@@ -393,11 +393,18 @@ async function giroDelVettore(lingua: Lingua): Promise<void> {
 async function suggerimento(sessione: string): Promise<void> {
   // La cella del vettore in fila: quella col suggerimento più lungo fra le celle disegnate coi pezzi del valore.
   const trova = `const celle = [...document.querySelectorAll("tbody td[title]")].filter((td) => td.querySelector("div") !== null && td.title.includes(" · ")); const c = celle.sort((a, b) => b.title.length - a.title.length)[0];`;
-  const cella = (await script(sessione, `${trova} if (c === undefined) return null; c.scrollIntoView({ block: "center", inline: "center" }); return c;`)) as Record<string, string> | null;
+  // A corsa finita la tabella disegna le righe in vista al fotogramma dopo: si aspetta la cella fino a 5 s.
+  let cella: Record<string, string> | null = null;
+  for (let d = 0; d < 50 && cella === null; d++) {
+    cella = (await script(sessione, `${trova} if (c === undefined) return null; c.scrollIntoView({ block: "center", inline: "center" }); return c;`)) as Record<string, string> | null;
+    if (cella === null) await Bun.sleep(100);
+  }
   if (cella === null) {
+    const scatto = Bun.spawn(["import", "-display", ":99", "-window", "root", join(uscita!, "suggerimento-tabella-senza-celle.png")], { stdout: "ignore", stderr: "ignore" });
+    await scatto.exited;
     const visto = await script(
       sessione,
-      `const t = [...document.querySelectorAll("td[title]")]; const b = [...document.querySelectorAll("tbody td[title]")]; const d = b.filter((td) => td.querySelector("div") !== null); return { celleColTitolo: t.length, nelCorpo: b.length, coiPezzi: d.length, coiPunti: d.filter((td) => td.title.includes(" · ")).length, righe: document.querySelectorAll("tbody tr").length, spiegazione: document.querySelector("[data-spiega]")?.textContent ?? null, esempio: (b[2] ?? t[0])?.outerHTML.slice(0, 200) ?? null };`,
+      `const t = [...document.querySelectorAll("td[title]")]; const b = [...document.querySelectorAll("tbody td[title]")]; const d = b.filter((td) => td.querySelector("div") !== null); const corpo = document.querySelector("tbody"); const scorre = corpo?.closest("table")?.parentElement; return { celleColTitolo: t.length, nelCorpo: b.length, coiPezzi: d.length, coiPunti: d.filter((td) => td.title.includes(" · ")).length, righe: [...document.querySelectorAll("tbody tr")].map((tr) => \`\${tr.getAttribute("data-riga") ?? "-"}:\${Math.round(tr.getBoundingClientRect().height)}\`), contenitore: scorre ? { alto: scorre.clientHeight, scorrimento: scorre.scrollTop, totale: scorre.scrollHeight } : null, finestra: [innerWidth, innerHeight], spiegazione: document.querySelector("[data-spiega]")?.textContent ?? null };`,
     );
     rosso("SUGGERIMENTO", `nessuna cella del vettore in fila disegnata nella tabella: ${JSON.stringify(visto)}`);
   }
