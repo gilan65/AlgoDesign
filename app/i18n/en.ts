@@ -134,7 +134,7 @@ export const en: Dizionario = {
   informazioniVersione: "Version {versione}, {data}",
   informazioniProva: "This is a test version: some features are still missing and others may change.",
   informazioniLicenza: "MIT License · © 2026 Giuseppe Lancellotti",
-  informazioniFile: "The license text is in the LICENSE file, next to the program; the libraries AlgoDesign uses, with their licenses, are in the LICENZE-DI-TERZE-PARTI file.",
+  informazioniFile: "The license text is in the LICENSE file, next to the program; the libraries AlgoDesign uses, with their licenses, are in the LICENZE-DI-TERZE-PARTI.txt file.",
   informazioniDocumenti: "The student guide (in Italian) is distributed under the Creative Commons Attribution 4.0 license (CC BY 4.0), in the LICENSE-DOCS file.",
   filtroDelFile: "AlgoDesign projects",
   progettoSenzaNome: "Untitled",

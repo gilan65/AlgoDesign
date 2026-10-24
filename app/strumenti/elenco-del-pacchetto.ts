@@ -16,8 +16,11 @@ export const elencoDelPacchetto: readonly string[] = [
   "CHANGELOG.md",
   "LICENSE",
   "LICENSE-DOCS",
-  "LICENZE-DI-TERZE-PARTI",
+  "LICENZE-DI-TERZE-PARTI.txt",
 ];
+
+/** Il file delle licenze di terze parti: con l'estensione, perché Windows lo apra con un doppio clic. */
+export const fileDelleLicenze = "LICENZE-DI-TERZE-PARTI.txt";
 
 /** I testi per l'utente, letti da una cartella data allo strumento: `{{versione}}` e `{{data}}` diventano quelle della release. */
 export const testiDelPacchetto: readonly string[] = ["LEGGIMI.md", "NOTE-DI-RILASCIO.md"];
