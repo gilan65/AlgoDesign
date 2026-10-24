@@ -1,0 +1,72 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "per-ogni-vettore",
+    "description": "Somma degli elementi di un vettore."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 4,
+          "initial": [
+            "3",
+            "1",
+            "4",
+            "1"
+          ]
+        },
+        {
+          "name": "x",
+          "type": "integer"
+        },
+        {
+          "name": "somma",
+          "type": "integer",
+          "initial": "0"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for_each",
+          "item": "x",
+          "source": "v",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "assignment",
+              "target": "somma",
+              "value": "somma + x"
+            }
+          ]
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "somma"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-ogni-vettore",
+      "inputs": [],
+      "expected": {
+        "output": "9\n"
+      }
+    }
+  ]
+}

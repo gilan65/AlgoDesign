@@ -1,0 +1,55 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "meno-zero-in-un-reale",
+    "description": "L'intero -0 dato a un reale, come valore iniziale e con un'assegnazione: è lo zero, senza segno."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "x",
+          "type": "real",
+          "initial": "-0"
+        },
+        {
+          "name": "y",
+          "type": "real"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "y",
+          "value": "-0"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "x",
+            "\" \"",
+            "y"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "meno-zero-in-un-reale",
+      "inputs": [],
+      "expected": {
+        "output": "0.00 0.00\n"
+      }
+    }
+  ]
+}

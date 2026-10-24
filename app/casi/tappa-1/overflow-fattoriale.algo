@@ -1,0 +1,76 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "overflow-fattoriale",
+    "description": "Il fattoriale di 13 non sta in un intero."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "13"
+        },
+        {
+          "name": "f",
+          "type": "integer",
+          "initial": "1"
+        },
+        {
+          "name": "i",
+          "type": "integer",
+          "initial": "1"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "while",
+          "condition": "i <= n",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "assignment",
+              "target": "f",
+              "value": "f * i"
+            },
+            {
+              "id": "b3",
+              "kind": "assignment",
+              "target": "i",
+              "value": "i + 1"
+            }
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "f"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "overflow-fattoriale",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "integer_overflow",
+          "block": "b2"
+        }
+      }
+    }
+  ]
+}

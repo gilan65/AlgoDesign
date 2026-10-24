@@ -1,0 +1,80 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "risultato-stringa-troppo-lunga",
+    "description": "La stringa restituita è più lunga della lunghezza massima del dato che la riceve: si ferma l'assegnazione."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "max_length": 5
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "\"inizio\""
+          ],
+          "newline": true
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "s",
+          "value": "saluto(\"Anna\")"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "s"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "saluto",
+      "return_type": "string",
+      "return_max_length": 20,
+      "data": [
+        {
+          "name": "nome",
+          "type": "string",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b5",
+        "return_value": "\"Ciao \" + nome"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "risultato-stringa-troppo-lunga",
+      "inputs": [],
+      "expected": {
+        "output": "inizio\n",
+        "error": {
+          "code": "string_too_long",
+          "block": "b2"
+        }
+      }
+    }
+  ]
+}

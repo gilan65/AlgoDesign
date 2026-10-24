@@ -1,0 +1,63 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "parametro-stringa",
+    "description": "Procedura con una stringa per valore: riceve una copia."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "saluta",
+          "arguments": [
+            "\"Anna\""
+          ]
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "saluta",
+      "data": [
+        {
+          "name": "nome",
+          "type": "string",
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "\"ciao \"",
+            "nome"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "parametro-stringa",
+      "inputs": [],
+      "expected": {
+        "output": "ciao Anna\n"
+      }
+    }
+  ]
+}

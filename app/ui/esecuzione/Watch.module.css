@@ -1,0 +1,103 @@
+/* Il riquadro del watch: accanto al nome del dato, sopra ogni altra cosa del disegno, senza prendere il puntatore.
+   Alto al più il 60% della finestra (la misura la legge anche il componente, per scegliere dove metterlo). Colori del
+   tema. L'altezza conta il bordo e il margine interno, come la misura del componente: altrimenti il riquadro sarebbe più
+   alto del posto scelto, e sopra il nome lo coprirebbe. */
+.watch {
+  --altezza-massima: 60;
+  box-sizing: border-box;
+  position: fixed;
+  z-index: 30;
+  max-width: 24rem;
+  max-height: calc(var(--altezza-massima) * 1vh);
+  overflow: hidden;
+  padding: 0.35rem 0.55rem;
+  font-size: 14px;
+  color: var(--colore-testo);
+  background: var(--colore-sfondo);
+  border: 1px solid var(--disegno-bordo);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 18%);
+  pointer-events: none;
+}
+
+/* Fermato dal clic sul nome: prende il puntatore e scorre, anche di lato (una stringa lunga senza spazi non va a capo); il
+   bordo del colore d'accento dice che resta. Sotto quello
+   che compare al passaggio del puntatore su un altro nome, e sotto le finestre (z-index 20): resta aperto mentre se ne
+   apre una, e il velo lo copre come il resto. */
+.fermo {
+  z-index: 19;
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-top: 0;
+  border: 2px solid var(--colore-accento);
+  pointer-events: auto;
+}
+
+/* L'intestazione del riquadro fermo resta in cima mentre gli elementi scorrono, sopra di loro (gli indici attenuati
+   fanno un livello proprio, che senza `z-index` le passava sopra). */
+.fermo .intestazione {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  display: grid;
+  grid-template: auto / 1fr auto;
+  place-items: center start;
+  padding: 0.3rem 0 0.2rem;
+  background: var(--colore-sfondo);
+}
+
+.chiudi {
+  justify-self: end;
+  padding: 0 0.35rem;
+  font: inherit;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  color: inherit;
+  background: none;
+  border: 1px solid #0000;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.chiudi:hover,
+.chiudi:focus-visible {
+  border-color: var(--disegno-bordo);
+}
+
+.nome {
+  font-family: var(--carattere-codice);
+  font-weight: bold;
+}
+
+.tipo {
+  opacity: 0.75;
+}
+
+.valore {
+  font-family: var(--carattere-codice);
+}
+
+/* «non inizializzata»: come nella tabella di traccia, in corsivo e attenuato. */
+.senzaValore {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.elementi {
+  margin-top: 2px;
+  border-collapse: collapse;
+}
+
+.indice {
+  padding-right: 0.8rem;
+  font-family: var(--carattere-codice);
+  opacity: 0.75;
+}
+
+/* Il dato di chi chiama, per un parametro per riferimento: sotto il valore, piccolo e attenuato come il tipo. */
+.riferimento {
+  margin-top: 0.2rem;
+  font-size: 0.85em;
+  opacity: 0.75;
+}

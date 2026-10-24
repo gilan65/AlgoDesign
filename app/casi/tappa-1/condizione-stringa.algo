@@ -1,0 +1,65 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "condizione-stringa",
+    "description": "Ordine delle stringhe per codice: una parola che comincia con è viene dopo una che comincia con z."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "string",
+          "initial": "\"zebra\""
+        },
+        {
+          "name": "b",
+          "type": "string",
+          "initial": "\"èra\""
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "if",
+          "condition": "a < b",
+          "then": [
+            {
+              "id": "b2",
+              "kind": "write",
+              "values": [
+                "\"prima\""
+              ],
+              "newline": true
+            }
+          ],
+          "else": [
+            {
+              "id": "b3",
+              "kind": "write",
+              "values": [
+                "\"dopo\""
+              ],
+              "newline": true
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "condizione-stringa",
+      "inputs": [],
+      "expected": {
+        "output": "prima\n"
+      }
+    }
+  ]
+}

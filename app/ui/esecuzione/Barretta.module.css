@@ -1,0 +1,30 @@
+/* La barretta dell'esecuzione, sopra il flowchart e i suoi riquadri ma sotto le finestre di dialogo e il loro velo
+   (livello 20): sopra, ne copriva le linguette. */
+.barretta {
+  position: fixed;
+  z-index: 15;
+  display: flex;
+  column-gap: 0.25rem;
+  place-items: center;
+  padding: 4px 6px;
+  font-size: 15px;
+  background: var(--colore-sfondo);
+  border: 1px solid var(--disegno-bordo);
+  border-radius: 0.5rem;
+  box-shadow: 0px 4px 14px rgb(0 0 0 / 0.22);
+}
+
+.maniglia {
+  padding: 0px 4px;
+  cursor: grab;
+  opacity: 0.5;
+  user-select: none;
+  touch-action: none;
+}
+
+.stato {
+  font-size: 0.85em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: var(--colore-premuto);
+}

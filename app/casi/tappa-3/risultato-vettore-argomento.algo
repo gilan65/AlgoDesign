@@ -1,0 +1,126 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "risultato-vettore-argomento",
+    "description": "Il vettore restituito da una funzione come argomento per valore di una procedura, che ne riceve una copia."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "voti",
+          "type": "integer",
+          "size": 3,
+          "initial": [
+            "7",
+            "4",
+            "9"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "mostra",
+          "arguments": [
+            "doppi(voti)"
+          ]
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "doppi",
+      "return_type": "integer",
+      "return_size": 3,
+      "data": [
+        {
+          "name": "w",
+          "type": "integer",
+          "size": 3,
+          "parameter": "value"
+        },
+        {
+          "name": "r",
+          "type": "integer",
+          "size": 3,
+          "initial": {
+            "each": "0"
+          }
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b3",
+          "kind": "for",
+          "counter": "i",
+          "from": "0",
+          "to": "2",
+          "body": [
+            {
+              "id": "b4",
+              "kind": "assignment",
+              "target": "r[i]",
+              "value": "w[i] * 2"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b5",
+        "return_value": "r"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "procedure",
+      "name": "mostra",
+      "data": [
+        {
+          "name": "w",
+          "type": "integer",
+          "size": 3,
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "b6",
+          "kind": "write",
+          "values": [
+            "w[0]",
+            "\" \"",
+            "w[1]",
+            "\" \"",
+            "w[2]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b7"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "risultato-vettore-argomento",
+      "inputs": [],
+      "expected": {
+        "output": "14 8 18\n"
+      }
+    }
+  ]
+}

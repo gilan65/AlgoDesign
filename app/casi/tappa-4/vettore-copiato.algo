@@ -1,0 +1,114 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "vettore-copiato",
+    "description": "Un vettore senza rif a ogni livello: ogni chiamata ha la sua copia; il vettore del programma principale non cambia."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 5,
+          "initial": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "somma(v, 0)"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "v[0]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "somma",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 5,
+          "parameter": "value"
+        },
+        {
+          "name": "i",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "s",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "if",
+          "condition": "i < 5",
+          "then": [
+            {
+              "id": "b5",
+              "kind": "assignment",
+              "target": "v[i]",
+              "value": "v[i] * 2"
+            },
+            {
+              "id": "b6",
+              "kind": "assignment",
+              "target": "s",
+              "value": "v[i] + somma(v, i + 1)"
+            }
+          ],
+          "else": [
+            {
+              "id": "b7",
+              "kind": "assignment",
+              "target": "s",
+              "value": "0"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b8",
+        "return_value": "s"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "vettore-copiato",
+      "inputs": [],
+      "expected": {
+        "output": "30\n1\n"
+      }
+    }
+  ]
+}

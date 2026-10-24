@@ -1,0 +1,225 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "ogni-tipo-per-uscita",
+    "description": "Un parametro di uscita di ogni tipo: un intero (che aveva un valore), un reale, un carattere, una stringa, un booleano, un vettore e un elemento di un altro vettore; la procedura dà a tutti un valore, e la procedura eseguita da sola li scrive."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "i",
+          "type": "integer",
+          "initial": "4"
+        },
+        {
+          "name": "r",
+          "type": "real"
+        },
+        {
+          "name": "c",
+          "type": "character"
+        },
+        {
+          "name": "s",
+          "type": "string"
+        },
+        {
+          "name": "b",
+          "type": "boolean"
+        },
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3
+        },
+        {
+          "name": "w",
+          "type": "integer",
+          "size": 3,
+          "initial": [
+            "0",
+            "0",
+            "0"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "riempi",
+          "arguments": [
+            "i",
+            "r",
+            "c",
+            "s",
+            "b",
+            "v",
+            "w[1]"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "i",
+            "\" \"",
+            "r",
+            "\" \"",
+            "c",
+            "\" \"",
+            "s",
+            "\" \"",
+            "b"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "v[0]",
+            "\" \"",
+            "v[1]",
+            "\" \"",
+            "v[2]",
+            "\" \"",
+            "w[0]",
+            "\" \"",
+            "w[1]",
+            "\" \"",
+            "w[2]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "riempi",
+      "data": [
+        {
+          "name": "i",
+          "type": "integer",
+          "parameter": "out"
+        },
+        {
+          "name": "r",
+          "type": "real",
+          "parameter": "out"
+        },
+        {
+          "name": "c",
+          "type": "character",
+          "parameter": "out"
+        },
+        {
+          "name": "s",
+          "type": "string",
+          "parameter": "out"
+        },
+        {
+          "name": "b",
+          "type": "boolean",
+          "parameter": "out"
+        },
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3,
+          "parameter": "out"
+        },
+        {
+          "name": "e",
+          "type": "integer",
+          "parameter": "out"
+        }
+      ],
+      "body": [
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "i",
+          "value": "7"
+        },
+        {
+          "id": "b6",
+          "kind": "assignment",
+          "target": "r",
+          "value": "2.5"
+        },
+        {
+          "id": "b7",
+          "kind": "assignment",
+          "target": "c",
+          "value": "'z'"
+        },
+        {
+          "id": "b8",
+          "kind": "assignment",
+          "target": "s",
+          "value": "\"ciao\""
+        },
+        {
+          "id": "b9",
+          "kind": "assignment",
+          "target": "b",
+          "value": "true"
+        },
+        {
+          "id": "b10",
+          "kind": "assignment",
+          "target": "v[0]",
+          "value": "1"
+        },
+        {
+          "id": "b11",
+          "kind": "assignment",
+          "target": "v[1]",
+          "value": "2"
+        },
+        {
+          "id": "b12",
+          "kind": "assignment",
+          "target": "v[2]",
+          "value": "3"
+        },
+        {
+          "id": "b13",
+          "kind": "assignment",
+          "target": "e",
+          "value": "9"
+        }
+      ],
+      "end": {
+        "id": "b14"
+      },
+      "test_cases": [
+        {
+          "name": "da sola",
+          "inputs": [],
+          "expected": {
+            "output": "\ni = 7\nr = 2.50\nc = z\ns = ciao\nb = true\nv[0] = 1\nv[1] = 2\nv[2] = 3\ne = 9\n"
+          }
+        }
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "ogni-tipo-per-uscita",
+      "inputs": [],
+      "expected": {
+        "output": "7 2.50 z ciao true\n1 2 3 0 9 0\n"
+      }
+    }
+  ]
+}

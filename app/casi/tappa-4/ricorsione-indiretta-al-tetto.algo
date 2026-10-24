@@ -1,0 +1,166 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "ricorsione-indiretta-al-tetto",
+    "description": "«pari» e «dispari» si chiamano l'una con l'altra: pari(n) tiene in corso n + 1 chiamate del giro, insieme."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer"
+        },
+        {
+          "name": "r",
+          "type": "boolean"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "n"
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "r",
+          "value": "pari(n)"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "r"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "pari",
+      "return_type": "boolean",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "e",
+          "type": "boolean"
+        }
+      ],
+      "body": [
+        {
+          "id": "b5",
+          "kind": "if",
+          "condition": "n == 0",
+          "then": [
+            {
+              "id": "b6",
+              "kind": "assignment",
+              "target": "e",
+              "value": "true"
+            }
+          ],
+          "else": [
+            {
+              "id": "b7",
+              "kind": "assignment",
+              "target": "e",
+              "value": "dispari(n - 1)"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b8",
+        "return_value": "e"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "function",
+      "name": "dispari",
+      "return_type": "boolean",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "e",
+          "type": "boolean"
+        }
+      ],
+      "body": [
+        {
+          "id": "b9",
+          "kind": "if",
+          "condition": "n == 0",
+          "then": [
+            {
+              "id": "b10",
+              "kind": "assignment",
+              "target": "e",
+              "value": "false"
+            }
+          ],
+          "else": [
+            {
+              "id": "b11",
+              "kind": "assignment",
+              "target": "e",
+              "value": "pari(n - 1)"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b12",
+        "return_value": "e"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "quattrocentonovantanove",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "499"
+        }
+      ],
+      "expected": {
+        "output": "false\n"
+      }
+    },
+    {
+      "name": "cinquecento",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "500"
+        }
+      ],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "recursion_too_deep",
+          "block": "b11"
+        }
+      }
+    }
+  ]
+}

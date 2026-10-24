@@ -1,0 +1,81 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "per-ogni-elemento-cambiato",
+    "description": "Un elemento del vettore cambiato nel corpo di un ciclo per ogni prima di essere preso: il giro dopo vede il valore nuovo."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3,
+          "initial": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        {
+          "name": "x",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for_each",
+          "item": "x",
+          "source": "v",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "write",
+              "values": [
+                "x"
+              ],
+              "newline": false
+            },
+            {
+              "id": "b3",
+              "kind": "assignment",
+              "target": "v[2]",
+              "value": "9"
+            }
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "\" \"",
+            "x"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-ogni-elemento-cambiato",
+      "inputs": [],
+      "expected": {
+        "output": "129 9\n",
+        "warnings": [
+          {
+            "code": "maybe_uninitialized",
+            "block": "b4"
+          }
+        ]
+      }
+    }
+  ]
+}

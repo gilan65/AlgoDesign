@@ -1,0 +1,24 @@
+/* L'area del flowchart: prende lo spazio che resta accanto alla vista dei dati, e si scorre quando il
+   disegno è più grande. Lo sfondo è quello del tema, su cui stanno le etichette Vero e Falso e i punti di
+   unione. Bordo e margine interno sottili: con «Adatta alla finestra» ogni pixel d'altezza è carattere. */
+.tela {
+  overflow: auto;
+  flex: 1;
+  /* Sotto le schede delle funzioni, in una colonna: senza, l'area crescerebbe col disegno invece di scorrere (nella
+     forma logica, come `.viste`). */
+  min-block-size: 0px;
+  padding: 0.25rem;
+  min-width: 0px;
+  background: var(--colore-sfondo);
+  border: 1px solid var(--disegno-linea);
+}
+
+/* Durante l'esecuzione lo scorrimento verso il blocco corrente è morbido, tranne con «riduci il movimento» del
+   sistema (`Flowchart.module.css`). Vale per gli scorrimenti chiesti dall'app, non per la rotellina. Solo in
+   esecuzione: in modifica uno scorrimento morbido si sovrappone a quello che porta in vista un «+», e il «+» finiva
+   sotto il riquadro dei campi del blocco appena inserito (misurato nel collaudo, nei due motori). */
+@media (prefers-reduced-motion: no-preference) {
+  .morbida {
+    scroll-behavior: smooth;
+  }
+}

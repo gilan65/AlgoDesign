@@ -1,0 +1,39 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "scrittura-booleano",
+    "description": "Scrittura di booleani come true e false."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "true",
+            "\" \"",
+            "1 > 2"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "scrittura-booleano",
+      "inputs": [],
+      "expected": {
+        "output": "true false\n"
+      }
+    }
+  ]
+}

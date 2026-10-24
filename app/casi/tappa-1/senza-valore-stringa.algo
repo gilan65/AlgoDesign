@@ -1,0 +1,62 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "senza-valore-stringa",
+    "description": "Una stringa letta prima di avere un valore."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string"
+        },
+        {
+          "name": "t",
+          "type": "string"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "t",
+          "value": "s + \"!\""
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "t"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "senza-valore-stringa",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "uninitialized",
+          "block": "b1"
+        },
+        "warnings": [
+          {
+            "code": "maybe_uninitialized",
+            "block": "b1"
+          }
+        ]
+      }
+    }
+  ]
+}

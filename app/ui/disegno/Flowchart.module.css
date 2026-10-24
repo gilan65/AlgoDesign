@@ -1,0 +1,376 @@
+/* Il flowchart: solo variabili del tema. Il carattere è quello del tema (la misura del testo lo legge
+   dalla stessa variabile), con il peso normale anche sulle etichette: la loro larghezza si misura così. */
+.flowchart {
+  display: block;
+  font-family: var(--carattere);
+  font-weight: normal;
+}
+
+/* Ogni genere di blocco col suo colore: quello dell'insieme, o quello scelto nelle Impostazioni (`ui/colori.ts`). */
+.inizioEFine,
+.assegnazione,
+.procedura,
+.lettura,
+.scrittura,
+.se,
+.cicli,
+.commento {
+  stroke: var(--disegno-bordo);
+  stroke-width: 1.5;
+}
+
+.inizioEFine {
+  fill: var(--blocco-inizio-e-fine);
+}
+
+.assegnazione {
+  fill: var(--blocco-assegnazione);
+}
+
+.procedura {
+  fill: var(--blocco-procedura);
+}
+
+.lettura {
+  fill: var(--blocco-lettura);
+}
+
+.scrittura {
+  fill: var(--blocco-scrittura);
+}
+
+.se {
+  fill: var(--blocco-se);
+}
+
+.cicli {
+  fill: var(--blocco-cicli);
+}
+
+.commento {
+  fill: var(--blocco-commento);
+  stroke-dasharray: 4 3;
+}
+
+/* Il riquadro di un ciclo «per» o «per ogni»: tratteggiato, del colore dei bordi (o del suo, scelto); col fondo colorato
+   (un'opzione) un velo dello stesso colore, uno solo anche coi cicli annidati (due veli portavano l'etichetta Vero dei
+   colori predefiniti in chiaro a 4,1:1, misurato; uno al 5% la lascia a 4,57:1). L'intestazione sta sul bordo, su un fondo
+   del colore dello sfondo che interrompe la linea. */
+.riquadro {
+  stroke-width: 1.25;
+  stroke: var(--blocco-riquadro);
+  stroke-dasharray: 6 4;
+  fill: none;
+}
+
+.riquadro.conFondo {
+  fill: color-mix(in srgb, var(--blocco-riquadro) 5%, transparent);
+}
+
+.intestazione {
+  stroke: none;
+  fill: var(--colore-sfondo);
+}
+
+/* `dominant-baseline` anche sulle righe: WebKit segue SVG 1.1, dove la proprietà NON si eredita, e le
+   righe (che portano la posizione) resterebbero sulla linea di base, 6 px più in alto (misurato). */
+.testo,
+.testo tspan {
+  fill: var(--colore-testo);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* L'intestazione di una procedura o di una funzione e il blocco della chiamata: il nome in grassetto, «rif» e il tipo in
+   corsivo (la misura del testo li conosce). */
+.testo .grassetto {
+  font-weight: 700;
+}
+
+.testo .corsivo {
+  font-style: italic;
+}
+
+/* Le due righe ai lati del blocco della chiamata, come il suo bordo. */
+.latoDellaChiamata {
+  stroke-width: 1.5;
+  stroke: var(--disegno-bordo);
+}
+
+.vero,
+.falso {
+  dominant-baseline: central;
+}
+
+.vero {
+  fill: var(--disegno-vero);
+}
+
+.falso {
+  fill: var(--disegno-falso);
+}
+
+.linea {
+  fill: none;
+  stroke: var(--disegno-linea);
+  stroke-width: 1.5;
+}
+
+.lineaNota {
+  fill: none;
+  stroke: var(--disegno-linea);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+.punta {
+  fill: var(--disegno-linea);
+}
+
+/* Lo strato delle modifiche, sopra il disegno. Il blocco si sceglie sulla sua forma: un contorno
+   trasparente che diventa del colore d'accento quando il blocco è selezionato (pieno) o ha il fuoco dalla
+   tastiera (tratteggiato). */
+.modificabile:focus {
+  outline: none;
+}
+
+.blocco,
+.punto {
+  cursor: pointer;
+  outline: none;
+}
+
+.areaDelBlocco {
+  fill: transparent;
+  stroke: none;
+}
+
+.blocco:focus-visible .areaDelBlocco {
+  stroke: var(--colore-accento);
+  stroke-width: 2;
+  stroke-dasharray: 5 3;
+}
+
+.selezionato .areaDelBlocco {
+  stroke: var(--colore-accento);
+  stroke-width: 3;
+  stroke-dasharray: none;
+}
+
+/* Più blocchi scelti insieme, con l'opzione dell'app: un riquadro tratteggiato col velo del colore d'accento intorno a
+   tutti, contenuto compreso. Non prende il puntatore. */
+.riquadroDellaScelta {
+  fill: var(--colore-accento);
+  fill-opacity: 0.07;
+  stroke: var(--colore-accento);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  pointer-events: none;
+}
+
+/* I «+»: visibili quando il puntatore è sul flowchart o il fuoco è dentro (nell'albero dell'accessibilità
+   ci sono sempre). L'area che risponde al puntatore è più grande del cerchio, e trasparente. */
+.punto {
+  opacity: 0;
+}
+
+.modificabile:hover .punto,
+.modificabile:focus-within .punto {
+  opacity: 1;
+}
+
+.areaDelPunto {
+  fill: transparent;
+}
+
+.cerchioDelPunto {
+  fill: var(--colore-sfondo);
+  stroke: var(--colore-accento);
+  stroke-width: 1.5;
+}
+
+.segnoDelPunto {
+  stroke: var(--colore-accento);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.punto:hover .cerchioDelPunto,
+.punto:focus-visible .cerchioDelPunto {
+  fill: var(--colore-accento);
+}
+
+.punto:hover .segnoDelPunto,
+.punto:focus-visible .segnoDelPunto {
+  stroke: var(--colore-sfondo);
+}
+
+/* Lo spostamento di un blocco (col mouse o dalla tastiera): tutti i «+» visibili, spenti quelli su cui il
+   blocco non va, pieno quello sotto il puntatore; il blocco col suo contenuto velato dal colore dello
+   sfondo; una copia della sua forma, trasparente, che segue il puntatore. Nessuna transizione. */
+.inMovimento .punto {
+  opacity: 1;
+}
+
+.inMovimento .punto.spento {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.punto.bersaglio .cerchioDelPunto {
+  fill: var(--colore-accento);
+}
+
+.punto.bersaglio .segnoDelPunto {
+  stroke: var(--colore-sfondo);
+}
+
+.spostato .areaDelBlocco {
+  fill: var(--colore-sfondo);
+  fill-opacity: 0.6;
+}
+
+.copia {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Il cerchio vuoto: riempito col colore dello sfondo, così le linee si fermano sul suo bordo. */
+.unione {
+  fill: var(--colore-sfondo);
+  stroke: var(--disegno-linea);
+  stroke-width: 1.6;
+}
+
+/* Un blocco con un errore del controllo statico: il contorno del colore dell'errore e un bollino col
+   punto esclamativo nell'angolo in alto a destra; con un avviso, il bollino col punto di domanda, del
+   colore dell'avviso. La selezione resta sopra: il suo contorno vince. Il segno ha il carattere del disegno
+   (mai più piccolo: alla scala minima resta di 5 px). */
+.conErrore .areaDelBlocco {
+  stroke: var(--colore-errore);
+  stroke-width: 2.5;
+}
+
+.selezionato.conErrore .areaDelBlocco {
+  stroke: var(--colore-accento);
+}
+
+.segno circle {
+  fill: var(--colore-errore);
+}
+
+.segno[data-segno="avviso"] circle {
+  fill: var(--colore-avviso);
+}
+
+.segno text {
+  fill: var(--colore-sfondo);
+  font-weight: bold;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.conAvviso .areaDelBlocco {
+  stroke: var(--colore-avviso);
+  stroke-width: 2.5;
+}
+
+.selezionato.conAvviso .areaDelBlocco {
+  stroke: var(--colore-accento);
+}
+
+/* L'esecuzione: il blocco prima del quale è in pausa ha il bordo spesso arancione, l'interno giallo
+   luminoso e il testo scuro (in chiaro e in scuro), con la punta della linea che entra grande e arancione; un
+   punto di interruzione è un pallino rosso (posizioni in `segni.ts`). Colori del tema, gli stessi per ogni
+   insieme di colori. */
+.corrente > rect,
+.corrente > polygon {
+  fill: var(--esecuzione-corrente);
+  stroke: var(--esecuzione-bordo);
+  stroke-width: 4;
+}
+
+/* Un blocco col punto di interruzione, finché l'esecuzione non lo raggiunge: il contorno rosso, come il pallino.
+   Raggiunto, vale il contorno del blocco corrente. */
+.conPunto > rect,
+.conPunto > polygon {
+  stroke: var(--esecuzione-punto);
+  stroke-width: 2;
+}
+
+.corrente .testo,
+.corrente .testo tspan {
+  fill: var(--esecuzione-testo);
+}
+
+.freccia {
+  fill: var(--esecuzione-bordo);
+}
+
+/* La pausa sulla ripresa dopo un ritorno: il segno della riga della ripresa nella tabella, del colore del bordo. */
+.segnoDellaRipresa {
+  font-size: 1.25rem;
+  fill: var(--esecuzione-bordo);
+  font-weight: 700;
+}
+
+/* Di una Lettura con la domanda corrente, la riga del passo: la domanda (la Scrittura) o la Lettura, cerchiata col
+   colore del bordo del blocco corrente. */
+.rigaCorrente {
+  fill: none;
+  stroke: var(--esecuzione-bordo);
+  stroke-width: 2;
+}
+
+.interruzione {
+  fill: var(--esecuzione-punto);
+  stroke: var(--colore-sfondo);
+  stroke-width: 1.5;
+}
+
+/* I nomi dei dati nei blocchi, durante l'esecuzione: sopra le lettere del nome, invisibili finché il puntatore non ci
+   arriva; allora il nome ha un fondo leggero e una riga sotto, del colore d'accento (nessun
+   segno sui nomi prima). */
+.nome rect {
+  fill: transparent;
+  cursor: help;
+}
+
+.nome line {
+  stroke: transparent;
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.nome:hover rect {
+  fill: var(--colore-accento);
+  fill-opacity: 0.22;
+}
+
+.nome:hover line {
+  stroke: var(--colore-accento);
+}
+
+/* Che cosa si muove durante l'esecuzione: il colore del blocco corrente sfuma
+   da un blocco all'altro e la sua punta compare piano; il disegno scorre morbido verso il blocco corrente
+   (`VistaFlowchart.module.css`). Solo senza «riduci il movimento» del sistema: con la preferenza, nulla si muove
+   (l'esecuzione animata avanza lo stesso: è un comando, non una decorazione). */
+@media (prefers-reduced-motion: no-preference) {
+  .flowchart [data-forma] > rect,
+  .flowchart [data-forma] > polygon {
+    transition:
+      fill 0.3s ease,
+      stroke 0.3s ease,
+      stroke-width 0.3s ease;
+  }
+
+  .freccia {
+    animation: comparsa 0.3s ease;
+  }
+}
+
+@keyframes comparsa {
+  from {
+    opacity: 0;
+  }
+}

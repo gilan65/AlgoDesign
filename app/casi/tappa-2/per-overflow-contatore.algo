@@ -1,0 +1,56 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "per-overflow-contatore",
+    "description": "Ciclo per che arriva al massimo intero: l'ultimo incremento va in overflow."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "i",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for",
+          "counter": "i",
+          "from": "2147483646",
+          "to": "2147483647",
+          "step": 1,
+          "body": [
+            {
+              "id": "b2",
+              "kind": "write",
+              "values": [
+                "i"
+              ],
+              "newline": true
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-overflow-contatore",
+      "inputs": [],
+      "expected": {
+        "output": "2147483646\n2147483647\n",
+        "error": {
+          "code": "integer_overflow",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

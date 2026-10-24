@@ -1,0 +1,331 @@
+/* La scheda dei casi d'uso: il titolo col riassunto, la premessa, i comandi, l'elenco; sotto il caso scelto le sue
+   differenze, sotto il caso aperto i suoi campi. Larga quanto basta per i campi, mai più della scheda di un dato. */
+.vista {
+  display: grid;
+  align-content: start;
+  row-gap: 0.5rem;
+  width: 26rem;
+  max-width: 100%;
+}
+
+.titolo {
+  margin: 0px;
+  font-size: 1rem;
+  display: flex;
+  align-items: baseline;
+  column-gap: 0.6rem;
+}
+
+.riassunto {
+  font-weight: normal;
+  font-size: 0.9rem;
+}
+
+.premessa {
+  margin: 0px;
+}
+
+.comandi {
+  display: flex;
+  gap: 0.4rem;
+  flex-flow: row wrap;
+  place-items: center start;
+}
+
+.avanzamento {
+  font-size: 0.9rem;
+}
+
+.nota {
+  margin: 0px;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+/* L'elenco: il segno, poi il nome e sotto i valori del caso. */
+.tabella {
+  width: 100%;
+}
+
+.tabella th,
+.tabella td {
+  white-space: normal;
+  vertical-align: top;
+}
+
+.riga {
+  cursor: default;
+}
+
+.riga[aria-current] > * {
+  background: var(--colore-sopra);
+}
+
+/* Una riga: la casella, il nome coi valori, il pallino in fondo; casella e pallino centrati sull'altezza della riga. */
+.tabella tr > * {
+  vertical-align: middle;
+}
+
+.tabella .cellaDellaCasella {
+  width: 1.15em;
+  padding: 0.2rem 0.45rem 0.2rem 0.35rem;
+}
+
+/* La casella, disegnata nel tema come il pallino: un quadrato dagli angoli arrotondati, pieno del colore d'accento con ✓
+   quando è spuntata (con «–» quando, in testa, solo alcuni casi sono selezionati). */
+.casella {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  box-sizing: border-box;
+  width: 1.15em;
+  height: 1.15em;
+  margin: 0px;
+  vertical-align: middle;
+  border: 1.5px solid var(--disegno-linea);
+  border-radius: 4px;
+  background: var(--colore-sfondo);
+  cursor: pointer;
+}
+
+.casella:checked,
+.casella:indeterminate {
+  background: var(--colore-accento);
+  border-color: var(--colore-accento);
+}
+
+.casella:checked::after,
+.casella:indeterminate::after {
+  content: "✓";
+  color: var(--colore-sfondo);
+  font: bold 0.8rem var(--carattere);
+  line-height: 1;
+}
+
+.casella:indeterminate::after {
+  content: "–";
+}
+
+.casella:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: 1px;
+}
+
+/* In testa all'elenco: la casella che seleziona o toglie tutti, con la sua scritta. */
+.tabella .tutti {
+  padding: 0.2rem 0.35rem;
+}
+
+.tutti > label {
+  display: inline-grid;
+  grid-template: none / auto 1fr;
+  place-items: center start;
+  column-gap: 0.45rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* Il pallino dell'esito: vuoto (mai eseguito, o raggiunto prima dell'ultima modifica), verde con ✓, rosso con ✗, giallo
+   con ✗ (non raggiunto prima dell'ultima modifica). */
+.segno {
+  width: 1.4em;
+  text-align: center;
+}
+
+.pallino {
+  display: inline-grid;
+  place-content: center;
+  box-sizing: border-box;
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.2em;
+  border-radius: 50%;
+  border: 1.5px solid var(--disegno-linea);
+  font: bold 0.85rem/1 var(--carattere);
+  color: var(--colore-sfondo);
+}
+
+[data-esito="raggiunto"] > .pallino {
+  background: var(--colore-riuscito);
+  border-color: var(--colore-riuscito);
+}
+
+[data-esito="non-raggiunto"] > .pallino {
+  background: var(--colore-errore);
+  border-color: var(--colore-errore);
+}
+
+[data-esito="da-rieseguire"] > .pallino {
+  background: var(--colore-avviso);
+  border-color: var(--colore-avviso);
+}
+
+[data-esito="fuori-tappa"] > .pallino {
+  color: var(--colore-testo);
+  opacity: 0.5;
+}
+
+.voci {
+  display: block;
+  font-weight: normal;
+  font-size: 0.85rem;
+  opacity: 0.75;
+  font-family: var(--carattere-codice);
+}
+
+/* Le differenze sotto il caso: un riquadro col bordo del colore dell'esito. */
+.rigaDellEsito > td {
+  padding: 0.2rem 0px 0.5rem;
+}
+
+.differenze {
+  display: grid;
+  row-gap: 0.3rem;
+  padding: 0.4rem 0.6rem;
+  border-left: 4px solid var(--colore-errore);
+  background: var(--colore-sopra);
+  font-size: 0.9rem;
+}
+
+.differenze[data-esito="raggiunto"] {
+  border-left-color: var(--colore-riuscito);
+}
+
+.titoloEsito,
+.campoDiverso,
+.avvisi p {
+  margin: 0px;
+}
+
+.avvisi {
+  display: grid;
+  row-gap: 0.2rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--colore-riga);
+}
+
+/* L'output atteso e ottenuto: il testo esatto, a capo dove va a capo, con la freccia dell'a capo e la prima differenza. */
+.testo {
+  margin: 0.15rem 0px 0.35rem;
+  padding: 0.2rem 0.35rem;
+  white-space: pre-wrap;
+  font-family: var(--carattere-codice);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  background: var(--colore-sfondo);
+  border: 1px solid var(--colore-riga);
+  border-radius: 3px;
+}
+
+.aCapo {
+  opacity: 0.45;
+}
+
+.differenza {
+  background: var(--colore-differenza);
+  color: var(--colore-testo);
+}
+
+/* I campi del caso: la scheda dei dati, coi valori in righe. */
+.campi {
+  max-inline-size: 100%;
+  box-sizing: border-box;
+}
+
+.largo {
+  inline-size: 100%;
+  box-sizing: border-box;
+}
+
+.valori {
+  display: grid;
+  row-gap: 0.3rem;
+  justify-items: start;
+  margin: 0px;
+  padding: 0px;
+  border: none;
+}
+
+.valori > legend {
+  padding: 0px 0px 0.2rem;
+}
+
+.valore {
+  display: grid;
+  grid-template-columns: 1.6rem minmax(5rem, auto) minmax(0px, 1fr) auto auto auto;
+  align-items: center;
+  column-gap: 0.25rem;
+  width: 100%;
+}
+
+/* La casella di una voce di un parametro («senza valore», «in ogni elemento»): sotto il suo valore, nella stessa colonna. */
+.casellaDellaVoce {
+  grid-column: 3;
+  display: flex;
+  column-gap: 0.25rem;
+  place-items: center;
+  font-size: 0.85rem;
+}
+
+.numero {
+  opacity: 0.6;
+}
+
+.output {
+  inline-size: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+/* Sulla riga, «Esegui» e «Passo passo» con le icone della barra: un gruppo solo, col suo bordo e il fondo, staccato dal
+   pallino che lo segue da uno spazio e da una linea (i due comandi stanno insieme e vengono prima
+   dell'esito, che è un'altra cosa). */
+.tabella .cellaDeiComandi {
+  white-space: nowrap;
+  padding-inline: 0.3rem 0.6rem;
+  border-inline-end: 1px solid var(--colore-riga);
+}
+
+.comandiDelCaso {
+  display: inline-flex;
+  border: 1px solid var(--disegno-linea);
+  border-radius: 5px;
+  background: var(--colore-sfondo);
+  overflow: hidden;
+}
+
+.comandoSullaRiga {
+  display: inline-grid;
+  place-content: center;
+  padding: 0.2rem 0.3rem;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.comandoSullaRiga + .comandoSullaRiga {
+  border-inline-start: 1px solid var(--colore-riga);
+}
+
+.comandoSullaRiga:hover,
+.comandoSullaRiga:focus-visible {
+  background: var(--colore-premuto);
+}
+
+.comandoSullaRiga:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: -2px;
+}
+
+/* Accanto a un campo diverso, il comando che scrive nell'atteso ciò che è stato ottenuto. */
+.comandoDallEsito {
+  margin-inline-start: 0.4rem;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+/* Il pallino, dopo la linea che chiude il gruppo dei comandi. */
+.tabella .segno {
+  padding-inline-start: 0.6rem;
+}

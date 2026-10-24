@@ -1,0 +1,66 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "converti-a-vettore",
+    "description": "Una stringa di 4 caratteri in un vettore di 6: gli ultimi due ricevono lo spazio."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "initial": "\"ciao\""
+        },
+        {
+          "name": "v",
+          "type": "character",
+          "size": 6
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "v",
+          "value": "to_array s"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "\"[\"",
+            "v[0]",
+            "\"][\"",
+            "v[1]",
+            "\"][\"",
+            "v[2]",
+            "\"][\"",
+            "v[3]",
+            "\"][\"",
+            "v[4]",
+            "\"][\"",
+            "v[5]",
+            "\"]\""
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "converti-a-vettore",
+      "inputs": [],
+      "expected": {
+        "output": "[c][i][a][o][ ][ ]\n"
+      }
+    }
+  ]
+}

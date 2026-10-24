@@ -1,0 +1,33 @@
+# Fine riga: LF nel repository e su disco, su ogni sistema.
+* text=auto eol=lf
+
+# Gli script di Windows restano con CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# I progetti di AlgoDesign sono testo JSON in UTF-8.
+*.algo text eol=lf
+
+# File binari: quelli di oggi e quelli che una release o una guida con le figure possono portare.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.bmp binary
+*.ico binary
+*.icns binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.7z binary
+*.dmg binary
+*.AppImage binary
+*.exe binary
+*.dll binary

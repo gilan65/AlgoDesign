@@ -1,0 +1,261 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "radice-allo-spazio",
+    "description": "La funzione «pesante» riceve per valore sette vettori di dieci stringhe lunghe al più 1000: i suoi dati non stanno nello spazio già alla prima chiamata, dal programma o eseguita da sola."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "string",
+          "size": 10,
+          "initial": {
+            "each": "\"x\""
+          },
+          "max_length": 1000
+        },
+        {
+          "name": "b",
+          "type": "string",
+          "size": 10,
+          "initial": {
+            "each": "\"x\""
+          },
+          "max_length": 1000
+        },
+        {
+          "name": "c",
+          "type": "string",
+          "size": 10,
+          "initial": {
+            "each": "\"x\""
+          },
+          "max_length": 1000
+        },
+        {
+          "name": "d",
+          "type": "string",
+          "size": 10,
+          "initial": {
+            "each": "\"x\""
+          },
+          "max_length": 1000
+        },
+        {
+          "name": "e",
+          "type": "string",
+          "size": 10,
+          "initial": {
+            "each": "\"x\""
+          },
+          "max_length": 1000
+        },
+        {
+          "name": "f",
+          "type": "string",
+          "size": 10,
+          "initial": {
+            "each": "\"x\""
+          },
+          "max_length": 1000
+        },
+        {
+          "name": "g",
+          "type": "string",
+          "size": 10,
+          "initial": {
+            "each": "\"x\""
+          },
+          "max_length": 1000
+        },
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "r",
+          "value": "pesante(1, a, b, c, d, e, f, g)"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "r"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "pesante",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "a",
+          "type": "string",
+          "size": 10,
+          "max_length": 1000,
+          "parameter": "value"
+        },
+        {
+          "name": "b",
+          "type": "string",
+          "size": 10,
+          "max_length": 1000,
+          "parameter": "value"
+        },
+        {
+          "name": "c",
+          "type": "string",
+          "size": 10,
+          "max_length": 1000,
+          "parameter": "value"
+        },
+        {
+          "name": "d",
+          "type": "string",
+          "size": 10,
+          "max_length": 1000,
+          "parameter": "value"
+        },
+        {
+          "name": "e",
+          "type": "string",
+          "size": 10,
+          "max_length": 1000,
+          "parameter": "value"
+        },
+        {
+          "name": "f",
+          "type": "string",
+          "size": 10,
+          "max_length": 1000,
+          "parameter": "value"
+        },
+        {
+          "name": "g",
+          "type": "string",
+          "size": 10,
+          "max_length": 1000,
+          "parameter": "value"
+        },
+        {
+          "name": "s",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "if",
+          "condition": "n > 0",
+          "then": [
+            {
+              "id": "b5",
+              "kind": "assignment",
+              "target": "s",
+              "value": "pesante(n - 1, a, b, c, d, e, f, g)"
+            }
+          ],
+          "else": [
+            {
+              "id": "b6",
+              "kind": "assignment",
+              "target": "s",
+              "value": "0"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b7",
+        "return_value": "s"
+      },
+      "test_cases": [
+        {
+          "name": "da-sola",
+          "inputs": [
+            {
+              "data": "n",
+              "text": "1"
+            },
+            {
+              "data": "a",
+              "text": "x",
+              "each": true
+            },
+            {
+              "data": "b",
+              "text": "x",
+              "each": true
+            },
+            {
+              "data": "c",
+              "text": "x",
+              "each": true
+            },
+            {
+              "data": "d",
+              "text": "x",
+              "each": true
+            },
+            {
+              "data": "e",
+              "text": "x",
+              "each": true
+            },
+            {
+              "data": "f",
+              "text": "x",
+              "each": true
+            },
+            {
+              "data": "g",
+              "text": "x",
+              "each": true
+            }
+          ],
+          "expected": {
+            "output": "",
+            "error": {
+              "code": "recursion_data_too_large",
+              "block": "f2"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "dal-programma",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "recursion_data_too_large",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

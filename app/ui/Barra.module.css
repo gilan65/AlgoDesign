@@ -1,0 +1,231 @@
+/* La barra: bassa, perché l'altezza che resta è del flowchart (con «Adatta alla finestra» in 1920 × 1080 il
+   riferimento è limitato dall'altezza). Due colonne: a sinistra i gruppi, che vanno a capo; a destra il gruppo
+   dell'applicazione, sempre nella prima riga. */
+.barra {
+  display: grid;
+  grid-template: none / minmax(0px, 1fr) auto;
+  column-gap: 2rem;
+  align-items: start;
+  font-size: 15px;
+}
+
+.gruppi {
+  display: flex;
+  flex-flow: wrap row;
+  row-gap: 0.25rem;
+  place-items: center start;
+  min-width: 0px;
+}
+
+/* I gruppi, separati da una linea. */
+.gruppo {
+  display: inline-flex;
+  column-gap: 0.25rem;
+  /* `place-items`: in un contenitore flessibile `justify-items` non ha effetto, quindi è lo stesso
+     allineamento di `align-items`. */
+  place-items: center;
+  padding: 0px 0.5rem;
+  border-left: 1px solid var(--colore-riga);
+}
+
+.gruppi > .gruppo:first-child {
+  padding-left: 0px;
+  border-left: none;
+}
+
+/* Le viste a destra dei gruppi di sinistra. */
+.spinta {
+  margin-left: auto;
+}
+
+.applicazione {
+  grid-column: 2;
+  padding-right: 0px;
+  border-left: none;
+}
+
+/* Il gruppo dell'esecuzione mentre c'è la barretta: resta al suo posto (la barra non si muove), non si vede e
+   non prende il fuoco. */
+.velato {
+  visibility: hidden;
+}
+
+.icona {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  stroke-width: 1.5;
+  stroke: currentColor;
+  fill: none;
+  stroke-linejoin: round;
+}
+
+/* Le estremità tonde, sui soli tratti. */
+.icona path {
+  stroke-linecap: round;
+}
+
+.pulsante {
+  display: inline-flex;
+  column-gap: 0.3rem;
+  align-items: center;
+  font: inherit;
+  color: var(--colore-testo);
+  background: transparent;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--disegno-bordo);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.pulsante:hover:not(:disabled, [aria-disabled="true"]) {
+  background: var(--colore-sopra);
+}
+
+.pulsante:disabled,
+.pulsante[aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.45;
+}
+
+/* Un interruttore acceso (il punto di interruzione) o un pannello aperto: il pulsante resta premuto. */
+.pulsante[aria-expanded="true"],
+.pulsante[aria-pressed="true"] {
+  background: var(--colore-premuto);
+  border-color: var(--colore-accento);
+}
+
+.pulsante:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: 2px;
+}
+
+/* Il tasto di un comando scritto piccolo accanto al testo. */
+.tasto {
+  font-size: 0.75em;
+  opacity: 0.7;
+}
+
+/* Fuori dalla vista, ma resta il nome del pulsante. */
+.nascosto {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------- le tre presentazioni dei pulsanti */
+
+/* Solo l'icona: il testo esce dalla vista ma resta il nome; il tasto si legge nel suggerimento. */
+[data-presentazione="icone"] .pulsante > .testo {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+[data-presentazione="icone"] .pulsante > .tasto,
+[data-presentazione="testo-sotto"] .pulsante > .tasto {
+  display: none;
+}
+
+/* Il testo piccolo sotto l'icona. */
+[data-presentazione="testo-sotto"] .pulsante {
+  flex-direction: column;
+  row-gap: 1px;
+  padding: 0.15rem 0.35rem;
+  min-width: 3.2rem;
+}
+
+[data-presentazione="testo-sotto"] .pulsante > .testo {
+  /* L'interlinea in pixel (11 × 1,1). */
+  font-size: 11px;
+  line-height: 12px;
+}
+
+/* ------------------------------------------------------------------------------------------- il menu */
+
+/* La freccia dice che il pulsante apre un menu; resta con la sola icona. Col testo sotto sta nell'angolo:
+   in colonna alzerebbe la barra. */
+.apreMenu {
+  position: relative;
+}
+
+.freccia {
+  font-size: 0.75em;
+}
+
+[data-presentazione="testo-sotto"] .apreMenu > .freccia {
+  position: absolute;
+  top: 1px;
+  right: 3px;
+  font-size: 10px;
+}
+
+.posizione {
+  z-index: 50;
+}
+
+.tendina {
+  display: flex;
+  flex-direction: column;
+  min-width: 15rem;
+  padding: 4px;
+  font-size: 15px;
+  color: var(--colore-testo);
+  background: var(--colore-sfondo);
+  border: 1px solid var(--disegno-bordo);
+  border-radius: 6px;
+  box-shadow: 0px 4px 14px rgb(0 0 0 / 0.18);
+  outline: none;
+}
+
+.tendina[hidden] {
+  display: none;
+}
+
+.voce {
+  display: flex;
+  column-gap: 0.5rem;
+  align-items: center;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.voce[data-highlighted] {
+  background: var(--colore-sopra);
+  outline: 2px solid var(--colore-accento);
+  outline-offset: -2px;
+}
+
+.voce[aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.testoDellaVoce {
+  flex: 1;
+}
+
+/* Il segno della voce scelta, in un menu che sceglie un valore: la colonna c'è anche vuota, le icone restano in fila. */
+.spunta {
+  flex: none;
+  width: 1em;
+  text-align: center;
+}
+
+.voce > .tasto {
+  margin-left: 1.5rem;
+}
+
+.linea {
+  width: 100%;
+  margin: 3px 0px;
+  border: none;
+  border-top: 1px solid var(--colore-riga);
+}

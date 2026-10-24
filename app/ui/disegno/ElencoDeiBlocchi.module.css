@@ -1,0 +1,54 @@
+/* L'elenco dei blocchi accanto al «+»: una colonna di voci sul colore dello sfondo, col bordo del disegno.
+   La posizione la scrive il componente (accanto al «+» sullo schermo). */
+.elenco {
+  position: fixed;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 10rem;
+  padding: 0.25rem;
+  background: var(--colore-sfondo);
+  border: 1px solid var(--disegno-bordo);
+  border-radius: 6px;
+  box-shadow: 0px 4px 14px rgb(0 0 0 / 0.18);
+  /* Un elenco lungo (le chiamate nascoste di «Dove sei») scorre dentro la finestra. */
+  max-height: calc(100vh - 1rem);
+  overflow-y: auto;
+}
+
+.voce {
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  color: var(--colore-testo);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+}
+
+.voce:hover,
+.voce:focus {
+  outline: none;
+  background: var(--colore-accento);
+  color: var(--colore-sfondo);
+}
+
+/* Una voce non disponibile (nel menu di una riga: spostare su la prima): spenta, e il puntatore non la illumina. */
+.voce[aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.voce[aria-disabled="true"]:hover {
+  background: transparent;
+  color: var(--colore-testo);
+}
+
+/* «Incolla» separato dai generi da una riga sottile. */
+.incolla {
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--colore-riga);
+  border-radius: 0px 0px 4px 4px;
+}

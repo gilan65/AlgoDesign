@@ -1,0 +1,66 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "parametro-reale",
+    "description": "Interi passati a parametri reali: conversione implicita."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "media(3, 4)"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "media",
+      "return_type": "real",
+      "data": [
+        {
+          "name": "a",
+          "type": "real",
+          "parameter": "value"
+        },
+        {
+          "name": "b",
+          "type": "real",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b3",
+        "return_value": "(a + b) / 2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "parametro-reale",
+      "inputs": [],
+      "expected": {
+        "output": "3.50\n",
+        "warnings": [
+          {
+            "code": "implicit_conversion",
+            "block": "b1"
+          }
+        ]
+      }
+    }
+  ]
+}

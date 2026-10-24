@@ -1,0 +1,100 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "stesso-dato-due-volte",
+    "description": "Lo stesso dato passato due volte per riferimento nella stessa chiamata: il progetto non parte."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "1"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "scambia",
+          "arguments": [
+            "n",
+            "n"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "n"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "scambia",
+      "data": [
+        {
+          "name": "a",
+          "type": "integer",
+          "parameter": "reference"
+        },
+        {
+          "name": "b",
+          "type": "integer",
+          "parameter": "reference"
+        },
+        {
+          "name": "t",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "t",
+          "value": "a"
+        },
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "a",
+          "value": "b"
+        },
+        {
+          "id": "b6",
+          "kind": "assignment",
+          "target": "b",
+          "value": "t"
+        }
+      ],
+      "end": {
+        "id": "b7"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "stesso-dato-due-volte",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "same_reference",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

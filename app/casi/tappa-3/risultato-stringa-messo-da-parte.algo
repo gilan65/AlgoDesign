@@ -1,0 +1,86 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "risultato-stringa-messo-da-parte",
+    "description": "Due chiamate di una funzione stringa che si può fermare nella stessa espressione: la prima si calcola e resta valida mentre si calcola la seconda; poi un «per ogni» sulla stringa restituita, chiamata una volta."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "c",
+          "type": "character"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "saluto(\"Anna\") + saluto(\"Bo\")"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b2",
+          "kind": "for_each",
+          "item": "c",
+          "source": "saluto(\"Ugo\")",
+          "body": [
+            {
+              "id": "b3",
+              "kind": "write",
+              "values": [
+                "c",
+                "\"-\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "\"fine\""
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "saluto",
+      "return_type": "string",
+      "return_max_length": 20,
+      "data": [
+        {
+          "name": "nome",
+          "type": "string",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b6",
+        "return_value": "\"Ciao \" + nome"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "risultato-stringa-messo-da-parte",
+      "inputs": [],
+      "expected": {
+        "output": "Ciao AnnaCiao Bo\nC-i-a-o- -U-g-o-fine\n"
+      }
+    }
+  ]
+}

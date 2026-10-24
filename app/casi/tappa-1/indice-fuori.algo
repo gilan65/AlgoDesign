@@ -1,0 +1,61 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "indice-fuori",
+    "description": "Scrittura nell'elemento 5 di un vettore di 5 elementi."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 5,
+          "initial": {
+            "each": "0"
+          }
+        },
+        {
+          "name": "i",
+          "type": "integer",
+          "initial": "5"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "v[i]",
+          "value": "1"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "v[0]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "indice-fuori",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "index_out_of_range",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

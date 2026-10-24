@@ -1,0 +1,105 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "tre-livelli",
+    "description": "Chiamate su tre livelli: una procedura chiama una funzione, che ne chiama un'altra."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "4"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "mostra",
+          "arguments": [
+            "n"
+          ]
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "mostra",
+      "data": [
+        {
+          "name": "q",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "\"risultato: \"",
+            "piu_uno_del_quadrato(q)"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "function",
+      "name": "piu_uno_del_quadrato",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "x",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b5",
+        "return_value": "quadrato(x) + 1"
+      }
+    },
+    {
+      "id": "f4",
+      "kind": "function",
+      "name": "quadrato",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "y",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b6",
+        "return_value": "y * y"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "tre-livelli",
+      "inputs": [],
+      "expected": {
+        "output": "risultato: 17\n"
+      }
+    }
+  ]
+}

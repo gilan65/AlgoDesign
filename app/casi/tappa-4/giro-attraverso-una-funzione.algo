@@ -1,0 +1,184 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "giro-attraverso-una-funzione",
+    "description": "La funzione «esterna» restituisce il valore di «aiuto», che chiama «scendi» k + 1 volte: «esterna» resta in corso finché il valore non è pronto, quindi con k = 499 le chiamate in corso sono 501."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "k",
+          "type": "integer"
+        },
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "k"
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "r",
+          "value": "esterna(k)"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "r"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "esterna",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "x",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b5",
+          "kind": "if",
+          "condition": "n < 0",
+          "then": [
+            {
+              "id": "b6",
+              "kind": "assignment",
+              "target": "x",
+              "value": "esterna(n + 1)"
+            }
+          ],
+          "else": [
+            {
+              "id": "b7",
+              "kind": "assignment",
+              "target": "x",
+              "value": "n"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b8",
+        "return_value": "aiuto(x)"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "function",
+      "name": "aiuto",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "m",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b9",
+        "return_value": "scendi(m)"
+      }
+    },
+    {
+      "id": "f4",
+      "kind": "function",
+      "name": "scendi",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "q",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "t",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b10",
+          "kind": "if",
+          "condition": "q > 0",
+          "then": [
+            {
+              "id": "b11",
+              "kind": "assignment",
+              "target": "t",
+              "value": "scendi(q - 1)"
+            }
+          ],
+          "else": [
+            {
+              "id": "b12",
+              "kind": "assignment",
+              "target": "t",
+              "value": "0"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b13",
+        "return_value": "t + 1"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "quattrocentonovantotto",
+      "inputs": [
+        {
+          "data": "k",
+          "text": "498"
+        }
+      ],
+      "expected": {
+        "output": "499\n"
+      }
+    },
+    {
+      "name": "quattrocentonovantanove",
+      "inputs": [
+        {
+          "data": "k",
+          "text": "499"
+        }
+      ],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "recursion_too_deep",
+          "block": "b11"
+        }
+      }
+    }
+  ]
+}

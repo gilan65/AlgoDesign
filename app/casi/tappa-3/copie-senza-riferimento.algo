@@ -1,0 +1,129 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "copie-senza-riferimento",
+    "description": "Un vettore e una stringa senza riferimento: la procedura riceve due copie e le cambia, chi chiama non vede nulla."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3,
+          "initial": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        {
+          "name": "t",
+          "type": "string",
+          "initial": "\"ciao\""
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "cambia",
+          "arguments": [
+            "v",
+            "t"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "v[0]",
+            "\" \"",
+            "t"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "cambia",
+      "data": [
+        {
+          "name": "w",
+          "type": "integer",
+          "size": 3,
+          "parameter": "value"
+        },
+        {
+          "name": "s",
+          "type": "string",
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "w[0]",
+          "value": "99"
+        },
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "s",
+          "value": "s + \"!\""
+        },
+        {
+          "id": "b6",
+          "kind": "write",
+          "values": [
+            "w[0]",
+            "\" \"",
+            "s"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b7"
+      },
+      "test_cases": [
+        {
+          "name": "vettore ripetuto",
+          "description": "Il vettore con la stessa riga per ogni elemento, poi la stringa.",
+          "inputs": [
+            {
+              "data": "w",
+              "text": "5",
+              "each": true
+            },
+            {
+              "data": "s",
+              "text": "ok"
+            }
+          ],
+          "expected": {
+            "output": "99 ok!\n"
+          }
+        }
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "copie-senza-riferimento",
+      "inputs": [],
+      "expected": {
+        "output": "99 ciao!\n1 ciao\n"
+      }
+    }
+  ]
+}

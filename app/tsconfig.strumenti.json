@@ -1,0 +1,9 @@
+{
+  // Prove (bun test), e2e, script di strumenti/ e configurazione di Playwright: con i tipi di Bun.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun"]
+  },
+  "include": ["strumenti", "e2e", "playwright.config.ts", "ui/css-modules.d.ts", "ui/algo.d.ts","**/*.test.ts", "**/*.test.tsx"],
+  "exclude": ["node_modules", "dist"]
+}

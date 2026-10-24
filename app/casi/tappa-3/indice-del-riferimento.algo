@@ -1,0 +1,121 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "indice-del-riferimento",
+    "description": "L'indice di un elemento passato per riferimento si calcola prima della chiamata, anche se un altro parametro per riferimento lo cambia."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "i",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3,
+          "initial": [
+            "1",
+            "2",
+            "3"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "metti",
+          "arguments": [
+            "i",
+            "v[i]"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "v[0]",
+            "\" \"",
+            "v[1]",
+            "\" \"",
+            "v[2]",
+            "\" \"",
+            "i"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "metti",
+      "data": [
+        {
+          "name": "a",
+          "type": "integer",
+          "parameter": "reference"
+        },
+        {
+          "name": "b",
+          "type": "integer",
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "a",
+          "value": "2"
+        },
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "b",
+          "value": "9"
+        }
+      ],
+      "end": {
+        "id": "b6"
+      },
+      "test_cases": [
+        {
+          "name": "con valore",
+          "description": "I due parametri per riferimento col loro valore, che un riferimento vuole: la procedura li assegna senza leggerli, poi i risultati.",
+          "inputs": [
+            {
+              "data": "a",
+              "text": "5"
+            },
+            {
+              "data": "b",
+              "text": "7"
+            }
+          ],
+          "expected": {
+            "output": "\na = 2\nb = 9\n"
+          }
+        }
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "indice-del-riferimento",
+      "inputs": [],
+      "expected": {
+        "output": "9 2 3 2\n"
+      }
+    }
+  ]
+}

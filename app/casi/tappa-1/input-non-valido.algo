@@ -1,0 +1,57 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "input-non-valido",
+    "description": "Una parola data a una lettura di intero."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "role": "input"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "n"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "n"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "input-non-valido",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "ciao"
+        }
+      ],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "invalid_input",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

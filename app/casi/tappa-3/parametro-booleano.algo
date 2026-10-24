@@ -1,0 +1,74 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "parametro-booleano",
+    "description": "Booleano per riferimento: la procedura cambia il dato del chiamante."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "f",
+          "type": "boolean",
+          "initial": "false"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "inverti",
+          "arguments": [
+            "f"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "f"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "inverti",
+      "data": [
+        {
+          "name": "b",
+          "type": "boolean",
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "b",
+          "value": "not b"
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "parametro-booleano",
+      "inputs": [],
+      "expected": {
+        "output": "true\n"
+      }
+    }
+  ]
+}

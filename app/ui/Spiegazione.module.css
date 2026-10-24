@@ -1,0 +1,21 @@
+/* «Spiegazione»: un pulsante che si legge come un collegamento, con la freccia che dice se il resto è aperto. */
+.apri {
+  font: inherit;
+  padding: 0px;
+  border: none;
+  background: none;
+  color: var(--colore-accento);
+  text-decoration: underline;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.apri:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: 2px;
+}
+
+.testo {
+  display: block;
+  margin-top: 0.25rem;
+}

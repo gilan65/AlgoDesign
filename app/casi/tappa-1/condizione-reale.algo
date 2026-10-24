@@ -1,0 +1,65 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "condizione-reale",
+    "description": "0.1 + 0.2 confrontato con 0.3: la somma in double è appena più grande."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "x",
+          "type": "real"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "x",
+          "value": "0.1 + 0.2"
+        },
+        {
+          "id": "b2",
+          "kind": "if",
+          "condition": "x > 0.3",
+          "then": [
+            {
+              "id": "b3",
+              "kind": "write",
+              "values": [
+                "\"maggiore\""
+              ],
+              "newline": true
+            }
+          ],
+          "else": [
+            {
+              "id": "b4",
+              "kind": "write",
+              "values": [
+                "\"non maggiore\""
+              ],
+              "newline": true
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "condizione-reale",
+      "inputs": [],
+      "expected": {
+        "output": "maggiore\n"
+      }
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "per-annidati",
+    "description": "Cicli annidati: un ciclo per la cui fine è il contatore di fuori, un ciclo per ogni dentro un ciclo per."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "i",
+          "type": "integer"
+        },
+        {
+          "name": "j",
+          "type": "integer"
+        },
+        {
+          "name": "s",
+          "type": "string",
+          "initial": "\"ab\""
+        },
+        {
+          "name": "c",
+          "type": "character"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for",
+          "counter": "i",
+          "from": "1",
+          "to": "3",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "for",
+              "counter": "j",
+              "from": "1",
+              "to": "i",
+              "body": [
+                {
+                  "id": "b3",
+                  "kind": "write",
+                  "values": [
+                    "\"*\""
+                  ],
+                  "newline": false
+                }
+              ]
+            },
+            {
+              "id": "b4",
+              "kind": "write",
+              "values": [
+                "\"\""
+              ],
+              "newline": true
+            }
+          ]
+        },
+        {
+          "id": "b5",
+          "kind": "for",
+          "counter": "i",
+          "from": "1",
+          "to": "2",
+          "body": [
+            {
+              "id": "b6",
+              "kind": "for_each",
+              "item": "c",
+              "source": "s",
+              "body": [
+                {
+                  "id": "b7",
+                  "kind": "write",
+                  "values": [
+                    "c",
+                    "i"
+                  ],
+                  "newline": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b8",
+          "kind": "write",
+          "values": [
+            "\"\""
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b9"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-annidati",
+      "inputs": [],
+      "expected": {
+        "output": "*\n**\n***\na1b1a2b2\n"
+      }
+    }
+  ]
+}

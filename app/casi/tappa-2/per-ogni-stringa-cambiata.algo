@@ -1,0 +1,78 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "per-ogni-stringa-cambiata",
+    "description": "La stringa di un ciclo per ogni cambiata e accorciata nel corpo: lunghezza e caratteri si rileggono a ogni giro; poi l'ultimo elemento preso."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "initial": "\"abcdef\""
+        },
+        {
+          "name": "c",
+          "type": "character"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for_each",
+          "item": "c",
+          "source": "s",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "write",
+              "values": [
+                "c"
+              ],
+              "newline": false
+            },
+            {
+              "id": "b3",
+              "kind": "assignment",
+              "target": "s",
+              "value": "\"xyz\""
+            }
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "\" \"",
+            "length s",
+            "\" \"",
+            "c"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-ogni-stringa-cambiata",
+      "inputs": [],
+      "expected": {
+        "output": "ayz 3 z\n",
+        "warnings": [
+          {
+            "code": "maybe_uninitialized",
+            "block": "b4"
+          }
+        ]
+      }
+    }
+  ]
+}

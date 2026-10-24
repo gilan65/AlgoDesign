@@ -1,0 +1,251 @@
+/* Le schede sopra il flowchart: linguette unite dalla riga di sotto, come quelle del pannello dei dati. La prima a
+   sinistra è il programma principale, dopo le schede il «+», in fondo a destra il pulsante dell'elenco. Le schede che non
+   ci stanno si scorrono di lato. */
+.fila {
+  display: flex;
+  align-items: end;
+  column-gap: 4px;
+  min-width: 0px;
+  border-bottom: 1px solid var(--disegno-bordo);
+}
+
+/* Il pulsante dell'elenco, spinto in fondo a destra. */
+.ancora {
+  flex: none;
+  margin-left: auto;
+}
+
+/* Scorrono solo di lato: la scheda scelta sporge di un pixel per unirsi al flowchart, e senza il margine qui sotto quel
+   pixel faceva scorrere la fila anche in verticale (una barra con le due frecce accanto alle schede). */
+.schede {
+  display: flex;
+  align-items: end;
+  column-gap: 2px;
+  min-width: 0px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 1px;
+  margin-bottom: -1px;
+}
+
+.elencoComando,
+.nuova {
+  flex: none;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  margin-bottom: 2px;
+  color: var(--colore-testo);
+  background: var(--colore-sopra);
+  border: 1px solid var(--colore-riga);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.linguetta {
+  flex: none;
+  align-items: center;
+  display: inline-flex;
+  background: var(--colore-sopra);
+  border: 1px solid var(--colore-riga);
+  border-bottom: none;
+  border-radius: 6px 6px 0px 0px;
+}
+
+/* La scheda mostrata: sullo sfondo del flowchart, unita a lui sopra la riga di sotto. */
+.linguetta[data-scelta] {
+  background: var(--colore-sfondo);
+  border-color: var(--disegno-bordo);
+  margin-bottom: -1px;
+  padding-bottom: 1px;
+}
+
+.scheda {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.7rem;
+  color: var(--colore-testo);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.linguetta[data-scelta] .scheda {
+  font-weight: 600;
+}
+
+.genere {
+  font-size: 0.8rem;
+  font-weight: 400;
+  opacity: 0.75;
+}
+
+.chiudi {
+  font: inherit;
+  padding: 0px 0.45rem 0px 0.1rem;
+  color: var(--colore-testo);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.chiudi:hover {
+  color: var(--colore-errore);
+}
+
+.scheda:focus-visible,
+.chiudi:focus-visible,
+.elencoComando:focus-visible,
+.nuova:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: -2px;
+}
+
+/* L'elenco di tutte le procedure e funzioni, sotto il suo pulsante. La posizione la scrive il componente. Allo stesso
+   livello dei menu (`ElencoDeiBlocchi.module.css`), non sopra: il menu di una voce, aperto col tasto destro, viene dopo
+   nella pagina e così sta sopra l'elenco (con 15 si apriva sotto). */
+.elenco {
+  position: fixed;
+  z-index: 10;
+  display: grid;
+  row-gap: 0.35rem;
+  box-sizing: border-box;
+  width: min(24rem, calc(100vw - 1rem));
+  max-height: min(28rem, calc(100vh - 1rem));
+  overflow: auto;
+  padding: 0.5rem;
+  color: var(--colore-testo);
+  background: var(--colore-sfondo);
+  border: 1px solid var(--disegno-bordo);
+  border-radius: 6px;
+  box-shadow: 0px 4px 14px rgb(0 0 0 / 0.18);
+}
+
+.cerca {
+  font: inherit;
+  color: var(--colore-testo);
+  background: var(--colore-sfondo);
+  border: 1px solid var(--colore-riga);
+  border-radius: 4px;
+  padding: 0.25rem 0.4rem;
+}
+
+.gruppo {
+  display: grid;
+}
+
+.titoloDelGruppo {
+  margin: 0.3rem 0px 0.15rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.voce {
+  display: grid;
+  font: inherit;
+  text-align: left;
+  color: var(--colore-testo);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 0.25rem 0.4rem;
+  cursor: pointer;
+}
+
+/* Una procedura o una funzione già aperta in una scheda. */
+.voce[data-aperta] {
+  background: var(--colore-sopra);
+}
+
+.voce:hover,
+.voce:focus-visible,
+.nuovaDallElenco:focus-visible,
+.cerca:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: -2px;
+}
+
+.chiamataDa {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.nessuna {
+  margin: 0.2rem 0px;
+}
+
+.nuovaDallElenco {
+  justify-self: start;
+  margin-top: 0.3rem;
+  font: inherit;
+  color: var(--colore-testo);
+  background: var(--colore-sopra);
+  border: 1px solid var(--colore-riga);
+  border-radius: 4px;
+  padding: 0.25rem 0.7rem;
+  cursor: pointer;
+}
+
+/* La finestra «Procedure e funzioni…»: una tabella che non va mai a capo (una riga con molti chiamanti la fa scorrere
+   di lato), e in fondo a ogni riga il «⋯» del suo menu. */
+.scorre {
+  overflow-x: auto;
+}
+
+.tabella {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.tabella th,
+.tabella td {
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+  padding: 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--colore-riga);
+}
+
+.puntini {
+  padding: 0px 0.6rem;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+/* La finestra di una procedura o di una funzione: i due generi come scelte, uno sotto l'altro. */
+.scelte {
+  display: grid;
+  row-gap: 0.3rem;
+}
+
+.scelta {
+  display: flex;
+  align-items: start;
+  column-gap: 0.4rem;
+}
+
+.dove {
+  margin: 0px;
+  padding-left: 1.2rem;
+  max-height: 9rem;
+  overflow: auto;
+}
+
+.rientro {
+  display: grid;
+  row-gap: 0.3rem;
+  padding-left: 1.6rem;
+}
+
+/* Le opzioni avanzate di ciò che una funzione restituisce (la lunghezza massima di una stringa), come nella vista dei
+   dati. */
+.avanzate > summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.avanzate > div {
+  margin-top: 0.4rem;
+}

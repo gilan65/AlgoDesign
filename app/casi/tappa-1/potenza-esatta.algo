@@ -1,0 +1,47 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "potenza-esatta",
+    "description": "Potenze con un risultato rappresentabile esattamente: esponente intero, negativo, scritto come reale, e una radice."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "2 raised_to 10",
+            "\" \"",
+            "2 raised_to (-3)",
+            "\" \"",
+            "(-3) raised_to 3",
+            "\" \"",
+            "1.5 raised_to 2.0",
+            "\" \"",
+            "10 raised_to 15",
+            "\" \"",
+            "4 raised_to 0.5"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "potenza-esatta",
+      "inputs": [],
+      "expected": {
+        "output": "1024.00 0.12 -27.00 2.25 1000000000000000.00 2.00\n"
+      }
+    }
+  ]
+}

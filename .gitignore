@@ -1,0 +1,34 @@
+# Materiale di riferimento di terze parti: solo per studio locale, mai versionato
+/sorgenti/
+
+# Utilità locali per lo studio del materiale di riferimento
+/strumenti/
+
+# Sottocartelle di docs/: materiale locale, mai versionato.
+# Manuali e guide si versionano direttamente in docs/.
+/docs/*/
+
+# I pacchetti delle release (cartella per versione, zip e impronta)
+/dist/
+
+# Generati dell'app: dipendenze, build, log del collaudo
+/app/node_modules/
+/app/dist/
+/app/.collaudo/
+
+# Generati del guscio: compilazione di Cargo e schemi che Tauri riscrive a ogni build
+/app/shell/target/
+/app/shell/gen/
+
+# Sonde temporanee del collaudo (le crea e le cancella il collaudo stesso)
+__sonda__*
+
+# File che il sistema scrive da solo in una cartella aperta nel Finder o in Esplora risorse
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Segreti
+.env
+.env.*
+!.env.example

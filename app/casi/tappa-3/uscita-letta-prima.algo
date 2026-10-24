@@ -1,0 +1,91 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "uscita-letta-prima",
+    "description": "Un parametro di uscita che la procedura scrive prima di dargli un valore: parte senza valore, e la scrittura si ferma."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "metti",
+          "arguments": [
+            "n"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "n"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "metti",
+      "data": [
+        {
+          "name": "x",
+          "type": "integer",
+          "parameter": "out"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "x"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "x",
+          "value": "1"
+        }
+      ],
+      "end": {
+        "id": "b6"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "uscita-letta-prima",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "uninitialized",
+          "block": "b4"
+        },
+        "warnings": [
+          {
+            "code": "maybe_uninitialized",
+            "block": "b4"
+          }
+        ]
+      }
+    }
+  ]
+}

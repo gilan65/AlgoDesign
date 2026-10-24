@@ -1,0 +1,261 @@
+/* Token del tema: i componenti usano solo queste variabili, così un tema è un insieme di valori. Un tema
+   diverso ridefinisce le stesse variabili, senza toccare i componenti. Nel flowchart il contrasto del
+   testo sulle sue superfici è almeno 4,5:1, in chiaro e in scuro, per ognuno dei tre insiemi di colori:
+   lo misura una prova nel browser. Il contrasto dei testi fuori dal flowchart (barra,
+   intestazioni, tabella dei dati) non lo misura nessuna prova. */
+:root {
+  --colore-sfondo: #f7f7f5;
+  --colore-testo: #1d1d1b;
+  --colore-accento: #2f5d8a;
+  /* Il carattere dell'interfaccia e del flowchart: la misura del testo del disegno lo legge da qui. */
+  --carattere: system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* I letterali del file (valori iniziali nella vista dei dati). */
+  --carattere-codice: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --spaziatura: 1rem;
+  /* I separatori delle righe di una tabella: decorativi, nessun testo sopra. */
+  --colore-riga: #dcdbd6;
+  /* I pulsanti della barra: sotto il puntatore, e premuto (il pannello dei dati aperto). */
+  --colore-sopra: #e9e8e3;
+  --colore-premuto: #dfe8f1;
+  /* Errori e avvisi del controllo: il segno nel disegno, la riga di stato, i campi di un blocco. */
+  --colore-errore: #b42318;
+  --colore-avviso: #9a6700;
+  /* L'esito di un caso d'uso: raggiunto (il segno e il bordo delle differenze); la prima differenza dell'output. */
+  --colore-riuscito: #1f7a3a;
+  --colore-differenza: #ffd6d6;
+  /* I controlli nativi (barre di scorrimento) seguono il tema chiaro o scuro. */
+  color-scheme: light dark;
+
+  /* L'esecuzione: il blocco corrente (interno, bordo, testo) e il pallino del punto di interruzione. Il
+     giallo e il testo scuro restano gli stessi in scuro: il blocco corrente deve accendersi. */
+  --esecuzione-corrente: #fff59d;
+  --esecuzione-bordo: #d97706;
+  --esecuzione-testo: #111111;
+  --esecuzione-punto: #c62828;
+  /* Nella tabella di traccia, la cella cambiata con l'azione: ambra fuori dalla riga corrente, più carica dentro. */
+  --esecuzione-cambiata: #fde68a;
+  --esecuzione-cambiata-corrente: #fbbf24;
+  /* Nella tabella di traccia, le righe dei livelli di chiamata (1, 2, 3, 4, poi di nuovo 1…): tinte fredde, lontane
+     dall'ambra della cella cambiata; nel codice, la riga della chiamata che apre il livello. Il contrasto lo misura una
+     prova (`ui/esecuzione/sfondi.test.ts`). */
+  --traccia-livello-1: #e0eafa;
+  --traccia-livello-2: #d9efec;
+  --traccia-livello-3: #ece4f8;
+  --traccia-livello-4: #f7e3ec;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --colore-sfondo: #1b1c1e;
+    --colore-testo: #e8e8e6;
+    --colore-accento: #8ab4dc;
+    --colore-riga: #34363a;
+    --colore-sopra: #2a2c30;
+    --colore-premuto: #23303d;
+    --colore-errore: #f97066;
+    --colore-avviso: #e3b341;
+    --colore-riuscito: #6cc79a;
+    --colore-differenza: #7a2e2a;
+
+    --traccia-livello-1: #1f2a38;
+    --traccia-livello-2: #1b2f2c;
+    --traccia-livello-3: #2a2238;
+    --traccia-livello-4: #36212b;
+  }
+}
+
+/* I colori del flowchart, scelti nelle Impostazioni: tre insiemi, ognuno in chiaro e in scuro secondo il sistema; un
+   colore per genere di blocco (`--disegno-<genere>`). «Tenui» sono i predefiniti; l'avvio scrive la scelta in
+   `data-colori` sulla radice. I colori dei «Tenui» li ha scelti l'utente: inizio e fine grigi (neutri), assegnazione
+   malva, procedura sabbia, lettura verde e scrittura azzurra (diverse fra loro e dal resto), il «se» arancione, i cicli
+   arancione intenso, il commento bianco (il giallo è del blocco corrente); il «Contrasto forte» è lo stesso schema un
+   gradino più carico. Un insieme vale anche su un elemento dentro la pagina (l'anteprima dei colori nelle Impostazioni,
+   che mostra la scelta prima di confermarla). */
+:root,
+[data-colori="tenue"] {
+  --disegno-linea: #5b6470;
+  --disegno-bordo: #3d4a5c;
+  --disegno-forma: #ffffff;
+  --disegno-inizio-e-fine: #cfd2d6;
+  --disegno-assegnazione: #f0dcf2;
+  --disegno-procedura: #efe3d0;
+  --disegno-lettura: #d9f0df;
+  --disegno-scrittura: #c9e0fd;
+  --disegno-se: #fcd2b0;
+  --disegno-cicli: #f9a66c;
+  --disegno-commento: #ffffff;
+  --disegno-vero: #1f7a4d;
+  --disegno-falso: #b4462f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root,
+  [data-colori="tenue"] {
+    --disegno-linea: #9aa4b0;
+    --disegno-bordo: #a9b6c6;
+    --disegno-forma: #23272d;
+    --disegno-inizio-e-fine: #444950;
+    --disegno-assegnazione: #3d2742;
+    --disegno-procedura: #3a3226;
+    --disegno-lettura: #1a3524;
+    --disegno-scrittura: #173a63;
+    --disegno-se: #5a3214;
+    --disegno-cicli: #7a3a0c;
+    --disegno-commento: #23272d;
+    --disegno-vero: #6cc79a;
+    --disegno-falso: #ee8a72;
+  }
+}
+
+[data-colori="contrasto"] {
+  --disegno-linea: #1d1d1b;
+  --disegno-bordo: #000000;
+  --disegno-forma: #ffffff;
+  --disegno-inizio-e-fine: #bcc0c6;
+  --disegno-assegnazione: #e4c3ea;
+  --disegno-procedura: #e3cfaf;
+  --disegno-lettura: #bfe6cb;
+  --disegno-scrittura: #acd0fb;
+  --disegno-se: #f9a66c;
+  --disegno-cicli: #f28a3c;
+  --disegno-commento: #ffffff;
+  --disegno-vero: #0b5733;
+  --disegno-falso: #8f2410;
+}
+
+[data-colori="bianco-e-nero"] {
+  --disegno-linea: #000000;
+  --disegno-bordo: #000000;
+  --disegno-forma: #ffffff;
+  --disegno-inizio-e-fine: #ffffff;
+  --disegno-assegnazione: #ffffff;
+  --disegno-procedura: #ffffff;
+  --disegno-lettura: #ffffff;
+  --disegno-scrittura: #ffffff;
+  --disegno-se: #ffffff;
+  --disegno-cicli: #ffffff;
+  --disegno-commento: #ffffff;
+  --disegno-vero: #000000;
+  --disegno-falso: #000000;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-colori="contrasto"] {
+    --disegno-linea: #f2f2f0;
+    --disegno-bordo: #ffffff;
+    --disegno-forma: #0d0f12;
+    --disegno-inizio-e-fine: #50565e;
+    --disegno-assegnazione: #4d2858;
+    --disegno-procedura: #4a3c22;
+    --disegno-lettura: #0e3d22;
+    --disegno-scrittura: #11457d;
+    --disegno-se: #7a3a0c;
+    --disegno-cicli: #94460c;
+    --disegno-commento: #0d0f12;
+    --disegno-vero: #86eab4;
+    --disegno-falso: #ffab96;
+  }
+
+  [data-colori="bianco-e-nero"] {
+    --disegno-linea: #ffffff;
+    --disegno-bordo: #ffffff;
+    --disegno-forma: #000000;
+    --disegno-inizio-e-fine: #000000;
+    --disegno-assegnazione: #000000;
+    --disegno-procedura: #000000;
+    --disegno-lettura: #000000;
+    --disegno-scrittura: #000000;
+    --disegno-se: #000000;
+    --disegno-cicli: #000000;
+    --disegno-commento: #000000;
+    --disegno-vero: #ffffff;
+    --disegno-falso: #ffffff;
+  }
+}
+
+/* I colori dei generi di blocco: quelli dell'insieme, finché nelle Impostazioni non se ne sceglie un altro (una tinta qui
+   sotto, scritta sull'elemento da `ui/colori.ts`). Dichiarati anche su ogni elemento con un insieme, perché prendano i
+   colori del SUO insieme. Il riquadro dei cicli ha il colore dei bordi. */
+:root,
+[data-colori] {
+  --blocco-inizio-e-fine: var(--disegno-inizio-e-fine);
+  --blocco-assegnazione: var(--disegno-assegnazione);
+  --blocco-procedura: var(--disegno-procedura);
+  --blocco-lettura: var(--disegno-lettura);
+  --blocco-scrittura: var(--disegno-scrittura);
+  --blocco-se: var(--disegno-se);
+  --blocco-cicli: var(--disegno-cicli);
+  --blocco-commento: var(--disegno-commento);
+  --blocco-riquadro: var(--disegno-bordo);
+}
+
+/* La tavolozza dei generi di blocco, in chiaro e in scuro: il testo su ogni riempimento almeno 4,5:1, la linea del
+   riquadro sullo sfondo almeno 3:1 (misurati nel motore su ogni tinta). Ci sono tutti i colori dei «Tenui» e cinque del
+   «Contrasto forte», più verde acqua e viola; niente giallo, che è del blocco corrente. */
+:root {
+  --tinta-bianco: #ffffff;
+  --tinta-grigio: #e3e4e6;
+  --tinta-sabbia: #efe3d0;
+  --tinta-verde: #d9f0df;
+  --tinta-acqua: #d3efec;
+  --tinta-azzurro: #c9e0fd;
+  --tinta-viola: #e6dcf7;
+  --tinta-malva: #f0dcf2;
+  --tinta-arancione: #fcd2b0;
+  --tinta-grigio-intenso: #cfd2d6;
+  --tinta-sabbia-intenso: #e3cfaf;
+  --tinta-verde-intenso: #bfe6cb;
+  --tinta-acqua-intenso: #b8e6e0;
+  --tinta-azzurro-intenso: #acd0fb;
+  --tinta-viola-intenso: #d4c4f5;
+  --tinta-malva-intenso: #e4c3ea;
+  --tinta-arancione-intenso: #f9a66c;
+
+  --tinta-linea-grigio: #5b6470;
+  --tinta-linea-verde: #1f7a4d;
+  --tinta-linea-acqua: #0f766e;
+  --tinta-linea-blu: #2f5d8a;
+  --tinta-linea-viola: #6a4c9c;
+  --tinta-linea-rosa: #a8326e;
+  --tinta-linea-arancione: #b45309;
+  --tinta-linea-rosso: #b4462f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tinta-bianco: #23272d;
+    --tinta-grigio: #363a40;
+    --tinta-sabbia: #3a3226;
+    --tinta-verde: #1a3524;
+    --tinta-acqua: #183532;
+    --tinta-azzurro: #173a63;
+    --tinta-viola: #33284a;
+    --tinta-malva: #3d2742;
+    --tinta-arancione: #5a3214;
+    --tinta-grigio-intenso: #444950;
+    --tinta-sabbia-intenso: #4a3c22;
+    --tinta-verde-intenso: #0e3d22;
+    --tinta-acqua-intenso: #0f3f3a;
+    --tinta-azzurro-intenso: #11457d;
+    --tinta-viola-intenso: #3d2a6b;
+    --tinta-malva-intenso: #4d2858;
+    --tinta-arancione-intenso: #7a3a0c;
+
+    --tinta-linea-grigio: #9aa4b0;
+    --tinta-linea-verde: #6cc79a;
+    --tinta-linea-acqua: #5ccfc3;
+    --tinta-linea-blu: #8ab4dc;
+    --tinta-linea-viola: #b39ddb;
+    --tinta-linea-rosa: #f08cb8;
+    --tinta-linea-arancione: #f0a35c;
+    --tinta-linea-rosso: #ee8a72;
+  }
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--colore-sfondo);
+  color: var(--colore-testo);
+  font-family: var(--carattere);
+}

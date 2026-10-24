@@ -1,0 +1,58 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "stringa-troppo-lunga",
+    "description": "Concatenazione oltre la lunghezza massima di 5 caratteri."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "string",
+          "initial": "\"ciao\""
+        },
+        {
+          "name": "s",
+          "type": "string",
+          "max_length": 5
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "s",
+          "value": "a + \"mondo\""
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "s"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "stringa-troppo-lunga",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "string_too_long",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

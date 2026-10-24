@@ -1,0 +1,21 @@
+{
+  // Interfaccia: nucleo, ui e dizionari, con il DOM. Le prove e gli strumenti hanno una
+  // configurazione propria (tsconfig.strumenti.json), il nucleo una senza DOM (tsconfig.nucleo.json).
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    // Versione e data del prodotto si leggono da package.json (`ui/prodotto.ts`).
+    "resolveJsonModule": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": ["core", "ui", "i18n"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx"]
+}

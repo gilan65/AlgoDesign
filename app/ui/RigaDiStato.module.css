@@ -1,0 +1,153 @@
+/* La riga di stato: una riga bassa in fondo alla finestra. L'elenco si apre sopra di lei, senza spostare le
+   viste (l'area del disegno non cambia). */
+.riga {
+  position: relative;
+  display: flex;
+  column-gap: 0.75rem;
+  place-items: center;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  border-top: 1px solid var(--colore-riga);
+  padding-top: 0.15rem;
+}
+
+/* Un nome lungo si tronca coi puntini, su una riga (`pre`: un nome di file non ha a capo, e non va a capo
+   sugli spazi). */
+.file {
+  white-space: pre;
+  max-width: 30rem;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.modificato {
+  font-weight: 600;
+}
+
+.sintesi {
+  padding-left: 0.5rem;
+  border-left: 4px solid transparent;
+}
+
+.conErrori {
+  border-left-color: var(--colore-errore);
+}
+
+.conAvvisi {
+  border-left-color: var(--colore-avviso);
+}
+
+.comando {
+  font: inherit;
+  color: var(--colore-accento);
+  background: transparent;
+  border: none;
+  padding: 0.1rem 0.3rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Il comando che apre il valore iniziale di un dato, sotto la voce del suo avviso: un pulsante vero, rientrato come il
+   testo della voce. */
+.daiUnValore {
+  font: inherit;
+  margin: 0px 0px 0.25rem 0.5rem;
+  padding: 0.1rem 0.5rem;
+  color: var(--colore-testo);
+  background: var(--colore-sopra);
+  border: 1px solid var(--colore-accento);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.daiUnValore:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.comando:focus-visible,
+.daiUnValore:focus-visible,
+.voce:focus-visible {
+  outline: 2px solid var(--colore-accento);
+}
+
+.elenco {
+  position: absolute;
+  z-index: 5;
+  left: 0px;
+  bottom: 100%;
+  margin: 0px 0px 0.3rem;
+  padding: 0.3rem;
+  list-style: none;
+  max-width: min(60rem, 100%);
+  max-height: 40vh;
+  overflow: auto;
+  background: var(--colore-sfondo);
+  border: 1px solid var(--disegno-bordo);
+  border-radius: 6px;
+  box-shadow: 0px 4px 14px rgb(0 0 0 / 0.18);
+}
+
+.elenco[hidden] {
+  display: none;
+}
+
+/* A destra lo stato dell'esecuzione e lo zoom, coi pulsanti bassi: la riga resta sottile. */
+.destra {
+  display: inline-flex;
+  column-gap: 0.5rem;
+  place-items: center;
+  margin-left: auto;
+}
+
+.stato {
+  padding: 0px 0.4rem;
+  border-radius: 4px;
+  background: var(--colore-premuto);
+}
+
+.zoom {
+  display: inline-flex;
+  column-gap: 0.2rem;
+  place-items: center;
+}
+
+.zoom > button {
+  padding: 0px 0.3rem;
+  font-size: 0.95em;
+}
+
+.livello {
+  min-width: 3.4rem;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.errore,
+.avviso {
+  border-left: 4px solid var(--colore-errore);
+  margin-bottom: 0.2rem;
+}
+
+.avviso {
+  border-left-color: var(--colore-avviso);
+}
+
+.voce {
+  display: block;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  color: var(--colore-testo);
+  background: transparent;
+  border: none;
+  padding: 0.25rem 0.5rem;
+}
+
+button.voce {
+  cursor: pointer;
+}
+
+button.voce:hover {
+  background: var(--colore-sopra);
+}

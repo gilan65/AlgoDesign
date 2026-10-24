@@ -1,0 +1,159 @@
+/* La console: il testo del programma col carattere dei letterali, che va a capo dove il programma va a capo
+   (bordo senza angoli arrotondati);
+   i valori letti in grassetto, quelli non validi e l'errore del colore dell'errore; la riga di lettura in
+   fondo. */
+.console {
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.25rem;
+  min-height: 0px;
+  flex: 1;
+}
+
+.titolo {
+  margin: 0px;
+  font-size: 1rem;
+}
+
+.registro {
+  flex: 1;
+  min-height: 3rem;
+  overflow-y: auto;
+  border: 1px solid var(--colore-riga);
+  padding: 0.25rem 0.4rem;
+  font-family: var(--carattere-codice);
+  white-space: pre-wrap;
+}
+
+.letto {
+  font-weight: bold;
+}
+
+.nonValido,
+.errore {
+  color: var(--colore-errore);
+}
+
+.fine {
+  font-style: italic;
+}
+
+/* L'istruzione sopra la riga di lettura: grande quanto quella, in grassetto e col colore d'accento, perché si
+   veda subito. */
+.istruzione {
+  margin: 0px;
+  font-weight: bold;
+  color: var(--colore-accento);
+}
+
+.lettura {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.4rem;
+  row-gap: 0.25rem;
+  place-items: center;
+}
+
+.campoDellaLettura {
+  display: flex;
+  flex: 1;
+  column-gap: 0.4rem;
+  place-items: center;
+}
+
+/* Il dato di chi chiama che riceve il valore, accanto al nome chiesto: piccolo e attenuato, come nel watch. */
+.riferimento {
+  font-size: 0.85em;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+/* «Senza valore» e «A ogni elemento», accanto alla riga di un parametro. */
+.comando {
+  font: inherit;
+}
+
+/* Un parametro arrivato senza valore: una riga in corsivo, come la fine. */
+.senzaValore {
+  font-style: italic;
+}
+
+.lettura input {
+  flex: 1;
+  min-width: 0px;
+  font-family: var(--carattere-codice);
+  font-size: inherit;
+}
+
+/* Sopra la console, quante righe il nucleo non tiene più (come la tabella). */
+.tolte {
+  margin: 0px;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Il segno davanti a una riga di cui resta solo la fine. */
+.tagliata {
+  opacity: 0.7;
+}
+
+/* Il suggerimento sotto l'errore: un riquadro col fondo tenue e il bordo sinistro spesso del colore d'accento,
+   «Suggerimento» in grassetto come titolo e il testo normale sotto, nel carattere dell'interfaccia. */
+.suggerimento {
+  display: block;
+  margin-top: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  border-left: 4px solid var(--colore-accento);
+  background: var(--colore-premuto);
+  font-family: var(--carattere);
+  white-space: normal;
+}
+
+.suggerimento strong,
+.suggerimento span {
+  display: block;
+}
+
+/* «Spiegazione» accanto alla riga dell'errore: un pulsante che si legge come un collegamento; sotto, ciò che è successo e
+   il suggerimento, nascosti finché non si apre. */
+.spiegazione {
+  font: inherit;
+  padding: 0px;
+  border: none;
+  background: none;
+  color: var(--colore-accento);
+  text-decoration: underline;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.spiegazione:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: 2px;
+}
+
+.spiegata {
+  display: block;
+}
+
+.accaduto {
+  display: block;
+  margin-top: 0.4rem;
+  font-family: var(--carattere);
+  white-space: normal;
+}
+
+/* L'esito di un caso d'uso, in fondo: un riquadro come il suggerimento, col bordo del colore dell'esito. */
+.esito {
+  display: block;
+  margin-top: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  border-left: 4px solid var(--colore-errore);
+  background: var(--colore-premuto);
+  font-family: var(--carattere);
+  white-space: normal;
+}
+
+.esito[data-raggiunto] {
+  border-left-color: var(--colore-riuscito);
+}

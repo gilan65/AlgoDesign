@@ -1,0 +1,250 @@
+/* La vista dei dati: tabelle strette, una riga per dato, il testo su una riga sola. */
+.vista {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  row-gap: var(--spaziatura);
+  /* Accanto al flowchart la vista resta larga quanto le sue tabelle; in altezza si scorre. */
+  flex: none;
+  overflow: auto;
+  max-height: 100%;
+}
+
+/* «Aggiungi un dato» sotto la tabella, accostato a lei. */
+.vista > .comando {
+  margin-top: calc(0.5rem - var(--spaziatura));
+}
+
+.tabella {
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.didascalia {
+  text-align: left;
+  font-weight: 600;
+  padding-bottom: 0.25rem;
+}
+
+.tabella th,
+.tabella td {
+  text-align: left;
+  border-bottom: solid 1px var(--colore-riga);
+  /* Sulla linea di base: il carattere del codice ha metriche diverse, e allineato in alto sale. */
+  vertical-align: baseline;
+  white-space: nowrap;
+  padding: 0.2rem 0.75rem 0.2rem 0px;
+}
+
+.tabella thead th {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Il valore iniziale è un letterale del file: nel carattere del codice. */
+.codice {
+  font-family: var(--carattere-codice);
+  font-size: 14px;
+}
+
+/* La riga scelta (col Tab, o col clic: è lei che Canc cancella) ha il contorno del colore d'accento. */
+.riga:focus {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: -2px;
+}
+
+.riga[aria-invalid] {
+  cursor: default;
+}
+
+/* I segni del controllo, come sui blocchi: un bollino col punto esclamativo (errore) o di domanda
+   (avviso) prima del nome, e la riga sottolineata del colore del segno. Il bollino è solo da vedere: il
+   suo testo alternativo è vuoto, e il lettore di schermo legge la descrizione della riga. */
+[data-segno] > th:first-child::before {
+  content: "!" / "";
+  display: inline-grid;
+  place-content: center;
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: -0.15em;
+  margin-right: 0.35em;
+  border-radius: 50%;
+  font-weight: bold;
+  color: var(--colore-sfondo);
+  background: var(--colore-errore);
+}
+
+[data-segno="avviso"] > th:first-child::before {
+  content: "?" / "";
+  background: var(--colore-avviso);
+}
+
+.tabella [data-segno] > * {
+  border-bottom: 2px solid var(--colore-errore);
+}
+
+.tabella [data-segno="avviso"] > * {
+  border-bottom-color: var(--colore-avviso);
+}
+
+/* La scheda sotto la riga: i campi in colonne che vanno a capo, poi gli errori, poi i comandi. */
+.rigaDellaScheda > td {
+  white-space: normal;
+  padding: 0.4rem 0px 0.6rem;
+}
+
+.scheda {
+  display: grid;
+  row-gap: 0.5rem;
+  max-width: 34rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--disegno-bordo);
+  border-radius: 6px;
+  background: var(--colore-sfondo);
+}
+
+.campi {
+  display: grid;
+  gap: 0.45rem 0.75rem;
+  grid-template: none / repeat(auto-fill, minmax(9rem, 1fr));
+}
+
+.voce {
+  display: grid;
+  row-gap: 0.2rem;
+  min-width: 0px;
+}
+
+.etichetta {
+  font-size: 0.85rem;
+}
+
+.campo {
+  min-width: 0px;
+  font: inherit;
+  font-size: 14px;
+  padding: 0.25rem 0.35rem;
+  color: var(--colore-testo);
+  background: var(--disegno-forma);
+  border: 1px solid var(--disegno-linea);
+  border-radius: 4px;
+}
+
+.campo.codice {
+  font-family: var(--carattere-codice);
+}
+
+.campo:focus {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: 0px;
+}
+
+.avanzate > summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.avanzate > .voce {
+  margin-top: 0.4rem;
+  max-width: 16rem;
+}
+
+.comandi {
+  display: flex;
+  column-gap: 0.4rem;
+}
+
+/* Il primo comando (cancellare) a sinistra, gli altri a destra. */
+.comandi > :nth-child(2) {
+  margin-left: auto;
+}
+
+.comando,
+.togli {
+  font: inherit;
+  color: var(--colore-testo);
+  background: var(--colore-sopra);
+  border: 1px solid var(--colore-riga);
+  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+}
+
+.togli {
+  padding: 0.1rem 0.45rem;
+}
+
+.comando:focus-visible,
+.togli:focus-visible {
+  outline: 2px solid var(--colore-accento);
+}
+
+/* Errori e avvisi del dato in modifica: vuoto, l'elenco non occupa posto. */
+.segnalazioni {
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+  display: grid;
+  row-gap: 0.3rem;
+  font-size: 0.9rem;
+  max-width: 34rem;
+  white-space: normal;
+}
+
+.segnalazioni:empty {
+  display: none;
+}
+
+.errore,
+.avviso {
+  padding: 0.3rem 0.5rem;
+  border-left: 4px solid var(--colore-errore);
+  background: var(--colore-sopra);
+}
+
+.avviso {
+  border-left-color: var(--colore-avviso);
+}
+
+/* Le celle: più campi nella stessa cella (tipo, forma, elementi, lunghezza) stanno su una riga. */
+.rigaACelle > * {
+  padding-right: 0.4rem;
+}
+
+.insieme {
+  display: inline-flex;
+  column-gap: 0.25rem;
+}
+
+.rigaACelle input[type="text"] {
+  width: 7.5rem;
+}
+
+.rigaACelle input[type="number"] {
+  width: 4rem;
+}
+
+/* Il testo per il lettore di schermo: presente nel documento, fuori dalla vista. */
+.nascosto {
+  clip-path: inset(50%);
+  position: absolute;
+  overflow: hidden;
+  white-space: nowrap;
+  height: 1px;
+  width: 1px;
+}
+
+/* La casella «globale» accanto alla natura di una costante: sulla riga dei campi, in basso come i campi. */
+.casella {
+  display: inline-flex;
+  align-self: end;
+  column-gap: 0.3rem;
+  font-size: 0.9rem;
+  padding-block: 0.25rem;
+}
+
+/* La tabella dei parametri senza parametri, e ciò che una funzione restituisce sotto i parametri. */
+.vuota > td,
+.piede > td {
+  font-style: italic;
+}

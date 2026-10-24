@@ -1,0 +1,50 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "arrotonda-meta",
+    "description": "Arrotondamento delle metà, positiva e negativa: lontano dallo zero."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "real",
+          "initial": "2.5"
+        },
+        {
+          "name": "b",
+          "type": "real",
+          "initial": "-2.5"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "round a",
+            "\" \"",
+            "round b"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "arrotonda-meta",
+      "inputs": [],
+      "expected": {
+        "output": "3.00 -3.00\n"
+      }
+    }
+  ]
+}

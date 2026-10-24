@@ -1,0 +1,62 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "divisione-per-zero",
+    "description": "Divisione intera per un divisore che vale zero."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "integer",
+          "initial": "7"
+        },
+        {
+          "name": "b",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "q",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "q",
+          "value": "a / b"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "q"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "divisione-per-zero",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "division_by_zero",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

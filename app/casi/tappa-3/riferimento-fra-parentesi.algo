@@ -1,0 +1,78 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "riferimento-fra-parentesi",
+    "description": "Un dato fra parentesi non si passa per riferimento: è un'espressione, non il dato."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "1"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "incrementa",
+          "arguments": [
+            "(n)"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "n"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "incrementa",
+      "data": [
+        {
+          "name": "x",
+          "type": "integer",
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "x",
+          "value": "x + 1"
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "riferimento-fra-parentesi",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "reference_not_assignable",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

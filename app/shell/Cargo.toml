@@ -1,0 +1,24 @@
+[package]
+# Il nome del pacchetto è il nome dell'eseguibile (algodesign.exe), non productName.
+name = "algodesign"
+version = "0.4.0-alpha.4"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[build-dependencies]
+tauri-build = { version = "=2.7.1", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Stessa versione di @tauri-apps/api in package.json: la CLI confronta le due.
+tauri = { version = "=2.12.1", features = [] }
+# Le finestre native per aprire e salvare un file. Su Linux con GTK 3, che Tauri usa già (il portale
+# XDG predefinito vorrebbe un servizio D-Bus).
+rfd = { version = "=0.17.2", default-features = false, features = ["gtk3"] }
+
+# Sul Mac la risposta alla richiesta di uscita dell'app si aggiunge al delegato di tao (`menu.rs`): la stessa
+# versione che tao porta già.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "=0.6.4"

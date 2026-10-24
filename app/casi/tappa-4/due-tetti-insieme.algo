@@ -1,0 +1,104 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "due-tetti-insieme",
+    "description": "La funzione «giu» tiene 524 byte di dati: 500 chiamate stanno nello spazio, la 501ª supererebbe insieme il numero delle chiamate e lo spazio, e l'arresto è quello delle chiamate."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "r",
+          "value": "giu(0)"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "r"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "giu",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 129,
+          "initial": {
+            "each": "0"
+          }
+        },
+        {
+          "name": "s",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "if",
+          "condition": "n < 1000",
+          "then": [
+            {
+              "id": "b5",
+              "kind": "assignment",
+              "target": "s",
+              "value": "giu(n + v[0] + 1)"
+            }
+          ],
+          "else": [
+            {
+              "id": "b6",
+              "kind": "assignment",
+              "target": "s",
+              "value": "n"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b7",
+        "return_value": "s"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "la-cinquecentunesima",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "recursion_too_deep",
+          "block": "b5"
+        }
+      }
+    }
+  ]
+}

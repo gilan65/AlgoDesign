@@ -1,0 +1,101 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "ordine-di-valutazione",
+    "description": "Due funzioni che si fermano nella stessa espressione: si valutano da sinistra a destra, quindi si ferma la prima."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "\"inizio\""
+          ],
+          "newline": true
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "r",
+          "value": "primo(5) + secondo(-1)"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "r"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "primo",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "k",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "t",
+          "type": "string",
+          "initial": "\"abc\""
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b5",
+        "return_value": "to_integer t[k]"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "function",
+      "name": "secondo",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "k",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b6",
+        "return_value": "to_integer (to_character k)"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "ordine-di-valutazione",
+      "inputs": [],
+      "expected": {
+        "output": "inizio\n",
+        "error": {
+          "code": "index_out_of_range",
+          "block": "b5"
+        }
+      }
+    }
+  ]
+}

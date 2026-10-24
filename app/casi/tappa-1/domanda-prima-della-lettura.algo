@@ -1,0 +1,177 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "domanda-prima-della-lettura",
+    "description": "Scritture subito prima di una Lettura: senza spazio in fondo, con lo spazio in fondo al testo, con uno spazio a sé, con l'a capo in un ramo."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "anno",
+          "type": "integer",
+          "role": "input"
+        },
+        {
+          "name": "nome",
+          "type": "string",
+          "role": "input"
+        },
+        {
+          "name": "voto",
+          "type": "integer",
+          "role": "input"
+        },
+        {
+          "name": "debiti",
+          "type": "integer",
+          "role": "input"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "\"Anno:\""
+          ],
+          "newline": false
+        },
+        {
+          "id": "b2",
+          "kind": "read",
+          "target": "anno"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "\"Come ti chiami? \""
+          ],
+          "newline": false
+        },
+        {
+          "id": "b4",
+          "kind": "read",
+          "target": "nome"
+        },
+        {
+          "id": "b5",
+          "kind": "write",
+          "values": [
+            "\"Voto di \"",
+            "nome",
+            "\" \""
+          ],
+          "newline": false
+        },
+        {
+          "id": "b6",
+          "kind": "read",
+          "target": "voto"
+        },
+        {
+          "id": "b7",
+          "kind": "if",
+          "condition": "voto >= 6",
+          "then": [
+            {
+              "id": "b8",
+              "kind": "write",
+              "values": [
+                "\"Promosso\""
+              ],
+              "newline": true
+            }
+          ],
+          "else": [
+            {
+              "id": "b9",
+              "kind": "write",
+              "values": [
+                "\"Quanti debiti?\""
+              ],
+              "newline": true
+            },
+            {
+              "id": "b10",
+              "kind": "read",
+              "target": "debiti"
+            },
+            {
+              "id": "b11",
+              "kind": "write",
+              "values": [
+                "\"Debiti: \"",
+                "debiti"
+              ],
+              "newline": true
+            }
+          ]
+        },
+        {
+          "id": "b12",
+          "kind": "write",
+          "values": [
+            "\"Anno \"",
+            "anno"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b13"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "promosso",
+      "inputs": [
+        {
+          "data": "anno",
+          "text": "2026"
+        },
+        {
+          "data": "nome",
+          "text": "Anna"
+        },
+        {
+          "data": "voto",
+          "text": "7"
+        }
+      ],
+      "expected": {
+        "output": "Anno:Come ti chiami? Voto di Anna Promosso\nAnno 2026\n"
+      }
+    },
+    {
+      "name": "con i debiti",
+      "description": "La Lettura nel ramo Falso, dopo una Scrittura che va a capo.",
+      "inputs": [
+        {
+          "data": "anno",
+          "text": "2026"
+        },
+        {
+          "data": "nome",
+          "text": "Luca"
+        },
+        {
+          "data": "voto",
+          "text": "5"
+        },
+        {
+          "data": "debiti",
+          "text": "2"
+        }
+      ],
+      "expected": {
+        "output": "Anno:Come ti chiami? Voto di Luca Quanti debiti?\nDebiti: 2\nAnno 2026\n"
+      }
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "assegnazione-intero",
+    "description": "Quoziente e resto fra interi con un dividendo negativo: troncamento verso lo zero, resto col segno del dividendo."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "integer",
+          "initial": "-7"
+        },
+        {
+          "name": "q",
+          "type": "integer"
+        },
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "q",
+          "value": "a / 2"
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "r",
+          "value": "a mod 2"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "q",
+            "\" \"",
+            "r"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "assegnazione-intero",
+      "inputs": [],
+      "expected": {
+        "output": "-3 -1\n"
+      }
+    }
+  ]
+}

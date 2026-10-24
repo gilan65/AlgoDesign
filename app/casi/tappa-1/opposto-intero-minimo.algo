@@ -1,0 +1,70 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "opposto-intero-minimo",
+    "description": "L'opposto del più piccolo intero non sta in un intero."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "m",
+          "type": "integer"
+        },
+        {
+          "name": "n",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "m",
+          "value": "-2147483647 - 1"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "m"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b3",
+          "kind": "assignment",
+          "target": "n",
+          "value": "-m"
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "n"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "opposto-intero-minimo",
+      "inputs": [],
+      "expected": {
+        "output": "-2147483648\n",
+        "error": {
+          "code": "integer_overflow",
+          "block": "b3"
+        }
+      }
+    }
+  ]
+}

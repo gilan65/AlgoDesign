@@ -1,0 +1,96 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "fibonacci",
+    "description": "Due chiamate ricorsive nella stessa espressione: fibonacci(n - 1) + fibonacci(n - 2)."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "n"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "fibonacci(n)"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "fibonacci",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "f",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "if",
+          "condition": "n < 2",
+          "then": [
+            {
+              "id": "b5",
+              "kind": "assignment",
+              "target": "f",
+              "value": "n"
+            }
+          ],
+          "else": [
+            {
+              "id": "b6",
+              "kind": "assignment",
+              "target": "f",
+              "value": "fibonacci(n - 1) + fibonacci(n - 2)"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b7",
+        "return_value": "f"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "venti",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "20"
+        }
+      ],
+      "expected": {
+        "output": "6765\n"
+      }
+    }
+  ]
+}

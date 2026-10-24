@@ -1,0 +1,38 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "scrittura-carattere",
+    "description": "Scrittura di caratteri, accentati compresi."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "'A'",
+            "'è'"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "scrittura-carattere",
+      "inputs": [],
+      "expected": {
+        "output": "Aè\n"
+      }
+    }
+  ]
+}

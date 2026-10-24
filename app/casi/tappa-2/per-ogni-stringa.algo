@@ -1,0 +1,64 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "per-ogni-stringa",
+    "description": "I caratteri di una stringa con una lettera accentata, uno alla volta."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "initial": "\"perché\""
+        },
+        {
+          "name": "c",
+          "type": "character"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for_each",
+          "item": "c",
+          "source": "s",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "write",
+              "values": [
+                "c",
+                "\".\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "length s"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-ogni-stringa",
+      "inputs": [],
+      "expected": {
+        "output": "p.e.r.c.h.é.6\n"
+      }
+    }
+  ]
+}

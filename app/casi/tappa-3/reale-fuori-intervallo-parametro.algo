@@ -1,0 +1,65 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "reale-fuori-intervallo-parametro",
+    "description": "Un reale troppo grande convertito in intero come argomento."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "x",
+          "type": "real",
+          "initial": "3.0e9"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "piu_uno(to_integer x)"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "piu_uno",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b3",
+        "return_value": "n + 1"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "reale-fuori-intervallo-parametro",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "real_to_integer_out_of_range",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

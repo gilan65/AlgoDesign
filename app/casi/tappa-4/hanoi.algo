@@ -1,0 +1,130 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "hanoi",
+    "description": "Una procedura ricorsiva che scrive: la torre di Hanoi di n dischi dal piolo A al piolo C."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "n"
+        },
+        {
+          "id": "b2",
+          "kind": "call",
+          "callee": "sposta",
+          "arguments": [
+            "n",
+            "'A'",
+            "'C'",
+            "'B'"
+          ]
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "sposta",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "origine",
+          "type": "character",
+          "parameter": "value"
+        },
+        {
+          "name": "destinazione",
+          "type": "character",
+          "parameter": "value"
+        },
+        {
+          "name": "appoggio",
+          "type": "character",
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "if",
+          "condition": "n > 0",
+          "then": [
+            {
+              "id": "b5",
+              "kind": "call",
+              "callee": "sposta",
+              "arguments": [
+                "n - 1",
+                "origine",
+                "appoggio",
+                "destinazione"
+              ]
+            },
+            {
+              "id": "b6",
+              "kind": "write",
+              "values": [
+                "\"disco \"",
+                "n",
+                "\" da \"",
+                "origine",
+                "\" a \"",
+                "destinazione"
+              ],
+              "newline": true
+            },
+            {
+              "id": "b7",
+              "kind": "call",
+              "callee": "sposta",
+              "arguments": [
+                "n - 1",
+                "appoggio",
+                "destinazione",
+                "origine"
+              ]
+            }
+          ],
+          "else": []
+        }
+      ],
+      "end": {
+        "id": "b8"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "tre",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "3"
+        }
+      ],
+      "expected": {
+        "output": "disco 1 da A a C\ndisco 2 da A a B\ndisco 1 da C a B\ndisco 3 da A a C\ndisco 1 da B a A\ndisco 2 da B a C\ndisco 1 da A a C\n"
+      }
+    }
+  ]
+}

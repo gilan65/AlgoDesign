@@ -1,0 +1,81 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "stringa-fuori-piano-base",
+    "description": "Un carattere oltre U+FFFF conta uno: lunghezza, posizione e ordine per codice, non per unità UTF-16."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "initial": "\"a😀b\""
+        },
+        {
+          "name": "u",
+          "type": "string",
+          "initial": "\"😀\""
+        },
+        {
+          "name": "t",
+          "type": "string",
+          "initial": "\"！\""
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "length s",
+            "\" \"",
+            "s[1]",
+            "s[2]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b2",
+          "kind": "if",
+          "condition": "u < t",
+          "then": [
+            {
+              "id": "b3",
+              "kind": "write",
+              "values": [
+                "\"prima\""
+              ],
+              "newline": true
+            }
+          ],
+          "else": [
+            {
+              "id": "b4",
+              "kind": "write",
+              "values": [
+                "\"dopo\""
+              ],
+              "newline": true
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "stringa-fuori-piano-base",
+      "inputs": [],
+      "expected": {
+        "output": "3 😀b\ndopo\n"
+      }
+    }
+  ]
+}

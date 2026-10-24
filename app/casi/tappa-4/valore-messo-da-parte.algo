@@ -1,0 +1,130 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "valore-messo-da-parte",
+    "description": "La funzione «f» somma il primo elemento del vettore restituito da «g», che può fermarsi, e chiama sé stessa: il vettore restituito sta nello spazio di ogni chiamata."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "r",
+          "value": "f(600)"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "r"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "f",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "s",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "if",
+          "condition": "n > 0",
+          "then": [
+            {
+              "id": "b5",
+              "kind": "assignment",
+              "target": "s",
+              "value": "g(n)[0] + f(n - 1)"
+            }
+          ],
+          "else": [
+            {
+              "id": "b6",
+              "kind": "assignment",
+              "target": "s",
+              "value": "0"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b7",
+        "return_value": "s"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "function",
+      "name": "g",
+      "return_type": "integer",
+      "return_size": 1000,
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 1000,
+          "initial": {
+            "each": "1"
+          }
+        }
+      ],
+      "body": [
+        {
+          "id": "b8",
+          "kind": "assignment",
+          "target": "v[0]",
+          "value": "10 / n"
+        }
+      ],
+      "end": {
+        "id": "b9",
+        "return_value": "v"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "al-tetto",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "recursion_data_too_large",
+          "block": "b5"
+        }
+      }
+    }
+  ]
+}

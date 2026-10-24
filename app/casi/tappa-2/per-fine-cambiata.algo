@@ -1,0 +1,73 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "per-fine-cambiata",
+    "description": "La fine di un ciclo per cambiata nel corpo: il controllo la ricalcola a ogni giro; poi il contatore e la fine."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "5"
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for",
+          "counter": "i",
+          "from": "1",
+          "to": "n",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "write",
+              "values": [
+                "i"
+              ],
+              "newline": false
+            },
+            {
+              "id": "b3",
+              "kind": "assignment",
+              "target": "n",
+              "value": "n - 1"
+            }
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "\" \"",
+            "i",
+            "\" \"",
+            "n"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-fine-cambiata",
+      "inputs": [],
+      "expected": {
+        "output": "123 4 2\n"
+      }
+    }
+  ]
+}

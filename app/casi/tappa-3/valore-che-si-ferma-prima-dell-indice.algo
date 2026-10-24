@@ -1,0 +1,94 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "valore-che-si-ferma-prima-dell-indice",
+    "description": "Un argomento per valore che si ferma, a sinistra dell'indice di un elemento per riferimento che si ferma anche lui: si ferma prima il valore."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "t",
+          "type": "string",
+          "initial": "\"abc\""
+        },
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3,
+          "initial": [
+            "1",
+            "2",
+            "3"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "metti",
+          "arguments": [
+            "to_integer (to_character -1)",
+            "v[to_integer t[5]]"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "v[0]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "metti",
+      "data": [
+        {
+          "name": "b",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "a",
+          "type": "integer",
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "a",
+          "value": "b"
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "valore-che-si-ferma-prima-dell-indice",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "invalid_character_code",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

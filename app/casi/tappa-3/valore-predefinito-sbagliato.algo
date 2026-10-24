@@ -1,0 +1,71 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "valore-predefinito-sbagliato",
+    "description": "Il valore predefinito di una funzione intera scritto come un carattere: il progetto non parte."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "r",
+          "value": "doppio(2)"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "r"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "doppio",
+      "return_type": "integer",
+      "default_result": "'0'",
+      "data": [
+        {
+          "name": "k",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b4",
+        "return_value": "k * 2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "valore-predefinito-sbagliato",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "invalid_default_value",
+          "block": "f2"
+        }
+      }
+    }
+  ]
+}

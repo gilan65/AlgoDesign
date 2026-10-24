@@ -1,0 +1,67 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "input-finito",
+    "description": "Due letture e un solo input."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "integer",
+          "role": "input"
+        },
+        {
+          "name": "b",
+          "type": "integer",
+          "role": "input"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "a"
+        },
+        {
+          "id": "b2",
+          "kind": "read",
+          "target": "b"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "a + b"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "input-finito",
+      "inputs": [
+        {
+          "data": "a",
+          "text": "1"
+        }
+      ],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "input_exhausted",
+          "block": "b2"
+        }
+      }
+    }
+  ]
+}

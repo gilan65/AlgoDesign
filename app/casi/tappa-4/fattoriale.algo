@@ -1,0 +1,118 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "fattoriale",
+    "description": "La ricorsione diretta: il fattoriale di n, n * fatt(n - 1) fino a 1."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer"
+        },
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "n"
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "r",
+          "value": "fatt(n)"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "r"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "fatt",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "f",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b5",
+          "kind": "if",
+          "condition": "n <= 1",
+          "then": [
+            {
+              "id": "b6",
+              "kind": "assignment",
+              "target": "f",
+              "value": "1"
+            }
+          ],
+          "else": [
+            {
+              "id": "b7",
+              "kind": "assignment",
+              "target": "f",
+              "value": "n * fatt(n - 1)"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b8",
+        "return_value": "f"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "dieci",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "10"
+        }
+      ],
+      "expected": {
+        "output": "3628800\n"
+      }
+    },
+    {
+      "name": "uno",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "1"
+        }
+      ],
+      "expected": {
+        "output": "1\n"
+      }
+    }
+  ]
+}

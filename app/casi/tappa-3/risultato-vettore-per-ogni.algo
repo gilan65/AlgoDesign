@@ -1,0 +1,122 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "risultato-vettore-per-ogni",
+    "description": "Un «per ogni» su una funzione che restituisce un vettore: la funzione si chiama una volta, all'inizio, e il ciclo percorre quel risultato anche se il corpo cambia l'argomento."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "voti",
+          "type": "integer",
+          "size": 3,
+          "initial": [
+            "7",
+            "4",
+            "9"
+          ]
+        },
+        {
+          "name": "x",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for_each",
+          "item": "x",
+          "source": "doppi(voti)",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "assignment",
+              "target": "voti[1]",
+              "value": "0"
+            },
+            {
+              "id": "b3",
+              "kind": "write",
+              "values": [
+                "x"
+              ],
+              "newline": true
+            }
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "voti[1]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "doppi",
+      "return_type": "integer",
+      "return_size": 3,
+      "data": [
+        {
+          "name": "w",
+          "type": "integer",
+          "size": 3,
+          "parameter": "value"
+        },
+        {
+          "name": "r",
+          "type": "integer",
+          "size": 3,
+          "initial": {
+            "each": "0"
+          }
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b6",
+          "kind": "for",
+          "counter": "i",
+          "from": "0",
+          "to": "2",
+          "body": [
+            {
+              "id": "b7",
+              "kind": "assignment",
+              "target": "r[i]",
+              "value": "w[i] * 2"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b8",
+        "return_value": "r"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "risultato-vettore-per-ogni",
+      "inputs": [],
+      "expected": {
+        "output": "14\n8\n18\n0\n"
+      }
+    }
+  ]
+}

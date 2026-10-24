@@ -1,0 +1,62 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "senza-valore-booleano",
+    "description": "Un booleano letto prima di avere un valore."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "p",
+          "type": "boolean"
+        },
+        {
+          "name": "q",
+          "type": "boolean"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "q",
+          "value": "not p"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "q"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "senza-valore-booleano",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "uninitialized",
+          "block": "b1"
+        },
+        "warnings": [
+          {
+            "code": "maybe_uninitialized",
+            "block": "b1"
+          }
+        ]
+      }
+    }
+  ]
+}

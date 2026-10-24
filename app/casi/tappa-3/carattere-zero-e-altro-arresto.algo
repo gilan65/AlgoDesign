@@ -1,0 +1,75 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "carattere-zero-e-altro-arresto",
+    "description": "Il carattere 0 a sinistra di una concatenazione e un codice non valido a destra: gli operandi si calcolano prima dell'operazione, quindi si ferma il codice."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string"
+        },
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "-1"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "s",
+          "value": "come_carattere(0) + (\"x\" + to_character n)"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "s"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "come_carattere",
+      "return_type": "character",
+      "data": [
+        {
+          "name": "k",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b4",
+        "return_value": "to_character k"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "carattere-zero-e-altro-arresto",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "invalid_character_code",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

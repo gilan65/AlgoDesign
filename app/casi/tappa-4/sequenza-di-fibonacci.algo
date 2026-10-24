@@ -1,0 +1,137 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "sequenza-di-fibonacci",
+    "description": "I primi n numeri di Fibonacci, uno per riga, con la funzione che chiama sé stessa due volte; con 26 si ferma al milione di azioni, sul ciclo."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer"
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "n"
+        },
+        {
+          "id": "b2",
+          "kind": "for",
+          "counter": "i",
+          "from": "0",
+          "to": "n - 1",
+          "body": [
+            {
+              "id": "b3",
+              "kind": "write",
+              "values": [
+                "fibonacci(i)"
+              ],
+              "newline": true
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "fibonacci",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "f",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b5",
+          "kind": "if",
+          "condition": "n < 2",
+          "then": [
+            {
+              "id": "b6",
+              "kind": "assignment",
+              "target": "f",
+              "value": "n"
+            }
+          ],
+          "else": [
+            {
+              "id": "b7",
+              "kind": "assignment",
+              "target": "f",
+              "value": "fibonacci(n - 1) + fibonacci(n - 2)"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b8",
+        "return_value": "f"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "dieci",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "10"
+        }
+      ],
+      "expected": {
+        "output": "0\n1\n1\n2\n3\n5\n8\n13\n21\n34\n"
+      }
+    },
+    {
+      "name": "uno",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "1"
+        }
+      ],
+      "expected": {
+        "output": "0\n"
+      }
+    },
+    {
+      "name": "ventisei",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "26"
+        }
+      ],
+      "expected": {
+        "output": "0\n1\n1\n2\n3\n5\n8\n13\n21\n34\n55\n89\n144\n233\n377\n610\n987\n1597\n2584\n4181\n6765\n10946\n17711\n28657\n",
+        "error": {
+          "code": "too_many_steps",
+          "block": "b2"
+        }
+      }
+    }
+  ]
+}

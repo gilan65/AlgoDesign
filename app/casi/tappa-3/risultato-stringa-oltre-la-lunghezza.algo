@@ -1,0 +1,79 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "risultato-stringa-oltre-la-lunghezza",
+    "description": "La funzione restituisce una stringa più lunga della sua lunghezza massima: si ferma sulla fine della funzione, prima che chi chiama riceva il risultato."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "\"inizio\""
+          ],
+          "newline": true
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "s",
+          "value": "saluto(\"Anna\")"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "s"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "saluto",
+      "return_type": "string",
+      "return_max_length": 6,
+      "data": [
+        {
+          "name": "nome",
+          "type": "string",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b5",
+        "return_value": "\"Ciao \" + nome"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "risultato-stringa-oltre-la-lunghezza",
+      "inputs": [],
+      "expected": {
+        "output": "inizio\n",
+        "error": {
+          "code": "string_too_long",
+          "block": "b5"
+        }
+      }
+    }
+  ]
+}

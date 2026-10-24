@@ -1,0 +1,266 @@
+/* La tabella di traccia: il titolo, la riga delle righe tolte, la tabella che scorre nei due versi con
+   l'intestazione e la colonna dei numeri ferme. Le cifre in colonna (cifre di larghezza
+   uguale), i valori a destra; la riga corrente col giallo e il bordo del blocco corrente, e il testo scuro anche in
+   tema scuro; le celle cambiate in ambra; «non inizializzata» in corsivo e più tenue. Una colonna stretta dall'utente
+   taglia il testo coi puntini; le intestazioni hanno sul bordo destro la maniglia della larghezza. Con procedure e
+   funzioni una riga di intestazione in più coi gruppi, e le righe dei livelli di chiamata con lo sfondo del loro livello
+   (sotto la cella cambiata e la riga corrente, che restano come sono). */
+.tabella {
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.25rem;
+  flex: 1;
+  min-height: 0px;
+}
+
+.titolo {
+  margin: 0px;
+  font-size: 1rem;
+}
+
+.tolte {
+  margin: 0px;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.scorre {
+  flex: 1;
+  min-height: 0px;
+  overflow: auto;
+  /* Il contorno come ombra interna: non occupa spazio, e non tocca la misura delle colonne ferme. */
+  box-shadow: inset 0px 0px 0px 1px var(--colore-riga);
+  font-size: 0.85rem;
+}
+
+/* Le cifre di larghezza uguale su una regola a parte. */
+.scorre table {
+  border-collapse: separate;
+  border-spacing: 0px;
+  font-variant-numeric: tabular-nums;
+}
+
+.scorre th,
+.scorre td {
+  box-sizing: border-box;
+  border-right: 1px solid var(--colore-riga);
+  border-bottom: 1px solid var(--colore-riga);
+  padding: 1px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--sfondo-della-riga, var(--colore-sfondo));
+}
+
+/* Lo sfondo del livello di chiamata della riga: le regole della cella cambiata e della riga corrente lo coprono. */
+.scorre tr[data-sfondo="1"] {
+  --sfondo-della-riga: var(--traccia-livello-1);
+}
+
+.scorre tr[data-sfondo="2"] {
+  --sfondo-della-riga: var(--traccia-livello-2);
+}
+
+.scorre tr[data-sfondo="3"] {
+  --sfondo-della-riga: var(--traccia-livello-3);
+}
+
+.scorre tr[data-sfondo="4"] {
+  --sfondo-della-riga: var(--traccia-livello-4);
+}
+
+.scorre th {
+  position: sticky;
+  top: 0px;
+  z-index: 2;
+  text-align: left;
+  vertical-align: bottom;
+}
+
+/* Sotto la riga dei gruppi, quella dei nomi delle colonne resta ferma alla sua altezza (misurata). */
+.scorre thead tr + tr th {
+  top: var(--altezza-dei-gruppi, 0px);
+}
+
+/* Il nome di un gruppo: col clic si chiude e si riapre. */
+.gruppo {
+  padding: 0px;
+}
+
+.nomeDelGruppo {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  border: 0px;
+  padding: 1px 6px;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  background: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nomeDelGruppo:hover {
+  background: var(--colore-sopra);
+}
+
+.nomeDelGruppo:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: -2px;
+}
+
+/* Un gruppo chiuso: una colonna stretta, «⋯» quando la sua funzione è attiva. */
+.chiuso {
+  text-align: center;
+  opacity: 0.8;
+}
+
+/* La colonna dei numeri resta ferma scorrendo di lato, e con lei la regola, se scelto (accanto, dalla larghezza
+   dei numeri misurata). Le celle ferme stanno sopra quelle che scorrono: senza un livello loro, una cella
+   semitrasparente («non inizializzata») veniva disegnata sopra (misurato); nell'intestazione stanno sopra tutte. */
+.numero {
+  position: sticky;
+  left: 0px;
+  z-index: 1;
+  text-align: right;
+}
+
+[data-ferme="numero-e-regola"] .regola {
+  position: sticky;
+  left: var(--larghezza-del-numero, 0px);
+  z-index: 1;
+}
+
+.scrive {
+  text-align: left;
+}
+
+.scorre th.numero,
+.scorre th.regola {
+  z-index: 3;
+}
+
+/* La maniglia della larghezza, sul bordo destro dell'intestazione; l'intestazione si trascina per spostare la colonna. */
+.maniglia {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  bottom: 0px;
+  width: 6px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.maniglia:hover {
+  background: var(--colore-accento);
+}
+
+.scorre th[data-gruppo] {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.scorre th:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: -2px;
+}
+
+/* Il posto dove andrebbe la colonna trascinata, e la colonna che si trascina. */
+.scorre th[data-mira="prima"] {
+  box-shadow: inset 3px 0px 0px var(--colore-accento);
+}
+
+.scorre th[data-mira="dopo"] {
+  box-shadow: inset -3px 0px 0px var(--colore-accento);
+}
+
+.scorre th[data-trascinata] {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.regola {
+  max-width: 13rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.valore {
+  text-align: right;
+}
+
+.tipo {
+  display: block;
+  font-weight: normal;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.vuota {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.scorre td[data-cambiata] {
+  background: var(--esecuzione-cambiata);
+  color: var(--esecuzione-testo);
+  font-weight: 600;
+}
+
+.corrente > td {
+  background: var(--esecuzione-corrente);
+  color: var(--esecuzione-testo);
+  font-weight: 600;
+  border-top: 2px solid var(--esecuzione-bordo);
+  border-bottom: 2px solid var(--esecuzione-bordo);
+}
+
+.scorre .corrente > td[data-cambiata] {
+  background: var(--esecuzione-cambiata-corrente);
+}
+
+/* Un vettore in fila: la cella si taglia (il testo intero è nel `title`, di cui il suggerimento mostra l'inizio) e non si segna tutta;
+   si segna l'elemento cambiato, col colore delle celle cambiate. */
+.inFila {
+  text-align: left;
+}
+
+.fila {
+  max-width: var(--fila, 26ch);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scorre td.inFila[data-cambiata] {
+  background: var(--sfondo-della-riga, var(--colore-sfondo));
+  color: inherit;
+  font-weight: normal;
+}
+
+.scorre .corrente > td.inFila[data-cambiata] {
+  background: var(--esecuzione-corrente);
+  color: var(--esecuzione-testo);
+  font-weight: 600;
+}
+
+.cambiato {
+  background: var(--esecuzione-cambiata);
+  color: var(--esecuzione-testo);
+  font-weight: 600;
+}
+
+.corrente .cambiato {
+  background: var(--esecuzione-cambiata-corrente);
+}
+
+/* Al posto delle righe non disegnate: niente bordi né sfondo, solo l'altezza. */
+.scorre .saltate > td {
+  padding: 0px;
+  border: 0px;
+  background: transparent;
+}

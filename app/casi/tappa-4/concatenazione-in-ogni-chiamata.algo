@@ -1,0 +1,127 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "concatenazione-in-ogni-chiamata",
+    "description": "Una concatenazione piccola in ognuna delle 500 chiamate in corso, e una di 1000 caratteri nel programma principale."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "string",
+          "initial": "\"x\"",
+          "max_length": 500
+        },
+        {
+          "name": "b",
+          "type": "string",
+          "initial": "\"y\"",
+          "max_length": 500
+        },
+        {
+          "name": "t",
+          "type": "string",
+          "max_length": 1000
+        },
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "t",
+          "value": "a + b"
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "r",
+          "value": "conta(499)"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "r",
+            "t"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "conta",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "t",
+          "type": "string",
+          "max_length": 2
+        },
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "t",
+          "value": "\"a\" + \"b\""
+        },
+        {
+          "id": "b6",
+          "kind": "if",
+          "condition": "n > 0",
+          "then": [
+            {
+              "id": "b7",
+              "kind": "assignment",
+              "target": "r",
+              "value": "conta(n - 1) + length t"
+            }
+          ],
+          "else": [
+            {
+              "id": "b8",
+              "kind": "assignment",
+              "target": "r",
+              "value": "0"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b9",
+        "return_value": "r"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "concatenazione-in-ogni-chiamata",
+      "inputs": [],
+      "expected": {
+        "output": "998xy\n"
+      }
+    }
+  ]
+}

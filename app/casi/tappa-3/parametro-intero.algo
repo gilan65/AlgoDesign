@@ -1,0 +1,55 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "parametro-intero",
+    "description": "Funzione con un parametro intero per valore."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "doppio(21)"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "doppio",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b3",
+        "return_value": "n * 2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "parametro-intero",
+      "inputs": [],
+      "expected": {
+        "output": "42\n"
+      }
+    }
+  ]
+}

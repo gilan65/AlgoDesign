@@ -1,0 +1,96 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "passi-fuori-dal-ciclo",
+    "description": "Una ricorsione ad albero senza cicli: si ferma al milione di azioni sull'azione in corso."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "x",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "x",
+          "value": "conta(20)"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "x"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "conta",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b5",
+          "kind": "if",
+          "condition": "n == 0",
+          "then": [
+            {
+              "id": "b6",
+              "kind": "assignment",
+              "target": "r",
+              "value": "1"
+            }
+          ],
+          "else": [
+            {
+              "id": "b7",
+              "kind": "assignment",
+              "target": "r",
+              "value": "conta(n - 1) + conta(n - 1)"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b8",
+        "return_value": "r"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "passi-fuori-dal-ciclo",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "too_many_steps",
+          "block": "b8"
+        }
+      }
+    }
+  ]
+}

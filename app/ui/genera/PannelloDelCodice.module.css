@@ -1,0 +1,163 @@
+/* Il codice generato: in testa le linguette dei tre linguaggi e i due comandi, sotto il codice coi numeri di riga, che
+   scorre nei due versi e prende l'altezza che resta. */
+.pannello {
+  flex: 1 1 0px;
+  min-height: 0px;
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.4rem;
+}
+
+.testa {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  column-gap: 0.4rem;
+  row-gap: 0.25rem;
+}
+
+.linguette {
+  display: inline-flex;
+  border: 1px solid var(--colore-riga);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.linguetta {
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--colore-testo);
+  background: var(--colore-sfondo);
+  border: 0px;
+  border-right: 1px solid var(--colore-riga);
+  padding: 0.25rem 0.7rem;
+  cursor: pointer;
+}
+
+.linguetta:last-child {
+  border-right: 0px;
+}
+
+.linguetta[aria-selected="true"] {
+  background: var(--colore-premuto);
+  color: var(--colore-accento);
+  font-weight: 600;
+}
+
+.linguetta:focus-visible,
+.comando:focus-visible,
+.codice:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: -2px;
+}
+
+.spazio {
+  flex: 1;
+}
+
+.comando {
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--colore-testo);
+  background: var(--colore-sopra);
+  border: 1px solid var(--colore-riga);
+  border-radius: 5px;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+}
+
+.comando[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* La scheda di un linguaggio: quella nascosta ha l'attributo, che vince sulla classe. */
+.scheda {
+  flex: 1 1 0px;
+  min-height: 0px;
+  display: flex;
+  flex-direction: column;
+}
+
+.scheda[hidden] {
+  display: none;
+}
+
+.codice {
+  flex: 1 1 0px;
+  min-height: 0px;
+  margin-block: 0px;
+  margin-inline: 0px;
+  overflow: auto;
+  font: 13px / 1.45 var(--carattere-codice);
+  background: var(--colore-sopra);
+  border: 1px solid var(--colore-riga);
+  border-radius: 6px;
+  padding-block: 0.4rem;
+  padding-inline: 0px;
+}
+
+/* Una riga larga quanto la più lunga: lo sfondo della riga corrente arriva in fondo anche scorrendo di lato. */
+.righe {
+  display: inline-block;
+  min-width: 100%;
+}
+
+.riga {
+  display: flex;
+  white-space: pre;
+  padding-right: 0.75rem;
+}
+
+.numero {
+  flex: none;
+  width: 2.6rem;
+  padding-right: 0.7rem;
+  text-align: right;
+  /* Più tenui del codice, ma leggibili: il contrasto lo misura la prova della colonna (`e2e/tabella.e2e.ts`). */
+  opacity: 0.7;
+  user-select: none;
+}
+
+/* La riga (o le righe) del blocco corrente, coi colori del blocco corrente nel flowchart; quella dell'errore che ha
+   fermato l'esecuzione col colore dell'errore. */
+.riga[data-evidenziata="corrente"] {
+  background: var(--esecuzione-corrente);
+  color: var(--esecuzione-testo);
+  box-shadow: inset 4px 0px 0px var(--esecuzione-bordo);
+}
+
+.riga[data-evidenziata="errore"] {
+  background: var(--colore-differenza);
+  color: var(--colore-testo);
+  box-shadow: inset 4px 0px 0px var(--colore-errore);
+}
+
+/* Le righe delle chiamate in corso ai livelli di sopra: lo sfondo del livello che ciascuna apre (lo stesso delle righe
+   di quel livello nella tabella di traccia) e il segno a sinistra col colore delle linee del flowchart. */
+.riga[data-chiamata="1"] {
+  background: var(--traccia-livello-1);
+}
+
+.riga[data-chiamata="2"] {
+  background: var(--traccia-livello-2);
+}
+
+.riga[data-chiamata="3"] {
+  background: var(--traccia-livello-3);
+}
+
+.riga[data-chiamata="4"] {
+  background: var(--traccia-livello-4);
+}
+
+.riga[data-chiamata] {
+  box-shadow: inset 4px 0px 0px var(--disegno-linea);
+}
+
+.nonGenerato {
+  margin: 0px;
+  padding: 0.5rem;
+  border: 1px solid var(--colore-riga);
+  border-radius: 6px;
+}

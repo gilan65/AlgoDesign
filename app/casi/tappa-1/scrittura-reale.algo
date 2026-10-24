@@ -1,0 +1,41 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "scrittura-reale",
+    "description": "Due decimali: 2/3, il valore a metà 0.125 e lo zero negativo."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "2.0 / 3.0",
+            "\" \"",
+            "0.125",
+            "\" \"",
+            "-0.0"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "scrittura-reale",
+      "inputs": [],
+      "expected": {
+        "output": "0.67 0.12 -0.00\n"
+      }
+    }
+  ]
+}

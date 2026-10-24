@@ -1,0 +1,133 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "risultato-vettore-assegnato",
+    "description": "Una funzione che restituisce un vettore, assegnato a un vettore dello stesso tipo e della stessa dimensione; la funzione eseguita da sola scrive una riga per elemento."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "voti",
+          "type": "integer",
+          "size": 3,
+          "initial": [
+            "7",
+            "4",
+            "9"
+          ]
+        },
+        {
+          "name": "doppi_voti",
+          "type": "integer",
+          "size": 3
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "doppi_voti",
+          "value": "doppi(voti)"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "doppi_voti[0]",
+            "\" \"",
+            "doppi_voti[1]",
+            "\" \"",
+            "doppi_voti[2]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "doppi",
+      "return_type": "integer",
+      "return_size": 3,
+      "data": [
+        {
+          "name": "w",
+          "type": "integer",
+          "size": 3,
+          "parameter": "value"
+        },
+        {
+          "name": "r",
+          "type": "integer",
+          "size": 3,
+          "initial": {
+            "each": "0"
+          }
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "for",
+          "counter": "i",
+          "from": "0",
+          "to": "2",
+          "body": [
+            {
+              "id": "b5",
+              "kind": "assignment",
+              "target": "r[i]",
+              "value": "w[i] * 2"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b6",
+        "return_value": "r"
+      },
+      "test_cases": [
+        {
+          "name": "tre numeri",
+          "inputs": [
+            {
+              "data": "w",
+              "text": "1"
+            },
+            {
+              "data": "w",
+              "text": "2"
+            },
+            {
+              "data": "w",
+              "text": "3"
+            }
+          ],
+          "expected": {
+            "output": "→ [0] = 2\n→ [1] = 4\n→ [2] = 6\n"
+          }
+        }
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "risultato-vettore-assegnato",
+      "inputs": [],
+      "expected": {
+        "output": "14 8 18\n"
+      }
+    }
+  ]
+}

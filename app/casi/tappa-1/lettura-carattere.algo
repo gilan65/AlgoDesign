@@ -1,0 +1,55 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "lettura-carattere",
+    "description": "Lettura di una lettera accentata e del suo codice."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "c",
+          "type": "character",
+          "role": "input"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "c"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "c",
+            "\" \"",
+            "to_integer c"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "lettura-carattere",
+      "inputs": [
+        {
+          "data": "c",
+          "text": "é"
+        }
+      ],
+      "expected": {
+        "output": "é 233\n"
+      }
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "per-ogni-su-una-funzione",
+    "description": "La procedura «scendi» scorre il vettore di dieci stringhe lunghe al più 1000 restituito da «elenco» e chiama sé stessa: il vettore restituito sta nello spazio di ogni chiamata."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "scendi",
+          "arguments": [
+            "1"
+          ]
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "scendi",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "x",
+          "type": "string",
+          "max_length": 1000
+        },
+        {
+          "name": "s",
+          "type": "integer",
+          "initial": "0"
+        }
+      ],
+      "body": [
+        {
+          "id": "b3",
+          "kind": "for_each",
+          "item": "x",
+          "source": "elenco()",
+          "body": [
+            {
+              "id": "b4",
+              "kind": "write",
+              "values": [
+                "x"
+              ],
+              "newline": true
+            },
+            {
+              "id": "b10",
+              "kind": "assignment",
+              "target": "s",
+              "value": "s + 1"
+            }
+          ]
+        },
+        {
+          "id": "b5",
+          "kind": "write",
+          "values": [
+            "s"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b6",
+          "kind": "if",
+          "condition": "n < 100",
+          "then": [
+            {
+              "id": "b7",
+              "kind": "call",
+              "callee": "scendi",
+              "arguments": [
+                "n + 1"
+              ]
+            }
+          ],
+          "else": []
+        }
+      ],
+      "end": {
+        "id": "b8"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "function",
+      "name": "elenco",
+      "return_type": "string",
+      "return_size": 10,
+      "return_max_length": 1000,
+      "data": [
+        {
+          "name": "v",
+          "type": "string",
+          "size": 10,
+          "initial": {
+            "each": "\"a\""
+          },
+          "max_length": 1000
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b9",
+        "return_value": "v"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "al-tetto",
+      "inputs": [],
+      "expected": {
+        "output": "a\na\na\na\na\na\na\na\na\na\n10\na\na\na\na\na\na\na\na\na\na\n10\na\na\na\na\na\na\na\na\na\na\n10\na\na\na\na\na\na\na\na\na\na\n10\na\na\na\na\na\na\na\na\na\na\n10\n",
+        "error": {
+          "code": "recursion_data_too_large",
+          "block": "b7"
+        }
+      }
+    }
+  ]
+}

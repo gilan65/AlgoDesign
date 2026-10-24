@@ -1,0 +1,61 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "divisione-intera-in-parametro",
+    "description": "7 / 2 fra interi passato a un parametro reale."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "meta(7 / 2)"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "meta",
+      "return_type": "real",
+      "data": [
+        {
+          "name": "x",
+          "type": "real",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b3",
+        "return_value": "x"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "divisione-intera-in-parametro",
+      "inputs": [],
+      "expected": {
+        "output": "3.00\n",
+        "warnings": [
+          {
+            "code": "integer_division_to_real",
+            "block": "b1"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "risultato-vettore-in-un-testo",
+    "description": "Un vettore restituito dentro un testo: tutto intero in converti_a_stringa, e un suo elemento stringa dentro una concatenazione."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "t",
+          "type": "string",
+          "role": "output"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "t",
+          "value": "to_string lettere()"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "t"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "\"Ciao \" + nomi()[1] + \"!\""
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "lettere",
+      "return_type": "character",
+      "return_size": 3,
+      "data": [
+        {
+          "name": "v",
+          "type": "character",
+          "size": 3,
+          "initial": [
+            "'a'",
+            "'b'",
+            "'c'"
+          ]
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b5",
+        "return_value": "v"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "function",
+      "name": "nomi",
+      "return_type": "string",
+      "return_size": 2,
+      "return_max_length": 5,
+      "data": [
+        {
+          "name": "w",
+          "type": "string",
+          "size": 2,
+          "initial": [
+            "\"Anna\"",
+            "\"Bo\""
+          ],
+          "max_length": 5
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b6",
+        "return_value": "w"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "risultato-vettore-in-un-testo",
+      "inputs": [],
+      "expected": {
+        "output": "abc\nCiao Bo!\n"
+      }
+    }
+  ]
+}

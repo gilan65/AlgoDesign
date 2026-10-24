@@ -1,0 +1,53 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "assegnazione-carattere",
+    "description": "Il carattere successivo, passando dal codice."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "c",
+          "type": "character",
+          "initial": "'a'"
+        },
+        {
+          "name": "e",
+          "type": "character"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "e",
+          "value": "to_character (to_integer c + 1)"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "e"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "assegnazione-carattere",
+      "inputs": [],
+      "expected": {
+        "output": "b\n"
+      }
+    }
+  ]
+}

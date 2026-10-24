@@ -1,0 +1,84 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "risultato-stringa",
+    "description": "Una funzione che restituisce una stringa con la sua lunghezza massima: in un dato, e con l'indice il suo carattere; la funzione eseguita da sola scrive la stringa dopo la freccia."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "max_length": 20
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "s",
+          "value": "saluto(\"Anna\")"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "s",
+            "\" \"",
+            "saluto(\"Bo\")[5]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "saluto",
+      "return_type": "string",
+      "return_max_length": 20,
+      "data": [
+        {
+          "name": "nome",
+          "type": "string",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b4",
+        "return_value": "\"Ciao \" + nome"
+      },
+      "test_cases": [
+        {
+          "name": "un nome",
+          "inputs": [
+            {
+              "data": "nome",
+              "text": "Ugo"
+            }
+          ],
+          "expected": {
+            "output": "→ Ciao Ugo\n"
+          }
+        }
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "risultato-stringa",
+      "inputs": [],
+      "expected": {
+        "output": "Ciao Anna B\n"
+      }
+    }
+  ]
+}

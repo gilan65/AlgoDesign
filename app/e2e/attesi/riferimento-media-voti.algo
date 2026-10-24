@@ -1,0 +1,263 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "riferimento-media-voti",
+    "description": "Programma di riferimento della tappa 1: media dei voti validi, con tutte le strutture annidate."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "role": "input"
+        },
+        {
+          "name": "voto",
+          "type": "integer",
+          "role": "input"
+        },
+        {
+          "name": "media",
+          "type": "real",
+          "role": "output"
+        },
+        {
+          "name": "contati",
+          "type": "integer",
+          "initial": "0",
+          "role": "output"
+        },
+        {
+          "name": "insufficienti",
+          "type": "integer",
+          "initial": "0",
+          "role": "output"
+        },
+        {
+          "name": "somma",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "i",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "j",
+          "type": "integer",
+          "initial": "0"
+        }
+      ],
+      "body": [
+        {
+          "id": "b2",
+          "kind": "comment",
+          "text": "Prima si chiede quanti voti leggere, finché il numero non è fra 1 e 30"
+        },
+        {
+          "id": "b3",
+          "kind": "repeat",
+          "body": [
+            {
+              "id": "b4",
+              "kind": "read",
+              "target": "n"
+            },
+            {
+              "id": "b5",
+              "kind": "if",
+              "condition": "n < 1 or n > 30",
+              "then": [
+                {
+                  "id": "b6",
+                  "kind": "write",
+                  "values": [
+                    "\"Numero non valido: da 1 a 30\""
+                  ],
+                  "newline": true
+                }
+              ],
+              "else": []
+            }
+          ],
+          "condition": "n < 1 or n > 30"
+        },
+        {
+          "id": "b7",
+          "kind": "assignment",
+          "target": "i",
+          "value": "0"
+        },
+        {
+          "id": "b8",
+          "kind": "while",
+          "condition": "i < n",
+          "body": [
+            {
+              "id": "b9",
+              "kind": "read",
+              "target": "voto"
+            },
+            {
+              "id": "b10",
+              "kind": "if",
+              "condition": "voto >= 1 and voto <= 10",
+              "then": [
+                {
+                  "id": "b11",
+                  "kind": "assignment",
+                  "target": "somma",
+                  "value": "somma + voto"
+                },
+                {
+                  "id": "b12",
+                  "kind": "assignment",
+                  "target": "contati",
+                  "value": "contati + 1"
+                },
+                {
+                  "id": "b13",
+                  "kind": "if",
+                  "condition": "voto < 6",
+                  "then": [
+                    {
+                      "id": "b14",
+                      "kind": "assignment",
+                      "target": "insufficienti",
+                      "value": "insufficienti + 1"
+                    }
+                  ],
+                  "else": []
+                }
+              ],
+              "else": [
+                {
+                  "id": "b15",
+                  "kind": "write",
+                  "values": [
+                    "\"Voto ignorato: \"",
+                    "voto"
+                  ],
+                  "newline": true
+                }
+              ]
+            },
+            {
+              "id": "b16",
+              "kind": "assignment",
+              "target": "i",
+              "value": "i + 1"
+            }
+          ]
+        },
+        {
+          "id": "b17",
+          "kind": "if",
+          "condition": "contati > 0",
+          "then": [
+            {
+              "id": "b18",
+              "kind": "assignment",
+              "target": "media",
+              "value": "to_real somma / to_real contati"
+            },
+            {
+              "id": "b19",
+              "kind": "write",
+              "values": [
+                "\"Media: \"",
+                "media",
+                "\" su \"",
+                "contati",
+                "\" voti, insufficienti: \"",
+                "insufficienti"
+              ],
+              "newline": true
+            },
+            {
+              "id": "b20",
+              "kind": "while",
+              "condition": "j < somma / contati",
+              "body": [
+                {
+                  "id": "b21",
+                  "kind": "write",
+                  "values": [
+                    "\"*\""
+                  ],
+                  "newline": false
+                },
+                {
+                  "id": "b22",
+                  "kind": "assignment",
+                  "target": "j",
+                  "value": "j + 1"
+                }
+              ]
+            },
+            {
+              "id": "b23",
+              "kind": "write",
+              "values": [
+                "\"\""
+              ],
+              "newline": true
+            }
+          ],
+          "else": [
+            {
+              "id": "b24",
+              "kind": "write",
+              "values": [
+                "\"Nessun voto valido\""
+              ],
+              "newline": true
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b1"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "riferimento-media-voti",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "0"
+        },
+        {
+          "data": "n",
+          "text": "4"
+        },
+        {
+          "data": "voto",
+          "text": "7"
+        },
+        {
+          "data": "voto",
+          "text": "11"
+        },
+        {
+          "data": "voto",
+          "text": "5"
+        },
+        {
+          "data": "voto",
+          "text": "8"
+        }
+      ],
+      "expected": {
+        "output": "Numero non valido: da 1 a 30\nVoto ignorato: 11\nMedia: 6.67 su 3 voti, insufficienti: 1\n******\n"
+      }
+    }
+  ]
+}

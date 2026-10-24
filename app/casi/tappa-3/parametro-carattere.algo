@@ -1,0 +1,55 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "parametro-carattere",
+    "description": "Funzione che restituisce il carattere successivo."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "successivo('y')"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "successivo",
+      "return_type": "character",
+      "data": [
+        {
+          "name": "c",
+          "type": "character",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b3",
+        "return_value": "to_character (to_integer c + 1)"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "parametro-carattere",
+      "inputs": [],
+      "expected": {
+        "output": "z\n"
+      }
+    }
+  ]
+}

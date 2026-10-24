@@ -1,0 +1,360 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "riferimento-media-voti-funzioni",
+    "description": "Programma di riferimento della tappa 3: quello della tappa 2 con una procedura che legge il numero dei voti e lo dà a chi la chiama con un parametro di uscita, una funzione che dice se un voto è valido e una procedura che scrive le stelle."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "role": "input"
+        },
+        {
+          "name": "voto",
+          "type": "integer",
+          "role": "input"
+        },
+        {
+          "name": "media",
+          "type": "real",
+          "role": "output"
+        },
+        {
+          "name": "contati",
+          "type": "integer",
+          "initial": "0",
+          "role": "output"
+        },
+        {
+          "name": "insufficienti",
+          "type": "integer",
+          "initial": "0",
+          "role": "output"
+        },
+        {
+          "name": "somma",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "leggi_numero",
+          "arguments": [
+            "n"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "for",
+          "counter": "i",
+          "from": "1",
+          "to": "n",
+          "body": [
+            {
+              "id": "b3",
+              "kind": "read",
+              "target": "voto"
+            },
+            {
+              "id": "b4",
+              "kind": "if",
+              "condition": "valido(voto)",
+              "then": [
+                {
+                  "id": "b5",
+                  "kind": "assignment",
+                  "target": "somma",
+                  "value": "somma + voto"
+                },
+                {
+                  "id": "b6",
+                  "kind": "assignment",
+                  "target": "contati",
+                  "value": "contati + 1"
+                },
+                {
+                  "id": "b7",
+                  "kind": "if",
+                  "condition": "voto < 6",
+                  "then": [
+                    {
+                      "id": "b8",
+                      "kind": "assignment",
+                      "target": "insufficienti",
+                      "value": "insufficienti + 1"
+                    }
+                  ],
+                  "else": []
+                }
+              ],
+              "else": [
+                {
+                  "id": "b9",
+                  "kind": "write",
+                  "values": [
+                    "\"Voto ignorato: \"",
+                    "voto"
+                  ],
+                  "newline": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b10",
+          "kind": "if",
+          "condition": "contati > 0",
+          "then": [
+            {
+              "id": "b11",
+              "kind": "assignment",
+              "target": "media",
+              "value": "to_real somma / to_real contati"
+            },
+            {
+              "id": "b12",
+              "kind": "write",
+              "values": [
+                "\"Media: \"",
+                "media",
+                "\" su \"",
+                "contati",
+                "\" voti, insufficienti: \"",
+                "insufficienti"
+              ],
+              "newline": true
+            },
+            {
+              "id": "b13",
+              "kind": "call",
+              "callee": "stelle",
+              "arguments": [
+                "somma / contati"
+              ]
+            }
+          ],
+          "else": [
+            {
+              "id": "b14",
+              "kind": "write",
+              "values": [
+                "\"Nessun voto valido\""
+              ],
+              "newline": true
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b15"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "leggi_numero",
+      "data": [
+        {
+          "name": "numero",
+          "type": "integer",
+          "parameter": "out"
+        }
+      ],
+      "body": [
+        {
+          "id": "b16",
+          "kind": "comment",
+          "text": "Si chiede quanti voti leggere, finché il numero non è fra 1 e 30"
+        },
+        {
+          "id": "b17",
+          "kind": "repeat",
+          "body": [
+            {
+              "id": "b18",
+              "kind": "read",
+              "target": "numero"
+            },
+            {
+              "id": "b19",
+              "kind": "if",
+              "condition": "numero < 1 or numero > 30",
+              "then": [
+                {
+                  "id": "b20",
+                  "kind": "write",
+                  "values": [
+                    "\"Numero non valido: da 1 a 30\""
+                  ],
+                  "newline": true
+                }
+              ],
+              "else": []
+            }
+          ],
+          "condition": "numero < 1 or numero > 30"
+        }
+      ],
+      "end": {
+        "id": "b21"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "function",
+      "name": "valido",
+      "return_type": "boolean",
+      "data": [
+        {
+          "name": "voto",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b22",
+        "return_value": "voto >= 1 and voto <= 10"
+      },
+      "test_cases": [
+        {
+          "name": "voto valido",
+          "inputs": [
+            {
+              "data": "voto",
+              "text": "7"
+            }
+          ],
+          "expected": {
+            "output": "→ true\n"
+          }
+        },
+        {
+          "name": "voto troppo alto",
+          "inputs": [
+            {
+              "data": "voto",
+              "text": "11"
+            }
+          ],
+          "expected": {
+            "output": "→ false\n"
+          }
+        }
+      ]
+    },
+    {
+      "id": "f4",
+      "kind": "procedure",
+      "name": "stelle",
+      "data": [
+        {
+          "name": "quante",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "k",
+          "type": "integer",
+          "initial": "0"
+        }
+      ],
+      "body": [
+        {
+          "id": "b23",
+          "kind": "while",
+          "condition": "k < quante",
+          "body": [
+            {
+              "id": "b24",
+              "kind": "write",
+              "values": [
+                "\"*\""
+              ],
+              "newline": false
+            },
+            {
+              "id": "b25",
+              "kind": "assignment",
+              "target": "k",
+              "value": "k + 1"
+            }
+          ]
+        },
+        {
+          "id": "b26",
+          "kind": "write",
+          "values": [
+            "\"\""
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b27"
+      },
+      "test_cases": [
+        {
+          "name": "tre stelle",
+          "inputs": [
+            {
+              "data": "quante",
+              "text": "3"
+            }
+          ],
+          "expected": {
+            "output": "***\n"
+          }
+        }
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "riferimento-media-voti-funzioni",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "0"
+        },
+        {
+          "data": "n",
+          "text": "4"
+        },
+        {
+          "data": "voto",
+          "text": "7"
+        },
+        {
+          "data": "voto",
+          "text": "11"
+        },
+        {
+          "data": "voto",
+          "text": "5"
+        },
+        {
+          "data": "voto",
+          "text": "8"
+        }
+      ],
+      "expected": {
+        "output": "Numero non valido: da 1 a 30\nVoto ignorato: 11\nMedia: 6.67 su 3 voti, insufficienti: 1\n******\n"
+      }
+    }
+  ]
+}

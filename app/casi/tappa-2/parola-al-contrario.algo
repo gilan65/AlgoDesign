@@ -1,0 +1,116 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "parola-al-contrario",
+    "description": "Una parola scritta al contrario con un ciclo per all'indietro, e le sue vocali contate con un ciclo per ogni."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "parola",
+          "type": "string",
+          "role": "input"
+        },
+        {
+          "name": "vocali",
+          "type": "integer",
+          "initial": "0",
+          "role": "output"
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        },
+        {
+          "name": "c",
+          "type": "character"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "parola"
+        },
+        {
+          "id": "b2",
+          "kind": "for",
+          "counter": "i",
+          "from": "length parola - 1",
+          "to": "0",
+          "step": -1,
+          "body": [
+            {
+              "id": "b3",
+              "kind": "write",
+              "values": [
+                "parola[i]"
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "\"\""
+          ],
+          "newline": true
+        },
+        {
+          "id": "b5",
+          "kind": "for_each",
+          "item": "c",
+          "source": "parola",
+          "body": [
+            {
+              "id": "b6",
+              "kind": "if",
+              "condition": "c == 'a' or c == 'e' or c == 'i' or c == 'o' or c == 'u'",
+              "then": [
+                {
+                  "id": "b7",
+                  "kind": "assignment",
+                  "target": "vocali",
+                  "value": "vocali + 1"
+                }
+              ],
+              "else": []
+            }
+          ]
+        },
+        {
+          "id": "b8",
+          "kind": "write",
+          "values": [
+            "\"Vocali: \"",
+            "vocali"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b9"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "ciao",
+      "inputs": [
+        {
+          "data": "parola",
+          "text": "ciao"
+        }
+      ],
+      "expected": {
+        "output": "oaic\nVocali: 3\n"
+      }
+    }
+  ]
+}

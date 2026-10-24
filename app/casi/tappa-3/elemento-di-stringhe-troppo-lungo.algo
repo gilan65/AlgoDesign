@@ -1,0 +1,157 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "elemento-di-stringhe-troppo-lungo",
+    "description": "Un elemento di un vettore di stringhe riceve una stringa più lunga della sua lunghezza massima, nel programma principale o attraverso un riferimento: si ferma sull'assegnazione."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "scelta",
+          "type": "integer",
+          "role": "input"
+        },
+        {
+          "name": "nomi",
+          "type": "string",
+          "size": 2,
+          "initial": [
+            "\"a\"",
+            "\"b\""
+          ],
+          "role": "output",
+          "max_length": 4
+        },
+        {
+          "name": "s",
+          "type": "string"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "scelta"
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "s",
+          "value": "\"abc\""
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "\"inizio\""
+          ],
+          "newline": true
+        },
+        {
+          "id": "b4",
+          "kind": "if",
+          "condition": "scelta == 1",
+          "then": [
+            {
+              "id": "b5",
+              "kind": "assignment",
+              "target": "nomi[0]",
+              "value": "s + \"de\""
+            }
+          ],
+          "else": [
+            {
+              "id": "b6",
+              "kind": "call",
+              "callee": "allunga",
+              "arguments": [
+                "nomi",
+                "s"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b7",
+          "kind": "write",
+          "values": [
+            "nomi[0]",
+            "nomi[1]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b8"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "allunga",
+      "data": [
+        {
+          "name": "v",
+          "type": "string",
+          "size": 2,
+          "max_length": 4,
+          "parameter": "reference"
+        },
+        {
+          "name": "t",
+          "type": "string",
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "b9",
+          "kind": "assignment",
+          "target": "v[1]",
+          "value": "t + \"xy\""
+        }
+      ],
+      "end": {
+        "id": "b10"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "nel-programma",
+      "inputs": [
+        {
+          "data": "scelta",
+          "text": "1"
+        }
+      ],
+      "expected": {
+        "output": "inizio\n",
+        "error": {
+          "code": "string_too_long",
+          "block": "b5"
+        }
+      }
+    },
+    {
+      "name": "attraverso-il-riferimento",
+      "inputs": [
+        {
+          "data": "scelta",
+          "text": "2"
+        }
+      ],
+      "expected": {
+        "output": "inizio\n",
+        "error": {
+          "code": "string_too_long",
+          "block": "b9"
+        }
+      }
+    }
+  ]
+}

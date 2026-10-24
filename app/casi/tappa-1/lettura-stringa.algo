@@ -1,0 +1,55 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "lettura-stringa",
+    "description": "Lettura di una riga intera, spazi compresi."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "role": "input"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "s"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "length s",
+            "\" \"",
+            "s"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "lettura-stringa",
+      "inputs": [
+        {
+          "data": "s",
+          "text": "ciao mondo"
+        }
+      ],
+      "expected": {
+        "output": "10 ciao mondo\n"
+      }
+    }
+  ]
+}

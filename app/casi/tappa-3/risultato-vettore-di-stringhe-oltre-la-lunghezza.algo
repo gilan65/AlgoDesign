@@ -1,0 +1,87 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "risultato-vettore-di-stringhe-oltre-la-lunghezza",
+    "description": "La funzione restituisce un vettore di stringhe con un elemento più lungo della lunghezza massima del risultato: si ferma sulla fine della funzione, prima che chi chiama riceva il risultato."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "v",
+          "type": "string",
+          "size": 2,
+          "max_length": 20
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "\"inizio\""
+          ],
+          "newline": true
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "v",
+          "value": "nomi()"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "v[1]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "nomi",
+      "return_type": "string",
+      "return_size": 2,
+      "return_max_length": 6,
+      "data": [
+        {
+          "name": "n",
+          "type": "string",
+          "size": 2,
+          "initial": [
+            "\"Anna\"",
+            "\"Benedetta\""
+          ],
+          "max_length": 20
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b5",
+        "return_value": "n"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "risultato-vettore-di-stringhe-oltre-la-lunghezza",
+      "inputs": [],
+      "expected": {
+        "output": "inizio\n",
+        "error": {
+          "code": "string_too_long",
+          "block": "b5"
+        }
+      }
+    }
+  ]
+}

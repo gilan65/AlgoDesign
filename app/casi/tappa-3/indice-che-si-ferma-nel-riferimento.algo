@@ -1,0 +1,94 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "indice-che-si-ferma-nel-riferimento",
+    "description": "L'indice di un elemento passato per riferimento si ferma, e anche l'argomento alla sua destra: si ferma prima l'indice."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "t",
+          "type": "string",
+          "initial": "\"abc\""
+        },
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3,
+          "initial": [
+            "1",
+            "2",
+            "3"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "metti",
+          "arguments": [
+            "v[to_integer t[5]]",
+            "to_integer (to_character -1)"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "v[0]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "metti",
+      "data": [
+        {
+          "name": "a",
+          "type": "integer",
+          "parameter": "reference"
+        },
+        {
+          "name": "b",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "a",
+          "value": "b"
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "indice-che-si-ferma-nel-riferimento",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "index_out_of_range",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

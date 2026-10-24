@@ -1,0 +1,78 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "fine-del-per-con-funzione",
+    "description": "La fine di un ciclo per che chiama una funzione: si calcola dopo aver dato il valore al contatore, e di nuovo a ogni controllo."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "k",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for",
+          "counter": "k",
+          "from": "1",
+          "to": "limite(k)",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "write",
+              "values": [
+                "k"
+              ],
+              "newline": true
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "limite",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "m",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "t",
+          "type": "string",
+          "initial": "\"99\""
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b4",
+        "return_value": "to_integer t[m - 1] - 40"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "fine-del-per-con-funzione",
+      "inputs": [],
+      "expected": {
+        "output": "1\n2\n",
+        "error": {
+          "code": "index_out_of_range",
+          "block": "b4"
+        }
+      }
+    }
+  ]
+}

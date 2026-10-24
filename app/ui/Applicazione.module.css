@@ -1,0 +1,247 @@
+/* La finestra in tre righe: la barra in alto, sotto le due viste con l'altezza che resta, in fondo la riga
+   di stato. Margini stretti:
+   con «Adatta alla finestra» il riferimento è limitato dall'altezza, e ogni pixel è carattere. */
+.applicazione {
+  display: grid;
+  row-gap: 0.5rem;
+  /* Le righe e, dopo la barra, nessuna colonna esplicita: la forma intera, che il bundler non separa. */
+  grid-template: auto minmax(0px, 1fr) auto / none;
+  height: 100vh;
+  padding: 0.5rem;
+  box-sizing: border-box;
+}
+
+/* Le due viste: i dati a sinistra, larghi quanto la loro tabella finché l'utente non sposta il bordo; il
+   flowchart a destra con lo spazio che resta. */
+.viste {
+  display: flex;
+  min-height: 0px;
+  /* Mai più larga della finestra: senza, la colonna della griglia cresce fino alla somma dei contenuti
+     (pannello al massimo più il disegno al 100%) e la pagina intera scorre di lato, barra compresa. Nella
+     forma logica (`inline`). */
+  min-inline-size: 0px;
+}
+
+/* Larga quanto la sua tabella, ma mai oltre la metà della finestra (il massimo del bordo, `Divisore.tsx`):
+   una scheda aperta o i campi nelle celle allargano la tabella, e il resto si scorre. */
+.pannello {
+  flex: none;
+  max-width: max(160px, 50vw);
+  overflow: auto;
+  box-sizing: border-box;
+  padding-right: 0.75rem;
+}
+
+.pannello[hidden] {
+  display: none;
+}
+
+.premessa {
+  margin: 0px 0px 0.75rem;
+  max-width: 24rem;
+}
+
+/* Le due schede del pannello, «Dati» e «Casi d'uso»: linguette sopra, unite da una riga. */
+.linguette {
+  display: flex;
+  column-gap: 2px;
+  margin-bottom: 0.6rem;
+  border-bottom: 1px solid var(--disegno-bordo);
+}
+
+.linguetta {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.25rem 0.7rem;
+  color: var(--colore-testo);
+  background: var(--colore-sopra);
+  border: 1px solid var(--colore-riga);
+  border-bottom: none;
+  border-radius: 6px 6px 0px 0px;
+  cursor: pointer;
+}
+
+.linguetta[aria-selected="true"] {
+  background: var(--colore-sfondo);
+  border-color: var(--disegno-bordo);
+  font-weight: 600;
+  /* Sopra la riga di sotto: la linguetta scelta è unita alla sua scheda. */
+  margin-bottom: -1px;
+  padding-bottom: calc(0.25rem + 1px);
+}
+
+.linguetta:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: -2px;
+}
+
+/* La scheda nascosta: l'attributo vince sulla classe. */
+.schedaDelPannello[hidden] {
+  display: none;
+}
+
+/* Il bordo fra le due viste: una fascia larga quanto basta da prendere col puntatore, con una linea sottile
+   in mezzo. */
+.divisore {
+  flex: none;
+  width: 0.75rem;
+  cursor: col-resize;
+  touch-action: none;
+  background: linear-gradient(to right, transparent calc(50% - 1px), var(--colore-riga) calc(50% - 1px), var(--colore-riga) calc(50% + 1px), transparent calc(50% + 1px));
+}
+
+.divisore:hover,
+.divisore:focus-visible {
+  background: linear-gradient(to right, transparent calc(50% - 1.5px), var(--colore-accento) calc(50% - 1.5px), var(--colore-accento) calc(50% + 1.5px), transparent calc(50% + 1.5px));
+  outline: none;
+}
+
+/* Il bordo fra la tabella di traccia e la console, nella colonna dell'esecuzione: lo stesso, di traverso (il
+   gradiente senza direzione va dall'alto in basso). */
+.divisoreOrizzontale {
+  flex: none;
+  height: 0.75rem;
+  cursor: row-resize;
+  touch-action: none;
+  background: linear-gradient(transparent calc(50% - 1px), var(--colore-riga) calc(50% - 1px), var(--colore-riga) calc(50% + 1px), transparent calc(50% + 1px));
+}
+
+.divisoreOrizzontale:hover,
+.divisoreOrizzontale:focus-visible {
+  background: linear-gradient(transparent calc(50% - 1.5px), var(--colore-accento) calc(50% - 1.5px), var(--colore-accento) calc(50% + 1.5px), transparent calc(50% + 1.5px));
+  outline: none;
+}
+
+/* La pagina di prova: i flowchart uno sotto l'altro, al 100%. */
+.prova {
+  overflow: auto;
+  display: flex;
+  gap: var(--spaziatura);
+  flex-direction: column;
+}
+
+/* Nella pagina di prova ogni disegno ha i suoi dati accanto. La colonna scorre: le coppie restano della
+   loro altezza, e nessun flowchart si restringe. Ristretto, non sarebbe più al 100%, e Chromium misura il
+   testo alla scala resa: le etichette di un disegno largo toccavano le forme (misurato). */
+.affiancate {
+  display: flex;
+  gap: var(--spaziatura);
+  align-items: flex-start;
+}
+
+.affiancate,
+.affiancate > * {
+  flex: none;
+}
+
+/* Il messaggio di una modifica che non si applica: sopra il flowchart, in basso sopra la riga di stato,
+   fuori dalla griglia (l'area del disegno non cambia). Vuoto, non si vede. */
+.avviso {
+  position: fixed;
+  bottom: 2.75rem;
+  left: 50%;
+  translate: -50% 0px;
+  max-width: 40rem;
+  /* La larghezza massima la dà l'area del flowchart (`Applicazione.tsx`), bordo e margini compresi. */
+  box-sizing: border-box;
+  padding: 0.4rem 2rem 0.4rem 1.5rem;
+  background: var(--colore-sfondo);
+  border: 1px solid var(--disegno-falso);
+  border-radius: 6px;
+}
+
+.avviso[data-vuoto] {
+  visibility: hidden;
+}
+
+/* La × in alto a destra dell'avviso, che lo chiude. */
+.chiudiAvviso {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.25rem;
+  inline-size: 1.4rem;
+  block-size: 1.4rem;
+  padding: 0px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--colore-testo);
+  font: inherit;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chiudiAvviso:hover {
+  background: var(--colore-sopra);
+}
+
+/* La maniglia a sinistra dell'avviso, che lo sposta trascinandola (come quella della barretta). */
+.manigliaAvviso {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.3rem;
+  cursor: grab;
+  opacity: 0.5;
+  user-select: none;
+  touch-action: none;
+}
+
+.chiudiAvviso:focus-visible {
+  outline: 2px solid var(--colore-accento);
+}
+
+/* Il flowchart con le schede delle procedure e delle funzioni sopra: prende lo spazio che resta accanto alla vista dei
+   dati, e il flowchart l'altezza che le schede lasciano. */
+.colonnaDelFlowchart {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* Nella forma logica, come `.viste`. */
+  min-block-size: 0px;
+  min-inline-size: 0px;
+}
+
+/* La colonna dell'esecuzione, a destra del flowchart: larga un terzo della finestra finché l'utente non sposta
+   il bordo; sopra la tabella di traccia, sotto la console che riempie l'altezza che resta. */
+.colonna {
+  flex: none;
+  width: 34vw;
+  max-width: max(160px, 50vw);
+  display: flex;
+  flex-direction: column;
+  min-height: 0px;
+  box-sizing: border-box;
+  padding-left: 0.5rem;
+}
+
+/* La tabella nella colonna: due terzi dell'altezza finché l'utente non sposta il bordo, e scorre nei due versi. */
+.tracciaNellaColonna {
+  flex: none;
+  height: 65%;
+  min-height: 0px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tracciaNellaColonna[hidden] {
+  display: none;
+}
+
+/* Il codice generato nella colonna: sopra la console come la tabella, che sostituisce; senza esecuzione prende tutta
+   l'altezza. */
+.codiceNellaColonna,
+.codiceDaSolo {
+  min-height: 0px;
+  display: flex;
+  flex-direction: column;
+}
+
+.codiceNellaColonna {
+  flex: none;
+  height: 65%;
+}
+
+.codiceDaSolo {
+  flex: 1 1 0px;
+}

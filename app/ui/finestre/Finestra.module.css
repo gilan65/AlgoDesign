@@ -1,0 +1,377 @@
+/* Le finestre di dialogo: un velo sulla pagina e, al centro, la finestra, che scorre se non ci sta. */
+.sfondo {
+  position: fixed;
+  inset: 0px;
+  z-index: 20;
+  background: rgb(0 0 0 / 0.35);
+}
+
+.posto {
+  position: fixed;
+  inset: 0px;
+  z-index: 21;
+  display: grid;
+  place-items: center;
+}
+
+.finestra {
+  display: grid;
+  row-gap: 0.75rem;
+  box-sizing: border-box;
+  width: min(30rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  padding: 1rem 1.1rem;
+  color: var(--colore-testo);
+  background: var(--colore-sfondo);
+  border: 1px solid var(--disegno-bordo);
+  border-radius: 8px;
+  box-shadow: 0px 8px 24px rgb(0 0 0 / 0.25);
+}
+
+.larga {
+  width: min(40rem, calc(100vw - 2rem));
+}
+
+/* Una tabella con molte colonne e i comandi su ogni riga («Procedure e funzioni…»). */
+.piena {
+  width: min(66rem, calc(100vw - 2rem));
+}
+
+.titolo {
+  margin: 0px;
+  font-size: 1.05rem;
+}
+
+.spiegazione {
+  margin: 0px;
+  color: var(--colore-testo);
+}
+
+.comandi {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 0.5rem;
+}
+
+.comando {
+  font: inherit;
+  color: var(--colore-testo);
+  background: var(--colore-sopra);
+  border: 1px solid var(--colore-riga);
+  border-radius: 4px;
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+}
+
+.comando:focus-visible,
+.campo:focus-visible {
+  outline: 2px solid var(--colore-accento);
+}
+
+.comando[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* I campi della finestra Progetto: etichetta sopra, aiuto ed errore sotto. */
+.campi {
+  display: grid;
+  row-gap: 0.6rem;
+}
+
+.voce {
+  display: grid;
+  row-gap: 0.2rem;
+}
+
+.campo {
+  font: inherit;
+  color: var(--colore-testo);
+  background: var(--colore-sfondo);
+  border: 1px solid var(--colore-riga);
+  border-radius: 4px;
+  padding: 0.25rem 0.4rem;
+}
+
+.campo[aria-invalid="true"] {
+  border-color: var(--colore-errore);
+}
+
+textarea.campo {
+  resize: vertical;
+  min-height: 3.2rem;
+}
+
+.aiuto {
+  font-size: 0.85rem;
+  color: var(--colore-testo);
+}
+
+.errore {
+  font-size: 0.85rem;
+  color: var(--colore-errore);
+}
+
+.gruppo {
+  display: grid;
+  row-gap: 0.6rem;
+  margin: 0px;
+  padding: 0.5rem 0.7rem 0.7rem;
+  border: 1px solid var(--colore-riga);
+  border-radius: 4px;
+}
+
+/* Le Impostazioni: le linguette delle schede in fila, la scheda sotto con un'altezza minima (cambiando
+   scheda la finestra non salta), scelte fra poche voci una per riga, l'avviso sotto un campo. */
+.schede {
+  display: grid;
+  row-gap: 0.75rem;
+}
+
+.linguette {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.25rem;
+  border-bottom: 1px solid var(--colore-riga);
+}
+
+.linguetta {
+  font: inherit;
+  color: var(--colore-testo);
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 4px 4px 0px 0px;
+  padding: 0.3rem 0.8rem;
+  margin-block-end: -1px;
+  cursor: pointer;
+}
+
+.linguetta[data-selected] {
+  border-color: var(--colore-riga);
+  background: var(--colore-sopra);
+  font-weight: 600;
+}
+
+.linguetta:focus-visible {
+  outline: 2px solid var(--colore-accento);
+}
+
+.scheda {
+  display: grid;
+  row-gap: 0.75rem;
+  align-content: start;
+  min-block-size: 20rem;
+}
+
+.scheda[hidden] {
+  display: none;
+}
+
+.numero {
+  inline-size: 9rem;
+}
+
+/* Un numero fra un minimo e un massimo: il campo e, accanto, il cursore che lo sceglie. */
+.numeroECursore {
+  display: flex;
+  column-gap: 0.6rem;
+  align-items: center;
+}
+
+.cursore {
+  inline-size: 16rem;
+  accent-color: var(--colore-accento);
+}
+
+/* Un gruppo di opzioni: la domanda e le sue risposte in un riquadro con una linea sottile. */
+.scelta {
+  display: grid;
+  row-gap: 0.2rem;
+  margin: 0px;
+  padding: 0.3rem 0.6rem 0.5rem;
+  border: 1px solid var(--colore-riga);
+  border-radius: 4px;
+}
+
+.scelta > legend {
+  padding: 0px 0.3rem;
+}
+
+/* Il riquadro di una cartella nella scheda «Percorsi»: la spiegazione, la cartella e i comandi più distanziati. */
+.cartella {
+  row-gap: 0.5rem;
+}
+
+.opzione {
+  display: flex;
+  column-gap: 0.4rem;
+  place-items: center start;
+  cursor: pointer;
+}
+
+.opzione > input {
+  margin: 0px;
+  accent-color: var(--colore-accento);
+}
+
+/* Un'opzione spenta col suo motivo, che va a capo sotto il testo (rientrato come il testo). */
+.opzioneSpenta {
+  flex-wrap: wrap;
+  cursor: default;
+}
+
+.motivoDellOpzione {
+  flex-basis: 100%;
+  padding-left: 1.4rem;
+  font-size: 0.85rem;
+  color: var(--colore-testo);
+}
+
+.avvisoDelCampo {
+  margin: 0px;
+  font-size: 0.85rem;
+  color: var(--colore-avviso);
+}
+
+/* L'elenco degli esempi e quello degli errori d'apertura. */
+.elenco {
+  display: grid;
+  row-gap: 0.25rem;
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+}
+
+.esempio {
+  display: flex;
+  align-items: center;
+  column-gap: 0.5rem;
+  padding: 0.25rem 0.3rem;
+  border-bottom: 1px solid var(--colore-riga);
+}
+
+.nome {
+  flex: 1;
+  display: grid;
+  row-gap: 0.1rem;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.titoloDellEsempio {
+  font-weight: 600;
+}
+
+.descrizione {
+  font-size: 0.9rem;
+}
+
+.etichetta {
+  font-size: 0.8rem;
+  color: var(--colore-testo);
+}
+
+/* Gli esempi a gruppi: quelli fuori da ogni gruppo in cima, poi un gruppo sotto l'altro, col nome che lo apre e lo
+   chiude e, aperto, i suoi esempi rientrati. */
+.esempi {
+  display: grid;
+  row-gap: 0.4rem;
+}
+
+.gruppoDegliEsempi {
+  display: grid;
+  row-gap: 0.25rem;
+}
+
+.gruppoDegliEsempi > .elenco,
+.gruppoDegliEsempi > .spiegazione {
+  padding-inline-start: 1.2rem;
+}
+
+/* Il nome del gruppo, che lo apre e lo chiude, e a destra il comando che lo toglie. */
+.testaDelGruppo {
+  display: flex;
+  align-items: center;
+  column-gap: 0.5rem;
+  padding: 0.15rem 0.3rem 0.15rem 0px;
+  border-bottom: 1px solid var(--colore-riga);
+}
+
+.nomeDelGruppo {
+  display: flex;
+  column-gap: 0.4rem;
+  align-items: baseline;
+  flex: 1;
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  color: var(--colore-testo);
+  background: transparent;
+  border: none;
+  padding: 0.25rem 0.3rem;
+  cursor: pointer;
+}
+
+.nomeDelGruppo:focus-visible {
+  outline: 2px solid var(--colore-accento);
+}
+
+.freccia {
+  inline-size: 0.8rem;
+}
+
+.quanti {
+  font-weight: 400;
+}
+
+/* Un'etichetta col suo campo sulla stessa riga (il gruppo dove aggiungere). */
+.inLinea {
+  display: flex;
+  align-items: center;
+  column-gap: 0.4rem;
+}
+
+.errori {
+  margin: 0px;
+  padding-inline-start: 1.2rem;
+  max-height: 50vh;
+  overflow: auto;
+}
+
+.percorso {
+  font-family: var(--carattere-codice);
+}
+
+/* La finestra delle informazioni del prodotto: il nome grande, la versione in evidenza, i file in piccolo. */
+.prodotto {
+  margin: 0px;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.versione {
+  font-weight: 600;
+}
+
+.informazioni {
+  display: grid;
+  row-gap: 0.2rem;
+  margin: 0px;
+}
+
+.nota {
+  font-size: 0.9rem;
+}
+
+/* Nel riepilogo dell'importazione, le scelte di un conflitto: l'elenco e il nome nuovo, sulla stessa riga se c'è posto. */
+.sceltaDelConflitto {
+  display: flex;
+  flex-flow: row wrap;
+  place-items: center start;
+  column-gap: 0.5rem;
+  row-gap: 0.25rem;
+  margin-block-start: 0.2rem;
+}

@@ -1,0 +1,121 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "per-zero-giri",
+    "description": "Cicli che non fanno giri: il contatore vale l'inizio, l'elemento resta com'era."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "i",
+          "type": "integer"
+        },
+        {
+          "name": "c",
+          "type": "character",
+          "initial": "'z'"
+        },
+        {
+          "name": "s",
+          "type": "string",
+          "initial": "\"\""
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for",
+          "counter": "i",
+          "from": "5",
+          "to": "1",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "write",
+              "values": [
+                "\"x\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "i",
+            "\" \""
+          ],
+          "newline": false
+        },
+        {
+          "id": "b4",
+          "kind": "for",
+          "counter": "i",
+          "from": "1",
+          "to": "3",
+          "step": -1,
+          "body": [
+            {
+              "id": "b5",
+              "kind": "write",
+              "values": [
+                "\"x\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b6",
+          "kind": "write",
+          "values": [
+            "i",
+            "\" \""
+          ],
+          "newline": false
+        },
+        {
+          "id": "b7",
+          "kind": "for_each",
+          "item": "c",
+          "source": "s",
+          "body": [
+            {
+              "id": "b8",
+              "kind": "write",
+              "values": [
+                "\"x\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b9",
+          "kind": "write",
+          "values": [
+            "c"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b10"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-zero-giri",
+      "inputs": [],
+      "expected": {
+        "output": "5 1 z\n"
+      }
+    }
+  ]
+}

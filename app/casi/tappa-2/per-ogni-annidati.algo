@@ -1,0 +1,178 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "per-ogni-annidati",
+    "description": "Un ciclo per ogni dentro un altro, un ciclo per col passo -2, un ciclo per dentro un per ogni, e un elemento del vettore scritto con un indice calcolato dentro il ciclo che lo percorre."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3,
+          "initial": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        {
+          "name": "w",
+          "type": "integer",
+          "size": 2,
+          "initial": [
+            "10",
+            "20"
+          ]
+        },
+        {
+          "name": "x",
+          "type": "integer"
+        },
+        {
+          "name": "y",
+          "type": "integer"
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        },
+        {
+          "name": "t",
+          "type": "string",
+          "initial": "\"ab\""
+        },
+        {
+          "name": "c",
+          "type": "character"
+        },
+        {
+          "name": "somma",
+          "type": "integer",
+          "initial": "0"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for_each",
+          "item": "x",
+          "source": "v",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "for_each",
+              "item": "y",
+              "source": "w",
+              "body": [
+                {
+                  "id": "b3",
+                  "kind": "assignment",
+                  "target": "somma",
+                  "value": "somma + x * y"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "for",
+          "counter": "i",
+          "from": "6",
+          "to": "1",
+          "step": -2,
+          "body": [
+            {
+              "id": "b5",
+              "kind": "write",
+              "values": [
+                "i"
+              ],
+              "newline": true
+            }
+          ]
+        },
+        {
+          "id": "b6",
+          "kind": "for_each",
+          "item": "c",
+          "source": "t",
+          "body": [
+            {
+              "id": "b7",
+              "kind": "for",
+              "counter": "i",
+              "from": "1",
+              "to": "2",
+              "body": [
+                {
+                  "id": "b8",
+                  "kind": "write",
+                  "values": [
+                    "c"
+                  ],
+                  "newline": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b9",
+          "kind": "write",
+          "values": [
+            "\"\""
+          ],
+          "newline": true
+        },
+        {
+          "id": "b10",
+          "kind": "for_each",
+          "item": "x",
+          "source": "v",
+          "body": [
+            {
+              "id": "b11",
+              "kind": "assignment",
+              "target": "v[x - 1]",
+              "value": "x * 2"
+            }
+          ]
+        },
+        {
+          "id": "b12",
+          "kind": "write",
+          "values": [
+            "somma",
+            "\" \"",
+            "i",
+            "\" \"",
+            "v[0]",
+            "\" \"",
+            "v[1]",
+            "\" \"",
+            "v[2]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b13"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-ogni-annidati",
+      "inputs": [],
+      "expected": {
+        "output": "6\n4\n2\naabb\n180 3 2 4 6\n"
+      }
+    }
+  ]
+}

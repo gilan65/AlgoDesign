@@ -1,0 +1,70 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "ricorsione-profonda",
+    "description": "Una funzione che salta a sé stessa senza mai fermarsi."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "r",
+          "value": "giu(1)"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "r"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "giu",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b4",
+        "return_value": "giu(n)"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "ricorsione-profonda",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "recursion_too_deep",
+          "block": "b4"
+        }
+      }
+    }
+  ]
+}

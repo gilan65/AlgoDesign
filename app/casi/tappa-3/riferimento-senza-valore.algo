@@ -1,0 +1,77 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "riferimento-senza-valore",
+    "description": "Un dato che non ha mai un valore passato per riferimento: il riferimento vuole il valore, e prima di eseguire è un errore."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "raddoppia",
+          "arguments": [
+            "n"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "n"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "raddoppia",
+      "data": [
+        {
+          "name": "x",
+          "type": "integer",
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "x",
+          "value": "x * 2"
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "riferimento-senza-valore",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "reference_without_value",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "scrittura-intero",
+    "description": "Scrittura di un negativo e del massimo intero."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "-42",
+            "\" \"",
+            "2147483647"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "scrittura-intero",
+      "inputs": [],
+      "expected": {
+        "output": "-42 2147483647\n"
+      }
+    }
+  ]
+}

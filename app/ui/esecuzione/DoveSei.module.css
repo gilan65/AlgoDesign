@@ -1,0 +1,46 @@
+/* «Dove sei»: una riga che va a capo se non ci sta; i nomi come collegamenti, quello dell'azione in corso in grassetto.
+   Nessun allineamento sulla linea di base: nomi e separatori hanno lo stesso carattere. */
+.doveSei {
+  display: flex;
+  flex-flow: row wrap;
+  column-gap: 0.3rem;
+  row-gap: 0.15rem;
+  padding-bottom: 0.25rem;
+}
+
+.titolo {
+  font-weight: bold;
+}
+
+.livello {
+  display: inline-flex;
+  column-gap: 0.3rem;
+}
+
+.separatore {
+  color: var(--disegno-linea);
+}
+
+.nome {
+  border: none;
+  background: none;
+  padding: 0px;
+  font: inherit;
+  color: var(--colore-accento);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.nome[aria-current] {
+  font-weight: bold;
+}
+
+/* Le chiamate nascoste di una pila lunga: «…» col loro numero, che apre l'elenco. */
+.nascosti {
+  border: none;
+  background: none;
+  padding: 0px;
+  font: inherit;
+  color: var(--colore-accento);
+  cursor: pointer;
+}

@@ -1,0 +1,86 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "stringa-lunga-nell-argomento",
+    "description": "Una stringa troppo lunga per il parametro, e un argomento alla sua destra che si ferma anche lui: si ferma prima la stringa."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "initial": "\"abc\"",
+          "max_length": 3
+        },
+        {
+          "name": "t",
+          "type": "string",
+          "initial": "\"xy\""
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "p",
+          "arguments": [
+            "s + \"d\"",
+            "t[5]"
+          ]
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "p",
+      "data": [
+        {
+          "name": "x",
+          "type": "string",
+          "max_length": 3,
+          "parameter": "value"
+        },
+        {
+          "name": "c",
+          "type": "character",
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "x",
+            "c"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "stringa-lunga-nell-argomento",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "string_too_long",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

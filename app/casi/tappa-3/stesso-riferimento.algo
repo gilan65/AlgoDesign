@@ -1,0 +1,115 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "stesso-riferimento",
+    "description": "Lo stesso elemento di un vettore passato due volte per riferimento."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3,
+          "initial": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        {
+          "name": "i",
+          "type": "integer",
+          "initial": "1"
+        },
+        {
+          "name": "j",
+          "type": "integer",
+          "initial": "1"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "scambia",
+          "arguments": [
+            "v[i]",
+            "v[j]"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "v[1]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "scambia",
+      "data": [
+        {
+          "name": "a",
+          "type": "integer",
+          "parameter": "reference"
+        },
+        {
+          "name": "b",
+          "type": "integer",
+          "parameter": "reference"
+        },
+        {
+          "name": "t",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "t",
+          "value": "a"
+        },
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "a",
+          "value": "b"
+        },
+        {
+          "id": "b6",
+          "kind": "assignment",
+          "target": "b",
+          "value": "t"
+        }
+      ],
+      "end": {
+        "id": "b7"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "stesso-riferimento",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "same_reference",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

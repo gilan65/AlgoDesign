@@ -1,0 +1,169 @@
+/* I campi di un blocco. Il riquadro sta sopra la pagina, attaccato al blocco (la posizione la scrive il
+   componente); il pannello è una colonna a destra del flowchart. Le colonne sono griglie. */
+.editor {
+  display: grid;
+  row-gap: 0.5rem;
+  box-sizing: border-box;
+  padding: 0.6rem 0.7rem;
+  background: var(--colore-sfondo);
+  border: 1px solid var(--disegno-bordo);
+  border-radius: 6px;
+}
+
+.riquadro {
+  position: fixed;
+  z-index: 10;
+  width: 26rem;
+  max-width: calc(100vw - 1rem);
+  overflow: auto;
+  box-shadow: 0px 4px 14px rgb(0 0 0 / 0.18);
+}
+
+.pannello {
+  flex: none;
+  width: 22rem;
+  overflow: auto;
+  margin-left: 0.75rem;
+  align-self: flex-start;
+  max-height: 100%;
+}
+
+.campo {
+  display: grid;
+  row-gap: 0.2rem;
+  flex: 1 1 auto;
+  min-width: 0px;
+}
+
+.etichetta {
+  font-size: 0.85rem;
+}
+
+.testo {
+  font-family: var(--carattere-codice);
+  font-size: 15px;
+  padding: 0.3rem 0.4rem;
+  color: var(--colore-testo);
+  background: var(--disegno-forma);
+  border: 1px solid var(--disegno-linea);
+  border-radius: 4px;
+}
+
+.testo:focus {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: 0px;
+}
+
+.riga {
+  display: flex;
+  column-gap: 0.4rem;
+  place-items: end;
+}
+
+.casella {
+  display: flex;
+  column-gap: 0.3rem;
+  place-items: center;
+  margin-left: auto;
+}
+
+.comandi {
+  display: flex;
+  column-gap: 0.4rem;
+}
+
+/* I comandi a destra: il primo spinge gli altri. */
+.comandi > :first-child {
+  margin-left: auto;
+}
+
+.comando,
+.togli {
+  font: inherit;
+  color: var(--colore-testo);
+  background: var(--colore-sopra);
+  border: 1px solid var(--colore-riga);
+  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+}
+
+.togli {
+  padding: 0.25rem 0.5rem;
+}
+
+.comando:focus-visible,
+.togli:focus-visible {
+  outline: 2px solid var(--colore-accento);
+}
+
+/* Il «?» dei suggerimenti, prima di Conferma: un cerchio grande quanto il bollino di un errore sul blocco (20 px),
+   centrato in altezza sui comandi e un po' staccato da Conferma; i suggerimenti sopra gli errori, col colore
+   dell'accento. Li usa anche la scheda di un dato. */
+.aiuto {
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 16px;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  align-self: center;
+  margin-right: 0.4rem;
+  padding: 0px;
+  color: var(--colore-accento);
+  background: var(--colore-sfondo);
+  border: 2px solid var(--colore-accento);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.aiuto[aria-expanded="true"] {
+  color: var(--colore-sfondo);
+  background: var(--colore-accento);
+}
+
+.aiuto:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: 2px;
+}
+
+/* Una riga di testo fra i campi: la procedura di un salto che non riceve dati. */
+.nota {
+  margin: 0px;
+  font-size: 0.9rem;
+}
+
+.guida {
+  margin: 0px;
+  padding: 0.3rem 0.5rem;
+  border-left: 4px solid var(--colore-accento);
+  background: var(--colore-sopra);
+  font-size: 0.9rem;
+}
+
+/* Errori e avvisi del blocco: vuoto, l'elenco non occupa posto. */
+.segnalazioni {
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+  display: grid;
+  row-gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.segnalazioni:empty {
+  display: none;
+}
+
+.errore,
+.avviso {
+  padding: 0.3rem 0.5rem;
+  border-left: 4px solid var(--colore-errore);
+  background: var(--colore-sopra);
+}
+
+.avviso {
+  border-left-color: var(--colore-avviso);
+}

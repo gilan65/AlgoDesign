@@ -1,0 +1,75 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "intero-minimo-diviso-meno-uno",
+    "description": "Il più piccolo intero diviso per -1: il quoziente non sta in un intero."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "integer"
+        },
+        {
+          "name": "d",
+          "type": "integer",
+          "initial": "-1"
+        },
+        {
+          "name": "q",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "a",
+          "value": "-2147483647 - 1"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "a"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b3",
+          "kind": "assignment",
+          "target": "q",
+          "value": "a / d"
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "q"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "intero-minimo-diviso-meno-uno",
+      "inputs": [],
+      "expected": {
+        "output": "-2147483648\n",
+        "error": {
+          "code": "integer_overflow",
+          "block": "b3"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,273 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "ricorsione-con-rif-out-e-stringhe",
+    "description": "Procedure e funzioni che chiamano sé stesse con un parametro per riferimento e uno di uscita, col risultato stringa e con un «per ogni» sul vettore restituito da una funzione."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "t",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "u",
+          "type": "integer"
+        },
+        {
+          "name": "s",
+          "type": "string",
+          "max_length": 20
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "somma_giu",
+          "arguments": [
+            "3",
+            "t",
+            "u"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "t",
+            "\" \"",
+            "u"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b3",
+          "kind": "assignment",
+          "target": "s",
+          "value": "ripeti(\"ab\", 3)"
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "s"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b5",
+          "kind": "call",
+          "callee": "scorri",
+          "arguments": [
+            "1"
+          ]
+        }
+      ],
+      "end": {
+        "id": "b6"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "somma_giu",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "tot",
+          "type": "integer",
+          "parameter": "reference"
+        },
+        {
+          "name": "ultimo",
+          "type": "integer",
+          "parameter": "out"
+        }
+      ],
+      "body": [
+        {
+          "id": "b7",
+          "kind": "assignment",
+          "target": "tot",
+          "value": "tot + n"
+        },
+        {
+          "id": "b8",
+          "kind": "if",
+          "condition": "n > 0",
+          "then": [
+            {
+              "id": "b9",
+              "kind": "call",
+              "callee": "somma_giu",
+              "arguments": [
+                "n - 1",
+                "tot",
+                "ultimo"
+              ]
+            }
+          ],
+          "else": [
+            {
+              "id": "b10",
+              "kind": "assignment",
+              "target": "ultimo",
+              "value": "n"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b11"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "function",
+      "name": "ripeti",
+      "return_type": "string",
+      "return_max_length": 20,
+      "data": [
+        {
+          "name": "x",
+          "type": "string",
+          "max_length": 20,
+          "parameter": "value"
+        },
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "r",
+          "type": "string",
+          "max_length": 20
+        }
+      ],
+      "body": [
+        {
+          "id": "b12",
+          "kind": "if",
+          "condition": "n == 0",
+          "then": [
+            {
+              "id": "b13",
+              "kind": "assignment",
+              "target": "r",
+              "value": "\"\""
+            }
+          ],
+          "else": [
+            {
+              "id": "b14",
+              "kind": "assignment",
+              "target": "r",
+              "value": "x + ripeti(x, n - 1)"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b15",
+        "return_value": "r"
+      }
+    },
+    {
+      "id": "f4",
+      "kind": "procedure",
+      "name": "scorri",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "e",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b16",
+          "kind": "for_each",
+          "item": "e",
+          "source": "tre()",
+          "body": [
+            {
+              "id": "b17",
+              "kind": "write",
+              "values": [
+                "e"
+              ],
+              "newline": true
+            }
+          ]
+        },
+        {
+          "id": "b18",
+          "kind": "if",
+          "condition": "n > 0",
+          "then": [
+            {
+              "id": "b19",
+              "kind": "call",
+              "callee": "scorri",
+              "arguments": [
+                "n - 1"
+              ]
+            }
+          ],
+          "else": []
+        }
+      ],
+      "end": {
+        "id": "b20"
+      }
+    },
+    {
+      "id": "f5",
+      "kind": "function",
+      "name": "tre",
+      "return_type": "integer",
+      "return_size": 3,
+      "data": [
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3,
+          "initial": [
+            "1",
+            "2",
+            "3"
+          ]
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b21",
+        "return_value": "v"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "ogni-forma",
+      "inputs": [],
+      "expected": {
+        "output": "6 0\nababab\n1\n2\n3\n1\n2\n3\n"
+      }
+    }
+  ]
+}

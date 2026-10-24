@@ -1,0 +1,122 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "chiamata-in-63-livelli",
+    "description": "La chiamata ricorsiva al fondo di un'espressione di 63 livelli, fino a 500 chiamate in corso."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer"
+        },
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "n"
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "r",
+          "value": "somma(n)"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "r"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "somma",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "s",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b5",
+          "kind": "if",
+          "condition": "n > 0",
+          "then": [
+            {
+              "id": "b6",
+              "kind": "assignment",
+              "target": "s",
+              "value": "0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (0 + (n + somma(n - 1))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))"
+            }
+          ],
+          "else": [
+            {
+              "id": "b7",
+              "kind": "assignment",
+              "target": "s",
+              "value": "0"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b8",
+        "return_value": "s"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "cinquecento-chiamate",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "499"
+        }
+      ],
+      "expected": {
+        "output": "124750\n"
+      }
+    },
+    {
+      "name": "la-cinquecentunesima",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "500"
+        }
+      ],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "recursion_too_deep",
+          "block": "b6"
+        }
+      }
+    }
+  ]
+}

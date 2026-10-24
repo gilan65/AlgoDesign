@@ -1,0 +1,60 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "condizione-carattere",
+    "description": "Confronto fra caratteri per codice: è viene dopo e."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "c",
+          "type": "character",
+          "initial": "'è'"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "if",
+          "condition": "c > 'e'",
+          "then": [
+            {
+              "id": "b2",
+              "kind": "write",
+              "values": [
+                "\"dopo\""
+              ],
+              "newline": true
+            }
+          ],
+          "else": [
+            {
+              "id": "b3",
+              "kind": "write",
+              "values": [
+                "\"prima\""
+              ],
+              "newline": true
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "condizione-carattere",
+      "inputs": [],
+      "expected": {
+        "output": "dopo\n"
+      }
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "procedura-al-tetto",
+    "description": "Una procedura che chiama sé stessa con un blocco di chiamata, 1000 volte: si ferma alla 501ª chiamata in corso."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "scendi",
+          "arguments": [
+            "1"
+          ]
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "scendi",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "b3",
+          "kind": "if",
+          "condition": "n < 1000",
+          "then": [
+            {
+              "id": "b4",
+              "kind": "call",
+              "callee": "scendi",
+              "arguments": [
+                "n + 1"
+              ]
+            }
+          ],
+          "else": []
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "la-cinquecentunesima",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "recursion_too_deep",
+          "block": "b4"
+        }
+      }
+    }
+  ]
+}

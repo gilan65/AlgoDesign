@@ -1,0 +1,61 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "per-contatore-assegnato",
+    "description": "Il contatore di un ciclo per assegnato nel corpo: errore statico."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "i",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for",
+          "counter": "i",
+          "from": "1",
+          "to": "3",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "write",
+              "values": [
+                "i"
+              ],
+              "newline": true
+            },
+            {
+              "id": "b3",
+              "kind": "assignment",
+              "target": "i",
+              "value": "i + 1"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-contatore-assegnato",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "assign_to_read_only",
+          "block": "b3"
+        }
+      }
+    }
+  ]
+}

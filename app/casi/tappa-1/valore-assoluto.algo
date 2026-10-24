@@ -1,0 +1,50 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "valore-assoluto",
+    "description": "Valore assoluto di un intero negativo (resta intero) e di un reale negativo (resta reale)."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "-7"
+        },
+        {
+          "name": "x",
+          "type": "real",
+          "initial": "-2.5"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "absolute_value n",
+            "\" \"",
+            "absolute_value x"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "valore-assoluto",
+      "inputs": [],
+      "expected": {
+        "output": "7 2.50\n"
+      }
+    }
+  ]
+}

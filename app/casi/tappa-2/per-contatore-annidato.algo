@@ -1,0 +1,64 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "per-contatore-annidato",
+    "description": "Lo stesso contatore in un ciclo per dentro l'altro: errore statico sul ciclo interno."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "i",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for",
+          "counter": "i",
+          "from": "1",
+          "to": "2",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "for",
+              "counter": "i",
+              "from": "1",
+              "to": "2",
+              "body": [
+                {
+                  "id": "b3",
+                  "kind": "write",
+                  "values": [
+                    "i"
+                  ],
+                  "newline": true
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-contatore-annidato",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "assign_to_read_only",
+          "block": "b2"
+        }
+      }
+    }
+  ]
+}

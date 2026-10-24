@@ -1,0 +1,67 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "condizione-booleano",
+    "description": "Ciclo governato da un booleano: il primo numero il cui quadrato supera 20."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "trovato",
+          "type": "boolean",
+          "initial": "false"
+        },
+        {
+          "name": "i",
+          "type": "integer",
+          "initial": "0"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "while",
+          "condition": "not trovato",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "assignment",
+              "target": "i",
+              "value": "i + 1"
+            },
+            {
+              "id": "b3",
+              "kind": "assignment",
+              "target": "trovato",
+              "value": "i * i > 20"
+            }
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "i"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "condizione-booleano",
+      "inputs": [],
+      "expected": {
+        "output": "5\n"
+      }
+    }
+  ]
+}

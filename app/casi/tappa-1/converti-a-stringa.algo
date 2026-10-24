@@ -1,0 +1,60 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "converti-a-stringa",
+    "description": "Un vettore di tre caratteri, uno accentato, in una stringa."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "v",
+          "type": "character",
+          "size": 3,
+          "initial": [
+            "'s'",
+            "'ì'",
+            "'!'"
+          ]
+        },
+        {
+          "name": "s",
+          "type": "string"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "s",
+          "value": "to_string v"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "s",
+            "\" \"",
+            "length s"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "converti-a-stringa",
+      "inputs": [],
+      "expected": {
+        "output": "sì! 3\n"
+      }
+    }
+  ]
+}

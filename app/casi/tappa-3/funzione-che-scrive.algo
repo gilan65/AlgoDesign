@@ -1,0 +1,79 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "funzione-che-scrive",
+    "description": "Una funzione che scrive: una funzione calcola il risultato e non fa altro, quindi il progetto non parte."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "r",
+          "value": "doppio(2)"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "r"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "doppio",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "k",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "\"calcolo\""
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b5",
+        "return_value": "k * 2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "funzione-che-scrive",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "function_with_effect",
+          "block": "b4"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+/* I colori dei generi di blocco nelle Impostazioni: una riga per genere (il nome, il blocco, le tinte). Le tinte in due
+   righe di dieci posti: «Come l'insieme» e le nove tenui, poi le otto intense sotto le tenui. */
+.colori {
+  row-gap: 0.35rem;
+}
+
+.genere {
+  display: grid;
+  grid-template-columns: 8.5rem 7.5rem 1fr;
+  column-gap: 0.5rem;
+  align-items: center;
+  padding-block: 0.15rem;
+  border-top: 1px solid var(--colore-riga);
+}
+
+.nome {
+  overflow-wrap: anywhere;
+}
+
+.esempio {
+  display: block;
+  font-size: 12px;
+}
+
+.tinte {
+  width: calc(10 * 1.6rem + 0.5rem);
+  display: flex;
+  row-gap: 0.2rem;
+  flex-wrap: wrap;
+}
+
+.aCapo {
+  margin-inline-start: calc(1.6rem + 0.5rem);
+}
+
+/* Un quadratino: il pulsante di opzione nativo, trasparente sopra il colore (lo raggiungono il Tab e le frecce); la scelta
+   ha l'anello del colore d'accento, il fuoco della tastiera anche il tratteggio. */
+.quadratino {
+  position: relative;
+  display: block;
+  width: 1.6rem;
+  height: 1.6rem;
+  cursor: pointer;
+}
+
+.quadratino > input {
+  position: absolute;
+  inset: 0px;
+  margin: 0px;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.quadratino > span {
+  position: absolute;
+  inset: 0.2rem;
+  border: 1px solid var(--disegno-bordo);
+  border-radius: 3px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.quadratino > input:checked + span {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: 1px;
+}
+
+.quadratino > input:focus-visible + span {
+  outline: 2px dashed var(--colore-accento);
+  outline-offset: 2px;
+}
+
+/* «Come l'insieme»: separato dalle tinte da un po' di spazio. */
+.dellInsieme {
+  display: block;
+  margin-inline-end: 0.5rem;
+}

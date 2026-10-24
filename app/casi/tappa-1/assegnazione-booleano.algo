@@ -1,0 +1,48 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "assegnazione-booleano",
+    "description": "Un booleano calcolato con confronti, and e not."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "p",
+          "type": "boolean"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "p",
+          "value": "3 < 5 and not (2 == 3)"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "p"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "assegnazione-booleano",
+      "inputs": [],
+      "expected": {
+        "output": "true\n"
+      }
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "scrittura-stringa",
+    "description": "Una scrittura che va a capo e una che non ci va."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "\"riga\""
+          ],
+          "newline": true
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "\"fine\""
+          ],
+          "newline": false
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "scrittura-stringa",
+      "inputs": [],
+      "expected": {
+        "output": "riga\nfine"
+      }
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "reale-non-finito",
+    "description": "Divisione fra reali per zero: in C infinito, qui l'esecuzione si ferma."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "x",
+          "type": "real",
+          "initial": "1.0"
+        },
+        {
+          "name": "y",
+          "type": "real",
+          "initial": "0.0"
+        },
+        {
+          "name": "z",
+          "type": "real"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "z",
+          "value": "x / y"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "z"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "reale-non-finito",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "non_finite_real",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

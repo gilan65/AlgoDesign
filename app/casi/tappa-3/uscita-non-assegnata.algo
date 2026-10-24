@@ -1,0 +1,98 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "uscita-non-assegnata",
+    "description": "Un parametro di uscita che la procedura non assegna: il dato di chi chiama aveva un valore, lo perde, e la scrittura dopo la chiamata si ferma."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "5"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "forse",
+          "arguments": [
+            "n",
+            "false"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "n"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "forse",
+      "data": [
+        {
+          "name": "x",
+          "type": "integer",
+          "parameter": "out"
+        },
+        {
+          "name": "dai",
+          "type": "boolean",
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "if",
+          "condition": "dai",
+          "then": [
+            {
+              "id": "b5",
+              "kind": "assignment",
+              "target": "x",
+              "value": "1"
+            }
+          ],
+          "else": []
+        }
+      ],
+      "end": {
+        "id": "b6"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "uscita-non-assegnata",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "uninitialized",
+          "block": "b2"
+        },
+        "warnings": [
+          {
+            "code": "maybe_uninitialized",
+            "block": "b2"
+          }
+        ]
+      }
+    }
+  ]
+}

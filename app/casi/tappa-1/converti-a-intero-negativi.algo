@@ -1,0 +1,50 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "converti-a-intero-negativi",
+    "description": "Conversione in intero di due reali negativi: si tronca verso lo zero."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "x",
+          "type": "real",
+          "initial": "-1.5"
+        },
+        {
+          "name": "y",
+          "type": "real",
+          "initial": "-0.5"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "to_integer x",
+            "\" \"",
+            "to_integer y"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "converti-a-intero-negativi",
+      "inputs": [],
+      "expected": {
+        "output": "-1 0\n"
+      }
+    }
+  ]
+}

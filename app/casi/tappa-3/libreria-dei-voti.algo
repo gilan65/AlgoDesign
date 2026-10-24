@@ -1,0 +1,390 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "libreria-dei-voti",
+    "description": "Una libreria da cui si importa nel programma di riferimento della tappa 3: la stessa procedura che legge il numero dei voti, una funzione che dice se un voto è valido diversa da quella del programma, una funzione che fa la media e ha il nome di un suo dato, la funzione che la media chiama, e un giudizio a stelle che chiama la funzione del voto valido.",
+    "library": true
+  },
+  "shared_constants": [
+    {
+      "name": "MAX_VOTI",
+      "type": "integer",
+      "constant": true,
+      "initial": "12"
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [],
+      "end": {
+        "id": "b1"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "leggi_numero",
+      "data": [
+        {
+          "name": "numero",
+          "type": "integer",
+          "parameter": "out"
+        }
+      ],
+      "body": [
+        {
+          "id": "b2",
+          "kind": "comment",
+          "text": "Si chiede quanti voti leggere, finché il numero non è fra 1 e 30"
+        },
+        {
+          "id": "b3",
+          "kind": "repeat",
+          "body": [
+            {
+              "id": "b4",
+              "kind": "read",
+              "target": "numero"
+            },
+            {
+              "id": "b5",
+              "kind": "if",
+              "condition": "numero < 1 or numero > 30",
+              "then": [
+                {
+                  "id": "b6",
+                  "kind": "write",
+                  "values": [
+                    "\"Numero non valido: da 1 a 30\""
+                  ],
+                  "newline": true
+                }
+              ],
+              "else": []
+            }
+          ],
+          "condition": "numero < 1 or numero > 30"
+        }
+      ],
+      "end": {
+        "id": "b7"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "function",
+      "name": "valido",
+      "return_type": "boolean",
+      "data": [
+        {
+          "name": "voto",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b8",
+        "return_value": "voto >= 0 and voto <= MAX_VOTI"
+      },
+      "test_cases": [
+        {
+          "name": "zero",
+          "inputs": [
+            {
+              "data": "voto",
+              "text": "0"
+            }
+          ],
+          "expected": {
+            "output": "→ true\n"
+          }
+        }
+      ]
+    },
+    {
+      "id": "f4",
+      "kind": "function",
+      "name": "somma_di",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3,
+          "parameter": "value"
+        },
+        {
+          "name": "quanti",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "s",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b9",
+          "kind": "for",
+          "counter": "i",
+          "from": "0",
+          "to": "quanti - 1",
+          "body": [
+            {
+              "id": "b10",
+              "kind": "assignment",
+              "target": "s",
+              "value": "s + v[i]"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b11",
+        "return_value": "s"
+      },
+      "test_cases": [
+        {
+          "name": "tre",
+          "inputs": [
+            {
+              "data": "v",
+              "text": "1"
+            },
+            {
+              "data": "v",
+              "text": "2"
+            },
+            {
+              "data": "v",
+              "text": "3"
+            },
+            {
+              "data": "quanti",
+              "text": "3"
+            }
+          ],
+          "expected": {
+            "output": "→ 6\n"
+          }
+        }
+      ]
+    },
+    {
+      "id": "f5",
+      "kind": "function",
+      "name": "media",
+      "return_type": "real",
+      "data": [
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3,
+          "parameter": "value"
+        },
+        {
+          "name": "quanti",
+          "type": "integer",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b12",
+        "return_value": "to_real somma_di(v, quanti) / to_real quanti"
+      },
+      "test_cases": [
+        {
+          "name": "tre voti",
+          "inputs": [
+            {
+              "data": "v",
+              "text": "6"
+            },
+            {
+              "data": "v",
+              "text": "7"
+            },
+            {
+              "data": "v",
+              "text": "9"
+            },
+            {
+              "data": "quanti",
+              "text": "3"
+            }
+          ],
+          "expected": {
+            "output": "→ 7.33\n"
+          }
+        }
+      ]
+    },
+    {
+      "id": "f6",
+      "kind": "function",
+      "name": "stelle_di",
+      "return_type": "string",
+      "return_max_length": 10,
+      "data": [
+        {
+          "name": "quante",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "s",
+          "type": "string",
+          "initial": "\"\"",
+          "max_length": 10
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b13",
+          "kind": "for",
+          "counter": "i",
+          "from": "1",
+          "to": "quante",
+          "body": [
+            {
+              "id": "b14",
+              "kind": "assignment",
+              "target": "s",
+              "value": "s + \"*\""
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b15",
+        "return_value": "s"
+      },
+      "test_cases": [
+        {
+          "name": "tre",
+          "inputs": [
+            {
+              "data": "quante",
+              "text": "3"
+            }
+          ],
+          "expected": {
+            "output": "→ ***\n"
+          }
+        }
+      ]
+    },
+    {
+      "id": "f7",
+      "kind": "function",
+      "name": "giudizio",
+      "return_type": "string",
+      "data": [
+        {
+          "name": "voto",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "g",
+          "type": "string"
+        }
+      ],
+      "body": [
+        {
+          "id": "b16",
+          "kind": "if",
+          "condition": "valido(voto)",
+          "then": [
+            {
+              "id": "b17",
+              "kind": "assignment",
+              "target": "g",
+              "value": "\"voto \" + stelle_di(voto)"
+            }
+          ],
+          "else": [
+            {
+              "id": "b18",
+              "kind": "assignment",
+              "target": "g",
+              "value": "\"non valido\""
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b19",
+        "return_value": "g"
+      },
+      "test_cases": [
+        {
+          "name": "sette",
+          "inputs": [
+            {
+              "data": "voto",
+              "text": "7"
+            }
+          ],
+          "expected": {
+            "output": "→ voto *******\n"
+          }
+        },
+        {
+          "name": "troppe stelle",
+          "inputs": [
+            {
+              "data": "voto",
+              "text": "11"
+            }
+          ],
+          "expected": {
+            "output": "",
+            "error": {
+              "code": "string_too_long",
+              "block": "b14"
+            }
+          }
+        },
+        {
+          "name": "tredici",
+          "inputs": [
+            {
+              "data": "voto",
+              "text": "13"
+            }
+          ],
+          "expected": {
+            "output": "→ non valido\n"
+          }
+        }
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "libreria-dei-voti",
+      "description": "Il programma principale di una libreria è vuoto: non scrive niente.",
+      "inputs": [],
+      "expected": {
+        "output": ""
+      }
+    }
+  ]
+}

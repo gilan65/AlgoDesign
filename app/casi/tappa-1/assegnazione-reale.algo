@@ -1,0 +1,65 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "assegnazione-reale",
+    "description": "Calcolo misto fra reale e intero, e la somma 0.1 + 0.2 scritta con due decimali."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "x",
+          "type": "real",
+          "initial": "1.5"
+        },
+        {
+          "name": "y",
+          "type": "real"
+        },
+        {
+          "name": "z",
+          "type": "real"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "y",
+          "value": "x * 2 + 1"
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "z",
+          "value": "0.1 + 0.2"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "y",
+            "\" \"",
+            "z"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "assegnazione-reale",
+      "inputs": [],
+      "expected": {
+        "output": "4.00 0.30\n"
+      }
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "risultato-vettore-con-indice",
+    "description": "L'elemento di un vettore restituito, con l'indice dopo la chiamata: la funzione restituisce un vettore, quindi è un elemento e non il carattere di una stringa."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "voti",
+          "type": "integer",
+          "size": 3,
+          "initial": [
+            "7",
+            "4",
+            "9"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "doppi(voti)[1]",
+            "\" \"",
+            "doppi(voti)[2] + 1"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "doppi",
+      "return_type": "integer",
+      "return_size": 3,
+      "data": [
+        {
+          "name": "w",
+          "type": "integer",
+          "size": 3,
+          "parameter": "value"
+        },
+        {
+          "name": "r",
+          "type": "integer",
+          "size": 3,
+          "initial": {
+            "each": "0"
+          }
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b3",
+          "kind": "for",
+          "counter": "i",
+          "from": "0",
+          "to": "2",
+          "body": [
+            {
+              "id": "b4",
+              "kind": "assignment",
+              "target": "r[i]",
+              "value": "w[i] * 2"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b5",
+        "return_value": "r"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "risultato-vettore-con-indice",
+      "inputs": [],
+      "expected": {
+        "output": "8 19\n"
+      }
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "descrizione": "La decisione di «Salva con nome»: il nome scelto nella finestra del sistema (scelto), i file e le cartelle che ci sono già (esistono, cartelle), il file dove si scrive (percorso) e se l'app chiede di sostituirlo (sostituire); con estensione «.csv» la stessa decisione per la tabella esportata, con «.txt», «.py» e «.c» per il codice generato (senza, «.algo»). La leggono le prove del guscio vero e quelle del guscio simulato delle prove nel browser. I nomi si confrontano esatti, come su Linux: le righe con maiuscoleDistinte valgono solo su un disco che distingue le maiuscole (su Windows le salta cargo test, e il caso di Windows ha una prova a parte). Il file scelto e il file finale che esistono tutti e due e sono diversi hanno anche una riga valida su ogni disco («media.json» e «media.json.algo»).",
+  "casi": [
+    { "scelto": "media.algo", "esistono": [], "percorso": "media.algo", "sostituire": false },
+    { "scelto": "media.algo", "esistono": ["media.algo"], "percorso": "media.algo", "sostituire": false },
+    { "scelto": "media", "esistono": [], "percorso": "media.algo", "sostituire": false },
+    { "scelto": "media", "esistono": ["media.algo"], "percorso": "media.algo", "sostituire": true },
+    { "scelto": "media", "esistono": ["media"], "percorso": "media.algo", "sostituire": false },
+    { "scelto": "esercizio 2.1", "esistono": [], "percorso": "esercizio 2.1.algo", "sostituire": false },
+    { "scelto": "esercizio 2.1", "esistono": ["esercizio 2.1.algo"], "percorso": "esercizio 2.1.algo", "sostituire": true },
+    { "scelto": "media.ALGO", "esistono": [], "percorso": "media.algo", "sostituire": false },
+    { "scelto": "media.ALGO", "esistono": ["media.ALGO"], "percorso": "media.algo", "sostituire": false },
+    { "scelto": "media.ALGO", "esistono": ["media.algo"], "percorso": "media.algo", "sostituire": true, "maiuscoleDistinte": true },
+    { "scelto": "media.Algo", "esistono": [], "percorso": "media.algo", "sostituire": false },
+    { "scelto": "media.json", "esistono": ["media.json.algo"], "percorso": "media.json.algo", "sostituire": true },
+    { "scelto": "media.json", "esistono": ["media.json", "media.json.algo"], "percorso": "media.json.algo", "sostituire": true },
+    { "scelto": ".algo", "esistono": [], "percorso": ".algo.algo", "sostituire": false },
+    { "scelto": ".algo", "esistono": [".algo.algo"], "percorso": ".algo.algo", "sostituire": true },
+    { "scelto": "media", "esistono": [], "cartelle": ["media.algo"], "percorso": "media.algo", "sostituire": false },
+    { "estensione": ".csv", "scelto": "media", "esistono": ["traccia.csv"], "percorso": "media.csv", "sostituire": false },
+    { "estensione": ".csv", "scelto": "media.CSV", "esistono": ["traccia.csv"], "percorso": "media.csv", "sostituire": false },
+    { "estensione": ".csv", "scelto": "media.algo", "esistono": ["traccia.csv"], "percorso": "media.algo.csv", "sostituire": false },
+    { "estensione": ".csv", "scelto": "traccia", "esistono": ["traccia.csv"], "percorso": "traccia.csv", "sostituire": true },
+    { "estensione": ".csv", "scelto": "traccia.csv", "esistono": ["traccia.csv"], "percorso": "traccia.csv", "sostituire": false },
+    { "estensione": ".py", "scelto": "media", "esistono": ["media.py"], "percorso": "media.py", "sostituire": true },
+    { "estensione": ".py", "scelto": "media.PY", "esistono": [], "percorso": "media.py", "sostituire": false },
+    { "estensione": ".c", "scelto": "media.c", "esistono": ["media.c"], "percorso": "media.c", "sostituire": false },
+    { "estensione": ".c", "scelto": "media.py", "esistono": [], "percorso": "media.py.c", "sostituire": false },
+    { "estensione": ".txt", "scelto": "media", "esistono": ["media.algo"], "percorso": "media.txt", "sostituire": false }
+  ]
+}

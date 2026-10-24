@@ -1,0 +1,57 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "troppi-passi",
+    "description": "Un ciclo la cui condizione non cambia mai."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "i",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "x",
+          "type": "integer",
+          "initial": "0"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "while",
+          "condition": "i < 10",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "assignment",
+              "target": "x",
+              "value": "1 - x"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "troppi-passi",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "too_many_steps",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

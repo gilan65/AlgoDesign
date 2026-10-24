@@ -1,0 +1,507 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "chiamata-al-livello-50",
+    "description": "La chiamata ricorsiva al livello 50, il più profondo, dentro 49 «se» annidati, fino a 500 chiamate in corso."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer"
+        },
+        {
+          "name": "r",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "n"
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "r",
+          "value": "somma(n)"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "r"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "somma",
+      "return_type": "integer",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "value"
+        },
+        {
+          "name": "s",
+          "type": "integer",
+          "initial": "0"
+        }
+      ],
+      "body": [
+        {
+          "id": "b5",
+          "kind": "if",
+          "condition": "n > 0",
+          "then": [
+            {
+              "id": "b147",
+              "kind": "if",
+              "condition": "n > 0",
+              "then": [
+                {
+                  "id": "b146",
+                  "kind": "if",
+                  "condition": "n > 0",
+                  "then": [
+                    {
+                      "id": "b145",
+                      "kind": "if",
+                      "condition": "n > 0",
+                      "then": [
+                        {
+                          "id": "b144",
+                          "kind": "if",
+                          "condition": "n > 0",
+                          "then": [
+                            {
+                              "id": "b143",
+                              "kind": "if",
+                              "condition": "n > 0",
+                              "then": [
+                                {
+                                  "id": "b142",
+                                  "kind": "if",
+                                  "condition": "n > 0",
+                                  "then": [
+                                    {
+                                      "id": "b141",
+                                      "kind": "if",
+                                      "condition": "n > 0",
+                                      "then": [
+                                        {
+                                          "id": "b140",
+                                          "kind": "if",
+                                          "condition": "n > 0",
+                                          "then": [
+                                            {
+                                              "id": "b139",
+                                              "kind": "if",
+                                              "condition": "n > 0",
+                                              "then": [
+                                                {
+                                                  "id": "b138",
+                                                  "kind": "if",
+                                                  "condition": "n > 0",
+                                                  "then": [
+                                                    {
+                                                      "id": "b137",
+                                                      "kind": "if",
+                                                      "condition": "n > 0",
+                                                      "then": [
+                                                        {
+                                                          "id": "b136",
+                                                          "kind": "if",
+                                                          "condition": "n > 0",
+                                                          "then": [
+                                                            {
+                                                              "id": "b135",
+                                                              "kind": "if",
+                                                              "condition": "n > 0",
+                                                              "then": [
+                                                                {
+                                                                  "id": "b134",
+                                                                  "kind": "if",
+                                                                  "condition": "n > 0",
+                                                                  "then": [
+                                                                    {
+                                                                      "id": "b133",
+                                                                      "kind": "if",
+                                                                      "condition": "n > 0",
+                                                                      "then": [
+                                                                        {
+                                                                          "id": "b132",
+                                                                          "kind": "if",
+                                                                          "condition": "n > 0",
+                                                                          "then": [
+                                                                            {
+                                                                              "id": "b131",
+                                                                              "kind": "if",
+                                                                              "condition": "n > 0",
+                                                                              "then": [
+                                                                                {
+                                                                                  "id": "b130",
+                                                                                  "kind": "if",
+                                                                                  "condition": "n > 0",
+                                                                                  "then": [
+                                                                                    {
+                                                                                      "id": "b129",
+                                                                                      "kind": "if",
+                                                                                      "condition": "n > 0",
+                                                                                      "then": [
+                                                                                        {
+                                                                                          "id": "b128",
+                                                                                          "kind": "if",
+                                                                                          "condition": "n > 0",
+                                                                                          "then": [
+                                                                                            {
+                                                                                              "id": "b127",
+                                                                                              "kind": "if",
+                                                                                              "condition": "n > 0",
+                                                                                              "then": [
+                                                                                                {
+                                                                                                  "id": "b126",
+                                                                                                  "kind": "if",
+                                                                                                  "condition": "n > 0",
+                                                                                                  "then": [
+                                                                                                    {
+                                                                                                      "id": "b125",
+                                                                                                      "kind": "if",
+                                                                                                      "condition": "n > 0",
+                                                                                                      "then": [
+                                                                                                        {
+                                                                                                          "id": "b124",
+                                                                                                          "kind": "if",
+                                                                                                          "condition": "n > 0",
+                                                                                                          "then": [
+                                                                                                            {
+                                                                                                              "id": "b123",
+                                                                                                              "kind": "if",
+                                                                                                              "condition": "n > 0",
+                                                                                                              "then": [
+                                                                                                                {
+                                                                                                                  "id": "b122",
+                                                                                                                  "kind": "if",
+                                                                                                                  "condition": "n > 0",
+                                                                                                                  "then": [
+                                                                                                                    {
+                                                                                                                      "id": "b121",
+                                                                                                                      "kind": "if",
+                                                                                                                      "condition": "n > 0",
+                                                                                                                      "then": [
+                                                                                                                        {
+                                                                                                                          "id": "b120",
+                                                                                                                          "kind": "if",
+                                                                                                                          "condition": "n > 0",
+                                                                                                                          "then": [
+                                                                                                                            {
+                                                                                                                              "id": "b119",
+                                                                                                                              "kind": "if",
+                                                                                                                              "condition": "n > 0",
+                                                                                                                              "then": [
+                                                                                                                                {
+                                                                                                                                  "id": "b118",
+                                                                                                                                  "kind": "if",
+                                                                                                                                  "condition": "n > 0",
+                                                                                                                                  "then": [
+                                                                                                                                    {
+                                                                                                                                      "id": "b117",
+                                                                                                                                      "kind": "if",
+                                                                                                                                      "condition": "n > 0",
+                                                                                                                                      "then": [
+                                                                                                                                        {
+                                                                                                                                          "id": "b116",
+                                                                                                                                          "kind": "if",
+                                                                                                                                          "condition": "n > 0",
+                                                                                                                                          "then": [
+                                                                                                                                            {
+                                                                                                                                              "id": "b115",
+                                                                                                                                              "kind": "if",
+                                                                                                                                              "condition": "n > 0",
+                                                                                                                                              "then": [
+                                                                                                                                                {
+                                                                                                                                                  "id": "b114",
+                                                                                                                                                  "kind": "if",
+                                                                                                                                                  "condition": "n > 0",
+                                                                                                                                                  "then": [
+                                                                                                                                                    {
+                                                                                                                                                      "id": "b113",
+                                                                                                                                                      "kind": "if",
+                                                                                                                                                      "condition": "n > 0",
+                                                                                                                                                      "then": [
+                                                                                                                                                        {
+                                                                                                                                                          "id": "b112",
+                                                                                                                                                          "kind": "if",
+                                                                                                                                                          "condition": "n > 0",
+                                                                                                                                                          "then": [
+                                                                                                                                                            {
+                                                                                                                                                              "id": "b111",
+                                                                                                                                                              "kind": "if",
+                                                                                                                                                              "condition": "n > 0",
+                                                                                                                                                              "then": [
+                                                                                                                                                                {
+                                                                                                                                                                  "id": "b110",
+                                                                                                                                                                  "kind": "if",
+                                                                                                                                                                  "condition": "n > 0",
+                                                                                                                                                                  "then": [
+                                                                                                                                                                    {
+                                                                                                                                                                      "id": "b109",
+                                                                                                                                                                      "kind": "if",
+                                                                                                                                                                      "condition": "n > 0",
+                                                                                                                                                                      "then": [
+                                                                                                                                                                        {
+                                                                                                                                                                          "id": "b108",
+                                                                                                                                                                          "kind": "if",
+                                                                                                                                                                          "condition": "n > 0",
+                                                                                                                                                                          "then": [
+                                                                                                                                                                            {
+                                                                                                                                                                              "id": "b107",
+                                                                                                                                                                              "kind": "if",
+                                                                                                                                                                              "condition": "n > 0",
+                                                                                                                                                                              "then": [
+                                                                                                                                                                                {
+                                                                                                                                                                                  "id": "b106",
+                                                                                                                                                                                  "kind": "if",
+                                                                                                                                                                                  "condition": "n > 0",
+                                                                                                                                                                                  "then": [
+                                                                                                                                                                                    {
+                                                                                                                                                                                      "id": "b105",
+                                                                                                                                                                                      "kind": "if",
+                                                                                                                                                                                      "condition": "n > 0",
+                                                                                                                                                                                      "then": [
+                                                                                                                                                                                        {
+                                                                                                                                                                                          "id": "b104",
+                                                                                                                                                                                          "kind": "if",
+                                                                                                                                                                                          "condition": "n > 0",
+                                                                                                                                                                                          "then": [
+                                                                                                                                                                                            {
+                                                                                                                                                                                              "id": "b103",
+                                                                                                                                                                                              "kind": "if",
+                                                                                                                                                                                              "condition": "n > 0",
+                                                                                                                                                                                              "then": [
+                                                                                                                                                                                                {
+                                                                                                                                                                                                  "id": "b102",
+                                                                                                                                                                                                  "kind": "if",
+                                                                                                                                                                                                  "condition": "n > 0",
+                                                                                                                                                                                                  "then": [
+                                                                                                                                                                                                    {
+                                                                                                                                                                                                      "id": "b101",
+                                                                                                                                                                                                      "kind": "if",
+                                                                                                                                                                                                      "condition": "n > 0",
+                                                                                                                                                                                                      "then": [
+                                                                                                                                                                                                        {
+                                                                                                                                                                                                          "id": "b100",
+                                                                                                                                                                                                          "kind": "if",
+                                                                                                                                                                                                          "condition": "n > 0",
+                                                                                                                                                                                                          "then": [
+                                                                                                                                                                                                            {
+                                                                                                                                                                                                              "id": "b6",
+                                                                                                                                                                                                              "kind": "assignment",
+                                                                                                                                                                                                              "target": "s",
+                                                                                                                                                                                                              "value": "n + somma(n - 1)"
+                                                                                                                                                                                                            }
+                                                                                                                                                                                                          ],
+                                                                                                                                                                                                          "else": []
+                                                                                                                                                                                                        }
+                                                                                                                                                                                                      ],
+                                                                                                                                                                                                      "else": []
+                                                                                                                                                                                                    }
+                                                                                                                                                                                                  ],
+                                                                                                                                                                                                  "else": []
+                                                                                                                                                                                                }
+                                                                                                                                                                                              ],
+                                                                                                                                                                                              "else": []
+                                                                                                                                                                                            }
+                                                                                                                                                                                          ],
+                                                                                                                                                                                          "else": []
+                                                                                                                                                                                        }
+                                                                                                                                                                                      ],
+                                                                                                                                                                                      "else": []
+                                                                                                                                                                                    }
+                                                                                                                                                                                  ],
+                                                                                                                                                                                  "else": []
+                                                                                                                                                                                }
+                                                                                                                                                                              ],
+                                                                                                                                                                              "else": []
+                                                                                                                                                                            }
+                                                                                                                                                                          ],
+                                                                                                                                                                          "else": []
+                                                                                                                                                                        }
+                                                                                                                                                                      ],
+                                                                                                                                                                      "else": []
+                                                                                                                                                                    }
+                                                                                                                                                                  ],
+                                                                                                                                                                  "else": []
+                                                                                                                                                                }
+                                                                                                                                                              ],
+                                                                                                                                                              "else": []
+                                                                                                                                                            }
+                                                                                                                                                          ],
+                                                                                                                                                          "else": []
+                                                                                                                                                        }
+                                                                                                                                                      ],
+                                                                                                                                                      "else": []
+                                                                                                                                                    }
+                                                                                                                                                  ],
+                                                                                                                                                  "else": []
+                                                                                                                                                }
+                                                                                                                                              ],
+                                                                                                                                              "else": []
+                                                                                                                                            }
+                                                                                                                                          ],
+                                                                                                                                          "else": []
+                                                                                                                                        }
+                                                                                                                                      ],
+                                                                                                                                      "else": []
+                                                                                                                                    }
+                                                                                                                                  ],
+                                                                                                                                  "else": []
+                                                                                                                                }
+                                                                                                                              ],
+                                                                                                                              "else": []
+                                                                                                                            }
+                                                                                                                          ],
+                                                                                                                          "else": []
+                                                                                                                        }
+                                                                                                                      ],
+                                                                                                                      "else": []
+                                                                                                                    }
+                                                                                                                  ],
+                                                                                                                  "else": []
+                                                                                                                }
+                                                                                                              ],
+                                                                                                              "else": []
+                                                                                                            }
+                                                                                                          ],
+                                                                                                          "else": []
+                                                                                                        }
+                                                                                                      ],
+                                                                                                      "else": []
+                                                                                                    }
+                                                                                                  ],
+                                                                                                  "else": []
+                                                                                                }
+                                                                                              ],
+                                                                                              "else": []
+                                                                                            }
+                                                                                          ],
+                                                                                          "else": []
+                                                                                        }
+                                                                                      ],
+                                                                                      "else": []
+                                                                                    }
+                                                                                  ],
+                                                                                  "else": []
+                                                                                }
+                                                                              ],
+                                                                              "else": []
+                                                                            }
+                                                                          ],
+                                                                          "else": []
+                                                                        }
+                                                                      ],
+                                                                      "else": []
+                                                                    }
+                                                                  ],
+                                                                  "else": []
+                                                                }
+                                                              ],
+                                                              "else": []
+                                                            }
+                                                          ],
+                                                          "else": []
+                                                        }
+                                                      ],
+                                                      "else": []
+                                                    }
+                                                  ],
+                                                  "else": []
+                                                }
+                                              ],
+                                              "else": []
+                                            }
+                                          ],
+                                          "else": []
+                                        }
+                                      ],
+                                      "else": []
+                                    }
+                                  ],
+                                  "else": []
+                                }
+                              ],
+                              "else": []
+                            }
+                          ],
+                          "else": []
+                        }
+                      ],
+                      "else": []
+                    }
+                  ],
+                  "else": []
+                }
+              ],
+              "else": []
+            }
+          ],
+          "else": [
+            {
+              "id": "b7",
+              "kind": "assignment",
+              "target": "s",
+              "value": "0"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b8",
+        "return_value": "s"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "cinquecento-chiamate",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "499"
+        }
+      ],
+      "expected": {
+        "output": "124750\n"
+      }
+    },
+    {
+      "name": "la-cinquecentunesima",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "500"
+        }
+      ],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "recursion_too_deep",
+          "block": "b6"
+        }
+      }
+    }
+  ]
+}

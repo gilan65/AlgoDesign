@@ -1,0 +1,50 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "radice-quadrata",
+    "description": "Radice quadrata di un intero quadrato perfetto e di un reale che non lo è: il risultato è sempre reale."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "16"
+        },
+        {
+          "name": "x",
+          "type": "real",
+          "initial": "2.0"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "square_root n",
+            "\" \"",
+            "square_root x"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "radice-quadrata",
+      "inputs": [],
+      "expected": {
+        "output": "4.00 1.41\n"
+      }
+    }
+  ]
+}

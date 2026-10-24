@@ -1,0 +1,111 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "riferimento-senza-valore-in-esecuzione",
+    "description": "Un dato che riceve un valore solo su un ramo, passato per riferimento: con lo zero arriva senza valore, e la chiamata si ferma."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "k",
+          "type": "integer"
+        },
+        {
+          "name": "n",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "k"
+        },
+        {
+          "id": "b2",
+          "kind": "if",
+          "condition": "k > 0",
+          "then": [
+            {
+              "id": "b3",
+              "kind": "assignment",
+              "target": "n",
+              "value": "k"
+            }
+          ],
+          "else": []
+        },
+        {
+          "id": "b4",
+          "kind": "call",
+          "callee": "raddoppia",
+          "arguments": [
+            "n"
+          ]
+        },
+        {
+          "id": "b5",
+          "kind": "write",
+          "values": [
+            "n"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b6"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "raddoppia",
+      "data": [
+        {
+          "name": "x",
+          "type": "integer",
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "b7",
+          "kind": "assignment",
+          "target": "x",
+          "value": "x * 2"
+        }
+      ],
+      "end": {
+        "id": "b8"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "senza valore",
+      "inputs": [
+        {
+          "data": "k",
+          "text": "0"
+        }
+      ],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "reference_without_value",
+          "block": "b4"
+        },
+        "warnings": [
+          {
+            "code": "maybe_uninitialized",
+            "block": "b4"
+          }
+        ]
+      }
+    }
+  ]
+}

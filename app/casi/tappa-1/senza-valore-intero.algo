@@ -1,0 +1,62 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "senza-valore-intero",
+    "description": "Un intero letto prima di avere un valore."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "x",
+          "type": "integer"
+        },
+        {
+          "name": "y",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "y",
+          "value": "x + 1"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "y"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "senza-valore-intero",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "uninitialized",
+          "block": "b1"
+        },
+        "warnings": [
+          {
+            "code": "maybe_uninitialized",
+            "block": "b1"
+          }
+        ]
+      }
+    }
+  ]
+}

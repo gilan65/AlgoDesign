@@ -1,0 +1,58 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "scrittura-che-si-ferma",
+    "description": "Una scrittura di due valori: il secondo, una stringa con il carattere di codice 0, ferma il programma, e il primo resta scritto."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "c",
+          "type": "character"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "c",
+          "value": "to_character n"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "\"prima \"",
+            "\"x\" + c"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "scrittura-che-si-ferma",
+      "inputs": [],
+      "expected": {
+        "output": "prima ",
+        "error": {
+          "code": "null_character_in_string",
+          "block": "b2"
+        }
+      }
+    }
+  ]
+}

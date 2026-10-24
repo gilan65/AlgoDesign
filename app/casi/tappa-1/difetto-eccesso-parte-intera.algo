@@ -1,0 +1,47 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "difetto-eccesso-parte-intera",
+    "description": "Per difetto, per eccesso e parte intera di un reale negativo non intero."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "x",
+          "type": "real",
+          "initial": "-2.7"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "round_down x",
+            "\" \"",
+            "round_up x",
+            "\" \"",
+            "integer_part x"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "difetto-eccesso-parte-intera",
+      "inputs": [],
+      "expected": {
+        "output": "-3.00 -2.00 -2.00\n"
+      }
+    }
+  ]
+}

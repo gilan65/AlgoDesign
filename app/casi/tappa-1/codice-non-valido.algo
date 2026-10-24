@@ -1,0 +1,57 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "codice-non-valido",
+    "description": "Un codice oltre 0x10FFFF messo in un carattere."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "1114112"
+        },
+        {
+          "name": "c",
+          "type": "character"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "c",
+          "value": "to_character n"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "c"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "codice-non-valido",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "invalid_character_code",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

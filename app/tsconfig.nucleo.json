@@ -1,0 +1,9 @@
+{
+  // Il nucleo non conosce il DOM: senza la libreria "DOM", usare `document` o `window` in core/
+  // e' un errore di compilazione, non una regola da ricordare.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2023"]
+  },
+  "include": ["core"]
+}

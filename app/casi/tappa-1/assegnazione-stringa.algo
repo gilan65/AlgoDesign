@@ -1,0 +1,55 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "assegnazione-stringa",
+    "description": "Concatenazione con una lettera accentata e lunghezza in caratteri."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "initial": "\"per\""
+        },
+        {
+          "name": "t",
+          "type": "string"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "t",
+          "value": "s + \"ché\""
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "t",
+            "\" \"",
+            "length t"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "assegnazione-stringa",
+      "inputs": [],
+      "expected": {
+        "output": "perché 6\n"
+      }
+    }
+  ]
+}

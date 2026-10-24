@@ -1,0 +1,103 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "lettura-attraverso-riferimento",
+    "description": "Una lettura attraverso due parametri di uscita: la voce del caso nomina il dato del programma principale che riceve il valore."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "role": "input"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "chiedi",
+          "arguments": [
+            "n"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "n * 2"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "chiedi",
+      "data": [
+        {
+          "name": "numero",
+          "type": "integer",
+          "parameter": "out"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "call",
+          "callee": "leggi",
+          "arguments": [
+            "numero"
+          ]
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "procedure",
+      "name": "leggi",
+      "data": [
+        {
+          "name": "valore",
+          "type": "integer",
+          "parameter": "out"
+        }
+      ],
+      "body": [
+        {
+          "id": "b6",
+          "kind": "read",
+          "target": "valore"
+        }
+      ],
+      "end": {
+        "id": "b7"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "lettura-attraverso-riferimento",
+      "inputs": [
+        {
+          "data": "n",
+          "text": "21"
+        }
+      ],
+      "expected": {
+        "output": "42\n"
+      }
+    }
+  ]
+}

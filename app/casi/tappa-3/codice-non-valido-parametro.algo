@@ -1,0 +1,72 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "codice-non-valido-parametro",
+    "description": "Un codice surrogato passato come carattere."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "55296"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "mostra",
+          "arguments": [
+            "to_character n"
+          ]
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "mostra",
+      "data": [
+        {
+          "name": "c",
+          "type": "character",
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "c"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "codice-non-valido-parametro",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "invalid_character_code",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

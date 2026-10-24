@@ -1,0 +1,50 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "arrotonda-quasi-meta",
+    "description": "Arrotondamento del reale appena sotto la metà, positivo e negativo: va verso lo zero, e lo zero negativo resta col segno."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "real",
+          "initial": "0.49999999999999994"
+        },
+        {
+          "name": "b",
+          "type": "real",
+          "initial": "-0.49999999999999994"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "round a",
+            "\" \"",
+            "round b"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "arrotonda-quasi-meta",
+      "inputs": [],
+      "expected": {
+        "output": "0.00 -0.00\n"
+      }
+    }
+  ]
+}

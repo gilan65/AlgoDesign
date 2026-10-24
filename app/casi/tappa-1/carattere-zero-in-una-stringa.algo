@@ -1,0 +1,107 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "carattere-zero-in-una-stringa",
+    "description": "Il carattere di codice 0 che entra in una stringa da un elemento di un vettore (k = 1) o da una conversione (k = 2): la scrittura si ferma dopo il primo valore."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "k",
+          "type": "integer"
+        },
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "v",
+          "type": "character",
+          "size": 3
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "k"
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "v[1]",
+          "value": "to_character n"
+        },
+        {
+          "id": "b3",
+          "kind": "if",
+          "condition": "k == 1",
+          "then": [
+            {
+              "id": "b4",
+              "kind": "write",
+              "values": [
+                "\"prima \"",
+                "\"x\" + v[1]"
+              ],
+              "newline": true
+            }
+          ],
+          "else": [
+            {
+              "id": "b5",
+              "kind": "write",
+              "values": [
+                "\"poi \"",
+                "\"x\" + to_character n"
+              ],
+              "newline": true
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b6"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "dal-vettore",
+      "inputs": [
+        {
+          "data": "k",
+          "text": "1"
+        }
+      ],
+      "expected": {
+        "output": "prima ",
+        "error": {
+          "code": "null_character_in_string",
+          "block": "b4"
+        }
+      }
+    },
+    {
+      "name": "dalla-conversione",
+      "inputs": [
+        {
+          "data": "k",
+          "text": "2"
+        }
+      ],
+      "expected": {
+        "output": "poi ",
+        "error": {
+          "code": "null_character_in_string",
+          "block": "b5"
+        }
+      }
+    }
+  ]
+}

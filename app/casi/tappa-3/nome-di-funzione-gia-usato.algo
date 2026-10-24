@@ -1,0 +1,75 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "nome-di-funzione-gia-usato",
+    "description": "Una funzione con lo stesso nome di un dato del programma principale: il progetto non parte."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "media",
+          "type": "real"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "media",
+          "value": "media(3.0, 4.0)"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "media"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "media",
+      "return_type": "real",
+      "data": [
+        {
+          "name": "a",
+          "type": "real",
+          "parameter": "value"
+        },
+        {
+          "name": "b",
+          "type": "real",
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b4",
+        "return_value": "(a + b) / 2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "nome-di-funzione-gia-usato",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "function_name_in_use",
+          "block": "f2"
+        }
+      }
+    }
+  ]
+}

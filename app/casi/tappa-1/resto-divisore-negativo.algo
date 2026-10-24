@@ -1,0 +1,55 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "resto-divisore-negativo",
+    "description": "Resto con il divisore negativo: il segno è quello del dividendo."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "integer",
+          "initial": "7"
+        },
+        {
+          "name": "b",
+          "type": "integer",
+          "initial": "-7"
+        },
+        {
+          "name": "d",
+          "type": "integer",
+          "initial": "-2"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "a mod d",
+            "\" \"",
+            "b mod d"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "resto-divisore-negativo",
+      "inputs": [],
+      "expected": {
+        "output": "1 -1\n"
+      }
+    }
+  ]
+}

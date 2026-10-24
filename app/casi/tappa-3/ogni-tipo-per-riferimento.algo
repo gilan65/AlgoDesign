@@ -1,0 +1,155 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "ogni-tipo-per-riferimento",
+    "description": "Una stringa, un vettore, un reale, un carattere e un elemento di un vettore di stringhe per riferimento: ognuno entra ed esce."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "initial": "\"ab\""
+        },
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 2,
+          "initial": [
+            "1",
+            "2"
+          ]
+        },
+        {
+          "name": "x",
+          "type": "real",
+          "initial": "1.5"
+        },
+        {
+          "name": "c",
+          "type": "character",
+          "initial": "'a'"
+        },
+        {
+          "name": "w",
+          "type": "string",
+          "size": 2,
+          "initial": [
+            "\"p\"",
+            "\"q\""
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "tutti",
+          "arguments": [
+            "s",
+            "v",
+            "x",
+            "c",
+            "w[1]"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "s",
+            "v[1]",
+            "x",
+            "c",
+            "w[1]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "tutti",
+      "data": [
+        {
+          "name": "a",
+          "type": "string",
+          "parameter": "reference"
+        },
+        {
+          "name": "b",
+          "type": "integer",
+          "size": 2,
+          "parameter": "reference"
+        },
+        {
+          "name": "y",
+          "type": "real",
+          "parameter": "reference"
+        },
+        {
+          "name": "d",
+          "type": "character",
+          "parameter": "reference"
+        },
+        {
+          "name": "s",
+          "type": "string",
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "a",
+          "value": "a + \"c\""
+        },
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "b[1]",
+          "value": "9"
+        },
+        {
+          "id": "b6",
+          "kind": "assignment",
+          "target": "y",
+          "value": "y * 2"
+        },
+        {
+          "id": "b7",
+          "kind": "assignment",
+          "target": "d",
+          "value": "'b'"
+        },
+        {
+          "id": "b8",
+          "kind": "assignment",
+          "target": "s",
+          "value": "s + \"!\""
+        }
+      ],
+      "end": {
+        "id": "b9"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "ogni-tipo-per-riferimento",
+      "inputs": [],
+      "expected": {
+        "output": "abc93.00bq!\n"
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Sorgente delle icone dell'app: `bun tauri icon shell/icona.svg -o shell/icons`. -->
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="#2f5d8a"/>
+  <g fill="none" stroke="#f7f7f5" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="166" y="64" width="180" height="76" rx="38"/>
+    <path d="M256 140v48"/>
+    <path d="M256 188l86 72-86 72-86-72z"/>
+    <path d="M256 332v56"/>
+    <rect x="166" y="388" width="180" height="64" rx="8"/>
+  </g>
+</svg>

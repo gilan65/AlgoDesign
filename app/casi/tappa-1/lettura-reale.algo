@@ -1,0 +1,53 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "lettura-reale",
+    "description": "Lettura di un reale."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "x",
+          "type": "real",
+          "role": "input"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "x"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "x * 2"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "lettura-reale",
+      "inputs": [
+        {
+          "data": "x",
+          "text": "2.5"
+        }
+      ],
+      "expected": {
+        "output": "5.00\n"
+      }
+    }
+  ]
+}

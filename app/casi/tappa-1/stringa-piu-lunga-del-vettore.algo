@@ -1,0 +1,56 @@
+{
+  "format": "algodesign",
+  "schema_version": 1,
+  "metadata": {
+    "name": "stringa-piu-lunga-del-vettore",
+    "description": "Una stringa di 6 caratteri in un vettore di 3."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "initial": "\"abcdef\""
+        },
+        {
+          "name": "v",
+          "type": "character",
+          "size": 3
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "v",
+          "value": "to_array s"
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "stringa-piu-lunga-del-vettore",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "string_longer_than_array",
+          "block": "b1"
+        },
+        "warnings": [
+          {
+            "code": "unused_value",
+            "block": "f1"
+          }
+        ]
+      }
+    }
+  ]
+}
