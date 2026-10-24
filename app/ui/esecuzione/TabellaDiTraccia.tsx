@@ -5,8 +5,8 @@
 // senza valore dicono «non inizializzata». Oltre 1000 righe restano la riga 0 e le ultime 1000, e una riga sopra
 // la tabella dice quante non ci sono più. Un vettore ha la forma scelta nelle Impostazioni (le colonne dei primi
 // dieci e una per gli altri, o in fila in una colonna sola): le celle le scrive il nucleo, e una riga sopra la tabella,
-// scritta anche lei dal nucleo, dice che cosa si vede e che cosa ha il CSV. In fila la cella si taglia e il testo
-// intero sta nel suo `title` (il suggerimento del sistema ne mostra l'inizio: misurato, in Chromium i primi 146
+// scritta anche lei dal nucleo, dice che cosa si vede e che cosa ha il CSV. In fila la cella si taglia (ne disegna i
+// primi `CARATTERI_IN_FILA`, più di quanti ne mostra la colonna più larga) e il testo intero sta nel suo `title` (il suggerimento del sistema ne mostra l'inizio: misurato, in Chromium i primi 146
 // elementi di 1000); l'elemento cambiato è segnato lui, non la cella. Scorrendo di lato restano
 // ferme l'intestazione, il numero e la regola (o solo il numero: scelta delle Impostazioni), e coprono ciò che
 // scorre sotto.
@@ -106,6 +106,27 @@ const RIGHE_TUTTE = 200;
 const MARGINE = 20;
 /** L'altezza di una riga prima della prima misura, in px. */
 const ALTEZZA_STIMATA = 20;
+/** I caratteri di un vettore in fila che la cella disegna: più di quanti ne mostra la colonna più larga
+ * (`LARGHEZZA_MASSIMA`, 640 px, circa 130 caratteri), quindi la cella appare uguale a ogni larghezza; il resto lo taglia
+ * comunque il CSS, e il testo intero sta nel `title`. Disegnati tutti (8534 caratteri per un vettore di 1000 interi, in
+ * ogni riga in vista) fermavano la finestra di WebKitGTK per 1161 ms alla fine della corsa (misurato sulla macchina
+ * Linux della CI, senza scheda grafica). */
+const CARATTERI_IN_FILA = 200;
+
+/** I pezzi di una cella in fila fino a `CARATTERI_IN_FILA` caratteri, l'ultimo tagliato se serve; un elemento cambiato
+ * oltre quel punto non si disegna (la cella non lo mostrerebbe). Si contano i punti di codice: il taglio non spezza un
+ * carattere. */
+export function pezziDisegnati<P extends { readonly testo: string }>(pezzi: readonly P[]): P[] {
+  const disegnati: P[] = [];
+  let resto = CARATTERI_IN_FILA;
+  for (const p of pezzi) {
+    if (resto <= 0) break;
+    const caratteri = [...p.testo];
+    disegnati.push(caratteri.length <= resto ? p : { ...p, testo: caratteri.slice(0, resto).join("") });
+    resto -= caratteri.length;
+  }
+  return disegnati;
+}
 /** Di quanto si muove il puntatore prima che la pressione su un'intestazione diventi un trascinamento, in px. */
 const SOGLIA_DEL_TRASCINAMENTO = 5;
 /** Vicino al bordo dello scorrimento, durante un trascinamento la tabella scorre di tanto a ogni movimento, in px. */
@@ -201,7 +222,7 @@ const Riga = memo(function Riga({
             data-non-inizializzata={c.nonInizializzata ? "" : undefined}
           >
             <div className={stili.fila}>
-              {c.pezzi.map((p, k) =>
+              {pezziDisegnati(c.pezzi).map((p, k) =>
                 p.cambiato ? (
                   <mark key={k} className={stili.cambiato} data-cambiato="">
                     {p.testo}
