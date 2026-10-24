@@ -1291,8 +1291,9 @@ test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l
   const cartella = fileURLToPath(new URL("../../casi", import.meta.url));
   const trovati: string[] = [];
   let [file, controllati] = [0, 0];
-  for (const tappa of readdirSync(cartella, { withFileTypes: true }).filter((d) => d.isDirectory()))
-    for (const nome of readdirSync(join(cartella, tappa.name)).filter((f) => f.endsWith(".algo"))) {
+  // In ordine di nome: `readdirSync` dà l'ordine del file system, alfabetico su NTFS e no su ext4.
+  for (const tappa of readdirSync(cartella, { withFileTypes: true }).filter((d) => d.isDirectory()).sort((a, b) => (a.name < b.name ? -1 : 1)))
+    for (const nome of readdirSync(join(cartella, tappa.name)).filter((f) => f.endsWith(".algo")).sort()) {
       file++;
       const aperto = apri(readFileSync(join(cartella, tappa.name, nome), "utf8"));
       if (!aperto.ok) throw new Error(`${nome} non si apre`);

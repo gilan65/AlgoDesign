@@ -139,8 +139,10 @@ test("i nomi del riferimento: genere e contenuto per i blocchi, sequenza e posto
 // ------------------------------------------------------------- i cicli
 
 const cartellaDeiCicli = join(import.meta.dir, "..", "..", "casi", "tappa-2");
+// In ordine di nome: `readdirSync` dà l'ordine del file system, alfabetico su NTFS e no su ext4.
 const deiCicli = readdirSync(cartellaDeiCicli)
   .filter((f) => f.endsWith(".algo"))
+  .sort()
   .map((f) => {
     const e = apri(readFileSync(join(cartellaDeiCicli, f), "utf8"));
     if (!e.ok) throw new Error(`${f} non si apre`);
