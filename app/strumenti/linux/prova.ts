@@ -6,7 +6,7 @@
 //    copiata accanto a `data/`). Deve NON essere vuota, o `docker diff` non ha dimostrato di vedere;
 // 2. portabile (`LANG=it_IT.UTF-8`): LINGUA, ESECUZIONE e VETTORE dentro il giro (qui si pretende la riga verde di
 //    ciascuna, oltre all'exit 0); qui TRACCE — il suo `docker diff` meno quello
-//    della base: ogni voce fuori da `data/` sta nell'elenco `ammesse` qui sotto, e nessuna contiene
+//    della base: ogni voce fuori da `data/` sta nell'elenco `ammesse` di `tracce.ts`, e nessuna contiene
 //    l'identificatore. Le voci dentro `data/` devono esserci (il diff vede le scritture dell'app);
 // 3. senza-data (`LANG=en_US.UTF-8`, controllo positivo delle tracce): lo stesso residuo deve contenere
 //    la cartella dell'identificatore sotto la home, vista da ENTRAMBI i rilevatori (identificatore; voce
@@ -40,17 +40,11 @@
 
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { controlloPositivo, residuo as residuoDelGiro, type Residuo, type Voce } from "./tracce";
 
-// Elenco dichiarato PRIMA della misura: le sole voci ammesse fuori da `data/` nel residuo
-// del giro portabile. Sono cache di librerie di sistema, non dell'app, più la cartella in cui il runtime
-// di AppImage si estrae quando FUSE manca. Una voce che contiene l'identificatore è rossa anche qui.
-// Una cartella è ammessa anche quando contiene soltanto voci ammesse o di `data/`.
-const ammesse: [RegExp, string][] = [
-  [/^\/root\/\.cache\/fontconfig(\/|$)/, "cache dei font (fontconfig)"],
-  [/^\/root\/\.cache\/mesa_shader_cache(_db)?(\/|$)/, "cache degli shader (mesa)"],
-  [/^\/root\/\.(cache|config)\/dconf(\/|$)/, "impostazioni di GTK (dconf)"],
-  [/^\/tmp\/appimage_extracted_[0-9a-f]+(\/|$)/, "estrazione del runtime di AppImage senza FUSE"],
-];
+// L'elenco delle voci ammesse fuori da `data/` e la divisione per specie sono in `tracce.ts`, comuni con la prova sulla
+// macchina della CI; qui la casa è quella di root nel container.
+const casa = "/root";
 
 const radice = join(import.meta.dir, "..", "..");
 const identificatore = JSON.parse(readFileSync(join(radice, "shell", "tauri.conf.json"), "utf8")).identifier as string;
@@ -119,8 +113,6 @@ async function costruisci(): Promise<void> {
 
 // ------------------------------------------------------------------------------------------------ giri
 
-type Voce = { tipo: string; percorso: string };
-
 /** Le righe stampate da ogni giro: le clausole dentro il giro si pretendono verdi per riga, non solo per exit code. */
 const righeDelGiro = new Map<string, string[]>();
 
@@ -150,28 +142,8 @@ async function giro(nome: "base" | "portabile" | "senza-data", lang: string): Pr
   }
 }
 
-type Residuo = { inData: Voce[]; ammesse: Voce[]; cartelle: Voce[]; fuori: Voce[]; conIdentificatore: Voce[] };
-
-/** Il diff di un giro meno quello della base. Le voci fuori da `data/` vanno in una sola specie fra
- *  ammesse, cartelle che contengono solo voci giuste, e fuori dall'elenco; i due rilevatori (fuori
- *  dall'elenco; con l'identificatore) sono indipendenti, quindi una voce può accenderli entrambi. */
-function residuo(diff: Voce[], base: Voce[]): Residuo {
-  const nellaBase = new Set(base.map((v) => v.percorso));
-  const voci = diff.filter((v) => !nellaBase.has(v.percorso));
-  const r: Residuo = { inData: [], ammesse: [], cartelle: [], fuori: [], conIdentificatore: [] };
-  const fuoriDaData = voci.filter((v) => v.percorso !== dati && !v.percorso.startsWith(`${dati}/`));
-  r.inData = voci.filter((v) => !fuoriDaData.includes(v));
-  r.ammesse = fuoriDaData.filter((v) => ammesse.some(([re]) => re.test(v.percorso)));
-  const giuste = [...r.inData, ...r.ammesse].map((v) => v.percorso);
-  for (const v of fuoriDaData) {
-    if (r.ammesse.includes(v)) continue;
-    const figlie = voci.filter((w) => w.percorso.startsWith(`${v.percorso}/`)).map((w) => w.percorso);
-    if (figlie.length > 0 && figlie.every((f) => giuste.includes(f))) r.cartelle.push(v);
-    else r.fuori.push(v);
-  }
-  r.conIdentificatore = fuoriDaData.filter((v) => v.percorso.toLowerCase().includes(identificatore.toLowerCase()));
-  return r;
-}
+/** Il diff di un giro meno quello della base, diviso per specie (`tracce.ts`). */
+const residuo = (diff: Voce[], base: Voce[]): Residuo => residuoDelGiro(diff, base, dati, casa, identificatore);
 
 function descrivi(nome: string, r: Residuo): void {
   for (const [specie, voci] of Object.entries(r)) log(`  ${nome} · ${specie}: ${(voci as Voce[]).map((v) => `${v.tipo} ${v.percorso}`).join(" | ")}`);
@@ -208,14 +180,9 @@ try {
   const senza = residuo(await giro("senza-data", "en_US.UTF-8"), base);
   descrivi("senza-data", senza);
   // Le cartelle col nome dell'identificatore sotto la home: ciascuna deve accendere ENTRAMBI i rilevatori.
-  const attese = senza.conIdentificatore.filter((v) => v.percorso.startsWith("/root/") && v.percorso.endsWith(`/${identificatore}`)).map((v) => v.percorso);
-  const viste = new Set(senza.fuori.map((v) => v.percorso));
-  const spente = [
-    ...(attese.length > 0 ? [] : ["nessuna cartella dell'identificatore sotto /root"]),
-    ...attese.filter((p) => !viste.has(p)).map((p) => `rilevatore voci fuori dall'elenco cieco su ${p}`),
-  ];
+  const { viste, spente } = controlloPositivo(senza, casa, identificatore);
   if (spente.length > 0) rosso("TRACCE (controllo positivo)", `SPENTO: ${spente.join("; ")}`);
-  riga(`TRACCE (controllo positivo): acceso | senza data/ entrambi i rilevatori vedono ${attese.join(" e ")}`);
+  riga(`TRACCE (controllo positivo): acceso | senza data/ entrambi i rilevatori vedono ${viste.join(" e ")}`);
   riga("ESITO: VERDE (build, lingua, lingua del sistema, esecuzione, vettore di 1000 elementi, tracce, linea di base, controllo positivo delle tracce)");
 } catch (e) {
   riga(e instanceof ClausolaRossa ? e.message : `ERRORE DELLA PROVA: ${e instanceof Error ? e.stack : String(e)}`);

@@ -1,0 +1,108 @@
+# La verifica degli archivi di una release, come li riceve chi li usa: scarica, controlla l'impronta, estrae con gli
+# strumenti del sistema, controlla i permessi, guarda quali librerie l'AppImage chiede al sistema, la avvia per 20 s con
+# FUSE, come un doppio clic, con una fotografia dello schermo. Su Ubuntu 22.04 e 24.04 appena installate, senza WebKit
+# nel sistema: la macchina della build ha i pacchetti di sviluppo, e una libreria che manca a un utente lì c'è.
+#
+# Che cosa NON guarda: l'interfaccia (nessuna prova la comanda: lo fa la prova sul prodotto del workflow `release`); un
+# desktop vero (niente gestore di finestre, niente GPU); il pacchetto per Windows (lo provano le clausole sul PC, dal
+# pacchetto scaricato) e quello per macOS.
+name: verifica
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Etichetta della release da verificare"
+        required: true
+      piattaforme:
+        description: "Piattaforme da verificare, separate da virgole (linux)"
+        default: "linux"
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    if: contains(inputs.piattaforme, 'linux')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            fuse: libfuse2
+          - os: ubuntu-24.04
+            fuse: libfuse2t64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Scarica e controlla l'impronta
+        run: |
+          gh release download "${{ inputs.tag }}" -R "$GITHUB_REPOSITORY" -p '*linux-x64.tar.gz*'
+          ls -la
+          test "$(find . -maxdepth 1 -name '*linux-x64.tar.gz' | grep -c .)" -eq 1 || { echo "ROSSO: la release non ha un solo archivio per Linux"; exit 1; }
+          sha256sum -c ./*.sha256
+
+      - name: Estrai come chi lo usa
+        run: |
+          tar xzf ./*.tar.gz
+          test "$(find . -maxdepth 1 -type d -name 'AlgoDesign-*' | grep -c .)" -eq 1
+          cd AlgoDesign-*/
+          ls -la
+          test -x AlgoDesign.AppImage
+          test -d data
+          test -z "$(ls -A data)"
+          echo "librerie WebKit installate nel sistema: $(dpkg -l 'libwebkit2gtk*' 2>/dev/null | grep -c '^ii' || true)"
+
+      - name: Librerie che l'AppImage chiede al sistema e che su questa macchina pulita mancano
+        run: |
+          mkdir -p uscita
+          cd AlgoDesign-*/
+          ./AlgoDesign.AppImage --appimage-extract > /dev/null
+          : > ../uscita/mancanti-prima.txt
+          find squashfs-root -type f \( -name 'algodesign' -o -name '*.so*' -o -name 'WebKit*Process' \) | while read -r f; do
+            LD_LIBRARY_PATH=squashfs-root/usr/lib ldd "$f" 2>/dev/null | grep 'not found' | awk '{print $1}' >> ../uscita/mancanti-prima.txt || true
+          done
+          sort -u -o ../uscita/mancanti-prima.txt ../uscita/mancanti-prima.txt
+          echo "mancanti: $(wc -l < ../uscita/mancanti-prima.txt)"; cat ../uscita/mancanti-prima.txt
+          rm -rf squashfs-root
+
+      - name: FUSE, schermo virtuale e la base grafica che ogni desktop ha (Mesa, caratteri)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ${{ matrix.fuse }} xvfb imagemagick libegl1 libgl1 libgles2 libgbm1 libgl1-mesa-dri fontconfig fonts-dejavu-core
+          cd AlgoDesign-*/
+          ./AlgoDesign.AppImage --appimage-extract > /dev/null
+          : > ../uscita/mancanti-dopo.txt
+          find squashfs-root -type f \( -name 'algodesign' -o -name '*.so*' -o -name 'WebKit*Process' \) | while read -r f; do
+            LD_LIBRARY_PATH=squashfs-root/usr/lib ldd "$f" 2>/dev/null | grep 'not found' | awk '{print $1}' >> ../uscita/mancanti-dopo.txt || true
+          done
+          sort -u -o ../uscita/mancanti-dopo.txt ../uscita/mancanti-dopo.txt
+          echo "mancanti dopo la base grafica: $(wc -l < ../uscita/mancanti-dopo.txt)"; cat ../uscita/mancanti-dopo.txt
+          rm -rf squashfs-root
+          test ! -s ../uscita/mancanti-dopo.txt || { echo "ROSSO: con la base grafica di un desktop mancano ancora delle librerie"; exit 1; }
+
+      - name: Avvio con FUSE, come un doppio clic
+        run: |
+          cd AlgoDesign-*/
+          Xvfb :99 -screen 0 1280x800x24 &
+          sleep 2
+          DISPLAY=:99 ./AlgoDesign.AppImage > ../uscita/avvio.log 2>&1 &
+          pid=$!
+          sleep 20
+          import -display :99 -window root ../uscita/schermo.png || echo "fotografia dello schermo non riuscita"
+          echo "montaggi dell'AppImage (con FUSE ce n'è uno):"; { mount | grep -i '\.mount_' || true; } | tee ../uscita/montaggi.txt
+          echo "estrazioni senza FUSE in /tmp:"; ls -d /tmp/appimage_extracted_* 2>/dev/null || echo "nessuna"
+          echo "contenuto di data/:"; find data -maxdepth 2 | sort | tee ../uscita/data.txt
+          kill -0 "${pid}" || { echo "ROSSO: il programma non è più vivo dopo 20 s"; cat ../uscita/avvio.log; exit 1; }
+          test -s ../uscita/montaggi.txt || { echo "ROSSO: il programma è vivo ma non si vede il montaggio FUSE"; exit 1; }
+          test -d data/webview || { echo "ROSSO: niente in data/: la modalità portabile non è partita"; exit 1; }
+          echo "VERDE: avviato con FUSE, vivo dopo 20 s, dati in data/"
+          kill "${pid}"
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: verifica-${{ matrix.os }}
+          path: uscita/
