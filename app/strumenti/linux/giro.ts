@@ -398,7 +398,7 @@ async function suggerimento(sessione: string): Promise<void> {
   // A corsa finita la tabella disegna le righe in vista al fotogramma dopo: si aspetta la cella fino a 5 s.
   let cella: Record<string, string> | null = null;
   for (let d = 0; d < 50 && cella === null; d++) {
-    cella = (await script(sessione, `${trova} if (c === undefined) return null; c.scrollIntoView({ block: "center", inline: "center" }); return c;`)) as Record<string, string> | null;
+    cella = (await script(sessione, `${trova} if (c === undefined) return null; c.scrollIntoView({ block: "center", inline: "nearest" }); return c;`)) as Record<string, string> | null;
     if (cella === null) await Bun.sleep(100);
   }
   if (cella === null) {

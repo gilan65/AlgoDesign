@@ -19,7 +19,7 @@
 // Che cosa questa prova NON guarda:
 // - le voci cancellate durante il giro, e quelle scritte con una data vecchia: `find -newer` vede solo ciò che il giro
 //   ha creato o cambiato e che c'è ancora alla fine;
-// - le cartelle del servizio delle Actions e del repository sotto la casa (`work`, `runners`), saltate perché cambiano
+// - le cartelle del servizio delle Actions e del repository sotto la casa (`work`, `actions-runner`), saltate perché cambiano
 //   da sole durante la corsa; l'app non ci scrive (la sua cartella di lavoro è quella di prova), ma la prova non lo
 //   dimostra;
 // - fuori dalla casa, da `/tmp` e dalla cartella di prova (`/var`, `/etc`, altre case): l'app gira come utente senza
@@ -57,8 +57,9 @@ const casa = homedir();
 const identificatore = JSON.parse(readFileSync(join(app, "shell", "tauri.conf.json"), "utf8")).identifier as string;
 const dove = join(process.env.RUNNER_TEMP ?? tmpdir(), "prova con spazi");
 const segno = join(process.env.RUNNER_TEMP ?? tmpdir(), "segno-del-giro");
-// Le cartelle che cambiano da sole durante la corsa, saltate (vedi in testa).
-const saltate = [join(casa, "work"), join(casa, "runners")];
+// Le cartelle che cambiano da sole durante la corsa, saltate (vedi in testa): il repository e la cartella temporanea
+// delle Actions (`work`), e il servizio delle Actions coi suoi registri (`actions-runner`, su `ubuntu-22.04`: misurato).
+const saltate = [join(casa, "work"), join(casa, "actions-runner"), join(casa, "runners")];
 
 function log(testo: string): void {
   appendFileSync(fileLog, testo.endsWith("\n") ? testo : `${testo}\n`);
