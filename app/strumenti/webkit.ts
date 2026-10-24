@@ -74,16 +74,24 @@ async function esegui(cmd: string[], ambiente: Record<string, string> = {}): Pro
   return codice;
 }
 
-type Prova = { file: string; titolo: string; progetto: string; stato: string; durata: number; limite: number };
+type Prova = { file: string; titolo: string; progetto: string; stato: string; durata: number; limite: number; errore: string };
 type Suite = {
   suites?: Suite[];
-  specs?: { file: string; title: string; tests: { projectName: string; status: string; timeout: number; results: { duration: number }[] }[] }[];
+  specs?: { file: string; title: string; line?: number; tests: { projectName: string; status: string; timeout: number; results: { duration: number; error?: { message?: string } }[] }[] }[];
 };
 type Resoconto = { suites?: Suite[]; errors?: { message?: string }[] };
 
 function proveDi(suite: Suite): Prova[] {
   const proprie = (suite.specs ?? []).flatMap((s) =>
-    s.tests.map((t) => ({ file: s.file, titolo: s.title, progetto: t.projectName, stato: t.status, durata: Math.max(0, ...t.results.map((r) => r.duration)), limite: t.timeout })),
+    s.tests.map((t) => ({
+      file: s.file,
+      titolo: s.title,
+      progetto: t.projectName,
+      stato: t.status,
+      durata: Math.max(0, ...t.results.map((r) => r.duration)),
+      limite: t.timeout,
+      errore: `${s.file}:${s.line ?? "?"} ${t.results.map((r) => r.error?.message ?? "").join(" | ")}`,
+    })),
   );
   return [...proprie, ...(suite.suites ?? []).flatMap(proveDi)];
 }
@@ -137,6 +145,9 @@ try {
   if (!controlloDelConfronto.includes(`manca ${tolta}`) || !controlloDelConfronto.includes("in più sonda › in più")) rosso("CORSA", `il confronto delle prove non si accende: ${JSON.stringify(controlloDelConfronto.slice(0, 4))}`);
   if (confronto.length > 0) rosso("CORSA", `eseguite diverse dalle elencate: ${confronto.slice(0, 10).join("; ")}`);
   const nonVerdi = vere.filter((p) => p.stato !== "expected");
+  // Il messaggio di ogni prova non verde nel log, senza i colori del terminale (le sequenze che cominciano col carattere 27).
+  const colori = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");
+  for (const p of nonVerdi) log(`NON VERDE (${p.stato}, ${(p.durata / 1000).toFixed(1)} s su ${p.limite / 1000} s): ${chiave(p)}\n  ${p.errore.replace(colori, "").slice(0, 3000)}`);
   if (nonVerdi.length > 0) rosso("CORSA", `${nonVerdi.length} prove non verdi su ${vere.length}: ${nonVerdi.map((p) => `${chiave(p)} (${p.stato})`).join("; ")}`);
   if (corsa.codice === 0 || dellaSonda.length !== 1 || dellaSonda[0]!.stato !== "unexpected")
     rosso("CORSA", `controllo positivo SPENTO: exit ${corsa.codice}, la sonda ${dellaSonda.length === 0 ? "non eseguita" : `con esito «${dellaSonda[0]!.stato}»`}`);

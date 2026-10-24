@@ -208,6 +208,8 @@ jobs:
         if: always()
         with:
           name: webkit-linux
+          # `.collaudo` comincia col punto: senza questa riga il caricamento salta i suoi file (misurato).
+          include-hidden-files: true
           path: |
             app/.collaudo/webkit-*
             app/.collaudo/playwright/

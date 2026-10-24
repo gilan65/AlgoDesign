@@ -388,15 +388,14 @@ async function giroDelVettore(lingua: Lingua): Promise<void> {
   );
 }
 
-/** SUGGERIMENTO: il puntatore del mouse sulla cella del vettore in fila dell'ultima riga della tabella, poi, dopo tre
- *  secondi, la fotografia dello schermo virtuale. */
+/** SUGGERIMENTO: il puntatore del mouse su una cella del vettore in fila della tabella, poi, dopo tre secondi, la
+ *  fotografia dello schermo virtuale. */
 async function suggerimento(sessione: string): Promise<void> {
-  const cella = (await script(
-    sessione,
-    `const c = [...document.querySelectorAll("td[title]")].filter((td) => td.querySelector("div") !== null && td.title.length > 1000).at(-1); if (c === undefined) return null; c.scrollIntoView({ block: "center", inline: "center" }); return c;`,
-  )) as Record<string, string> | null;
-  if (cella === null) rosso("SUGGERIMENTO", "nessuna cella del vettore in fila col testo intero nella tabella");
-  const testo = (await script(sessione, `return [...document.querySelectorAll("td[title]")].filter((td) => td.querySelector("div") !== null && td.title.length > 1000).at(-1).title;`)) as string;
+  // La cella del vettore in fila: quella col suggerimento più lungo fra le celle disegnate coi pezzi del valore.
+  const trova = `const celle = [...document.querySelectorAll("tbody td[title]")].filter((td) => td.querySelector("div") !== null && td.title.includes(" · ")); const c = celle.sort((a, b) => b.title.length - a.title.length)[0];`;
+  const cella = (await script(sessione, `${trova} if (c === undefined) return null; c.scrollIntoView({ block: "center", inline: "center" }); return c;`)) as Record<string, string> | null;
+  if (cella === null) rosso("SUGGERIMENTO", "nessuna cella del vettore in fila disegnata nella tabella");
+  const testo = (await script(sessione, `${trova} return c.title;`)) as string;
   const muovi = (x: number) => ({ type: "pointerMove", duration: 100, origin: cella, x, y: 0 });
   await wd("POST", `/session/${sessione}/actions`, { actions: [{ type: "pointer", id: "mouse", parameters: { pointerType: "mouse" }, actions: [muovi(0), { type: "pause", duration: 200 }, muovi(2)] }] });
   await Bun.sleep(3_000);
@@ -404,7 +403,7 @@ async function suggerimento(sessione: string): Promise<void> {
   const scatto = Bun.spawn(["import", "-display", ":99", "-window", "root", foto], { stdout: "ignore", stderr: "pipe" });
   const [errore, codice] = await Promise.all([new Response(scatto.stderr).text(), scatto.exited]);
   if (codice !== 0 || !existsSync(foto)) rosso("SUGGERIMENTO", `la fotografia non è riuscita (exit ${codice}): ${errore.trim()}`);
-  console.log(`SUGGERIMENTO: FOTOGRAFATO | ${foto}: il puntatore del mouse sulla cella del vettore in fila dell'ultima riga (il testo intero ha ${testo.split(" · ").length} elementi, ${testo.length} caratteri); quanti se ne leggono lo dice la fotografia`);
+  console.log(`SUGGERIMENTO: FOTOGRAFATO | ${foto}: il puntatore del mouse su una cella del vettore in fila (il testo intero ha ${testo.split(" · ").length} elementi, ${testo.length} caratteri); quanti se ne leggono lo dice la fotografia`);
 }
 
 /** La soglia della misura della memoria, scritta prima della misura: il fondo degli ultimi 60 s sopra il valore a 10 s. */
