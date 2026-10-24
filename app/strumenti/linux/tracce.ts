@@ -18,6 +18,9 @@ export function ammesse(casa: string): [RegExp, string][] {
     [new RegExp(`^${c}/\\.cache/mesa_shader_cache(_db)?(/|$)`), "cache degli shader (mesa)"],
     [new RegExp(`^${c}/\\.(cache|config)/dconf(/|$)`), "impostazioni di GTK (dconf)"],
     [/^\/tmp\/appimage_extracted_[0-9a-f]+(\/|$)/, "estrazione del runtime di AppImage senza FUSE"],
+    // Sulla macchina della CI systemd crea la cartella privata di un servizio che avvia a richiesta (misurato: quello
+    // dell'ora di sistema, `systemd-timedated`, durante il giro dell'app); è del sistema, di root, non dell'app.
+    [/^\/tmp\/systemd-private-[0-9a-f]+-[^/]+\.service-[^/]+(\/|$)/, "cartella privata di un servizio di systemd"],
   ];
 }
 
@@ -30,11 +33,21 @@ export function residuo(voci: readonly Voce[], base: readonly Voce[], dati: stri
   const fuoriDaData = nuove.filter((v) => v.percorso !== dati && !v.percorso.startsWith(`${dati}/`));
   r.inData = nuove.filter((v) => !fuoriDaData.includes(v));
   r.ammesse = fuoriDaData.filter((v) => elenco.some(([re]) => re.test(v.percorso)));
-  const giuste = [...r.inData, ...r.ammesse].map((v) => v.percorso);
+  // Una cartella è giusta quando ogni voce nuova sotto di lei lo è: le voci di `data/`, le ammesse e le cartelle giuste
+  // più profonde, che quindi si guardano prima (dalla più profonda alla più alta: `~/.cache` prima della casa).
+  const giuste = new Set([...r.inData, ...r.ammesse].map((v) => v.percorso));
+  const daGuardare = fuoriDaData.filter((v) => !r.ammesse.includes(v)).sort((a, b) => b.percorso.split("/").length - a.percorso.split("/").length);
+  const cartelle = new Set<string>();
+  for (const v of daGuardare) {
+    const figlie = nuove.filter((w) => w.percorso.startsWith(`${v.percorso}/`)).map((w) => w.percorso);
+    if (figlie.length > 0 && figlie.every((f) => giuste.has(f))) {
+      giuste.add(v.percorso);
+      cartelle.add(v.percorso);
+    }
+  }
   for (const v of fuoriDaData) {
     if (r.ammesse.includes(v)) continue;
-    const figlie = nuove.filter((w) => w.percorso.startsWith(`${v.percorso}/`)).map((w) => w.percorso);
-    if (figlie.length > 0 && figlie.every((f) => giuste.includes(f))) r.cartelle.push(v);
+    if (cartelle.has(v.percorso)) r.cartelle.push(v);
     else r.fuori.push(v);
   }
   r.conIdentificatore = fuoriDaData.filter((v) => v.percorso.toLowerCase().includes(identificatore.toLowerCase()));

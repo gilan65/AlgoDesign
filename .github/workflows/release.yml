@@ -15,6 +15,10 @@
 # Da un'etichetta `v<versione>` il pacchetto è una release; da un ramo è un pacchetto di prova (`--prova`), con lo
 # stesso contenuto e lo stesso nome, nella cartella `dist/prova/` del runner.
 #
+# Fino a quando il repository è privato i minuti delle Actions sono contati: il pacchetto per Windows si compone sul PC
+# di sviluppo con lo stesso strumento (`bun run pacchetto`), e qui si lancia Linux, una volta per release. Il job di
+# Windows resta pronto per quando il repository sarà pubblico.
+#
 # Che cosa NON guarda: che il programma per Windows faccia ciò che deve oltre ad aprirsi e restare vivo (lo provano le
 # clausole della prova sul prodotto, sul pacchetto scaricato, e il controllo a ogni invio); che la finestra disegni
 # qualcosa (le fotografie si guardano); la firma dei programmi (non sono firmati); l'AppImage avviata con FUSE su una

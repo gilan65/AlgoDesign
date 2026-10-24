@@ -33,6 +33,20 @@ for (const casa of ["/root", "/home/runner"]) {
   });
 }
 
+test("una cartella che contiene solo voci giuste e cartelle giuste è giusta anche lei: la casa con dentro ~/.cache", () => {
+  // Misurato sulla macchina della CI: la casa cambia, dentro ha solo `~/.cache` (giusta perché contiene solo cache
+  // ammesse) e la cartella privata di un servizio di systemd in /tmp.
+  const casa = "/home/runner";
+  const giro = voci(casa, `${casa}/.cache`, `${casa}/.cache/mesa_shader_cache`, `${casa}/.cache/mesa_shader_cache/index`, "/tmp/systemd-private-5fca0bf5-systemd-timedated.service-mJ8kB3");
+  const r = residuo(giro, [], "/prova/data", casa, id);
+  expect(r.cartelle.map((v) => v.percorso).sort()).toEqual([casa, `${casa}/.cache`]);
+  expect(r.ammesse.map((v) => v.percorso)).toEqual([`${casa}/.cache/mesa_shader_cache`, `${casa}/.cache/mesa_shader_cache/index`, "/tmp/systemd-private-5fca0bf5-systemd-timedated.service-mJ8kB3"]);
+  expect(r.fuori).toEqual([]);
+  // Una voce estranea sotto la casa rende la casa fuori dall'elenco, insieme a lei.
+  const conEstranea = residuo(voci(...giro.map((v) => v.percorso), `${casa}/estranea.txt`), [], "/prova/data", casa, id);
+  expect(conEstranea.fuori.map((v) => v.percorso).sort()).toEqual([casa, `${casa}/estranea.txt`]);
+});
+
 test("il controllo positivo si dice spento senza la cartella dell'identificatore", () => {
   const r = residuo(voci("/root/.cache/dconf/user"), [], "/prova/data", "/root", id);
   expect(controlloPositivo(r, "/root", id)).toEqual({ viste: [], spente: ["nessuna cartella dell'identificatore sotto /root"] });
