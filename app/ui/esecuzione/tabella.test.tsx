@@ -349,6 +349,27 @@ test("durante «tutto insieme» la tabella non si ridisegna: si aggiorna quando 
   expect(righe().at(-1)?.getAttribute("data-riga")).toBe("1000000");
 }, 120_000);
 
+test("una seconda esecuzione uguale dopo «Ferma»: alla fine la tabella ha di nuovo le sue righe", async () => {
+  // La tabella si ridisegna quando cambia la sua versione, contata dai passi e dalle righe: una seconda esecuzione dello
+  // stesso programma finisce con lo stesso conto della prima, e la tabella restava quella vuota disegnata all'avvio (lo
+  // ha trovato la prova sul prodotto di Linux, e si vede in ogni motore).
+  await apriLaFinestra("troppi-passi.algo", testoDel("troppi-passi.algo"));
+  const fino = async () => {
+    await act(async () => {
+      fireEvent.keyDown(document.body, { key: "F5" });
+    });
+    await aspetta("la fine", () => statoMostrato() === it.statoFermataDaUnErrore);
+    return righe().length;
+  };
+  const prima = await fino();
+  await act(async () => {
+    fireEvent.keyDown(document.body, { key: "F5", shiftKey: true });
+  });
+  await aspetta("la fermata", () => statoMostrato() === it.statoPronto);
+  const seconda = await fino();
+  expect({ prima, seconda, ultima: righe().at(-1)?.getAttribute("data-riga") }).toEqual({ prima: 1001, seconda: 1001, ultima: "1000000" });
+}, 240_000);
+
 // ------------------------------------------------------------------------------- un vettore
 
 test("un vettore: una colonna per elemento, e la tabella è l'atteso scritto a mano", async () => {

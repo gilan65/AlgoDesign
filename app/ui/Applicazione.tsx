@@ -597,9 +597,12 @@ export function Applicazione({
   // La tabella di traccia del progetto eseguito, nella lingua, col separatore dei decimali e la forma dei vettori delle
   // Impostazioni: le stesse celle che si esportano col CSV «uguale».
   // La versione della tabella mostrata: durante «tutto insieme» quella dell'ultima fermata (la tabella si aggiorna
-  // quando l'esecuzione si ferma, non a ogni fetta).
-  const versioneDellaTabella = useRef(0);
-  if (esecuzione && statoEs?.genere !== "in corso") versioneDellaTabella.current = esecuzione.passi + esecuzione.traccia.tolte + esecuzione.traccia.righe.length;
+  // quando l'esecuzione si ferma, non a ogni fetta). Di un'esecuzione appena cominciata, la sua: una seconda esecuzione
+  // uguale finisce con lo stesso conto della prima, e col conto rimasto dalla prima la tabella non si ridisegnava più.
+  const versioneMostrata = useRef<{ readonly es: Esecuzione<CasoDiUnaFunzione>; readonly versione: number } | null>(null);
+  if (esecuzione && (statoEs?.genere !== "in corso" || versioneMostrata.current?.es !== esecuzione))
+    versioneMostrata.current = { es: esecuzione, versione: esecuzione.passi + esecuzione.traccia.tolte + esecuzione.traccia.righe.length };
+  const versioneDellaTabella = versioneMostrata.current?.versione ?? 0;
   const separatori = separatoriDelCsv(scelte, lingua);
   const tabellaMostrata = useMemo(
     () =>
@@ -709,7 +712,7 @@ export function Applicazione({
   const chiudiIlFermo = useCallback(() => setFermo(null), []);
   // Un oggetto solo per tutta la vita del riquadro fermo: il watch non si ridisegna a ogni fetta.
   const conIlFermo = useMemo(() => ({ chiudi: chiudiIlFermo }), [chiudiIlFermo]);
-  const versioneDelWatch = versioneDellaTabella.current;
+  const versioneDelWatch = versioneDellaTabella;
   const datoNelWatch = useMemo(
     () => (puntato && esecuzione && tabellaMostrata ? nelWatch(tabellaMostrata, esecuzione.traccia, puntato, funzioneDelWatch, livelloDelWatch) : undefined),
     // La versione dice quando la tabella è cambiata: la traccia cambia da sé.
@@ -3264,7 +3267,7 @@ export function Applicazione({
                   className={stili.tracciaNellaColonna}
                   style={altezzaTabella === null ? undefined : { height: altezzaTabella }}
                 >
-                  {tabellaMostrata && <TabellaDiTraccia tabella={tabellaMostrata} traccia={esecuzione.traccia} versione={versioneDellaTabella.current} visibile={conTabella && !conCodice} spiegazione={spiegazione} testi={testi} lingua={lingua} ferme={scelte.colonneFerme} disposizione={disposizione} disponi={setDisposizione} />}
+                  {tabellaMostrata && <TabellaDiTraccia tabella={tabellaMostrata} traccia={esecuzione.traccia} versione={versioneDellaTabella} visibile={conTabella && !conCodice} spiegazione={spiegazione} testi={testi} lingua={lingua} ferme={scelte.colonneFerme} disposizione={disposizione} disponi={setDisposizione} />}
                 </div>
               )}
               {esecuzione && conTabella && !conCodice && <Divisore pannello={pannelloTabella} larghezza={altezzaTabella} cambia={setAltezzaTabella} nome={testi.altezzaTabella} controlla={idTabella} orizzontale />}

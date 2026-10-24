@@ -347,8 +347,8 @@ async function corsaDelVettore(sessione: string, testi: (typeof dizionari)[Lingu
   misure.push({ cosa: "risposta alla fine", ms: await risposta() });
   const vista = (await script(
     sessione,
-    `const spiega = document.querySelector("[data-spiega]"); return { spiegazione: spiega?.textContent ?? null, colonne: spiega?.parentElement?.querySelector("thead tr")?.children.length ?? 0 };`,
-  )) as { spiegazione: string | null; colonne: number };
+    `const spiega = document.querySelector("[data-spiega]"); return { spiegazione: spiega?.textContent ?? null, colonne: spiega?.parentElement?.querySelector("thead tr")?.children.length ?? 0, righe: document.querySelectorAll("table[data-traccia] tbody tr[data-riga]").length };`,
+  )) as { spiegazione: string | null; colonne: number; righe: number };
   if (primaDiFermare !== undefined) await primaDiFermare();
   const t = Date.now();
   await tasti(sessione, maiusc, f5);
@@ -382,9 +382,11 @@ async function giroDelVettore(lingua: Lingua): Promise<void> {
   await chiudi(sessione);
   if (predefinita.spiegazione === null || inFila.spiegazione === null || predefinita.spiegazione === inFila.spiegazione || inFila.colonne >= predefinita.colonne)
     rosso("VETTORE", `le due corse non hanno mostrato le due forme: riga sopra la tabella ${JSON.stringify(predefinita.spiegazione)} e ${JSON.stringify(inFila.spiegazione)}, colonne ${predefinita.colonne} e ${inFila.colonne}; ${predefinita.descritte}; ${inFila.descritte}`);
+  // In ciascuna la tabella ha le sue righe alla fine (la seconda esecuzione la lasciava vuota: trovato qui).
+  if (predefinita.righe === 0 || inFila.righe === 0) rosso("VETTORE", `a esecuzione finita la tabella senza righe: ${predefinita.righe} nella forma predefinita, ${inFila.righe} in fila`);
   const peggiore = Math.max(predefinita.peggiore, inFila.peggiore);
   console.log(
-    `VETTORE: VERDE | in «${lingua}», F5 sul vettore di 1000 elementi riempito da un ciclo, dato come argomento; ${predefinita.descritte} (${predefinita.colonne} colonne); ${inFila.descritte} (${inFila.colonne} colonne); il più lungo ${peggiore} ms, margine ${Math.round((100 * (SOGLIA_MS - peggiore)) / SOGLIA_MS)}% (soglia ${SOGLIA_MS} ms) | controllo positivo: le due forme diverse (la riga sopra la tabella e le colonne), il campionatore acceso`,
+    `VETTORE: VERDE | in «${lingua}», F5 sul vettore di 1000 elementi riempito da un ciclo, dato come argomento; ${predefinita.descritte} (${predefinita.colonne} colonne); ${inFila.descritte} (${inFila.colonne} colonne); righe disegnate alla fine ${predefinita.righe} e ${inFila.righe}; il più lungo ${peggiore} ms, margine ${Math.round((100 * (SOGLIA_MS - peggiore)) / SOGLIA_MS)}% (soglia ${SOGLIA_MS} ms) | controllo positivo: le due forme diverse (la riga sopra la tabella e le colonne), il campionatore acceso`,
   );
 }
 
