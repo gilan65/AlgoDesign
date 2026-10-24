@@ -41,7 +41,9 @@ jobs:
         run: |
           rustup toolchain install $env:RUST_VERSION --profile minimal
           rustup default $env:RUST_VERSION
-          & ([scriptblock]::Create((Invoke-RestMethod https://bun.sh/install.ps1))) -Version $env:BUN_VERSION
+          # In un processo a parte: l'installatore di Bun riscrive il PATH della sessione, e Rust non si troverebbe più.
+          pwsh -NoProfile -Command "& ([scriptblock]::Create((Invoke-RestMethod https://bun.sh/install.ps1))) -Version $env:BUN_VERSION"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           "$HOME\.bun\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
           rustc --version
 
