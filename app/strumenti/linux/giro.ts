@@ -394,7 +394,13 @@ async function suggerimento(sessione: string): Promise<void> {
   // La cella del vettore in fila: quella col suggerimento più lungo fra le celle disegnate coi pezzi del valore.
   const trova = `const celle = [...document.querySelectorAll("tbody td[title]")].filter((td) => td.querySelector("div") !== null && td.title.includes(" · ")); const c = celle.sort((a, b) => b.title.length - a.title.length)[0];`;
   const cella = (await script(sessione, `${trova} if (c === undefined) return null; c.scrollIntoView({ block: "center", inline: "center" }); return c;`)) as Record<string, string> | null;
-  if (cella === null) rosso("SUGGERIMENTO", "nessuna cella del vettore in fila disegnata nella tabella");
+  if (cella === null) {
+    const visto = await script(
+      sessione,
+      `const t = [...document.querySelectorAll("td[title]")]; const b = [...document.querySelectorAll("tbody td[title]")]; const d = b.filter((td) => td.querySelector("div") !== null); return { celleColTitolo: t.length, nelCorpo: b.length, coiPezzi: d.length, coiPunti: d.filter((td) => td.title.includes(" · ")).length, righe: document.querySelectorAll("tbody tr").length, spiegazione: document.querySelector("[data-spiega]")?.textContent ?? null, esempio: (b[2] ?? t[0])?.outerHTML.slice(0, 200) ?? null };`,
+    );
+    rosso("SUGGERIMENTO", `nessuna cella del vettore in fila disegnata nella tabella: ${JSON.stringify(visto)}`);
+  }
   const testo = (await script(sessione, `${trova} return c.title;`)) as string;
   const muovi = (x: number) => ({ type: "pointerMove", duration: 100, origin: cella, x, y: 0 });
   await wd("POST", `/session/${sessione}/actions`, { actions: [{ type: "pointer", id: "mouse", parameters: { pointerType: "mouse" }, actions: [muovi(0), { type: "pause", duration: 200 }, muovi(2)] }] });
