@@ -1,23 +1,40 @@
-# La build di release, lanciata a mano, per le piattaforme scelte (oggi Windows). Il job di Windows compone il
+# La build di release, lanciata a mano, per le piattaforme scelte (Windows e Linux). Il job di Windows compone il
 # pacchetto portabile con `bun run pacchetto` (lo zip, la sua impronta e i controlli dello strumento: l'albero, le
 # proprietà dell'eseguibile, nessun percorso della macchina nei byte, le voci dell'elenco, le licenze, la doppia lettura
-# dello zip), lo estrae in una cartella con spazi, avvia il programma una volta (resta vivo per 20 s, fotografia dello
+# dello zip); quello di Linux compone l'archivio con `strumenti/archivio.ts` (l'AppImage su Ubuntu 22.04, la glibc più
+# vecchia fra le immagini, gli stessi controlli più le librerie di Ubuntu dentro l'AppImage coi loro copyright). Ognuno
+# estrae il suo archivio in una cartella con spazi, avvia il programma una volta (resta vivo per 20 s, fotografia dello
 # schermo) e carica gli artefatti. Non pubblica nulla: la release si crea a parte dagli artefatti scaricati.
+#
+# Con «prove» acceso (una volta per release) corrono anche, sull'archivio di Linux della stessa corsa o sul sorgente:
+# - le prove dell'interfaccia nel WebKit di Playwright per Linux (il progetto `webkit-anteprima`, `strumenti/webkit.ts`);
+# - la prova sul prodotto dell'AppImage col WebKitGTK di Ubuntu 22.04 (`strumenti/linux/prova-ci.ts`): lingua,
+#   esecuzione, vettore di 1000 elementi, suggerimento fotografato, memoria, tracce fuori da `data/`;
+# - il test differenziale col gcc e il clang di Ubuntu 24.04 (`bun run differenziale`, con gli avvisi attesi).
 #
 # Da un'etichetta `v<versione>` il pacchetto è una release; da un ramo è un pacchetto di prova (`--prova`), con lo
 # stesso contenuto e lo stesso nome, nella cartella `dist/prova/` del runner.
 #
-# Che cosa NON guarda: che il programma faccia ciò che deve oltre ad aprirsi e restare vivo (lo provano le clausole
-# della prova sul prodotto, sul pacchetto scaricato, e il controllo a ogni invio); che la finestra disegni qualcosa (la
-# fotografia si guarda); la firma dell'eseguibile (non è firmato); Linux e macOS.
+# Fino a quando il repository è privato i minuti delle Actions sono contati: il pacchetto per Windows si compone sul PC
+# di sviluppo con lo stesso strumento (`bun run pacchetto`), e qui si lancia Linux, una volta per release. Il job di
+# Windows resta pronto per quando il repository sarà pubblico.
+#
+# Che cosa NON guarda: che il programma per Windows faccia ciò che deve oltre ad aprirsi e restare vivo (lo provano le
+# clausole della prova sul prodotto, sul pacchetto scaricato, e il controllo a ogni invio); che la finestra disegni
+# qualcosa (le fotografie si guardano); la firma dei programmi (non sono firmati); l'AppImage avviata con FUSE su una
+# macchina pulita (lo fa `verifica.yml`, dalla release); un desktop Linux vero; macOS.
 name: release
 
 on:
   workflow_dispatch:
     inputs:
       piattaforme:
-        description: "Piattaforme da costruire, separate da virgole"
+        description: "Piattaforme da costruire, separate da virgole (windows, linux)"
         default: "windows"
+      prove:
+        description: "Anche le prove di Linux: WebKit, prodotto, differenziale (una volta per release)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -99,3 +116,186 @@ jobs:
           name: windows
           path: uscita/
           if-no-files-found: error
+
+  linux:
+    if: contains(inputs.piattaforme || 'windows', 'linux')
+    # La glibc più vecchia fra le immagini disponibili: l'AppImage parte solo dove la glibc è uguale o più nuova.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Dipendenze di sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev file xvfb imagemagick
+
+      - name: Rust e Bun
+        run: |
+          rustup toolchain install "$RUST_VERSION" --profile minimal
+          rustup default "$RUST_VERSION"
+          curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}"
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+
+      - name: Dipendenze
+        working-directory: app
+        run: |
+          bun --version
+          bun install --frozen-lockfile
+
+      - name: Archivio
+        working-directory: app
+        run: bun ./strumenti/archivio.ts --piattaforma linux --testi ../rilascio/linux ${{ github.ref_type != 'tag' && '--prova' || '' }}
+
+      - name: Raccolta
+        run: |
+          mkdir -p uscita
+          if [ "${{ github.ref_type }}" = "tag" ]; then cartella=dist; else cartella=dist/prova; fi
+          trovati=$(find "${cartella}" -maxdepth 1 -name 'AlgoDesign-*-linux-x64.tar.gz')
+          echo "archivi trovati: ${trovati}"
+          test "$(echo "${trovati}" | grep -c .)" -eq 1
+          cp "${trovati}" "${trovati}.sha256" uscita/
+          cp app/.collaudo/archivio-*.log uscita/
+          # Il commit da cui nasce l'archivio, con il ramo o l'etichetta e la corsa.
+          printf 'commit %s\nref %s\ncorsa %s\n' "$(git rev-parse HEAD)" "${{ github.ref }}" "${{ github.run_id }}" > uscita/commit.txt
+          cat uscita/commit.txt
+
+      - name: Avvio di prova
+        run: |
+          dove="${RUNNER_TEMP}/prova con spazi"
+          mkdir -p "${dove}"
+          tar -xzf uscita/AlgoDesign-*-linux-x64.tar.gz -C "${dove}"
+          cd "${dove}"/AlgoDesign-*/
+          Xvfb :99 -screen 0 1280x800x24 &
+          sleep 2
+          # Senza FUSE l'AppImage si estrae e parte da lì; l'avvio con FUSE lo prova `verifica.yml`.
+          DISPLAY=:99 APPIMAGE_EXTRACT_AND_RUN=1 ./AlgoDesign.AppImage > "${GITHUB_WORKSPACE}/uscita/avvio-linux.log" 2>&1 &
+          pid=$!
+          sleep 20
+          import -display :99 -window root "${GITHUB_WORKSPACE}/uscita/schermo-linux.png" || echo "fotografia dello schermo non riuscita"
+          echo "contenuto di data/:"; find data | sort
+          kill -0 "${pid}" || { echo "ROSSO: il programma non è più vivo dopo 20 s"; cat "${GITHUB_WORKSPACE}/uscita/avvio-linux.log"; exit 1; }
+          echo "VERDE: il programma è vivo dopo 20 s"
+          kill "${pid}"
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: linux
+          path: uscita/
+          if-no-files-found: error
+
+  webkit-linux:
+    if: inputs.prove && contains(inputs.piattaforme || 'windows', 'linux')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Bun
+        working-directory: .
+        run: |
+          curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}"
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+
+      - name: Dipendenze e WebKit di Playwright
+        run: |
+          bun install --frozen-lockfile
+          ./node_modules/.bin/playwright install --with-deps webkit
+          # Le misure delle prove che dipendono dal carattere (le righe della barra) sono quelle di DejaVu Sans.
+          echo "carattere di sistema: $(fc-match system-ui)"
+
+      - name: Prove dell'interfaccia in WebKit
+        run: bun ./strumenti/webkit.ts --progetto webkit-anteprima --processi 2
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: webkit-linux
+          # `.collaudo` comincia col punto: senza questa riga il caricamento salta i suoi file (misurato).
+          include-hidden-files: true
+          path: |
+            app/.collaudo/webkit-*
+            app/.collaudo/playwright/
+
+  prodotto-linux:
+    if: inputs.prove && contains(inputs.piattaforme || 'windows', 'linux')
+    needs: linux
+    # La macchina della build: il WebKitWebDriver di Ubuntu 22.04 è della stessa versione del WebKitGTK nell'AppImage.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Schermo virtuale, pilota di WebKitGTK, fotografie e lingue del sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends webkit2gtk-driver xvfb imagemagick locales
+          sudo locale-gen it_IT.UTF-8 en_US.UTF-8
+
+      - name: Rust, tauri-driver e Bun
+        run: |
+          rustup toolchain install "$RUST_VERSION" --profile minimal
+          rustup default "$RUST_VERSION"
+          cargo install tauri-driver --version 2.1.0 --locked
+          curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}"
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+
+      - uses: actions/download-artifact@v5
+        with:
+          name: linux
+          path: archivio
+
+      - name: Dipendenze
+        working-directory: app
+        run: bun install --frozen-lockfile
+
+      - name: Prova sul prodotto
+        working-directory: app
+        run: bun ./strumenti/linux/prova-ci.ts --archivio "$(find ../archivio -maxdepth 1 -name 'AlgoDesign-*-linux-x64.tar.gz')" --uscita ../uscita-prodotto
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: prodotto-linux
+          path: uscita-prodotto/
+
+  differenziale-linux:
+    if: inputs.prove && contains(inputs.piattaforme || 'windows', 'linux')
+    # Il gcc 13 e il clang di Ubuntu 24.04: l'avviso della ricorsione infinita c'è dal gcc 12.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Bun
+        working-directory: .
+        run: |
+          curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}"
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+
+      - name: Dipendenze e compilatori
+        run: |
+          bun install --frozen-lockfile
+          gcc --version | head -1
+          clang --version | head -1
+          python3 --version
+
+      - name: Test differenziale
+        run: |
+          mkdir -p ../uscita-differenziale
+          bun run differenziale > ../uscita-differenziale/differenziale.log 2>&1 && codice=0 || codice=$?
+          tail -40 ../uscita-differenziale/differenziale.log
+          echo "exit ${codice}"
+          exit "${codice}"
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: differenziale-linux
+          path: uscita-differenziale/

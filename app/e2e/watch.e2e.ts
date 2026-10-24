@@ -53,6 +53,26 @@ const watch = (page: Page) => page.locator('[role="tooltip"][data-watch]');
 /** Il nome di un dato in un blocco; `valore:x` è il blocco del valore iniziale del dato `x`. */
 const nome = (page: Page, blocco: string, dato: string) =>
   page.locator(`${blocco.startsWith("valore:") ? `[data-iniziale-di="${blocco.slice(7)}"]` : `[data-blocco="${blocco}"]`} [data-watch-dato="${dato}"]`).first();
+/** Lo scorrimento morbido del disegno verso il blocco corrente finito: la posizione uguale per cinque fotogrammi di fila.
+ * Sotto carico l'animazione si ferma per qualche fotogramma, Playwright guarda la posizione su due soli, e il clic cadeva
+ * dove il nome era prima (misurato nel WebKit per Linux col carattere DejaVu Sans: 20 px più a sinistra, e il clic
+ * prendeva il disegno). */
+const scorrimentoFinito = (page: Page) =>
+  page.getByRole("region", { name: it.vistaFlowchart, exact: true }).evaluate(
+    (tela) =>
+      new Promise<void>((fatto) => {
+        let prima = "";
+        let uguali = 0;
+        const giro = () => {
+          const ora = `${tela.scrollLeft},${tela.scrollTop}`;
+          uguali = ora === prima ? uguali + 1 : 0;
+          prima = ora;
+          if (uguali >= 5) fatto();
+          else requestAnimationFrame(giro);
+        };
+        requestAnimationFrame(giro);
+      }),
+  );
 const giri = (page: Page, n = 2) =>
   page.evaluate((k) => new Promise((r) => {
     const uno = (i: number) => (i === 0 ? r(undefined) : requestAnimationFrame(() => uno(i - 1)));
@@ -248,7 +268,9 @@ test("un vettore di 1000 elementi: un clic sul nome ferma il riquadro, che prend
   expect(sopraIlNome, "in nessuna finestra il riquadro sta sopra il nome: la prova non direbbe nulla").toBeGreaterThan(0);
 });
 
-/** Una stringa lunga senza spazi, due vettori di 30 elementi riempiti da un ciclo: il riquadro fermo largo e alto. */
+/** Una stringa lunga senza spazi, due vettori di 60 elementi riempiti da un ciclo: il riquadro fermo largo e alto. Con 30
+ * elementi, nel WebKit per Linux col carattere DejaVu Sans il riquadro di `v` li conteneva tutti a 1920 × 1080, e non
+ * scorreva (misurato): 60 lo fanno scorrere con ogni carattere, e la premessa sotto lo controlla. */
 const lunghiEVettori = JSON.stringify({
   format: "algodesign",
   schema_version: 1,
@@ -260,15 +282,15 @@ const lunghiEVettori = JSON.stringify({
       data: [
         // Senza spazi: non va a capo, ed esce di lato.
         { name: "s", type: "string", initial: `"${"abcdefghij".repeat(15)}"` },
-        { name: "v", type: "integer", size: 30 },
-        { name: "w", type: "integer", size: 30 },
+        { name: "v", type: "integer", size: 60 },
+        { name: "w", type: "integer", size: 60 },
         { name: "i", type: "integer", initial: "0" },
       ],
       body: [
         {
           id: "b1",
           kind: "while",
-          condition: "i < 30",
+          condition: "i < 60",
           body: [
             { id: "b2", kind: "assignment", target: "v[i]", value: "i" },
             { id: "b3", kind: "assignment", target: "w[i]", value: "2 * i" },
@@ -290,12 +312,14 @@ test("il riquadro fermo: una stringa lunga si scorre di lato, cambiando dato lo 
   await page.getByRole("region", { name: it.vistaFlowchart, exact: true }).click({ position: { x: 5, y: 5 } });
   await page.keyboard.press("F10");
   await expect(statoDi(page)).toHaveText(riempi(it.statoInPausa, { n: "1" }));
+  await scorrimentoFinito(page);
   await nome(page, "b2", "v").click();
   await expect(fermo).toBeVisible();
   expect(await page.locator('[data-blocco="b2"]').first().getAttribute("aria-pressed")).not.toBe("true");
   await page.keyboard.press("Escape");
   await page.keyboard.press("F5");
   await expect(statoDi(page)).toHaveText(it.statoFinita);
+  await scorrimentoFinito(page);
 
   // La stringa lunga: la rotella di lato la scorre (prima l'eccedenza era nascosta, e la fine non si leggeva).
   await nome(page, "b5", "s").click();
@@ -313,6 +337,9 @@ test("il riquadro fermo: una stringa lunga si scorre di lato, cambiando dato lo 
   await nome(page, "b2", "v").click();
   const fv = (await fermo.boundingBox())!;
   await page.mouse.move(fv.x + fv.width / 2, fv.y + fv.height / 2);
+  // Premessa: gli elementi del vettore non stanno tutti nel riquadro.
+  const altezza = await fermo.evaluate((e) => ({ dentro: e.scrollHeight, visibile: e.clientHeight }));
+  expect(altezza.dentro, `il riquadro di v contiene tutti gli elementi: ${JSON.stringify(altezza)}`).toBeGreaterThan(altezza.visibile);
   for (let k = 0; k < 10; k++) await page.mouse.wheel(0, 1500);
   await expect.poll(() => fermo.evaluate((e) => e.scrollTop)).toBeGreaterThan(0);
   await nome(page, "b3", "w").click();

@@ -1,7 +1,8 @@
 # Il controllo a ogni invio, su Linux: i tipi delle tre configurazioni di `tsc`, le prove di `bun test` e i casi d'uso
-# del corpus. Su un ramo qualsiasi corre la parte veloce (tipi e casi); le prove intere corrono sugli invii di `master`
-# e quando il controllo si lancia a mano con «prove» acceso. Ogni passo corre anche se uno prima è rosso, così un esito
-# rosso li mostra tutti.
+# del corpus. A ogni invio, su ogni ramo e anche su `master`, corre la parte veloce (tipi e casi, circa un minuto); le
+# prove intere (circa 13 minuti) solo quando il controllo si lancia a mano con «prove» acceso: fino a quando il
+# repository è privato i minuti delle Actions sono contati, e le prove intere corrono nel collaudo sul PC di sviluppo.
+# Ogni passo corre anche se uno prima è rosso, così un esito rosso li mostra tutti.
 #
 # Che cosa NON guarda: la build dell'app e del guscio (`bun run build`, `bun tauri build`), le prove dell'interfaccia
 # nei motori (Playwright), le prove del guscio in Rust (`cargo test`), il test differenziale col compilatore C, Windows
@@ -56,7 +57,7 @@ jobs:
         run: ./node_modules/.bin/tsc -p tsconfig.strumenti.json --noEmit
 
       - name: Prove (bun test)
-        if: ${{ !cancelled() && (github.ref == 'refs/heads/master' || (github.event_name == 'workflow_dispatch' && inputs.prove)) }}
+        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.prove }}
         run: bun test
 
       - name: Casi d'uso del corpus

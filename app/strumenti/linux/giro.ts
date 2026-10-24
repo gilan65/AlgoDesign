@@ -15,13 +15,26 @@
 //   fine e «Ferma» entro un secondo. Qui la risposta passa da WebDriver (il giro HTTP verso tauri-driver ci entra) e
 //   i fotogrammi sono quelli di Xvfb, senza GPU: non sono quelli di un desktop vero;
 // - senza-data: lo stesso eseguibile, con un cambio di lingua, deve scrivere la preferenza sotto la home.
-//   Le tracce le guarda `prova.ts`, da fuori, con `docker diff`.
+//   Le tracce le guarda chi lancia il giro, da fuori: `prova.ts` con `docker diff`, `prova-ci.ts` con `find -newer`.
 // In portabile e senza-data si stampano `navigator.language` contro `LANG` e il valore di `APPIMAGE`
 // letto dall'ambiente del processo dell'app.
 //
+// Sulla macchina della CI (`prova-ci.ts`) le cartelle vengono dall'ambiente: `ALGODESIGN_SORGENTI` (la cartella `app`
+// del repository, al posto di `/sorgenti`), `ALGODESIGN_CARTELLA_PROVA` (la cartella dell'archivio estratto, con
+// l'AppImage e `data/` vuota: il giro senza `data` la toglie) e `ALGODESIGN_USCITA` (dove vanno la fotografia del
+// suggerimento e le misure della memoria). Lì il giro portabile fa in più due misure:
+// - SUGGERIMENTO: alla fine della corsa del vettore in fila, il puntatore del mouse sulla cella del vettore e, dopo tre
+//   secondi, la fotografia dello schermo virtuale con il suggerimento di WebKitGTK; quanti elementi vi si leggono lo
+//   dice chi guarda la fotografia;
+// - MEMORIA: il ciclo che scrive seimila caratteri a giro, eseguito per 120 s; la memoria privata dei processi dell'app
+//   e di WebKitGTK ogni 2 s. La soglia, scritta prima della misura (`SOGLIA_FONDO_MB`): il fondo, cioè il valore più
+//   basso degli ultimi 60 s, sale al più di 100 MB sopra il valore a 10 s. Il picco si scrive e non ferma: in WebKit
+//   la memoria si libera a dente di sega.
+//
 // Il pilota è un client WebDriver W3C minimo (fetch) verso tauri-driver, che passa a WebKitWebDriver.
 
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { basename, join } from "node:path";
 import { vettoreRiempito } from "../../e2e/vettore-riempito";
 import { dizionari, linguaDelSistema, nomiLingue, riempi, type Lingua } from "../../i18n/lingue";
@@ -32,17 +45,37 @@ if (giro !== "base" && giro !== "portabile" && giro !== "senza-data") {
   process.exit(2);
 }
 
-const identificatore = JSON.parse(readFileSync("/sorgenti/shell/tauri.conf.json", "utf8")).identifier as string;
+const sorgenti = process.env.ALGODESIGN_SORGENTI ?? "/sorgenti";
+// Sulla macchina della CI la cartella di prova è l'archivio estratto, già pronto; nel container la prepara il giro.
+const estratta = process.env.ALGODESIGN_CARTELLA_PROVA;
+const uscita = process.env.ALGODESIGN_USCITA;
+const identificatore = JSON.parse(readFileSync(join(sorgenti, "shell", "tauri.conf.json"), "utf8")).identifier as string;
 const cartellaBundle = "/lavoro/target/release/bundle/appimage";
-const cartellaProva = "/prova portabile";
+const cartellaProva = estratta ?? "/prova portabile";
 const appimage = join(cartellaProva, "AlgoDesign.AppImage");
 const dati = join(cartellaProva, "data");
 const driver = "http://127.0.0.1:4444";
 // Il programma della clausola ESECUZIONE, letto dai sorgenti montati in sola lettura (fuori dal `docker diff`).
-const riferimento = "/sorgenti/casi/tappa-1/riferimento-media-voti.algo";
+const riferimento = join(sorgenti, "casi", "tappa-1", "riferimento-media-voti.algo");
 // Il programma della clausola VETTORE, scritto nella cartella di prova da ogni giro (la base compresa: `prova.ts` lo
 // sottrae con la linea di base).
 const vettore = join(cartellaProva, "vettore di prova.algo");
+// Il programma della misura della memoria, scritto come il vettore: un ciclo senza fine che scrive seimila caratteri a giro.
+const pesante = join(cartellaProva, "memoria di prova.algo");
+const programmaPesante = JSON.stringify({
+  format: "algodesign",
+  schema_version: 1,
+  metadata: { name: "memoria" },
+  functions: [
+    {
+      id: "f1",
+      kind: "main",
+      data: [{ name: "s", type: "string", max_length: 1000, initial: `"${"x".repeat(1000)}"` }],
+      body: [{ id: "b1", kind: "while", condition: "true", body: [{ id: "b2", kind: "write", values: ["s", "s", "s", "s", "s", "s"], newline: true }] }],
+      end: { id: "bz" },
+    },
+  ],
+});
 // Nel container FUSE manca e l'AppImage non parte («fuse: device not found», misurato): il suo runtime si
 // estrae in /tmp e si avvia da lì. tauri-driver passa l'ambiente a WebKitWebDriver, che lo passa all'app.
 const ambiente = { ...process.env, DISPLAY: ":99", APPIMAGE_EXTRACT_AND_RUN: "1" };
@@ -213,6 +246,7 @@ async function giroPortabile(): Promise<void> {
   await chiudi(terza);
   await giroDellEsecuzione(iniziale);
   await giroDelVettore(iniziale);
+  if (uscita !== undefined) await giroDellaMemoria(iniziale);
   const profilo = join(dati, "webview");
   console.log(
     `LINGUA: VERDE | «${iniziale}» → «${opposta}», ritrovata dopo la chiusura; data/preferenze.json con «${opposta}» | controllo positivo acceso (senza il file torna «${iniziale}») | data/webview: ${existsSync(profilo) ? contaFile(profilo) : 0} file`,
@@ -280,7 +314,7 @@ async function tasti(sessione: string, ...codici: string[]): Promise<void> {
  *  andata e ritorno, qui attraverso WebDriver) due secondi dopo F5 e alla fine, il fotogramma più lungo dal tasto alla
  *  fine (un campionatore nella pagina, acceso prima di F5, che conta anche i fotogrammi), «Ferma» dal tasto alla
  *  colonna chiusa; la riga sopra la tabella e le colonne dell'intestazione dicono la forma che si vedeva. */
-async function corsaDelVettore(sessione: string, testi: (typeof dizionari)[Lingua], forma: string) {
+async function corsaDelVettore(sessione: string, testi: (typeof dizionari)[Lingua], forma: string, primaDiFermare?: () => Promise<void>) {
   const f5 = String.fromCharCode(0xe035);
   const maiusc = String.fromCharCode(0xe008);
   const risposta = async () => {
@@ -313,8 +347,9 @@ async function corsaDelVettore(sessione: string, testi: (typeof dizionari)[Lingu
   misure.push({ cosa: "risposta alla fine", ms: await risposta() });
   const vista = (await script(
     sessione,
-    `const spiega = document.querySelector("[data-spiega]"); return { spiegazione: spiega?.textContent ?? null, colonne: spiega?.parentElement?.querySelector("thead tr")?.children.length ?? 0 };`,
-  )) as { spiegazione: string | null; colonne: number };
+    `const spiega = document.querySelector("[data-spiega]"); return { spiegazione: spiega?.textContent ?? null, colonne: spiega?.parentElement?.querySelector("thead tr")?.children.length ?? 0, righe: document.querySelectorAll("table[data-traccia] tbody tr[data-riga]").length };`,
+  )) as { spiegazione: string | null; colonne: number; righe: number };
+  if (primaDiFermare !== undefined) await primaDiFermare();
   const t = Date.now();
   await tasti(sessione, maiusc, f5);
   const fermata = await attendiStato(testi.statoPronto, 120_000);
@@ -343,21 +378,115 @@ async function giroDelVettore(lingua: Lingua): Promise<void> {
   await clicSu(sessione, `//*[@role="dialog"]//label[normalize-space()="${testi.formaInFila}"]`);
   await clicSu(sessione, `//*[@role="dialog"]//button[normalize-space()="${testi.progettoConferma}"]`);
   await attendi("la finestra delle Impostazioni chiusa", async () => ((await script(sessione, `return document.querySelector('[role="dialog"]') === null;`)) ? true : undefined), 100);
-  const inFila = await corsaDelVettore(sessione, testi, "in fila (scelta nelle Impostazioni)");
+  const inFila = await corsaDelVettore(sessione, testi, "in fila (scelta nelle Impostazioni)", uscita === undefined ? undefined : () => suggerimento(sessione));
   await chiudi(sessione);
   if (predefinita.spiegazione === null || inFila.spiegazione === null || predefinita.spiegazione === inFila.spiegazione || inFila.colonne >= predefinita.colonne)
     rosso("VETTORE", `le due corse non hanno mostrato le due forme: riga sopra la tabella ${JSON.stringify(predefinita.spiegazione)} e ${JSON.stringify(inFila.spiegazione)}, colonne ${predefinita.colonne} e ${inFila.colonne}; ${predefinita.descritte}; ${inFila.descritte}`);
+  // In ciascuna la tabella ha le sue righe alla fine (la seconda esecuzione la lasciava vuota: trovato qui).
+  if (predefinita.righe === 0 || inFila.righe === 0) rosso("VETTORE", `a esecuzione finita la tabella senza righe: ${predefinita.righe} nella forma predefinita, ${inFila.righe} in fila`);
   const peggiore = Math.max(predefinita.peggiore, inFila.peggiore);
   console.log(
-    `VETTORE: VERDE | in «${lingua}», F5 sul vettore di 1000 elementi riempito da un ciclo, dato come argomento; ${predefinita.descritte} (${predefinita.colonne} colonne); ${inFila.descritte} (${inFila.colonne} colonne); il più lungo ${peggiore} ms, margine ${Math.round((100 * (SOGLIA_MS - peggiore)) / SOGLIA_MS)}% (soglia ${SOGLIA_MS} ms) | controllo positivo: le due forme diverse (la riga sopra la tabella e le colonne), il campionatore acceso`,
+    `VETTORE: VERDE | in «${lingua}», F5 sul vettore di 1000 elementi riempito da un ciclo, dato come argomento; ${predefinita.descritte} (${predefinita.colonne} colonne); ${inFila.descritte} (${inFila.colonne} colonne); righe disegnate alla fine ${predefinita.righe} e ${inFila.righe}; il più lungo ${peggiore} ms, margine ${Math.round((100 * (SOGLIA_MS - peggiore)) / SOGLIA_MS)}% (soglia ${SOGLIA_MS} ms) | controllo positivo: le due forme diverse (la riga sopra la tabella e le colonne), il campionatore acceso`,
   );
+}
+
+/** SUGGERIMENTO: il puntatore del mouse su una cella del vettore in fila della tabella, poi, dopo tre secondi, la
+ *  fotografia dello schermo virtuale. */
+async function suggerimento(sessione: string): Promise<void> {
+  // La cella del vettore in fila: quella col suggerimento più lungo fra le celle disegnate coi pezzi del valore.
+  const trova = `const celle = [...document.querySelectorAll("tbody td[title]")].filter((td) => td.querySelector("div") !== null && td.title.includes(" · ")); const c = celle.sort((a, b) => b.title.length - a.title.length)[0];`;
+  // A corsa finita la tabella disegna le righe in vista al fotogramma dopo: si aspetta la cella fino a 5 s.
+  let cella: Record<string, string> | null = null;
+  for (let d = 0; d < 50 && cella === null; d++) {
+    cella = (await script(sessione, `${trova} if (c === undefined) return null; c.scrollIntoView({ block: "center", inline: "nearest" }); return c;`)) as Record<string, string> | null;
+    if (cella === null) await Bun.sleep(100);
+  }
+  if (cella === null) {
+    const scatto = Bun.spawn(["import", "-display", ":99", "-window", "root", join(uscita!, "suggerimento-tabella-senza-celle.png")], { stdout: "ignore", stderr: "ignore" });
+    await scatto.exited;
+    const visto = await script(
+      sessione,
+      `const t = [...document.querySelectorAll("td[title]")]; const b = [...document.querySelectorAll("tbody td[title]")]; const d = b.filter((td) => td.querySelector("div") !== null); const corpo = document.querySelector("tbody"); const scorre = corpo?.closest("table")?.parentElement; return { celleColTitolo: t.length, nelCorpo: b.length, coiPezzi: d.length, coiPunti: d.filter((td) => td.title.includes(" · ")).length, righe: [...document.querySelectorAll("tbody tr")].map((tr) => \`\${tr.getAttribute("data-riga") ?? "-"}:\${Math.round(tr.getBoundingClientRect().height)}\`), contenitore: scorre ? { alto: scorre.clientHeight, scorrimento: scorre.scrollTop, totale: scorre.scrollHeight } : null, finestra: [innerWidth, innerHeight], spiegazione: document.querySelector("[data-spiega]")?.textContent ?? null };`,
+    );
+    rosso("SUGGERIMENTO", `nessuna cella del vettore in fila disegnata nella tabella: ${JSON.stringify(visto)}`);
+  }
+  const testo = (await script(sessione, `${trova} return c.title;`)) as string;
+  const muovi = (x: number) => ({ type: "pointerMove", duration: 100, origin: cella, x, y: 0 });
+  await wd("POST", `/session/${sessione}/actions`, { actions: [{ type: "pointer", id: "mouse", parameters: { pointerType: "mouse" }, actions: [muovi(0), { type: "pause", duration: 200 }, muovi(2)] }] });
+  await Bun.sleep(3_000);
+  const foto = join(uscita!, "suggerimento-webkitgtk.png");
+  const scatto = Bun.spawn(["import", "-display", ":99", "-window", "root", foto], { stdout: "ignore", stderr: "pipe" });
+  const [errore, codice] = await Promise.all([new Response(scatto.stderr).text(), scatto.exited]);
+  if (codice !== 0 || !existsSync(foto)) rosso("SUGGERIMENTO", `la fotografia non è riuscita (exit ${codice}): ${errore.trim()}`);
+  console.log(`SUGGERIMENTO: FOTOGRAFATO | ${foto}: il puntatore del mouse su una cella del vettore in fila (il testo intero ha ${testo.split(" · ").length} elementi, ${testo.length} caratteri); quanti se ne leggono lo dice la fotografia`);
+}
+
+/** La soglia della misura della memoria, scritta prima della misura: il fondo degli ultimi 60 s sopra il valore a 10 s. */
+const SOGLIA_FONDO_MB = 100;
+
+/** La memoria privata dei processi dell'app e di WebKitGTK (`algodesign`, `WebKit*Process`), in MB, da `smaps_rollup`. */
+function memoriaDellApp(): { mb: number; processi: number } {
+  let kb = 0;
+  let processi = 0;
+  for (const pid of readdirSync("/proc").filter((v) => /^\d+$/.test(v))) {
+    try {
+      const nome = basename(readlinkSync(`/proc/${pid}/exe`));
+      if (nome !== "algodesign" && !(nome.startsWith("WebKit") && nome.endsWith("Process"))) continue;
+      const righe = readFileSync(`/proc/${pid}/smaps_rollup`, "latin1");
+      for (const m of righe.matchAll(/^Private_(Clean|Dirty):\s+(\d+) kB$/gm)) kb += Number(m[2]);
+      processi++;
+    } catch {
+      // Uscito nel frattempo, o non nostro.
+    }
+  }
+  return { mb: Math.round(kb / 1024), processi };
+}
+
+/** MEMORIA: il ciclo dei seimila caratteri per 120 s, la memoria ogni 2 s, poi «Ferma». */
+async function giroDellaMemoria(lingua: Lingua): Promise<void> {
+  const testi = dizionari[lingua];
+  const sessione = await avvia([pesante]);
+  const flowchart = `${testi.flowchart}: memoria`;
+  await attendi(`il flowchart «${flowchart}»`, async () => ((await script(sessione, `return document.querySelector(${JSON.stringify(`[role="group"][aria-label="${flowchart}"]`)}) !== null;`)) ? true : undefined), 150);
+  const stato = (): Promise<string> => script(sessione, `return document.querySelector("[data-stato-esecuzione]")?.textContent ?? "";`).catch(() => "");
+  const prima = memoriaDellApp();
+  const f5 = String.fromCharCode(0xe035);
+  await tasti(sessione, f5);
+  const partenza = Date.now();
+  const campioni: { s: number; mb: number; processi: number }[] = [];
+  while (Date.now() - partenza < 120_000) {
+    await Bun.sleep(2_000);
+    campioni.push({ s: Math.round((Date.now() - partenza) / 1000), ...memoriaDellApp() });
+  }
+  const durante = await stato();
+  const righe = (await script(sessione, `return document.querySelector('[role="log"]')?.childElementCount ?? 0;`)) as number;
+  await tasti(sessione, String.fromCharCode(0xe008), f5);
+  let fermata = "";
+  for (let d = 0; d < 300 && fermata !== testi.statoPronto; d++) {
+    fermata = await stato();
+    if (fermata !== testi.statoPronto) await Bun.sleep(100);
+  }
+  await Bun.sleep(5_000);
+  const dopo = memoriaDellApp();
+  await chiudi(sessione);
+  writeFileSync(join(uscita!, "memoria-webkitgtk.txt"), `prima ${prima.mb} MB (${prima.processi} processi)\n${campioni.map((c) => `${c.s} s ${c.mb} MB (${c.processi} processi)`).join("\n")}\ndopo «Ferma» e 5 s ${dopo.mb} MB\n`);
+  if (righe === 0 || durante === testi.statoPronto || fermata !== testi.statoPronto) rosso("MEMORIA", `il programma non ha girato come atteso: ${righe} righe nella console, stato a 120 s «${durante}», dopo «Ferma» «${fermata}»`);
+  const a10 = campioni.find((c) => c.s >= 10);
+  const coda = campioni.filter((c) => c.s >= 60);
+  if (a10 === undefined || coda.length === 0 || campioni.some((c) => c.processi === 0)) rosso("MEMORIA", `campioni insufficienti o senza processi: ${JSON.stringify(campioni.slice(0, 5))}`);
+  const fondo = Math.min(...coda.map((c) => c.mb));
+  const picco = campioni.reduce((a, c) => (c.mb > a.mb ? c : a));
+  const descritte = `prima ${prima.mb} MB, a 10 s ${a10.mb} MB, picco ${picco.mb} MB a ${picco.s} s, fondo degli ultimi 60 s ${fondo} MB (${fondo - a10.mb >= 0 ? "+" : ""}${fondo - a10.mb} MB), dopo «Ferma» ${dopo.mb} MB; ${campioni.length} campioni, ${righe} righe nella console`;
+  if (fondo - a10.mb > SOGLIA_FONDO_MB) rosso("MEMORIA", `il fondo sale oltre la soglia di ${SOGLIA_FONDO_MB} MB: ${descritte}`);
+  console.log(`MEMORIA: VERDE | il ciclo dei seimila caratteri per 120 s in WebKitGTK: ${descritte} | soglia sul fondo +${SOGLIA_FONDO_MB} MB, scritta prima`);
 }
 
 async function giroSenzaDati(): Promise<void> {
   const { opposta, sessione } = await primoAvvioECambio("TRACCE (controllo positivo)");
-  await attendiFile(join("/root/.config", identificatore, "preferenze.json"), opposta, "TRACCE (controllo positivo)");
+  const configurazione = join(homedir(), ".config", identificatore);
+  await attendiFile(join(configurazione, "preferenze.json"), opposta, "TRACCE (controllo positivo)");
   await chiudi(sessione);
-  console.log(`SENZA DATA: preferenza «${opposta}» scritta in /root/.config/${identificatore}`);
+  console.log(`SENZA DATA: preferenza «${opposta}» scritta in ${configurazione}`);
 }
 
 // ------------------------------------------------------------------------------------------- preparazione
@@ -367,15 +496,25 @@ const tauriDriver = Bun.spawn(["tauri-driver"], { env: ambiente, stdout: "inheri
 
 let esito = 0;
 try {
-  const prodotte = readdirSync(cartellaBundle).filter((voce) => voce.endsWith(".AppImage"));
-  if (prodotte.length !== 1) rosso("PROVA", `in ${cartellaBundle} servono una sola AppImage, trovate ${JSON.stringify(prodotte)}`);
-  mkdirSync(cartellaProva);
-  cpSync(join(cartellaBundle, prodotte[0]!), appimage);
+  let origine: string;
+  if (estratta === undefined) {
+    const prodotte = readdirSync(cartellaBundle).filter((voce) => voce.endsWith(".AppImage")).sort();
+    if (prodotte.length !== 1) rosso("PROVA", `in ${cartellaBundle} servono una sola AppImage, trovate ${JSON.stringify(prodotte)}`);
+    mkdirSync(cartellaProva);
+    cpSync(join(cartellaBundle, prodotte[0]!), appimage);
+    if (giro !== "senza-data") mkdirSync(dati);
+    origine = prodotte[0]!;
+  } else {
+    // L'archivio estratto: l'AppImage e `data/` vuota ci sono già; il giro senza `data` la toglie.
+    if (!existsSync(appimage) || !existsSync(dati) || readdirSync(dati).length > 0) rosso("PROVA", `in «${cartellaProva}» servono AlgoDesign.AppImage e data/ vuota`);
+    if (giro === "senza-data") rmdirSync(dati);
+    origine = "dall'archivio";
+  }
   writeFileSync(vettore, vettoreRiempito);
-  if (giro !== "senza-data") mkdirSync(dati);
+  writeFileSync(pesante, programmaPesante);
   await attendi("lo schermo virtuale :99", () => (existsSync("/tmp/.X11-unix/X99") ? true : undefined));
   await attendi("tauri-driver sulla 4444", async () => ((await wd("GET", "/status")).ready === true ? true : undefined));
-  console.log(`GIRO ${giro}: AppImage ${prodotte[0]} (${statSync(appimage).size} byte) in «${cartellaProva}», data/ ${existsSync(dati) ? "presente" : "assente"}`);
+  console.log(`GIRO ${giro}: AppImage ${origine} (${statSync(appimage).size} byte) in «${cartellaProva}», data/ ${existsSync(dati) ? "presente" : "assente"}`);
 
   if (giro === "portabile") await giroPortabile();
   if (giro === "senza-data") await giroSenzaDati();

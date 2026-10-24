@@ -54,6 +54,12 @@ async function esegui(page: Page): Promise<void> {
 async function apriEdEsegui(page: Page): Promise<void> {
   await apri(page, { lingua: "it" }, undefined, [{ nome: "quadrati", titolo: "quadrati", funzione: quadrati }]);
   await esegui(page);
+  // La colonna dell'esecuzione (aperta dall'esecuzione) alla sua larghezza massima, metà della finestra, col tasto Fine
+  // sul suo bordo: con un carattere più largo di quello di Windows (DejaVu Sans, il predefinito di molti Linux, misurato
+  // nel WebKit per Linux) l'intestazione di «i» usciva di 37 px dalla parte visibile, e la premessa del trascinamento
+  // cadeva.
+  await page.getByRole("separator", { name: it.larghezzaColonna, exact: true }).focus();
+  await page.keyboard.press("End");
 }
 
 /** Le chiavi delle intestazioni dopo il numero, nell'ordine mostrato (la regola compresa). */

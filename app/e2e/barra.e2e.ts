@@ -59,14 +59,23 @@ const FINESTRE = [
 ] as const;
 const PRESENTAZIONI = ["icone-e-testo", "icone", "testo-sotto"] as const;
 const GRUPPI = ["progetto", "modifica", "esecuzione", "viste", "applicazione"];
+type Righe = Record<"it" | "en", Record<(typeof PRESENTAZIONI)[number], readonly number[]>>;
 /** Le righe della barra per lingua, presentazione e finestra (1920, 1366, 1280), misurate in Chromium e in
- * WebKit, uguali nei due motori: la barra che cambia di una riga (un pulsante nuovo, un testo più lungo) è un rosso. */
-const RIGHE_ATTESE: Record<"it" | "en", Record<(typeof PRESENTAZIONI)[number], readonly number[]>> = {
+ * WebKit su Windows, uguali nei due motori: la barra che cambia di una riga (un pulsante nuovo, un testo più lungo) è un
+ * rosso. Le righe dipendono dal carattere del sistema (`system-ui`): su Linux valgono quelle di `RIGHE_ATTESE_SU_LINUX`. */
+const RIGHE_ATTESE: Righe = {
   it: { "icone-e-testo": [2, 2, 3], icone: [1, 1, 1], "testo-sotto": [1, 1, 1] },
   // Col pulsante «Function» (accanto a «Save») e le voci più corte «Clear points» e «Code» (erano «Remove breakpoints» e
   // «Generate»), la barra inglese con icona e testo sta in una riga a 1920 e in due a 1366 e a 1280 (misurato sulle
   // diciotto combinazioni).
   en: { "icone-e-testo": [1, 2, 2], icone: [1, 1, 1], "testo-sotto": [1, 1, 1] },
+};
+/** Su Linux, col carattere DejaVu Sans (il `system-ui` della macchina della CI e di molte distribuzioni, più largo di
+ * quello di Windows), misurate nel WebKit per Linux sulle diciotto combinazioni: tre cambiano di una riga, e il gruppo di
+ * destra resta in prima riga. Un desktop con un altro carattere può dare altre righe: la prova non lo guarda. */
+const RIGHE_ATTESE_SU_LINUX: Righe = {
+  it: { "icone-e-testo": [2, 3, 3], icone: [1, 1, 1], "testo-sotto": [1, 1, 2] },
+  en: { "icone-e-testo": [2, 2, 3], icone: [1, 1, 1], "testo-sotto": [1, 1, 1] },
 };
 
 /** Un programma senza letture: l'esecuzione arriva alla fine da sola. */
@@ -131,7 +140,8 @@ test("i cinque gruppi in ordine; Impostazioni e il menu «Aiuto» nella prima ri
         const d = await disposizione(page);
         console.log(`[${info.project.name}] ${f.larghezza} × ${f.altezza} ${lingua} ${barra}: ${descrivi(d)}`);
         expect(d.gruppi, `${f.larghezza} ${lingua} ${barra}`).toEqual(GRUPPI);
-        expect(d.righe, `${f.larghezza} ${lingua} ${barra}: ${descrivi(d)}`).toBe(RIGHE_ATTESE[lingua][barra][k]);
+        const attese = (await page.evaluate(() => navigator.platform.startsWith("Linux"))) ? RIGHE_ATTESE_SU_LINUX : RIGHE_ATTESE;
+        expect(d.righe, `${f.larghezza} ${lingua} ${barra}: ${descrivi(d)}`).toBe(attese[lingua][barra][k]);
         expect(d.inPrimaRiga, `${f.larghezza} ${lingua} ${barra}: ${descrivi(d)}`).toBe(true);
         expect(d.daDestra, `${f.larghezza} ${lingua} ${barra}`).toBeLessThanOrEqual(1);
         misure++;

@@ -45,6 +45,39 @@ export function nomiDelPacchetto(testoDelPackageJson: string): NomiDelPacchetto 
   return { versione, cartella: versione, zip: `AlgoDesign-${versione}-windows-x64.zip`, cartellaNelloZip: `AlgoDesign-${versione}` };
 }
 
+/** La cartella dell'archivio di Linux che porta le librerie di Ubuntu dentro l'AppImage: l'elenco dei file col loro
+ * pacchetto, le versioni, i file di copyright, i testi delle licenze comuni e un `LEGGIMI.md` che spiega la cartella. */
+export const cartellaDelleLibrerieDiSistema = "LICENZE-DELLE-LIBRERIE-DI-SISTEMA";
+
+/** Le voci al primo livello dell'archivio di Linux (`archivio.ts`): le stesse di Windows con l'AppImage al posto
+ * dell'eseguibile, più la cartella delle librerie di sistema. */
+export const elencoDiLinux: readonly string[] = [
+  "AlgoDesign.AppImage",
+  "data/",
+  "LEGGIMI.md",
+  "NOTE-DI-RILASCIO.md",
+  "GUIDA-PER-LO-STUDENTE.md",
+  "CHANGELOG.md",
+  "LICENSE",
+  "LICENSE-DOCS",
+  fileDelleLicenze,
+  `${cartellaDelleLibrerieDiSistema}/`,
+];
+
+/** I testi per l'utente di Linux, letti dalla cartella data allo strumento coi segnaposto sostituiti: i due di Windows
+ * al primo livello, e quello della cartella delle librerie di sistema, che dentro l'archivio si chiama `LEGGIMI.md`. */
+export const testiDiLinux: Readonly<Record<string, string>> = {
+  "LEGGIMI.md": "LEGGIMI.md",
+  "NOTE-DI-RILASCIO.md": "NOTE-DI-RILASCIO.md",
+  "LICENZE-DELLE-LIBRERIE-DI-SISTEMA.md": `${cartellaDelleLibrerieDiSistema}/LEGGIMI.md`,
+};
+
+/** I nomi dell'archivio di Linux, dal testo di `package.json`, con la stessa regola della versione di Windows. */
+export function nomiDiLinux(testoDelPackageJson: string): { versione: string; cartella: string; archivio: string; cartellaNellArchivio: string } {
+  const { versione, cartellaNelloZip } = nomiDelPacchetto(testoDelPackageJson);
+  return { versione, cartella: `${versione}-linux`, archivio: `AlgoDesign-${versione}-linux-x64.tar.gz`, cartellaNellArchivio: cartellaNelloZip };
+}
+
 /** Le differenze fra le voci trovate e l'elenco, nei due versi: «manca X», «in più X». Vuoto se coincidono. */
 export function differenzeDallElenco(trovate: readonly string[], elenco: readonly string[] = elencoDelPacchetto): string[] {
   return [...elenco.filter((v) => !trovate.includes(v)).map((v) => `manca ${v}`), ...trovate.filter((v) => !elenco.includes(v)).map((v) => `in più ${v}`)];

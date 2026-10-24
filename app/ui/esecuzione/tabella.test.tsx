@@ -58,7 +58,7 @@ import { it } from "../../i18n/it";
 import { riempi, type Lingua } from "../../i18n/lingue";
 import { Applicazione } from "../Applicazione";
 import { scelteIniziali, type Scelte } from "../preferenze";
-import { testiDellaTraccia } from "./TabellaDiTraccia";
+import { pezziDisegnati, testiDellaTraccia } from "./TabellaDiTraccia";
 
 const misura = (t: string) => [...t].length * 10;
 const CARTELLA = new URL("../../casi/tappa-1/", import.meta.url);
@@ -348,6 +348,46 @@ test("durante «tutto insieme» la tabella non si ridisegna: si aggiorna quando 
   expect(volteDellaTabella).toBeLessThanOrEqual(3);
   expect(righe().at(-1)?.getAttribute("data-riga")).toBe("1000000");
 }, 120_000);
+
+test("una seconda esecuzione uguale dopo «Ferma»: alla fine la tabella ha di nuovo le sue righe", async () => {
+  // La tabella si ridisegna quando cambia la sua versione, contata dai passi e dalle righe: una seconda esecuzione dello
+  // stesso programma finisce con lo stesso conto della prima, e la tabella restava quella vuota disegnata all'avvio (lo
+  // ha trovato la prova sul prodotto di Linux, e si vede in ogni motore).
+  await apriLaFinestra("troppi-passi.algo", testoDel("troppi-passi.algo"));
+  const fino = async () => {
+    await act(async () => {
+      fireEvent.keyDown(document.body, { key: "F5" });
+    });
+    await aspetta("la fine", () => statoMostrato() === it.statoFermataDaUnErrore);
+    return righe().length;
+  };
+  const prima = await fino();
+  await act(async () => {
+    fireEvent.keyDown(document.body, { key: "F5", shiftKey: true });
+  });
+  await aspetta("la fermata", () => statoMostrato() === it.statoPronto);
+  const seconda = await fino();
+  expect({ prima, seconda, ultima: righe().at(-1)?.getAttribute("data-riga") }).toEqual({ prima: 1001, seconda: 1001, ultima: "1000000" });
+}, 240_000);
+
+test("in fila la cella disegna i primi 200 caratteri: l'ultimo pezzo tagliato senza spezzare un carattere, un cambiato oltre non c'è", () => {
+  const testo = (n: number, da = 0) => Array.from({ length: n }, (_, i) => String(da + i)).join(" · ");
+  // Corto: i pezzi così come sono.
+  const corti = [{ testo: "1 · 2 · ", cambiato: false }, { testo: "3", cambiato: true }];
+  expect(pezziDisegnati(corti)).toEqual(corti);
+  // Lungo: 200 caratteri in tutto, e il cambiato che comincia dopo non si disegna.
+  const lunghi = [{ testo: `${testo(300)} · `, cambiato: false }, { testo: "999", cambiato: true }];
+  const disegnati = pezziDisegnati(lunghi);
+  expect(disegnati.map((p) => p.testo).join("")).toBe(`${testo(300)} · `.slice(0, 200));
+  expect(disegnati.some((p) => p.cambiato)).toBe(false);
+  // Un cambiato entro il taglio resta segnato.
+  expect(pezziDisegnati([{ testo: "0 · ", cambiato: false }, { testo: "1", cambiato: true }, { testo: ` · ${testo(300, 2)}`, cambiato: false }]).map((p) => p.cambiato)).toEqual([false, true, false]);
+  // Un carattere fuori dal piano di base (due unità di codice) non si spezza al taglio.
+  const emoji = String.fromCodePoint(0x1f600);
+  const conEmoji = pezziDisegnati([{ testo: `${"x".repeat(199)}${emoji}${emoji}`, cambiato: false }]);
+  expect([...conEmoji[0]!.testo].length).toBe(200);
+  expect(conEmoji[0]!.testo.endsWith(emoji)).toBe(true);
+});
 
 // ------------------------------------------------------------------------------- un vettore
 
