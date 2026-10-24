@@ -17,11 +17,14 @@ import { apri, salva } from "./formato";
 const cartella = join(import.meta.dir, "..", "..", "casi");
 const elenco: Record<string, string[]> = JSON.parse(readFileSync(join(cartella, "elenco.json"), "utf8"));
 
+// In ordine di nome: `readdirSync` dà l'ordine del file system, alfabetico su NTFS e no su ext4.
 const suDisco = readdirSync(cartella, { withFileTypes: true })
   .filter((d) => d.isDirectory())
+  .sort((a, b) => (a.name < b.name ? -1 : 1))
   .flatMap((d) =>
     readdirSync(join(cartella, d.name))
       .filter((f) => f.endsWith(".algo"))
+      .sort()
       .map((f) => `${d.name}/${f.slice(0, -".algo".length)}`),
   );
 // Le voci dell'elenco sono i casi, `file#caso`; i file sono i nomi prima di `#`.
