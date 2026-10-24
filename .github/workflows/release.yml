@@ -28,7 +28,7 @@ env:
 
 jobs:
   windows:
-    if: contains(inputs.piattaforme, 'windows')
+    if: contains(inputs.piattaforme || 'windows', 'windows')
     runs-on: windows-2025
     timeout-minutes: 60
     defaults:
