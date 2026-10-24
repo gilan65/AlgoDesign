@@ -34,7 +34,7 @@ Salva il progetto con **Salva con nome** (Ctrl+Maiusc+S): il file ha l'estension
 
 Nella scheda «Dati» premi **Aggiungi un dato** e compila i campi:
 
-- **Nome**: lettere senza accento, cifre e trattino basso, cominciando con una lettera (`numero`, `eta`, non `età`): così il nome passa identico nel codice generato;
+- **Nome**: lettere senza accento, cifre e trattino basso, cominciando con una lettera (`numero`, `eta`, non `età`), al massimo 63 caratteri; non può essere una parola riservata del C o di Python (`if`, `while`, `int`, `return`…) né il nome di un operatore scritto a parole (`mod`, `lunghezza`…): così il nome passa identico nel codice generato;
 - **Tipo**: intero, reale, carattere, stringa o booleano;
 - **Forma**: semplice, o vettore con il numero degli elementi (al più 1000);
 - **Natura**: variabile o costante (una costante ha sempre un valore);

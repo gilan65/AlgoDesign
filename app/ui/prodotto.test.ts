@@ -29,7 +29,7 @@ import { nomeApplicazione } from "../core/applicazione";
 import { FinestraInformazioni } from "./finestre/FinestraInformazioni";
 import { elencoDelPacchetto, nomiDelPacchetto } from "../strumenti/elenco-del-pacchetto";
 import { politicaDelProdotto } from "../strumenti/politica";
-import { dataDellaVersione, dataMostrata, versione } from "./prodotto";
+import { dataDellaVersione, dataMostrata, versione, versioneDiProva } from "./prodotto";
 
 const app = join(import.meta.dir, "..");
 const leggi = (percorso: string) => readFileSync(join(app, percorso), "utf8");
@@ -137,15 +137,15 @@ test("il nome dell'app è lo stesso nel nucleo, nella pagina, nella finestra del
 });
 
 test("i file delle licenze che la finestra nomina sono quelli del pacchetto, e il copyright è uno in quattro posti", () => {
-  // I nomi in maiuscolo col trattino (LICENSE, LICENSE-DOCS, LICENZE-DI-TERZE-PARTI) nei due testi della finestra,
-  // appaiati nei due versi con le voci del pacchetto che sono licenze.
-  const nomina = (t: string) => [...new Set(t.match(/\bLICEN[A-Z-]*\b/g) ?? [])].sort();
+  // I nomi in maiuscolo col trattino, con l'estensione se c'è (LICENSE, LICENSE-DOCS, LICENZE-DI-TERZE-PARTI.txt), nei
+  // due testi della finestra, appaiati nei due versi con le voci del pacchetto che sono licenze.
+  const nomina = (t: string) => [...new Set(t.match(/\bLICEN[A-Z-]*(\.txt)?\b/g) ?? [])].sort();
   const licenze = elencoDelPacchetto.filter((v) => v.startsWith("LICEN")).sort();
   for (const testi of [it, en]) expect(nomina(`${testi.informazioniFile} ${testi.informazioniDocumenti}`)).toEqual(licenze);
   expect(licenze.length).toBe(3);
   // Controllo positivo: un nome cambiato in un testo solo esce dall'appaiamento.
-  const alterato = nomina(`${it.informazioniFile.replace("LICENZE-DI-TERZE-PARTI", "LICENZE-TERZE-PARTI")} ${it.informazioniDocumenti}`);
-  expect(alterato).toEqual(["LICENSE", "LICENSE-DOCS", "LICENZE-TERZE-PARTI"]);
+  const alterato = nomina(`${it.informazioniFile.replace("LICENZE-DI-TERZE-PARTI.txt", "LICENZE-DI-TERZE-PARTI")} ${it.informazioniDocumenti}`);
+  expect(alterato).toEqual(["LICENSE", "LICENSE-DOCS", "LICENZE-DI-TERZE-PARTI"]);
   expect(alterato).not.toEqual(licenze);
 
   // Il copyright: nel LICENSE, nelle proprietà dell'eseguibile (tauri.conf.json) e nella finestra, nelle due lingue.
@@ -215,6 +215,14 @@ test("la finestra delle informazioni mostra la versione dei file e la sua data, 
     const finestra = document.querySelector('[role="dialog"]');
     expect(finestra?.querySelector("[data-versione]")?.textContent).toBe(riempi(testi.informazioniVersione, { versione: fonte.version, data: dataMostrata(fonte.dataDiRilascio, lingua) }));
     for (const t of [testi.informazioniTitolo, testi.informazioniLicenza, testi.informazioniFile, testi.informazioniDocumenti]) expect(finestra?.textContent).toContain(t);
+    // La frase della versione di prova c'è se e solo se la versione dei file ha un suffisso.
+    expect(finestra?.textContent?.includes(testi.informazioniProva)).toBe(versioneDiProva(fonte.version));
     r.unmount();
   }
+});
+
+test("una versione è di prova se e solo se ha un suffisso dopo i tre numeri", () => {
+  expect(["0.4.0-alpha.4", "0.5.0-beta.1", "1.0.0-rc.1"].map(versioneDiProva)).toEqual([true, true, true]);
+  // Controllo positivo: le versioni definitive non lo sono.
+  expect(["1.0.0", "1.2.10"].map(versioneDiProva)).toEqual([false, false]);
 });

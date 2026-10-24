@@ -162,7 +162,7 @@ export const it = {
   informazioniVersione: "Versione {versione} del {data}",
   informazioniProva: "È una versione di prova: alcune funzioni mancano ancora e altre possono cambiare.",
   informazioniLicenza: "Licenza MIT · © 2026 Giuseppe Lancellotti",
-  informazioniFile: "Il testo della licenza è nel file LICENSE, accanto al programma; le librerie che AlgoDesign usa, con le loro licenze, sono nel file LICENZE-DI-TERZE-PARTI.",
+  informazioniFile: "Il testo della licenza è nel file LICENSE, accanto al programma; le librerie che AlgoDesign usa, con le loro licenze, sono nel file LICENZE-DI-TERZE-PARTI.txt.",
   informazioniDocumenti: "La guida per lo studente è distribuita con licenza Creative Commons Attribuzione 4.0 (CC BY 4.0), nel file LICENSE-DOCS.",
   filtroDelFile: "Progetti AlgoDesign",
   progettoSenzaNome: "Senza nome",

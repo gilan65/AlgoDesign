@@ -1,0 +1,99 @@
+# La build di release, lanciata a mano, per le piattaforme scelte (oggi Windows). Il job di Windows compone il
+# pacchetto portabile con `bun run pacchetto` (lo zip, la sua impronta e i controlli dello strumento: l'albero, le
+# proprietà dell'eseguibile, nessun percorso della macchina nei byte, le voci dell'elenco, le licenze, la doppia lettura
+# dello zip), lo estrae in una cartella con spazi, avvia il programma una volta (resta vivo per 20 s, fotografia dello
+# schermo) e carica gli artefatti. Non pubblica nulla: la release si crea a parte dagli artefatti scaricati.
+#
+# Da un'etichetta `v<versione>` il pacchetto è una release; da un ramo è un pacchetto di prova (`--prova`), con lo
+# stesso contenuto e lo stesso nome, nella cartella `dist/prova/` del runner.
+#
+# Che cosa NON guarda: che il programma faccia ciò che deve oltre ad aprirsi e restare vivo (lo provano le clausole
+# della prova sul prodotto, sul pacchetto scaricato, e il controllo a ogni invio); che la finestra disegni qualcosa (la
+# fotografia si guarda); la firma dell'eseguibile (non è firmato); Linux e macOS.
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      piattaforme:
+        description: "Piattaforme da costruire, separate da virgole"
+        default: "windows"
+
+permissions:
+  contents: read
+
+env:
+  RUST_VERSION: "1.99.0"
+  BUN_VERSION: "1.4.2"
+
+jobs:
+  windows:
+    if: contains(inputs.piattaforme, 'windows')
+    runs-on: windows-2025
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Rust e Bun
+        run: |
+          rustup toolchain install $env:RUST_VERSION --profile minimal
+          rustup default $env:RUST_VERSION
+          & ([scriptblock]::Create((Invoke-RestMethod https://bun.sh/install.ps1))) -Version $env:BUN_VERSION
+          "$HOME\.bun\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          rustc --version
+
+      - name: Dipendenze
+        working-directory: app
+        run: |
+          bun --version
+          bun install --frozen-lockfile
+
+      - name: Pacchetto
+        working-directory: app
+        run: |
+          bun run pacchetto --testi ../rilascio/windows ${{ github.ref_type != 'tag' && '--prova' || '' }}
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Raccolta
+        run: |
+          New-Item -ItemType Directory -Force uscita | Out-Null
+          $cartella = if ("${{ github.ref_type }}" -eq "tag") { "dist" } else { "dist/prova" }
+          $zip = @(Get-ChildItem "$cartella/AlgoDesign-*-windows-x64.zip")
+          "zip trovati: $($zip.Count)"
+          if ($zip.Count -ne 1) { exit 1 }
+          Copy-Item $zip[0].FullName, "$($zip[0].FullName).sha256" uscita/
+          Copy-Item app/.collaudo/pacchetto-*.log uscita/
+          # Il commit da cui nasce il pacchetto, con il ramo o l'etichetta e la corsa.
+          "commit $(git rev-parse HEAD)`nref ${{ github.ref }}`ncorsa ${{ github.run_id }}" | Out-File -FilePath uscita/commit.txt -Encoding utf8
+          Get-Content uscita/commit.txt
+
+      - name: Avvio di prova
+        run: |
+          $zip = Get-ChildItem uscita/AlgoDesign-*-windows-x64.zip
+          $dove = Join-Path $env:RUNNER_TEMP "prova con spazi"
+          Expand-Archive -LiteralPath $zip.FullName -DestinationPath $dove
+          $exe = Get-ChildItem "$dove/*/AlgoDesign.exe"
+          $p = Start-Process -FilePath $exe.FullName -WorkingDirectory $exe.DirectoryName -PassThru
+          Start-Sleep -Seconds 20
+          try {
+            Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+            [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+            $bmp.Save("uscita/schermo-windows.png")
+          } catch { "fotografia dello schermo non riuscita: $_" }
+          $p.Refresh()
+          "finestra: «$($p.MainWindowTitle)»"
+          "contenuto di data/:"; Get-ChildItem -Recurse -Force (Join-Path $exe.DirectoryName "data") | ForEach-Object { $_.FullName }
+          if ($p.HasExited) { "ROSSO: il programma non è più vivo dopo 20 s (exit $($p.ExitCode))"; exit 1 }
+          "VERDE: il programma è vivo dopo 20 s"
+          Stop-Process -Id $p.Id -Force
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: windows
+          path: uscita/
+          if-no-files-found: error
