@@ -19,7 +19,8 @@
 // 4. LICENZE: compone `LICENZE-DI-TERZE-PARTI.txt` per Windows con `licenze.ts` (che cosa contiene e da dove viene è
 //    scritto lì).
 // 5. CARTELLA: `dist/<versione>/` alla radice del repository (`dist/prova/<versione>/` con `--prova`), con le voci di `elencoDelPacchetto`; i testi per l'utente
-//    dalla cartella di `--testi`, con `{{versione}}` e `{{data}}` sostituiti (un `{{` rimasto è rosso); la guida per lo
+//    dalla cartella di `--testi`, tracciati dal repository (una cartella fuori, come le note di una versione di prima
+//    rimaste fra i documenti di lavoro, è rossa), con `{{versione}}` e `{{data}}` sostituiti (un `{{` rimasto è rosso); la guida per lo
 //    studente da `docs/` del repository, così com'è (vale per la versione del prodotto; un `{{` è rosso); `README.md` e
 //    `LEGGIMI.md` dalla radice, così come sono, rossi se non dicono la cartella della versione (`AlgoDesign-<versione>`);
 //    `CHANGELOG.md`
@@ -48,7 +49,7 @@
 import { appendFileSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { homedir, tmpdir } from "node:os";
-import { join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { dataMostrata } from "../ui/prodotto";
 import { differenzeDallElenco, documentiDellaRadice, documentiDelPacchetto, elencoDelPacchetto, fileDelleLicenze, nomiDelPacchetto, testiDelPacchetto } from "./elenco-del-pacchetto";
 import { licenzeDiTerzeParti } from "./licenze";
@@ -224,6 +225,14 @@ const voci = (dir: string) => readdirSync(dir, { withFileTypes: true }).map((v) 
 /** 4. La cartella del pacchetto. */
 async function componi(rilascio: string): Promise<void> {
   if (!lstatSync(cartellaTesti!, { throwIfNoEntry: false })?.isDirectory()) rosso("CARTELLA", `--testi ${cartellaTesti}: non è una cartella`);
+  // I testi tracciati dal repository: con l'albero pulito sono quelli del commit, e non una copia rimasta fuori (le note
+  // di una versione di prima nelle cartelle di lavoro hanno gli stessi segnaposto e passerebbero).
+  const sorgenti = testiDelPacchetto.map((t) => resolve(cartellaTesti!, t));
+  const tracciati = await esegui(["git", "-C", repository, "ls-files", "--full-name", "--", ...sorgenti]);
+  const elencati = new Set(tracciati.out.split("\n").map((r) => r.trim()).filter((r) => r !== "").map((r) => resolve(repository, r).toLowerCase()));
+  const nonTracciati = sorgenti.filter((s) => !elencati.has(s.toLowerCase()));
+  if (tracciati.codice !== 0 || nonTracciati.length > 0)
+    rosso("CARTELLA", `--testi ${cartellaTesti}: ${nonTracciati.map((s) => relative(repository, s)).join(", ")} non tracciati dal repository, e i testi del pacchetto vengono dal commit`);
   if (existsSync(cartella)) {
     const estranee = differenzeDallElenco(voci(cartella)).filter((d) => d.startsWith("in più"));
     const datiPieni = existsSync(join(cartella, "data")) && readdirSync(join(cartella, "data")).length > 0;

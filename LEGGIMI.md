@@ -4,7 +4,7 @@
 
 **Progettare algoritmi con i flowchart, eseguirli passo passo e tradurli in pseudocodice, Python e C.**
 
-Versione 0.5.0-beta.1 del 25 ottobre 2026, per Windows 10 e 11 a 64 bit.
+Versione 0.5.0-beta.1 del 26 ottobre 2026, per Windows 10 e 11 a 64 bit.
 
 AlgoDesign è un ambiente didattico per chi impara a programmare: prima si progetta e si prova l'algoritmo come flowchart, poi si guarda come lo stesso ragionamento diventa codice. È un'applicazione **locale e leggera**: funziona senza internet, senza installarla e senza diritti di amministratore.
 
@@ -110,7 +110,7 @@ Tutti i comandi si danno nella cartella `app/`, dopo `bun install`.
 - Guscio desktop **Tauri 2**; interfaccia React + TypeScript + Ark UI, con **Bun** per pacchetti, server di sviluppo, build e test.
 - Il flowchart è un **albero sintattico**; il nucleo (modello, controllo dei tipi, interprete, generatori di codice) è TypeScript puro, separato da interfaccia e guscio.
 - Tipi e semantica del **C11**, più un tipo `stringa`.
-- Un progetto è un solo file `.algo`, in JSON: il formato è spiegato campo per campo in `docs/FORMATO-FILE-ALGO.md`, e scritto come JSON Schema in `docs/algo.schema.json`.
+- Un progetto è un solo file `.algo`, in JSON: il formato è spiegato campo per campo in `FORMATO-FILE-ALGO.md`, e scritto come JSON Schema in `algo.schema.json`, nella cartella `docs/` del repository del progetto.
 
 ## Licenza
 

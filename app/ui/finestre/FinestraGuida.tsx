@@ -160,12 +160,16 @@ function Guida({
   }, [posizione]);
 
   const larghezza = Math.min(44 * 16, Math.round(window.innerWidth * 0.46));
+  const alta = Math.max(240, window.innerHeight - posto.alto - posto.basso);
+  // Le misure date trascinando l'angolo valgono finché la finestra le contiene: in una finestra più stretta o più bassa
+  // la guida si adatta, e la posizione ricordata rientra (`useSpostabile`).
+  const larga = Math.min(memoria.misure?.larghezza ?? larghezza, window.innerWidth - 16);
   const stile = spostabile
     ? {
-        left: posizione?.x ?? window.innerWidth - 8 - (memoria.misure?.larghezza ?? larghezza),
+        left: posizione?.x ?? window.innerWidth - 8 - larga,
         top: posizione?.y ?? posto.alto,
-        width: memoria.misure?.larghezza ?? larghezza,
-        height: memoria.misure?.altezza ?? Math.max(240, window.innerHeight - posto.alto - posto.basso),
+        width: larga,
+        height: Math.min(memoria.misure?.altezza ?? alta, window.innerHeight - 16),
       }
     : { right: 8, top: posto.alto, bottom: posto.basso, width: larghezza };
 
@@ -173,7 +177,7 @@ function Guida({
     <section
       ref={finestra}
       role="dialog"
-      data-guida={lingua}
+      data-finestra-guida={lingua}
       aria-labelledby="titolo-della-guida"
       aria-modal="false"
       className={spostabile ? `${stili.guida} ${stili.spostabile}` : stili.guida}
@@ -250,6 +254,10 @@ function Ricerca({ testo, html, testi }: { testo: RefObject<HTMLElement | null>;
     // La guida va alla prima trovata solo quando cambia la parola: con l'altra lingua resta sul capitolo.
     segna(0, cercataPrima.current !== cercata);
     cercataPrima.current = cercata;
+    // La ricerca che va via (spenta nelle Impostazioni con la guida aperta) non lascia i suoi segni nel testo.
+    return () => {
+      if (testo.current) testo.current.innerHTML = html;
+    };
   }, [cercata, html]);
   const vai = (passo: number) => {
     if (trovate === 0) return;

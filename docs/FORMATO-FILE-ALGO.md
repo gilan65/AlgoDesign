@@ -184,7 +184,7 @@ L'assegnazione: la destinazione riceve il valore dell'espressione.
 | `counter` | `string` | sì | il nome del contatore |
 | `from` | `string` | sì | l'espressione del primo valore |
 | `to` | `string` | sì | l'espressione dell'ultimo valore |
-| `step` | `integer` | no | il passo, un numero intero diverso da zero; assente vale 1, e salvando un passo 1 non si scrive |
+| `step` | `integer` | no | il passo, un numero intero diverso da zero; assente vale 1; AlgoDesign non lo scrive quando vale 1, ma un `1` scritto a mano resta |
 | `body` | `array` | sì | i blocchi del corpo |
 
 ### Il ciclo «per ogni» — `blocco{for_each}`
@@ -334,7 +334,7 @@ Il caso esegue il programma principale e a ogni lettura consegna la voce success
 
 | Campo | Tipo | Obbligatorio | Valori e regole |
 |---|---|---|---|
-| `name` | `string` | sì | unico fra i casi del programma; non il nome di una procedura o funzione seguito da «/» e dal nome di un suo caso |
+| `name` | `string` | sì | unico fra i casi del programma; AlgoDesign non dà a un caso il nome di una procedura o funzione seguito da «/» e dal nome di un suo caso (un file che lo ha si apre) |
 | `description` | `string` | no | |
 | `inputs` | `array` | sì | le voci, in ordine, anche nessuna |
 | `expected` | `object` | sì | l'atteso, nella forma dell'atteso dei casi di una procedura |

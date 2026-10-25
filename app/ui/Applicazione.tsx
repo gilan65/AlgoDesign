@@ -743,10 +743,18 @@ export function Applicazione({
   const conIlFermo = useMemo(() => ({ chiudi: chiudiIlFermo }), [chiudiIlFermo]);
   /** Maiusc+F9 su un blocco (o sulla fine di una funzione) durante l'esecuzione: il riquadro fermo del primo nome di un
    * dato o di una funzione nel blocco, col fuoco; di nuovo, quello del nome dopo. I nomi sono quelli disegnati nel blocco,
-   * gli stessi su cui passa il puntatore del mouse; senza nomi, l'avviso. */
+   * gli stessi su cui passa il puntatore del mouse, ognuno una volta (in «somma ← somma + voto» «somma» è un dato solo);
+   * senza nomi, l'avviso. */
   const watchDaTastiera = useCallback(
     (blocco: SVGGElement) => {
-      const nomi = [...blocco.querySelectorAll<SVGGElement>("[data-watch-dato], [data-watch-funzione]")];
+      const visti = new Set<string>();
+      const nomi = [...blocco.querySelectorAll<SVGGElement>("[data-watch-dato], [data-watch-funzione]")].filter((g) => {
+        const funzione = g.getAttribute("data-watch-funzione");
+        const chiave = funzione !== null ? `funzione ${funzione}` : `dato ${g.getAttribute("data-watch-dato")}`;
+        if (visti.has(chiave)) return false;
+        visti.add(chiave);
+        return true;
+      });
       if (nomi.length === 0) {
         setAvviso(testi.watchSenzaDati);
         return;
@@ -2553,6 +2561,11 @@ export function Applicazione({
     const proposto = tabella ? riempi(testi.nomeDellaTabella, { nome: base }) : base;
     if (!nomeCambiato(nomeDelProgetto, base)) return Promise.resolve(proposto);
     const motivo = tabella ? "caratteri" : motivoDelCambio(nomeDelProgetto);
+    // Il nome della tabella porta già l'estensione: l'avviso la mostra accanto al campo, una volta, e la rimette dopo.
+    if (tabella && proposto.endsWith(estensione)) {
+      const senza = proposto.slice(0, -estensione.length);
+      return new Promise((risposta) => setFinestra({ genere: "nome", chiesto: { progetto: nomeDelProgetto, proposto: senza, estensione, motivo }, risposta: (n) => risposta(n === null ? null : `${n}${estensione}`) }));
+    }
     return new Promise((risposta) => setFinestra({ genere: "nome", chiesto: { progetto: nomeDelProgetto, proposto, estensione, motivo }, risposta }));
   }
 
@@ -2872,7 +2885,7 @@ export function Applicazione({
     ...comandiDelProgetto,
     ...azioniDelMenu,
     // La guida resta aperta mentre si lavora: già aperta, la voce le riporta il fuoco.
-    guida: () => (guidaAperta ? document.querySelector<HTMLElement>("[data-guida] article")?.focus() : setGuidaAperta(true)),
+    guida: () => (guidaAperta ? document.querySelector<HTMLElement>("[data-finestra-guida] article")?.focus() : setGuidaAperta(true)),
     ...(siAnnulla(cronologia) && !inEsecuzione ? { annulla: () => passo("annulla") } : {}),
     ...(siRipete(cronologia) && !inEsecuzione ? { ripeti: () => passo("ripeti") } : {}),
     ...(scelto !== null && !inEsecuzione

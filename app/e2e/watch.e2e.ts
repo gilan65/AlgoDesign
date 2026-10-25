@@ -58,7 +58,8 @@ const nome = (page: Page, blocco: string, dato: string) =>
 /** Lo scorrimento morbido del disegno verso il blocco corrente finito: la posizione uguale per cinque fotogrammi di fila.
  * Sotto carico l'animazione si ferma per qualche fotogramma, Playwright guarda la posizione su due soli, e il clic cadeva
  * dove il nome era prima (misurato nel WebKit per Linux col carattere DejaVu Sans: 20 px più a sinistra, e il clic
- * prendeva il disegno). */
+ * prendeva il disegno). È una soglia, non la condizione: un'animazione ferma per più di cinque fotogrammi la passa
+ * ancora, e il rosso torna come un clic che prende il disegno. */
 const scorrimentoFinito = (page: Page) =>
   page.getByRole("region", { name: it.vistaFlowchart, exact: true }).evaluate(
     (tela) =>

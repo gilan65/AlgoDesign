@@ -7,7 +7,7 @@
 // - La lingua dalla riga di stato: «ITA», il menu delle due lingue, «English»; l'interfaccia e la guida aperta passano
 //   all'inglese, la preferenza si scrive con la lingua nuova, e le Impostazioni la mostrano.
 // - La ricerca: c'è o no secondo la preferenza; segna ogni volta che il testo contiene la parola, e Invio va alla
-//   successiva. La finestra fissa a destra o, con la preferenza, spostabile (le sue misure scritte, l'angolo che allarga).
+//   successiva; spenta con la guida aperta, i segni vanno via. La finestra fissa a destra o, con la preferenza, spostabile (le sue misure scritte, l'angolo che allarga).
 //
 // Che cosa NON guarda: le misure e lo scorrimento (happy-dom non dispone la pagina: li guardano i motori,
 // `e2e/guida.e2e.ts`, col capitolo tenuto al cambio di lingua e i menu sopra la guida).
@@ -19,7 +19,7 @@ import { en } from "../../i18n/en";
 import { it } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
 import { Applicazione } from "../Applicazione";
-import { GUIDE } from "../finestre/FinestraGuida";
+import { FinestraGuida, GUIDE, memoriaNuova } from "../finestre/FinestraGuida";
 import { scelteIniziali, type Scelte } from "../preferenze";
 import { testoDi } from "./guida";
 
@@ -57,7 +57,7 @@ afterEach(() => {
 
 const giro = () => act(async () => await new Promise((r) => setTimeout(r, 20)));
 const avviso = () => document.querySelector('output[role="status"]')?.textContent ?? "";
-const guida = () => document.querySelector<HTMLElement>("[data-guida]");
+const guida = () => document.querySelector<HTMLElement>("[data-finestra-guida]");
 const statoMostrato = () => document.querySelector("[data-stato-esecuzione]")?.textContent ?? "";
 /** L'HTML della build come lo scrive il DOM (che scrive `&quot;` come `"`), per confrontarlo col testo della finestra. */
 const nelDom = (html: string) => {
@@ -103,7 +103,7 @@ test("«Guida per lo studente» apre la guida della lingua, non modale, col fuoc
   await apriLaGuida();
   await aspetta("la guida aperta", () => guida() !== null);
   const g = guida()!;
-  expect({ ruolo: g.getAttribute("role"), modale: g.getAttribute("aria-modal"), titolo: g.querySelector("h2")?.textContent, lingua: g.getAttribute("data-guida") }).toEqual({ ruolo: "dialog", modale: "false", titolo: it.guidaTitolo, lingua: "it" });
+  expect({ ruolo: g.getAttribute("role"), modale: g.getAttribute("aria-modal"), titolo: g.querySelector("h2")?.textContent, lingua: g.getAttribute("data-finestra-guida") }).toEqual({ ruolo: "dialog", modale: "false", titolo: it.guidaTitolo, lingua: "it" });
   expect(g.querySelector("article")?.innerHTML === nelDom(GUIDE.it.html)).toBe(true);
   expect(nelDom(GUIDE.it.html) === nelDom(GUIDE.en.html)).toBe(false);
   expect([...g.querySelectorAll("nav button")].map((b) => b.textContent)).toEqual(GUIDE.it.capitoli.map((c) => c.titolo));
@@ -129,7 +129,7 @@ test("la lingua dalla riga di stato: «ITA», il menu, «English»; l'interfacci
   await aspetta("l'interfaccia in inglese", () => lingua().textContent === "ENG");
   expect({ nome: lingua().getAttribute("aria-label"), documento: document.documentElement.lang, aiuto: pulsanteDellAiuto().textContent?.replace("▾", "").trim() }).toEqual({ nome: `${en.linguaDellInterfaccia}: English`, documento: "en", aiuto: en.menuAiuto });
   // La guida aperta ha cambiato lingua.
-  expect({ lingua: guida()?.getAttribute("data-guida"), titolo: guida()?.querySelector("h2")?.textContent, testo: guida()?.querySelector("article")?.innerHTML === nelDom(GUIDE.en.html) }).toEqual({ lingua: "en", titolo: en.guidaTitolo, testo: true });
+  expect({ lingua: guida()?.getAttribute("data-finestra-guida"), titolo: guida()?.querySelector("h2")?.textContent, testo: guida()?.querySelector("article")?.innerHTML === nelDom(GUIDE.en.html) }).toEqual({ lingua: "en", titolo: en.guidaTitolo, testo: true });
   // La preferenza scritta: la lingua nuova, le altre scelte com'erano.
   expect(scritte.at(-1)).toMatchObject({ lingua: "en", ricercaNellaGuida: true, guidaSpostabile: false });
   // Le Impostazioni, aperte dopo, mostrano l'inglese.
@@ -164,6 +164,19 @@ test("la ricerca: c'è secondo la preferenza, segna ogni volta che il testo cont
   await apriLaGuida();
   await aspetta("la guida aperta", () => guida() !== null);
   expect(guida()!.querySelector('input[type="search"]')?.outerHTML ?? "nessun campo").toBe("nessun campo");
+});
+
+test("la ricerca spenta con la guida aperta non lascia segni nel testo", async () => {
+  const memoria = memoriaNuova();
+  const finestra = (ricerca: boolean) => <FinestraGuida aperta testi={it} lingua="it" ricerca={ricerca} spostabile={false} memoria={memoria} chiudi={() => {}} />;
+  const { rerender } = render(finestra(true));
+  const campo = guida()!.querySelector<HTMLInputElement>('input[type="search"]')!;
+  await act(async () => void fireEvent.change(campo, { target: { value: "Maiusc+F9" } }));
+  await giro();
+  // Premessa: i segni ci sono.
+  expect(guida()!.querySelectorAll("article mark").length).toBeGreaterThan(1);
+  await act(async () => void rerender(finestra(false)));
+  expect({ segni: guida()!.querySelectorAll("article mark").length, testo: guida()!.querySelector("article")!.innerHTML === nelDom(GUIDE.it.html) }).toEqual({ segni: 0, testo: true });
 });
 
 test("la guida fissa sta a destra; con la preferenza si sposta dal titolo e si ridimensiona dall'angolo", async () => {

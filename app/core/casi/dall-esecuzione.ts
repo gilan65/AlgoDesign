@@ -28,7 +28,8 @@ export function casoDallEsecuzione(es: Esecuzione<CasoDiUnaFunzione>): DallEsecu
   if (s.genere !== "finita") return { ok: false, motivo: "non finita" };
   if (es.caso !== undefined) return { ok: false, motivo: "caso" };
   const righe = es.console;
-  if (es.consoleTolte > 0 || righe.some((v) => "tagliata" in v && v.tagliata === true)) return { ok: false, motivo: "output perso" };
+  // L'output è fatto delle sole righe scritte: una riga letta o non valida tenuta dalla fine non gli toglie nulla.
+  if (es.consoleTolte > 0 || righe.some((v) => v.genere === "scrive" && "tagliata" in v && v.tagliata === true)) return { ok: false, motivo: "output perso" };
   const output = righe.map((v) => (v.genere === "scrive" ? (v.aCapo ? `${v.testo}\n` : v.testo) : "")).join("");
   // Un'esecuzione partita ha un controllo dentro la tappa.
   const avvisi = es.controllo.fuoriTappa ? [] : es.controllo.avvisi;

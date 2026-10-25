@@ -6,6 +6,10 @@
 //
 // `default-src` non ha una violazione sua: si vede da una richiesta che nessuna altra direttiva governa (un video), che
 // la pagina annota col nome della direttiva effettiva («media-src»).
+//
+// Le direttive delle risorse (video, immagine, carattere, oggetto) hanno due sonde: una incorporata (`data:`) e una da un
+// indirizzo esterno. Ognuna è fermata da `'self'` e da `'none'`, ma una politica allargata ne lascia passare una sola:
+// con `data:` la prima, con un indirizzo o `https:` la seconda, che allora finisce senza violazione.
 
 export interface Sonda {
   readonly nome: string;
@@ -19,13 +23,18 @@ const altrove = "https://algodesign.invalid/";
 
 export const sonde: readonly Sonda[] = [
   { nome: "un video incorporato", direttiva: "default-src", attesa: "media-src data" },
+  { nome: "un video da un indirizzo esterno", direttiva: "default-src", attesa: `media-src ${altrove}` },
   { nome: "uno script scritto nella pagina", direttiva: "script-src", attesa: "script-src-elem inline" },
   { nome: "un testo eseguito come codice", direttiva: "script-src", attesa: "script-src eval" },
   { nome: "uno stile scritto nella pagina", direttiva: "style-src", attesa: "style-src-elem inline" },
   { nome: "un'immagine incorporata", direttiva: "img-src", attesa: "img-src data" },
+  { nome: "un'immagine da un indirizzo esterno", direttiva: "img-src", attesa: `img-src ${altrove}` },
   { nome: "un carattere incorporato", direttiva: "font-src", attesa: "font-src data" },
+  { nome: "un carattere da un indirizzo esterno", direttiva: "font-src", attesa: `font-src ${altrove}` },
   { nome: "una richiesta a un indirizzo esterno", direttiva: "connect-src", attesa: `connect-src ${altrove}` },
   { nome: "un oggetto incorporato", direttiva: "object-src", attesa: "object-src data" },
+  // Per un oggetto la pagina annota l'origine dell'indirizzo, senza la barra finale (misurato in Chromium).
+  { nome: "un oggetto da un indirizzo esterno", direttiva: "object-src", attesa: "object-src https://algodesign.invalid" },
   { nome: "un indirizzo di base", direttiva: "base-uri", attesa: `base-uri ${altrove}` },
   // Il metodo GET aggiunge all'indirizzo i campi del modulo (nessuno): resta il «?».
   { nome: "un modulo spedito altrove", direttiva: "form-action", attesa: `form-action ${altrove}?` },
@@ -60,9 +69,10 @@ export function provaLaSonda(nome: string): Promise<string> {
       return e;
     };
     switch (nome) {
-      case "un video incorporato": {
+      case "un video incorporato":
+      case "un video da un indirizzo esterno": {
         const v = document.createElement("video");
-        v.src = "data:video/mp4;base64,AAAA";
+        v.src = nome === "un video incorporato" ? "data:video/mp4;base64,AAAA" : altrove;
         metti(v);
         break;
       }
@@ -90,21 +100,24 @@ export function provaLaSonda(nome: string): Promise<string> {
         metti(s, document.head);
         break;
       }
-      case "un'immagine incorporata": {
+      case "un'immagine incorporata":
+      case "un'immagine da un indirizzo esterno": {
         const i = document.createElement("img");
-        i.src = pixel;
+        i.src = nome === "un'immagine incorporata" ? pixel : altrove;
         metti(i);
         break;
       }
       case "un carattere incorporato":
-        void new FontFace("sonda", `url(${pixel})`).load().catch(() => undefined);
+      case "un carattere da un indirizzo esterno":
+        void new FontFace("sonda", `url(${nome === "un carattere incorporato" ? pixel : altrove})`).load().catch(() => undefined);
         break;
       case "una richiesta a un indirizzo esterno":
         void fetch(altrove).catch(() => undefined);
         break;
-      case "un oggetto incorporato": {
+      case "un oggetto incorporato":
+      case "un oggetto da un indirizzo esterno": {
         const o = document.createElement("object");
-        o.data = "data:text/plain,x";
+        o.data = nome === "un oggetto incorporato" ? "data:text/plain,x" : altrove;
         metti(o);
         break;
       }

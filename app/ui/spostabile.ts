@@ -1,8 +1,9 @@
 // Un riquadro che si sposta trascinando la sua maniglia (la barretta dell'esecuzione, l'avviso sopra il flowchart):
 // segue il puntatore, catturato, e resta tutto dentro la finestra; trascinato oltre un bordo si ferma lì, e quando la
 // finestra si stringe rientra. Finché non lo si sposta la posizione è `null`, e il riquadro sta dove lo mette chi lo
-// disegna; `azzera` lo riporta lì. Un riquadro che si chiude e si riapre (la guida) riparte da dove era: `iniziale`.
-import { useEffect, useReducer, useState, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
+// disegna; `azzera` lo riporta lì. Un riquadro che si chiude e si riapre (la guida) riparte da dove era: `iniziale`, che
+// rientra subito se intanto la finestra si è stretta.
+import { useEffect, useLayoutEffect, useReducer, useState, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 
 export interface Posizione {
   readonly x: number;
@@ -25,6 +26,10 @@ export function useSpostabile(
     const r = riquadro.current?.getBoundingClientRect();
     return { x: Math.max(0, Math.min(p.x, window.innerWidth - (r?.width ?? 0))), y: Math.max(0, Math.min(p.y, window.innerHeight - (r?.height ?? 0))) };
   };
+  // La posizione di partenza, presa quando la finestra poteva essere più larga: rientra prima di farsi vedere.
+  useLayoutEffect(() => {
+    setPosizione((p) => (p === null ? p : dentro(p)));
+  }, []);
   // La finestra che cambia misura: il riquadro spostato rientra, quello mai spostato si ridisegna dove va.
   useEffect(() => {
     const ridimensiona = () => {

@@ -176,7 +176,7 @@ const conOggetto = (campi: Campi): Lettore => lettore((v, p, c) => oggetto(v, p,
 /**
  * Lo schema di un oggetto i cui campi dipendono dal genere (`kind`): un ramo `if`/`then` per genere. Un validatore guarda
  * solo il ramo del genere scritto; con un `oneOf` li proverebbe tutti, e i generi che contengono altri blocchi
- * moltiplicherebbero il lavoro a ogni livello annidato (misurato: un file con 51 livelli non finiva in due minuti).
+ * moltiplicherebbero il lavoro a ogni livello annidato, fino a non finire su un file annidato in profondità.
  */
 function perGenere<G extends string>(generi: readonly G[], campi: (g: G) => Campi): Schema {
   return {

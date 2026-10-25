@@ -74,8 +74,10 @@ test("ogni oggetto e ogni campo dello schema ha la sua riga nella spiegazione, e
   expect(differenze(schema, scritte)).toEqual([]);
 });
 
-test("il confronto vede una riga tolta, un tipo cambiato, un valore in più e una tabella di troppo", () => {
+test("il confronto vede una riga tolta, un tipo cambiato, un valore in più, una tabella di troppo e un obbligatorio scambiato", () => {
   const scritte = tavoleDelDocumento(testo);
+  const conUnObbligatorioScambiato = scritte.map((t) => (t.percorso === "metadata" ? { ...t, righe: t.righe.map((r) => (r.campo === "name" ? { ...r, obbligatorio: r.obbligatorio === "sì" ? "no" : "sì" } : r)) } : t));
+  expect(differenze(schema, conUnObbligatorioScambiato)).toEqual([expect.stringContaining("metadata.name: obbligatorio")]);
   const conUnaRigaInMeno = scritte.map((t) => (t.percorso === "metadata" ? { ...t, righe: t.righe.filter((r) => r.campo !== "notes") } : t));
   const conUnTipoCambiato = scritte.map((t) => (t.percorso === "options" ? { ...t, righe: t.righe.map((r) => (r.campo === "real_decimals" ? { ...r, tipi: ["string"] } : r)) } : t));
   const conUnValoreInPiu = scritte.map((t) => (t.percorso === "shared_constants[]" ? { ...t, righe: t.righe.map((r) => (r.campo === "role" ? { ...r, valori: [...r.valori, "work"] } : r)) } : t));

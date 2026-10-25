@@ -4,7 +4,7 @@
 
 **Design algorithms as flowcharts, run them step by step and translate them into pseudocode, Python and C.**
 
-Version 0.5.0-beta.1 of 25 October 2026, for 64-bit Windows 10 and 11.
+Version 0.5.0-beta.1 of 26 October 2026, for 64-bit Windows 10 and 11.
 
 AlgoDesign is a teaching environment for people learning to program: first you design and test the algorithm as a flowchart, then you see how the same reasoning becomes code. It is a **local and lightweight** application: it works without internet, without installing it and without administrator rights.
 
@@ -110,7 +110,7 @@ All the commands are given in the `app/` folder, after `bun install`.
 - Desktop shell **Tauri 2**; interface React + TypeScript + Ark UI, with **Bun** for packages, development server, build and tests.
 - The flowchart is a **syntax tree**; the core (model, type checking, interpreter, code generators) is pure TypeScript, separate from interface and shell.
 - Types and semantics of **C11**, plus a `string` type.
-- A project is a single `.algo` file, in JSON: the format is explained field by field in `docs/FORMATO-FILE-ALGO.md` (in Italian), and written as a JSON Schema in `docs/algo.schema.json`.
+- A project is a single `.algo` file, in JSON: the format is explained field by field in `FORMATO-FILE-ALGO.md` (in Italian), and written as a JSON Schema in `algo.schema.json`, in the `docs/` folder of the project repository.
 
 ## License
 
