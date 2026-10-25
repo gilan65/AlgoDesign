@@ -166,8 +166,10 @@
   font-size: 10px;
 }
 
+/* I menu sopra tutto ciò che sta nella pagina, la guida compresa. Ark scrive sul posto `z-index: var(--z-index)` con
+   `--z-index: auto` (misurato): la variabile si dà qui, e vince solo con `!important`. */
 .posizione {
-  z-index: 50;
+  --z-index: 50 !important;
 }
 
 .tendina {

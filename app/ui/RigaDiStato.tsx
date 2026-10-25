@@ -19,10 +19,16 @@
 // finestra»), coi comandi del catalogo. La percentuale è la sola della finestra, e un clic torna al 100%. Lo stato
 // dell'esecuzione non è una regione che parla da sé: lo stesso evento lo annuncia l'avviso (la pausa, la fine,
 // l'errore), o la console (il valore da scrivere); detto due volte, a ogni passo dell'animata lo si sentirebbe doppio.
+//
+// All'estrema destra la lingua dell'interfaccia, come quella della tastiera nella barra di Windows: «ITA» o «ENG», e col
+// clic un menu con le due lingue, ognuna scritta nella sua. È una scorciatoia della lingua delle Impostazioni: la stessa
+// preferenza, scritta subito.
+import { Menu } from "@ark-ui/react/menu";
+import { Portal } from "@ark-ui/react/portal";
 import { useId, useState, type ReactElement } from "react";
 import type { Dizionario } from "../i18n/it";
-import { riempi } from "../i18n/lingue";
-import { attributi, PulsanteDelComando, type Azioni, type Stati } from "./Barra";
+import { nomiLingue, riempi, sigleLingue, type Lingua } from "../i18n/lingue";
+import { attributi, fuocoAChiLAveva, PulsanteDelComando, type Azioni, type Stati } from "./Barra";
 import stiliDellaBarra from "./Barra.module.css";
 import stili from "./RigaDiStato.module.css";
 
@@ -51,6 +57,37 @@ export interface VoceDelControllo {
   readonly versoOut?: readonly { readonly nome: string; readonly funzione: string; readonly indice: number }[];
 }
 
+/** La lingua dell'interfaccia: la sigla, e col clic (o con Invio) il menu delle lingue, segnata quella scelta. */
+function LinguaDellInterfaccia({ lingua, scegli, testi }: { lingua: Lingua; scegli: (l: Lingua) => void; testi: Dizionario }): ReactElement {
+  const nome = `${testi.linguaDellInterfaccia}: ${nomiLingue[lingua]}`;
+  return (
+    <Menu.Root lazyMount unmountOnExit positioning={{ placement: "top-end" }}>
+      <Menu.Trigger className={`${stiliDellaBarra.pulsante} ${stili.lingua}`} data-lingua={lingua} title={nome} aria-label={nome}>
+        {sigleLingue[lingua]}
+      </Menu.Trigger>
+      <Portal>
+        <Menu.Positioner className={stiliDellaBarra.posizione}>
+          <Menu.Content className={`${stiliDellaBarra.tendina} ${stili.tendinaDelleLingue}`} onFocus={fuocoAChiLAveva}>
+            <Menu.RadioItemGroup value={lingua} onValueChange={(d) => scegli(d.value as Lingua)}>
+              {(Object.keys(nomiLingue) as Lingua[]).map((l) => (
+                <Menu.RadioItem key={l} value={l} className={stiliDellaBarra.voce} data-valore={l} lang={l}>
+                  <span className={stiliDellaBarra.spunta} aria-hidden="true">
+                    {l === lingua ? "✓" : ""}
+                  </span>
+                  <Menu.ItemText className={stiliDellaBarra.testoDellaVoce}>{nomiLingue[l]}</Menu.ItemText>
+                  <span className={stili.sigla} aria-hidden="true">
+                    {sigleLingue[l]}
+                  </span>
+                </Menu.RadioItem>
+              ))}
+            </Menu.RadioItemGroup>
+          </Menu.Content>
+        </Menu.Positioner>
+      </Portal>
+    </Menu.Root>
+  );
+}
+
 export function RigaDiStato({
   file,
   modificato,
@@ -63,6 +100,7 @@ export function RigaDiStato({
   sostituisciConOut,
   esecuzione,
   zoom,
+  lingua,
 }: {
   /** Il nome del file, senza la cartella; `null` se il progetto non è legato a un file. */
   file: string | null;
@@ -83,6 +121,8 @@ export function RigaDiStato({
   esecuzione: string;
   /** La scala del flowchart e i comandi dello zoom, con ciò che mostrano (dopo «Adatta», un altro nome). */
   zoom: { readonly scala: number; readonly azioni: Azioni; readonly stati?: Stati };
+  /** La lingua dell'interfaccia e la scelta di un'altra (la preferenza delle Impostazioni). */
+  lingua: { readonly attuale: Lingua; readonly scegli: (l: Lingua) => void };
 }): ReactElement {
   const [aperto, setAperto] = useState(false);
   const [ricorsioniAperte, setRicorsioniAperte] = useState(false);
@@ -101,7 +141,7 @@ export function RigaDiStato({
   const mostrato = aperto && voci.length > 0;
 
   return (
-    <section aria-label={testi.rigaDiStato} className={stili.riga}>
+    <section aria-label={testi.rigaDiStato} className={stili.riga} data-riga-di-stato="">
       <span className={stili.file} data-file>
         {file ?? testi.statoNessunFile}
         {modificato && <span className={stili.modificato}> · {testi.statoModificato}</span>}
@@ -195,6 +235,7 @@ export function RigaDiStato({
           <PulsanteDelComando id="ingrandisci" testi={testi} azione={zoom.azioni.ingrandisci} soloIcona />
           <PulsanteDelComando id="adatta" testi={testi} azione={zoom.azioni.adatta} stato={zoom.stati?.adatta} />
         </span>
+        <LinguaDellInterfaccia lingua={lingua.attuale} scegli={lingua.scegli} testi={testi} />
       </span>
     </section>
   );

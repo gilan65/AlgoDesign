@@ -8,6 +8,9 @@ export type Lingua = keyof typeof dizionari;
 /** Ogni lingua si presenta nella propria lingua: questi nomi non si traducono. */
 export const nomiLingue: Record<Lingua, string> = { it: "Italiano", en: "English" };
 
+/** La sigla di ogni lingua nella riga di stato, come quella della tastiera nella barra di Windows: non si traduce. */
+export const sigleLingue: Record<Lingua, string> = { it: "ITA", en: "ENG" };
+
 export function linguaValida(valore: unknown): valore is Lingua {
   return typeof valore === "string" && Object.hasOwn(dizionari, valore);
 }

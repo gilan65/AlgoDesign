@@ -357,10 +357,11 @@ test("ogni gruppo di opzioni sta in un riquadro, con la sua domanda dentro", asy
     gruppi += visti.length;
     esiti.push(...visti.filter((v) => !/bordo [1-9][\d.]*\/[1-9][\d.]*\/[1-9][\d.]*\/[1-9][\d.]* solid$/.test(v)).map((v) => `${nome} · ${v}`));
   }
-  // Controllo positivo della premessa: i gruppi sono quelli che le schede hanno (13 in Aspetto, coi tre dei cicli, quello
-  // della copia di un vettore, quello dei blocchi selezionati, quello del blocco di Lettura e quello dei colori dei
-  // blocchi; 5 in Modifica, con quello delle parentesi e quello dei casi d'uso; 5 nella tabella di traccia, 1 nella console).
-  expect({ gruppi, senzaRiquadro: esiti }).toEqual({ gruppi: 24, senzaRiquadro: [] });
+  // Controllo positivo della premessa: i gruppi sono quelli che le schede hanno (14 in Aspetto, coi tre dei cicli, quello
+  // della copia di un vettore, quello dei blocchi selezionati, quello del blocco di Lettura, quello dei colori dei
+  // blocchi e quello della guida; 5 in Modifica, con quello delle parentesi e quello dei casi d'uso; 5 nella tabella di
+  // traccia, 1 nella console).
+  expect({ gruppi, senzaRiquadro: esiti }).toEqual({ gruppi: 25, senzaRiquadro: [] });
 });
 
 test.describe("col sistema in italiano, le preferenze che non si leggono", () => {

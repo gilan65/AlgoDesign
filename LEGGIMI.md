@@ -29,7 +29,7 @@ AlgoDesign separa i due compiti: prima si **progetta** l'algoritmo come flowchar
 
 Tipi e regole sono quelli del linguaggio C, con in più un tipo stringa, perché il passaggio dal flowchart al codice sia naturale. Il codice generato, però, è fatto per essere letto e non controlla i calcoli che escono dalle regole (un intero fuori dal suo intervallo, una divisione intera per zero, un indice fuori dal vettore e pochi altri, elencati nelle note di rilascio): AlgoDesign li ferma sempre, il Python e il C generati no, e su quei calcoli possono dare risultati diversi fra loro.
 
-Come si usa AlgoDesign è nella **guida per lo studente**, `GUIDA-PER-LO-STUDENTE.md` (in inglese `STUDENT-GUIDE.md`): nel pacchetto sta accanto al programma, nel repository nella cartella `docs`. Le novità di ogni versione sono nel registro delle modifiche, `CHANGELOG.md`.
+Come si usa AlgoDesign è nella **guida per lo studente**, `GUIDA-PER-LO-STUDENTE.md` (in inglese `STUDENT-GUIDE.md`): nel pacchetto sta accanto al programma, nel repository nella cartella `docs`. Dentro AlgoDesign la guida si apre dal menu **Aiuto**, «Guida per lo studente», nella lingua dell'interfaccia. Le novità di ogni versione sono nel registro delle modifiche, `CHANGELOG.md`.
 
 ## Scaricare e avviare
 
@@ -97,7 +97,7 @@ Tutti i comandi si danno nella cartella `app/`, dopo `bun install`.
 | Collaudo completo, coi test dell'interfaccia anche in WebKit | `bun run collaudo --completo` |
 | Confronto del codice generato con l'esecuzione sui casi d'uso | `bun run differenziale` |
 | Eseguibile di release per Windows | `bun tauri build --no-bundle` → `shell/target/release/algodesign.exe` |
-| Pacchetto della release per Windows (cartella, zip e impronta in `dist/` alla radice; porta questo file, `README.md`, la guida per lo studente da `docs/` e le note di rilascio, che si danno allo strumento) | `bun run pacchetto --testi ../rilascio/windows` (con `--prova` da un albero con modifiche, in `dist/prova/`) |
+| Pacchetto della release per Windows (cartella, zip e impronta in `dist/` alla radice; porta questo file, `README.md`, le due guide per lo studente da `docs/` e le note di rilascio, che si danno allo strumento) | `bun run pacchetto --testi ../rilascio/windows` (con `--prova` da un albero con modifiche, in `dist/prova/`) |
 | Lo JSON Schema del formato, dopo un cambio del lettore dei file | `bun ./strumenti/schema-del-formato.ts` |
 
 ### Le prove sul prodotto

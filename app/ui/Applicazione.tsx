@@ -159,6 +159,7 @@ import { ConfermaTogli, type DaTogliere } from "./finestre/ConfermaTogli";
 import { FinestraErrori, type VoceDiErrore } from "./finestre/FinestraErrori";
 import { FinestraEsempi } from "./finestre/FinestraEsempi";
 import { FinestraImporta, nomiCheEntrano, type DaUnFile } from "./finestre/FinestraImporta";
+import { FinestraGuida, memoriaNuova } from "./finestre/FinestraGuida";
 import { FinestraInformazioni } from "./finestre/FinestraInformazioni";
 import { FinestraImpostazioni } from "./finestre/FinestraImpostazioni";
 import { FinestraProgetto, type DatiDelProgetto } from "./finestre/FinestraProgetto";
@@ -291,6 +292,9 @@ export function Applicazione({
 }): ReactElement {
   const [lingua, setLingua] = useState(linguaIniziale);
   const [scelte, setScelte] = useState(scelteIniziali);
+  // La guida per lo studente: non è una delle finestre (`finestra`), resta aperta mentre si lavora e i tasti valgono.
+  const [guidaAperta, setGuidaAperta] = useState(false);
+  const memoriaDellaGuida = useRef(memoriaNuova());
   const { condizioni, modoDeiBlocchi: modo, modoDeiDati: modoDati, limiti } = scelte;
   const sempre = scelte.conferma === "sempre";
   const cartellaScelta = scelte.cartellaEsempi;
@@ -2836,6 +2840,12 @@ export function Applicazione({
     if (nuove.cartellaEsempi !== cartellaScelta) rileggiEsempi(nuove.cartellaEsempi).catch(erroreDegliEsempi);
     if (nuove.cartellaLibrerie !== scelte.cartellaLibrerie) rileggiLibrerie(nuove.cartellaLibrerie).catch(erroreDelleLibrerie);
   }
+  /** La lingua scelta dalla riga di stato: la stessa preferenza delle Impostazioni, scritta subito. */
+  function scegliLingua(l: Lingua): void {
+    if (l === lingua) return;
+    setLingua(l);
+    salvaPreferenze(l, scelte);
+  }
   /** «Adatta alla finestra»; adattata, lo stesso pulsante torna allo zoom di prima. */
   function adatta(): void {
     if (adattata) {
@@ -2861,6 +2871,8 @@ export function Applicazione({
   const azioni: Azioni = {
     ...comandiDelProgetto,
     ...azioniDelMenu,
+    // La guida resta aperta mentre si lavora: già aperta, la voce le riporta il fuoco.
+    guida: () => (guidaAperta ? document.querySelector<HTMLElement>("[data-guida] article")?.focus() : setGuidaAperta(true)),
     ...(siAnnulla(cronologia) && !inEsecuzione ? { annulla: () => passo("annulla") } : {}),
     ...(siRipete(cronologia) && !inEsecuzione ? { ripeti: () => passo("ripeti") } : {}),
     ...(scelto !== null && !inEsecuzione
@@ -3448,6 +3460,7 @@ export function Applicazione({
         testi={testi}
         esecuzione={statoInParole}
         zoom={{ scala, azioni, stati }}
+        lingua={{ attuale: lingua, scegli: scegliLingua }}
         daiUnValore={inEsecuzione ? undefined : daiUnValore}
         sostituisciConOut={inEsecuzione ? undefined : sostituisciConOut}
         vai={(v) => {
@@ -3682,6 +3695,15 @@ export function Applicazione({
       />
       {impostazioni}
       <FinestraInformazioni aperta={finestra?.genere === "informazioni"} testi={testi} lingua={lingua} chiudi={() => setFinestra(null)} />
+      <FinestraGuida
+        aperta={guidaAperta}
+        testi={testi}
+        lingua={lingua}
+        ricerca={scelte.ricercaNellaGuida}
+        spostabile={scelte.guidaSpostabile}
+        memoria={memoriaDellaGuida.current}
+        chiudi={() => setGuidaAperta(false)}
+      />
       <FinestraErrori errori={errori} testi={testi} chiudi={() => setErrori(null)} />
       {/* L'avviso sopra il flowchart: si chiude con la ×, mai col clic sull'avviso stesso, che può partire per errore; si
           sposta trascinando la maniglia a sinistra. */}

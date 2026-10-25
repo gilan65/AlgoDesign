@@ -164,6 +164,20 @@ export const it = {
   informazioniLicenza: "Licenza MIT · © 2026 Giuseppe Lancellotti",
   informazioniFile: "Il testo della licenza è nel file LICENSE, accanto al programma; le librerie che AlgoDesign usa, con le loro licenze, sono nel file LICENZE-DI-TERZE-PARTI.txt.",
   informazioniDocumenti: "La guida per lo studente è distribuita con licenza Creative Commons Attribuzione 4.0 (CC BY 4.0), nel file LICENSE-DOCS.",
+  // La finestra con la guida per lo studente, nella lingua dell'interfaccia: la voce del menu «Aiuto», il titolo,
+  // l'indice dei capitoli.
+  guida: "Guida per lo studente",
+  guidaTitolo: "Guida per lo studente",
+  guidaIndice: "Capitoli",
+  // La ricerca nella guida: il campo (anche il suo nome) e quante parole ha trovato; le due caselle delle Impostazioni.
+  guidaCerca: "Cerca nella guida",
+  /** {n} la parola segnata, {totale} quante ne ha trovate. */
+  guidaTrovate: "{n} di {totale}",
+  guidaNessuna: "Nessun risultato",
+  ricercaNellaGuida: "Mostra la ricerca nella guida",
+  guidaSpostabile: "La finestra della guida si sposta e si ridimensiona",
+  // La lingua all'estrema destra della riga di stato: il nome del pulsante, seguito dalla lingua scelta.
+  linguaDellInterfaccia: "Lingua dell'interfaccia",
   filtroDelFile: "Progetti AlgoDesign",
   progettoSenzaNome: "Senza nome",
   progettoNuovoTitolo: "Nuovo progetto",

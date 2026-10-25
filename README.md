@@ -29,7 +29,7 @@ AlgoDesign separates the two tasks: first you **design** the algorithm as a flow
 
 Types and rules are those of the C language, plus a string type, so that the step from the flowchart to the code is natural. The generated code, however, is made to be read and does not check the calculations that break the rules (an integer outside its range, an integer division by zero, an index outside the array and a few others, listed in the release notes): AlgoDesign always stops them, the generated Python and C do not, and on those calculations they may give different results from each other.
 
-How to use AlgoDesign is in the **student guide**, `STUDENT-GUIDE.md` (in Italian `GUIDA-PER-LO-STUDENTE.md`): in the package it sits next to the program, in the repository in the `docs` folder. The news of each version is in the change log, `CHANGELOG.md` (in Italian).
+How to use AlgoDesign is in the **student guide**, `STUDENT-GUIDE.md` (in Italian `GUIDA-PER-LO-STUDENTE.md`): in the package it sits next to the program, in the repository in the `docs` folder. Inside AlgoDesign the guide opens from the **Help** menu, “Student guide”, in the language of the interface. The news of each version is in the change log, `CHANGELOG.md` (in Italian).
 
 ## Download and start
 
@@ -97,7 +97,7 @@ All the commands are given in the `app/` folder, after `bun install`.
 | Full test run, with the interface tests in WebKit too | `bun run collaudo --completo` |
 | Comparison of the generated code with the run on the test cases | `bun run differenziale` |
 | Release executable for Windows | `bun tauri build --no-bundle` → `shell/target/release/algodesign.exe` |
-| Release package for Windows (folder, zip and fingerprint in `dist/` at the root; it carries this file, `LEGGIMI.md`, the student guide from `docs/` and the release notes, which are given to the tool) | `bun run pacchetto --testi ../rilascio/windows` (with `--prova` from a tree with changes, in `dist/prova/`) |
+| Release package for Windows (folder, zip and fingerprint in `dist/` at the root; it carries this file, `LEGGIMI.md`, the two student guides from `docs/` and the release notes, which are given to the tool) | `bun run pacchetto --testi ../rilascio/windows` (with `--prova` from a tree with changes, in `dist/prova/`) |
 | The JSON Schema of the format, after a change to the file reader | `bun ./strumenti/schema-del-formato.ts` |
 
 ### The tests on the product

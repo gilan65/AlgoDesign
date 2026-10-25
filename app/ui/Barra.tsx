@@ -105,7 +105,7 @@ export function PulsanteDelComando({
 }
 
 /** Un menu chiuso (che sta sparendo) non tiene il fuoco: lo restituisce a chi lo aveva (vedi il menu «Progetto»). */
-const fuocoAChiLAveva = (e: FocusEvent<HTMLDivElement>) => {
+export const fuocoAChiLAveva = (e: FocusEvent<HTMLDivElement>) => {
   if (e.target === e.currentTarget && e.currentTarget.dataset.state !== "open") (e.relatedTarget as HTMLElement | null)?.focus({ preventScroll: true });
 };
 

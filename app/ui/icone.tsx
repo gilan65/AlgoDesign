@@ -246,6 +246,12 @@ export const icone = {
       <path d="M7 7.2a2 2 0 113 1.6c-.7.4-1 .8-1 1.6M9 12.6v.6" />
     </Icona>
   ),
+  /** Un libro aperto. */
+  guida: (
+    <Icona>
+      <path d="M9 4.5C7.5 3.3 5 3 2 3.2v10.3c3-.2 5.5.1 7 1.3 1.5-1.2 4-1.5 7-1.3V3.2c-3-.2-5.5.1-7 1.3zM9 4.5v10.3" />
+    </Icona>
+  ),
   /** Una «i» in un cerchio. */
   informazioni: (
     <Icona>
