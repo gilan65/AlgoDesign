@@ -20,7 +20,9 @@
 //    scritto lì).
 // 5. CARTELLA: `dist/<versione>/` alla radice del repository (`dist/prova/<versione>/` con `--prova`), con le voci di `elencoDelPacchetto`; i testi per l'utente
 //    dalla cartella di `--testi`, con `{{versione}}` e `{{data}}` sostituiti (un `{{` rimasto è rosso); la guida per lo
-//    studente da `docs/` del repository, così com'è (vale per la versione del prodotto; un `{{` è rosso); `CHANGELOG.md`
+//    studente da `docs/` del repository, così com'è (vale per la versione del prodotto; un `{{` è rosso); `README.md` e
+//    `LEGGIMI.md` dalla radice, così come sono, rossi se non dicono la cartella della versione (`AlgoDesign-<versione>`);
+//    `CHANGELOG.md`
 //    dalla radice del repository, così com'è: senza la voce della versione («## <versione>, »), o con un
 //    `SEGNAPOSTO` rimasto, è rosso. Le voci
 //    composte si confrontano con l'elenco nei due versi. Controllo positivo: lo stesso confronto, con una voce tolta e
@@ -48,7 +50,7 @@ import { createHash } from "node:crypto";
 import { homedir, tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { dataMostrata } from "../ui/prodotto";
-import { differenzeDallElenco, documentiDelPacchetto, elencoDelPacchetto, fileDelleLicenze, nomiDelPacchetto, testiDelPacchetto } from "./elenco-del-pacchetto";
+import { differenzeDallElenco, documentiDellaRadice, documentiDelPacchetto, elencoDelPacchetto, fileDelleLicenze, nomiDelPacchetto, testiDelPacchetto } from "./elenco-del-pacchetto";
 import { licenzeDiTerzeParti } from "./licenze";
 
 const argomenti = process.argv.slice(2);
@@ -250,6 +252,12 @@ async function componi(rilascio: string): Promise<void> {
     if (!existsSync(sorgente)) rosso("CARTELLA", `manca il documento ${sorgente}`);
     const testo = readFileSync(sorgente, "utf8");
     if (testo.includes("{{")) rosso("CARTELLA", `${relative(repository, sorgente)}: un «{{» nel documento, che si copia così com'è`);
+    writeFileSync(join(cartella, d), testo);
+  }
+  for (const d of documentiDellaRadice) {
+    const testo = readFileSync(join(repository, d), "utf8");
+    if (testo.includes("{{")) rosso("CARTELLA", `${d}: un «{{» nel documento, che si copia così com'è`);
+    if (!testo.includes(`AlgoDesign-${nomi.versione}`)) rosso("CARTELLA", `${d} non dice la cartella della versione, «AlgoDesign-${nomi.versione}»`);
     writeFileSync(join(cartella, d), testo);
   }
   const l = await licenzeDiTerzeParti(["x86_64-pc-windows-msvc"], nomi.versione, esegui, rosso);

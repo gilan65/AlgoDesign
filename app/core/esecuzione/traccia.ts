@@ -823,8 +823,9 @@ const numeroNegativo = /^-\d+(?:[.,]\d+)?$/;
  * il gruppo di una funzione che si può chiamare; in un progetto con funzioni che si possono chiamare, il livello dopo il
  * numero. Una cella che un foglio
  * di calcolo leggerebbe come una formula (comincia con `=`, `+`, `-`, `@`, una tabulazione o un ritorno a capo, e
- * non è un numero) comincia con un apostrofo, che la fa leggere come testo (un foglio di calcolo può mostrarlo: non
- * è misurato); come le virgolette, è la forma del file, non il contenuto della cella.
+ * non è un numero) comincia con un apostrofo, che la fa leggere come testo; come le virgolette, è la forma del file, non
+ * il contenuto della cella. Excel e LibreOffice Calc aprono la cella come testo e mostrano l'apostrofo davanti (lo dice
+ * il README); senza l'apostrofo la calcolerebbero come formula.
  */
 export function csv(t: Traccia, tabella: TabellaMostrata, forma: FormaDelCsv, campo: string, ordine?: readonly number[]): string {
   const fonte = forma === "uguale" ? tabella : tabella.conForma("per-elemento");

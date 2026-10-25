@@ -1,6 +1,6 @@
 # AlgoDesign {{versione}}: note di rilascio
 
-Versione del {{data}}. È la **quarta versione di prova** (ALPHA 4) di AlgoDesign, qui **per Linux** a 64 bit, in una **copia di prova riservata**: la versione per Linux è stata provata solo in parte e mai su un desktop vero. È un'AppImage portabile: si estrae l'archivio e si avvia `AlgoDesign.AppImage`, senza installarla. Come si avvia, i requisiti e i **limiti della versione per Linux** sono nel file `LEGGIMI.md`; come si usa è nella guida per lo studente, `GUIDA-PER-LO-STUDENTE.md`, che vale anche qui, con gli stessi tasti di Windows.
+Versione del {{data}}. È la **quarta versione di prova** (ALPHA 4) di AlgoDesign, qui **per Linux** a 64 bit, in una **copia di prova riservata**: la versione per Linux è stata provata solo in parte e mai su un desktop vero. È un'AppImage portabile: si estrae l'archivio e si avvia `AlgoDesign.AppImage`, senza installarla. Come si avvia, i requisiti e i **limiti della versione per Linux** sono nel file `ALGODESIGN-PER-LINUX.md`; come si usa è nella guida per lo studente, `GUIDA-PER-LO-STUDENTE.md`, che vale anche qui, con gli stessi tasti di Windows.
 
 Una versione di prova serve a provare il programma in aula e a raccogliere osservazioni: alcune funzioni mancano ancora, e altre possono cambiare nelle prossime versioni.
 
@@ -35,7 +35,7 @@ Una versione di prova serve a provare il programma in aula e a raccogliere osser
 ## Che cosa manca
 
 - La versione per macOS, data a parte.
-- Una versione per Linux provata su un desktop vero: questa copia lo è solo in parte (vedi il `LEGGIMI.md`).
+- Una versione per Linux provata su un desktop vero: questa copia lo è solo in parte (vedi il `ALGODESIGN-PER-LINUX.md`).
 - Compilare ed eseguire il codice generato dentro AlgoDesign: il codice si copia o si salva, e si prova con un compilatore C o con Python a parte.
 
 ## Da sapere
@@ -46,5 +46,5 @@ Una versione di prova serve a provare il programma in aula e a raccogliere osser
 - **Il codice generato è semplice, da leggere**: non controlla i calcoli che il C lascia senza una regola (un intero che esce dal suo intervallo, una divisione intera per zero, un indice fuori dal vettore, un reale fuori dall'intervallo degli interi convertito in intero, un dato letto prima di avere un valore), né un reale che diventa infinito o non è un numero. Un commento in testa al programma Python e C lo dice; AlgoDesign, invece, ferma l'esecuzione su ognuno di questi errori e indica il blocco. Su questi calcoli il Python e il C generati possono dare risultati diversi fra loro.
 - **Un ciclo che non finisce**: AlgoDesign ferma l'esecuzione dopo un milione di azioni; il Python e il C generati non hanno questo limite, e il programma va fermato a mano.
 - **Il Python generato** vuole Python 3.9 o successivo; il C generato si compila con un compilatore C11.
-- **Se l'AppImage non parte**: il permesso di esecuzione, la libreria FUSE e la finestra bianca con alcune schede grafiche hanno ciascuno il suo rimedio nel `LEGGIMI.md`.
-- **La versione portabile non scrive nulla di suo fuori dalla cartella `data`** accanto all'AppImage, dove stanno preferenze ed esempi; i file che salvi stanno dove li metti tu. Il sistema, invece, può annotare da sé gli ultimi file delle sue finestre per aprire e salvare, e le cache dei caratteri e della grafica (il `LEGGIMI.md` lo spiega).
+- **Se l'AppImage non parte**: il permesso di esecuzione, la libreria FUSE e la finestra bianca con alcune schede grafiche hanno ciascuno il suo rimedio nel `ALGODESIGN-PER-LINUX.md`.
+- **La versione portabile non scrive nulla di suo fuori dalla cartella `data`** accanto all'AppImage, dove stanno preferenze ed esempi; i file che salvi stanno dove li metti tu. Il sistema, invece, può annotare da sé gli ultimi file delle sue finestre per aprire e salvare, e le cache dei caratteri e della grafica (il `ALGODESIGN-PER-LINUX.md` lo spiega).

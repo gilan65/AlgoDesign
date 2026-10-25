@@ -76,8 +76,17 @@ const versioneSchema = 1;
 export const livelliMassimi = 50;
 
 type Contesto = { errori: ErroreDiApertura[]; id: Set<string>; principali: number; livello: number };
-type Lettore = (v: unknown, percorso: string, c: Contesto) => unknown;
-type Campi = Record<string, { obbligatorio: boolean; leggi: Lettore }>;
+
+/** Un pezzo di JSON Schema (draft 2020-12): ciò che un lettore accetta, detto nella lingua degli editor. */
+export type Schema = { readonly [chiave: string]: unknown };
+
+/** Un lettore porta con sé il pezzo di schema che gli corrisponde: lo schema del formato si compone da questi pezzi
+ * (`schemaDelFormato`), quindi dice per costruzione i campi, i tipi, gli elenchi di valori e gli obbligatori del lettore. */
+type Lettore = ((v: unknown, percorso: string, c: Contesto) => unknown) & { readonly schema: Schema };
+type Campo = { obbligatorio: boolean; leggi: Lettore; vietato?: true };
+type Campi = Record<string, Campo>;
+
+const lettore = (leggi: (v: unknown, percorso: string, c: Contesto) => unknown, schema: Schema): Lettore => Object.assign(leggi, { schema });
 
 const segnala = (c: Contesto, percorso: string, motivo: Motivo): undefined => {
   c.errori.push({ percorso, motivo });
@@ -91,30 +100,41 @@ const eOggetto = (v: unknown): v is Record<string, unknown> => typeof v === "obj
 
 // ------------------------------------------------------------------------------------- lettori di base
 
-const stringa: Lettore = (v, p, c) => (typeof v === "string" ? v : segnala(c, p, "wrong_type"));
+const stringa = lettore((v, p, c) => (typeof v === "string" ? v : segnala(c, p, "wrong_type")), { type: "string" });
 
-const stringaNonVuota: Lettore = (v, p, c) => (typeof v !== "string" ? segnala(c, p, "wrong_type") : v === "" ? segnala(c, p, "invalid_value") : v);
+const stringaNonVuota = lettore((v, p, c) => (typeof v !== "string" ? segnala(c, p, "wrong_type") : v === "" ? segnala(c, p, "invalid_value") : v), {
+  type: "string",
+  minLength: 1,
+});
 
-const booleano: Lettore = (v, p, c) => (typeof v === "boolean" ? v : segnala(c, p, "wrong_type"));
+const booleano = lettore((v, p, c) => (typeof v === "boolean" ? v : segnala(c, p, "wrong_type")), { type: "boolean" });
 
 /** Un intero; `-0` diventa `0`, perché il testo JSON lo scrive `0` e la riapertura deve dare lo stesso modello. */
-const intero =
-  (min = -Infinity, max = Infinity): Lettore =>
-  (v, p, c) =>
-    !Number.isInteger(v) ? segnala(c, p, "wrong_type") : (v as number) < min || (v as number) > max ? segnala(c, p, "invalid_value") : Object.is(v, -0) ? 0 : v;
+const intero = (min = -Infinity, max = Infinity): Lettore =>
+  lettore(
+    (v, p, c) =>
+      !Number.isInteger(v) ? segnala(c, p, "wrong_type") : (v as number) < min || (v as number) > max ? segnala(c, p, "invalid_value") : Object.is(v, -0) ? 0 : v,
+    { type: "integer", ...(min > -Infinity ? { minimum: min } : {}), ...(max < Infinity ? { maximum: max } : {}) },
+  );
 
-const uno =
-  (valori: readonly string[]): Lettore =>
-  (v, p, c) =>
-    typeof v !== "string" ? segnala(c, p, "wrong_type") : valori.includes(v) ? v : segnala(c, p, "invalid_value");
+const uno = (valori: readonly string[]): Lettore =>
+  lettore((v, p, c) => (typeof v !== "string" ? segnala(c, p, "wrong_type") : valori.includes(v) ? v : segnala(c, p, "invalid_value")), {
+    type: "string",
+    enum: [...valori],
+  });
 
-const elenco =
-  (voce: Lettore, almenoUna = false): Lettore =>
-  (v, p, c) => {
-    if (!Array.isArray(v)) return segnala(c, p, "wrong_type");
-    if (almenoUna && v.length === 0) return segnala(c, p, "invalid_value");
-    return v.map((x, i) => voce(x, sotto(p, i), c));
-  };
+/** Un valore fisso, già controllato da chi legge l'oggetto (il genere, la versione dello schema): si tiene com'è. */
+const fisso = (valore: string | number): Lettore => lettore((x) => x, { const: valore });
+
+const elenco = (voce: Lettore, almenoUna = false): Lettore =>
+  lettore(
+    (v, p, c) => {
+      if (!Array.isArray(v)) return segnala(c, p, "wrong_type");
+      if (almenoUna && v.length === 0) return segnala(c, p, "invalid_value");
+      return v.map((x, i) => voce(x, sotto(p, i), c));
+    },
+    { type: "array", items: voce.schema, ...(almenoUna ? { minItems: 1 } : {}) },
+  );
 
 /** Un oggetto con esattamente i campi dati: ricostruito nell'ordine di `campi`. */
 function oggetto(v: unknown, p: string, c: Contesto, campi: Campi): Record<string, unknown> | undefined {
@@ -133,25 +153,52 @@ function oggetto(v: unknown, p: string, c: Contesto, campi: Campi): Record<strin
   return fuori;
 }
 
-const campo = (leggi: Lettore) => ({ obbligatorio: true, leggi });
-const facoltativo = (leggi: Lettore) => ({ obbligatorio: false, leggi });
+const campo = (leggi: Lettore): Campo => ({ obbligatorio: true, leggi });
+const facoltativo = (leggi: Lettore): Campo => ({ obbligatorio: false, leggi });
 
-/** Un campo che per questo genere di funzione o di blocco non deve esserci. */
-const vietato = facoltativo((_v, p, c) => segnala(c, p, "field_not_allowed"));
+/** Un campo che per questo genere di funzione o di blocco non deve esserci: nello schema non compare, e un oggetto
+ * dello schema non ammette campi oltre i suoi. */
+const vietato: Campo = { obbligatorio: false, leggi: lettore((_v, p, c) => segnala(c, p, "field_not_allowed"), {}), vietato: true };
 
-const conOggetto =
-  (campi: Campi): Lettore =>
-  (v, p, c) =>
-    oggetto(v, p, c, campi);
-
-/** Un `id` di funzione o di blocco: non vuoto (un blocco vuoto vuol dire «il progetto») e unico nel progetto. */
-const id: Lettore = (v, p, c) => {
-  if (typeof v !== "string") return segnala(c, p, "wrong_type");
-  if (v === "") return segnala(c, p, "invalid_value");
-  if (c.id.has(v)) segnala(c, p, "duplicate_id");
-  c.id.add(v);
-  return v;
+/** Lo schema di un oggetto coi campi dati: i campi nell'ordine del formato, gli obbligatori, nessun campo in più. */
+const schemaDiCampi = (campi: Campi): Schema => {
+  const ammessi = Object.entries(campi).filter(([, x]) => !x.vietato);
+  return {
+    type: "object",
+    properties: Object.fromEntries(ammessi.map(([nome, x]) => [nome, x.leggi.schema])),
+    required: ammessi.filter(([, x]) => x.obbligatorio).map(([nome]) => nome),
+    additionalProperties: false,
+  };
 };
+
+const conOggetto = (campi: Campi): Lettore => lettore((v, p, c) => oggetto(v, p, c, campi), schemaDiCampi(campi));
+
+/**
+ * Lo schema di un oggetto i cui campi dipendono dal genere (`kind`): un ramo `if`/`then` per genere. Un validatore guarda
+ * solo il ramo del genere scritto; con un `oneOf` li proverebbe tutti, e i generi che contengono altri blocchi
+ * moltiplicherebbero il lavoro a ogni livello annidato (misurato: un file con 51 livelli non finiva in due minuti).
+ */
+function perGenere<G extends string>(generi: readonly G[], campi: (g: G) => Campi): Schema {
+  return {
+    type: "object",
+    properties: { kind: { type: "string", enum: [...generi] } },
+    required: ["kind"],
+    allOf: generi.map((g) => ({ if: { type: "object", properties: { kind: { const: g } }, required: ["kind"] }, then: schemaDiCampi(campi(g)) })),
+  };
+}
+
+/** Un `id` di funzione o di blocco: non vuoto (un blocco vuoto vuol dire «il progetto») e unico nel progetto. Lo schema
+ * non sa dire «unico»: lo dice solo il lettore. */
+const id = lettore(
+  (v, p, c) => {
+    if (typeof v !== "string") return segnala(c, p, "wrong_type");
+    if (v === "") return segnala(c, p, "invalid_value");
+    if (c.id.has(v)) segnala(c, p, "duplicate_id");
+    c.id.add(v);
+    return v;
+  },
+  { type: "string", minLength: 1 },
+);
 
 // ---------------------------------------------------------------------------------------- lo schema
 
@@ -161,26 +208,37 @@ const metadati = conOggetto({
   description: facoltativo(stringa),
   notes: facoltativo(stringa),
   // `false` vuol dire «non è una libreria», come l'assenza: si legge come assente e salvando non si scrive.
-  library: facoltativo((v, p, c) => (booleano(v, p, c) === true ? true : undefined)),
+  library: facoltativo(lettore((v, p, c) => (booleano(v, p, c) === true ? true : undefined), booleano.schema)),
 });
 
-/** Un solo carattere (un codice), mai quello di codice 0 né un surrogato isolato. */
-const carattereDiRiempimento: Lettore = (v, p, c) => {
-  if (typeof v !== "string") return segnala(c, p, "wrong_type");
-  const codici = [...v].map((x) => x.codePointAt(0)!);
-  return codici.length !== 1 || codici[0] === 0 || (codici[0]! >= 0xd800 && codici[0]! <= 0xdfff) ? segnala(c, p, "invalid_value") : v;
-};
+/** Un solo carattere (un codice), mai quello di codice 0 né un surrogato isolato. Lo schema conta i caratteri come il
+ * lettore, ma non sa escludere un surrogato isolato: lo esclude solo il lettore. */
+const carattereDiRiempimento = lettore(
+  (v, p, c) => {
+    if (typeof v !== "string") return segnala(c, p, "wrong_type");
+    const codici = [...v].map((x) => x.codePointAt(0)!);
+    return codici.length !== 1 || codici[0] === 0 || (codici[0]! >= 0xd800 && codici[0]! <= 0xdfff) ? segnala(c, p, "invalid_value") : v;
+  },
+  { type: "string", minLength: 1, maxLength: 1, not: { const: String.fromCodePoint(0) } },
+);
+
+const campiDelleOpzioni: Campi = { fill_character: facoltativo(carattereDiRiempimento), real_decimals: facoltativo(intero(0, 15)) };
 
 /** Le opzioni uguali al predefinito si tolgono, e con esse un oggetto rimasto vuoto: salvando, l'app le omette. */
-const opzioni: Lettore = (v, p, c) => {
-  const letto = oggetto(v, p, c, { fill_character: facoltativo(carattereDiRiempimento), real_decimals: facoltativo(intero(0, 15)) });
+const opzioni = lettore((v, p, c) => {
+  const letto = oggetto(v, p, c, campiDelleOpzioni);
   if (letto === undefined) return undefined;
   const diverse = Object.entries(letto).filter(([k, x]) => x !== opzioniPredefinite[k as keyof typeof opzioniPredefinite]);
   return diverse.length === 0 ? undefined : Object.fromEntries(diverse);
-};
+}, schemaDiCampi(campiDelleOpzioni));
 
-const valoreIniziale: Lettore = (v, p, c) =>
-  typeof v === "string" ? v : Array.isArray(v) ? elenco(stringa)(v, p, c) : eOggetto(v) ? oggetto(v, p, c, { each: campo(stringa) }) : segnala(c, p, "wrong_type");
+const perOgniElemento: Campi = { each: campo(stringa) };
+
+const valoreIniziale = lettore(
+  (v, p, c) =>
+    typeof v === "string" ? v : Array.isArray(v) ? elenco(stringa)(v, p, c) : eOggetto(v) ? oggetto(v, p, c, perOgniElemento) : segnala(c, p, "wrong_type"),
+  { anyOf: [stringa.schema, elenco(stringa).schema, schemaDiCampi(perOgniElemento)] },
+);
 
 const dato = conOggetto({
   name: campo(stringa),
@@ -193,93 +251,32 @@ const dato = conOggetto({
   parameter: facoltativo(uno(modalita)),
 });
 
-/** Una sequenza di blocchi, un livello più in giù: oltre il tetto una sequenza che ha dei blocchi si segnala
- * (`too_deep`, una volta sola) e non si scende; vuota, non aggiunge livelli. */
-const blocchi: Lettore = (v, p, c) => {
-  if (c.livello >= livelliMassimi && Array.isArray(v) && v.length > 0) return segnala(c, p, "too_deep");
-  c.livello++;
-  try {
-    return elenco(blocco)(v, p, c);
-  } finally {
-    c.livello--;
-  }
-};
-
-const campiPropri: Record<(typeof generiDiBlocco)[number], Campi> = {
-  assignment: { target: campo(stringa), value: campo(stringa) },
-  read: { target: campo(stringa) },
-  write: { values: campo(elenco(stringa, true)), newline: campo(booleano) },
-  if: { condition: campo(stringa), then: campo(blocchi), else: campo(blocchi) },
-  while: { condition: campo(stringa), body: campo(blocchi) },
-  repeat: { body: campo(blocchi), condition: campo(stringa) },
-  for: { counter: campo(stringa), from: campo(stringa), to: campo(stringa), step: facoltativo(intero()), body: campo(blocchi) },
-  for_each: { item: campo(stringa), source: campo(stringa), body: campo(blocchi) },
-  call: { callee: campo(stringa), arguments: campo(elenco(stringa)) },
-  comment: { text: campo(stringa) },
-};
-
-/**
- * Il genere si legge per primo, perché decide quali campi sono ammessi; se manca o è sconosciuto si
- * segnala solo quello, invece di dichiarare sconosciuti tutti gli altri campi.
- */
-function genere(v: Record<string, unknown>, p: string, c: Contesto, generi: readonly string[]): string | undefined {
-  if (!Object.hasOwn(v, "kind")) return segnala(c, sotto(p, "kind"), "missing_field");
-  return uno(generi)(v.kind, sotto(p, "kind"), c) as string | undefined;
-}
-
-function blocco(v: unknown, p: string, c: Contesto): unknown {
-  if (!eOggetto(v)) return segnala(c, p, "wrong_type");
-  const g = genere(v, p, c, generiDiBlocco);
-  if (g === undefined) return undefined;
-  const propri = campiPropri[g as keyof typeof campiPropri];
-  return oggetto(v, p, c, { id: campo(id), kind: campo((x) => x), breakpoint: facoltativo(booleano), ...propri });
-}
-
-function funzione(v: unknown, p: string, c: Contesto): unknown {
-  if (!eOggetto(v)) return segnala(c, p, "wrong_type");
-  const g = genere(v, p, c, generiDiFunzione);
-  if (g === undefined) return undefined;
-  if (g === "main") c.principali++;
-  const conNome = g !== "main";
-  const restituisce = g === "function";
-  const fine = conOggetto({
-    id: campo(id),
-    return_value: restituisce ? campo(stringa) : vietato,
-    breakpoint: facoltativo(booleano),
-  });
-  return oggetto(v, p, c, {
-    id: campo(id),
-    kind: campo((x) => x),
-    name: conNome ? campo(stringa) : vietato,
-    return_type: restituisce ? campo(uno(tipi)) : vietato,
-    // Il vettore e la lunghezza massima della stringa restituiti, sullo stampo di un dato: i valori fuori dai limiti sono
-    // errori del controllo statico.
-    return_size: restituisce ? facoltativo(intero()) : vietato,
-    return_max_length: restituisce ? facoltativo(intero()) : vietato,
-    default_result: restituisce ? facoltativo(stringa) : vietato,
-    data: campo(elenco(dato)),
-    body: campo(blocchi),
-    end: campo(fine),
-    // I casi del programma principale stanno nella radice; quelli di una procedura o di una funzione qui.
-    test_cases: conNome ? facoltativo(casiDUso(casoDiUnaFunzione)) : vietato,
-  });
-}
-
 const segnalazione = (codici: readonly string[]) => conOggetto({ code: campo(uno(codici)), block: campo(stringa) });
 
-function atteso(v: unknown, p: string, c: Contesto): unknown {
-  const letto = oggetto(v, p, c, {
-    output: campo(stringa),
-    error: facoltativo(segnalazione(codiciErrore)),
-    static_error: facoltativo(segnalazione(codiciErroreStatico)),
-    warnings: facoltativo(elenco(segnalazione(codiciAvviso))),
-  });
-  if (letto === undefined) return undefined;
-  if ("error" in letto && "static_error" in letto) segnala(c, p, "error_and_static_error");
-  // Con un errore statico atteso l'output è vuoto: il progetto non parte, e niente è stato scritto.
-  if ("static_error" in letto && typeof letto.output === "string" && letto.output !== "") segnala(c, sotto(p, "output"), "output_with_static_error");
-  return letto;
-}
+const campiDellAtteso: Campi = {
+  output: campo(stringa),
+  error: facoltativo(segnalazione(codiciErrore)),
+  static_error: facoltativo(segnalazione(codiciErroreStatico)),
+  warnings: facoltativo(elenco(segnalazione(codiciAvviso))),
+};
+
+const atteso = lettore(
+  (v, p, c) => {
+    const letto = oggetto(v, p, c, campiDellAtteso);
+    if (letto === undefined) return undefined;
+    if ("error" in letto && "static_error" in letto) segnala(c, p, "error_and_static_error");
+    // Con un errore statico atteso l'output è vuoto: il progetto non parte, e niente è stato scritto.
+    if ("static_error" in letto && typeof letto.output === "string" && letto.output !== "") segnala(c, sotto(p, "output"), "output_with_static_error");
+    return letto;
+  },
+  {
+    ...schemaDiCampi(campiDellAtteso),
+    // I campi nominati si dichiarano anche qui (vuoti: accettano tutto), perché un validatore rigoroso lo chiede.
+    not: { type: "object", properties: { error: {}, static_error: {} }, required: ["error", "static_error"] },
+    if: { type: "object", properties: { static_error: {} }, required: ["static_error"] },
+    then: { type: "object", properties: { output: { const: "" } } },
+  },
+);
 
 const casoDUso = conOggetto({
   name: campo(stringa),
@@ -297,19 +294,113 @@ const casoDiUnaFunzione = conOggetto({
   expected: campo(atteso),
 });
 
-/** I nomi dei casi d'uso sono unici fra i casi del progetto, e fra quelli di una funzione. */
-const casiDUso = (caso: Lettore = casoDUso): Lettore => (v, p, c) => {
-  const casi = elenco(caso)(v, p, c);
-  if (!Array.isArray(casi)) return undefined;
-  const visti = new Set<unknown>();
-  casi.forEach((caso, i) => {
-    const nome = eOggetto(caso) ? caso.name : undefined;
-    if (typeof nome !== "string") return;
-    if (visti.has(nome)) segnala(c, sotto(sotto(p, i), "name"), "duplicate_test_case_name");
-    visti.add(nome);
-  });
-  return casi;
+/** I nomi dei casi d'uso sono unici fra i casi del progetto, e fra quelli di una funzione (lo schema non lo sa dire). */
+const casiDUso = (caso: Lettore = casoDUso): Lettore =>
+  lettore((v, p, c) => {
+    const casi = elenco(caso)(v, p, c);
+    if (!Array.isArray(casi)) return undefined;
+    const visti = new Set<unknown>();
+    casi.forEach((caso, i) => {
+      const nome = eOggetto(caso) ? caso.name : undefined;
+      if (typeof nome !== "string") return;
+      if (visti.has(nome)) segnala(c, sotto(sotto(p, i), "name"), "duplicate_test_case_name");
+      visti.add(nome);
+    });
+    return casi;
+  }, elenco(caso).schema);
+
+/** Un blocco dentro una sequenza: lo schema lo richiama per nome, perché un blocco contiene altre sequenze. */
+const unBlocco = lettore((v, p, c) => blocco(v, p, c), { $ref: "#/$defs/block" });
+
+/** Una sequenza di blocchi, un livello più in giù: oltre il tetto una sequenza che ha dei blocchi si segnala
+ * (`too_deep`, una volta sola) e non si scende; vuota, non aggiunge livelli. Lo schema non conta i livelli. */
+const blocchi = lettore((v, p, c) => {
+  if (c.livello >= livelliMassimi && Array.isArray(v) && v.length > 0) return segnala(c, p, "too_deep");
+  c.livello++;
+  try {
+    return elenco(unBlocco)(v, p, c);
+  } finally {
+    c.livello--;
+  }
+}, elenco(unBlocco).schema);
+
+const campiPropri: Record<(typeof generiDiBlocco)[number], Campi> = {
+  assignment: { target: campo(stringa), value: campo(stringa) },
+  read: { target: campo(stringa) },
+  write: { values: campo(elenco(stringa, true)), newline: campo(booleano) },
+  if: { condition: campo(stringa), then: campo(blocchi), else: campo(blocchi) },
+  while: { condition: campo(stringa), body: campo(blocchi) },
+  repeat: { body: campo(blocchi), condition: campo(stringa) },
+  for: { counter: campo(stringa), from: campo(stringa), to: campo(stringa), step: facoltativo(intero()), body: campo(blocchi) },
+  for_each: { item: campo(stringa), source: campo(stringa), body: campo(blocchi) },
+  call: { callee: campo(stringa), arguments: campo(elenco(stringa)) },
+  comment: { text: campo(stringa) },
 };
+
+/** I campi di un blocco di quel genere: gli stessi per la lettura e per lo schema. */
+const campiDelBlocco = (g: (typeof generiDiBlocco)[number]): Campi => ({ id: campo(id), kind: campo(fisso(g)), breakpoint: facoltativo(booleano), ...campiPropri[g] });
+
+/** I campi di una funzione di quel genere: gli stessi per la lettura e per lo schema. */
+function campiDellaFunzione(g: (typeof generiDiFunzione)[number]): Campi {
+  const conNome = g !== "main";
+  const restituisce = g === "function";
+  const fine = conOggetto({
+    id: campo(id),
+    return_value: restituisce ? campo(stringa) : vietato,
+    breakpoint: facoltativo(booleano),
+  });
+  return {
+    id: campo(id),
+    kind: campo(fisso(g)),
+    name: conNome ? campo(stringa) : vietato,
+    return_type: restituisce ? campo(uno(tipi)) : vietato,
+    // Il vettore e la lunghezza massima della stringa restituiti, sullo stampo di un dato: i valori fuori dai limiti sono
+    // errori del controllo statico.
+    return_size: restituisce ? facoltativo(intero()) : vietato,
+    return_max_length: restituisce ? facoltativo(intero()) : vietato,
+    default_result: restituisce ? facoltativo(stringa) : vietato,
+    data: campo(elenco(dato)),
+    body: campo(blocchi),
+    end: campo(fine),
+    // I casi del programma principale stanno nella radice; quelli di una procedura o di una funzione qui.
+    test_cases: conNome ? facoltativo(casiDUso(casoDiUnaFunzione)) : vietato,
+  };
+}
+
+/**
+ * Il genere si legge per primo, perché decide quali campi sono ammessi; se manca o è sconosciuto si
+ * segnala solo quello, invece di dichiarare sconosciuti tutti gli altri campi.
+ */
+function genere(v: Record<string, unknown>, p: string, c: Contesto, generi: readonly string[]): string | undefined {
+  if (!Object.hasOwn(v, "kind")) return segnala(c, sotto(p, "kind"), "missing_field");
+  return uno(generi)(v.kind, sotto(p, "kind"), c) as string | undefined;
+}
+
+function blocco(v: unknown, p: string, c: Contesto): unknown {
+  if (!eOggetto(v)) return segnala(c, p, "wrong_type");
+  const g = genere(v, p, c, generiDiBlocco);
+  if (g === undefined) return undefined;
+  return oggetto(v, p, c, campiDelBlocco(g as (typeof generiDiBlocco)[number]));
+}
+
+const funzione = lettore(
+  (v, p, c) => {
+    if (!eOggetto(v)) return segnala(c, p, "wrong_type");
+    const g = genere(v, p, c, generiDiFunzione);
+    if (g === undefined) return undefined;
+    if (g === "main") c.principali++;
+    return oggetto(v, p, c, campiDellaFunzione(g as (typeof generiDiFunzione)[number]));
+  },
+  perGenere(generiDiFunzione, campiDellaFunzione),
+);
+
+/** Le funzioni del progetto: una sola è il programma principale (lo schema lo dice con `contains`). */
+const funzioni = lettore(elenco(funzione), {
+  ...elenco(funzione).schema,
+  contains: { type: "object", properties: { kind: { const: "main" } }, required: ["kind"] },
+  minContains: 1,
+  maxContains: 1,
+});
 
 /** Se un caso chiamato `nome`, del programma (`funzione` assente) o della procedura o funzione con quell'`id`, ha lo
  * stesso nome nella riga di comando (`file#funzione/caso`) di un caso dell'altra parte: un caso del
@@ -332,6 +423,34 @@ function migra(v: Record<string, unknown>, c: Contesto): Record<string, unknown>
   return v;
 }
 
+const campiDelProgetto: Campi = {
+  format: campo(uno(["algodesign"])),
+  schema_version: campo(fisso(versioneSchema)),
+  metadata: campo(metadati),
+  options: facoltativo(opzioni),
+  shared_constants: facoltativo(elenco(dato)),
+  functions: campo(funzioni),
+  test_cases: facoltativo(casiDUso()),
+};
+
+/**
+ * Lo JSON Schema del file `.algo`, composto dai pezzi del lettore: lo stesso lettore, detto per gli editor e per chi
+ * scrive un file fuori dall'app. Non sa dire ciò che il lettore controlla oltre la forma: gli `id` unici, i nomi dei
+ * casi d'uso unici, la chiave ripetuta in un oggetto, i 50 livelli di blocchi annidati, il surrogato isolato nel
+ * carattere di riempimento.
+ */
+export function schemaDelFormato(): Schema {
+  return {
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    title: "AlgoDesign project (.algo)",
+    ...schemaDiCampi(campiDelProgetto),
+    $defs: { block: perGenere(generiDiBlocco, campiDelBlocco) },
+  };
+}
+
+/** Il testo del file dello schema pubblicato: rientro di 2 spazi e un a capo finale, come un progetto salvato. */
+export const testoDelloSchema = (): string => `${JSON.stringify(schemaDelFormato(), null, 2)}\n`;
+
 // ------------------------------------------------------------------------------------------ ingressi
 
 /** Valida un valore JSON già analizzato e ne fa un progetto. */
@@ -340,15 +459,7 @@ export function leggi(v: unknown): Esito {
   if (!eOggetto(v)) return { ok: false, errori: [{ percorso: "", motivo: "wrong_type" }] };
   const migrato = migra(v, c);
   if (migrato === undefined) return { ok: false, errori: c.errori };
-  const progetto = oggetto(migrato, "", c, {
-    format: campo(uno(["algodesign"])),
-    schema_version: campo((x) => x),
-    metadata: campo(metadati),
-    options: facoltativo(opzioni),
-    shared_constants: facoltativo(elenco(dato)),
-    functions: campo(elenco(funzione)),
-    test_cases: facoltativo(casiDUso()),
-  });
+  const progetto = oggetto(migrato, "", c, campiDelProgetto);
   if (Array.isArray(migrato.functions) && c.principali !== 1) segnala(c, "functions", "main_count");
   if (c.errori.length > 0 || progetto === undefined) return { ok: false, errori: c.errori };
   return { ok: true, progetto: progetto as unknown as Progetto };

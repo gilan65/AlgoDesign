@@ -14,7 +14,7 @@
 //    rilevatore trova la cartella di Cargo nel file delle dipendenze di `tokio` che il build lascia in
 //    `target/release/deps`.
 // 4. GLIBC: la versione più alta di glibc che il programma chiede (`objdump -T`), cioè la minima che il sistema deve
-//    avere; rossa se supera quella che il `LEGGIMI` di Linux promette (`glibcPromessa`).
+//    avere; rossa se supera quella che il testo di Linux (`ALGODESIGN-PER-LINUX.md`) promette (`glibcPromessa`).
 // 5. LIBRERIE DI SISTEMA: ogni libreria dentro l'AppImage (fuori da `usr/bin`: `*.so*`, `*.xml`, `*.compiled`,
 //    `*.cache`) col pacchetto di Ubuntu da cui viene (`dpkg -S`, anche coi moduli che l'AppImage tiene in
 //    `usr/lib/<modulo>` e che Ubuntu tiene in `/usr/lib/x86_64-linux-gnu/<modulo>`), la versione del pacchetto e il suo
@@ -22,7 +22,8 @@
 //    il copyright, se le licenze comuni mancano, se una libreria non ha un pacchetto e non è una cache dei moduli.
 // 6. CARTELLA: `dist/<versione>-linux/` alla radice del repository (`dist/prova/…` con `--prova`), con le voci di
 //    `elencoDiLinux`; i testi per l'utente dalla cartella di `--testi` coi segnaposto sostituiti (un `{{` rimasto è
-//    rosso); la guida da `docs/`, il registro delle modifiche dalla radice, così come sono (come per Windows); le licenze
+//    rosso); la guida da `docs/`, i due README e il registro delle modifiche dalla radice, così come sono (come per
+//    Windows); le licenze
 //    di terze parti per `x86_64-unknown-linux-gnu` con `licenze.ts`. Le voci, al primo livello e nella cartella delle
 //    librerie di sistema, si confrontano con l'atteso nei due versi; controllo positivo: lo stesso confronto, con una
 //    voce tolta e una in più, le dice tutte e due. L'AppImage ha i permessi 0755, gli altri file 0644, `data/` è vuota.
@@ -47,10 +48,10 @@ import { createHash } from "node:crypto";
 import { homedir, tmpdir } from "node:os";
 import { basename, join, relative } from "node:path";
 import { dataMostrata } from "../ui/prodotto";
-import { cartellaDelleLibrerieDiSistema, differenzeDallElenco, documentiDelPacchetto, elencoDiLinux, fileDelleLicenze, nomiDiLinux, testiDiLinux } from "./elenco-del-pacchetto";
+import { cartellaDelleLibrerieDiSistema, differenzeDallElenco, documentiDellaRadice, documentiDelPacchetto, elencoDiLinux, fileDelleLicenze, nomiDiLinux, testiDiLinux } from "./elenco-del-pacchetto";
 import { licenzeDiTerzeParti } from "./licenze";
 
-/** La glibc più vecchia su cui l'AppImage deve partire: quella che il `LEGGIMI` di Linux promette. */
+/** La glibc più vecchia su cui l'AppImage deve partire: quella che il testo di Linux promette. */
 const glibcPromessa = "2.34";
 
 const argomenti = process.argv.slice(2);
@@ -217,8 +218,8 @@ async function glibc(contenuto: string): Promise<string> {
   const versioni = [...new Set(o.out.match(/GLIBC_[0-9.]+/g) ?? [])].map((v) => v.slice("GLIBC_".length)).sort(confrontaVersioni);
   if (o.codice !== 0 || versioni.length === 0) rosso("GLIBC", `objdump esce ${o.codice} con ${versioni.length} versioni di glibc (dettaglio nel log)`);
   const minima = versioni.at(-1)!;
-  if (confrontaVersioni(minima, glibcPromessa) > 0) rosso("GLIBC", `il programma chiede glibc ${minima}, il LEGGIMI promette ${glibcPromessa}`);
-  riga(`GLIBC: VERDE | il programma chiede glibc ${minima} (${versioni.length} versioni di simboli), il LEGGIMI promette ${glibcPromessa}`);
+  if (confrontaVersioni(minima, glibcPromessa) > 0) rosso("GLIBC", `il programma chiede glibc ${minima}, il testo di Linux promette ${glibcPromessa}`);
+  riga(`GLIBC: VERDE | il programma chiede glibc ${minima} (${versioni.length} versioni di simboli), il testo di Linux promette ${glibcPromessa}`);
   return minima;
 }
 
@@ -332,6 +333,11 @@ async function componi(appimage: string, sistema: LibrerieDiSistema): Promise<vo
     if (testo.includes("{{")) rosso("CARTELLA", `${relative(repository, sorgente)}: un «{{» nel documento, che si copia così com'è`);
     writeFileSync(join(cartella, d), testo);
   }
+  for (const d of documentiDellaRadice) {
+    const testo = readFileSync(join(repository, d), "utf8");
+    if (testo.includes("{{")) rosso("CARTELLA", `${d}: un «{{» nel documento, che si copia così com'è`);
+    writeFileSync(join(cartella, d), testo);
+  }
   const l = await licenzeDiTerzeParti(["x86_64-unknown-linux-gnu"], nomi.versione, esegui, rosso);
   writeFileSync(join(cartella, fileDelleLicenze), l.testo);
   writeFileSync(join(librerie, "pacchetti-di-sistema.txt"), sistema.pacchetti);
@@ -345,7 +351,7 @@ async function componi(appimage: string, sistema: LibrerieDiSistema): Promise<vo
   const differenze = differenzeDallElenco(trovate, elencoDiLinux);
   if (differenze.length > 0) rosso("CARTELLA", `le voci non sono quelle dell'elenco: ${differenze.join(", ")}`);
   const nelleLibrerie = voci(librerie);
-  const atteseNelleLibrerie = ["LEGGIMI.md", "licenze-comuni/", "pacchetti-di-sistema.txt", "versioni-dei-pacchetti.txt", ...[...sistema.copyright.keys()].map((p) => `${p}.copyright`)].sort();
+  const atteseNelleLibrerie = ["CONTENUTO-DELLA-CARTELLA.md", "licenze-comuni/", "pacchetti-di-sistema.txt", "versioni-dei-pacchetti.txt", ...[...sistema.copyright.keys()].map((p) => `${p}.copyright`)].sort();
   confrontoAcceso(nelleLibrerie, atteseNelleLibrerie, cartellaDelleLibrerieDiSistema);
   const diverseNelleLibrerie = differenzeDallElenco(nelleLibrerie, atteseNelleLibrerie);
   if (diverseNelleLibrerie.length > 0) rosso("CARTELLA", `${cartellaDelleLibrerieDiSistema}: ${diverseNelleLibrerie.slice(0, 10).join(", ")}`);

@@ -1,0 +1,1665 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AlgoDesign project (.algo)",
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "string",
+      "enum": [
+        "algodesign"
+      ]
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "author": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "library": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "fill_character": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1,
+          "not": {
+            "const": "\u0000"
+          }
+        },
+        "real_decimals": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "shared_constants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "integer",
+              "real",
+              "character",
+              "string",
+              "boolean"
+            ]
+          },
+          "size": {
+            "type": "integer"
+          },
+          "constant": {
+            "type": "boolean"
+          },
+          "initial": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "each": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "each"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "input",
+              "output",
+              "input_output"
+            ]
+          },
+          "max_length": {
+            "type": "integer"
+          },
+          "parameter": {
+            "type": "string",
+            "enum": [
+              "value",
+              "reference",
+              "out"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "functions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "main",
+              "procedure",
+              "function"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "main"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "kind": {
+                  "const": "main"
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "integer",
+                          "real",
+                          "character",
+                          "string",
+                          "boolean"
+                        ]
+                      },
+                      "size": {
+                        "type": "integer"
+                      },
+                      "constant": {
+                        "type": "boolean"
+                      },
+                      "initial": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "each": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "each"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "input",
+                          "output",
+                          "input_output"
+                        ]
+                      },
+                      "max_length": {
+                        "type": "integer"
+                      },
+                      "parameter": {
+                        "type": "string",
+                        "enum": [
+                          "value",
+                          "reference",
+                          "out"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "body": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/block"
+                  }
+                },
+                "end": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "breakpoint": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "data",
+                "body",
+                "end"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "if": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "procedure"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "kind": {
+                  "const": "procedure"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "integer",
+                          "real",
+                          "character",
+                          "string",
+                          "boolean"
+                        ]
+                      },
+                      "size": {
+                        "type": "integer"
+                      },
+                      "constant": {
+                        "type": "boolean"
+                      },
+                      "initial": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "each": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "each"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "input",
+                          "output",
+                          "input_output"
+                        ]
+                      },
+                      "max_length": {
+                        "type": "integer"
+                      },
+                      "parameter": {
+                        "type": "string",
+                        "enum": [
+                          "value",
+                          "reference",
+                          "out"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "body": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/block"
+                  }
+                },
+                "end": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "breakpoint": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                },
+                "test_cases": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "inputs": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "data": {
+                              "type": "string"
+                            },
+                            "text": {
+                              "type": "string"
+                            },
+                            "each": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "data"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "expected": {
+                        "type": "object",
+                        "properties": {
+                          "output": {
+                            "type": "string"
+                          },
+                          "error": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "uninitialized",
+                                  "index_out_of_range",
+                                  "string_too_long",
+                                  "null_character_in_string",
+                                  "invalid_character_code",
+                                  "string_longer_than_array",
+                                  "same_reference",
+                                  "reference_without_value",
+                                  "integer_overflow",
+                                  "division_by_zero",
+                                  "real_to_integer_out_of_range",
+                                  "non_finite_real",
+                                  "invalid_input",
+                                  "input_exhausted",
+                                  "input_mismatch",
+                                  "unused_inputs",
+                                  "too_many_steps",
+                                  "recursion_too_deep",
+                                  "recursion_data_too_large",
+                                  "out_of_memory"
+                                ]
+                              },
+                              "block": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "block"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "static_error": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "unknown_name",
+                                  "invalid_name",
+                                  "invalid_data_item",
+                                  "assign_to_constant",
+                                  "assign_to_read_only",
+                                  "array_assignment",
+                                  "literal_out_of_range",
+                                  "literal_leading_zero",
+                                  "string_literal_too_long",
+                                  "multi_code_character",
+                                  "type_mismatch",
+                                  "condition_not_boolean",
+                                  "chained_comparison",
+                                  "chained_power",
+                                  "division_by_literal_zero",
+                                  "invalid_step",
+                                  "unknown_callee",
+                                  "argument_mismatch",
+                                  "reference_not_assignable",
+                                  "same_reference",
+                                  "function_as_statement",
+                                  "procedure_in_expression",
+                                  "limit_exceeded",
+                                  "syntax_error",
+                                  "function_with_effect",
+                                  "invalid_default_value",
+                                  "function_name_in_use",
+                                  "reference_without_value"
+                                ]
+                              },
+                              "block": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "block"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "warnings": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "code": {
+                                  "type": "string",
+                                  "enum": [
+                                    "integer_division_to_real",
+                                    "real_equality",
+                                    "useless_conversion",
+                                    "constant_loop_condition",
+                                    "input_never_read",
+                                    "output_never_written",
+                                    "missing_role",
+                                    "maybe_uninitialized",
+                                    "unused_data",
+                                    "unused_value",
+                                    "implicit_conversion"
+                                  ]
+                                },
+                                "block": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "code",
+                                "block"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "output"
+                        ],
+                        "additionalProperties": false,
+                        "not": {
+                          "type": "object",
+                          "properties": {
+                            "error": {},
+                            "static_error": {}
+                          },
+                          "required": [
+                            "error",
+                            "static_error"
+                          ]
+                        },
+                        "if": {
+                          "type": "object",
+                          "properties": {
+                            "static_error": {}
+                          },
+                          "required": [
+                            "static_error"
+                          ]
+                        },
+                        "then": {
+                          "type": "object",
+                          "properties": {
+                            "output": {
+                              "const": ""
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "inputs",
+                      "expected"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "name",
+                "data",
+                "body",
+                "end"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "if": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "function"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "kind": {
+                  "const": "function"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "return_type": {
+                  "type": "string",
+                  "enum": [
+                    "integer",
+                    "real",
+                    "character",
+                    "string",
+                    "boolean"
+                  ]
+                },
+                "return_size": {
+                  "type": "integer"
+                },
+                "return_max_length": {
+                  "type": "integer"
+                },
+                "default_result": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "integer",
+                          "real",
+                          "character",
+                          "string",
+                          "boolean"
+                        ]
+                      },
+                      "size": {
+                        "type": "integer"
+                      },
+                      "constant": {
+                        "type": "boolean"
+                      },
+                      "initial": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "each": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "each"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "input",
+                          "output",
+                          "input_output"
+                        ]
+                      },
+                      "max_length": {
+                        "type": "integer"
+                      },
+                      "parameter": {
+                        "type": "string",
+                        "enum": [
+                          "value",
+                          "reference",
+                          "out"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "body": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/block"
+                  }
+                },
+                "end": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "return_value": {
+                      "type": "string"
+                    },
+                    "breakpoint": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "return_value"
+                  ],
+                  "additionalProperties": false
+                },
+                "test_cases": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "inputs": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "data": {
+                              "type": "string"
+                            },
+                            "text": {
+                              "type": "string"
+                            },
+                            "each": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "data"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "expected": {
+                        "type": "object",
+                        "properties": {
+                          "output": {
+                            "type": "string"
+                          },
+                          "error": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "uninitialized",
+                                  "index_out_of_range",
+                                  "string_too_long",
+                                  "null_character_in_string",
+                                  "invalid_character_code",
+                                  "string_longer_than_array",
+                                  "same_reference",
+                                  "reference_without_value",
+                                  "integer_overflow",
+                                  "division_by_zero",
+                                  "real_to_integer_out_of_range",
+                                  "non_finite_real",
+                                  "invalid_input",
+                                  "input_exhausted",
+                                  "input_mismatch",
+                                  "unused_inputs",
+                                  "too_many_steps",
+                                  "recursion_too_deep",
+                                  "recursion_data_too_large",
+                                  "out_of_memory"
+                                ]
+                              },
+                              "block": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "block"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "static_error": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "unknown_name",
+                                  "invalid_name",
+                                  "invalid_data_item",
+                                  "assign_to_constant",
+                                  "assign_to_read_only",
+                                  "array_assignment",
+                                  "literal_out_of_range",
+                                  "literal_leading_zero",
+                                  "string_literal_too_long",
+                                  "multi_code_character",
+                                  "type_mismatch",
+                                  "condition_not_boolean",
+                                  "chained_comparison",
+                                  "chained_power",
+                                  "division_by_literal_zero",
+                                  "invalid_step",
+                                  "unknown_callee",
+                                  "argument_mismatch",
+                                  "reference_not_assignable",
+                                  "same_reference",
+                                  "function_as_statement",
+                                  "procedure_in_expression",
+                                  "limit_exceeded",
+                                  "syntax_error",
+                                  "function_with_effect",
+                                  "invalid_default_value",
+                                  "function_name_in_use",
+                                  "reference_without_value"
+                                ]
+                              },
+                              "block": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "block"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "warnings": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "code": {
+                                  "type": "string",
+                                  "enum": [
+                                    "integer_division_to_real",
+                                    "real_equality",
+                                    "useless_conversion",
+                                    "constant_loop_condition",
+                                    "input_never_read",
+                                    "output_never_written",
+                                    "missing_role",
+                                    "maybe_uninitialized",
+                                    "unused_data",
+                                    "unused_value",
+                                    "implicit_conversion"
+                                  ]
+                                },
+                                "block": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "code",
+                                "block"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "output"
+                        ],
+                        "additionalProperties": false,
+                        "not": {
+                          "type": "object",
+                          "properties": {
+                            "error": {},
+                            "static_error": {}
+                          },
+                          "required": [
+                            "error",
+                            "static_error"
+                          ]
+                        },
+                        "if": {
+                          "type": "object",
+                          "properties": {
+                            "static_error": {}
+                          },
+                          "required": [
+                            "static_error"
+                          ]
+                        },
+                        "then": {
+                          "type": "object",
+                          "properties": {
+                            "output": {
+                              "const": ""
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "inputs",
+                      "expected"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "name",
+                "return_type",
+                "data",
+                "body",
+                "end"
+              ],
+              "additionalProperties": false
+            }
+          }
+        ]
+      },
+      "contains": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "main"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "test_cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "data",
+                "text"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "expected": {
+            "type": "object",
+            "properties": {
+              "output": {
+                "type": "string"
+              },
+              "error": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "enum": [
+                      "uninitialized",
+                      "index_out_of_range",
+                      "string_too_long",
+                      "null_character_in_string",
+                      "invalid_character_code",
+                      "string_longer_than_array",
+                      "same_reference",
+                      "reference_without_value",
+                      "integer_overflow",
+                      "division_by_zero",
+                      "real_to_integer_out_of_range",
+                      "non_finite_real",
+                      "invalid_input",
+                      "input_exhausted",
+                      "input_mismatch",
+                      "unused_inputs",
+                      "too_many_steps",
+                      "recursion_too_deep",
+                      "recursion_data_too_large",
+                      "out_of_memory"
+                    ]
+                  },
+                  "block": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "block"
+                ],
+                "additionalProperties": false
+              },
+              "static_error": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "enum": [
+                      "unknown_name",
+                      "invalid_name",
+                      "invalid_data_item",
+                      "assign_to_constant",
+                      "assign_to_read_only",
+                      "array_assignment",
+                      "literal_out_of_range",
+                      "literal_leading_zero",
+                      "string_literal_too_long",
+                      "multi_code_character",
+                      "type_mismatch",
+                      "condition_not_boolean",
+                      "chained_comparison",
+                      "chained_power",
+                      "division_by_literal_zero",
+                      "invalid_step",
+                      "unknown_callee",
+                      "argument_mismatch",
+                      "reference_not_assignable",
+                      "same_reference",
+                      "function_as_statement",
+                      "procedure_in_expression",
+                      "limit_exceeded",
+                      "syntax_error",
+                      "function_with_effect",
+                      "invalid_default_value",
+                      "function_name_in_use",
+                      "reference_without_value"
+                    ]
+                  },
+                  "block": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "block"
+                ],
+                "additionalProperties": false
+              },
+              "warnings": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "integer_division_to_real",
+                        "real_equality",
+                        "useless_conversion",
+                        "constant_loop_condition",
+                        "input_never_read",
+                        "output_never_written",
+                        "missing_role",
+                        "maybe_uninitialized",
+                        "unused_data",
+                        "unused_value",
+                        "implicit_conversion"
+                      ]
+                    },
+                    "block": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "block"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "output"
+            ],
+            "additionalProperties": false,
+            "not": {
+              "type": "object",
+              "properties": {
+                "error": {},
+                "static_error": {}
+              },
+              "required": [
+                "error",
+                "static_error"
+              ]
+            },
+            "if": {
+              "type": "object",
+              "properties": {
+                "static_error": {}
+              },
+              "required": [
+                "static_error"
+              ]
+            },
+            "then": {
+              "type": "object",
+              "properties": {
+                "output": {
+                  "const": ""
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "name",
+          "inputs",
+          "expected"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "format",
+    "schema_version",
+    "metadata",
+    "functions"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "block": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "assignment",
+            "read",
+            "write",
+            "if",
+            "while",
+            "repeat",
+            "for",
+            "for_each",
+            "call",
+            "comment"
+          ]
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "assignment"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "assignment"
+              },
+              "breakpoint": {
+                "type": "boolean"
+              },
+              "target": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "target",
+              "value"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "read"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "read"
+              },
+              "breakpoint": {
+                "type": "boolean"
+              },
+              "target": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "target"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "write"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "write"
+              },
+              "breakpoint": {
+                "type": "boolean"
+              },
+              "values": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "newline": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "values",
+              "newline"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "if"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "if"
+              },
+              "breakpoint": {
+                "type": "boolean"
+              },
+              "condition": {
+                "type": "string"
+              },
+              "then": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/block"
+                }
+              },
+              "else": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/block"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "condition",
+              "then",
+              "else"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "while"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "while"
+              },
+              "breakpoint": {
+                "type": "boolean"
+              },
+              "condition": {
+                "type": "string"
+              },
+              "body": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/block"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "condition",
+              "body"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "repeat"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "repeat"
+              },
+              "breakpoint": {
+                "type": "boolean"
+              },
+              "body": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/block"
+                }
+              },
+              "condition": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "body",
+              "condition"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "for"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "for"
+              },
+              "breakpoint": {
+                "type": "boolean"
+              },
+              "counter": {
+                "type": "string"
+              },
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              },
+              "step": {
+                "type": "integer"
+              },
+              "body": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/block"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "counter",
+              "from",
+              "to",
+              "body"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "for_each"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "for_each"
+              },
+              "breakpoint": {
+                "type": "boolean"
+              },
+              "item": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "body": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/block"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "item",
+              "source",
+              "body"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "call"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "call"
+              },
+              "breakpoint": {
+                "type": "boolean"
+              },
+              "callee": {
+                "type": "string"
+              },
+              "arguments": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "callee",
+              "arguments"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "comment"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "const": "comment"
+              },
+              "breakpoint": {
+                "type": "boolean"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "text"
+            ],
+            "additionalProperties": false
+          }
+        }
+      ]
+    }
+  }
+}
