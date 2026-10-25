@@ -2,6 +2,27 @@
 
 Le novità e le correzioni di ogni versione, dalla più recente. Il dettaglio di una versione è nelle sue note di rilascio (`NOTE-DI-RILASCIO.md`); come si usa AlgoDesign è nella guida per lo studente (`GUIDA-PER-LO-STUDENTE.md`).
 
+## 0.5.0-beta.1, 25 ottobre 2026
+
+Prima versione beta, per Windows.
+
+### Novità
+
+- **Un caso d'uso da un'esecuzione**: finita un'esecuzione, «Salva l'esecuzione come caso d'uso» nella console, o «Nuovo caso dall'ultima esecuzione» nella scheda dei casi, prepara un caso coi valori scritti e l'output ottenuto; una casella delle Impostazioni lo spegne.
+- **Il valore di un dato dalla tastiera**: Maiusc+F9 sul blocco apre il riquadro del primo dato, col fuoco dentro; un altro Maiusc+F9 passa al dato dopo, Esc torna al blocco.
+- **Le ricorsioni nella riga di stato**: la prima, quante altre ce ne sono, e «Mostra le ricorsioni» con l'elenco di tutte.
+- **Il disegno**: coi cicli chiusi il punto di interruzione non tocca più il bordo del riquadro; il segno di un errore su un ciclo non cade più sulla linea che entra né sulla scritta «Vero»; il segno «↩» della ripresa sta sotto il blocco, a sinistra della linea che esce.
+- **Il nome del file**: se il nome del progetto non può essere il nome di un file, prima di salvare AlgoDesign propone un altro nome, con le regole dei nomi; le stesse regole valgono per gli esempi e i loro gruppi.
+- **La guida per lo studente anche in inglese** (`STUDENT-GUIDE.md`), e il README in due lingue (`LEGGIMI.md` in italiano, `README.md` in inglese).
+- **Il formato dei file `.algo`** spiegato campo per campo (`docs/FORMATO-FILE-ALGO.md`) e scritto come JSON Schema (`docs/algo.schema.json`), per gli editor che lo conoscono.
+
+### Correzioni
+
+- Eseguire, fermare ed eseguire di nuovo lo stesso programma lasciava vuota la tabella di traccia.
+- Un blocco trascinato e lasciato fuori dal flowchart restava attaccato al puntatore del mouse.
+- La tabella di traccia con centinaia di chiamate in corso si riempie in meno della metà del tempo.
+- «Elimina il gruppo» elimina tutto il gruppo o niente: se un suo esempio è aperto in un'altra applicazione, il gruppo resta com'era e AlgoDesign lo dice.
+
 ## 0.4.0-alpha.4, 25 ottobre 2026
 
 Quarta versione di prova.

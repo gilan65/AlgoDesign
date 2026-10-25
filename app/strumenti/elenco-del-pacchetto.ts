@@ -10,6 +10,7 @@
 export const elencoDelPacchetto: readonly string[] = [
   "AlgoDesign.exe",
   "data/",
+  "README.md",
   "LEGGIMI.md",
   "NOTE-DI-RILASCIO.md",
   "GUIDA-PER-LO-STUDENTE.md",
@@ -23,7 +24,11 @@ export const elencoDelPacchetto: readonly string[] = [
 export const fileDelleLicenze = "LICENZE-DI-TERZE-PARTI.txt";
 
 /** I testi per l'utente, letti da una cartella data allo strumento: `{{versione}}` e `{{data}}` diventano quelle della release. */
-export const testiDelPacchetto: readonly string[] = ["LEGGIMI.md", "NOTE-DI-RILASCIO.md"];
+export const testiDelPacchetto: readonly string[] = ["NOTE-DI-RILASCIO.md"];
+
+/** I due README della radice del repository (inglese e italiano), che il pacchetto copia così come sono: dicono la
+ * versione del prodotto. */
+export const documentiDellaRadice: readonly string[] = ["README.md", "LEGGIMI.md"];
 
 /** I documenti del repository che il pacchetto copia così come sono, dalla cartella `docs/`. */
 export const documentiDelPacchetto: readonly string[] = ["GUIDA-PER-LO-STUDENTE.md"];
@@ -46,15 +51,17 @@ export function nomiDelPacchetto(testoDelPackageJson: string): NomiDelPacchetto 
 }
 
 /** La cartella dell'archivio di Linux che porta le librerie di Ubuntu dentro l'AppImage: l'elenco dei file col loro
- * pacchetto, le versioni, i file di copyright, i testi delle licenze comuni e un `LEGGIMI.md` che spiega la cartella. */
+ * pacchetto, le versioni, i file di copyright, i testi delle licenze comuni e `CONTENUTO-DELLA-CARTELLA.md`, che la spiega. */
 export const cartellaDelleLibrerieDiSistema = "LICENZE-DELLE-LIBRERIE-DI-SISTEMA";
 
 /** Le voci al primo livello dell'archivio di Linux (`archivio.ts`): le stesse di Windows con l'AppImage al posto
- * dell'eseguibile, più la cartella delle librerie di sistema. */
+ * dell'eseguibile, più il testo di Linux e la cartella delle librerie di sistema. */
 export const elencoDiLinux: readonly string[] = [
   "AlgoDesign.AppImage",
   "data/",
+  "README.md",
   "LEGGIMI.md",
+  "ALGODESIGN-PER-LINUX.md",
   "NOTE-DI-RILASCIO.md",
   "GUIDA-PER-LO-STUDENTE.md",
   "CHANGELOG.md",
@@ -64,12 +71,13 @@ export const elencoDiLinux: readonly string[] = [
   `${cartellaDelleLibrerieDiSistema}/`,
 ];
 
-/** I testi per l'utente di Linux, letti dalla cartella data allo strumento coi segnaposto sostituiti: i due di Windows
- * al primo livello, e quello della cartella delle librerie di sistema, che dentro l'archivio si chiama `LEGGIMI.md`. */
+/** I testi per l'utente di Linux, letti dalla cartella data allo strumento coi segnaposto sostituiti: quello che dice come
+ * si avvia AlgoDesign su Linux e i suoi limiti e le note di rilascio al primo livello, e quello della cartella delle
+ * librerie di sistema, che dentro l'archivio si chiama `CONTENUTO-DELLA-CARTELLA.md`. */
 export const testiDiLinux: Readonly<Record<string, string>> = {
-  "LEGGIMI.md": "LEGGIMI.md",
+  "ALGODESIGN-PER-LINUX.md": "ALGODESIGN-PER-LINUX.md",
   "NOTE-DI-RILASCIO.md": "NOTE-DI-RILASCIO.md",
-  "LICENZE-DELLE-LIBRERIE-DI-SISTEMA.md": `${cartellaDelleLibrerieDiSistema}/LEGGIMI.md`,
+  "LICENZE-DELLE-LIBRERIE-DI-SISTEMA.md": `${cartellaDelleLibrerieDiSistema}/CONTENUTO-DELLA-CARTELLA.md`,
 };
 
 /** I nomi dell'archivio di Linux, dal testo di `package.json`, con la stessa regola della versione di Windows. */

@@ -18,7 +18,7 @@ Le parole che la guida usa sono queste: un **dato** è una costante o una variab
 - **Il flowchart**, a destra, con lo zoom nella riga in fondo (meno, la percentuale che con un clic torna al 100%, più, «Adatta alla finestra»). Quando il progetto ha procedure o funzioni, sopra il flowchart c'è una scheda per ciascuna (§8).
 - **La riga di stato**, in fondo: il nome del file, «modificato» se ci sono modifiche non salvate, gli errori e gli avvisi del progetto (un clic su «Mostra l'elenco» li elenca, e un clic su una voce porta al blocco o al dato), lo stato dell'esecuzione.
 
-Ogni comando si dà anche da tastiera: Tab porta da un elemento all'altro, Invio apre e conferma, Esc rinuncia. La guida scrive i tasti di Windows e di Linux; sul Mac cambiano, come dice il §13.
+Ogni comando si dà anche da tastiera: Tab porta da un elemento all'altro, Invio apre e conferma, Esc rinuncia.
 
 ## 3. Il primo progetto, passo per passo
 
@@ -28,7 +28,7 @@ Come esempio, un programma che legge un numero intero e scrive se è pari o disp
 
 Dal menu **Progetto** scegli **Nuovo** (Ctrl+N). Scrivi il nome del progetto, che è obbligatorio, e, se vuoi, l'autore, una descrizione e delle note; conferma con **Crea**. Le stesse informazioni si cambiano dopo con **Proprietà**, che ha anche due opzioni che cambiano il risultato: quante cifre decimali ha un numero reale scritto (2 se non si dice altro) e il carattere che riempie un vettore di caratteri.
 
-Salva il progetto con **Salva con nome** (Ctrl+Maiusc+S): il file ha l'estensione `.algo`. Da lì in poi **Salva** (Ctrl+S) scrive lo stesso file.
+Salva il progetto con **Salva con nome** (Ctrl+Maiusc+S): il file ha l'estensione `.algo`. Da lì in poi **Salva** (Ctrl+S) scrive lo stesso file. Il file prende il nome del progetto; se quel nome ha caratteri che un file non può avere, o è un nome che Windows riserva (come `CON` o `NUL`), prima della finestra di Windows AlgoDesign lo dice e propone un altro nome, che si può cambiare: **Quali nomi si possono usare?** dice le regole.
 
 ### I dati
 
@@ -193,7 +193,7 @@ La **tabella di traccia** ha una riga per azione: il numero, la regola, il valor
 
 Le colonne della tabella si allargano e si stringono trascinando il bordo destro della loro intestazione, e si spostano trascinando l'intestazione (tranne «#» e «Regola»); le colonne di un vettore si spostano insieme. Da tastiera: Tab fino all'intestazione «Regola», le frecce da una colonna all'altra, e Invio (o il tasto Menu, o Maiusc+F10) apre il menu della colonna, con Sposta a sinistra, Sposta a destra, Allarga e Stringi; col mouse lo stesso menu si apre col tasto destro. Ordine e larghezze restano fino alla chiusura di AlgoDesign, e il CSV «uguale alla tabella» segue l'ordine che si vede.
 
-Col puntatore del mouse sul nome di un dato in un blocco, un riquadro ne dice tipo e valore; un clic sul nome lo ferma, e con un vettore lungo lo si scorre fino all'ultimo elemento.
+Col puntatore del mouse sul nome di un dato in un blocco, un riquadro ne dice tipo e valore; un clic sul nome lo ferma, e con un vettore lungo lo si scorre fino all'ultimo elemento. Da tastiera, **Maiusc+F9** sul blocco che ha il fuoco apre il riquadro del primo dato del blocco, col fuoco dentro; un altro Maiusc+F9 passa al dato dopo, ed **Esc** chiude il riquadro e torna al blocco. Il riquadro c'è durante l'esecuzione e, finita l'esecuzione, finché il progetto non cambia.
 
 Se il programma fa qualcosa che non si può fare (un intero che esce dal suo intervallo, una divisione per zero, un indice fuori dal vettore, un dato letto prima di avere un valore), l'esecuzione si ferma sul blocco, e la console dice in una frase che cosa è successo; **Spiegazione**, accanto, apre il resto con un **suggerimento** per correggerlo. Durante l'esecuzione flowchart e dati si possono solo guardare: per modificarli si preme Ferma, oppure si aspetta la fine.
 
@@ -210,6 +210,8 @@ Nella scheda «Casi d'uso» premi **Aggiungi un caso** e compila:
 Per l'esempio pari o dispari: un caso con il valore `7` per `numero` e l'output atteso `dispari` seguito da un a capo; un altro con `10` e `pari`.
 
 Sulla riga di un caso, **Esegui** lo esegue come F5, con la tabella e la console e i valori del caso al posto di quelli da scrivere; l'altro pulsante lo esegue **un'azione alla volta**, come F10. **Esegui tutti** ed **Esegui i selezionati** li eseguono uno dopo l'altro. Accanto a ogni caso un pallino dice l'ultimo esito: **verde** raggiunto, **rosso** non raggiunto, **giallo** se il progetto è cambiato dopo un rosso. Sotto il caso scelto si leggono le differenze fra atteso e ottenuto, con la prima segnata. Un caso può anche attendere un errore: dopo un'esecuzione fermata da un errore, **Attendi questo errore** lo scrive nell'atteso.
+
+**Un caso d'uso da un'esecuzione.** Finita un'esecuzione con F5 o F10 senza un caso d'uso, in fondo alla console c'è **Salva l'esecuzione come caso d'uso**: un clic porta alla scheda «Casi d'uso» con un caso nuovo già pronto, coi valori scritti nella console, ognuno col suo dato, e come output atteso ciò che il programma ha scritto, con l'errore se l'esecuzione si è fermata su un errore, e con gli avvisi del progetto. I campi del caso sono aperti, col nome proposto («caso 3») già selezionato, da cambiare. Lo stesso fa **Nuovo caso dall'ultima esecuzione** nella scheda «Casi d'uso». Il caso va al programma, o alla procedura o alla funzione eseguita da sola. Il comando non c'è in pausa, dopo «Ferma», dopo un caso d'uso eseguito, né quando la console ha perso una parte dell'output; se il programma cambia dopo la fine, va eseguito di nuovo. Se c'è già un caso con gli stessi valori e lo stesso risultato, AlgoDesign sceglie quello e lo dice. Nelle Impostazioni, scheda «Modifica», la casella **Offri di salvare un'esecuzione come caso d'uso**, accesa di partenza, toglie i due comandi.
 
 Il menu della riga di un caso, come quello di un dato, lo duplica, lo sposta e lo elimina. Annulla riporta anche la spunta di un caso eliminato o rinominato, com'era prima della modifica; gli altri casi tengono la spunta che hanno.
 
@@ -352,7 +354,7 @@ Fra gli esempi forniti (§11), nel gruppo «Funzioni e procedure»:
 - **Fattoriale con la ricorsione**: il programma principale legge `n`, calcola `r ← fatt(n)` e scrive `r`; la funzione «fatt» ha un «se» con la condizione `n <= 1`, e nel ramo Vero `f ← 1`, nel Falso `f ← n * fatt(n - 1)`; poi restituisce `f`. Con 10 scrive 3628800;
 - **Sequenza di Fibonacci con la ricorsione** legge `n` e scrive i primi n numeri di Fibonacci, uno per riga: la funzione «fibonacci» chiama sé stessa due volte, `fibonacci(n - 1) + fibonacci(n - 2)`, fino a 0 e 1. Il suo caso d'uso «ventisei» si ferma: il lavoro cresce molto in fretta a ogni numero, e dopo 24 numeri supera il milione di azioni.
 
-AlgoDesign riconosce la ricorsione da sé e la dice, nella riga di stato e nell'elenco «Procedure e funzioni», sotto «chiamata da»: «La funzione «fatt» chiama sé stessa», oppure «La funzione «pari» chiama «dispari», che chiama di nuovo «pari»». È un'informazione, non un errore.
+AlgoDesign riconosce la ricorsione da sé e la dice, nella riga di stato e nell'elenco «Procedure e funzioni», sotto «chiamata da»: «La funzione «fatt» chiama sé stessa», oppure «La funzione «pari» chiama «dispari», che chiama di nuovo «pari»». È un'informazione, non un errore. Se il progetto ha più ricorsioni, la riga di stato dice la prima e quante altre ce ne sono («, e altre 2 ricorsioni»); **Mostra le ricorsioni** apre l'elenco di tutte, sopra la riga, e **Nascondi le ricorsioni** lo chiude.
 
 ### Eseguire passo passo
 
@@ -424,7 +426,7 @@ Dallo stesso menu, **Informazioni su AlgoDesign** dice la versione, la sua data 
 Il pulsante **Impostazioni** apre una finestra a sei schede; le scelte valgono dopo **Conferma** e restano dopo il riavvio:
 
 - **Aspetto**: la lingua (italiano o inglese), i colori del flowchart (Tenui, Contrasto forte, Bianco e nero) e i colori dei blocchi (più sotto), le condizioni lunghe su una o due righe, i valori iniziali mostrati nel flowchart sotto «Inizio» o nascosti, e il valore iniziale di un vettore in un elenco o con un valore solo, come si disegnano i cicli «per» e «per ogni» e il loro riquadro (§4), il riquadro intorno ai blocchi selezionati (§3), la copia di un vettore col suo nome, compatta o espansa (§4), la domanda nel blocco di Lettura (§3), l'aspetto dei pulsanti della barra, i comandi dell'esecuzione in una barretta sopra il flowchart;
-- **Modifica**: dove si scrivono i campi di un blocco (in un riquadro accanto al blocco o in un pannello a destra) e quelli di un dato (in una scheda sotto la riga o in ogni cella), quando chiedere conferma prima di eliminare un dato, se parentesi e virgolette si chiudono da sé mentre scrivi (§3);
+- **Modifica**: dove si scrivono i campi di un blocco (in un riquadro accanto al blocco o in un pannello a destra) e quelli di un dato (in una scheda sotto la riga o in ogni cella), quando chiedere conferma prima di eliminare un dato, se parentesi e virgolette si chiudono da sé mentre scrivi (§3), se offrire di salvare un'esecuzione come caso d'uso (§6);
 - **Limiti**: gli elementi di un vettore, i caratteri di una stringa e i caratteri di un vettore di stringhe (elementi × lunghezza massima), che si possono solo abbassare;
 - **Percorsi**: la cartella delle librerie (§10) e quella degli esempi (§11);
 - **Tabella di traccia**: come si mostra un vettore, che cosa ha il file CSV, le colonne che restano ferme, i separatori;
@@ -432,26 +434,6 @@ Il pulsante **Impostazioni** apre una finestra a sei schede; le scelte valgono d
 
 **I colori dei blocchi.** Nella scheda «Aspetto», sotto «Colori del flowchart», il riquadro **Colori dei blocchi** ha una riga per genere: Inizio e fine, Assegnazione, Procedura, Lettura, Scrittura, Se, Cicli (il rombo di ogni ciclo), Commento e Riquadro dei cicli. Ogni riga ha un blocco d'esempio, disegnato col colore che avrà, e le tinte da scegliere: la prima, **Come l'insieme**, lascia il colore dell'insieme scelto sopra; poi diciassette tinte per i blocchi (nove tenui e otto intense) e otto per la linea del riquadro dei cicli. Una tinta scelta vale con ogni insieme: cambiando insieme resta, e gli altri generi prendono i colori del nuovo. **Tutti come l'insieme** riporta ogni genere al colore dell'insieme. Di partenza, nei «Tenui», inizio e fine sono grigi, l'assegnazione malva, la procedura sabbia, la lettura verde, la scrittura azzurra, il «se» arancione, i cicli arancione intenso e il commento bianco; nel «Contrasto forte» gli stessi colori sono più carichi. Il giallo non c'è: è il colore del blocco corrente durante l'esecuzione.
 
-## 13. Sul Mac
-
-Sul Mac AlgoDesign funziona allo stesso modo, con i tasti del Mac; i suggerimenti dei pulsanti li scrivono già così.
-
-| Su Windows e Linux | Sul Mac | Che cosa fa |
-|---|---|---|
-| Ctrl+N, Ctrl+O, Ctrl+S | ⌘N, ⌘O, ⌘S | Nuovo, Apri, Salva |
-| Ctrl+Maiusc+S | ⇧⌘S | Salva con nome |
-| Ctrl+Z | ⌘Z | Annulla |
-| Ctrl+Y | ⇧⌘Z (anche ⌘Y) | Ripeti |
-| Ctrl+X, Ctrl+C, Ctrl+V | ⌘X, ⌘C, ⌘V | Taglia, Copia, Incolla |
-| Canc | ⌫ | Elimina il blocco, il dato o il caso scelto |
-| F5, F10, F9, Maiusc+F5 | fn+F5, fn+F10, fn+F9, fn+⇧F5 | Esegui, Passo, Interruzione, Ferma |
-| F11, Maiusc+F11 | fn+F11, fn+⇧F11 | Entra, Esci |
-| il tasto Menu, o Maiusc+F10 | il tasto destro, o Ctrl+clic | il menu di un blocco, di un dato, di un caso, di una colonna, di una procedura o di una funzione |
-
-Sulle tastiere del Mac i tasti F1…F12 regolano luminosità, volume e simili: per usarli come tasti funzione si tiene premuto **fn**. Alcuni, come F11, macOS può tenerli per sé (F11 mostra la scrivania). I pulsanti della barra fanno le stesse cose e funzionano sempre.
-
-In cima allo schermo, la barra dei menu del Mac ha tre menu nella lingua di AlgoDesign: **AlgoDesign** (Informazioni su AlgoDesign, Impostazioni… ⌘, ed Esci da AlgoDesign ⌘Q), **Modifica** (Annulla, Ripeti, Taglia, Copia, Incolla e Seleziona tutto, per il testo dei campi) e **Finestra**. Gli altri comandi stanno nella barra dentro la finestra. Se ci sono modifiche non salvate, uscendo con ⌘Q, dal menu o dal Dock AlgoDesign chiede che cosa fare, come quando si chiude la finestra; lo spegnimento del Mac manda la stessa richiesta.
-
-## 14. Licenza di questa guida
+## 13. Licenza di questa guida
 
 Questa guida è di Giuseppe Lancellotti ed è rilasciata con licenza Creative Commons Attribuzione 4.0 Internazionale (CC BY 4.0): si può copiare, distribuire e modificare, anche per scopi commerciali, citando l'autore e la licenza. Il testo completo della licenza è nel file `LICENSE-DOCS`.

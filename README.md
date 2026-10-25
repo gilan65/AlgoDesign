@@ -1,71 +1,135 @@
 # AlgoDesign
 
-Ambiente didattico per flowchart: applicazione desktop **locale, multipiattaforma e leggera** per creare flowchart didattici, eseguirli passo per passo e tradurli in pseudocodice, Python e C.
+**English** · [Italiano](LEGGIMI.md)
 
-**Stato:** quarta versione di prova, `0.4.0-alpha.4` del 25 ottobre 2026, portabile per Windows 10 e 11 a 64 bit. Le precedenti sono la `0.3.0-alpha.3` del 24 ottobre 2026, la `0.2.1-alpha.2` del 20 ottobre (correzioni della seconda, solo per Windows), la `0.2.0-alpha.2` del 18 ottobre e la `0.1.0-alpha.1` del 13 ottobre 2026; le novità e le correzioni di ogni versione sono nel registro delle modifiche, `CHANGELOG.md`. Il linguaggio comprende: strutture di base, i cicli «per» e «per ogni», espressioni, lettura e scrittura, e le procedure e le funzioni, con parametri per valore, per riferimento e di uscita, un risultato anche stringa o vettore, e la ricorsione. Oggi:
+**Design algorithms as flowcharts, run them step by step and translate them into pseudocode, Python and C.**
 
-- un progetto `.algo` si controlla e si esegue da riga di comando, coi suoi casi d'uso;
-- i casi d'uso di un progetto si scrivono nella finestra, in una scheda accanto ai dati, anche prima delle regole: gli input del caso col dato a cui vanno e l'output atteso. «Esegui» e «un'azione alla volta» sulla riga di un caso lo eseguono come F5 e F10, coi valori del caso al posto di quelli da scrivere; «Esegui tutti» ed «Esegui i selezionati» li eseguono uno dopo l'altro. L'esito dice «raggiunto» o «non raggiunto», con le differenze sotto il caso, e a parte se il progetto ha avvisi diversi da quelli attesi; dall'esito si scrivono nell'atteso l'errore ottenuto e gli avvisi. Un caso, come un dato, si duplica, si sposta e si elimina dal menu della sua riga. La riga di comando dà gli stessi esiti;
-- nella finestra si costruisce e si modifica: a sinistra la vista dei dati, a destra il flowchart, dove un blocco si inserisce dai «+», si scrive nei suoi campi (con l'errore mostrato mentre si scrive, o alla conferma per un blocco o un dato appena aggiunto, e un «?» che dice che cosa scrivere), si sposta trascinandolo, si copia, si cancella, anche dal suo menu col tasto destro; più blocchi vicini si scelgono insieme (Maiusc+clic, Maiusc+↑ e Maiusc+↓) e si spostano, si copiano e si eliminano in un passo; parentesi e virgolette si chiudono da sé, e la frase dell'errore dice la causa precisa; Annulla e Ripeti; tutto anche da tastiera;
-- i cicli «per» (un contatore da un primo a un ultimo valore, col passo) e «per ogni» (gli elementi di un vettore o i caratteri di una stringa) si comportano come il «mentre» che li scrive per esteso, e il flowchart li disegna così: un riquadro tratteggiato con l'intestazione sul bordo e dentro il «mentre» equivalente, oppure, a scelta nelle Impostazioni, chiusi; si eseguono una parte alla volta, coi punti di interruzione che fermano a ogni controllo, e diventano codice nei tre linguaggi;
-- le procedure e le funzioni: una procedura compie un lavoro (legge, scrive, cambia i dati che riceve per riferimento) e si chiama con un blocco; una funzione calcola un risultato dai dati che riceve, senza leggere né scrivere, e si usa in un'espressione. Ognuna ha i suoi dati, i suoi parametri (per valore, una copia; per riferimento, il dato entra ed esce) e i suoi casi d'uso, e una scheda sopra il flowchart, con un elenco di tutte; si creano dal pulsante «Funzione», dal blocco «Procedura» e dal menu Progetto, e si rinominano, si cambiano, si duplicano e si eliminano (con le conferme e Annulla). Le costanti con la casella «globale» valgono in tutto il progetto. Un parametro può essere anche di uscita (*out*), una funzione restituisce anche una stringa o un vettore, e procedure e funzioni si importano da un altro progetto o dalla cartella delle librerie. Una procedura o una funzione può chiamare sé stessa: la ricorsione si ferma alla cinquecentunesima chiamata in corso, o quando i dati delle chiamate superano 256 KB, nello stesso punto nell'app, nel Python e nel C generati;
-- due avvisi sui dati inutili: un dato mai usato, e un dato che riceve un valore che nessun blocco legge; e un avviso per un intero che diventa reale passando a un parametro o nel risultato di una funzione;
-- un progetto si crea, si apre, si salva; prima di perdere modifiche non salvate (chiudendo la finestra, aprendo un altro progetto) e prima di sostituire un file che c'è già, l'app chiede; la pagina non si ricarica né torna indietro coi tasti del browser (F5, Ctrl+R, «Aggiorna» e «Indietro» di certe tastiere, Alt+freccia), che l'app ferma. Non sono provati: lo spegnimento o il riavvio di Windows con modifiche non salvate (prima conviene salvare), un file trascinato sulla finestra (per aprirlo si usa «Apri») e, su Linux, la domanda del motore prima di una ricarica; gli esempi sono i file di una cartella, a gruppi (uno per sottocartella), con una ricerca, a cui se ne aggiungono e se ne eliminano;
-- un programma si esegue nella finestra: tutto insieme (F5), un'azione alla volta (F10) o in modo animato a tre velocità, fermandosi sui punti di interruzione (F9); il blocco corrente è evidenziato, i valori letti si scrivono nella console, e la tabella di traccia mostra a ogni azione il valore di ogni dato, la condizione e ciò che si scrive; la tabella si esporta in CSV per un foglio di calcolo; col puntatore del mouse sul nome di un dato in un blocco se ne vedono tipo e valore, e un clic sul nome ferma il riquadro, che per un vettore lungo scorre fino all'ultimo elemento. Durante l'esecuzione flowchart e dati si possono solo guardare (si mettono e si tolgono soltanto i punti di interruzione). Con le procedure e le funzioni, Entra (F11) ed Esci (Maiusc+F11) entrano in una chiamata e ne escono, il flowchart segue l'azione da una scheda all'altra, «Dove sei» dice le chiamate in corso (con molte chiamate, i primi livelli, gli ultimi e l'elenco degli altri), e la tabella di traccia ha le colonne di ogni procedura o funzione in un gruppo che si chiude, con uno sfondo per ogni livello di chiamata; una procedura o una funzione si esegue anche da sola, coi parametri chiesti nella console; dopo il ritorno da una funzione chiamata in un'espressione l'esecuzione si ferma a metà del blocco, e l'animata entra nelle chiamate;
-- nella tabella di traccia un vettore ha una colonna per ciascuno dei primi 10 elementi e una sola per gli altri, che dice quale cambia, oppure tutti gli elementi in fila in una colonna sola; una riga sopra la tabella dice che cosa si vede e che cosa ha il CSV. Le colonne si allargano, si stringono e si spostano, col mouse e da tastiera, fino alla chiusura dell'app; col «per ogni» disegnato con la posizione c'è la colonna `_indice`. Tabella e console tengono le ultime 1000 righe e dicono quante ne hanno tolte; una riga della console troppo lunga va a capo, o se ne tiene la fine. Un errore durante l'esecuzione si legge nella console con il suo suggerimento. Vettori e stringhe arrivano al più a 1000 elementi e caratteri, e con questi limiti la finestra resta pronta anche col programma più pesante;
-- il valore iniziale di un dato si vede in tutte e due le viste: nella vista dei dati e nel flowchart, sotto «Inizio», come un blocco di assegnazione che si modifica e si toglie da lì (togliendolo, l'app chiede); nell'esecuzione ogni valore iniziale è un'azione con la sua riga nella tabella di traccia, che comincia con la riga «Inizio». Un dato che su qualche strada del flowchart può essere letto prima di avere un valore ha un avviso sul blocco che lo legge e nella riga di stato, con un comando che apre il suo valore iniziale nella vista dei dati;
-- le Impostazioni (lingua, colori del disegno e di ogni genere di blocco, forma delle condizioni lunghe, dove si scrivono blocchi e dati, quando chiedere prima di cancellare un dato, limiti, cartella degli esempi e delle librerie, aspetto della barra e barretta dell'esecuzione, valori iniziali nel flowchart mostrati o nascosti, forma del valore iniziale di un vettore, forma dei vettori nella tabella e nel CSV, colonne della tabella che restano ferme, separatori del CSV, righe lunghe della console, parentesi e virgolette che si chiudono da sé, il riquadro dei blocchi selezionati, la domanda nel blocco di Lettura, la copia di un vettore compatta o espansa) si ricordano fra un avvio e l'altro, anche nella forma portabile; ogni numero con un minimo e un massimo si sceglie anche con un cursore accanto al campo.
+Version 0.5.0-beta.1 of 25 October 2026, for 64-bit Windows 10 and 11.
 
-- il codice generato: «Genera» apre accanto al flowchart lo stesso programma in pseudocodice (nella lingua dell'interfaccia), Python e C, con le procedure e le funzioni, che segue ogni modifica; durante l'esecuzione la riga del blocco corrente è evidenziata; «Copia» e «Salva…». Il Python e il C generati si confrontano con l'esecuzione sui casi d'uso a ogni collaudo;
-- il menu «Aiuto» con gli esempi (undici forniti con l'app, in tre gruppi) e le informazioni del prodotto (versione, data, licenze);
-- sul Mac: la barra dei menu in cima allo schermo nella lingua dell'app (AlgoDesign, Modifica, Finestra), i tasti coi simboli del Mac nei suggerimenti, ⌫ che elimina come Canc, e ogni uscita con modifiche non salvate (⌘Q, il menu, il Dock) che chiede come la chiusura della finestra.
+AlgoDesign is a teaching environment for people learning to program: first you design and test the algorithm as a flowchart, then you see how the same reasoning becomes code. It is a **local and lightweight** application: it works without internet, without installing it and without administrator rights.
 
-## Prerequisiti
+Project page: https://www.lancellotti.info/AlgoDesign/
 
-- [Bun](https://bun.sh) 1.4.2 e [Rust](https://rustup.rs) stabile (1.99.0).
-- Windows 10 o 11 con WebView2 (già presente su Windows 11).
-- Linux: le librerie di sistema che Tauri 2 richiede (fra cui `webkit2gtk-4.1`) e la lingua del sistema installata come locale (senza, l'app parte in inglese); per avviare l'AppImage, su alcune distribuzioni, `libfuse2`.
-- Per il collaudo, il confronto del codice generato: un gcc e un clang (C11) e Python 3, dati con le variabili `ALGODESIGN_CC` (gli eseguibili dei compilatori, separati come nel `PATH`) e `ALGODESIGN_PYTHON`, oppure nel file `app/.collaudo/toolchain.json` (`{ "c": [ … ], "python": "…" }`, non versionato), oppure trovati nel `PATH`.
-- Solo per la prova su Linux: Docker Desktop.
+## Why AlgoDesign
 
-## Avvio
+Whoever starts programming has to learn two things at the same time: to reason in algorithms and to write the solution in a programming language, with its syntax, its punctuation and its error messages. Often the second task hides the first, and the student gets stuck on a missing parenthesis before even understanding what they wanted the computer to do.
 
-Tutti i comandi si danno nella cartella `app/`, dopo `bun install`.
+AlgoDesign separates the two tasks: first you **design** the algorithm as a flowchart, **test** it and fix it; only afterwards you see how it becomes code.
 
-| Che cosa | Comando |
+## What it does
+
+- **Data view** next to the drawing: constants and variables, each with its type (integer, real, character, string, boolean, also as an array), its initial value and its role.
+- **Flowchart editor** with the blocks used in class: start and end, assignment, read, write, selection (“If”), loops with the check at the top (“While”) and at the bottom (“Repeat”), the loops that count (“For”) and that go through an array or a string (“For each”), the call of a procedure, comment. You work with the mouse or the keyboard, also on several blocks together; errors are shown on the block and in the status bar, with the precise cause and a hint.
+- **Procedures and functions**: an algorithm is split into named pieces, each in its own tab, with its data and its parameters, by value, by reference or output; a procedure does a job, a function computes a result, also a string or an array. They can call themselves (recursion), and they are imported from another project or from a libraries folder.
+- **Step-by-step run**: all at once, one action at a time or animated, in and out of procedures and functions, with breakpoints; you follow the active block, type the values in the console and watch the data change in the trace table, which can be exported for a spreadsheet. The value of a data item is read with the mouse pointer on its name, or from the keyboard.
+- **Test cases**: an algorithm, or one of its procedures or functions on its own, is tested on input values and expected results, like a small test, even before writing the rules; a finished run can be saved as a test case.
+- **Translation** of the flowchart into pseudocode (in Italian or in English), Python and C, next to the drawing, with the current line highlighted during the run; the code is copied or saved to a file.
+- **Examples** ready to open and change, in groups.
+- Interface in **Italian** and **English**.
+
+Types and rules are those of the C language, plus a string type, so that the step from the flowchart to the code is natural. The generated code, however, is made to be read and does not check the calculations that break the rules (an integer outside its range, an integer division by zero, an index outside the array and a few others, listed in the release notes): AlgoDesign always stops them, the generated Python and C do not, and on those calculations they may give different results from each other.
+
+How to use AlgoDesign is in the **student guide**, `STUDENT-GUIDE.md` (in Italian `GUIDA-PER-LO-STUDENTE.md`): in the package it sits next to the program, in the repository in the `docs` folder. The news of each version is in the change log, `CHANGELOG.md` (in Italian).
+
+## Download and start
+
+The test versions are downloaded from the project page.
+
+1. Download the zip and, if you like, check its fingerprint: the `.sha256` file next to the zip contains its SHA-256 code, which in PowerShell is computed with `Get-FileHash <zip name>` (PowerShell writes it in uppercase, the file in lowercase: upper and lower case do not matter).
+2. Extract the zip wherever you like (the Desktop, a documents folder, a USB stick): the folder `AlgoDesign-0.5.0-beta.1` is created.
+3. Open the folder and double-click `AlgoDesign.exe`.
+
+**The Windows warning at the first start.** AlgoDesign is not digitally signed, and Windows warns when a program downloaded from the internet without a signature is started. If the window “Windows protected your PC” appears, choose “More info” and then “Run anyway”. To avoid it, before extracting the zip open its Properties (right-click on the zip), tick “Unblock” at the bottom of the “General” tab and confirm with “OK”.
+
+**If Windows blocks AlgoDesign without the “Run anyway” button.** It happens on a Windows 11 with “Smart App Control” turned on, which is usually there only on recently installed PCs: it blocks the programs that are not digitally signed and that Microsoft does not know, and it does not allow an exception for a single program. To use AlgoDesign on that PC the control must be turned off, in “Windows Security”, “App & browser control”. Turning it off removes that protection for all programs, not only for AlgoDesign: on a Windows 11 updated at least to April 2026 it can be turned on again whenever you want, on an older one, once turned off, it cannot be turned on again without reinstalling Windows. If the PC is not yours (for example in a lab), ask whoever manages it.
+
+**The `data` folder.** Next to `AlgoDesign.exe` there is the `data` folder: there AlgoDesign keeps the preferences, the examples and the data of its window, and it writes nothing of its own in the user profile or in the Windows registry. To move AlgoDesign elsewhere you copy the whole folder, also onto a USB stick (tested on NTFS, exFAT and FAT32 sticks; on exFAT and FAT32 a file saved over one whose extension is written with other capitals, for example `media.ALGO`, keeps its previous name). If the `data` folder is not there, AlgoDesign uses the standard folders of the user profile.
+
+**The windows to open and save a file** are those of Windows, not of AlgoDesign: they have the look and the language of the system, even when AlgoDesign is in another language. Before saving a project with a name that cannot be a file name, AlgoDesign suggests another name, which can be changed.
+
+Windows itself, instead, records some things in the user registry even for a portable program: its windows to open and save a file, or to choose a folder, remember the last files and folders used; the list of started programs remembers the path of `AlgoDesign.exe`; the WebView2 component remembers when it was used. These are traces of Windows, not of AlgoDesign.
+
+## Requirements
+
+- **64-bit Windows 10 or Windows 11.**
+- **Microsoft Edge WebView2**, the Windows component that draws the AlgoDesign window: without it, AlgoDesign does not open. It is already present on Windows 11 and, almost always, on an updated Windows 10. To check whether it is there: in the Windows Settings, “Apps”, then “Installed apps” (on Windows 10 “Apps & features”), search for “WebView2”: the item is “Microsoft Edge WebView2 Runtime”. If it is missing, it can be downloaded for free from the Microsoft site, https://developer.microsoft.com/microsoft-edge/webview2/, in the “Evergreen” part. It can also be installed without administrator rights: in that case, according to Microsoft, it applies only to the user who installs it.
+- **No installation and no administrator rights**: AlgoDesign also works with a user without rights, from any folder or from a USB stick.
+- **Disk space**: about 20 MB (the program is 9 MB, the window data in the `data` folder grows up to about ten MB).
+- A screen of at least 960 × 600 points: the window does not shrink below that size.
+- No internet connection is needed.
+
+## The trace table in a spreadsheet
+
+“Export the table…” writes the trace table to a CSV file, which opens with a spreadsheet. The cell separator and the decimal separator are chosen in the Settings, “Trace table” tab; at first they follow the interface language: in English the comma and the point, which English Excel opens with a double click.
+
+A cell that starts with `=`, `+`, `-` or `@` and is not a number (for example a text written by the program, such as `=1+2` or `-a`) is written in the file preceded by an apostrophe, so that the spreadsheet does not take it as a formula to compute. Microsoft Excel and LibreOffice Calc open it as text and show the apostrophe in front: `'=1+2`.
+
+## Good to know
+
+- This version is for Windows only.
+- Not tested: shutting down or restarting Windows with unsaved changes (better save first) and a file dragged onto the window (to open it use “Open”). The browser keys that would reload the window or go back (F5, Ctrl+R, “Refresh” and “Back” of some keyboards, Alt+arrow) are stopped by AlgoDesign: F5 runs the program.
+- The generated code has no limit on actions: a loop that does not end, which AlgoDesign stops after a million actions, must be stopped by hand in the generated Python and C.
+
+## How it was developed
+
+AlgoDesign is a *vibe coding* project: the author describes what is needed, makes the teaching decisions and checks every result, while most of the code is written by an artificial intelligence assistant. The development diary is on the site:
+https://www.lancellotti.info/blog/tag/algodesign/
+
+## For developers
+
+### Prerequisites
+
+- [Bun](https://bun.sh) 1.4.2 and stable [Rust](https://rustup.rs) (1.99.0).
+- Windows 10 or 11 with WebView2.
+- For the test run, the comparison of the generated code: a gcc and a clang (C11) and Python 3, given with the variables `ALGODESIGN_CC` (the compiler executables, separated as in the `PATH`) and `ALGODESIGN_PYTHON`, or in the file `app/.collaudo/toolchain.json` (`{ "c": [ … ], "python": "…" }`, not versioned), or found in the `PATH`.
+- Only for the test in the Linux container: Docker Desktop.
+
+### Commands
+
+All the commands are given in the `app/` folder, after `bun install`.
+
+| What | Command |
 |---|---|
-| L'app in sviluppo, in una finestra | `bun tauri dev` |
-| Browser per i test dell'interfaccia (solo la prima volta) | `bun --bun playwright install chromium webkit` |
-| Casi d'uso del corpus di esempi (`casi/`), oppure di un progetto dato | `bun run casi`, `bun run casi <progetto.algo>` |
-| Collaudo (tipi, test di unità, casi d'uso, confronto del codice generato, build, test del guscio in Rust, test dell'interfaccia in Chromium) | `bun run collaudo` |
-| Collaudo completo, coi test dell'interfaccia anche in WebKit | `bun run collaudo --completo` |
-| Confronto del codice generato con l'esecuzione sui casi d'uso | `bun run differenziale` |
-| Eseguibile di release per Windows | `bun tauri build --no-bundle` → `shell/target/release/algodesign.exe` |
-| Pacchetto della release per Windows (cartella, zip e impronta in `dist/` alla radice; la guida per lo studente viene da `docs/`, i due testi della release non sono nel repository e si danno allo strumento) | `bun run pacchetto --testi <cartella con LEGGIMI.md e NOTE-DI-RILASCIO.md>` (con `--prova` da un albero con modifiche, in `dist/prova/`) |
-| AppImage per Linux | `bun tauri build --bundles appimage` (su Linux) |
-| App per macOS, per i Mac con chip Apple e Intel | `bun tauri build --target universal-apple-darwin --bundles app` (su macOS, coi target di Rust `aarch64-apple-darwin` e `x86_64-apple-darwin`) |
+| The app in development, in a window | `bun tauri dev` |
+| Browsers for the interface tests (only the first time) | `bun --bun playwright install chromium webkit` |
+| Test cases of the example corpus (`casi/`), or of a given project | `bun run casi`, `bun run casi <project.algo>` |
+| Test run (types, unit tests, test cases, comparison of the generated code, build, tests of the Rust shell, interface tests in Chromium) | `bun run collaudo` |
+| Full test run, with the interface tests in WebKit too | `bun run collaudo --completo` |
+| Comparison of the generated code with the run on the test cases | `bun run differenziale` |
+| Release executable for Windows | `bun tauri build --no-bundle` → `shell/target/release/algodesign.exe` |
+| Release package for Windows (folder, zip and fingerprint in `dist/` at the root; it carries this file, `LEGGIMI.md`, the student guide from `docs/` and the release notes, which are given to the tool) | `bun run pacchetto --testi ../rilascio/windows` (with `--prova` from a tree with changes, in `dist/prova/`) |
+| The JSON Schema of the format, after a change to the file reader | `bun ./strumenti/schema-del-formato.ts` |
 
-## Forma portabile
+### The tests on the product
 
-L'app è **portabile**: si copia in una cartella (anche su una chiavetta; l'app intera è provata su una chiavetta NTFS; su chiavette exFAT e FAT32 sono provate la scrittura dei file, gli esempi e i loro gruppi; lì un file salvato sopra uno con l'estensione scritta con altre maiuscole, per esempio `media.ALGO`, tiene il nome di prima) e si avvia senza installarla. Se accanto all'eseguibile, o accanto al file `.AppImage` su Linux, c'è una cartella **`data`**, preferenze e dati della finestra stanno lì e l'app non crea nulla di suo nel profilo dell'utente. Su Windows la prova sul prodotto lo controlla nelle cartelle dei dati delle applicazioni e dei file temporanei (`%APPDATA%`, `%LOCALAPPDATA%`, `%TEMP%`): nessuna cartella dell'app e nessuna voce nuova al loro primo livello; non guarda dentro le cartelle che esistono già, né il registro. Su Linux la prova confronta i file del container alla fine del giro con quelli di partenza. Su Linux nel profilo possono restare le cache delle librerie di sistema (per esempio di font e shader), che non sono dati dell'app. Le finestre del sistema per aprire e salvare un file, o per scegliere una cartella, non sono dell'app: su Windows ricordano nel registro dell'utente gli ultimi file e la vista delle cartelle, anche nella forma portabile; e Windows annota da sé, nel registro dell'utente, il percorso del programma avviato e l'ultimo uso del componente WebView2. Senza `data`, l'app usa le cartelle standard del sistema. Su macOS l'app si distribuisce senza `data` (l'eseguibile sta dentro il pacchetto `.app`), quindi non è portabile: preferenze e dati della finestra stanno nella Libreria dell'utente.
+- `bun run prova-portabile`: builds the executable, starts it with and without `data` and checks language, preferences, opening and saving a file given at the start, building a whole program from the interface with its test case, run from its row before and after the rules, and one with two procedures and a function, the supplied examples in their groups, running a program with the values typed in the console and exporting its trace table, without violations of the content security policy, the window answering within a second while running an array of 1000 elements, in the two forms of the table, closing the window with and without changes, the F5 key that runs and does not reload the window, and the traces, in the profile and next to the executable. The traces are searched in the folders of application data and temporary files (`%APPDATA%`, `%LOCALAPPDATA%`, `%TEMP%`): no folder of the app and no new item at their first level; it does not look inside the folders that already exist, nor in the registry. `--senza-build` uses the executable already built, `--radice <folder>` creates the test folder elsewhere (for example on the USB stick), `--pacchetto <folder>` tests the folder composed by the package tool, copied whole.
+- `bun run prova-linux` (Docker Desktop started): builds the app in an Ubuntu 24.04 container and checks the language, running a program with the values typed in the console, the window answering within a second with an array of 1000 elements, and the traces, with and without `data`.
 
-Le prove sul prodotto, che lo verificano:
+### Technical choices, in short
 
-- `bun run prova-portabile` (Windows): costruisce l'eseguibile, lo avvia con e senza `data` e controlla lingua, preferenze, apertura e salvataggio di un file dato all'avvio, la costruzione di un programma intero dall'interfaccia col suo caso d'uso, eseguito dalla sua riga prima e dopo le regole, e di uno con due procedure e una funzione, gli esempi forniti nei loro gruppi, l'esecuzione di un programma coi valori scritti nella console e l'esportazione della sua tabella di traccia, senza violazioni della politica di sicurezza dei contenuti, la finestra che risponde entro un secondo mentre esegue un vettore di 1000 elementi, nelle due forme della tabella, la chiusura della finestra con e senza modifiche, il tasto F5 che esegue e non ricarica la finestra, e le tracce, nel profilo e accanto all'eseguibile. `--senza-build` usa l'eseguibile già costruito (per esempio per un utente senza Rust; servono comunque Bun e le dipendenze installate con `bun install`), `--radice <cartella>` crea la cartella di prova altrove (per esempio sulla chiavetta), `--pacchetto <cartella>` prova la cartella composta dallo strumento del pacchetto (per esempio `../dist/0.4.0-alpha.4`), copiata intera.
-- `bun run prova-linux` (Docker Desktop avviato): costruisce l'AppImage in un container Ubuntu 24.04 e controlla la lingua, l'esecuzione di un programma coi valori scritti nella console, la finestra che risponde entro un secondo con un vettore di 1000 elementi, e le tracce, con e senza `data`.
+- Desktop shell **Tauri 2**; interface React + TypeScript + Ark UI, with **Bun** for packages, development server, build and tests.
+- The flowchart is a **syntax tree**; the core (model, type checking, interpreter, code generators) is pure TypeScript, separate from interface and shell.
+- Types and semantics of **C11**, plus a `string` type.
+- A project is a single `.algo` file, in JSON: the format is explained field by field in `docs/FORMATO-FILE-ALGO.md` (in Italian), and written as a JSON Schema in `docs/algo.schema.json`.
 
-## Scelte tecniche, in breve
+## License
 
-- Guscio desktop **Tauri 2**; interfaccia React + TypeScript + Ark UI, con **Bun** per pacchetti, server di sviluppo, build e test.
-- Il flowchart è un **albero sintattico**; il nucleo (modello, controllo dei tipi, interprete, generatori di codice) è TypeScript puro, separato da interfaccia e guscio.
-- Tipi e semantica del **C11**, più un tipo `stringa`.
-- Lingue: italiano e inglese.
+© 2026 Giuseppe Lancellotti. Two licenses, depending on the kind of content:
 
-## Licenza
-
-© 2026 Giuseppe Lancellotti. Due licenze, a seconda del tipo di contenuto:
-
-| Contenuto | Licenza | Testo |
+| Content | License | Text |
 |---|---|---|
-| **Codice**: sorgenti, script, configurazioni di build e di test | [MIT](https://opensource.org/license/mit) | [`LICENSE`](LICENSE) |
-| **Documentazione**: i file Markdown (`*.md`) del repository, inclusi manuali e guide in `docs/` | [Creative Commons Attribuzione 4.0 Internazionale (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/deed.it) | [`LICENSE-DOCS`](LICENSE-DOCS) |
+| **Code**: sources, scripts, build and test configurations | [MIT](https://opensource.org/license/mit) | [`LICENSE`](LICENSE) |
+| **Documentation**: the Markdown files (`*.md`) of the repository, including manuals and guides in `docs/` | [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/) | [`LICENSE-DOCS`](LICENSE-DOCS) |
+
+AlgoDesign uses third-party libraries, each with its own license: in the package, the list and the license texts are in the file `LICENZE-DI-TERZE-PARTI.txt`.
+
+## The name
+
+"AlgoDesign" is the name of this project, used since 4 October 2026 by Giuseppe Lancellotti:
+https://www.lancellotti.info/AlgoDesign/
+
+The MIT license covers the **code**, not the name. Whoever distributes a modified version must give it a different name, so that nobody mistakes it for the original. They may write that it is "based on AlgoDesign", with a link to the project page.
+
+## Author
+
+Giuseppe Lancellotti, teacher of Computer Science: https://www.lancellotti.info
