@@ -32,12 +32,11 @@ import { fileURLToPath } from "node:url";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
 import { apriEsempio, apriVuota, costruisciFinzione } from "./pagina";
+import { fotogrammi, risposta, SOGLIA_MS } from "./risposta";
 
 test.beforeAll(costruisciFinzione);
 test.use({ viewport: { width: 1920, height: 1080 } });
 test.describe.configure({ mode: "parallel" });
-
-const SOGLIA_MS = 1_000;
 
 const troppiPassi = readFileSync(fileURLToPath(new URL("../casi/tappa-1/troppi-passi.algo", import.meta.url)), "utf8");
 /** Il ciclo che scrive seimila caratteri a giro, con un caso che non attende nulla. */
@@ -56,32 +55,6 @@ const seimila = JSON.stringify({
   ],
   test_cases: [{ name: "seimila", inputs: [], expected: { output: "" } }],
 });
-
-async function risposta(page: Page): Promise<number> {
-  const t0 = Date.now();
-  await page.evaluate(() => 1);
-  return Date.now() - t0;
-}
-
-const fotogrammi = (page: Page, ms: number) =>
-  page.evaluate(
-    (durata) =>
-      new Promise<{ n: number; peggiore: number }>((fatto) => {
-        let prima = performance.now();
-        let n = 0;
-        let peggiore = 0;
-        const fine = prima + durata;
-        const giro = (t: number) => {
-          peggiore = Math.max(peggiore, t - prima);
-          prima = t;
-          n++;
-          if (t < fine) requestAnimationFrame(giro);
-          else fatto({ n, peggiore: Math.round(peggiore) });
-        };
-        requestAnimationFrame(giro);
-      }),
-    ms,
-  );
 
 /** La finestra col progetto aperto dagli esempi e la scheda dei casi d'uso. */
 async function apriICasi(page: Page, testo: string): Promise<void> {

@@ -168,12 +168,12 @@ test("ogni dato del modello ha la sua riga e ogni riga il suo dato, in italiano 
     { lingua: "it" },
     progetti.map((p) => ({ nome: p.nome, funzione: p.funzione, costantiComuni: p.costantiComuni })),
   );
-  await expect(page.getByRole("table", { name: `${it.dati}: dati-di-ogni-forma` })).toBeVisible();
+  await expect(page.getByRole("table", { name: `${it.dati}: dati-di-ogni-forma`, exact: true })).toBeVisible();
 
   for (const [lingua, testi] of [["it", it], ["en", en]] as const) {
     if (lingua === "en") {
       await scegliLingua(page, "en");
-      await expect(page.getByRole("table", { name: `${en.dati}: dati-di-ogni-forma` })).toBeVisible();
+      await expect(page.getByRole("table", { name: `${en.dati}: dati-di-ogni-forma`, exact: true })).toBeVisible();
     }
     const lette = await leggi(page);
     const { difetti, premesse } = appaia(lette, testi);
@@ -197,7 +197,7 @@ test("ogni dato del modello ha la sua riga e ogni riga il suo dato, in italiano 
   }
 
   // Controllo positivo 1: una riga tolta dalla vista.
-  await page.getByRole("table", { name: `${en.dati}: riferimento-media-voti` }).locator("tbody tr").first().evaluate((r) => r.remove());
+  await page.getByRole("table", { name: `${en.dati}: riferimento-media-voti`, exact: true }).locator("tbody tr").first().evaluate((r) => r.remove());
   const senzaRiga = appaia(await leggi(page), en);
   console.log(`[${info.project.name}] dati, controllo positivo (una riga tolta): difetti ${senzaRiga.difetti.length}`);
   expect(senzaRiga.difetti.some((d) => d.includes("riferimento-media-voti") && d.includes("«n» con 0 righe"))).toBe(true);
@@ -205,8 +205,8 @@ test("ogni dato del modello ha la sua riga e ogni riga il suo dato, in italiano 
   // Controllo positivo 2: in italiano, un tipo riscritto con la parola del file. La pagina si ricarica
   // (torna in italiano), perché React non ridisegni un albero che la prova ha alterato.
   await page.reload();
-  await expect(page.getByRole("table", { name: `${it.dati}: dati-di-ogni-forma` })).toBeVisible();
-  const tipo = page.getByRole("table", { name: `${it.dati}: dati-di-ogni-forma` }).locator("tbody tr").first().locator("td").first();
+  await expect(page.getByRole("table", { name: `${it.dati}: dati-di-ogni-forma`, exact: true })).toBeVisible();
+  const tipo = page.getByRole("table", { name: `${it.dati}: dati-di-ogni-forma`, exact: true }).locator("tbody tr").first().locator("td").first();
   await tipo.evaluate((c) => (c.textContent = "integer"));
   const riscritti = inglesi(await leggi(page));
   console.log(`[${info.project.name}] dati, controllo positivo (tipo con la parola del file): ${riscritti.length}`);
@@ -215,13 +215,13 @@ test("ogni dato del modello ha la sua riga e ogni riga il suo dato, in italiano 
 
 test("nella finestra i dati del riferimento si trovano per ruolo e nome accanto al flowchart", async ({ page }) => {
   await apri(page, { lingua: "it" });
-  const tabella = page.getByRole("table", { name: `${it.dati}: riferimento-media-voti` });
+  const tabella = page.getByRole("table", { name: `${it.dati}: riferimento-media-voti`, exact: true });
   await expect(tabella).toBeVisible();
   await expect(tabella.locator("tbody tr")).toHaveCount(8);
   await expect(page.getByRole("group", { name: `${it.flowchart}: riferimento-media-voti`, exact: true })).toBeVisible();
   // Affiancati: la tabella a sinistra della vista del flowchart.
-  const [t, f] = [await tabella.boundingBox(), await page.getByRole("region", { name: it.vistaFlowchart }).boundingBox()];
+  const [t, f] = [await tabella.boundingBox(), await page.getByRole("region", { name: it.vistaFlowchart, exact: true }).boundingBox()];
   expect(t!.x + t!.width).toBeLessThanOrEqual(f!.x);
   await scegliLingua(page, "en");
-  await expect(page.getByRole("table", { name: `${en.dati}: riferimento-media-voti` })).toBeVisible();
+  await expect(page.getByRole("table", { name: `${en.dati}: riferimento-media-voti`, exact: true })).toBeVisible();
 });

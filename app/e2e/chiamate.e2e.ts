@@ -73,7 +73,7 @@ test("«Entra» ed «Esci» nella barra e nella barretta fanno come i tasti; il 
   // Da ferma «Entra» comincia, fermo sulla prima azione; poi i comandi stanno nella barretta.
   await entra.click();
   await expect(stato(page)).toHaveText(riempi(it.statoInPausa, { n: "1" }));
-  const barretta = page.getByRole("toolbar", { name: it.barrettaEsecuzione });
+  const barretta = page.getByRole("toolbar", { name: it.barrettaEsecuzione, exact: true });
   for (let k = 0; k < 4; k++) {
     await barretta.locator('[data-comando="entra"]').click();
     await expect(stato(page)).toHaveText(riempi(it.statoInPausa, { n: String(k + 2) }));

@@ -8,8 +8,17 @@ import { readFileSync } from "node:fs";
 import { daSalvare, type Estensione } from "./salva-con-nome";
 
 const casi = JSON.parse(readFileSync(new URL("../shell/src/salva-con-nome.json", import.meta.url), "utf8")) as {
-  casi: { scelto: string; esistono: string[]; cartelle?: string[]; percorso: string; sostituire: boolean; estensione?: Estensione }[];
+  casi: { scelto: string; esistono: string[]; cartelle?: string[]; percorso: string; sostituire: boolean; maiuscoleDistinte?: boolean; estensione?: Estensione }[];
 };
+
+test("la tabella ha solo chiavi note, la riga col segno delle maiuscole e quella col file scelto e il finale che esistono", () => {
+  // Una chiave scritta male non vale come assente (la rifiuta anche `cargo test`).
+  const note = ["scelto", "esistono", "cartelle", "percorso", "sostituire", "maiuscoleDistinte", "estensione"];
+  expect(casi.casi.flatMap((c) => Object.keys(c).filter((k) => !note.includes(k)))).toEqual([]);
+  expect(casi.casi.filter((c) => c.maiuscoleDistinte).length).toBe(1);
+  const specie = casi.casi.filter((c) => !c.maiuscoleDistinte && c.scelto !== c.percorso && c.esistono.includes(c.scelto) && c.esistono.includes(c.percorso));
+  expect(specie.length).toBeGreaterThan(0);
+});
 
 test("il guscio simulato decide «Salva con nome», «Esporta la tabella» e «Salva…» del codice come il guscio vero, caso per caso", () => {
   const sbagliati = casi.casi.flatMap((c) => {

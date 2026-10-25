@@ -1,6 +1,7 @@
 // La finestra che risponde, misurata nella pagina: la soglia, un giro di andata e ritorno con la pagina, il fotogramma più
-// lungo in un intervallo e un campionatore acceso per tutta una corsa. Per le prove nuove: le tre che hanno la loro copia
-// (`casi.e2e.ts`, `esecuzione.e2e.ts`, `programmi-pesanti.e2e.ts`) la tengono fino a chi le tocca.
+// lungo in un intervallo e un campionatore acceso per tutta una corsa. La soglia è una sola: la leggono anche le prove
+// sul prodotto (`strumenti/prova-portabile.ts` e `strumenti/linux/giro.ts`), che misurano coi loro strumenti (il
+// protocollo del browser, WebDriver) e contano anche i fotogrammi del campionatore.
 import type { Page } from "@playwright/test";
 
 /** La soglia della finestra che risponde: dal gesto all'effetto, e il fotogramma più lungo. */

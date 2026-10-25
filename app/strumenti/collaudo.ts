@@ -8,7 +8,8 @@
 // La porta confronta i progetti ESEGUITI (letti dalle prove del report, non dalla configurazione, che li elenca
 // tutti e quattro anche quando se ne chiedono due: misurato) con quelli del modo, nei due versi, e dice nella
 // sua riga quali motori ha provato e quali no. La prima porta è l'elenco delle prove del modo (pochi secondi, senza
-// server); con `--solo-elenco` il collaudo si ferma lì.
+// server), poi i selettori delle prove (un controllo del sorgente, meno di un secondo); con `--solo-elenco` il collaudo
+// si ferma lì.
 //
 // Ogni porta ha il proprio CONTROLLO POSITIVO nello stesso giro: una sonda (file `__sonda__*`) scritta
 // dentro la configurazione vera, che deve far fallire la porta con l'errore atteso e nessun altro; poi
@@ -63,7 +64,7 @@
 // - lo stile del codice (nessun linter);
 // - che le porte chiamino davvero i confronti dei progetti e degli spec: le sonde provano le funzioni del confronto,
 //   non la chiamata, che una riga cancellata toglierebbe senza rosso;
-// - con `--solo-elenco`, nulla oltre l'elenco: la riga «ESITO: SOLO ELENCO» lo dice, ma l'uscita è 0 come quella del
+// - con `--solo-elenco`, nulla oltre l'elenco e i selettori: la riga «ESITO: SOLO ELENCO» lo dice, ma l'uscita è 0 come quella del
 //   collaudo verde, e chi legge solo l'uscita non li distingue.
 //
 // Gli exit code si leggono dal processo avviato (`await proc.exited`), mai attraverso una pipe.
@@ -71,6 +72,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync, appendFileSync, cpSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, relative } from "node:path";
+import { chiamate, senzaExact } from "./selettori";
 
 const argomenti = process.argv.slice(2);
 const opzioni = ["--completo", "--solo-elenco"];
@@ -79,7 +81,8 @@ if (argomenti.some((a) => !opzioni.includes(a)) || new Set(argomenti).size !== a
   process.exit(2);
 }
 const completo = argomenti.includes("--completo");
-// Solo la prima porta (l'elenco delle prove del modo, pochi secondi): per controllare un modo senza la corsa intera.
+// Solo le prime due porte (l'elenco delle prove del modo e i selettori, pochi secondi): per controllare un modo senza la
+// corsa intera.
 const soloElenco = argomenti.includes("--solo-elenco");
 
 const radice = join(import.meta.dir, "..");
@@ -1066,7 +1069,7 @@ const proveAttesePerSpec: Record<string, number> = {
   "domanda.e2e.ts": 3,
   "editor-dei-cicli.e2e.ts": 7,
   "editor.e2e.ts": 5,
-  "esecuzione.e2e.ts": 11,
+  "esecuzione.e2e.ts": 12,
   "espressioni.e2e.ts": 6,
   "finestra.e2e.ts": 9,
   "fluida.e2e.ts": 1,
@@ -1108,6 +1111,43 @@ function problemiDegliSpec(osservate: ReadonlyMap<string, number>, progetti: rea
   return problemi;
 }
 
+// ---------------------------------------------------------------------------------------- selettori
+
+// I selettori delle prove che cercano un testo per sottostringa (`selettori.ts`: un nome di `getByRole` o un testo di
+// `getByText` e simili senza `exact`), in `e2e/` e in `strumenti/` (le prove sul prodotto cercano anche loro
+// l'interfaccia): devono essere zero. Controllo positivo nello stesso giro: una sonda in `e2e/` (fuori dal pattern
+// degli spec) con un selettore per specie, che il giro deve trovare tutti e due nel file della sonda e solo lì.
+const sondaSelettori = join("e2e", "__sonda__selettori.ts");
+
+function fileDeiSelettori(cartella: string): string[] {
+  const fuori: string[] = [];
+  for (const voce of readdirSync(cartella, { withFileTypes: true })) {
+    const pieno = join(cartella, voce.name);
+    if (voce.isDirectory()) fuori.push(...fileDeiSelettori(pieno));
+    else if (voce.name.endsWith(".ts")) fuori.push(relative(radice, pieno));
+  }
+  return fuori.sort();
+}
+
+function selettoriPerSottostringa(): { file: number; chiamate: number; trovate: ReturnType<typeof senzaExact> } {
+  const file = [...fileDeiSelettori(join(radice, "e2e")), ...fileDeiSelettori(join(radice, "strumenti"))];
+  const tutte = file.flatMap((f) => chiamate(readFileSync(join(radice, f), "utf8"), f));
+  return { file: file.length, chiamate: tutte.length, trovate: senzaExact(tutte) };
+}
+
+async function portaSelettori(): Promise<void> {
+  const vero = selettoriPerSottostringa();
+  if (vero.trovate.length > 0)
+    rosso("selettori", `${vero.trovate.length} cercano per sottostringa (manca \`exact\`): ${vero.trovate.map((c) => `${c.file}:${c.riga} ${c.metodo}(${c.argomenti.replace(/\s+/g, " ").slice(0, 80)})`).join("; ")}`);
+  const sonda = `// sonda del collaudo\npage.getByRole("button", { name: it.salva });\npage.getByText(it.premessa);\n`;
+  const conLaSonda = await conSonda(sondaSelettori, sonda, async () => selettoriPerSottostringa());
+  const viste = conLaSonda.trovate.map((c) => `${c.file}:${c.riga} ${c.metodo}`);
+  const attese = [`${sondaSelettori}:2 getByRole`, `${sondaSelettori}:3 getByText`];
+  if (JSON.stringify(viste) !== JSON.stringify(attese)) rosso("selettori", `controllo positivo SPENTO: con la sonda trovate ${JSON.stringify(viste)} invece di ${JSON.stringify(attese)}`);
+  if (vero.file === 0 || vero.chiamate === 0) rosso("selettori", `denominatore a zero: ${vero.file} file, ${vero.chiamate} chiamate`);
+  riga(`PORTA selettori: VERDE | nessun selettore per sottostringa | controllo positivo acceso (la sonda: ${viste.length} su ${attese.length}, nel suo file) | file guardati: ${vero.file}, chiamate dei metodi di ricerca: ${vero.chiamate}`);
+}
+
 // -------------------------------------------------------------------------------------------- giro
 
 log(`=== INIZIO COLLAUDO ${new Date().toISOString()} · bun ${Bun.version} · modo ${modo} ===`);
@@ -1117,9 +1157,10 @@ if (rimaste.length > 0) riga(`sonde rimaste da un giro interrotto, tolte: ${rima
 
 try {
   await portaElenco();
+  await portaSelettori();
   if (soloElenco) {
     // Un esito suo, non quello del collaudo: chi legge «ESITO: VERDE» crede che le prove siano passate.
-    riga(`ESITO: SOLO ELENCO, VERDE — controllato l'elenco delle prove del modo ${modo} (progetti e spec), non il collaudo: nessuna prova eseguita`);
+    riga(`ESITO: SOLO ELENCO, VERDE — controllato l'elenco delle prove del modo ${modo} (progetti e spec) e i selettori, non il collaudo: nessuna prova eseguita`);
     log("=== FINE COLLAUDO ===");
     process.exit(0);
   }
@@ -1130,7 +1171,7 @@ try {
   await portaBuild();
   await portaCargo();
   await portaPlaywright();
-  riga(`ESITO: VERDE (porte: elenco, 3 tsc, bun test, casi, differenziale, build, cargo test, playwright nel modo ${modo}: ${progettiEseguitiAttesi.join(", ")})`);
+  riga(`ESITO: VERDE (porte: elenco, selettori, 3 tsc, bun test, casi, differenziale, build, cargo test, playwright nel modo ${modo}: ${progettiEseguitiAttesi.join(", ")})`);
   log("=== FINE COLLAUDO ===");
 } catch (e) {
   riga(e instanceof PortaRossa ? e.message : `ERRORE DEL COLLAUDO: ${e instanceof Error ? e.stack : String(e)}`);

@@ -105,7 +105,7 @@ async function giro(nome: "base" | "portabile" | "senza-data", lang: string): Pr
   log(`=== INIZIO GIRO ${nome} ${new Date().toISOString()} ===`);
   const g = await esegui([process.execPath, join(app, "strumenti", "linux", "giro.ts"), nome], {
     LANG: lang,
-    ALGODESIGN_SORGENTI: app,
+    ALGODESIGN_PROGETTO: app,
     ALGODESIGN_CARTELLA_PROVA: cartella,
     ALGODESIGN_USCITA: uscita,
   });

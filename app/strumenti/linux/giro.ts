@@ -1,5 +1,5 @@
 // Un giro della prova Linux, DENTRO il container (lo lancia `prova.ts`, una volta per giro, ognuno in un
-// container suo): `bun /sorgenti/strumenti/linux/giro.ts <base|portabile|senza-data>`.
+// container suo): `bun /progetto/strumenti/linux/giro.ts <base|portabile|senza-data>`.
 //
 // Tutti i giri fanno la stessa preparazione: Xvfb, tauri-driver, l'AppImage copiata dal volume in una
 // cartella con spazi del container (`/prova portabile/`), e `data/` accanto a lei (tranne `senza-data`).
@@ -19,8 +19,8 @@
 // In portabile e senza-data si stampano `navigator.language` contro `LANG` e il valore di `APPIMAGE`
 // letto dall'ambiente del processo dell'app.
 //
-// Sulla macchina della CI (`prova-ci.ts`) le cartelle vengono dall'ambiente: `ALGODESIGN_SORGENTI` (la cartella `app`
-// del repository, al posto di `/sorgenti`), `ALGODESIGN_CARTELLA_PROVA` (la cartella dell'archivio estratto, con
+// Sulla macchina della CI (`prova-ci.ts`) le cartelle vengono dall'ambiente: `ALGODESIGN_PROGETTO` (la cartella `app`
+// del repository, al posto di `/progetto`), `ALGODESIGN_CARTELLA_PROVA` (la cartella dell'archivio estratto, con
 // l'AppImage e `data/` vuota: il giro senza `data` la toglie) e `ALGODESIGN_USCITA` (dove vanno la fotografia del
 // suggerimento e le misure della memoria). Lì il giro portabile fa in più due misure:
 // - SUGGERIMENTO: alla fine della corsa del vettore in fila, il puntatore del mouse sulla cella del vettore e, dopo tre
@@ -36,6 +36,8 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
+// La soglia della finestra che risponde: la stessa della prova nei motori.
+import { SOGLIA_MS } from "../../e2e/risposta";
 import { vettoreRiempito } from "../../e2e/vettore-riempito";
 import { dizionari, linguaDelSistema, nomiLingue, riempi, type Lingua } from "../../i18n/lingue";
 
@@ -45,18 +47,18 @@ if (giro !== "base" && giro !== "portabile" && giro !== "senza-data") {
   process.exit(2);
 }
 
-const sorgenti = process.env.ALGODESIGN_SORGENTI ?? "/sorgenti";
+const progetto = process.env.ALGODESIGN_PROGETTO ?? "/progetto";
 // Sulla macchina della CI la cartella di prova è l'archivio estratto, già pronto; nel container la prepara il giro.
 const estratta = process.env.ALGODESIGN_CARTELLA_PROVA;
 const uscita = process.env.ALGODESIGN_USCITA;
-const identificatore = JSON.parse(readFileSync(join(sorgenti, "shell", "tauri.conf.json"), "utf8")).identifier as string;
+const identificatore = JSON.parse(readFileSync(join(progetto, "shell", "tauri.conf.json"), "utf8")).identifier as string;
 const cartellaBundle = "/lavoro/target/release/bundle/appimage";
 const cartellaProva = estratta ?? "/prova portabile";
 const appimage = join(cartellaProva, "AlgoDesign.AppImage");
 const dati = join(cartellaProva, "data");
 const driver = "http://127.0.0.1:4444";
 // Il programma della clausola ESECUZIONE, letto dai sorgenti montati in sola lettura (fuori dal `docker diff`).
-const riferimento = join(sorgenti, "casi", "tappa-1", "riferimento-media-voti.algo");
+const riferimento = join(progetto, "casi", "tappa-1", "riferimento-media-voti.algo");
 // Il programma della clausola VETTORE, scritto nella cartella di prova da ogni giro (la base compresa: `prova.ts` lo
 // sottrae con la linea di base).
 const vettore = join(cartellaProva, "vettore di prova.algo");
@@ -300,9 +302,6 @@ async function giroDellEsecuzione(lingua: Lingua): Promise<void> {
     `ESECUZIONE: VERDE | in «${lingua}», F5 sul riferimento dato come argomento, ${caso.inputs.length} valori del caso scritti nella console, «${finale}» in ${secondi} s: output uguale all'atteso del caso (${Buffer.byteLength(visto)} byte) | controllo positivo: prima di F5 l'output era diverso (${JSON.stringify(prima)})`,
   );
 }
-
-/** La soglia della finestra che risponde, la stessa della prova nei motori (`e2e/programmi-pesanti.e2e.ts`). */
-const SOGLIA_MS = 1_000;
 
 /** I tasti dati, premuti insieme e lasciati in ordine inverso (Maiusc+F5: Maiusc e F5). */
 async function tasti(sessione: string, ...codici: string[]): Promise<void> {

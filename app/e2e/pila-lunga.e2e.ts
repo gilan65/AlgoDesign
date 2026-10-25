@@ -95,7 +95,7 @@ test("500 chiamate in corso: la finestra risponde, «Dove sei» col principio e 
   // L'elenco delle chiamate nascoste, e il livello 37.
   const t = Date.now();
   await dove.locator("[data-nascosti]").click();
-  const elenco = page.getByRole("menu", { name: it.doveSeiElenco });
+  const elenco = page.getByRole("menu", { name: it.doveSeiElenco, exact: true });
   await expect(elenco.getByRole("menuitem")).toHaveCount(496);
   misure.push({ cosa: "l'elenco delle 496 chiamate aperto", ms: Date.now() - t });
   await elenco.locator('[data-voce="37"]').click();

@@ -11,7 +11,9 @@
 // TUTTA la corsa, dal tasto alla fine, da un campionatore acceso prima di F5 (un programma breve finisce prima dei due
 // secondi, e il disegno della tabella intera cadeva fuori da ogni campione); poi «Ferma», dal tasto alla colonna
 // chiusa. Tutti entro la soglia di un secondo; i valori e il margine si stampano. Premesse: la riga sopra la tabella
-// dice la forma scelta, e il ciclo che non finisce ha almeno un campione durante la corsa.
+// dice la forma scelta, e il ciclo che non finisce ha almeno un campione durante la corsa. Coi valori iniziali si conta
+// anche il lavoro: la cella più lunga della tabella resta corta (in Chromium una cella da migliaia di caratteri starebbe
+// comunque sotto la soglia: è nel WebKit di Linux che costa).
 //
 // CHE COSA NON GUARDA:
 // - la WebView2 vera e WebKitGTK (qui i motori di Playwright; la prova sul prodotto ha la sua clausola);
@@ -30,14 +32,18 @@ import { expect, test, type Page } from "@playwright/test";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
 import { apriEsempio, apriVuota, costruisciFinzione } from "./pagina";
+import { accendiIlCampionatore, fotogrammaPeggiore as peggioreDellaCorsa, fotogrammi, risposta, SOGLIA_MS } from "./risposta";
 import { vettoreRiempito } from "./vettore-riempito";
 
 test.beforeAll(costruisciFinzione);
 test.use({ viewport: { width: 1920, height: 1080 } });
 test.describe.configure({ mode: "parallel" });
 
-/** La soglia della finestra che risponde: dal gesto all'effetto, e il fotogramma più lungo. */
-const SOGLIA_MS = 1_000;
+/** La cella più lunga della tabella coi valori iniziali, in caratteri: la colonna degli altri è un elenco tagliato, la
+ * cella in fila si taglia. Misurate in Chromium: al più 75 (gli altri) e 200 (in fila, il suo taglio); la
+ * colonna degli altri con gli elementi uno per uno 10 797 e 15 328, la cella in fila intera 3997 e 8534, con la finestra
+ * sempre entro la soglia (al più 83 ms). Il doppio del taglio della cella in fila. */
+const CARATTERI_DI_UNA_CELLA = 400;
 /** Quanto dura al più il ciclo che non finisce prima della misura «alla fine». */
 const DURATA_DEL_CICLO_MS = 30_000;
 
@@ -128,6 +134,7 @@ const programmi = [
       forma,
       finisce: true,
       oltre: true,
+      valoreIniziale: true,
     },
     {
       nome: `il valore iniziale di un vettore di 1000 elementi in un elenco, ${forma === "in-fila" ? "in fila" : "con le colonne dei primi dieci"}`,
@@ -135,6 +142,7 @@ const programmi = [
       forma,
       finisce: true,
       oltre: true,
+      valoreIniziale: true,
     },
   ]),
   {
@@ -175,34 +183,6 @@ const programmi = [
 
 const statoDi = (page: Page) => page.getByRole("region", { name: it.rigaDiStato, exact: true }).locator("[data-stato-esecuzione]");
 
-/** Un giro di andata e ritorno con la pagina, in millisecondi. */
-async function risposta(page: Page): Promise<number> {
-  const t0 = Date.now();
-  await page.evaluate(() => 1);
-  return Date.now() - t0;
-}
-
-/** Il fotogramma più lungo nei prossimi `ms` millisecondi, misurato nella pagina, e quanti ne arrivano. */
-const fotogrammi = (page: Page, ms: number) =>
-  page.evaluate(
-    (durata) =>
-      new Promise<{ n: number; peggiore: number }>((fatto) => {
-        let prima = performance.now();
-        let n = 0;
-        let peggiore = 0;
-        const fine = prima + durata;
-        const giro = (t: number) => {
-          peggiore = Math.max(peggiore, t - prima);
-          prima = t;
-          n++;
-          if (t < fine) requestAnimationFrame(giro);
-          else fatto({ n, peggiore: Math.round(peggiore) });
-        };
-        requestAnimationFrame(giro);
-      }),
-    ms,
-  );
-
 for (const p of programmi)
   test(`la finestra risponde entro la soglia: ${p.nome}`, async ({ page }, info) => {
     test.setTimeout(240_000);
@@ -212,17 +192,7 @@ for (const p of programmi)
     const misure: { cosa: string; ms: number }[] = [];
     const partenza = Date.now();
     // Il fotogramma più lungo di tutta la corsa, dal tasto alla fine: un campionatore nella pagina, acceso prima.
-    await page.evaluate(() => {
-      const w = window as unknown as { __peggiore: number };
-      w.__peggiore = 0;
-      let prima = performance.now();
-      const giro = (t: number) => {
-        w.__peggiore = Math.max(w.__peggiore, t - prima);
-        prima = t;
-        requestAnimationFrame(giro);
-      };
-      requestAnimationFrame(giro);
-    });
+    await accendiIlCampionatore(page);
     await page.keyboard.press("F5");
     await page.waitForTimeout(2_000);
     misure.push({ cosa: "risposta dopo 2 s", ms: await risposta(page) });
@@ -246,7 +216,7 @@ for (const p of programmi)
       misure.push({ cosa: `risposta peggiore durante la corsa (${campioni} campioni)`, ms: rispostaPeggiore });
       misure.push({ cosa: "fotogramma più lungo durante la corsa", ms: fotogrammaPeggiore });
     }
-    misure.push({ cosa: `fotogramma più lungo dal tasto alla fine (${Date.now() - partenza} ms di corsa)`, ms: Math.round(await page.evaluate(() => (window as unknown as { __peggiore: number }).__peggiore)) });
+    misure.push({ cosa: `fotogramma più lungo dal tasto alla fine (${Date.now() - partenza} ms di corsa)`, ms: await peggioreDellaCorsa(page) });
     const stato = await statoDi(page).textContent();
     // La forma scelta è quella mostrata (la riga sopra la tabella): senza, le due forme della stessa prova potrebbero
     // misurare la stessa tabella. Un vettore in fila ha sempre la sua frase; con le colonne dei primi dieci solo oltre
@@ -255,6 +225,15 @@ for (const p of programmi)
     if (p.forma === "in-fila") expect(spiega, "la riga sopra la tabella").toContain("in una colonna sola");
     else if (p.oltre) expect(spiega, "la riga sopra la tabella").toContain("le colonne dei primi 10");
     else expect(spiega, "la riga sopra la tabella").toBe("");
+    // Il valore iniziale si disegna leggero (in Chromium anche pesante starebbe sotto la soglia: misurato), quindi qui si
+    // conta il lavoro: la cella più lunga della tabella, in caratteri (il valore iniziale è un'azione, la riga dopo «Inizio»).
+    if ("valoreIniziale" in p) {
+      const celle = await page.locator("tbody tr[data-riga] td").allTextContents();
+      const piuLunga = Math.max(0, ...celle.map((c) => c.length));
+      console.log(`[${info.project.name}] ${p.nome}: ${celle.length} celle disegnate, la più lunga ${piuLunga} caratteri (al più ${CARATTERI_DI_UNA_CELLA})`);
+      expect(celle.length, "premessa: la tabella è disegnata").toBeGreaterThan(0);
+      expect(piuLunga, "il valore iniziale disegna una cella troppo lunga").toBeLessThanOrEqual(CARATTERI_DI_UNA_CELLA);
+    }
     misure.push({ cosa: `risposta alla fine (${stato})`, ms: await risposta(page) });
     const f2 = await fotogrammi(page, 1_000);
     misure.push({ cosa: `fotogramma più lungo alla fine (${f2.n} in 1 s)`, ms: f2.peggiore });
@@ -292,17 +271,7 @@ test("la finestra risponde entro la soglia: un ciclo per fino al tetto dei passi
   await expect(page.getByRole("region", { name: it.codiceGenerato, exact: true })).toBeVisible();
   const misure: { cosa: string; ms: number }[] = [];
   const partenza = Date.now();
-  await page.evaluate(() => {
-    const w = window as unknown as { __peggiore: number };
-    w.__peggiore = 0;
-    let prima = performance.now();
-    const giro = (t: number) => {
-      w.__peggiore = Math.max(w.__peggiore, t - prima);
-      prima = t;
-      requestAnimationFrame(giro);
-    };
-    requestAnimationFrame(giro);
-  });
+  await accendiIlCampionatore(page);
   await page.keyboard.press("F5");
   let campioni = 0;
   let rispostaPeggiore = 0;
@@ -319,7 +288,7 @@ test("la finestra risponde entro la soglia: un ciclo per fino al tetto dei passi
   await expect(fermo).toHaveCount(1);
   misure.push({ cosa: `risposta peggiore durante la corsa (${campioni} campioni)`, ms: rispostaPeggiore });
   misure.push({ cosa: "fotogramma più lungo durante la corsa", ms: fotogrammaPeggiore });
-  misure.push({ cosa: `fotogramma più lungo dal tasto alla fine (${Date.now() - partenza} ms di corsa)`, ms: Math.round(await page.evaluate(() => (window as unknown as { __peggiore: number }).__peggiore)) });
+  misure.push({ cosa: `fotogramma più lungo dal tasto alla fine (${Date.now() - partenza} ms di corsa)`, ms: await peggioreDellaCorsa(page) });
   misure.push({ cosa: "risposta alla fine", ms: await risposta(page) });
   const peggiore = Math.max(...misure.map((m) => m.ms));
   console.log(

@@ -930,7 +930,10 @@ mod prove {
         fs::remove_dir_all(&base).unwrap();
     }
 
+    // Una chiave scritta male (`maiuscoleDistinti`, `cartele`) è un errore, non un campo ignorato col suo valore di
+    // partenza: una riga che si salta, o una cartella che non c'è, uscirebbe verde senza dire nulla.
     #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
     struct Caso {
         scelto: String,
         esistono: Vec<String>,
@@ -950,8 +953,21 @@ mod prove {
     }
 
     #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
     struct Casi {
+        descrizione: String,
         casi: Vec<Caso>,
+    }
+
+    #[test]
+    fn la_tabella_di_salva_con_nome_rifiuta_una_chiave_scritta_male() {
+        let riga = |chiave: &str| format!(r#"{{ "descrizione": "x", "casi": [{{ "scelto": "a", "esistono": [], "percorso": "a.algo", "sostituire": false, "{chiave}": true }}] }}"#);
+        // Controllo positivo: la stessa riga con la chiave giusta si legge.
+        assert!(serde_json::from_str::<Casi>(&riga("maiuscoleDistinte")).is_ok());
+        let errore = serde_json::from_str::<Casi>(&riga("maiuscoleDistinti")).err().map(|e| e.to_string()).unwrap_or_default();
+        assert!(errore.contains("unknown field `maiuscoleDistinti`"), "{errore:?}");
+        let fuori = serde_json::from_str::<Casi>(r#"{ "descrizone": "x", "casi": [] }"#).err().map(|e| e.to_string()).unwrap_or_default();
+        assert!(fuori.contains("unknown field `descrizone`"), "{fuori:?}");
     }
 
     #[test]
@@ -992,7 +1008,16 @@ mod prove {
         }
         assert!(casi.casi.iter().all(|c| c.estensione == ALGO || c.estensione == CSV || CODICE.contains(&c.estensione.as_str())));
         assert_eq!(sbagliati, Vec::<String>::new());
-        assert_eq!(saltati, if distingue { 0 } else { casi.casi.iter().filter(|c| c.maiuscole_distinte).count() });
+        assert!(!casi.descrizione.is_empty());
+        // Le righe che un disco senza maiuscole salta: quante sono si scrive qui, non si legge dalla tabella (che
+        // altrimenti si confronterebbe con sé stessa: tolta la riga, zero saltate su zero attese).
+        let col_segno = casi.casi.iter().filter(|c| c.maiuscole_distinte).count();
+        assert_eq!(col_segno, 1, "righe con «maiuscoleDistinte»");
+        assert_eq!(saltati, if distingue { 0 } else { col_segno });
+        // Su un disco senza maiuscole l'unica riga che distingue il file scelto dal file finale quando esistono tutti e
+        // due: senza di lei `stesso_file` sbagliato resterebbe verde su Windows.
+        let specie = casi.casi.iter().filter(|c| !c.maiuscole_distinte && c.scelto != c.percorso && c.esistono.contains(&c.scelto) && c.esistono.contains(&c.percorso)).count();
+        assert!(specie > 0, "nessuna riga valida su ogni disco col file scelto e quello finale che esistono e sono diversi");
         // La tabella ha le due risposte (una decisione sempre uguale non passerebbe).
         let chiede = casi.casi.iter().filter(|c| c.sostituire).count();
         assert!(chiede > 0 && chiede < casi.casi.len(), "{chiede} su {}", casi.casi.len());

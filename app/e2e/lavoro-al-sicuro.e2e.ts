@@ -51,7 +51,9 @@
 //   sostituito da uno che non è una parola sola, e uno nuovo non usato col nome scritto) prima conferma il testo:
 //   il dato usato chiede e, rinunciando, il testo è nel progetto; quello non usato si elimina e Ctrl+Z lo riporta
 //   col testo. Il dato col nome che non è una parola resta usato: le regole tengono il nome di prima, e la
-//   domanda conta anche quello. Una pagina nuova per caso. Il dato appena aggiunto nella
+//   domanda conta anche quello. Nelle celle i campi della riga mostrano anche la bozza ancora aperta: lì il testo
+//   «nel progetto» vale col progetto modificato (la riga di stato), che una bozza non rende tale; la premessa, che il
+//   testo non ci fosse prima, si controlla. Una pagina nuova per caso. Il dato appena aggiunto nella
 //   scheda e lasciato vuoto sparisce senza domanda e senza passi. Controllo positivo: lo stesso rilevatore dice
 //   «perso» per il testo rinunciato con Esc e «nel progetto» per quello confermato con Invio.
 // - Nelle celle un clic sull'angolo di ognuna delle sei parti della riga (fuori dai campi) conferma il testo
@@ -98,8 +100,6 @@
 //   provata a parte; il «×» delle celle raggiunto col Tab e premuto con Invio; il «×» di un'altra riga mentre se
 //   ne scrive una; eliminare un dato coi campi di un blocco aperti (il gesto che arriva alla vista dei dati li
 //   conferma prima); due dati che hanno portato lo stesso nome (la domanda può contare le regole dell'altro);
-// - nella prova dell'eliminazione, nelle celle «il testo è nel progetto» si legge dai campi della riga, che
-//   mostrano anche il testo di campi ancora aperti: lì decidono la domanda e le righe contate;
 // - la X vera della finestra: qui la imita il guscio simulato; sul guscio vero c'è la prova sul prodotto (la
 //   chiusura dopo un `destroy()` fallito non si raggiunge senza guastare il motore: `cargo test` prova l'ordine
 //   della funzione che il comando chiama, non che il comando la chiami);
@@ -1138,17 +1138,23 @@ test("eliminare il dato che si sta scrivendo prima conferma il testo: rinunciand
         const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
         try {
           await apri(page, e.salvate);
+          const primaDelTesto = await progettoMostrato(page);
           const s = await d.scrivi(page);
+          // La premessa: il testo scritto non c'era già (un «c'è» dopo non direbbe nulla).
+          if (primaDelTesto.includes(s.testo)) throw new Error(`premessa: «${s.testo}» era già nel progetto mostrato`);
           const prima = await righeDeiDati(page);
           await g.fai(page, s);
           const { domanda, righe } = await dopoLEliminazione(page, s.usato);
           casi++;
+          // Nelle celle i campi della riga mostrano anche una bozza ancora aperta: il testo che si legge lì può essere quello
+          // della bozza. Il progetto modificato (la riga di stato) lo distingue: la bozza non è un passo, la conferma sì.
           const dentro = (await progettoMostrato(page)).includes(s.testo);
+          const cambiato = await modificato(page);
           // Un dato usato resta (si è rinunciato); uno non usato è eliminato, poi Ctrl+Z lo riporta.
           const righeAttese = s.usato ? prima : prima - 1;
-          if (domanda !== s.usato || righe !== righeAttese || !dentro)
+          if (domanda !== s.usato || righe !== righeAttese || !dentro || !cambiato)
             sbagliati.push(
-              `${dove}: domanda ${domanda} (attesa ${s.usato}), righe ${prima} → ${righe} (attese ${righeAttese}), il testo scritto nel progetto ${s.usato ? "dopo la rinuncia" : "dopo Ctrl+Z"} ${dentro}`,
+              `${dove}: domanda ${domanda} (attesa ${s.usato}), righe ${prima} → ${righe} (attese ${righeAttese}), il testo scritto nel progetto ${s.usato ? "dopo la rinuncia" : "dopo Ctrl+Z"} ${dentro}, il progetto modificato ${cambiato}`,
             );
         } catch (errore) {
           sbagliati.push(`${dove}: interrotto, ${(errore as Error).message.split("\n")[0]}`);

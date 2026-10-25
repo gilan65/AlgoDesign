@@ -112,8 +112,8 @@ function misura(page: Page, vistaFlowchart: string, vistaDati: string): Promise<
 }
 
 async function adatta(page: Page, testi: typeof it): Promise<void> {
-  const zoom = page.getByRole("group", { name: testi.zoom });
-  await zoom.getByRole("button", { name: testi.zoomAdatta }).click();
+  const zoom = page.getByRole("group", { name: testi.zoom, exact: true });
+  await zoom.getByRole("button", { name: testi.zoomAdatta, exact: true }).click();
   await expect(zoom.locator('[data-comando="cento"]')).not.toHaveText("100%");
 }
 
@@ -134,7 +134,7 @@ test("in 1920 × 1080, con le due viste aperte, «Adatta» mostra tutto il rifer
       // La premessa: i valori iniziali sono davvero nascosti.
       await expect(page.locator("[data-valore-iniziale]")).toHaveCount(0);
       // La premessa: la vista dei dati è aperta, accanto al flowchart.
-      await expect(page.getByRole("region", { name: testi.vistaDati })).toBeVisible();
+      await expect(page.getByRole("region", { name: testi.vistaDati, exact: true })).toBeVisible();
       await adatta(page, testi);
       const m = await misura(page, testi.vistaFlowchart, testi.vistaDati);
       console.log(`[${info.project.name}] una pagina ${lingua} ${condizioni}: ${descrivi(m)}`);
@@ -188,7 +188,7 @@ test("il riferimento della tappa 2: con «Adatta» il carattere coi «per» chiu
     const page = await context.newPage();
     await apri(page, { lingua: "it", valoriIniziali: "nascosti", cicliPer }, undefined, [{ nome, titolo: nome, funzione }]);
     await expect(page.getByRole("group", { name: `${it.flowchart}: ${nome}`, exact: true })).toBeVisible();
-    await expect(page.getByRole("region", { name: it.vistaDati })).toBeVisible();
+    await expect(page.getByRole("region", { name: it.vistaDati, exact: true })).toBeVisible();
     await adatta(page, it);
     const m = await misura(page, it.vistaFlowchart, it.vistaDati);
     const riquadri = await page.locator("[data-riquadro]").count();
@@ -217,9 +217,9 @@ test("le due viste si trovano per ruolo e nome, affiancate, in italiano e in ing
   let viste = 0;
   for (const [lingua, testi] of [["it", it], ["en", en]] as const) {
     if (lingua === "en") await scegliLingua(page, "en");
-    const dati = page.getByRole("region", { name: testi.vistaDati });
-    const flowchart = page.getByRole("region", { name: testi.vistaFlowchart });
-    await expect(dati.getByRole("table", { name: `${testi.dati}: ${RIFERIMENTO}` })).toBeVisible();
+    const dati = page.getByRole("region", { name: testi.vistaDati, exact: true });
+    const flowchart = page.getByRole("region", { name: testi.vistaFlowchart, exact: true });
+    await expect(dati.getByRole("table", { name: `${testi.dati}: ${RIFERIMENTO}`, exact: true })).toBeVisible();
     await expect(flowchart.getByRole("group", { name: `${testi.flowchart}: ${RIFERIMENTO}`, exact: true })).toBeVisible();
     const [d, f] = [(await dati.boundingBox())!, (await flowchart.boundingBox())!];
     console.log(`[${info.project.name}] due viste ${lingua}: dati ${d.width.toFixed(0)} × ${d.height.toFixed(0)} a x ${d.x.toFixed(0)}, flowchart ${f.width.toFixed(0)} × ${f.height.toFixed(0)} a x ${f.x.toFixed(0)}`);
@@ -231,16 +231,16 @@ test("le due viste si trovano per ruolo e nome, affiancate, in italiano e in ing
   expect(viste).toBe(4);
 
   // Controllo positivo: una vista senza nome non si trova per ruolo e nome.
-  await page.getByRole("region", { name: en.vistaDati }).evaluate((s) => s.removeAttribute("aria-label"));
-  await expect(page.getByRole("region", { name: en.vistaDati })).toHaveCount(0);
-  await expect(page.getByRole("region", { name: en.vistaFlowchart })).toHaveCount(1);
+  await page.getByRole("region", { name: en.vistaDati, exact: true }).evaluate((s) => s.removeAttribute("aria-label"));
+  await expect(page.getByRole("region", { name: en.vistaDati, exact: true })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: en.vistaFlowchart, exact: true })).toHaveCount(1);
 });
 
 test("il pulsante «Dati» chiude e riapre la vista dei dati; il bordo la allarga col puntatore e con la tastiera", async ({ page }) => {
   await apri(page, { lingua: "it" });
-  const dati = page.getByRole("region", { name: it.vistaDati });
-  const flowchart = page.getByRole("region", { name: it.vistaFlowchart });
-  const pulsante = page.getByRole("button", { name: it.pannelloDati });
+  const dati = page.getByRole("region", { name: it.vistaDati, exact: true });
+  const flowchart = page.getByRole("region", { name: it.vistaFlowchart, exact: true });
+  const pulsante = page.getByRole("button", { name: it.pannelloDati, exact: true });
   await expect(dati).toBeVisible();
   const [larga, stretta] = [(await dati.boundingBox())!.width, (await flowchart.boundingBox())!.width];
 
@@ -254,7 +254,7 @@ test("il pulsante «Dati» chiude e riapre la vista dei dati; il bordo la allarg
   expect((await dati.boundingBox())!.width).toBeCloseTo(larga, 0);
 
   // Con la tastiera: tre pressioni della freccia a destra, 16 px ciascuna.
-  const bordo = page.getByRole("separator", { name: it.larghezzaPannello });
+  const bordo = page.getByRole("separator", { name: it.larghezzaPannello, exact: true });
   await expect(bordo).toHaveAttribute("aria-valuenow", String(Math.round(larga)));
   await bordo.focus();
   await page.keyboard.press("ArrowRight");
@@ -334,7 +334,7 @@ test.describe("la lingua del documento al primo render", () => {
   test("è quella della preferenza salvata, non quella di index.html", async ({ page }, info) => {
     await registraLaLingua(page);
     await apri(page, { lingua: "en" });
-    await expect(page.getByRole("region", { name: en.vistaDati })).toBeVisible();
+    await expect(page.getByRole("region", { name: en.vistaDati, exact: true })).toBeVisible();
     const lette = await lingueLette(page);
     console.log(`[${info.project.name}] lingua del documento: all'apertura ${lette.apertura}, al primo render ${lette.primoRender}`);
     expect(lette.primoRender).toBe("en");
@@ -349,7 +349,7 @@ test.describe("la lingua del documento senza preferenza, con il sistema in un'al
   test("è l'inglese già al primo render", async ({ page }) => {
     await registraLaLingua(page);
     await apri(page, null);
-    await expect(page.getByRole("region", { name: en.vistaDati })).toBeVisible();
+    await expect(page.getByRole("region", { name: en.vistaDati, exact: true })).toBeVisible();
     expect((await lingueLette(page)).primoRender).toBe("en");
   });
 });

@@ -23,11 +23,13 @@
 //   di prima, coi forniti fuori dai gruppi, li vede spostati nei loro gruppi (il file dell'utente resta in cima), e
 //   «Ripristina» porta quelli con le funzioni, che si aprono; un file della cartella che non si apre resta col suo motivo.
 // - Il file dato come argomento si apre all'avvio.
-// - Ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, conferma delle modifiche, Informazioni,
-//   conferma prima di togliere un esempio) trattiene il fuoco e si chiude con Esc; i giri sono appaiati nei due versi coi
+// - Ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, conferma delle modifiche, procedura o
+//   funzione nuova, «Procedure e funzioni…», «Importa procedure e funzioni…», Informazioni, conferma prima di togliere
+//   un esempio) trattiene il fuoco e si chiude con Esc; i giri sono appaiati nei due versi coi
 //   componenti che usano la finestra comune, e le finestre che nascono dal lavoro (le conferme del dato, del valore
 //   iniziale e del file da sostituire, l'avviso del nome del file, l'eliminazione di una funzione) si nominano nella prova
-//   dove si aprono. Il rosso porta il registro: per ogni tasto
+//   dove si aprono. In ogni finestra il fuoco fa il giro nei due versi (torna da dove è partito, quindi passa il bordo), e
+//   ogni fuoco che entra fuori dalla finestra si conta, anche uscito e tornato fra due letture. Il rosso porta il registro: per ogni tasto
 //   dov'era il fuoco e dove è andato, se la finestra c'era, il `tabindex` del pannello della scheda, tempo e
 //   fotogramma dall'apertura, e gli eventi di fuoco della pagina.
 // - Una finestra appena aperta riceve subito i tasti, senza che la prova aspetti il fuoco: Proprietà aperta con
@@ -53,8 +55,6 @@
 //   `lavoro-al-sicuro.e2e.ts`);
 // - un file del corpus modificato e poi salvato: lo confronta col file atteso la prova della costruzione;
 // - l'aspetto delle finestre;
-// - nel fuoco trattenuto, un'uscita fra due letture (il fuoco uscito e tornato prima della lettura dopo il tasto): non
-//   si conta, si vede solo negli eventi del registro, che si stampa quando la prova è rossa;
 // - i tasti battuti subito nelle finestre aperte da un'azione e non da un comando della barra (conferma delle
 //   modifiche, errori, conferma prima di togliere un esempio o di eliminare un dato): passano dalla stessa base
 //   (`ui/finestre/Finestra.tsx`), che la prova esercita da tre comandi.
@@ -427,7 +427,7 @@ test("al primo avvio la cartella degli esempi riceve i forniti nei loro gruppi, 
   // I gruppi chiusi, nell'ordine dei forniti; il fuoco nella ricerca.
   expect(await gruppiMostrati(esempi)).toEqual([`${it.esempiGruppoPrimiPassi}(4)`, `${it.esempiGruppoCicli}(2)`, `${it.esempiGruppoFunzioni}(5)`]);
   await expect(esempi.getByRole("listitem")).toHaveCount(0);
-  await expect(esempi.getByRole("searchbox", { name: it.esempiCerca })).toBeFocused();
+  await expect(esempi.getByRole("searchbox", { name: it.esempiCerca, exact: true })).toBeFocused();
   await nomeDelGruppo(esempi, it.esempiGruppoPrimiPassi).click();
   expect(await nomiDegliEsempi(esempi)).toEqual(inOrdineDiFile([it.esempioMediaVoti, it.esempioPariDispari, it.esempioPrimoQuadrato, it.esempioFattoriale]));
   await expect(rigaDellEsempio(esempi, it.esempioMediaVoti)).toContainText(it.esempioMediaVotiDescrizione);
@@ -436,7 +436,7 @@ test("al primo avvio la cartella degli esempi riceve i forniti nei loro gruppi, 
 
   // «Aggiungi»: il progetto aperto («Senza nome») diventa un file del gruppo proposto, «I miei esempi», che nasce e si
   // apre; due volte, due nomi.
-  await expect(esempi.getByRole("combobox", { name: it.esempiGruppo })).toHaveValue(it.esempiGruppoMiei);
+  await expect(esempi.getByRole("combobox", { name: it.esempiGruppo, exact: true })).toHaveValue(it.esempiGruppoMiei);
   await esempi.getByRole("button", { name: it.esempiAggiungi, exact: true }).click();
   await expect(gruppo(esempi, it.esempiGruppoMiei).getByRole("listitem")).toHaveCount(1);
   await esempi.getByRole("button", { name: it.esempiAggiungi, exact: true }).click();
@@ -480,7 +480,7 @@ test("i gruppi restano come li ha lasciati l'utente; la ricerca trova nel nome, 
   expect(await gruppiMostrati(esempi)).toEqual([`${it.esempiGruppoPrimiPassi}(4)`, `${it.esempiGruppoCicli}(2) aperto`, `${it.esempiGruppoFunzioni}(5)`]);
 
   // La ricerca parte dal fuoco: si scrive subito. Senza maiuscole né accenti; i gruppi senza nessuno spariscono.
-  const ricerca = esempi.getByRole("searchbox", { name: it.esempiCerca });
+  const ricerca = esempi.getByRole("searchbox", { name: it.esempiCerca, exact: true });
   await expect(ricerca).toBeFocused();
   await page.keyboard.type("PIU UNO");
   expect(await gruppiMostrati(esempi)).toEqual([`${it.esempiGruppoFunzioni}(1) aperto`]);
@@ -510,8 +510,8 @@ test("un gruppo nuovo da «Aggiungi»: un nome che una cartella non può avere s
   const esempi = finestra(page, it.esempiTitolo);
   await (await voceDellAiuto(page, it.esempi)).click();
   const aggiungi = esempi.getByRole("button", { name: it.esempiAggiungi, exact: true });
-  await esempi.getByRole("combobox", { name: it.esempiGruppo }).selectOption({ label: it.esempiGruppoNuovo });
-  const nome = esempi.getByRole("textbox", { name: it.esempiNomeDelGruppo });
+  await esempi.getByRole("combobox", { name: it.esempiGruppo, exact: true }).selectOption({ label: it.esempiGruppoNuovo });
+  const nome = esempi.getByRole("textbox", { name: it.esempiNomeDelGruppo, exact: true });
   await expect(aggiungi).toHaveAttribute("aria-disabled", "true");
   for (const sbagliato of ["Verifica.", "a/b", ".nascosto"]) {
     await nome.fill(sbagliato);
@@ -524,15 +524,15 @@ test("un gruppo nuovo da «Aggiungi»: un nome che una cartella non può avere s
   await expect(gruppo(esempi, "Verifica").getByRole("listitem")).toHaveCount(1);
   // Lo stesso nome con altre maiuscole: lo stesso gruppo (su Windows e sul Mac è la stessa cartella), e il gruppo dell'ultima
   // aggiunta è quello proposto.
-  await esempi.getByRole("combobox", { name: it.esempiGruppo }).selectOption({ label: it.esempiGruppoNuovo });
-  await esempi.getByRole("textbox", { name: it.esempiNomeDelGruppo }).fill("VERIFICA");
+  await esempi.getByRole("combobox", { name: it.esempiGruppo, exact: true }).selectOption({ label: it.esempiGruppoNuovo });
+  await esempi.getByRole("textbox", { name: it.esempiNomeDelGruppo, exact: true }).fill("VERIFICA");
   await aggiungi.click();
   await expect(gruppo(esempi, "Verifica").getByRole("listitem")).toHaveCount(2);
   expect((await fileDegliEsempi(page)).filter((n) => !undiciForniti(it).includes(n))).toEqual([`Verifica/${it.progettoSenzaNome} (2).algo`, `Verifica/${it.progettoSenzaNome}.algo`]);
-  await expect(esempi.getByRole("combobox", { name: it.esempiGruppo })).toHaveValue("Verifica");
+  await expect(esempi.getByRole("combobox", { name: it.esempiGruppo, exact: true })).toHaveValue("Verifica");
 
   // I gruppi dei forniti non hanno «Elimina il gruppo»; quello nuovo sì (controllo positivo).
-  for (const g of [it.esempiGruppoPrimiPassi, it.esempiGruppoCicli, it.esempiGruppoFunzioni]) await expect(gruppo(esempi, g).getByRole("button", { name: it.esempiEliminaGruppo })).toHaveCount(0);
+  for (const g of [it.esempiGruppoPrimiPassi, it.esempiGruppoCicli, it.esempiGruppoFunzioni]) await expect(gruppo(esempi, g).getByRole("button", { name: it.esempiEliminaGruppo, exact: true })).toHaveCount(0);
   const elimina = gruppo(esempi, "Verifica").getByRole("button", { name: it.esempiEliminaGruppo, exact: true });
   await expect(elimina).toHaveCount(1);
 
@@ -549,11 +549,11 @@ test("un gruppo nuovo da «Aggiungi»: un nome che una cartella non può avere s
   expect(Object.keys((await finzione(page)).esempi!).filter((k) => k.startsWith("Verifica/"))).toEqual([]);
   expect(await fileDegliEsempi(page)).toEqual(undiciForniti(it));
   // Il gruppo eliminato non è più quello dove aggiungere, né nella finestra aperta né riaperta: «Aggiungi» lo ricreerebbe.
-  await expect(esempi.getByRole("combobox", { name: it.esempiGruppo })).toHaveValue(it.esempiGruppoMiei);
+  await expect(esempi.getByRole("combobox", { name: it.esempiGruppo, exact: true })).toHaveValue(it.esempiGruppoMiei);
   await chiudiConEsc(page, esempi);
   await (await voceDellAiuto(page, it.esempi)).click();
-  await expect(esempi.getByRole("combobox", { name: it.esempiGruppo })).toHaveValue(it.esempiGruppoMiei);
-  await expect(esempi.getByRole("combobox", { name: it.esempiGruppo }).locator("option", { hasText: "Verifica" })).toHaveCount(0);
+  await expect(esempi.getByRole("combobox", { name: it.esempiGruppo, exact: true })).toHaveValue(it.esempiGruppoMiei);
+  await expect(esempi.getByRole("combobox", { name: it.esempiGruppo, exact: true }).locator("option", { hasText: "Verifica" })).toHaveCount(0);
 });
 
 test("la cartella delle versioni di prima, coi forniti fuori dai gruppi: si spostano nei loro gruppi, il file dell'utente resta in cima; «Ripristina» porta i nuovi, che si aprono", async ({ page }) => {
@@ -635,10 +635,10 @@ test("il file dato come argomento si apre all'avvio, legato al file", async ({ p
  * fuoco e quando, anche se nessuno lo ripete. */
 async function registraIlFuoco(page: Page): Promise<void> {
   await page.evaluate(() => {
-    type Registro = { eventi: string[]; fotogrammi: number; t0: number; nomeDi: (e: EventTarget | null) => string };
+    type Registro = { eventi: string[]; fotogrammi: number; t0: number; nomeDi: (e: EventTarget | null) => string; finestra: Element | null; fuori: string[] };
     const w = window as unknown as { __fuoco__?: Registro };
     if (w.__fuoco__) {
-      Object.assign(w.__fuoco__, { eventi: [], fotogrammi: 0, t0: performance.now() });
+      Object.assign(w.__fuoco__, { eventi: [], fotogrammi: 0, t0: performance.now(), finestra: null, fuori: [] });
       return;
     }
     const nomeDi = (e: EventTarget | null): string => {
@@ -650,12 +650,17 @@ async function registraIlFuoco(page: Page): Promise<void> {
       const ruolo = e.getAttribute("role") ?? e.getAttribute("data-part");
       return `<${e.tagName.toLowerCase()}${ruolo ? ` ${ruolo}` : ""}${e.hasAttribute("tabindex") ? ` tabindex=${e.getAttribute("tabindex")}` : ""}> «${testo}»`;
     };
-    const r: Registro = { eventi: [], fotogrammi: 0, t0: performance.now(), nomeDi };
+    const r: Registro = { eventi: [], fotogrammi: 0, t0: performance.now(), nomeDi, finestra: null, fuori: [] };
     w.__fuoco__ = r;
     for (const tipo of ["focusin", "focusout"])
       document.addEventListener(
         tipo,
-        (e) => r.eventi.push(`${Math.round(performance.now() - r.t0)} ms, fotogramma ${r.fotogrammi}: ${tipo} ${nomeDi(e.target)}, altro capo ${nomeDi((e as FocusEvent).relatedTarget)}`),
+        (e) => {
+          const evento = `${Math.round(performance.now() - r.t0)} ms, fotogramma ${r.fotogrammi}: ${tipo} ${nomeDi(e.target)}, altro capo ${nomeDi((e as FocusEvent).relatedTarget)}`;
+          r.eventi.push(evento);
+          // Da quando la finestra ha il fuoco, ogni fuoco che entra fuori da lei: anche uno uscito e tornato fra due letture.
+          if (tipo === "focusin" && r.finestra !== null && !(e.target instanceof Node && r.finestra.contains(e.target))) r.fuori.push(evento);
+        },
         true,
       );
     const conta = () => {
@@ -672,10 +677,23 @@ const eventiDelFuoco = (page: Page) => page.evaluate(() => (window as unknown as
 /** Dopo ogni tasto il fuoco è dentro la finestra: quanti tasti l'hanno lasciato uscire, e una riga per tasto nel
  * registro (dov'era il fuoco e dove è andato, se la finestra c'era, il `tabindex` del pannello della scheda, tempo e
  * fotogramma). Una finestra che si è chiusa (il fuoco uscito la chiude) conta come fuori, senza aspettarla, ma la riga
- * la distingue. */
-async function fuoriDalla(page: Page, f: Locator, tasto: string, volte: number, registro: string[]): Promise<number> {
+ * la distingue. `tornato`: il fuoco è tornato sull'elemento da cui è partito, cioè ha passato il bordo della finestra
+ * (dall'ultimo al primo, o all'indietro) e ha fatto il giro: con meno punti di sosta dei tasti succede sempre. */
+async function fuoriDalla(page: Page, f: Locator, tasto: string, volte: number, registro: string[]): Promise<{ fuori: number; tornato: boolean }> {
+  /** L'identità dell'elemento col fuoco: un numero dato la prima volta che lo si vede (il nome può ripetersi). */
+  const idDelFuoco = () =>
+    page.evaluate(() => {
+      const a = document.activeElement as (Element & { __idDelFuoco?: number }) | null;
+      const w = window as unknown as { __idDelFuoco?: number };
+      if (a === null) return 0;
+      a.__idDelFuoco ??= w.__idDelFuoco = (w.__idDelFuoco ?? 0) + 1;
+      return a.__idDelFuoco;
+    });
   let fuori = 0;
-  for (let i = 0; i < volte; i++) {
+  let tornato = false;
+  const partenza = await idDelFuoco();
+  // Almeno `volte` tasti, e poi fino al giro (una finestra con più punti di sosta, le Impostazioni), al più 60.
+  for (let i = 0; i < 60 && (i < volte || !tornato); i++) {
     const prima = await page.evaluate(() => (window as unknown as { __fuoco__: { nomeDi: (e: EventTarget | null) => string } }).__fuoco__.nomeDi(document.activeElement));
     await page.keyboard.press(tasto);
     // Una lettura sola, subito dopo il tasto: anche una finestra non trovata (zero elementi) dà la sua riga.
@@ -692,10 +710,11 @@ async function fuoriDalla(page: Page, f: Locator, tasto: string, volte: number, 
       };
     });
     if (!d.dentro) fuori++;
+    if ((await idDelFuoco()) === partenza) tornato = true;
     const esito = d.dentro ? "dentro" : d.trovate === 1 ? "FUORI" : `FINESTRA TROVATA ${d.trovate} VOLTE`;
     registro.push(`${tasto} n. ${i + 1}: ${prima} → ${d.attivo} | ${esito} | pannello tabindex ${d.pannello} | ${d.ms} ms, fotogramma ${d.fotogramma}`);
   }
-  return fuori;
+  return { fuori, tornato };
 }
 
 test("ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, conferma delle modifiche, procedura o funzione nuova, «Procedure e funzioni…», «Importa procedure e funzioni…», Informazioni, conferma prima di togliere un esempio) trattiene il fuoco e si chiude con Esc; i giri appaiati coi componenti della finestra", async ({ page }, info) => {
@@ -736,13 +755,26 @@ test("ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, c
     const f = la();
     await expect(f).toBeVisible();
     await expect.poll(() => f.evaluate((el) => el.contains(document.activeElement)), { message: `la finestra ${nome} non prende il fuoco` }).toBe(true);
+    // Da qui ogni fuoco che entra fuori dalla finestra si conta, anche uno uscito e tornato prima della lettura dopo il tasto.
+    await f.evaluate((el) => {
+      (window as unknown as { __fuoco__: { finestra: Element | null } }).__fuoco__.finestra = el;
+    });
     const registro: string[] = [];
-    const fuori = (await fuoriDalla(page, f, "Tab", 14, registro)) + (await fuoriDalla(page, f, "Shift+Tab", 14, registro));
-    console.log(`[${info.project.name}] finestra ${nome}: ${registro.length} tasti, ${fuori} fuori`);
-    const racconto = fuori === 0 ? "" : `\n${registro.join("\n")}\neventi del fuoco dall'apertura:\n${(await eventiDelFuoco(page)).join("\n")}`;
+    const avanti = await fuoriDalla(page, f, "Tab", 14, registro);
+    const indietro = await fuoriDalla(page, f, "Shift+Tab", 14, registro);
+    const fuori = avanti.fuori + indietro.fuori;
+    const transitori = await page.evaluate(() => {
+      const r = (window as unknown as { __fuoco__: { finestra: Element | null; fuori: string[] } }).__fuoco__;
+      r.finestra = null;
+      return r.fuori;
+    });
+    console.log(`[${info.project.name}] finestra ${nome}: ${registro.length} tasti, ${fuori} fuori, ${transitori.length} entrate del fuoco fuori, giro del bordo avanti ${avanti.tornato} e indietro ${indietro.tornato}`);
+    const racconto = fuori === 0 && transitori.length === 0 ? "" : `\n${registro.join("\n")}\neventi del fuoco dall'apertura:\n${(await eventiDelFuoco(page)).join("\n")}`;
     expect(fuori, `la finestra ${nome} lascia uscire il fuoco${racconto}`).toBe(0);
-    // Controllo positivo del registro: una riga per tasto.
-    expect(registro.length).toBe(28);
+    expect(transitori, `la finestra ${nome} lascia entrare il fuoco fuori da lei, anche solo fra due letture${racconto}`).toEqual([]);
+    // Il bordo passato nei due versi: senza, una finestra con più punti di sosta dei tasti non proverebbe il passaggio
+    // dall'ultimo al primo (e il rilevatore «fuori» non avrebbe visto il caso in cui il fuoco esce davvero).
+    expect([avanti.tornato, indietro.tornato], `la finestra ${nome}: il fuoco non ha fatto il giro della finestra in 60 tasti${racconto}`).toEqual([true, true]);
     await page.keyboard.press("Escape");
     await expect(f, `la finestra ${nome} non si chiude con Esc`).toBeHidden();
   }

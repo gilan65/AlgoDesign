@@ -14,7 +14,7 @@
 //    «`navigator.language` segue `LANG`», che `giro.ts` verifica in ciascuno dei due giri.
 //
 // Che cosa questa prova NON guarda:
-// - le scritture nei volumi e nei montaggi (`/lavoro`, `/sorgenti`): `docker diff` guarda solo il
+// - le scritture nei volumi e nei montaggi (`/lavoro`, `/progetto`): `docker diff` guarda solo il
 //   filesystem del container. L'estrazione dell'AppImage in /tmp sta fuori dai volumi, quindi si vede;
 // - l'avvio con FUSE, cioè quello di un desktop normale: nel container FUSE manca e l'AppImage parte
 //   con `APPIMAGE_EXTRACT_AND_RUN=1` (vedi `giro.ts`). Che `APPIMAGE` valga anche lì lo dice la
@@ -80,7 +80,7 @@ async function esegui(cmd: string[]): Promise<{ codice: number; uscita: string }
   return { codice, uscita: out };
 }
 
-const montaggi = ["-v", `${radice}:/sorgenti:ro`];
+const montaggi = ["-v", `${radice}:/progetto:ro`];
 
 // ----------------------------------------------------------------------------------------------- build
 
@@ -94,7 +94,7 @@ async function costruisci(): Promise<void> {
     "set -e",
     "rm -rf /lavoro/app /lavoro/target/release/bundle/appimage",
     "mkdir -p /lavoro/app",
-    "tar -C /sorgenti --exclude=./node_modules --exclude=./dist --exclude=./.collaudo --exclude=./shell/target --exclude=./shell/gen -cf - . | tar -C /lavoro/app -xf -",
+    "tar -C /progetto --exclude=./node_modules --exclude=./dist --exclude=./.collaudo --exclude=./shell/target --exclude=./shell/gen -cf - . | tar -C /lavoro/app -xf -",
     "cd /lavoro/app",
     "bun install --frozen-lockfile",
     "bun tauri build --bundles appimage",
@@ -120,7 +120,7 @@ async function giro(nome: "base" | "portabile" | "senza-data", lang: string): Pr
   const container = `${prefissoContainer}${nome}`;
   log(`=== INIZIO GIRO ${nome} ${new Date().toISOString()} ===`);
   const proc = Bun.spawn({
-    cmd: ["docker", "run", "--name", container, ...montaggi, "-v", `${volume}:/lavoro:ro`, "-e", `LANG=${lang}`, immagine, "bun", "/sorgenti/strumenti/linux/giro.ts", nome],
+    cmd: ["docker", "run", "--name", container, ...montaggi, "-v", `${volume}:/lavoro:ro`, "-e", `LANG=${lang}`, immagine, "bun", "/progetto/strumenti/linux/giro.ts", nome],
     cwd: radice,
     stdout: "pipe",
     stderr: "pipe",
