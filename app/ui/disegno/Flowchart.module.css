@@ -243,7 +243,7 @@
 }
 
 /* Un blocco con un errore del controllo statico: il contorno del colore dell'errore e un bollino col
-   punto esclamativo nell'angolo in alto a destra; con un avviso, il bollino col punto di domanda, del
+   punto esclamativo su un angolo della forma (`bollino` in `segni.ts`); con un avviso, il bollino col punto di domanda, del
    colore dell'avviso. La selezione resta sopra: il suo contorno vince. Il segno ha il carattere del disegno
    (mai più piccolo: alla scala minima resta di 5 px). */
 .conErrore .areaDelBlocco {

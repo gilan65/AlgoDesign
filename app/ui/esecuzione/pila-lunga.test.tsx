@@ -9,7 +9,8 @@
 // - Il dato dietro un riferimento lo dice il nucleo (`origini`), mai i nomi: il watch di un parametro che riceve un dato
 //   di una funzione con più chiamate in corso ne dice il livello; la lettura in un parametro per riferimento nomina il
 //   dato vero anche quando una funzione in mezzo ha un dato con lo stesso nome (dedotto dai nomi sarebbe il suo).
-// - I giri della ricorsione nell'elenco delle procedure e delle funzioni e nella riga di stato.
+// - I giri della ricorsione nell'elenco delle procedure e delle funzioni e nella riga di stato: la prima frase e quante
+//   altre, e l'elenco a richiesta.
 // - Le righe delle chiamate nel codice: con dieci chiamate dallo stesso blocco, una volta sola, con lo sfondo del livello
 //   più profondo; un `per` che chiama dai suoi limiti accende solo la riga della sua partenza.
 //
@@ -258,9 +259,58 @@ test("i giri della ricorsione nell'elenco delle procedure e delle funzioni e nel
     `f2: ${frase}`,
   ]);
   cleanup();
+  // Una sola ricorsione: la frase, senza il comando che apre l'elenco.
+  expect(comandoDelleRicorsioni()).toBeNull();
+  cleanup();
   // Senza ricorsione, nessuna delle due.
   await apriLaFinestra(conta(0).replace('"conta(n - 1) + 1"', '"n + 1"'));
   expect(document.querySelector("[data-ricorsione]")?.outerHTML ?? null).toBeNull();
+}, 60_000);
+
+/** Un programma che chiama `nomi.length` funzioni, ognuna delle quali chiama sé stessa fino a 0. */
+const ricorsive = (nomi: readonly string[]) =>
+  JSON.stringify({
+    format: "algodesign",
+    schema_version: 1,
+    metadata: { name: "ricorsive" },
+    functions: [
+      { id: "f0", kind: "main", data: [{ name: "t", type: "integer", initial: "0" }], body: nomi.map((nome, k) => ({ id: `m${k}`, kind: "assignment", target: "t", value: `t + ${nome}(3)` })), end: { id: "mf" } },
+      ...nomi.map((nome, k) => ({
+        id: `f${k + 1}`,
+        kind: "function",
+        name: nome,
+        return_type: "integer",
+        data: [
+          { name: "n", type: "integer", parameter: "value" },
+          { name: "r", type: "integer" },
+        ],
+        body: [{ id: `c${k}a`, kind: "if", condition: "n <= 0", then: [{ id: `c${k}b`, kind: "assignment", target: "r", value: "0" }], else: [{ id: `c${k}c`, kind: "assignment", target: "r", value: `${nome}(n - 1) + 1` }] }],
+        end: { id: `c${k}d`, return_value: "r" },
+      })),
+    ],
+  });
+const comandoDelleRicorsioni = () => [...document.querySelectorAll("button")].find((b) => b.textContent === testi.ricorsioniMostra || b.textContent === testi.ricorsioniNascondi) ?? null;
+
+test("con più ricorsioni la riga di stato dice la prima e quante altre, e l'elenco a richiesta le dice tutte", async () => {
+  const frase = (nome: string) => `La funzione «${nome}» chiama sé stessa`;
+  await apriLaFinestra(ricorsive(["conta", "somma"]));
+  expect(document.querySelector("[data-ricorsione]")?.textContent).toBe(`${frase("conta")}${testi.ricorsioneUnAltra}`);
+  cleanup();
+  await apriLaFinestra(ricorsive(["conta", "somma", "potenza", "cifre"]));
+  expect(document.querySelector("[data-ricorsione]")?.textContent).toBe(`${frase("conta")}${riempi(testi.ricorsioniAltre, { n: "3" })}`);
+  // Il testo intero della prima frase anche sotto il puntatore del mouse, quando è tagliata.
+  expect(document.querySelector("[data-ricorsione]")?.getAttribute("title")).toBe(frase("conta"));
+  const elenco = () => document.querySelector<HTMLElement>("[data-ricorsioni]")!;
+  expect(elenco().hidden).toBe(true);
+  await clic(comandoDelleRicorsioni(), "«Mostra le ricorsioni»");
+  expect({ aperto: !elenco().hidden, nome: elenco().getAttribute("aria-label"), comando: comandoDelleRicorsioni()?.textContent, voci: [...elenco().querySelectorAll("li")].map((l) => l.textContent) }).toEqual({
+    aperto: true,
+    nome: testi.elencoDelleRicorsioni,
+    comando: testi.ricorsioniNascondi,
+    voci: ["conta", "somma", "potenza", "cifre"].map(frase),
+  });
+  await clic(comandoDelleRicorsioni(), "«Nascondi le ricorsioni»");
+  expect(elenco().hidden).toBe(true);
 }, 60_000);
 
 // ---------------------------------------------------------------------------------- le righe delle chiamate nel codice

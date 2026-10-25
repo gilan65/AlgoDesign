@@ -4,6 +4,10 @@
 // regione col suo nome, diversa dall'avviso della finestra (un `<output>` col ruolo di stato, che dice
 // l'esito di un gesto): qui c'è lo stato del progetto, che resta finché il progetto non cambia.
 //
+// Le ricorsioni del progetto (un'informazione, non un errore): la frase della prima, tagliata coi puntini se non ci sta, e
+// quante altre; «Mostra le ricorsioni» apre l'elenco con una frase per ricorsione, sopra la riga come quello del
+// controllo. La riga resta su una riga: è la frase a stringersi.
+//
 // Una voce di un dato porta alla sua riga nella vista dei dati (che si apre, se è chiusa). Una voce di una procedura o di
 // una funzione (il suo nome, il suo valore predefinito, ciò che restituisce) porta alla sua scheda.
 //
@@ -52,7 +56,7 @@ export function RigaDiStato({
   modificato,
   voci,
   fuoriTappa,
-  ricorsione,
+  ricorsioni,
   testi,
   vai,
   daiUnValore,
@@ -65,8 +69,8 @@ export function RigaDiStato({
   modificato: boolean;
   voci: readonly VoceDelControllo[];
   fuoriTappa: boolean;
-  /** I giri della ricorsione in parole, dopo la sintesi: un'informazione, non un errore. */
-  ricorsione?: string;
+  /** I giri della ricorsione in parole, una frase per giro, dopo la sintesi: un'informazione, non un errore. */
+  ricorsioni?: readonly string[];
   testi: Dizionario;
   /** Porta al blocco della voce (lo seleziona e gli dà il fuoco), o alla riga del dato. */
   vai: (voce: VoceDelControllo) => void;
@@ -81,7 +85,11 @@ export function RigaDiStato({
   zoom: { readonly scala: number; readonly azioni: Azioni; readonly stati?: Stati };
 }): ReactElement {
   const [aperto, setAperto] = useState(false);
+  const [ricorsioniAperte, setRicorsioniAperte] = useState(false);
   const idElenco = useId();
+  const idDelleRicorsioni = useId();
+  const altre = (ricorsioni?.length ?? 0) - 1;
+  const ricorsioniMostrate = ricorsioniAperte && altre > 0;
   const errori = voci.filter((v) => v.genere === "errore").length;
   const avvisi = voci.length - errori;
   const conteggio = (n: number, uno: string, molti: string) => (n === 1 ? uno : riempi(molti, { n: String(n) }));
@@ -99,13 +107,45 @@ export function RigaDiStato({
         {modificato && <span className={stili.modificato}> · {testi.statoModificato}</span>}
       </span>
       <span className={errori > 0 ? `${stili.sintesi} ${stili.conErrori}` : avvisi > 0 ? `${stili.sintesi} ${stili.conAvvisi}` : stili.sintesi}>{sintesi}</span>
-      {ricorsione !== undefined && (
-        <span className={stili.sintesi} data-ricorsione="">
-          {ricorsione}
+      {ricorsioni !== undefined && ricorsioni.length > 0 && (
+        <span className={`${stili.sintesi} ${stili.ricorsioni}`} data-ricorsione="" title={ricorsioni[0]}>
+          <span className={stili.frase}>{ricorsioni[0]}</span>
+          {altre > 0 && <span className={stili.altre}>{altre === 1 ? testi.ricorsioneUnAltra : riempi(testi.ricorsioniAltre, { n: String(altre) })}</span>}
         </span>
       )}
+      {altre > 0 && (
+        <button
+          type="button"
+          className={stili.comando}
+          aria-expanded={ricorsioniMostrate}
+          aria-controls={idDelleRicorsioni}
+          // Un elenco alla volta: si aprono nello stesso posto, sopra la riga.
+          onClick={() => {
+            setAperto(false);
+            setRicorsioniAperte((a) => !a);
+          }}
+        >
+          {ricorsioniMostrate ? testi.ricorsioniNascondi : testi.ricorsioniMostra}
+        </button>
+      )}
+      <ul id={idDelleRicorsioni} aria-label={testi.elencoDelleRicorsioni} className={stili.elenco} hidden={!ricorsioniMostrate} data-ricorsioni="">
+        {ricorsioni?.map((r, i) => (
+          <li key={i} className={stili.voce}>
+            {r}
+          </li>
+        ))}
+      </ul>
       {voci.length > 0 && (
-        <button type="button" className={stili.comando} aria-expanded={mostrato} aria-controls={idElenco} onClick={() => setAperto((a) => !a)}>
+        <button
+          type="button"
+          className={stili.comando}
+          aria-expanded={mostrato}
+          aria-controls={idElenco}
+          onClick={() => {
+            setRicorsioniAperte(false);
+            setAperto((a) => !a);
+          }}
+        >
           {mostrato ? testi.statoNascondi : testi.statoMostra}
         </button>
       )}

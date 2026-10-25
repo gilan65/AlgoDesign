@@ -1,14 +1,46 @@
 /* La riga di stato: una riga bassa in fondo alla finestra. L'elenco si apre sopra di lei, senza spostare le
-   viste (l'area del disegno non cambia). */
+   viste (l'area del disegno non cambia). Non si allarga oltre la finestra, e i suoi pezzi non vanno a capo: quando
+   manca posto si stringe la frase delle ricorsioni. */
 .riga {
   position: relative;
   display: flex;
   column-gap: 0.75rem;
   place-items: center;
+  min-width: 0;
   font-size: 0.85rem;
   line-height: 1.2;
   border-top: 1px solid var(--colore-riga);
   padding-top: 0.15rem;
+}
+
+.riga > :not(.elenco) {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* La frase della prima ricorsione coi puntini, e quante altre subito dopo, intere: si stringe per prima (poi il nome
+   del file, che ha i suoi puntini). */
+.riga > .ricorsioni {
+  display: inline-flex;
+  min-width: 0;
+  flex-shrink: 1000;
+}
+
+.riga > .file {
+  min-width: 0;
+  flex-shrink: 1;
+  white-space: pre;
+}
+
+.frase {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.altre {
+  flex-shrink: 0;
+  white-space: pre;
 }
 
 /* Un nome lungo si tronca coi puntini, su una riga (`pre`: un nome di file non ha a capo, e non va a capo

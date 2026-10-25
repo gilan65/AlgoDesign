@@ -725,10 +725,39 @@ export function Applicazione({
   // fermata.
   const [livelloScelto, setLivelloScelto] = useState<{ readonly stato: Esecuzione["stato"]; readonly livello: number } | null>(null);
   const livelloDelWatch = statoEs !== undefined && livelloScelto?.stato === statoEs ? livelloScelto.livello : undefined;
-  const fermaIlWatch = useCallback((nome: NomePuntato) => setFermo((f) => (f?.elemento === nome.elemento ? null : nome)), []);
+  // Il riquadro fermo aperto dalla tastiera (Maiusc+F9 su un blocco): il blocco, a cui il fuoco torna quando si chiude, e
+  // quale dei suoi nomi mostra; il clic su un nome lo apre dal puntatore del mouse.
+  const [fermoDaTastiera, setFermoDaTastiera] = useState<{ readonly blocco: SVGGElement; readonly indice: number } | null>(null);
+  const fermaIlWatch = useCallback((nome: NomePuntato) => {
+    setFermoDaTastiera(null);
+    setFermo((f) => (f?.elemento === nome.elemento ? null : nome));
+  }, []);
   const chiudiIlFermo = useCallback(() => setFermo(null), []);
   // Un oggetto solo per tutta la vita del riquadro fermo: il watch non si ridisegna a ogni fetta.
   const conIlFermo = useMemo(() => ({ chiudi: chiudiIlFermo }), [chiudiIlFermo]);
+  /** Maiusc+F9 su un blocco (o sulla fine di una funzione) durante l'esecuzione: il riquadro fermo del primo nome di un
+   * dato o di una funzione nel blocco, col fuoco; di nuovo, quello del nome dopo. I nomi sono quelli disegnati nel blocco,
+   * gli stessi su cui passa il puntatore del mouse; senza nomi, l'avviso. */
+  const watchDaTastiera = useCallback(
+    (blocco: SVGGElement) => {
+      const nomi = [...blocco.querySelectorAll<SVGGElement>("[data-watch-dato], [data-watch-funzione]")];
+      if (nomi.length === 0) {
+        setAvviso(testi.watchSenzaDati);
+        return;
+      }
+      const indice = fermo !== null && fermoDaTastiera?.blocco === blocco ? (fermoDaTastiera.indice + 1) % nomi.length : 0;
+      const g = nomi[indice]!;
+      const funzione = g.getAttribute("data-watch-funzione");
+      const chi = blocco.getAttribute("data-blocco") ?? blocco.getAttribute("data-restituisce");
+      setFermoDaTastiera({ blocco, indice });
+      setFermo(funzione !== null && chi !== null ? { dato: funzione, elemento: g, chiamataIn: chi } : { dato: g.getAttribute("data-watch-dato")!, elemento: g });
+    },
+    [fermo, fermoDaTastiera, testi],
+  );
+  const conLaTastiera = useMemo(
+    () => (fermoDaTastiera ? { ritorno: fermoDaTastiera.blocco, prossimo: () => watchDaTastiera(fermoDaTastiera.blocco) } : undefined),
+    [fermoDaTastiera, watchDaTastiera],
+  );
   const versioneDelWatch = versioneDellaTabella;
   const datoNelWatch = useMemo(
     () => (puntato && esecuzione && tabellaMostrata ? nelWatch(tabellaMostrata, esecuzione.traccia, puntato, funzioneDelWatch, livelloDelWatch) : undefined),
@@ -1935,6 +1964,14 @@ export function Applicazione({
     const b = blocco ? trova(progetto, blocco) : undefined;
     // Con un watch aperto, Esc chiude prima lui (lo ascolta il documento): un secondo Esc toglie la scelta.
     const qualcosaScelto = (scelto !== null || sceltoValore !== null) && puntato === null && fermo === null;
+    // Maiusc+F9: il watch dalla tastiera, finché i nomi nel disegno ci sono (durante l'esecuzione, e dopo la fine finché il
+    // progetto non cambia).
+    const conIlWatch = (e.target as Element).closest?.("[data-blocco], [data-restituisce]");
+    if (e.key === "F9" && e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && nomiNelDisegno && conIlWatch instanceof SVGGElement) {
+      e.preventDefault();
+      watchDaTastiera(conIlWatch);
+      return;
+    }
     if (inEsecuzione) {
       if (e.key === "Escape" && qualcosaScelto) {
         setSelezionato(null);
@@ -3266,7 +3303,9 @@ export function Applicazione({
           }}
         />
         </div>
-        {fermo && datoNelFermo && fermo.elemento.isConnected && <Watch key={fermo.dato} dato={datoNelFermo} sotto={fermo.elemento} testi={testi} fermo={conIlFermo} riferimento={riferimentoNelWatch(datoNelFermo)} />}
+        {fermo && datoNelFermo && fermo.elemento.isConnected && (
+          <Watch key={fermo.dato} dato={datoNelFermo} sotto={fermo.elemento} testi={testi} fermo={conIlFermo} riferimento={riferimentoNelWatch(datoNelFermo)} {...(conLaTastiera ? { tastiera: conLaTastiera } : {})} />
+        )}
         {puntato && datoNelWatch && puntato.elemento.isConnected && puntato.elemento !== fermo?.elemento && <Watch dato={datoNelWatch} sotto={puntato.elemento} testi={testi} riferimento={riferimentoNelWatch(datoNelWatch)} />}
         {inModifica && inScrittura && modo === "pannello" && editor(inScrittura)}
         {modo === "pannello" && campiDelValore}
@@ -3386,7 +3425,7 @@ export function Applicazione({
         modificato={modificato}
         voci={voci}
         fuoriTappa={controllo.fuoriTappa}
-        {...(giri.frasi.length > 0 ? { ricorsione: giri.frasi.join("; ") } : {})}
+        {...(giri.frasi.length > 0 ? { ricorsioni: giri.frasi } : {})}
         testi={testi}
         esecuzione={statoInParole}
         zoom={{ scala, azioni, stati }}

@@ -8,11 +8,14 @@
 // altri blocchi, le linee, i punti di unione, i «+» dei punti di inserimento, i bordi dei riquadri dei cicli; e
 // stanno nel disegno. Il pallino c'è solo sui blocchi dell'albero (l'intestazione di un ciclo, non le parti che il
 // riquadro aggiunge); la punta anche sulle parti, che sono il blocco corrente di una fase.
-// LIMITE DICHIARATO E CONTATO: coi cicli chiusi il pallino di un blocco vicino al lato sinistro di un riquadro
-// annidato tocca il bordo del riquadro che lo contiene (il margine è 12 px, il pallino ne chiede 20): i casi si
-// contano, e un tocco diverso da quello resta un difetto.
-// Controllo positivo: le premesse contate (blocchi, condizioni, etichette, linee) e un pallino messo apposta
-// sull'etichetta «Falso» del primo rombo, che il rilevatore deve vedere.
+// Lo stesso per il «↩» della ripresa (anche contro il pallino dello stesso blocco) e per il bollino di un errore o di un
+// avviso, che sta per costruzione su un angolo della sua forma (l'intestazione sul bordo del suo riquadro): per lui non
+// contano la sua forma e il bordo del suo riquadro, contano il pallino dello stesso blocco e i «+» (il bollino c'è anche
+// mentre si modifica).
+// Controllo positivo: le premesse contate (blocchi, condizioni, etichette, linee), un pallino messo apposta
+// sull'etichetta «Falso» del primo rombo, che il rilevatore deve vedere, e per ogni segno la posizione di prima su un
+// disegno del corpus dove toccava: il pallino coi cicli chiusi col margine di 12 px, il «↩» in basso a destra, il bollino
+// dell'intestazione in alto a destra.
 //
 // CHE COSA NON GUARDA:
 // - la misura vera del testo: qui quella delle prove dell'impaginazione (per carattere); nei motori il testo è
@@ -27,12 +30,12 @@ import { expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { alberoGenerato, progettoGenerato } from "../../core/disegno/alberi-di-prova";
-import { impagina, opzioniPredefinite, type Disegno, type MisuraDelTesto, type TestiDelDisegno } from "../../core/disegno/impaginazione";
+import { impagina, opzioniPredefinite, type Disegno, type Elemento, type MisuraDelTesto, type TestiDelDisegno } from "../../core/disegno/impaginazione";
 import { geometriaPredefinita } from "../../core/disegno/tema";
 import { cicliEn, cicliIt, funzioniEn, funzioniIt } from "../../core/esecuzione/testi-di-prova";
 import { apri } from "../../core/progetto/formato";
 import { tipi, type Dato, type Funzione } from "../../core/progetto/modello";
-import { pallino, punta, RAGGIO_DEL_PALLINO, ripresa } from "./segni";
+import { bollino, pallino, punta, RAGGIO_DEL_BOLLINO, RAGGIO_DEL_PALLINO, ripresa } from "./segni";
 import { testiDelDisegno } from "./testi";
 
 test("le parole dei cicli e delle funzioni che le prove del disegno usano sono quelle dei dizionari, nelle due lingue", () => {
@@ -108,14 +111,6 @@ const disegni = (condizioniLunghe: "su-due-righe" | "su-una-riga") => [
     formeDeiCicli.map((f) => ({ nome, forma: `${f.per}/${f.perOgni}`, d: impagina(funzione, tema, misura, testi, { ...opzioniPredefinite, condizioniLunghe, ...f }, [], delProgetto) })),
   ),
 ];
-/** Il limite dichiarato: coi cicli chiusi, il pallino sul bordo del riquadro che contiene quello del blocco. */
-// 191 sugli alberi delle tappe 1 e 2, 156 su quelli coi salti (la stessa specie: cicli chiusi annidati).
-const TOCCHI_DEL_BORDO_CHIUSI = 347;
-/** Il limite dichiarato del «↩» della ripresa, misurato su 53 680 blocchi: la posizione si decide più avanti. */
-const TOCCHI_DEL_SEGNO_DELLA_RIPRESA = {
-  difetti: 9666,
-  specie: { "il bordo del disegno": 2334, "il bordo di un riquadro": 6783, "un altro blocco": 58, "un'etichetta": 10, "una linea": 771 },
-};
 
 type P = { readonly x: number; readonly y: number };
 type R = { readonly x: number; readonly y: number; readonly larghezza: number; readonly altezza: number };
@@ -162,11 +157,12 @@ function toccaSegmento(s: Segno, a: P, b: P): boolean {
 
 /** Che cosa tocca il segno, nel disegno: un elenco vuoto se nulla. La punta del blocco corrente sta per
  * costruzione sulla linea che entra e tocca il vertice: con `entrata` (il punto dove la linea entra) quella linea
- * e la forma del blocco non contano. */
-function ostacoli(d: Disegno, id: string, s: Segno, entrata?: P, inEsecuzione = entrata !== undefined): string[] {
+ * e la forma del blocco non contano. Con `suo` (il bollino) non contano la forma di quell'elemento e il bordo del suo
+ * riquadro. */
+function ostacoli(d: Disegno, id: string, s: Segno, entrata?: P, inEsecuzione = entrata !== undefined, suo?: Elemento): string[] {
   const fuori: string[] = [];
   for (const e of d.elementi) {
-    if (entrata && e.id === id) continue;
+    if ((entrata && e.id === id) || e === suo) continue;
     const forma = e.id === id && e.forma === "condizione" ? e.vertici : angoli(e.riquadro);
     if (tocca(s, forma)) fuori.push(e.id === id ? "la sua forma" : `il blocco ${e.id}`);
   }
@@ -176,7 +172,7 @@ function ostacoli(d: Disegno, id: string, s: Segno, entrata?: P, inEsecuzione = 
     if (entrata && Math.hypot(fine.x - entrata.x, fine.y - entrata.y) < 1) return;
     for (let i = 1; i < c.punti.length; i++) if (toccaSegmento(s, c.punti[i - 1]!, c.punti[i]!)) return void fuori.push(`la linea ${k}`);
   });
-  for (const r of d.riquadri) if (lati(angoli(r.bordo)).some(([a, b]) => toccaSegmento(s, a, b))) fuori.push(`il bordo del riquadro di ${r.blocco}`);
+  for (const r of d.riquadri) if (!(suo && r.blocco === id) && lati(angoli(r.bordo)).some(([a, b]) => toccaSegmento(s, a, b))) fuori.push(`il bordo del riquadro di ${r.blocco}`);
   for (const u of d.ricongiungimenti) if (tocca(s, angoli({ x: u.centro.x - u.raggio, y: u.centro.y - u.raggio, larghezza: 2 * u.raggio, altezza: 2 * u.raggio }))) fuori.push("un punto di unione");
   // Durante l'esecuzione i «+» non ci sono (sola lettura), e solo allora c'è un blocco corrente: per la punta non contano.
   if (!inEsecuzione) for (const p of d.punti) if (tocca(s, angoli({ x: p.x - PIU / 2, y: p.y - PIU / 2, larghezza: PIU, altezza: PIU }))) fuori.push("un «+»");
@@ -187,7 +183,7 @@ function ostacoli(d: Disegno, id: string, s: Segno, entrata?: P, inEsecuzione = 
 
 test("il pallino del punto di interruzione non tocca nulla del disegno, in ogni albero e su ogni blocco che si esegue", () => {
   const difetti: string[] = [];
-  const conti = { disegni: 0, blocchi: 0, condizioni: 0, commenti: 0, etichette: 0, linee: 0, intestazioni: 0, riquadri: 0, bordiChiusi: 0 };
+  const conti = { disegni: 0, blocchi: 0, condizioni: 0, commenti: 0, etichette: 0, linee: 0, intestazioni: 0, riquadri: 0 };
   for (const condizioniLunghe of ["su-due-righe", "su-una-riga"] as const)
     for (const { nome, forma, d } of disegni(condizioniLunghe)) {
       conti.disegni++;
@@ -206,21 +202,17 @@ test("il pallino del punto di interruzione non tocca nulla del disegno, in ogni 
         if (e.fase !== undefined) continue;
         conti.blocchi++;
         if (e.forma === "intestazione") conti.intestazioni++;
-        const tocchi = ostacoli(d, e.id, { cerchio: pallino(e), raggio: RAGGIO_DEL_PALLINO });
-        // Il limite dichiarato: coi cicli chiusi, il bordo di un altro riquadro.
-        const altroBordo = (o: string) => forma === "chiuso/chiuso" && o.startsWith("il bordo del riquadro di ") && !o.endsWith(` di ${e.id}`);
-        if (tocchi.some(altroBordo)) conti.bordiChiusi++;
-        const p = tocchi.filter((o) => !altroBordo(o));
+        const p = ostacoli(d, e.id, { cerchio: pallino(e), raggio: RAGGIO_DEL_PALLINO });
         if (p.length > 0) difetti.push(`${nome} ${forma} ${condizioniLunghe} ${e.id} (${e.forma}): il pallino tocca ${p.join(", ")}`);
       }
     }
-  console.log(`pallini: disegni ${conti.disegni}, blocchi ${conti.blocchi}, condizioni ${conti.condizioni}, intestazioni ${conti.intestazioni}, riquadri ${conti.riquadri}, commenti saltati ${conti.commenti}, etichette ${conti.etichette}, linee ${conti.linee}; sul bordo di un altro riquadro coi cicli chiusi ${conti.bordiChiusi}; difetti ${difetti.length}`);
+  console.log(`pallini: disegni ${conti.disegni}, blocchi ${conti.blocchi}, condizioni ${conti.condizioni}, intestazioni ${conti.intestazioni}, riquadri ${conti.riquadri}, commenti saltati ${conti.commenti}, etichette ${conti.etichette}, linee ${conti.linee}; difetti ${difetti.length}`);
   // Le premesse: alberi con condizioni, etichette, linee, commenti e cicli.
   expect(conti.condizioni).toBeGreaterThan(100);
   expect(conti.commenti).toBeGreaterThan(0);
   expect(conti.intestazioni).toBeGreaterThan(500);
   expect(conti.etichette).toBe(2 * conti.condizioni);
-  expect({ difetti: difetti.length, primi: difetti.slice(0, 12), bordiChiusi: conti.bordiChiusi }).toEqual({ difetti: 0, primi: [], bordiChiusi: TOCCHI_DEL_BORDO_CHIUSI });
+  expect({ difetti: difetti.length, primi: difetti.slice(0, 12) }).toEqual({ difetti: 0, primi: [] });
 }, 30_000);
 
 test("la punta del blocco corrente non tocca nulla del disegno oltre alla linea che entra, né il pallino dello stesso blocco, in ogni albero", () => {
@@ -261,7 +253,9 @@ test("il «↩» della ripresa non tocca nulla del disegno e ci sta dentro, su o
       for (const e of d.elementi) {
         if (e.forma === "commento") continue;
         blocchi++;
-        const o = ostacoli(d, e.id, { triangolo: angoli(ripresa(e).riquadro) }, undefined, true);
+        const glifo = { triangolo: angoli(ripresa(e).riquadro) };
+        const o = ostacoli(d, e.id, glifo, undefined, true);
+        if (e.fase === undefined && tocca({ cerchio: pallino(e), raggio: RAGGIO_DEL_PALLINO }, glifo.triangolo)) o.push("il pallino dello stesso blocco");
         if (o.length > 0) difetti.push(`${nome} ${forma} ${condizioniLunghe} ${e.id}${e.fase ? `:${e.fase}` : ""} (${e.forma}): il «↩» tocca ${o.join(", ")}`);
         // La specie: il bordo del disegno, il bordo di un riquadro, una linea, un blocco, un'etichetta.
         const di = (x: string) => (x.startsWith("il bordo del riquadro") ? "il bordo di un riquadro" : x.startsWith("la linea") ? "una linea" : x.startsWith("il blocco") ? "un altro blocco" : x.startsWith("l'etichetta") ? "un'etichetta" : x);
@@ -270,9 +264,30 @@ test("il «↩» della ripresa non tocca nulla del disegno e ci sta dentro, su o
     }
   console.log(`riprese: blocchi ${blocchi}; difetti ${difetti.length}${[...specie].map(([k, n]) => `; ${n} ${k}`).join("")}`);
   expect(blocchi).toBeGreaterThan(7000);
-  // Il limite dichiarato: la posizione del segno si decide più avanti; fino ad allora i tocchi di oggi sono fissati
-  // specie per specie, e un cambiamento in un verso o nell'altro fa rossa la prova.
-  expect({ difetti: difetti.length, specie: Object.fromEntries(specie) }).toEqual(TOCCHI_DEL_SEGNO_DELLA_RIPRESA);
+  expect({ difetti: difetti.length, primi: difetti.slice(0, 12) }).toEqual({ difetti: 0, primi: [] });
+}, 150_000);
+
+test("il bollino di un errore non tocca nulla del disegno fuori dalla sua forma e ci sta dentro, su ogni blocco che si esegue, in ogni albero", () => {
+  // Il bollino c'è mentre si modifica (coi «+») e in esecuzione, su ogni blocco dell'albero che si esegue (le parti che il
+  // riquadro di un ciclo aggiunge non hanno segni: il segno è sull'intestazione).
+  const difetti: string[] = [];
+  const specie = new Map<string, number>();
+  let blocchi = 0;
+  for (const condizioniLunghe of ["su-due-righe", "su-una-riga"] as const)
+    for (const { nome, forma, d } of disegni(condizioniLunghe)) {
+      for (const e of d.elementi) {
+        if (e.forma === "commento" || e.fase !== undefined) continue;
+        blocchi++;
+        const s = { cerchio: bollino(e), raggio: RAGGIO_DEL_BOLLINO };
+        const o = ostacoli(d, e.id, s, undefined, false, e);
+        if (tocca(s, angoli({ x: pallino(e).x - RAGGIO_DEL_PALLINO, y: pallino(e).y - RAGGIO_DEL_PALLINO, larghezza: 2 * RAGGIO_DEL_PALLINO, altezza: 2 * RAGGIO_DEL_PALLINO }))) o.push("il pallino dello stesso blocco");
+        if (o.length > 0) difetti.push(`${nome} ${forma} ${condizioniLunghe} ${e.id} (${e.forma}): il bollino tocca ${o.join(", ")}`);
+        for (const x of new Set(o.map((y) => y.split(" ").slice(0, 2).join(" ")))) specie.set(`${e.forma}: ${x}`, (specie.get(`${e.forma}: ${x}`) ?? 0) + 1);
+      }
+    }
+  console.log(`bollini: blocchi ${blocchi}; difetti ${difetti.length}${[...specie].map(([k, n]) => `; ${n} ${k}`).join("")}`);
+  expect(blocchi).toBeGreaterThan(7000);
+  expect({ difetti: difetti.length, primi: difetti.slice(0, 12) }).toEqual({ difetti: 0, primi: [] });
 }, 150_000);
 
 test("controllo positivo: un pallino sull'etichetta «Falso» del primo rombo, e uno sulla linea che entra, si vedono", () => {
@@ -290,4 +305,27 @@ test("controllo positivo: un pallino sull'etichetta «Falso» del primo rombo, e
   const r = c.riquadri[0]!;
   const sulBordo = { x: r.bordo.x, y: r.bordo.y + r.bordo.altezza / 2 };
   expect(ostacoli(c, "nessuno", { cerchio: sulBordo, raggio: RAGGIO_DEL_PALLINO })).toContain(`il bordo del riquadro di ${r.blocco}`);
+});
+
+test("controllo positivo: le posizioni di prima dei tre segni toccano, su disegni del corpus", () => {
+  const coiPer = conICicli.find((f) => f.nome === "riferimento-media-voti-per.algo")!.funzione;
+  // Il pallino coi cicli chiusi e il margine di prima (12 px): sul blocco «scrivi "Voto ignorato: "…» tocca il bordo
+  // del riquadro del «per» che lo contiene.
+  const chiusi = { ...opzioniPredefinite, per: "chiuso", perOgni: "chiuso" } as const;
+  const conDodici = impagina(coiPer, { ...tema, margineRiquadroChiuso: 12 }, misura, testi, chiusi);
+  const scrive = conDodici.elementi.find((e) => e.id === "b14")!;
+  expect(ostacoli(conDodici, "b14", { cerchio: pallino(scrive), raggio: RAGGIO_DEL_PALLINO })).toContain("il bordo del riquadro di b7");
+  expect(ostacoli(impagina(coiPer, tema, misura, testi, chiusi), "b14", { cerchio: pallino(impagina(coiPer, tema, misura, testi, chiusi).elementi.find((e) => e.id === "b14")!), raggio: RAGGIO_DEL_PALLINO })).toEqual([]);
+  // Il bollino dell'intestazione del primo «per» (aperto) in alto a destra, come prima: tocca la linea che entra.
+  const aperti = impagina(coiPer, tema, misura, testi, opzioniPredefinite);
+  const intestazione = aperti.elementi.find((e) => e.id === "b7" && e.forma === "intestazione")!;
+  const inAltoADestra = { x: Math.max(...intestazione.vertici.map((v) => v.x)), y: Math.min(...intestazione.vertici.map((v) => v.y)) };
+  expect(ostacoli(aperti, "b7", { cerchio: inAltoADestra, raggio: RAGGIO_DEL_BOLLINO }, undefined, false, intestazione).some((o) => o.startsWith("la linea"))).toBe(true);
+  // Il «↩» in basso a destra, come prima, sulla stessa intestazione: tocca il bordo del suo riquadro.
+  const { x, y, larghezza, altezza } = intestazione.riquadro;
+  expect(ostacoli(aperti, "b7", { triangolo: angoli({ x: x + larghezza + 4, y: y + altezza + 4 - 16, larghezza: 20, altezza: 20 }) }, undefined, true)).toContain("il bordo del riquadro di b7");
+  // E sotto la fine, col margine in basso di prima (20 px), esce dal disegno.
+  const conVenti = impagina(coiPer, { ...tema, margineInBasso: 20 }, misura, testi, opzioniPredefinite);
+  const fine = conVenti.elementi.find((e) => e.forma === "fine")!;
+  expect(ostacoli(conVenti, fine.id, { triangolo: angoli(ripresa(fine).riquadro) }, undefined, true)).toContain("il bordo del disegno");
 });

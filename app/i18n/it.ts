@@ -535,6 +535,12 @@ export const it = {
   ricorsioneChiama: "{chi} chiama «{nome}»",
   ricorsioneChePoi: ", che chiama «{nome}»",
   ricorsioneDiNuovo: ", che chiama di nuovo «{nome}»",
+  // Nella riga di stato, dopo la prima frase, quante altre ricorsioni ha il progetto; l'elenco le mostra tutte.
+  ricorsioneUnAltra: ", e un'altra ricorsione",
+  ricorsioniAltre: ", e altre {n} ricorsioni",
+  ricorsioniMostra: "Mostra le ricorsioni",
+  ricorsioniNascondi: "Nascondi le ricorsioni",
+  elencoDelleRicorsioni: "Le ricorsioni del progetto",
   menuDellaFunzione: "Comandi di «{nome}»",
   menuApri: "Apri",
   menuRinomina: "Rinomina…",
@@ -914,6 +920,9 @@ export const it = {
   watchFunzione: "{nome}(…)",
   watchNonChiamata: "Non ha ancora restituito un valore qui",
   watchChiamataNumero: "Chiamata {n}",
+  // Maiusc+F9 su un blocco: senza nomi di dati, l'avviso; nel riquadro aperto così, la descrizione per gli ausili.
+  watchSenzaDati: "Nel blocco non ci sono dati di cui mostrare il valore.",
+  watchDaTastiera: "Maiusc+F9 mostra il dato dopo del blocco; Esc chiude.",
   tracciaTolte: "Le prime {n} righe non sono più nella tabella: restano le ultime 1000.",
   tracciaTolta: "La prima riga non è più nella tabella: restano le ultime 1000.",
   /** La riga sopra la tabella per un vettore oltre il tetto delle colonne: {nome} il dato, {n} gli elementi, {primi}

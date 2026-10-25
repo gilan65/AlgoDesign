@@ -105,13 +105,24 @@ const fermi = (n: number): readonly boolean[] => {
   return f;
 };
 
+/** Per la fotografia di una chiamata, l'elenco di «nessun cambio» di ogni suo dato: uno solo, condiviso dalle righe in cui
+ * la chiamata resta la stessa. */
+const nessunCambioDi = new WeakMap<FotografiaDiUnaChiamata, readonly (readonly boolean[])[]>();
+
 /** Gli elementi cambiati di una chiamata attiva: rispetto a prima se era la stessa chiamata, altrimenti (appena
- * saltati) ogni elemento con un valore. */
-const cambiatiInUnaChiamata = (c: FotografiaDiUnaChiamata, prima: FotografiaDiUnaChiamata | undefined): readonly (readonly boolean[])[] =>
-  c.valori.map((elementi, d) => {
+ * saltati) ogni elemento con un valore. La fotografia rimasta la stessa (l'interprete la rifà solo se una sua cella è
+ * cambiata) non ha cambi: con molte chiamate in corso quasi tutte sono così, e a ogni riga non si rifà nulla per loro. */
+const cambiatiInUnaChiamata = (c: FotografiaDiUnaChiamata, prima: FotografiaDiUnaChiamata | undefined): readonly (readonly boolean[])[] => {
+  if (c === prima) {
+    let f = nessunCambioDi.get(c);
+    if (f === undefined) nessunCambioDi.set(c, (f = Object.freeze(c.valori.map((elementi) => fermi(elementi.length)))));
+    return f;
+  }
+  return c.valori.map((elementi, d) => {
     if (prima === undefined || prima.numero !== c.numero) return elementi.map((v) => v !== undefined);
     return elementi === prima.valori[d] ? fermi(elementi.length) : elementi.map((v, i) => !uguali(v, prima.valori[d]![i]));
   });
+};
 
 /** Le posizioni cambiate di una chiamata attiva coi `per ogni`: rispetto a prima se era la stessa chiamata, altrimenti
  * (appena saltati) quelle che ci sono. */
