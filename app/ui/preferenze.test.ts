@@ -2,7 +2,7 @@
 // limiti coi loro intervalli (vettori e stringhe fino a 1000, i caratteri di un vettore di stringhe fino a 10 000), i separatori del CSV, la
 // velocità dell'esecuzione animata, la forma dei vettori nella tabella e quella del CSV, le righe lunghe della console
 // e i suoi caratteri per riga (da 50 a 1000), le forme dei cicli nel flowchart e il fondo del loro riquadro, i colori dei
-// generi di blocco.
+// generi di blocco, la ricerca e la finestra della guida.
 //
 // CHE COSA NON GUARDA: le Impostazioni a schermo (i campi e i messaggi: `e2e/impostazioni.e2e.ts`)
 // né il file sul disco (lo scrive il guscio: `cargo test`).
@@ -42,6 +42,9 @@ const tutte = {
   chiusuraAutomatica: false,
   domandaNellaLettura: true,
   offriCasoDallEsecuzione: false,
+  // I valori diversi dai predefiniti (la ricerca accesa, la guida fissa), perché il ritorno si veda.
+  ricercaNellaGuida: false,
+  guidaSpostabile: true,
 };
 
 test("la presentazione dei pulsanti: tre valori, il predefinito è il testo sotto l'icona, e i due di prima valgono così come sono scritti", () => {
@@ -103,6 +106,8 @@ const rotti: Record<string, readonly unknown[]> = {
   chiusuraAutomatica: ["no", 0, null],
   domandaNellaLettura: ["sì", 1, null],
   offriCasoDallEsecuzione: ["no", 0, null],
+  ricercaNellaGuida: ["sì", 1, null],
+  guidaSpostabile: ["no", 0, null],
 };
 
 test("un campo rotto scarta lui solo: gli altri restano", () => {
@@ -119,7 +124,7 @@ test("un campo rotto scarta lui solo: gli altri restano", () => {
     }
   // Ogni campo del file ha le sue prove (i limiti hanno la loro).
   expect(Object.keys(rotti).sort()).toEqual(Object.keys(tutte).filter((k) => k !== "limiti").sort());
-  expect(provati).toBe(103);
+  expect(provati).toBe(109);
 });
 
 test("un limite rotto scarta lui solo, e un oggetto dei limiti rotto li scarta tutti e tre", () => {
@@ -235,4 +240,14 @@ test("il comando che salva un'esecuzione come caso d'uso: acceso di partenza e i
   expect(scelteIniziali.offriCasoDallEsecuzione).toBe(true);
   expect(preferenzeDa({ lingua: "it" }).scelte.offriCasoDallEsecuzione).toBe(true);
   for (const v of [true, false]) expect(fileDa("it", preferenzeDa({ offriCasoDallEsecuzione: v }).scelte).offriCasoDallEsecuzione).toBe(v);
+});
+
+test("la guida: la ricerca accesa e la finestra fissa di partenza, anche in un file scritto prima che le scelte esistessero; ogni valore torna uguale", () => {
+  expect([scelteIniziali.ricercaNellaGuida, scelteIniziali.guidaSpostabile]).toEqual([true, false]);
+  const { scelte } = preferenzeDa({ lingua: "it" });
+  expect([scelte.ricercaNellaGuida, scelte.guidaSpostabile]).toEqual([true, false]);
+  for (const v of [true, false]) {
+    const letto = fileDa("it", preferenzeDa({ ricercaNellaGuida: v, guidaSpostabile: v }).scelte);
+    expect([letto.ricercaNellaGuida, letto.guidaSpostabile]).toEqual([v, v]);
+  }
 });

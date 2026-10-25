@@ -307,7 +307,7 @@ test("una voce non disponibile si raggiunge dalla tastiera e non fa nulla, né c
 /** Versione e data come le dice il file, letto qui dal disco (non dal programma che le mostra). */
 const pacchetto = JSON.parse(readFileSync(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8")) as { version: string; dataDiRilascio: string };
 
-test("il menu «Aiuto» è l'ultimo della barra, alla destra di «Impostazioni», con «Esempi…» e «Informazioni su AlgoDesign»; le informazioni dicono la versione dei file, ed Esc rimette il fuoco sul pulsante del menu", async ({ page }) => {
+test("il menu «Aiuto» è l'ultimo della barra, alla destra di «Impostazioni», con la guida, «Esempi…» e «Informazioni su AlgoDesign»; le informazioni dicono la versione dei file, ed Esc rimette il fuoco sul pulsante del menu", async ({ page }) => {
   await apriVuota(page, { lingua: "it" });
   const barra = page.getByRole("banner");
   const aiuto = barra.getByRole("button", { name: it.menuAiuto, exact: true });
@@ -333,7 +333,7 @@ test("il menu «Aiuto» è l'ultimo della barra, alla destra di «Impostazioni»
   await expect(menuAiuto).toBeVisible();
   await fuocoNelMenu(page);
   const voci = await menuAiuto.getByRole("menuitem").evaluateAll((v) => v.map((x) => `${x.getAttribute("data-comando")}: ${x.querySelector("[data-testo]")?.textContent}`));
-  expect(voci).toEqual([`esempi: ${it.esempi}`, `informazioni: ${it.informazioni}`]);
+  expect(voci).toEqual([`guida: ${it.guida}`, `esempi: ${it.esempi}`, `informazioni: ${it.informazioni}`]);
 
   // Dalla tastiera: Fine sull'ultima voce, Invio apre le informazioni; Esc le chiude e il fuoco torna al pulsante.
   await page.keyboard.press("End");

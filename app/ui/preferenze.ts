@@ -94,6 +94,10 @@ export interface Scelte {
   readonly domandaNellaLettura: boolean;
   /** A esecuzione finita, il comando che la salva come caso d'uso: nella console e nella scheda dei casi. */
   readonly offriCasoDallEsecuzione: boolean;
+  /** Nella guida per lo studente, la ricerca sopra il testo. */
+  readonly ricercaNellaGuida: boolean;
+  /** La finestra della guida si sposta dal titolo e si ridimensiona dall'angolo; altrimenti sta fissa a destra. */
+  readonly guidaSpostabile: boolean;
 }
 
 export const scelteIniziali: Scelte = {
@@ -126,6 +130,8 @@ export const scelteIniziali: Scelte = {
   chiusuraAutomatica: true,
   domandaNellaLettura: false,
   offriCasoDallEsecuzione: true,
+  ricercaNellaGuida: true,
+  guidaSpostabile: false,
 };
 
 export const voci = {
@@ -252,6 +258,8 @@ export function preferenzeDa(file: unknown): { lingua: Lingua | undefined; scelt
       chiusuraAutomatica: typeof f.chiusuraAutomatica === "boolean" ? f.chiusuraAutomatica : scelteIniziali.chiusuraAutomatica,
       domandaNellaLettura: typeof f.domandaNellaLettura === "boolean" ? f.domandaNellaLettura : scelteIniziali.domandaNellaLettura,
       offriCasoDallEsecuzione: typeof f.offriCasoDallEsecuzione === "boolean" ? f.offriCasoDallEsecuzione : scelteIniziali.offriCasoDallEsecuzione,
+      ricercaNellaGuida: typeof f.ricercaNellaGuida === "boolean" ? f.ricercaNellaGuida : scelteIniziali.ricercaNellaGuida,
+      guidaSpostabile: typeof f.guidaSpostabile === "boolean" ? f.guidaSpostabile : scelteIniziali.guidaSpostabile,
     },
   };
 }
@@ -289,6 +297,8 @@ export function fileDa(lingua: Lingua, s: Scelte): Record<string, unknown> {
     chiusuraAutomatica: s.chiusuraAutomatica,
     domandaNellaLettura: s.domandaNellaLettura,
     offriCasoDallEsecuzione: s.offriCasoDallEsecuzione,
+    ricercaNellaGuida: s.ricercaNellaGuida,
+    guidaSpostabile: s.guidaSpostabile,
   };
 }
 

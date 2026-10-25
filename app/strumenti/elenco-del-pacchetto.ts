@@ -14,6 +14,7 @@ export const elencoDelPacchetto: readonly string[] = [
   "LEGGIMI.md",
   "NOTE-DI-RILASCIO.md",
   "GUIDA-PER-LO-STUDENTE.md",
+  "STUDENT-GUIDE.md",
   "CHANGELOG.md",
   "LICENSE",
   "LICENSE-DOCS",
@@ -30,8 +31,9 @@ export const testiDelPacchetto: readonly string[] = ["NOTE-DI-RILASCIO.md"];
  * versione del prodotto. */
 export const documentiDellaRadice: readonly string[] = ["README.md", "LEGGIMI.md"];
 
-/** I documenti del repository che il pacchetto copia così come sono, dalla cartella `docs/`. */
-export const documentiDelPacchetto: readonly string[] = ["GUIDA-PER-LO-STUDENTE.md"];
+/** I documenti del repository che il pacchetto copia così come sono, dalla cartella `docs/`: le due guide per lo
+ * studente, le stesse che la finestra «Guida» mostra (`ui/guida/guide.ts`, appaiate da `ui/guida/guida.test.ts`). */
+export const documentiDelPacchetto: readonly string[] = ["GUIDA-PER-LO-STUDENTE.md", "STUDENT-GUIDE.md"];
 
 export type NomiDelPacchetto = {
   versione: string;
@@ -64,6 +66,7 @@ export const elencoDiLinux: readonly string[] = [
   "ALGODESIGN-PER-LINUX.md",
   "NOTE-DI-RILASCIO.md",
   "GUIDA-PER-LO-STUDENTE.md",
+  "STUDENT-GUIDE.md",
   "CHANGELOG.md",
   "LICENSE",
   "LICENSE-DOCS",

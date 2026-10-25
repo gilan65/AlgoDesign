@@ -1521,7 +1521,7 @@ async function giroDelCodice(lingua: Lingua): Promise<void> {
   }
   if (esito.righe === 0) rosso("CODICE", "la colonna del codice non ha righe");
   if (esito.copiato === sentinella) rosso("CODICE", `«Copia» non ha cambiato gli appunti di Windows (c'è ancora la sentinella); avviso «${esito.avviso}»`);
-  if ((esito.copiato ?? "").replaceAll("\r\n", "\n") !== esito.testo) rosso("CODICE", `negli appunti di Windows c'è ${visibile(esito.copiato ?? undefined)} invece del codice Python mostrato`);
+  if ((esito.copiato ?? "").replaceAll("\r\n", "\n") !== esito.testo) rosso("CODICE", `negli appunti di Windows c'è ${visibile(esito.copiato ?? undefined)} invece del codice Python mostrato; avviso «${esito.avviso}»`);
   if (!esito.avviso.startsWith("visto")) rosso("CODICE", `«Salva…» col progetto «con» non ha aperto l'avviso del nome (${esito.avviso})`);
   if (esito.campo !== "con (2)") rosso("CODICE", `nell'avviso il nome proposto è «${esito.campo}» invece di «con (2)»`);
   if (esito.compilata !== "salvato") rosso("CODICE", `la finestra del sistema per salvare il codice non è stata compilata: ${esito.compilata}`);

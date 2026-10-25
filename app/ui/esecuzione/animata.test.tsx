@@ -255,11 +255,16 @@ test("un altro progetto (Nuovo, Apri, un esempio) chiude l'esecuzione e rilascia
     [
       "un esempio",
       async () => {
-        // «Esempi…» è la prima voce del menu «Aiuto»: sotto happy-dom si sceglie dalla tastiera, non col clic.
+        // «Esempi…» è la seconda voce del menu «Aiuto», dopo la guida: sotto happy-dom si sceglie dalla tastiera, non col
+        // clic.
         await clic(document.querySelector('header [data-menu="aiuto"]'), "il menu «Aiuto»");
         await aspetta("il menu «Aiuto»", () => document.querySelector('[role="menu"]') !== null);
         await act(async () => {
           fireEvent.keyDown(document.querySelector('[role="menu"]')!, { key: "Home" });
+        });
+        await aspetta("«Guida per lo studente» evidenziata", () => document.querySelector('[data-highlighted][data-comando="guida"]') !== null);
+        await act(async () => {
+          fireEvent.keyDown(document.querySelector('[role="menu"]')!, { key: "ArrowDown" });
         });
         await aspetta("«Esempi…» evidenziata", () => document.querySelector('[data-highlighted][data-comando="esempi"]') !== null);
         await act(async () => {

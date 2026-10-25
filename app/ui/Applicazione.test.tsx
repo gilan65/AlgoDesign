@@ -29,18 +29,21 @@ const RIFERIMENTO = it.esempioMediaVoti;
 /** I fotogrammi e i timer in attesa (happy-dom), e gli aggiornamenti di React. */
 const giro = () => act(async () => await new Promise((r) => setTimeout(r, 20)));
 
-/** Una voce del menu «Aiuto», la prima (Inizio) o l'ultima (Fine): il menu si apre col clic sul suo pulsante e la voce
- * si sceglie dalla tastiera (sotto happy-dom il clic su una voce chiude il menu senza sceglierla). */
-async function voceDellAiuto(voce: "esempi" | "informazioni", testi = it): Promise<void> {
+/** Una voce del menu «Aiuto»: la prima, «Guida…» (Inizio), la seconda, «Esempi…» (Inizio e una freccia), o l'ultima
+ * (Fine): il menu si apre col clic sul suo pulsante e la voce si sceglie dalla tastiera (sotto happy-dom il clic su una
+ * voce chiude il menu senza sceglierla). */
+async function voceDellAiuto(voce: "guida" | "esempi" | "informazioni", testi = it): Promise<void> {
   await act(async () => {
     fireEvent.click(within(screen.getByRole("banner")).getByRole("button", { name: testi.menuAiuto }));
   });
   await giro();
   const menu = document.querySelector<HTMLElement>('[role="menu"]')!;
-  await act(async () => {
-    fireEvent.keyDown(menu, { key: voce === "esempi" ? "Home" : "End" });
-  });
-  await giro();
+  for (const tasto of voce === "informazioni" ? ["End"] : voce === "guida" ? ["Home"] : ["Home", "ArrowDown"]) {
+    await act(async () => {
+      fireEvent.keyDown(menu, { key: tasto });
+    });
+    await giro();
+  }
   expect(document.querySelector("[data-highlighted]")?.getAttribute("data-comando")).toBe(voce);
   await act(async () => {
     fireEvent.keyDown(menu, { key: "Enter" });

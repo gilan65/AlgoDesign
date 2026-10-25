@@ -387,6 +387,17 @@ function Contenuto({
             lang={(l) => l}
             cambia={(lingua) => setBozza((b) => ({ ...b, lingua }))}
           />
+          <fieldset className={stili.scelta}>
+            <legend>{testi.guidaTitolo}</legend>
+            <label className={stili.opzione}>
+              <input type="checkbox" checked={s.ricercaNellaGuida} onChange={(e) => cambia({ ricercaNellaGuida: e.target.checked })} />
+              {testi.ricercaNellaGuida}
+            </label>
+            <label className={stili.opzione}>
+              <input type="checkbox" checked={s.guidaSpostabile} onChange={(e) => cambia({ guidaSpostabile: e.target.checked })} />
+              {testi.guidaSpostabile}
+            </label>
+          </fieldset>
         </Tabs.Content>
         <Tabs.Content value="modifica" className={stili.scheda}>
           <Opzioni

@@ -1,0 +1,173 @@
+/* La finestra «Guida»: a destra, sopra il resto dell'app ma sotto le finestre che chiedono (strato 20), e sopra la
+   barretta dell'esecuzione (15) e i campi di un blocco (10). Dentro, l'indice dei capitoli a sinistra e il testo a
+   destra, ognuno che scorre da sé. */
+.guida {
+  position: fixed;
+  z-index: 18;
+  display: grid;
+  grid-template: auto minmax(0px, 1fr) auto / minmax(0px, 1fr);
+  row-gap: 0.6rem;
+  box-sizing: border-box;
+  padding: 0.75rem 0.9rem;
+  color: var(--colore-testo);
+  background: var(--colore-sfondo);
+  border: 1px solid var(--disegno-bordo);
+  border-radius: 8px;
+  box-shadow: 0px 8px 24px rgb(0 0 0 / 0.25);
+}
+
+/* Con l'impostazione «si sposta e si ridimensiona»: il titolo è la maniglia, l'angolo in basso allarga e stringe. */
+.spostabile {
+  resize: both;
+  overflow: hidden;
+  min-inline-size: 22rem;
+  min-block-size: 16rem;
+  max-inline-size: calc(100vw - 1rem);
+  max-block-size: calc(100vh - 1rem);
+}
+
+.titolo {
+  margin: 0px;
+  font-size: 1.05rem;
+}
+
+.spostabile > .titolo {
+  cursor: move;
+  user-select: none;
+}
+
+.corpo {
+  display: grid;
+  grid-template: minmax(0px, 1fr) / minmax(9rem, 13rem) minmax(0px, 1fr);
+  column-gap: 0.75rem;
+  min-block-size: 0px;
+}
+
+.indice {
+  overflow: auto;
+  padding-inline-end: 0.4rem;
+  border-inline-end: 1px solid var(--colore-riga);
+}
+
+.indice > ul {
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+}
+
+.voce {
+  display: block;
+  width: 100%;
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  color: var(--colore-testo);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 0.3rem 0.4rem;
+  cursor: pointer;
+}
+
+.voce:hover {
+  background: var(--colore-sopra);
+}
+
+.voce:focus-visible,
+.testo:focus-visible {
+  outline: 2px solid var(--colore-accento);
+}
+
+/* La ricerca, se c'è, sopra il testo. */
+.colonna {
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.5rem;
+  min-block-size: 0px;
+}
+
+.ricerca {
+  display: flex;
+  column-gap: 0.6rem;
+  align-items: center;
+}
+
+.ricerca > input {
+  flex: 0 1 20rem;
+  min-inline-size: 0px;
+}
+
+.trovate {
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+/* Il testo della guida: righe di lettura comoda, titoli che separano, tabelle col bordo. */
+.testo {
+  flex: 1;
+  min-block-size: 0px;
+  overflow: auto;
+  padding: 0px 0.6rem 1rem 0.2rem;
+  line-height: 1.5;
+}
+
+.testo > :first-child {
+  margin-top: 0px;
+}
+
+.testo h2 {
+  margin: 1.6rem 0px 0.6rem;
+  font-size: 1.2rem;
+  scroll-margin-top: 0.5rem;
+}
+
+.testo h3 {
+  margin: 1.2rem 0px 0.4rem;
+  font-size: 1.02rem;
+}
+
+.testo p,
+.testo ul,
+.testo ol {
+  margin: 0.5rem 0px;
+}
+
+.testo li {
+  margin: 0.2rem 0px;
+}
+
+.testo code {
+  font-family: var(--carattere-codice);
+  font-size: 0.92em;
+  padding: 0px 0.2rem;
+  border-radius: 3px;
+  background: var(--colore-sopra);
+}
+
+.testo table {
+  border-collapse: collapse;
+  margin: 0.6rem 0px;
+  font-size: 0.92rem;
+}
+
+.testo th,
+.testo td {
+  border: 1px solid var(--colore-riga);
+  padding: 0.25rem 0.5rem;
+  vertical-align: top;
+  text-align: start;
+}
+
+.testo th {
+  background: var(--colore-sopra);
+}
+
+/* Le parole trovate dalla ricerca, e quella a cui si è arrivati. */
+.testo mark {
+  color: inherit;
+  background: rgb(255 214 0 / 0.55);
+}
+
+.testo mark[data-corrente] {
+  outline: 2px solid var(--colore-accento);
+}

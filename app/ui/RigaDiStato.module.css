@@ -155,6 +155,22 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* La lingua dell'interfaccia, all'estrema destra: la sigla, bassa come i pulsanti dello zoom. */
+.lingua {
+  padding: 0px 0.4rem;
+  font-size: 0.95em;
+  letter-spacing: 0.04em;
+}
+
+.tendinaDelleLingue {
+  min-width: 10rem;
+}
+
+.sigla {
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
 .errore,
 .avviso {
   border-left: 4px solid var(--colore-errore);

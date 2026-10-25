@@ -36,9 +36,16 @@ async function apriLaParola(): Promise<void> {
   });
   await giro();
   const aiuto = document.querySelector<HTMLElement>('[role="menu"]')!;
+  // «Esempi…» è la seconda voce, dopo la guida.
   await act(async () => {
     fireEvent.keyDown(aiuto, { key: "Home" });
   });
+  await giro();
+  await act(async () => {
+    fireEvent.keyDown(aiuto, { key: "ArrowDown" });
+  });
+  await giro();
+  expect(document.querySelector("[data-highlighted]")?.getAttribute("data-comando")).toBe("esempi");
   await act(async () => {
     fireEvent.keyDown(aiuto, { key: "Enter" });
   });

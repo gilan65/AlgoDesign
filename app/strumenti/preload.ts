@@ -1,4 +1,4 @@
-// Preload di `bun test` (bunfig.toml → [test] preload). Tre cose, e ognuna ha una ragione:
+// Preload di `bun test` (bunfig.toml → [test] preload). Quattro cose, e ognuna ha una ragione:
 //
 // 1. Sotto `bun test` un `*.module.css` arriva come oggetto VUOTO: i CSS Modules sono del bundler,
 //    non del runtime. Le classi varrebbero `undefined` e un test che confronta due `undefined`
@@ -7,6 +7,13 @@
 // 3. Testing Library registra da sola la propria pulizia solo se trova un `afterEach` GLOBALE; qui
 //    `afterEach` si importa da "bun:test", quindi la pulizia si registra a mano. Senza, i nodi resi da
 //    una prova restano nel documento e la prova successiva ne trova due.
+// 4. La finestra «Guida» prende le guide da una macro (`ui/guida/guide.ts`, `with { type: "macro" }`), che nella build e
+//    nel server di sviluppo gira mentre Bun impacchetta. Sotto `bun test` no (Bun 1.4.2, misurato): quando la finestra
+//    arriva fra gli import statici di un file di prova (l'app intera), la macro viene chiamata ma il suo risultato non
+//    entra nel codice, l'import sparisce e resta la chiamata (`guide is not defined`), e quella trasformazione guasta
+//    resta nella cache del transpiler per le corse dopo. Con un import dinamico funziona: la regola non è affidabile.
+//    Qui l'import della macro diventa un import normale, e la stessa conversione gira quando la finestra si carica;
+//    la sostituzione deve trovare il suo testo una volta sola, o il caricamento si ferma col perché.
 import { afterEach } from "bun:test";
 import { plugin } from "bun";
 import { readFileSync } from "node:fs";
@@ -23,6 +30,19 @@ plugin({
         if (nome) classi[nome] = nome;
       }
       return { exports: { default: classi, ...classi }, loader: "object" };
+    });
+  },
+});
+
+const importDellaMacro = 'import { guide } from "../guida/guide" with { type: "macro" };';
+plugin({
+  name: "guide-senza-macro-nelle-prove",
+  setup(build) {
+    build.onLoad({ filter: /[\\/]ui[\\/]finestre[\\/]FinestraGuida\.tsx$/ }, ({ path }) => {
+      const testo = readFileSync(path, "utf8");
+      const volte = testo.split(importDellaMacro).length - 1;
+      if (volte !== 1) throw new Error(`${path}: l'import della macro delle guide compare ${volte} volte, non 1 («${importDellaMacro}»)`);
+      return { contents: testo.replace(importDellaMacro, 'import { guide } from "../guida/guide";'), loader: "tsx" };
     });
   },
 });

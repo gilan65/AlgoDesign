@@ -13,6 +13,8 @@ Prima versione beta, per Windows.
 - **Le ricorsioni nella riga di stato**: la prima, quante altre ce ne sono, e «Mostra le ricorsioni» con l'elenco di tutte.
 - **Il disegno**: coi cicli chiusi il punto di interruzione non tocca più il bordo del riquadro; il segno di un errore su un ciclo non cade più sulla linea che entra né sulla scritta «Vero»; il segno «↩» della ripresa sta sotto il blocco, a sinistra della linea che esce.
 - **Il nome del file**: se il nome del progetto non può essere il nome di un file, prima di salvare AlgoDesign propone un altro nome, con le regole dei nomi; le stesse regole valgono per gli esempi e i loro gruppi.
+- **La guida per lo studente dentro AlgoDesign**: «Guida per lo studente», nel menu «Aiuto», la apre in una finestra a destra, nella lingua dell'interfaccia, che resta aperta mentre si lavora; la ricerca si toglie e la finestra si può spostare, nelle Impostazioni.
+- **La lingua nella riga di stato**: «ITA» o «ENG» all'estrema destra, e un clic apre il menu delle due lingue.
 - **La guida per lo studente anche in inglese** (`STUDENT-GUIDE.md`), e il README in due lingue (`LEGGIMI.md` in italiano, `README.md` in inglese).
 - **Il formato dei file `.algo`** spiegato campo per campo (`docs/FORMATO-FILE-ALGO.md`) e scritto come JSON Schema (`docs/algo.schema.json`), per gli editor che lo conoscono.
 
