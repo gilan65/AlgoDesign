@@ -63,12 +63,10 @@ import type { Posto } from "../../core/modifica/operazioni";
 import { chiaveDelPosto, type Voce } from "./accessibile";
 import { bersaglio, latoDellArea, nelDisegno, type Bersaglio, type Coordinate, type Copia } from "./bersaglio";
 import stili from "./Flowchart.module.css";
-import { pallino, punta as puntaCorrente, RAGGIO_DEL_PALLINO, ripresa as segnoDellaRipresa } from "./segni";
+import { bollino, pallino, punta as puntaCorrente, RAGGIO_DEL_BOLLINO, RAGGIO_DEL_PALLINO, ripresa as segnoDellaRipresa } from "./segni";
 
 /** Il «+»: raggio del cerchio disegnato, nel sistema del disegno (12 px di diametro al 100%). */
 export const RAGGIO_DEL_PUNTO = 6;
-/** Il bollino di un blocco con un errore o un avviso, nel sistema del disegno. */
-const RAGGIO_DEL_SEGNO = 10;
 /** Di quanti pixel dello schermo si muove il puntatore premuto su un blocco prima che sia un trascinamento
  * (sotto, è un clic che sceglie il blocco). */
 export const SOGLIA_DEL_TRASCINAMENTO = 5;
@@ -332,9 +330,8 @@ function Strato({ voce, interazione, elementi, valori, puntiPerPosto, lato, prem
       const segno = segni.includes("errore") ? "errore" : segni.find((s) => s !== undefined);
       const descrizione = ids.flatMap((x) => interazione.descrizioni?.get(x) ?? []).join(" ") || undefined;
       const idDescrizione = `descrizione-${voce.id}`;
-      // Il segno dell'errore: un bollino nell'angolo in alto a destra della forma, e il contorno.
-      const destra = Math.max(...e.vertici.map((v) => v.x));
-      const alto = Math.min(...e.vertici.map((v) => v.y));
+      // Il segno dell'errore: un bollino su un angolo della forma (`bollino`), e il contorno.
+      const b = bollino(e);
       return (
         <g
           role="button"
@@ -345,6 +342,7 @@ function Strato({ voce, interazione, elementi, valori, puntiPerPosto, lato, prem
           aria-invalid={segno === "errore" ? true : undefined}
           aria-current={interazione.corrente != null && ids.includes(interazione.corrente) ? "step" : undefined}
           aria-describedby={descrizione ? idDescrizione : undefined}
+          aria-keyshortcuts={interazione.nomi?.get(voce.id)?.length ? "Shift+F9" : undefined}
           className={classi(stili.blocco, scelto && stili.selezionato, inMovimento?.dentro.has(voce.id) && stili.spostato, segno === "errore" && stili.conErrore, segno === "avviso" && stili.conAvviso)}
           // Il fuoco su un blocco della scelta la lascia com'è (il trascinamento di un blocco scelto porta gli altri; Maiusc+frecce
           // ci porta il fuoco); il clic sceglie il blocco solo, o con Maiusc allarga la scelta fino a lui.
@@ -367,8 +365,8 @@ function Strato({ voce, interazione, elementi, valori, puntiPerPosto, lato, prem
           <polygon className={stili.areaDelBlocco} points={punti(e.vertici)} />
           <Nomi nomi={interazione.nomi?.get(voce.id)} interazione={interazione} blocco={voce.id} />
           {segno && (
-            <g className={stili.segno} data-segno={segno} transform={`translate(${destra} ${alto})`}>
-              <circle r={RAGGIO_DEL_SEGNO} />
+            <g className={stili.segno} data-segno={segno} transform={`translate(${b.x} ${b.y})`}>
+              <circle r={RAGGIO_DEL_BOLLINO} />
               <text>{segno === "errore" ? "!" : "?"}</text>
             </g>
           )}
@@ -413,8 +411,7 @@ function Strato({ voce, interazione, elementi, valori, puntiPerPosto, lato, prem
       const segno = interazione.segnati.get(voce.id);
       const descrizione = interazione.descrizioni?.get(voce.id);
       const idDescrizione = `descrizione-${voce.id}`;
-      const destra = Math.max(...e.vertici.map((v) => v.x));
-      const alto = Math.min(...e.vertici.map((v) => v.y));
+      const b = bollino(e);
       return (
         <g
           role="button"
@@ -423,6 +420,7 @@ function Strato({ voce, interazione, elementi, valori, puntiPerPosto, lato, prem
           data-restituisce={voce.id}
           aria-invalid={segno === "errore" ? true : undefined}
           aria-describedby={descrizione ? idDescrizione : undefined}
+          aria-keyshortcuts={interazione.nomi?.get(voce.id)?.length ? "Shift+F9" : undefined}
           className={classi(stili.blocco, segno === "errore" && stili.conErrore, segno === "avviso" && stili.conAvviso)}
           onDoubleClick={interazione.solaLettura ? undefined : () => interazione.apriRestituisce?.()}
         >
@@ -430,8 +428,8 @@ function Strato({ voce, interazione, elementi, valori, puntiPerPosto, lato, prem
           <polygon className={stili.areaDelBlocco} points={punti(e.vertici)} />
           <Nomi nomi={interazione.nomi?.get(voce.id)} interazione={interazione} blocco={voce.id} />
           {segno && (
-            <g className={stili.segno} data-segno={segno} transform={`translate(${destra} ${alto})`}>
-              <circle r={RAGGIO_DEL_SEGNO} />
+            <g className={stili.segno} data-segno={segno} transform={`translate(${b.x} ${b.y})`}>
+              <circle r={RAGGIO_DEL_BOLLINO} />
               <text>{segno === "errore" ? "!" : "?"}</text>
             </g>
           )}

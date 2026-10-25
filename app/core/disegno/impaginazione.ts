@@ -933,7 +933,7 @@ export function impagina(
   /** Un ciclo `per` o `per ogni` nella forma delle opzioni, nel suo riquadro. */
   function cicloPer(b: Extract<Blocco, { kind: "for" | "for_each" }>): Pezzo {
     const come = b.kind === "for" ? opzioni.per : opzioni.perOgni;
-    if (come === "chiuso") return riquadro(b.id, partiDelBlocco(b, testi), chiuso(b));
+    if (come === "chiuso") return riquadro(b.id, partiDelBlocco(b, testi), chiuso(b), false, tema.margineRiquadroChiuso);
     if (b.kind === "for_each") perOgniAperti++;
     // Il testo di ogni blocco aggiunto dalla stessa funzione della tabella di traccia e del watch.
     const testo = (fase: FaseDelCiclo) => partiDellaFase(b, fase, opzioni, testi, perOgniAperti, [...funzione.data, ...costantiComuni])!;
@@ -996,8 +996,7 @@ export function impagina(
    * linea che entra (se il contenuto è stretto, il riquadro si allarga a sinistra), su un fondo che interrompe la
    * linea. La linea che entra scende dall'alto fino al contenuto. Con `didascalia` l'intestazione non è il blocco (la
    * copia compatta): sta nel riquadro, non fra gli elementi. */
-  function riquadro(id: string, parti: readonly ParteDelTesto[], interno: Pezzo, didascalia = false): Pezzo {
-    const m = tema.margineRiquadro;
+  function riquadro(id: string, parti: readonly ParteDelTesto[], interno: Pezzo, didascalia = false, m = tema.margineRiquadro): Pezzo {
     const f = forma(id, "intestazione", parti);
     const yBordo = hTesto / 2 + tema.scostamentoEtichetta;
     const yInterno = yBordo + hTesto / 2 + m;
@@ -1109,7 +1108,7 @@ export function impagina(
   const connettori = linee(disegno.connettori, disegno.ricongiungimenti);
   return {
     larghezza: tutto.sinistra + tutto.destra + 2 * m,
-    altezza: tutto.altezza + 2 * m,
+    altezza: tutto.altezza + m + tema.margineInBasso,
     elementi: disegno.elementi,
     connettori,
     etichette: disegno.etichette,

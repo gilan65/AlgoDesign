@@ -15,6 +15,8 @@
 // - Il riquadro fermato da un clic sul nome: resta lasciando il nome, il clic non sceglie il blocco; ×, Esc, un altro
 //   clic e «Ferma» lo chiudono. Il posto del riquadro (sotto il nome, o sopra se sotto c'è meno posto): la funzione,
 //   con numeri dati.
+// - Dalla tastiera: Maiusc+F9 sul blocco ferma il riquadro del primo dato col fuoco dentro, ripetuto passa al dato dopo;
+//   Esc lo chiude e il fuoco torna al blocco; un blocco senza dati dà l'avviso.
 //
 // Che cosa NON guarda:
 // - dove compare davvero il riquadro e che cosa copre, né che il puntatore vero arrivi sui nomi (la posizione dei nomi
@@ -450,6 +452,53 @@ test("un clic sul nome ferma il riquadro: resta lasciando il nome, segue l'esecu
   // «Ferma» l'esecuzione: il riquadro fermo si chiude.
   await premi("F5", true);
   expect(fermo()?.outerHTML ?? null).toBeNull();
+}, 60_000);
+
+test("dalla tastiera: Maiusc+F9 su un blocco ferma il riquadro del suo primo dato col fuoco dentro, di nuovo passa al dato dopo; Esc lo chiude e il fuoco torna al blocco", async () => {
+  await apriLaFinestra("riferimento-media-voti.algo", riferimento);
+  await premi("F10");
+  const fermo = () => document.querySelector<HTMLElement>("[data-watch][data-watch-fermo]");
+  const b7 = document.querySelector<SVGGElement>('[data-blocco="b7"]')!;
+  // Il tasto è scritto sul blocco per gli ausili, solo dove ci sono nomi.
+  expect([b7.getAttribute("aria-keyshortcuts"), document.querySelector('[data-blocco="b5"]')?.getAttribute("aria-keyshortcuts") ?? null]).toEqual(["Shift+F9", null]);
+  const maiuscF9 = async (dove: Element) => {
+    await act(async () => {
+      fireEvent.keyDown(dove, { key: "F9", shiftKey: true });
+    });
+    await giro();
+  };
+  /** Il dato del riquadro fermo, se il fuoco ci sta dentro, e la sua descrizione per gli ausili. */
+  const conIlFuoco = () => {
+    const f = fermo();
+    return { nome: f?.querySelector("[data-watch-nome]")?.textContent ?? null, fuocoDentro: f !== null && f.contains(document.activeElement), descrizione: f ? document.getElementById(f.getAttribute("aria-describedby") ?? "")?.textContent : null };
+  };
+  act(() => b7.focus());
+  await maiuscF9(b7);
+  expect(conIlFuoco()).toEqual({ nome: "i", fuocoDentro: true, descrizione: it.watchDaTastiera });
+  // Il punto di interruzione non cambia: Maiusc+F9 non è F9.
+  expect(document.querySelectorAll("[data-interruzione]").length).toBe(0);
+  await maiuscF9(fermo()!);
+  expect(conIlFuoco()).toEqual({ nome: "n", fuocoDentro: true, descrizione: it.watchDaTastiera });
+  // Dopo l'ultimo nome del blocco si torna al primo.
+  await maiuscF9(fermo()!);
+  expect(conIlFuoco().nome).toBe("i");
+  await act(async () => {
+    fireEvent.keyDown(fermo()!, { key: "Escape" });
+  });
+  await giro();
+  expect({ fermo: fermo()?.outerHTML ?? null, fuoco: document.activeElement === b7 }).toEqual({ fermo: null, fuoco: true });
+  // Un blocco senza dati: l'avviso, nessun riquadro.
+  const b5 = document.querySelector<SVGGElement>('[data-blocco="b5"]')!;
+  act(() => b5.focus());
+  await maiuscF9(b5);
+  expect({ fermo: fermo()?.outerHTML ?? null, avviso: avviso() }).toEqual({ fermo: null, avviso: it.watchSenzaDati });
+  // Aperto col clic, il riquadro resta quello del puntatore del mouse: il fuoco non ci va.
+  const iIn = nomi().find((x) => x.getAttribute("data-watch-dato") === "i" && x.closest('[data-blocco="b7"]'))!;
+  await act(async () => {
+    fireEvent.mouseDown(iIn);
+    fireEvent.click(iIn);
+  });
+  expect({ nome: fermo()?.querySelector("[data-watch-nome]")?.textContent, tabindex: fermo()?.getAttribute("tabindex") ?? null, descrizione: fermo()?.getAttribute("aria-describedby") ?? null }).toEqual({ nome: "i", tabindex: null, descrizione: null });
 }, 60_000);
 
 test("il posto del riquadro: sotto il nome se ci sta, altrimenti dalla parte col posto maggiore, mai sopra il nome", () => {

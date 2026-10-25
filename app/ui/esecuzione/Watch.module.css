@@ -34,6 +34,12 @@
   pointer-events: auto;
 }
 
+/* Aperto dalla tastiera, il riquadro ha il fuoco: un secondo contorno fuori dal bordo. */
+.fermo:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: 2px;
+}
+
 /* L'intestazione del riquadro fermo resta in cima mentre gli elementi scorrono, sopra di loro (gli indici attenuati
    fanno un livello proprio, che senza `z-index` le passava sopra). */
 .fermo .intestazione {

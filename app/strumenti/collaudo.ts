@@ -1079,7 +1079,7 @@ const proveAttesePerSpec: Record<string, number> = {
   "modifica-dati.e2e.ts": 10,
   "modifica.e2e.ts": 7,
   "parametri.e2e.ts": 3,
-  "pila-lunga.e2e.ts": 1,
+  "pila-lunga.e2e.ts": 2,
   "programmi-pesanti.e2e.ts": 14,
   "scelta.e2e.ts": 3,
   "scorrimento.e2e.ts": 1,
@@ -1087,7 +1087,7 @@ const proveAttesePerSpec: Record<string, number> = {
   "tabella.e2e.ts": 9,
   "trascina.e2e.ts": 3,
   "valori-iniziali.e2e.ts": 4,
-  "watch.e2e.ts": 6,
+  "watch.e2e.ts": 7,
 };
 
 function problemiDegliSpec(osservate: ReadonlyMap<string, number>, progetti: readonly string[], suDisco: readonly string[]): string[] {

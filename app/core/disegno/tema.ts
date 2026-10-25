@@ -35,8 +35,12 @@ export interface GeometriaDelTema {
   readonly raggioRicongiungimento: number;
   /** Margine intorno all'intero disegno. */
   readonly margineEsterno: number;
+  /** Il margine sotto il disegno, più alto degli altri. */
+  readonly margineInBasso: number;
   /** Il riquadro tratteggiato di un ciclo `per` o `per ogni`: lo spazio fra il suo contenuto e la linea. */
   readonly margineRiquadro: number;
+  /** Lo stesso spazio nel riquadro di un ciclo chiuso. */
+  readonly margineRiquadroChiuso: number;
   /** La distanza dell'intestazione del riquadro dal suo angolo in alto a sinistra. */
   readonly rientroIntestazione: number;
   /** Lo spazio intorno al testo dell'intestazione, che interrompe la linea del riquadro (in verticale la metà). */
@@ -65,8 +69,13 @@ export const geometriaPredefinita: GeometriaDelTema = {
   raggioRicongiungimento: 5,
   // 20 e non 16: a sinistra dei blocchi più larghi c'è il pallino del punto di interruzione, staccato dal blocco.
   margineEsterno: 20,
+  // 26 e non 20: sotto la fine di una funzione c'è il «↩» della ripresa (alto 20, a 4 dal blocco), che deve starci dentro.
+  margineInBasso: 26,
   // Le misure del riquadro dei cicli: 12 fra il contenuto e la linea, l'intestazione a 5 dall'angolo col testo a 10.
   margineRiquadro: 12,
+  // 20 e non 12: in un ciclo chiuso il corpo sta sull'asse, e a sinistra di un blocco largo quanto il riquadro c'è il
+  // pallino del punto di interruzione, staccato dal blocco (nei cicli aperti la linea che torna lo tiene già lontano).
+  margineRiquadroChiuso: 20,
   rientroIntestazione: 5,
   luceIntestazione: 5,
   latiDellaChiamata: 8,

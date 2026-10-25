@@ -15,6 +15,8 @@
 //   all'ultimo elemento col nome del dato in cima, non sceglie il blocco; una finestra aperta lo copre ed Esc chiude
 //   lei sola; ×, Esc e un altro clic sul nome lo chiudono; in finestre basse sta dentro la finestra e non copre il nome
 //   (anche sopra il nome). Controllo positivo: senza il fermo l'ultimo elemento non si legge.
+// - Lo stesso riquadro dalla tastiera: Maiusc+F9 sul blocco lo apre col fuoco dentro, Fine lo scorre fino all'ultimo
+//   elemento, Esc lo chiude e il fuoco torna al blocco.
 //
 // CHE COSA NON GUARDA:
 // - ogni nome a ogni pausa: la prova della finestra sotto happy-dom (`ui/esecuzione/watch.test.tsx`, 8 dati × 66
@@ -266,6 +268,38 @@ test("un vettore di 1000 elementi: un clic sul nome ferma il riquadro, che prend
     await expect(fermo).toHaveCount(0);
   }
   expect(sopraIlNome, "in nessuna finestra il riquadro sta sopra il nome: la prova non direbbe nulla").toBeGreaterThan(0);
+});
+
+test("dalla tastiera: Maiusc+F9 sul blocco ferma il riquadro col fuoco dentro, Fine lo scorre fino all'ultimo elemento, Esc lo chiude e il fuoco torna al blocco", async ({ page }, info) => {
+  test.setTimeout(120_000);
+  await apriVuota(page, { lingua: "it" }, { esempi: { "1 pesante.algo": vettoreRiempito } });
+  await apriEsempio(page, 0);
+  await page.getByRole("region", { name: it.vistaFlowchart, exact: true }).click({ position: { x: 5, y: 5 } });
+  await page.keyboard.press("F5");
+  await expect(statoDi(page)).toHaveText(it.statoFinita, { timeout: 60_000 });
+  const fermo = page.locator("[data-watch][data-watch-fermo]");
+  const ultimo = fermo.locator("[data-watch-elemento]").filter({ has: page.locator("[data-watch-indice]", { hasText: /^v\[999\]$/ }) });
+  const siLeggeLUltimo = async () => {
+    const riga = await ultimo.boundingBox();
+    const q = await fermo.boundingBox();
+    return riga !== null && q !== null && riga.y >= q.y && riga.y + riga.height <= q.y + q.height;
+  };
+  const b2 = page.locator('[data-blocco="b2"]').first();
+  await b2.focus();
+  await page.keyboard.press("Shift+F9");
+  await expect(fermo).toBeVisible();
+  await expect(fermo).toBeFocused();
+  await expect(fermo.locator("[data-watch-nome]")).toHaveText("v");
+  // Controllo positivo: aperto, l'ultimo elemento non si legge ancora.
+  const primaDiFine = await siLeggeLUltimo();
+  await page.keyboard.press("End");
+  await expect.poll(siLeggeLUltimo, { message: "v[999] non si legge dopo Fine" }).toBe(true);
+  await expect(ultimo.locator("[data-watch-valore]")).toHaveText("998001");
+  expect(primaDiFine, "l'ultimo elemento si legge già all'apertura: la prova non direbbe nulla").toBe(false);
+  await page.keyboard.press("Escape");
+  await expect(fermo).toHaveCount(0);
+  await expect(b2).toBeFocused();
+  console.log(`[${info.project.name}] watch dalla tastiera: v[999] letto dopo Fine, prima no; il fuoco tornato al blocco`);
 });
 
 /** Una stringa lunga senza spazi, due vettori di 60 elementi riempiti da un ciclo: il riquadro fermo largo e alto. Con 30

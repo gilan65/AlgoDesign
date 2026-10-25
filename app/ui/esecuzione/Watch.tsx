@@ -9,6 +9,9 @@
 // valori seguono l'esecuzione; si chiude col ×, con Esc o con un altro clic sul nome. Né l'uno né l'altro coprono il
 // nome: stanno sotto, o sopra se sotto c'è meno posto, alti al più quanto quel posto.
 //
+// Dalla tastiera: Maiusc+F9 su un blocco apre il riquadro fermo del primo nome del blocco, col fuoco dentro (le frecce lo
+// scorrono); Maiusc+F9 nel riquadro passa al nome dopo, e quando il riquadro si chiude il fuoco torna al blocco.
+//
 // Dentro una procedura un parametro per riferimento È il dato di chi chiama (lo stesso valore): sotto il valore una riga
 // dice quale, con le parole di chi monta il watch. Di una funzione con più chiamate in corso (la ricorsione), una riga
 // dice di quale livello sono i valori.
@@ -16,7 +19,7 @@
 // Sul nome di una funzione chiamata in un blocco, il valore che ha restituito nell'ultima azione di
 // quel blocco che l'ha chiamata (`TabellaMostrata.chiamata`); chiamata più volte nella stessa azione, ogni valore col
 // numero della chiamata; prima di una chiamata finita lì, una riga lo dice.
-import { memo, useEffect, useLayoutEffect, useRef, useState, type ReactElement } from "react";
+import { memo, useEffect, useId, useLayoutEffect, useRef, useState, type ReactElement } from "react";
 import type { ChiamataNelWatch, DatoNelWatch } from "../../core/esecuzione/traccia";
 import type { Dizionario } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
@@ -55,6 +58,7 @@ export const Watch = memo(function Watch({
   testi,
   fermo,
   riferimento,
+  tastiera,
 }: {
   dato: DatoNelWatch | ChiamataNelWatch;
   /** Per un parametro per riferimento: il dato di chi chiama, in parole. */
@@ -64,9 +68,27 @@ export const Watch = memo(function Watch({
   testi: Dizionario;
   /** Il riquadro fermato dal clic sul nome, con chi lo chiude. */
   fermo?: { readonly chiudi: () => void };
+  /** Il riquadro fermo aperto dalla tastiera: il blocco a cui torna il fuoco, e chi passa al nome dopo. */
+  tastiera?: { readonly ritorno: SVGGElement; readonly prossimo: () => void };
 }): ReactElement {
   const riquadro = useRef<HTMLDivElement>(null);
+  const idDellAiuto = useId();
   const [posto, setPosto] = useState<{ left: number; top: number; maxHeight: number } | null>(null);
+  // Dalla tastiera il fuoco entra nel riquadro quando ha il suo posto (prima è nascosto, e un elemento nascosto non prende
+  // il fuoco: misurato in Chromium); alla chiusura torna al blocco, se non è andato altrove (il riquadro tolto lo lascia al
+  // documento).
+  const ritorno = tastiera?.ritorno;
+  const aPosto = posto !== null;
+  useEffect(() => {
+    if (ritorno && aPosto) riquadro.current?.focus({ preventScroll: true });
+  }, [ritorno, aPosto]);
+  useEffect(() => {
+    if (!ritorno) return;
+    return () => {
+      const qui = document.activeElement;
+      if ((qui === null || qui === document.body || riquadro.current?.contains(qui)) && ritorno.isConnected) ritorno.focus({ preventScroll: true });
+    };
+  }, [ritorno]);
   // Accanto al nome, dentro la finestra. L'altezza è quella del contenuto (non quella già limitata dal posto di prima),
   // al più quella del foglio di stile. Fermo, il riquadro si mette a posto una volta sola: resta dov'è comparso, finché la
   // finestra non cambia misura (in una finestra più bassa il suo fondo ne uscirebbe).
@@ -135,11 +157,27 @@ export const Watch = memo(function Watch({
       ref={riquadro}
       role={fermo ? "dialog" : "tooltip"}
       aria-label={fermo ? dato.nome : undefined}
+      aria-describedby={tastiera ? idDellAiuto : undefined}
+      tabIndex={tastiera ? -1 : undefined}
+      onKeyDown={
+        tastiera
+          ? (e) => {
+              if (e.key !== "F9" || !e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+              e.preventDefault();
+              tastiera.prossimo();
+            }
+          : undefined
+      }
       data-watch=""
       data-watch-fermo={fermo ? "" : undefined}
       className={fermo ? `${stili.watch} ${stili.fermo}` : stili.watch}
       style={posto ?? { visibility: "hidden" }}
     >
+      {tastiera && (
+        <span id={idDellAiuto} hidden>
+          {testi.watchDaTastiera}
+        </span>
+      )}
       {intestazione}
       {"chiamate" in dato ? (
         dato.chiamate.length === 0 ? (

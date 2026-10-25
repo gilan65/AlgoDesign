@@ -850,6 +850,31 @@ describe("la ricorsione: il gruppo e il watch leggono la chiamata giusta, livell
     expect(righeDi(TabellaMostrata, p, eseguita(p))).toEqual(attese);
   });
 
+  test("i cambi di ogni chiamata attiva, riga per riga, uguali a quelli ricalcolati da capo dalla riga prima, valore per valore", () => {
+    // Il ricalcolo di riferimento non guarda se la fotografia di una chiamata è la stessa di prima: confronta ogni valore
+    // con quello della stessa chiamata (lo stesso numero) nella riga prima; una chiamata appena cominciata ha cambiati i
+    // valori che ci sono.
+    const e = eseguita(conta(40));
+    const righe = e.traccia.righe;
+    const stesso = (a: traccia.Riga["dati"]["valori"][number][number], b: typeof a) =>
+      a === b || (a !== undefined && b !== undefined && a.tipo === b.tipo && (a.tipo === "string" ? JSON.stringify(a.v) === JSON.stringify(b.v) : Object.is(a.v, b.v)));
+    let ferme = 0;
+    let cambiate = 0;
+    for (let i = 1; i < righe.length; i++) {
+      const prima = righe[i - 1]!.dati.chiamate ?? [];
+      const attesi = (righe[i]!.dati.chiamate ?? []).map((c) => {
+        const q = prima.find((x) => x.numero === c.numero);
+        if (q === c) ferme++;
+        else cambiate++;
+        return c.valori.map((elementi, d) => elementi.map((v, k) => (q === undefined ? v !== undefined : !stesso(v, q.valori[d]![k]))));
+      });
+      expect({ riga: i, cambi: (righe[i]!.chiamateCambiate ?? []).map((c) => c.map((x) => [...x])) }).toEqual({ riga: i, cambi: attesi });
+    }
+    // Le premesse: molte chiamate rimaste uguali da una riga all'altra, e una cambiata o appena cominciata quasi a ogni riga.
+    console.log(`cambi delle chiamate: righe ${righe.length}, chiamate ferme ${ferme}, cambiate o appena cominciate ${cambiate}`);
+    expect({ ferme: ferme > 1000, cambiate: cambiate > 40 }).toEqual({ ferme: true, cambiate: true });
+  });
+
   test("il watch: la chiamata più profonda, o quella del livello scelto, col livello e quanti sono", () => {
     const p = conta(3);
     const e = new Esecuzione(p, tetti);

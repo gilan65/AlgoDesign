@@ -7,6 +7,8 @@
 // - il gruppo di `conta` nella riga corrente e il watch di `n` hanno la chiamata più profonda (n = 0); scelto il livello
 //   37 dall'elenco, il watch ha la sua (n = 463);
 // - il watch e l'elenco non ridisegnano la tabella (`data-ridisegni` fermo): la difesa del suo `memo` contata, non a tempo.
+// E con sette funzioni ricorsive la riga di stato resta su una riga a 1280 px: la prima frase e quante altre, lo stato
+// dell'esecuzione e lo zoom dentro la finestra, l'elenco a richiesta con le sette frasi.
 //
 // CHE COSA NON GUARDA:
 // - la WebView2 vera e WebKitGTK (qui il Chromium di Playwright; WebKit al rilascio per Linux);
@@ -115,4 +117,51 @@ test("500 chiamate in corso: la finestra risponde, «Dove sei» col principio e 
   );
   for (const m of misure) expect(m.ms, m.cosa).toBeLessThanOrEqual(SOGLIA_MS);
   expect(disegniDopo, "i disegni della tabella col watch e l'elenco").toBe(disegni);
+});
+
+/** Sette funzioni che chiamano sé stesse: sette frasi nella riga di stato. */
+const setteRicorsioni = JSON.stringify({
+  format: "algodesign",
+  schema_version: 1,
+  metadata: { name: "sette ricorsioni" },
+  functions: [
+    { id: "f0", kind: "main", data: [{ name: "t", type: "integer", initial: "0" }], body: ["conta", "somma_fino", "potenza", "cifre", "fattoriale", "fibonacci", "massimo"].map((nome, k) => ({ id: `m${k}`, kind: "assignment", target: "t", value: `t + ${nome}(3)` })), end: { id: "mf" } },
+    ...["conta", "somma_fino", "potenza", "cifre", "fattoriale", "fibonacci", "massimo"].map((nome, k) => ({
+      id: `f${k + 1}`,
+      kind: "function",
+      name: nome,
+      return_type: "integer",
+      data: [
+        { name: "n", type: "integer", parameter: "value" },
+        { name: "r", type: "integer" },
+      ],
+      body: [{ id: `c${k}a`, kind: "if", condition: "n <= 0", then: [{ id: `c${k}b`, kind: "assignment", target: "r", value: "0" }], else: [{ id: `c${k}c`, kind: "assignment", target: "r", value: `${nome}(n - 1) + 1` }] }],
+      end: { id: `c${k}d`, return_value: "r" },
+    })),
+  ],
+});
+
+test("la riga di stato con sette ricorsioni resta su una riga a 1280 px: la prima frase, quante altre, lo stato e lo zoom in vista", async ({ page }, info) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const percorso = "C:\\Documenti\\sette ricorsioni.algo";
+  await apriVuota(page, { lingua: "it" }, { argomento: percorso, file: { [percorso]: setteRicorsioni } });
+  await expect(page.getByRole("status")).toHaveText(riempi(it.apertoIl, { file: "sette ricorsioni.algo" }));
+  const riga = page.getByRole("region", { name: it.rigaDiStato, exact: true });
+  const ricorsioni = riga.locator("[data-ricorsione]");
+  await expect(ricorsioni).toHaveText(`La funzione «conta» chiama sé stessa${riempi(it.ricorsioniAltre, { n: "6" })}`);
+  const misura = await riga.evaluate((r) => {
+    const dentro = (e: Element | null) => {
+      const q = e?.getBoundingClientRect();
+      return q !== undefined && q.left >= 0 && q.right <= window.innerWidth && q.width > 0;
+    };
+    return { alta: r.getBoundingClientRect().height, stato: dentro(r.querySelector("[data-stato-esecuzione]")), zoom: dentro(r.querySelector('[role="group"]')), larga: r.scrollWidth <= r.clientWidth };
+  });
+  console.log(`[${info.project.name}] riga di stato con sette ricorsioni a 1280 px: alta ${misura.alta} px, stato in vista ${misura.stato}, zoom in vista ${misura.zoom}`);
+  // Una riga sola (alta come senza ricorsioni, 23 px; con le frasi di seguito andava a capo e saliva a 101), lo stato e lo
+  // zoom dentro la finestra.
+  expect(misura).toEqual({ alta: expect.any(Number), stato: true, zoom: true, larga: true });
+  expect(misura.alta).toBeLessThan(30);
+  // L'elenco a richiesta, con le sette frasi.
+  await riga.getByRole("button", { name: it.ricorsioniMostra, exact: true }).click();
+  await expect(page.getByRole("list", { name: it.elencoDelleRicorsioni, exact: true }).getByRole("listitem")).toHaveCount(7);
 });
