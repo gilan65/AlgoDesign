@@ -450,6 +450,8 @@ function Strato({ voce, interazione, elementi, valori, puntiPerPosto, lato, prem
           aria-label={voce.nome}
           aria-haspopup="menu"
           data-punto={chiave}
+          data-spento={inMovimento?.escluso(voce.posto) ? "" : undefined}
+          data-bersaglio={sulBersaglio === chiave ? "" : undefined}
           className={classi(stili.punto, inMovimento?.escluso(voce.posto) && stili.spento, sulBersaglio === chiave && stili.bersaglio)}
           transform={`translate(${p.x} ${p.y})`}
           onPointerDown={() => (premuto.current = chiave)}
@@ -503,7 +505,14 @@ export function Flowchart({
     setTrascinamento(t);
   };
 
-  // Esc durante il trascinamento lo annulla: il blocco resta dov'è.
+  /** Il trascinamento annullato: il blocco resta dov'è. */
+  const annulla = () => {
+    const t = corrente.current;
+    if (t && svg.current?.hasPointerCapture(t.pointerId)) svg.current.releasePointerCapture(t.pointerId);
+    presa.current = null;
+    aggiorna(null);
+  };
+  // Esc durante il trascinamento lo annulla, e così la finestra che perde il fuoco (Alt+Tab a metà).
   const trascinando = trascinamento !== null;
   useEffect(() => {
     if (!trascinando) return;
@@ -511,13 +520,14 @@ export function Flowchart({
       if (e.key !== "Escape") return;
       e.preventDefault();
       e.stopPropagation();
-      const t = corrente.current;
-      if (t && svg.current?.hasPointerCapture(t.pointerId)) svg.current.releasePointerCapture(t.pointerId);
-      presa.current = null;
-      aggiorna(null);
+      annulla();
     };
     document.addEventListener("keydown", esc, true);
-    return () => document.removeEventListener("keydown", esc, true);
+    window.addEventListener("blur", annulla);
+    return () => {
+      document.removeEventListener("keydown", esc, true);
+      window.removeEventListener("blur", annulla);
+    };
   }, [trascinando]);
   const { larghezza, altezza } = disegno;
   const disegnato = (
@@ -675,6 +685,12 @@ export function Flowchart({
   function muovi(ev: PointerEvent<SVGSVGElement>): void {
     const p = presa.current;
     if (p === null || ev.pointerId !== p.pointerId) return;
+    // Nessun tasto premuto: il rilascio è avvenuto fuori dal disegno prima che il trascinamento partisse (e la cattura
+    // non c'era), e la presa rimasta non deve far partire un trascinamento al primo movimento.
+    if (ev.buttons === 0) {
+      annulla();
+      return;
+    }
     const puntatore = nelSistema(ev.clientX, ev.clientY);
     let t = corrente.current;
     if (t === null) {
@@ -705,6 +721,7 @@ export function Flowchart({
       onPointerMove={muovi}
       onPointerUp={rilascia}
       onPointerCancel={rilascia}
+      onLostPointerCapture={rilascia}
     >
       <g aria-hidden="true">{disegnato}</g>
       {/* Il riquadro dei blocchi scelti insieme: sopra il disegno e sotto lo strato, non prende il puntatore. */}
@@ -724,6 +741,7 @@ export function Flowchart({
       {trascinamento && copia && (
         <g
           aria-hidden="true"
+          data-copia=""
           className={stili.copia}
           transform={`translate(${copia.dx + trascinamento.puntatore.x - trascinamento.inizio.x} ${copia.dy + trascinamento.puntatore.y - trascinamento.inizio.y})`}
         >

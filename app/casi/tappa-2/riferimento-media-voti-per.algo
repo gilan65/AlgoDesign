@@ -3,7 +3,7 @@
   "schema_version": 1,
   "metadata": {
     "name": "riferimento-media-voti-per",
-    "description": "Programma di riferimento della tappa 2: quello della tappa 1 coi due cicli a contatore scritti come cicli per."
+    "description": "La stessa media dei voti, coi due cicli che contano scritti come cicli Per."
   },
   "functions": [
     {

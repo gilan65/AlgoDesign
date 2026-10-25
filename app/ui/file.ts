@@ -4,9 +4,14 @@
 // caricamento (come al primo avvio).
 import { invoke } from "@tauri-apps/api/core";
 
-/** Un errore di lettura o di scrittura: il file non è testo UTF-8, o il messaggio del sistema. */
+/** I generi di un errore del guscio (`GENERI` in `shell/src/progetto.rs`, appaiati da una prova di `cargo test`): il
+ * file non è testo UTF-8, il messaggio del sistema, e per gli esempi e i gruppi un nome non ammesso, un gruppo con dentro
+ * altro oltre agli esempi, un gruppo con un esempio aperto in un altro programma, un esempio in sola lettura. */
+export const generiDelFile = ["non_testo", "sistema", "nome_non_valido", "gruppo_con_altro", "gruppo_bloccato", "sola_lettura"] as const;
+
+/** Un errore di lettura o di scrittura: il genere, e il dettaglio (il messaggio del sistema, un nome, un elenco). */
 export interface ErroreDelFile {
-  readonly genere: "non_testo" | "sistema";
+  readonly genere: (typeof generiDelFile)[number];
   readonly dettaglio: string;
 }
 
@@ -145,8 +150,8 @@ export const eventoDiChiusura = "algodesign-chiusura";
 /** Un errore rifiutato da `invoke`, riconosciuto per forma; un'altra cosa (la finzione lancia un `Error`)
  * è un errore del sistema col suo testo. */
 export function erroreDelFile(e: unknown): ErroreDelFile {
-  if (typeof e === "object" && e !== null && "genere" in e && (e.genere === "non_testo" || e.genere === "sistema"))
-    return { genere: e.genere, dettaglio: String((e as { dettaglio?: unknown }).dettaglio ?? "") };
+  if (typeof e === "object" && e !== null && "genere" in e && generiDelFile.some((g) => g === e.genere))
+    return { genere: e.genere as ErroreDelFile["genere"], dettaglio: String((e as { dettaglio?: unknown }).dettaglio ?? "") };
   const messaggio = (e as { message?: unknown } | null)?.message;
   return { genere: "sistema", dettaglio: typeof messaggio === "string" ? messaggio : String(e) };
 }
@@ -158,17 +163,4 @@ export const nomeDelFile = (percorso: string) => percorso.split(/[\\/]/).at(-1) 
 export function cartellaDi(percorso: string): string | null {
   const fine = Math.max(percorso.lastIndexOf("\\"), percorso.lastIndexOf("/"));
   return fine <= 0 ? null : percorso.slice(0, fine);
-}
-
-/** Il nome proposto per «Salva con nome»: quello del file, o il nome del progetto senza i caratteri che un
- * nome di file non ammette. */
-export function nomeProposto(percorso: string | null, nomeDelProgetto: string): string {
-  if (percorso !== null) return nomeDelFile(percorso);
-  return `${nomeAmmesso(nomeDelProgetto)}.algo`;
-}
-
-/** Il nome del progetto senza i caratteri che un nome di file non ammette («progetto» se non resta nulla). */
-export function nomeAmmesso(nomeDelProgetto: string): string {
-  const pulito = [...nomeDelProgetto].filter((c) => !'\\/:*?"<>|'.includes(c) && c.charCodeAt(0) >= 32).join("").trim();
-  return pulito === "" ? "progetto" : pulito;
 }

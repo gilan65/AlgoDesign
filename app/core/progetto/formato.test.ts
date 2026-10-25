@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { apri, leggi, livelliMassimi, salva, type ErroreDiApertura } from "./formato";
+import { apri, leggi, livelliMassimi, motivi, salva, type ErroreDiApertura } from "./formato";
 import { codiciAvviso, codiciErrore, codiciErroreStatico } from "./modello";
 
 // Censimento delle regole del formato del file di progetto (radice, metadati e opzioni, dati, funzioni, blocchi,
@@ -157,12 +157,16 @@ const base = (): Json => ({
   ],
 });
 
+/** I motivi che i rami provati in questo file hanno dato: la prova in fondo li appaia con `motivi`. */
+const motiviVisti = new Set<string>();
+
 /** La base con una modifica: il file deve essere rifiutato con esattamente questi errori. */
 function rifiuta(modifica: (p: Json) => void, ...attesi: ErroreDiApertura[]): void {
   const p = base();
   modifica(p);
   const esito = leggi(p);
   expect(esito.ok ? [] : esito.errori).toEqual(attesi);
+  for (const a of attesi) motiviVisti.add(a.motivo);
 }
 
 /** La base con una modifica: il file si apre. */
@@ -181,6 +185,7 @@ test("la base si apre, e un JSON non valido no", () => {
   expect(leggi(base()).ok).toBe(true);
   expect(apri("{ \"format\": ")).toEqual({ ok: false, errori: [e("", "invalid_json")] });
   expect(apri("[]")).toEqual({ ok: false, errori: [e("", "wrong_type")] });
+  motiviVisti.add("invalid_json");
 });
 
 test("un intero -0 si legge 0: il testo salvato lo scrive 0, e la riapertura dà lo stesso modello", () => {
@@ -259,7 +264,10 @@ describe("radice", () => {
     const testo = JSON.stringify(base(), null, 2);
     /** Il testo con `riga` scritta subito dopo la prima riga che contiene `dopo`. */
     const conRiga = (dopo: string, riga: string) => testo.replace(dopo, `${dopo}\n${riga}`);
-    const rifiutaTesto = (t: string, ...attesi: ErroreDiApertura[]) => expect(apri(t)).toEqual({ ok: false, errori: attesi });
+    const rifiutaTesto = (t: string, ...attesi: ErroreDiApertura[]) => {
+      expect(apri(t)).toEqual({ ok: false, errori: attesi });
+      for (const a of attesi) motiviVisti.add(a.motivo);
+    };
     // Alla radice, in un oggetto annidato, in un oggetto dentro un elenco: il percorso è della ripetizione.
     rifiutaTesto(conRiga('"format": "algodesign",', '  "format": "algodesign",'), e("format", "duplicate_key"));
     rifiutaTesto(conRiga('"name": "Prova",', '    "name": "Altro",'), e("metadata.name", "duplicate_key"));
@@ -615,7 +623,7 @@ describe("casi d'uso e atteso", () => {
     };
     accetta(statico);
     rifiuta((p) => (statico(p), (caso(p, 1).expected.static_error.code = "uninitialized")), e("test_cases[1].expected.static_error.code", "invalid_value"));
-    rifiuta((p) => (statico(p), (caso(p, 1).expected.output = "a")), e("test_cases[1].expected.output", "invalid_value"));
+    rifiuta((p) => (statico(p), (caso(p, 1).expected.output = "a")), e("test_cases[1].expected.output", "output_with_static_error"));
   });
   regola("F8.4", () => {
     accetta((p) => (caso(p, 1).expected.warnings = []));
@@ -664,6 +672,20 @@ test("i codici dell'atteso sono quelli del formato, nome per nome: 20 + 28 + 11,
   // Controllo positivo: un nome battuto male con lo stesso conteggio si vede nei due versi.
   const battutoMale = codiciErrore.map((c) => (c === "too_many_steps" ? "too_many_step" : c));
   expect(appaia(codiciDelDocumento.interprete, battutoMale)).toEqual({ conteggi: [20, 20], soloNelDocumento: ["too_many_steps"], soloNelModello: ["too_many_step"] });
+});
+
+// Dopo tutti i rami (Bun esegue le prove nell'ordine in cui sono scritte): ogni motivo d'apertura è dato da almeno un ramo
+// provato qui col suo percorso, e nessun ramo dà un motivo che non c'è; così ogni testo di `i18n/motivi.ts` ha una causa
+// vera, e una causa nuova non resta sotto il testo di un'altra.
+test("ogni motivo d'apertura è dato da almeno un ramo provato, nei due versi", () => {
+  const senzaRamo = motivi.filter((m) => !motiviVisti.has(m));
+  const senzaMotivo = [...motiviVisti].filter((m) => !(motivi as readonly string[]).includes(m));
+  console.log(`motivi d'apertura: ${motivi.length}; dati dai rami provati: ${motiviVisti.size}; senza ramo: ${JSON.stringify(senzaRamo)}`);
+  expect({ senzaRamo, senzaMotivo }).toEqual({ senzaRamo: [], senzaMotivo: [] });
+  // Controllo positivo: un motivo tolto dai visti si vede.
+  const menoUno = new Set(motiviVisti);
+  menoUno.delete("too_deep");
+  expect(motivi.filter((m) => !menoUno.has(m))).toEqual(["too_deep"]);
 });
 
 // Ultima prova del file (Bun le esegue nell'ordine in cui sono scritte): il censimento nei due versi. Ogni

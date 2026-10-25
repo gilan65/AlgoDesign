@@ -10,7 +10,9 @@
 //   altrimenti, nella versione portabile, dalla cartella dell'eseguibile; altrimenti da dove decide il sistema;
 // - `leggi_progetto` con `percorso` → il testo; `scrivi_progetto` con `percorso` e `testo`, scrittura
 //   atomica. Un errore arriva come `{ genere, dettaglio }`: `non_testo` (il file non è UTF-8) o `sistema`
-//   (il messaggio del sistema);
+//   (il messaggio del sistema); gli esempi e i gruppi hanno anche `nome_non_valido` (il nome), `gruppo_con_altro`
+//   (ciò che c'è oltre agli esempi), `gruppo_bloccato` (il messaggio del sistema: un file aperto in un altro programma)
+//   e `sola_lettura` (il nome dell'esempio). I generi sono in `GENERI`, appaiati con `ui/file.ts` da una prova;
 // - `file_dato_all_avvio` → il percorso assoluto del primo argomento della riga di comando, o `null`;
 // - gli esempi sono i file `.algo` di una cartella: quella scelta nelle Impostazioni (`scelta`,
 //   un percorso, che ogni comando degli esempi riceve) se c'è ancora, altrimenti la predefinita, `esempi`
@@ -49,6 +51,9 @@ pub struct ErroreDelFile {
     pub dettaglio: String,
 }
 
+/// I generi di un errore: l'interfaccia ne dice ognuno con le sue parole (`generiDelFile` in `ui/file.ts`).
+pub const GENERI: [&str; 6] = ["non_testo", "sistema", "nome_non_valido", "gruppo_con_altro", "gruppo_bloccato", "sola_lettura"];
+
 fn di_sistema(e: std::io::Error) -> ErroreDelFile {
     ErroreDelFile { genere: "sistema", dettaglio: e.to_string() }
 }
@@ -62,10 +67,18 @@ pub fn scrivi(percorso: &Path, testo: &str) -> Result<(), ErroreDelFile> {
     scrittura::atomica(percorso, testo.as_bytes()).map_err(di_sistema)
 }
 
-/// Il file da aprire all'avvio: il primo argomento, reso assoluto rispetto alla cartella di lavoro.
-pub fn dall_argomento(argomenti: &[OsString], cartella: &Path) -> Option<PathBuf> {
+/// Il file da aprire all'avvio: il primo argomento, reso assoluto rispetto alla cartella di lavoro. La cartella di
+/// lavoro si chiede solo per un argomento relativo: se non si legge (cancellata, su Linux), un avvio senza argomenti o
+/// con un percorso assoluto non ne risente, e un argomento relativo si lascia com'è.
+pub fn dall_argomento(argomenti: &[OsString], cartella: impl FnOnce() -> std::io::Result<PathBuf>) -> Option<PathBuf> {
     let primo = PathBuf::from(argomenti.get(1)?);
-    Some(if primo.is_absolute() { primo } else { cartella.join(primo) })
+    if primo.is_absolute() {
+        return Some(primo);
+    }
+    Some(match cartella() {
+        Ok(c) => c.join(primo),
+        Err(_) => primo,
+    })
 }
 
 /// Il file dove «Salva con nome» scrive.
@@ -100,8 +113,14 @@ pub fn da_salvare(scelto: PathBuf, estensione: &str) -> (PathBuf, bool) {
         nome.push(estensione);
         PathBuf::from(nome)
     };
-    let sostituire = fs::metadata(&percorso).is_ok_and(|m| m.is_file()) && !stesso_file(&percorso, &scelto);
+    let sostituire = da_chiedere(&percorso, &scelto, stesso_file);
     (percorso, sostituire)
+}
+
+/// Si chiede di sostituire un file che c'è, se non è quello scelto: lo stesso percorso lo è sempre, anche quando
+/// l'identità non si legge (`canonicalize` che fallisce su un percorso di rete o per i permessi).
+fn da_chiedere(percorso: &Path, scelto: &Path, stesso: impl Fn(&Path, &Path) -> bool) -> bool {
+    fs::metadata(percorso).is_ok_and(|m| m.is_file()) && !(percorso == scelto || stesso(percorso, scelto))
 }
 
 /// Due percorsi che portano allo stesso file (su Windows anche scritti con altre maiuscole).
@@ -180,10 +199,13 @@ pub fn nome_riservato(nome: &str) -> bool {
     (prefisso == "COM" || prefisso == "LPT") && resto.len() == 1 && "0123456789¹²³".contains(resto[0])
 }
 
-/// Il nome di un esempio è il nome di un file `.algo` nella cartella: niente separatori né `..`, niente
-/// caratteri che Windows non ammette in un nome, nessun nome riservato.
+/// Il nome di un esempio è il nome di un file `.algo` (l'estensione in qualunque maiuscola) nella cartella: niente
+/// separatori né `..`, niente caratteri che Windows non ammette in un nome, niente punto in testa (i file nascosti,
+/// come `._media.algo` che il Mac scrive su una chiavetta), nessun nome riservato. È la regola dell'elenco e delle
+/// scritture: l'app mostra solo gli esempi che sa anche riscrivere e togliere.
 pub fn nome_di_esempio_valido(nome: &str) -> bool {
-    let base = nome.strip_suffix(".algo").unwrap_or("");
+    let fine = nome.len().saturating_sub(ALGO.len());
+    let base = if nome.is_char_boundary(fine) && nome[fine..].eq_ignore_ascii_case(ALGO) { &nome[..fine] } else { "" };
     !base.trim().is_empty()
         && !nome.chars().any(|c| c.is_control() || "\\/:*?\"<>|".contains(c))
         && !nome.starts_with('.')
@@ -214,9 +236,14 @@ fn voci(cartella: &Path, tieni: impl Fn(&fs::DirEntry, &str) -> bool) -> Result<
     Ok(nomi)
 }
 
-/// I file `.algo` di una cartella, in ordine di nome, col testo o perché non si leggono.
+/// Gli esempi di una cartella: i file col nome di un esempio (`nome_di_esempio_valido`).
+fn esempi_di(cartella: &Path) -> Result<Vec<String>, ErroreDelFile> {
+    voci(cartella, |v, n| v.file_type().is_ok_and(|t| t.is_file()) && nome_di_esempio_valido(n))
+}
+
+/// Gli esempi di una cartella, in ordine di nome, col testo o perché non si leggono.
 fn file_di(cartella: &Path) -> Result<Vec<FileDiEsempio>, ErroreDelFile> {
-    let nomi = voci(cartella, |v, n| v.file_type().is_ok_and(|t| t.is_file()) && n.to_lowercase().ends_with(".algo"))?;
+    let nomi = esempi_di(cartella)?;
     Ok(nomi
         .into_iter()
         .map(|nome| match leggi(&cartella.join(&nome)) {
@@ -242,18 +269,18 @@ pub fn elenca(scelta: Option<&str>, predefinita: &Path) -> Result<Esempi, Errore
     Ok(Esempi { cartella: mostrata, predefinita, mancante, esiste: true, file: file_di(cartella)?, gruppi })
 }
 
-fn non_valido(cosa: &str, nome: &str) -> ErroreDelFile {
-    ErroreDelFile { genere: "sistema", dettaglio: format!("nome di {cosa} non valido: {nome:?}") }
+fn non_valido(nome: &str) -> ErroreDelFile {
+    ErroreDelFile { genere: "nome_non_valido", dettaglio: nome.to_owned() }
 }
 
 /// Il file di un esempio: nella cartella, o nel suo gruppo; con un nome o un gruppo che uscirebbe dalla cartella,
 /// l'errore.
 fn percorso_di(cartella: &Path, gruppo: Option<&str>, nome: &str) -> Result<PathBuf, ErroreDelFile> {
     if !nome_di_esempio_valido(nome) {
-        return Err(non_valido("esempio", nome));
+        return Err(non_valido(nome));
     }
     match gruppo {
-        Some(g) if !nome_di_gruppo_valido(g) => Err(non_valido("gruppo", g)),
+        Some(g) if !nome_di_gruppo_valido(g) => Err(non_valido(g)),
         Some(g) => Ok(cartella.join(g).join(nome)),
         None => Ok(cartella.join(nome)),
     }
@@ -272,28 +299,48 @@ pub fn togli_da(cartella: &Path, gruppo: Option<&str>, nome: &str) -> Result<(),
 /// I file che il sistema scrive da solo in una cartella aperta nel Finder o in Esplora risorse: non sono dell'utente.
 const DEL_SISTEMA: [&str; 3] = [".ds_store", "thumbs.db", "desktop.ini"];
 
-/// Toglie un gruppo: i suoi esempi (e i file che il sistema vi ha scritto da solo), poi la sottocartella. Se dentro c'è
-/// altro (un file che non è un esempio, una cartella più in fondo) non tocca nulla: l'app cancella solo ciò che mostra.
+/// Toglie un gruppo: i suoi esempi (e i file che il sistema vi ha scritto da solo), poi la sottocartella. Tutto o
+/// niente: se dentro c'è altro (un file che non è un esempio, una cartella più in fondo: l'app cancella solo ciò che
+/// mostra), un file in sola lettura, o un file aperto in un altro programma, non cancella nulla. Il file aperto lo dice
+/// la sottocartella che non si rinomina (Windows rifiuta di rinominare una cartella con dentro un file aperto senza il
+/// permesso di cancellarlo): la si rinomina prima, in un nome nascosto, e solo dopo si cancella. Se una cancellazione
+/// fallisce lo stesso (un file aperto proprio in quell'istante), la sottocartella torna al suo nome con ciò che resta.
 pub fn togli_gruppo_da(cartella: &Path, gruppo: &str) -> Result<(), ErroreDelFile> {
     if !nome_di_gruppo_valido(gruppo) {
-        return Err(non_valido("gruppo", gruppo));
+        return Err(non_valido(gruppo));
     }
     let dentro = cartella.join(gruppo);
-    let esempi = voci(&dentro, |v, n| v.file_type().is_ok_and(|t| t.is_file()) && n.to_lowercase().ends_with(".algo"))?;
+    let esempi = esempi_di(&dentro)?;
     let del_sistema = voci(&dentro, |v, n| v.file_type().is_ok_and(|t| t.is_file()) && DEL_SISTEMA.contains(&n.to_lowercase().as_str()))?;
-    let altro: Vec<String> = fs::read_dir(&dentro)
+    let mut altro: Vec<String> = fs::read_dir(&dentro)
         .map_err(di_sistema)?
         .filter_map(|v| v.ok())
         .map(|v| v.file_name().to_string_lossy().into_owned())
         .filter(|n| !esempi.contains(n) && !del_sistema.contains(n))
         .collect();
+    altro.sort();
     if !altro.is_empty() {
-        return Err(ErroreDelFile { genere: "sistema", dettaglio: format!("nel gruppo {gruppo:?} c'è altro oltre agli esempi: {}", altro.join(", ")) });
+        return Err(ErroreDelFile { genere: "gruppo_con_altro", dettaglio: altro.join(", ") });
     }
-    for nome in esempi.iter().chain(&del_sistema) {
-        fs::remove_file(dentro.join(nome)).map_err(di_sistema)?;
+    let da_togliere: Vec<&String> = esempi.iter().chain(&del_sistema).collect();
+    if let Some(nome) = da_togliere.iter().find(|n| fs::metadata(dentro.join(n)).is_ok_and(|m| m.permissions().readonly())) {
+        return Err(ErroreDelFile { genere: "sola_lettura", dettaglio: (*nome).clone() });
     }
-    fs::remove_dir(&dentro).map_err(di_sistema)
+    let via = (0..)
+        .map(|n| cartella.join(format!(".{gruppo}.eliminato-{}-{n}", std::process::id())))
+        .find(|p| fs::symlink_metadata(p).is_err())
+        .expect("un nome libero per la sottocartella da eliminare");
+    fs::rename(&dentro, &via).map_err(|e| ErroreDelFile { genere: "gruppo_bloccato", dettaglio: e.to_string() })?;
+    let tolti = (|| {
+        for nome in &da_togliere {
+            fs::remove_file(via.join(nome))?;
+        }
+        fs::remove_dir(&via)
+    })();
+    tolti.map_err(|e| {
+        let _ = fs::rename(&via, &dentro);
+        di_sistema(e)
+    })
 }
 
 fn finestra_del_file(finestra: &tauri::WebviewWindow, filtro: &str, estensione: &str, cartella: Option<&str>, portabile: &CartellaPortabile) -> rfd::FileDialog {
@@ -456,7 +503,7 @@ mod prove {
         scrivi(&percorso, testo).unwrap();
         assert_eq!(fs::read(&percorso).unwrap(), testo.as_bytes());
         assert_eq!(leggi(&percorso).unwrap(), testo);
-        assert!(!scrittura::temporaneo(&percorso).exists());
+        assert_eq!(fs::read_dir(&base).unwrap().count(), 1, "resta un temporaneo accanto al file");
         fs::remove_dir_all(&base).unwrap();
     }
 
@@ -476,10 +523,33 @@ mod prove {
     fn il_file_dato_all_avvio_e_il_primo_argomento_reso_assoluto() {
         let cartella = std::env::temp_dir();
         let argomenti = |v: &[&str]| v.iter().map(OsString::from).collect::<Vec<_>>();
-        assert_eq!(dall_argomento(&argomenti(&["algodesign.exe"]), &cartella), None);
-        assert_eq!(dall_argomento(&argomenti(&["algodesign.exe", "media.algo"]), &cartella), Some(cartella.join("media.algo")));
+        let qui = || Ok(cartella.clone());
+        assert_eq!(dall_argomento(&argomenti(&["algodesign.exe"]), qui), None);
+        assert_eq!(dall_argomento(&argomenti(&["algodesign.exe", "media.algo"]), qui), Some(cartella.join("media.algo")));
         let assoluto = cartella.join("altro").join("x.algo");
-        assert_eq!(dall_argomento(&argomenti(&["algodesign.exe", assoluto.to_str().unwrap()]), &cartella), Some(assoluto));
+        assert_eq!(dall_argomento(&argomenti(&["algodesign.exe", assoluto.to_str().unwrap()]), qui), Some(assoluto.clone()));
+        // La cartella di lavoro che non si legge (cancellata, su Linux) non ferma l'avvio: senza argomenti e con un
+        // percorso assoluto non si chiede nemmeno; un argomento relativo resta com'è.
+        let illeggibile = || -> std::io::Result<PathBuf> { Err(std::io::Error::other("cartella di lavoro cancellata")) };
+        let mai = || -> std::io::Result<PathBuf> { panic!("cartella di lavoro chiesta senza un argomento relativo") };
+        assert_eq!(dall_argomento(&argomenti(&["algodesign.exe"]), mai), None);
+        assert_eq!(dall_argomento(&argomenti(&["algodesign.exe", assoluto.to_str().unwrap()]), mai), Some(assoluto));
+        assert_eq!(dall_argomento(&argomenti(&["algodesign.exe", "media.algo"]), illeggibile), Some(PathBuf::from("media.algo")));
+    }
+
+    /// «Sostituire?» non si chiede per il file scelto, nemmeno quando la sua identità non si legge.
+    #[test]
+    fn il_file_scelto_non_fa_chiedere_anche_se_l_identita_non_si_legge() {
+        let base = cartella_di_prova("identita");
+        let scelto = base.join("media.algo");
+        fs::write(&scelto, "c'era").unwrap();
+        let mai_lo_stesso = |_: &Path, _: &Path| false;
+        assert!(!da_chiedere(&scelto, &scelto, mai_lo_stesso));
+        // Controllo positivo: un altro file che c'è fa chiedere, e uno che non c'è no.
+        let altro = base.join("media.json");
+        assert!(da_chiedere(&scelto, &altro, mai_lo_stesso));
+        assert!(!da_chiedere(&base.join("manca.algo"), &altro, mai_lo_stesso));
+        fs::remove_dir_all(&base).unwrap();
     }
 
     /// I file di un elenco: nome, testo, genere dell'errore.
@@ -578,6 +648,137 @@ mod prove {
         fs::remove_dir_all(&base).unwrap();
     }
 
+    /// Una regola sola per l'elenco e per le scritture: un esempio elencato si riscrive e si toglie (anche con
+    /// l'estensione in maiuscolo), e un nome che l'app non sa gestire (i file nascosti, come quelli che il Mac scrive
+    /// accanto a ogni file su una chiavetta exFAT, `._media.algo`) non si elenca e resta com'è.
+    #[test]
+    fn l_elenco_mostra_solo_gli_esempi_che_si_possono_riscrivere_e_togliere() {
+        let base = cartella_di_prova("elenco-e-scritture");
+        let cartella = base.join("esempi");
+        fs::create_dir_all(cartella.join("Gruppo")).unwrap();
+        let mut nascosti = vec!["._media.algo", ".nascosto.algo"];
+        // Su Linux un nome può avere i due punti, che Windows non ammette.
+        if cfg!(unix) {
+            nascosti.push("a:b.algo");
+        }
+        for nome in ["Prova.ALGO", "media.Algo"].iter().chain(&nascosti) {
+            fs::write(cartella.join(nome), "c'era").unwrap();
+            fs::write(cartella.join("Gruppo").join(nome), "c'era").unwrap();
+        }
+        let esempi = elenca(None, &cartella).unwrap();
+        let elencati: Vec<&str> = esempi.file.iter().map(|f| f.nome.as_str()).collect();
+        let nel_gruppo: Vec<&str> = esempi.gruppi[0].file.iter().map(|f| f.nome.as_str()).collect();
+        println!("elencati {elencati:?}, nel gruppo {nel_gruppo:?}, non elencati {nascosti:?}");
+        assert_eq!(elencati, vec!["Prova.ALGO", "media.Algo"]);
+        assert_eq!(nel_gruppo, elencati);
+        for gruppo in [None, Some("Gruppo")] {
+            for nome in &elencati {
+                scrivi_in(&cartella, gruppo, nome, "nuovo").unwrap();
+                togli_da(&cartella, gruppo, nome).unwrap();
+            }
+        }
+        let dentro = |c: &Path| {
+            let mut n: Vec<String> = fs::read_dir(c).unwrap().filter_map(|v| v.ok()).filter(|v| v.path().is_file()).map(|v| v.file_name().to_string_lossy().into_owned()).collect();
+            n.sort();
+            n
+        };
+        let mut attesi: Vec<String> = nascosti.iter().map(|n| n.to_string()).collect();
+        attesi.sort();
+        // I nomi non elencati restano, col testo di prima.
+        assert_eq!(dentro(&cartella), attesi);
+        assert_eq!(dentro(&cartella.join("Gruppo")), attesi);
+        assert!(nascosti.iter().all(|n| fs::read_to_string(cartella.join(n)).unwrap() == "c'era"));
+        fs::remove_dir_all(&base).unwrap();
+    }
+
+    /// «Elimina il gruppo» è tutto o niente: con un esempio in sola lettura non si cancella nulla, e l'errore lo nomina.
+    #[test]
+    fn un_gruppo_con_un_esempio_in_sola_lettura_resta_intero() {
+        let base = cartella_di_prova("gruppo-sola-lettura");
+        let cartella = base.join("esempi");
+        for nome in ["a.algo", "b.algo", "c.algo"] {
+            scrivi_in(&cartella, Some("Verifica"), nome, "x").unwrap();
+        }
+        let b = cartella.join("Verifica").join("b.algo");
+        let mut permessi = fs::metadata(&b).unwrap().permissions();
+        permessi.set_readonly(true);
+        fs::set_permissions(&b, permessi.clone()).unwrap();
+        let errore = togli_gruppo_da(&cartella, "Verifica").unwrap_err();
+        let restano: Vec<bool> = ["a.algo", "b.algo", "c.algo"].iter().map(|n| cartella.join("Verifica").join(n).exists()).collect();
+        println!("errore {errore:?}, restano {restano:?}");
+        assert_eq!(restano, vec![true, true, true]);
+        assert_eq!(errore, ErroreDelFile { genere: "sola_lettura", dettaglio: "b.algo".into() });
+        // Controllo positivo: tolta la sola lettura, il gruppo va via intero.
+        #[allow(clippy::permissions_set_readonly_false)]
+        permessi.set_readonly(false);
+        fs::set_permissions(&b, permessi).unwrap();
+        togli_gruppo_da(&cartella, "Verifica").unwrap();
+        assert!(!cartella.join("Verifica").exists());
+        fs::remove_dir_all(&base).unwrap();
+    }
+
+    /// «Elimina il gruppo» è tutto o niente: con un esempio aperto da un altro programma (senza permettere di
+    /// cancellarlo) non si cancella nulla.
+    #[cfg(windows)]
+    #[test]
+    fn un_gruppo_con_un_esempio_aperto_in_un_altro_programma_resta_intero() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let base = cartella_di_prova("gruppo-aperto");
+        let cartella = base.join("esempi");
+        for nome in ["a.algo", "b.algo", "c.algo"] {
+            scrivi_in(&cartella, Some("Verifica"), nome, "x").unwrap();
+        }
+        // Condiviso solo in lettura (FILE_SHARE_READ): né scrittura né cancellazione, come fa un programma che lo tiene aperto.
+        let aperto = fs::OpenOptions::new().read(true).share_mode(1).open(cartella.join("Verifica").join("b.algo")).unwrap();
+        let errore = togli_gruppo_da(&cartella, "Verifica").unwrap_err();
+        let restano: Vec<bool> = ["a.algo", "b.algo", "c.algo"].iter().map(|n| cartella.join("Verifica").join(n).exists()).collect();
+        println!("errore {errore:?}, restano {restano:?}");
+        assert_eq!(restano, vec![true, true, true]);
+        assert_eq!(errore.genere, "gruppo_bloccato");
+        // Nessuna cartella nascosta lasciata accanto ai gruppi.
+        assert_eq!(fs::read_dir(&cartella).unwrap().count(), 1);
+        // Controllo positivo: chiuso il file, il gruppo va via intero.
+        drop(aperto);
+        togli_gruppo_da(&cartella, "Verifica").unwrap();
+        assert!(!cartella.join("Verifica").exists());
+        fs::remove_dir_all(&base).unwrap();
+    }
+
+    /// I generi degli errori del guscio sono quelli che l'interfaccia sa dire (`generiDelFile` in `ui/file.ts`), e ogni
+    /// genere scritto in questo file è fra quelli: un genere nuovo da un lato solo arriverebbe come «sistema» o non
+    /// verrebbe detto.
+    #[test]
+    fn i_generi_degli_errori_sono_quelli_che_l_interfaccia_sa_dire() {
+        let interfaccia = include_str!("../../ui/file.ts");
+        let da = interfaccia.find("export const generiDelFile = [").expect("manca generiDelFile in ui/file.ts") + "export const generiDelFile = [".len();
+        let corpo = &interfaccia[da..da + interfaccia[da..].find(']').unwrap()];
+        let letti: std::collections::BTreeSet<&str> = corpo.split(',').map(|g| g.trim().trim_matches('"')).filter(|g| !g.is_empty()).collect();
+        let dichiarati: std::collections::BTreeSet<&str> = GENERI.into_iter().collect();
+        let sorgente = include_str!("progetto.rs");
+        let scritti: std::collections::BTreeSet<&str> = sorgente.match_indices("genere: \"").map(|(i, _)| &sorgente[i + 9..i + 9 + sorgente[i + 9..].find('"').unwrap()]).collect();
+        println!("generi: dell'interfaccia {letti:?}, del guscio {dichiarati:?}, scritti nel guscio {scritti:?}");
+        assert_eq!(letti, dichiarati);
+        assert!(scritti.is_subset(&dichiarati), "generi scritti e non dichiarati: {:?}", scritti.difference(&dichiarati).collect::<Vec<_>>());
+        // Le premesse: i rilevatori trovano i sei generi, e nel guscio almeno i cinque che si scrivono come testo.
+        assert_eq!(letti.len(), 6);
+        assert!(scritti.len() >= 5, "{scritti:?}");
+    }
+
+    /// Gli errori del guscio che l'interfaccia deve dire con parole sue hanno un genere e i dati, non una frase.
+    #[test]
+    fn gli_errori_dei_nomi_e_dei_gruppi_hanno_il_loro_genere() {
+        let base = cartella_di_prova("generi");
+        let cartella = base.join("esempi");
+        assert_eq!(togli_da(&cartella, None, "a/b.algo").unwrap_err(), ErroreDelFile { genere: "nome_non_valido", dettaglio: "a/b.algo".into() });
+        assert_eq!(scrivi_in(&cartella, Some("a?"), "x.algo", "x").unwrap_err(), ErroreDelFile { genere: "nome_non_valido", dettaglio: "a?".into() });
+        assert_eq!(togli_gruppo_da(&cartella, "..").unwrap_err(), ErroreDelFile { genere: "nome_non_valido", dettaglio: "..".into() });
+        scrivi_in(&cartella, Some("Altro"), "c.algo", "c").unwrap();
+        fs::write(cartella.join("Altro").join("note.txt"), "x").unwrap();
+        fs::create_dir(cartella.join("Altro").join("più in fondo")).unwrap();
+        assert_eq!(togli_gruppo_da(&cartella, "Altro").unwrap_err(), ErroreDelFile { genere: "gruppo_con_altro", dettaglio: "note.txt, più in fondo".into() });
+        fs::remove_dir_all(&base).unwrap();
+    }
+
     #[test]
     fn la_cartella_scelta_vale_se_esiste_altrimenti_la_predefinita_senza_ricrearla() {
         let base = cartella_di_prova("scelta");
@@ -607,15 +808,74 @@ mod prove {
         fs::remove_dir_all(&base).unwrap();
     }
 
+    #[derive(serde::Deserialize)]
+    struct Coppia {
+        buoni: Vec<String>,
+        cattivi: Vec<String>,
+    }
+
+    #[derive(serde::Deserialize)]
+    struct Riservati {
+        si: Vec<String>,
+        no: Vec<String>,
+    }
+
+    #[derive(serde::Deserialize)]
+    struct Nomi {
+        esempi: Coppia,
+        gruppi: Coppia,
+        riservati: Riservati,
+    }
+
+    /// Un nome della tabella col carattere di controllo scritto `<U+XXXX>` costruito.
+    fn con_i_controlli(nome: &str) -> String {
+        let mut fuori = String::new();
+        let mut resto = nome;
+        while let Some(i) = resto.find("<U+") {
+            fuori.push_str(&resto[..i]);
+            let codice = u32::from_str_radix(&resto[i + 3..i + 7], 16).expect("<U+XXXX> con quattro cifre esadecimali");
+            fuori.push(char::from_u32(codice).unwrap());
+            resto = &resto[i + 8..];
+        }
+        fuori + resto
+    }
+
+    /// La tabella dei nomi comune con la prova dell'interfaccia (`ui/esempi.test.ts`).
+    fn nomi() -> Nomi {
+        let mut n: Nomi = serde_json::from_str(include_str!("nomi.json")).unwrap();
+        for lista in [&mut n.esempi.buoni, &mut n.esempi.cattivi, &mut n.gruppi.buoni, &mut n.gruppi.cattivi, &mut n.riservati.si, &mut n.riservati.no] {
+            for nome in lista.iter_mut() {
+                *nome = con_i_controlli(nome);
+            }
+        }
+        n
+    }
+
+    #[test]
+    fn i_nomi_riservati_di_windows_sono_quelli_della_tabella_comune() {
+        let n = nomi();
+        for nome in &n.riservati.si {
+            assert!(nome_riservato(nome), "{nome:?}");
+        }
+        for nome in &n.riservati.no {
+            assert!(!nome_riservato(nome), "{nome:?}");
+        }
+        println!("riservati {}, simili {}", n.riservati.si.len(), n.riservati.no.len());
+        // Controllo positivo: i caratteri di controllo della tabella sono costruiti.
+        assert!(n.esempi.cattivi.iter().any(|c| c.chars().any(|x| x == '\u{7f}')), "nessun U+007F costruito");
+    }
+
     #[test]
     fn il_nome_di_un_esempio_non_esce_dalla_cartella() {
-        // Accanto ai nomi riservati di Windows, quelli che ci assomigliano e non lo sono.
-        for buono in ["media.algo", "Media dei voti.algo", "è (2).algo", "CONSOLE.algo", "con2.algo", "COM10.algo", "nul (2).algo", "LPT.algo"] {
-            assert!(nome_di_esempio_valido(buono), "{buono}");
+        // Dalla tabella comune: accanto ai nomi riservati di Windows, quelli che ci assomigliano e non lo sono.
+        let n = nomi();
+        for buono in &n.esempi.buoni {
+            assert!(nome_di_esempio_valido(buono), "{buono:?}");
         }
-        for cattivo in ["", ".algo", " .algo", "media", "media.txt", "../media.algo", "a/b.algo", "a\\b.algo", "C:media.algo", "..algo", "a?.algo", "a\u{7}.algo", "CON.algo", "nul.algo", "Aux.algo", "prn.algo", "COM1.algo", "lpt9.algo", "COM¹.algo", "con .algo", "NUL.tar.algo"] {
-            assert!(!nome_di_esempio_valido(cattivo), "{cattivo}");
+        for cattivo in &n.esempi.cattivi {
+            assert!(!nome_di_esempio_valido(cattivo), "{cattivo:?}");
         }
+        println!("esempi buoni {}, cattivi {}", n.esempi.buoni.len(), n.esempi.cattivi.len());
         let base = cartella_di_prova("fuori");
         assert!(scrivi_in(&base.join("esempi"), None, "../fuori.algo", "x").is_err());
         assert!(!base.join("fuori.algo").exists());
@@ -624,14 +884,16 @@ mod prove {
 
     #[test]
     fn il_gruppo_di_un_esempio_non_esce_dalla_cartella() {
-        for buono in ["Primi passi", "Funzioni e procedure", "I miei esempi (2)", "è"] {
-            assert!(nome_di_gruppo_valido(buono), "{buono}");
+        let n = nomi();
+        for buono in &n.gruppi.buoni {
+            assert!(nome_di_gruppo_valido(buono), "{buono:?}");
         }
         let base = cartella_di_prova("gruppo-fuori");
         let cartella = base.join("esempi");
+        // Dalla tabella comune, più un percorso assoluto di questa macchina.
         let assoluto = base.join("altrove").to_string_lossy().into_owned();
-        let cattivi = ["", " ", "..", ".", "../fuori", "a/b", "a\\b", "C:", "C:fuori", "/fuori", "\\\\server\\x", "nascosta/..", ".nascosta", "fine.", "fine ", "a?", "a\u{7}", "CON", "nul", "Com3", "LPT1", "aux.txt", assoluto.as_str()];
-        for cattivo in cattivi {
+        let cattivi: Vec<&str> = n.gruppi.cattivi.iter().map(String::as_str).chain([assoluto.as_str()]).collect();
+        for &cattivo in &cattivi {
             assert!(!nome_di_gruppo_valido(cattivo), "{cattivo}");
             assert!(scrivi_in(&cartella, Some(cattivo), "x.algo", "x").is_err(), "{cattivo}");
             assert!(togli_da(&cartella, Some(cattivo), "x.algo").is_err(), "{cattivo}");
@@ -766,23 +1028,44 @@ mod prove {
         assert!(!modificato.load(Ordering::SeqCst), "controllo positivo spento: dopo una chiusura riuscita «modificato» resta");
     }
 
+    /// Il file system del disco che contiene `percorso` («NTFS», «exFAT», «FAT32»).
+    #[cfg(windows)]
+    fn file_system(percorso: &Path) -> String {
+        use std::os::windows::ffi::OsStrExt;
+        use windows_sys::Win32::Storage::FileSystem::{GetVolumeInformationW, GetVolumePathNameW};
+        let largo: Vec<u16> = percorso.as_os_str().encode_wide().chain([0]).collect();
+        let mut radice = [0u16; 261];
+        let mut nome = [0u16; 261];
+        // SAFETY: le stringhe finiscono con lo zero e i buffer hanno la lunghezza dichiarata.
+        unsafe {
+            assert_ne!(GetVolumePathNameW(largo.as_ptr(), radice.as_mut_ptr(), radice.len() as u32), 0, "la radice del disco di {percorso:?}");
+            let (n16, n32) = (std::ptr::null_mut(), std::ptr::null_mut());
+            assert_ne!(GetVolumeInformationW(radice.as_ptr(), n16, 0, n32, n32, n32, nome.as_mut_ptr(), nome.len() as u32), 0, "il file system di {percorso:?}");
+        }
+        String::from_utf16_lossy(&nome[..nome.iter().position(|c| *c == 0).unwrap()])
+    }
+
     /// Su Windows «media.ALGO» e «media.algo» sono lo stesso file: il sistema ha già chiesto di sostituirlo, e
-    /// l'app non chiede una seconda volta; il file scritto resta uno solo.
+    /// l'app non chiede una seconda volta; il file scritto resta uno solo, col testo nuovo. Il nome dopo la rinomina
+    /// dipende dal disco: su NTFS è quello nuovo (`media.algo`); su exFAT resta quello vecchio (`media.ALGO`, misurato
+    /// sulla chiavetta), e fuori da NTFS si accettano i due (scelta dichiarata: nessuna perdita, cambia solo l'aspetto).
     #[cfg(windows)]
     #[test]
     fn su_windows_lestensione_con_altre_maiuscole_e_lo_stesso_file_nessuna_seconda_domanda() {
         let base = cartella_di_prova("maiuscole");
+        let disco = file_system(&base);
         fs::write(base.join("media.ALGO"), "c'era").unwrap();
         let (percorso, sostituire) = da_salvare(base.join("media.ALGO"), ALGO);
         assert_eq!((percorso.clone(), sostituire), (base.join("media.algo"), false));
         scrivi(&percorso, "nuovo").unwrap();
         let nomi: Vec<_> = fs::read_dir(&base).unwrap().map(|v| v.unwrap().file_name().to_string_lossy().into_owned()).collect();
-        println!("nomi nella cartella dopo la scrittura atomica: {nomi:?}");
+        println!("disco {disco}; nomi nella cartella dopo la scrittura atomica: {nomi:?}");
         assert_eq!(leggi(&base.join("media.algo")).unwrap(), "nuovo");
-        // Misurato solo su NTFS: la rinomina sopra il file vecchio gli dà il nome nuovo, con le maiuscole nuove. Su
-        // una chiavetta FAT32 o exFAT non è misurato (il nome può restare quello vecchio: un file solo, nessuna
-        // seconda domanda).
-        assert_eq!(nomi, vec!["media.algo"]);
+        if disco == "NTFS" {
+            assert_eq!(nomi, vec!["media.algo"]);
+        } else {
+            assert!(nomi == vec!["media.algo"] || nomi == vec!["media.ALGO"], "{nomi:?}");
+        }
         fs::remove_dir_all(&base).unwrap();
     }
 }

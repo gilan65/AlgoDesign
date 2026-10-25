@@ -39,6 +39,14 @@ export function ricarica(e: { key: string; code?: string; ctrlKey: boolean; meta
   return e.key === "F5" || ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key.toLowerCase() === "r" || e.code === "KeyR"));
 }
 
+/** I tasti che nel motore lasciano la pagina: quelli che la ricaricano (`ricarica`, più il tasto «Aggiorna» che certe
+ * tastiere hanno) e quelli che tornano indietro o vanno avanti fra le pagine (i tasti «Indietro» e «Avanti», Alt+freccia
+ * a sinistra e a destra). L'app è una pagina sola: nessuno di loro le serve. */
+export function lasciaLaPagina(e: { key: string; code?: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean }): boolean {
+  if (ricarica(e) || ["BrowserRefresh", "BrowserBack", "BrowserForward"].includes(e.key)) return true;
+  return e.altKey && !e.ctrlKey && !e.metaKey && (e.key === "ArrowLeft" || e.key === "ArrowRight");
+}
+
 /** Il tasto che elimina ciò che ha il fuoco (un blocco, un dato, un caso): Canc; sul Mac, che non ha Canc, anche ⌫
  * da solo, mai in un campo di testo (lì cancella le lettere). */
 export function tastoCheElimina(e: { key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean; target: EventTarget | null }, mac = sulMac()): boolean {

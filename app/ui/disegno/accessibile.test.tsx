@@ -307,12 +307,13 @@ test("nello strato ogni valore iniziale è un pulsante sul suo blocco, col nome 
   // La voce sta sulla forma del suo blocco.
   const forme = [...flowchart.querySelectorAll("[data-valore-iniziale] polygon")].map((p) => p.getAttribute("points"));
   expect(voci.map((v) => v.querySelector("polygon")?.getAttribute("points"))).toEqual(forme);
-  // Clic, doppio clic, e il puntatore premuto e mosso: si sceglie, si apre, non si trascina.
+  // Clic, doppio clic, e il puntatore premuto e mosso (col tasto premuto anche nel movimento, `buttons`: senza, il
+  // disegno lo tratta come un trascinamento rimasto da un rilascio fuori, e lo annulla): si sceglie, si apre, non si trascina.
   await act(async () => {
     fireEvent.click(voci[1]!);
     fireEvent.doubleClick(voci[3]!);
     fireEvent.pointerDown(voci[0]!, { button: 0, isPrimary: true, pointerId: 1, clientX: 10, clientY: 10 });
-    fireEvent.pointerMove(flowchart, { pointerId: 1, clientX: 80, clientY: 80 });
+    fireEvent.pointerMove(flowchart, { pointerId: 1, buttons: 1, clientX: 80, clientY: 80 });
     fireEvent.pointerUp(flowchart, { pointerId: 1, clientX: 80, clientY: 80 });
   });
   expect(scelti).toEqual(["dati-4"]);
@@ -322,7 +323,7 @@ test("nello strato ogni valore iniziale è un pulsante sul suo blocco, col nome 
   const blocco = flowchart.querySelector('[data-blocco="b1"]')!;
   await act(async () => {
     fireEvent.pointerDown(blocco, { button: 0, isPrimary: true, pointerId: 2, clientX: 10, clientY: 10 });
-    fireEvent.pointerMove(flowchart, { pointerId: 2, clientX: 80, clientY: 80 });
+    fireEvent.pointerMove(flowchart, { pointerId: 2, buttons: 1, clientX: 80, clientY: 80 });
     fireEvent.pointerUp(flowchart, { pointerId: 2, clientX: 80, clientY: 80 });
   });
   expect(presi).toEqual(["b1"]);

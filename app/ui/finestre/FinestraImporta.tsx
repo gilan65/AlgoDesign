@@ -25,7 +25,8 @@ import type { Funzione, Progetto } from "../../core/progetto/modello";
 import type { Dizionario } from "../../i18n/it";
 import { riempi, type Lingua } from "../../i18n/lingue";
 import { testiDelDisegno } from "../disegno/testi";
-import { cerca, gruppoDi, gruppoValido, testoDelProblema, type Esempio, type EsempiDellaCartella } from "../esempi";
+import { cerca, gruppoDi, testoDelProblema, type Esempio, type EsempiDellaCartella } from "../esempi";
+import { gruppoValido } from "../nomi";
 import { Descrizione, Finestra, Rinuncia, stili } from "./Finestra";
 
 /** La voce «Nuovo gruppo…» dell'elenco dei gruppi: una barra, che il nome di un gruppo non può avere. */
@@ -124,7 +125,7 @@ function DaDove({ cartella, librerie, testi, lingua, daUnAltroFile, aggiungi, ca
       <span className={stili.nome}>
         <strong className={stili.titoloDellEsempio}>{e.progetto?.metadata.name ?? e.nome}</strong>
         {e.progetto?.metadata.description && <span className={stili.descrizione}>{e.progetto.metadata.description}</span>}
-        {e.problema && <span className={stili.errore}>{riempi(testi.esempioNonSiApre, { motivo: testoDelProblema(e.problema, testi, lingua) })}</span>}
+        {e.problema && <span className={stili.errore}>{riempi(testi.esempioNonSiApre, { motivo: testoDelProblema(e.problema, testi) })}</span>}
         <span className={stili.etichetta}>
           {e.progetto === null ? e.nome : riempi(testi.importaQuante, { file: e.nome, n: String(e.progetto.functions.filter((f) => f.kind !== "main").length) })}
         </span>

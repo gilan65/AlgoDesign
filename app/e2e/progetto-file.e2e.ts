@@ -5,8 +5,9 @@
 // - Apri e salva: ogni file del corpus si apre con «Apri», dalle tappe 1 e 2 (coi cicli `per` e `per ogni`) alla
 //   ricorsione della tappa 4, e salvato con «Salva con nome» dà lo stesso testo (stringhe uguali: il guscio vero legge
 //   e scrive UTF-8 senza toccare i byte, lo prova `cargo test`).
-// - I tredici motivi d'apertura: per ognuno un file rotto scritto qui (il lettore conferma che ha QUEL motivo),
-//   aperto dall'interfaccia in italiano e in inglese; la finestra mostra percorso e testo del motivo. I motivi
+// - I quattordici motivi d'apertura: per ognuno un file rotto scritto qui (il lettore conferma che ha QUEL motivo),
+//   aperto dall'interfaccia in italiano e in inglese; la finestra mostra la frase per lo studente, e nei dettagli
+//   (chiusi di partenza, aperti col clic) percorso e testo del motivo. I motivi
 //   del lettore e quelli provati si appaiano nei due versi.
 // - Il giro salva → apri, «Salva» legato al file dopo il primo «Salva con nome», la riga di stato col nome del
 //   file e «modificato», Ctrl+S.
@@ -24,8 +25,9 @@
 // - Il file dato come argomento si apre all'avvio.
 // - Ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, conferma delle modifiche, Informazioni,
 //   conferma prima di togliere un esempio) trattiene il fuoco e si chiude con Esc; i giri sono appaiati nei due versi coi
-//   componenti che usano la finestra comune, e le tre conferme che nascono dal lavoro (dato, valore iniziale, file da
-//   sostituire) si nominano nella prova dove si aprono. Il rosso porta il registro: per ogni tasto
+//   componenti che usano la finestra comune, e le finestre che nascono dal lavoro (le conferme del dato, del valore
+//   iniziale e del file da sostituire, l'avviso del nome del file, l'eliminazione di una funzione) si nominano nella prova
+//   dove si aprono. Il rosso porta il registro: per ogni tasto
 //   dov'era il fuoco e dove è andato, se la finestra c'era, il `tabindex` del pannello della scheda, tempo e
 //   fotogramma dall'apertura, e gli eventi di fuoco della pagina.
 // - Una finestra appena aperta riceve subito i tasti, senza che la prova aspetti il fuoco: Proprietà aperta con
@@ -191,10 +193,11 @@ const rotti: Record<Motivo, string> = {
   duplicate_id: testo((p) => (p.functions[0].body[1].id = p.functions[0].body[0].id)),
   duplicate_test_case_name: testo((p) => p.test_cases.push({ ...p.test_cases[0] })),
   error_and_static_error: testo((p) => (p.test_cases[0].expected = { output: "", error: { code: "input_exhausted", block: "b1" }, static_error: { code: "syntax_error", block: "b1" } })),
+  output_with_static_error: testo((p) => (p.test_cases[0].expected = { output: "a", static_error: { code: "syntax_error", block: "b1" } })),
   too_deep: annidati(livelliMassimi + 1),
 };
 
-test("ognuno dei tredici motivi d'apertura ha il suo testo, in italiano e in inglese, appaiato coi motivi del lettore nei due versi", async ({ page }) => {
+test("ognuno dei quattordici motivi d'apertura ha il suo testo, in italiano e in inglese, appaiato coi motivi del lettore nei due versi", async ({ page }) => {
   test.setTimeout(120_000);
   // Premessa: ogni file rotto ha (anche) il suo motivo, secondo il lettore.
   const visti = new Map<Motivo, string[]>();
@@ -222,6 +225,10 @@ test("ognuno dei tredici motivi d'apertura ha il suo testo, in italiano e in ing
       await (await voceDelMenu(p, testi.apri, testi)).click();
       const errore = p.getByRole("alertdialog", { name: riempi(testi.apriErroreTitolo, { file: `${m}.algo` }), exact: true });
       await expect(errore).toBeVisible();
+      // La frase per lo studente in testa; le voci in «Dettagli», chiuso di partenza: prima di aprirlo non si vedono.
+      await expect(errore.getByText(testi.apriNonEUnProgetto, { exact: true })).toBeVisible();
+      await expect(errore.getByRole("listitem")).toHaveCount(0);
+      await errore.getByText(testi.dettagli, { exact: true }).click();
       const voci = await errore.getByRole("listitem").allInnerTexts();
       const attese = visti.get(m)!.map((percorso) => `${percorso === "" ? testi.erroreDelFileIntero : percorso}: ${testiDeiMotivi[lingua][m]}`);
       for (const a of attese) expect(voci, `«${m}» in «${lingua}»: manca la voce`).toContain(a);
@@ -231,7 +238,7 @@ test("ognuno dei tredici motivi d'apertura ha il suo testo, in italiano e in ing
     await p.close();
   }
   console.log(`motivi d'apertura: ${motivi.length}, provati in due lingue, voci mostrate ${mostrati}`);
-  expect(motivi.length).toBe(13);
+  expect(motivi.length).toBe(14);
 });
 
 // --------------------------------------------------------------------------------- salva e apri
@@ -595,10 +602,11 @@ test("la cartella degli esempi: un file che non si apre resta nell'elenco col mo
   await (await voceDellAiuto(page, it.esempi)).click();
   const esempi = finestra(page, it.esempiTitolo);
   const rotto = rigaDellEsempio(esempi, "rotto.algo");
-  await expect(rotto).toContainText(riempi(it.esempioNonSiApre, { motivo: `${it.erroreDelFileIntero}: ${testiDeiMotivi.it.invalid_json}` }));
+  // La frase per lo studente; il percorso del campo e il motivo li dà «Apri», nei dettagli della finestra degli errori.
+  await expect(rotto).toContainText(riempi(it.esempioNonSiApre, { motivo: it.apriNonEUnProgetto }));
   await expect(rotto.getByRole("button", { name: it.esempioApri, exact: true })).toHaveAttribute("aria-disabled", "true");
   const profondo = rigaDellEsempio(esempi, "profondo.algo");
-  await expect(profondo).toContainText(testiDeiMotivi.it.too_deep);
+  await expect(profondo).toContainText(riempi(it.esempioNonSiApre, { motivo: it.apriNonEUnProgetto }));
   await expect(profondo.getByRole("button", { name: it.esempioApri, exact: true })).toHaveAttribute("aria-disabled", "true");
   // Controllo positivo: gli altri si aprono.
   await expect(rigaDellEsempio(esempi, "riferimento-media-voti").getByRole("button", { name: it.esempioApri, exact: true })).toHaveAttribute("aria-disabled", "false");
@@ -760,6 +768,8 @@ test("ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, c
     ConfermaEliminazione: ["modifica-dati.e2e.ts", "eliminaDatoTitolo"],
     ConfermaValoreIniziale: ["valori-iniziali.e2e.ts", "togliValoreTitolo"],
     ConfermaSostituzione: ["tabella.e2e.ts", "sostituireTitolo"],
+    // L'avviso del nome del file: vuole un progetto con un nome che cambia, e un salvataggio.
+    AvvisoDelNome: ["codice.e2e.ts", "nomeCambiaTitolo"],
     // La conferma prima di eliminare una procedura o una funzione: vuole un progetto che ne abbia una.
     EliminaFunzione: ["funzioni.e2e.ts", "eliminaFunzioneTitoloF"],
   };

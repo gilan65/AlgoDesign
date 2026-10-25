@@ -140,6 +140,14 @@
   outline: none;
 }
 
+/* Un blocco si trascina: col tocco il gesto non fa scorrere la vista (fuori dai blocchi sì), e col mouse non
+   seleziona il testo che attraversa. */
+.modificabile .blocco {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .areaDelBlocco {
   fill: transparent;
   stroke: none;

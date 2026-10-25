@@ -48,8 +48,16 @@
 //      `.csv` scritto accanto è il CSV atteso della lingua (`core/esecuzione/atteso-del-riferimento.ts`, col BOM),
 //      byte per byte. Controllo positivo: prima di F5 l'output è diverso dall'atteso (e il file non c'è);
 //    - SICUREZZA: nella stessa esecuzione, dall'apertura del file all'esportazione, la pagina non annota violazioni
-//      della politica di sicurezza dei contenuti (quella della configurazione di Tauri). Controllo positivo: uno stile
-//      scritto nella pagina la viola («style-src-elem»), cioè la politica è attiva nel prodotto;
+//      della politica di sicurezza dei contenuti (quella della configurazione di Tauri). Controllo positivo direttiva per
+//      direttiva: per ognuna una cosa vietata fatta nella pagina (uno script e uno stile scritti nella pagina, `eval`,
+//      un'immagine, un carattere, un oggetto e un video incorporati, una richiesta altrove, un indirizzo di base, un
+//      modulo spedito altrove: `strumenti/sonde-della-politica.ts`) fermata con la sua violazione, cioè la politica è
+//      attiva nel prodotto per ogni direttiva; direttive e sonde appaiate nei due versi;
+//    - CODICE: col riferimento chiamato «con» (un nome che Windows riserva) dato come argomento, la colonna del codice
+//      sulla WebView2 vera mostra il Python; «Copia» lo mette negli appunti di Windows (letti da PowerShell, prima c'era
+//      una sentinella; quelli dell'utente si rimettono alla fine); «Salva…» apre prima l'avviso del nome col nome
+//      «con (2)», «Continua» apre la finestra vera del sistema, che propone «con (2).py» (letto dal campo prima di
+//      compilarlo), e il file scritto è il codice mostrato, byte per byte;
 //    - VETTORE: l'app parte col vettore di 1000 elementi riempito da un ciclo (`e2e/vettore-riempito.ts`, lo stesso
 //      programma della prova nei motori) dato come argomento; F5 lo esegue nella forma predefinita della tabella (le
 //      colonne dei primi dieci e una per gli altri), «Ferma», poi nelle Impostazioni si sceglie la forma in fila e F5
@@ -77,7 +85,10 @@
 //      e aspetta il primo valore (poi la prova la ferma). Una ricarica chiesta dalla pagina fa
 //      chiedere conferma al motore (rifiutata, la pagina resta). Due controlli positivi a ogni corsa: la stessa
 //      via scrive una lettera nel campo dell'autore (arriva alla pagina), e lo stesso F5 ricarica una pagina
-//      senza il fermo (`about:blank`: arriva agli acceleratori). Un tasto che non parte è rosso, mai verde;
+//      senza il fermo (`about:blank`: arriva agli acceleratori). Un tasto che non parte è rosso, mai verde. I tasti del
+//      browser di certe tastiere («Aggiorna», «Indietro»), Alt+freccia e i pulsanti «indietro» e «avanti» del mouse non
+//      passano da qui: mandati come messaggio non raggiungono il motore nemmeno su `about:blank` (misurato),
+//      e si misurano coi tasti veri, una tantum, col primo piano;
 //    - TRACCE: nessuna cartella dell'identificatore e nessuna voce nuova al primo livello di
 //      %APPDATA%, %LOCALAPPDATA%, %TEMP% (e %TMP%, se è un'altra cartella); nella cartella di prova,
 //      accanto all'eseguibile, nient'altro che `data\`. Voci ammesse: nessuna. Il log dice quanto pesa `data\webview`.
@@ -223,9 +234,11 @@ import { userInfo } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { apri as apriProgetto, salva as testoDel } from "../core/progetto/formato";
 import { csvIngleseAtteso, csvItalianoAtteso } from "../core/esecuzione/atteso-del-riferimento";
-import { costruisci as costruisciIlRiferimento, differenze, riferimentoDellaTappa2, riferimentoDellaTappa3 } from "../e2e/costruzione";
+import { costruisci as costruisciIlRiferimento, differenze, primaDifferenza, riferimentoDellaTappa2, riferimentoDellaTappa3 } from "../e2e/costruzione";
 import { vettoreRiempito } from "../e2e/vettore-riempito";
 import { differenzeDallElenco, elencoDelPacchetto } from "./elenco-del-pacchetto";
+import { politicaDelProdotto } from "./politica";
+import { direttiveSenzaSonda, provaLaSonda, sonde } from "./sonde-della-politica";
 import { testiDeiCodici } from "../i18n/codici";
 import { dizionari, linguaDelSistema, nomiLingue, riempi, type Lingua } from "../i18n/lingue";
 
@@ -302,6 +315,7 @@ const clausole: [string, string][] = [
   ["FUNZIONI", "costruzione con le funzioni"],
   ["ESECUZIONE", "esecuzione"],
   ["SICUREZZA", "politica di sicurezza dei contenuti"],
+  ["CODICE", "codice generato"],
   ["VETTORE", "vettore di 1000 elementi"],
   ["RICORSIONE", "ricorsione al tetto"],
   ["CHIUSURA", "chiusura"],
@@ -517,10 +531,15 @@ async function finestraVera(pid: number, azione: "tasto" | "chiudi" | "coperta" 
     return "NON inviato: PowerShell non ha risposto in 30 s";
   }
   log(`${esito.out}${esito.err}(PowerShell: exit ${esito.codice})`);
-  // Una PowerShell che non arriva a stampare l'esito (per esempio `Add-Type` che fallisce): il motivo è il suo errore.
-  const riga = esito.out.trim();
+  // L'esito è la prima riga (dopo «salvato» c'è il nome proposto: `righeDellaFinestraVera`). Una PowerShell che non arriva
+  // a stampare l'esito (per esempio `Add-Type` che fallisce): il motivo è il suo errore.
+  righeDellaFinestraVera = esito.out.trim().split(/\r?\n/);
+  const riga = righeDellaFinestraVera[0] ?? "";
   return riga !== "" ? riga : `NON inviato: PowerShell senza esito (exit ${esito.codice}): ${esito.err.trim().split("\n")[0] ?? ""}`;
 }
+
+/** Le righe stampate dall'ultima chiamata dello strumento della finestra vera. */
+let righeDellaFinestraVera: string[] = [];
 
 /** Il messaggio di chiusura alla finestra; se non parte, la clausola è rossa (il guasto è dello strumento). */
 async function chiudiLaFinestraVera(pid: number): Promise<void> {
@@ -777,6 +796,7 @@ async function giroPortabile(): Promise<void> {
   await giroDellaCostruzione(iniziale);
   await giroDelleFunzioni(iniziale);
   await giroDellEsecuzione(iniziale);
+  await giroDelCodice(iniziale);
   await giroDelVettore(iniziale);
   await giroDellaRicorsione(iniziale);
   await giroDellaChiusura(iniziale);
@@ -958,7 +978,7 @@ async function giroDellaCostruzione(lingua: Lingua): Promise<void> {
     } catch {
       campi = ["(il file sul disco non è JSON)"];
     }
-    rosso("COSTRUZIONE", `${progettoFuori} dopo «Salva» non è l'atteso (${Buffer.byteLength(scritto)} byte invece di ${Buffer.byteLength(attesoDellaCostruzione.testo)}); campi diversi: ${campi.length === 0 ? "nessuno, diversi i byte" : campi.join(", ")}`);
+    rosso("COSTRUZIONE", `${progettoFuori} dopo «Salva» non è l'atteso (${Buffer.byteLength(scritto)} byte invece di ${Buffer.byteLength(attesoDellaCostruzione.testo)}); campi diversi: ${campi.length === 0 ? "nessuno, diversi i byte" : campi.join(", ")}; ${primaDifferenza(scritto, attesoDellaCostruzione.testo)}`);
   }
   const temporanei = readdirSync(cartellaProva).filter((v) => v.endsWith(".tmp"));
   if (temporanei.length > 0) rosso("COSTRUZIONE", `temporanei rimasti accanto al file: ${temporanei.join(", ")}`);
@@ -1015,7 +1035,7 @@ async function giroDelleFunzioni(lingua: Lingua): Promise<void> {
     } catch {
       campi = ["(il file sul disco non è JSON)"];
     }
-    rosso("FUNZIONI", `${progettoFuori} dopo «Salva» non è l'atteso (${Buffer.byteLength(scritto)} byte invece di ${Buffer.byteLength(atteso.testo)}); campi diversi: ${campi.length === 0 ? "nessuno, diversi i byte" : campi.join(", ")}`);
+    rosso("FUNZIONI", `${progettoFuori} dopo «Salva» non è l'atteso (${Buffer.byteLength(scritto)} byte invece di ${Buffer.byteLength(atteso.testo)}); campi diversi: ${campi.length === 0 ? "nessuno, diversi i byte" : campi.join(", ")}; ${primaDifferenza(scritto, atteso.testo)}`);
   }
   rmSync(progettoFuori);
   verde(
@@ -1129,19 +1149,18 @@ async function giroDellEsecuzione(lingua: Lingua): Promise<void> {
     if (detto !== avviso) await Bun.sleep(250);
   }
   const violazioni = await a.pagina.evaluate(() => [...(window as unknown as { __violazioni__: string[] }).__violazioni__]);
-  // Controllo positivo: uno stile scritto nella pagina, che la politica del prodotto non ammette.
-  const sonda = await a.pagina.evaluate(
-    () =>
-      new Promise<string>((fatto) => {
-        document.addEventListener("securitypolicyviolation", (e) => fatto(`${e.effectiveDirective} ${e.blockedURI}`), { once: true });
-        const stile = document.createElement("style");
-        stile.textContent = "body { outline: 1px solid red; }";
-        document.head.append(stile);
-        setTimeout(() => fatto("nessuna violazione"), 5_000);
-      }),
-  );
+  // Controllo positivo direttiva per direttiva: per ognuna una cosa vietata fatta nella pagina, fermata con la sua
+  // violazione (`strumenti/sonde-della-politica.ts`, le stesse dell'anteprima del build); prova anche che la politica è
+  // attiva nel prodotto.
+  const senzaSonda = direttiveSenzaSonda(politicaDelProdotto());
+  const sondeSbagliate: string[] = [];
+  for (const s of sonde) {
+    const vista = await a.pagina.evaluate(provaLaSonda, s.nome);
+    if (vista !== s.attesa) sondeSbagliate.push(`${s.nome}: «${vista}» invece di «${s.attesa}»`);
+  }
   await chiudi(a);
-  if (sonda !== "style-src-elem inline") rosso("SICUREZZA (controllo positivo)", `uno stile scritto nella pagina dà «${sonda}» invece di «style-src-elem inline»: la politica non è attiva nel prodotto`);
+  if (senzaSonda.length > 0) rosso("SICUREZZA (controllo positivo)", `direttive e sonde non appaiate: ${senzaSonda.join(", ")}`);
+  if (sondeSbagliate.length > 0) rosso("SICUREZZA (controllo positivo)", `sonde della politica nel prodotto: ${sondeSbagliate.join("; ")}`);
   if (violazioni.length > 0) rosso("SICUREZZA", `violazioni della politica durante l'esecuzione e l'esportazione: ${violazioni.join("; ")}`);
   if (!existsSync(esportata)) rosso("ESECUZIONE", `nessun ${esportata} dopo «Esporta la tabella…»; avviso «${detto}»`);
   const scritto = readFileSync(esportata, "utf8");
@@ -1160,7 +1179,7 @@ async function giroDellEsecuzione(lingua: Lingua): Promise<void> {
     "ESECUZIONE",
     `in «${lingua}», F5 sul riferimento dato come argomento, ${caso.inputs.length} valori del caso scritti nella console, «${finale}» in ${secondi} s: output uguale all'atteso del caso (${Buffer.byteLength(visto)} byte) | «Esporta la tabella…» con la finestra del sistema compilata («${nomeEsportata}», senza estensione): ${nomeEsportata}.csv di ${Buffer.byteLength(scritto)} byte uguali al CSV atteso, avviso «${detto}», nessun temporaneo | controllo positivo: prima di F5 l'output era diverso (${JSON.stringify(outputPrima)})`,
   );
-  verde("SICUREZZA", `nessuna violazione della politica di sicurezza dei contenuti dall'apertura del file all'esportazione | controllo positivo acceso (uno stile scritto nella pagina: «${sonda}»)`);
+  verde("SICUREZZA", `nessuna violazione della politica di sicurezza dei contenuti dall'apertura del file all'esportazione | controllo positivo acceso (${sonde.length} sonde per ${new Set(sonde.map((s) => s.direttiva)).size} direttive, ognuna fermata con la sua violazione)`);
 }
 
 /** La soglia della finestra che risponde, la stessa della prova nei motori (`e2e/programmi-pesanti.e2e.ts`). */
@@ -1444,6 +1463,85 @@ async function giroDellaRicarica(lingua: Lingua): Promise<void> {
   verde(
     "RICARICA",
     `progetto modificato; F5 mandato alla finestra d'input: nessuna ricarica e nessuna domanda del motore, e l'esecuzione parte («${statoDopoF5}»); una ricarica chiesta dalla pagina: domanda del motore (${domandeDellaRete.join(", ")}), rifiutata, la pagina resta | controlli positivi accesi: la stessa via scrive «${scritto.at(-1)}» nel campo dell'autore, e lo stesso F5 ricarica una pagina senza il fermo (about:blank)`,
+  );
+}
+
+/** Il testo negli appunti di Windows (letti da PowerShell, non dalla pagina), o `null` se non c'è testo. */
+function appunti(): string | null {
+  const r = Bun.spawnSync(["powershell", "-NoProfile", "-Command", "[Console]::OutputEncoding = [Text.Encoding]::UTF8; $t = Get-Clipboard -Raw; if ($null -eq $t) { '<nessun testo>' } else { $t }"], { stdout: "pipe", stderr: "pipe" });
+  const t = r.stdout.toString().replace(/\r?\n$/, "");
+  return t === "<nessun testo>" ? null : t;
+}
+
+/** Mette un testo negli appunti di Windows (passato per variabile d'ambiente: nessuna virgoletta da sfuggire). */
+function scriviAppunti(testo: string): void {
+  Bun.spawnSync(["powershell", "-NoProfile", "-Command", "Set-Clipboard -Value $env:TESTO_DEGLI_APPUNTI"], { env: { ...process.env, TESTO_DEGLI_APPUNTI: testo }, stdout: "pipe", stderr: "pipe" });
+}
+
+/** La clausola CODICE: la colonna del codice sulla WebView2 vera; «Copia» mette il codice Python negli appunti di Windows
+ * (prima c'era una sentinella); col progetto che si chiama «con» (un nome che Windows riserva) «Salva…» apre prima
+ * l'avviso del nome col nome «con (2)», e «Continua» apre la finestra vera del sistema, che propone «con (2).py»; il file
+ * scritto è il codice mostrato. Gli appunti dell'utente si rimettono alla fine. */
+async function giroDelCodice(lingua: Lingua): Promise<void> {
+  const testi = dizionari[lingua];
+  const progetto = JSON.parse(testoDiPartenza) as { metadata: { name: string } };
+  progetto.metadata.name = "con";
+  writeFileSync(progettoFuori, JSON.stringify(progetto, null, 2));
+  const nomeDelCodice = "codice di prova";
+  const salvato = join(cartellaProva, `${nomeDelCodice}.py`);
+  rmSync(salvato, { force: true });
+  const dellUtente = appunti();
+  const sentinella = `sentinella di AlgoDesign ${Date.now()}`;
+  scriviAppunti(sentinella);
+  const a = await avvia([progettoFuori]);
+  let esito: { righe: number; copiato: string | null; avviso: string; campo: string; compilata: string; proposto: string; detto: string; scritto: string | null; testo: string };
+  try {
+    await a.pagina.getByRole("banner").getByRole("button", { name: testi.pannelloCodice, exact: true }).click();
+    const riquadro = a.pagina.getByRole("region", { name: testi.codiceGenerato, exact: true });
+    await riquadro.getByRole("tab", { name: testi.linguaggioPython, exact: true }).click();
+    const righe = await riquadro.locator("[data-riga]").count();
+    const testo = `${(await riquadro.locator("[data-riga] > span:last-child").allTextContents()).map((t) => (t === " " ? "" : t)).join("\n")}\n`;
+    const stato = () => a.pagina.locator('output[role="status"]').textContent({ timeout: 5_000 }).catch(() => "");
+    const attendiStato = async (atteso: string) => {
+      let detto = "";
+      for (let i = 0; i < 40 && detto !== atteso; i++) {
+        detto = (await stato()) ?? "";
+        if (detto !== atteso) await Bun.sleep(250);
+      }
+      return detto;
+    };
+    await riquadro.getByRole("button", { name: testi.codiceCopia, exact: true }).click();
+    const copiato = await attendiStato(riempi(testi.codiceCopiato, { linguaggio: testi.linguaggioPython }));
+    const negliAppunti = appunti();
+    await riquadro.getByRole("button", { name: testi.codiceSalva, exact: true }).click();
+    const avviso = a.pagina.getByRole("dialog", { name: testi.nomeCambiaTitolo, exact: true });
+    const avvisoVisto = await avviso.waitFor({ timeout: 10_000 }).then(
+      () => "visto",
+      () => "non visto",
+    );
+    const campo = avvisoVisto === "visto" ? await avviso.getByLabel(testi.nomeCambiaCampo, { exact: true }).inputValue() : "";
+    if (avvisoVisto === "visto") await avviso.getByRole("button", { name: testi.nomeCambiaContinua, exact: true }).click();
+    const compilata = await finestraVera(a.proc.pid, "salva", join(cartellaProva, nomeDelCodice));
+    const proposto = (righeDellaFinestraVera[1] ?? "").replace(/^proposto: /, "");
+    const detto = await attendiStato(riempi(testi.codiceSalvatoIn, { file: `${nomeDelCodice}.py` }));
+    esito = { righe, copiato: negliAppunti, avviso: `${avvisoVisto}; ${copiato}`, campo, compilata, proposto, detto, scritto: existsSync(salvato) ? readFileSync(salvato, "utf8") : null, testo };
+  } finally {
+    await chiudi(a);
+    if (dellUtente !== null) scriviAppunti(dellUtente);
+    rmSync(progettoFuori, { force: true });
+    rmSync(salvato, { force: true });
+  }
+  if (esito.righe === 0) rosso("CODICE", "la colonna del codice non ha righe");
+  if (esito.copiato === sentinella) rosso("CODICE", `«Copia» non ha cambiato gli appunti di Windows (c'è ancora la sentinella); avviso «${esito.avviso}»`);
+  if ((esito.copiato ?? "").replaceAll("\r\n", "\n") !== esito.testo) rosso("CODICE", `negli appunti di Windows c'è ${visibile(esito.copiato ?? undefined)} invece del codice Python mostrato`);
+  if (!esito.avviso.startsWith("visto")) rosso("CODICE", `«Salva…» col progetto «con» non ha aperto l'avviso del nome (${esito.avviso})`);
+  if (esito.campo !== "con (2)") rosso("CODICE", `nell'avviso il nome proposto è «${esito.campo}» invece di «con (2)»`);
+  if (esito.compilata !== "salvato") rosso("CODICE", `la finestra del sistema per salvare il codice non è stata compilata: ${esito.compilata}`);
+  if (esito.proposto !== "con (2).py") rosso("CODICE", `la finestra del sistema proponeva «${esito.proposto}» invece di «con (2).py»`);
+  if (esito.scritto !== esito.testo) rosso("CODICE", `${salvato}: ${esito.scritto === null ? "non scritto" : primaDifferenza(esito.scritto, esito.testo)}; avviso «${esito.detto}»`);
+  verde(
+    "CODICE",
+    `in «${lingua}», la colonna del codice con ${esito.righe} righe di Python; «Copia»: il codice negli appunti di Windows (${Buffer.byteLength(esito.testo)} byte); «Salva…» col progetto «con»: l'avviso del nome con «${esito.campo}», poi la finestra vera del sistema che proponeva «${esito.proposto}», e il file scritto uguale al codice mostrato | controllo positivo: prima di «Copia» negli appunti c'era una sentinella`,
   );
 }
 

@@ -13,7 +13,7 @@ test("ogni motivo d'apertura ha un testo italiano e uno inglese, e nessun testo 
     for (const m of motivi) expect(testiDeiMotivi[lingua][m].trim().length).toBeGreaterThan(10);
   }
   for (const m of motivi) expect(testiDeiMotivi.it[m]).not.toBe(testiDeiMotivi.en[m]);
-  expect(motivi.length).toBe(13);
+  expect(motivi.length).toBe(14);
   // Il testo del tetto dei livelli dice il numero del lettore.
   for (const lingua of ["it", "en"] as const) expect(testiDeiMotivi[lingua].too_deep).toContain(` ${livelliMassimi} `);
   // Controllo positivo: una chiave tolta e una battuta male si vedono, ognuna nel suo verso.

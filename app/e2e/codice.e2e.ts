@@ -12,6 +12,11 @@
 //   una finestra bassa, ha in vista tutte le sue righe, non solo la prima.
 // - «Copia» mette il testo negli appunti (letti in Chromium) e lascia il fuoco sul pulsante; «Salva…» propone il nome
 //   del progetto con l'estensione, scrive il testo nel file scelto e lascia il fuoco sul pulsante.
+// - L'avviso del nome: con un progetto che si chiama «con» (riservato da Windows) «Salva…» del codice apre prima
+//   l'avviso, col nome proposto «con (2)» nel campo; un nome che non va («aux») spegne «Continua» e Invio non conferma;
+//   le regole si aprono col clic; un altro nome va alla finestra del sistema; Esc rinuncia senza finestra del sistema.
+//   «Salva con nome» di un progetto nuovo «Media: voti?» propone «Media voti». Controllo positivo: un progetto che si
+//   chiama come il file proposto non apre l'avviso.
 //
 // CHE COSA NON GUARDA:
 // - il contrasto dei testi del codice (`tabella.e2e.ts`, con quelli della colonna dell'esecuzione);
@@ -27,7 +32,7 @@ import type { Funzione } from "../core/progetto/modello";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
 import type { Finzione } from "./finzione-tauri";
-import { apri, costruisciFinzione } from "./pagina";
+import { apri, apriVuota, costruisciFinzione, voceDelMenu } from "./pagina";
 
 test.beforeAll(costruisciFinzione);
 test.use({ viewport: { width: 1920, height: 1080 } });
@@ -174,4 +179,74 @@ test("«Copia» e «Salva…» lasciano il fuoco sul pulsante; il testo va negli
   await expect(salva).toBeFocused();
   const f = await page.evaluate(() => window.__finzione__ as Finzione);
   expect({ volte: f.finestre.codice, proposto: f.finestre.proposto, uguale: f.file["C:\\Documenti\\media.py"] === testo }).toEqual({ volte: 1, proposto: "riferimento-media-voti.py", uguale: true });
+});
+
+/** Il programma di riferimento, col nome del progetto cambiato. */
+function riferimentoChiamato(nome: string): string {
+  const p = JSON.parse(readFileSync(fileURLToPath(new URL("../casi/tappa-1/riferimento-media-voti.algo", import.meta.url)), "utf8")) as { metadata: { name: string } };
+  p.metadata.name = nome;
+  return JSON.stringify(p, null, 2);
+}
+const finestreDelSistema = (page: Page) => page.evaluate(() => ({ codice: window.__finzione__.finestre.codice ?? 0, salva: window.__finzione__.finestre.salva, proposto: window.__finzione__.finestre.proposto }));
+
+test("un progetto con un nome che Windows riserva, o con caratteri che un file non può avere: l'avviso dice il nome proposto prima della finestra del sistema e lo lascia cambiare", async ({ page }) => {
+  await apriVuota(page, { lingua: "it" }, { argomento: "C:\\scuola\\con.algo", file: { "C:\\scuola\\con.algo": riferimentoChiamato("con") }, daSalvareIlCodice: "C:\\scuola\\uscita" });
+  await genera(page).click();
+  await riquadro(page).getByRole("tab", { name: it.linguaggioPython, exact: true }).click();
+  const salva = riquadro(page).getByRole("button", { name: it.codiceSalva, exact: true });
+  await salva.click();
+  const avviso = page.getByRole("dialog", { name: it.nomeCambiaTitolo, exact: true });
+  await expect(avviso).toBeVisible();
+  await expect(avviso.getByText(riempi(it.nomeCambiaRiservato, { nome: "con.py", proposto: "con (2).py" }), { exact: true })).toBeVisible();
+  const campo = avviso.getByLabel(it.nomeCambiaCampo, { exact: true });
+  await expect(campo).toHaveValue("con (2)");
+  expect(await finestreDelSistema(page)).toEqual({ codice: 0, salva: 0, proposto: null });
+  // Un nome che non va: l'errore sotto il campo, «Continua» spento, Invio non conferma.
+  await campo.fill("aux");
+  await expect(campo).toHaveAttribute("aria-invalid", "true");
+  await expect(avviso.getByText(it.nomeCambiaNonValido, { exact: true })).toBeVisible();
+  const continua = avviso.getByRole("button", { name: it.nomeCambiaContinua, exact: true });
+  await expect(continua).toHaveAttribute("aria-disabled", "true");
+  await campo.press("Enter");
+  await expect(avviso).toBeVisible();
+  // Le regole dei nomi, chiuse di partenza, si aprono col clic.
+  const regola = avviso.getByText(it.nomeRegolaRiservati, { exact: true });
+  await expect(regola).toBeHidden();
+  await avviso.getByText(it.nomeCambiaRegole, { exact: true }).click();
+  await expect(regola).toBeVisible();
+  // Un altro nome: «Continua» apre la finestra del sistema con quello, e il codice si salva.
+  await campo.fill("esercizio");
+  await expect(avviso.getByText(it.nomeCambiaNonValido, { exact: true })).toBeHidden();
+  await continua.click();
+  await expect(avviso).toBeHidden();
+  await expect(page.locator('output[role="status"]')).toHaveText(riempi(it.codiceSalvatoIn, { file: "uscita.py" }));
+  expect(await finestreDelSistema(page)).toEqual({ codice: 1, salva: 0, proposto: "esercizio.py" });
+  // Esc rinuncia: nessuna finestra del sistema.
+  await salva.click();
+  await expect(avviso).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(avviso).toBeHidden();
+  expect((await finestreDelSistema(page)).codice).toBe(1);
+
+  // «Salva con nome» di un progetto nuovo coi caratteri che un nome di file non può avere.
+  await (await voceDelMenu(page, it.nuovo)).click();
+  const nuovo = page.getByRole("dialog", { name: it.progettoNuovoTitolo, exact: true });
+  await nuovo.getByLabel(it.progettoNome, { exact: true }).fill("Media: voti?");
+  await nuovo.getByRole("button", { name: it.progettoCrea, exact: true }).click();
+  await expect(nuovo).toBeHidden();
+  await (await voceDelMenu(page, it.salvaConNome)).click();
+  await expect(avviso.getByText(riempi(it.nomeCambiaCaratteri, { proposto: "Media voti.algo" }), { exact: true })).toBeVisible();
+  await expect(campo).toHaveValue("Media voti");
+  await continua.click();
+  await expect(avviso).toBeHidden();
+  expect(await finestreDelSistema(page)).toEqual({ codice: 1, salva: 1, proposto: "Media voti.algo" });
+});
+
+test("controllo positivo dell'avviso: un progetto che si chiama come il file non chiede nulla", async ({ page }) => {
+  await apriVuota(page, { lingua: "it" }, { argomento: "C:\\scuola\\media.algo", file: { "C:\\scuola\\media.algo": riferimentoChiamato("Media dei voti") }, daSalvareIlCodice: "C:\\scuola\\uscita" });
+  await genera(page).click();
+  await riquadro(page).getByRole("button", { name: it.codiceSalva, exact: true }).click();
+  await expect(page.locator('output[role="status"]')).toHaveText(riempi(it.codiceSalvatoIn, { file: "uscita.txt" }));
+  await expect(page.getByRole("dialog", { name: it.nomeCambiaTitolo, exact: true })).toBeHidden();
+  expect(await finestreDelSistema(page)).toEqual({ codice: 1, salva: 0, proposto: "Media dei voti.txt" });
 });

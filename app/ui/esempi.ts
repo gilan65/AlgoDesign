@@ -31,9 +31,9 @@ import { controlla, type Tetti } from "../core/controllo/controllo";
 import { apri, salva, type ErroreDiApertura } from "../core/progetto/formato";
 import type { Progetto } from "../core/progetto/modello";
 import type { Dizionario } from "../i18n/it";
-import { dizionari, riempi, type Lingua } from "../i18n/lingue";
-import { testiDeiMotivi } from "../i18n/motivi";
+import { dizionari, riempi } from "../i18n/lingue";
 import type { CartellaDegliEsempi, ErroreDelFile, FileDiEsempio } from "./file";
+import { baseDelNome, nomeRiservato } from "./nomi";
 
 /** Perché un file della cartella non si apre. */
 export type Problema =
@@ -178,35 +178,16 @@ export function cerca(esempi: EsempiDellaCartella, testo: string): EsempiDellaCa
   };
 }
 
-/** Un nome che Windows riserva ai dispositivi (`CON`, `PRN`, `AUX`, `NUL`, `COM` e `LPT` con una cifra, anche in
- * apice), a meno delle maiuscole: conta la parte prima del primo punto, senza gli spazi in fondo («nul.algo», «Con
- * .algo»). Lo stesso predicato del guscio (`nome_riservato` in `shell/src/progetto.rs`). */
-export function nomeRiservato(nome: string): boolean {
-  const base = nome.split(".")[0]!.replace(/ +$/, "").toUpperCase();
-  return ["CON", "PRN", "AUX", "NUL"].includes(base) || /^(COM|LPT)[0-9¹²³]$/u.test(base);
-}
-
-/** Il nome di un gruppo nuovo che una sottocartella può avere (le regole del guscio: niente separatori, niente
- * caratteri che Windows non ammette, niente caratteri di controllo, come `is_control` del guscio: anche U+007F e
- * U+0080…U+009F; niente punto in testa, niente spazio o punto in fondo, nessun nome riservato). */
-export function gruppoValido(nome: string): boolean {
-  return nome.trim() !== "" && ![...nome].some((c) => '\\/:*?"<>|'.includes(c) || /\p{Cc}/u.test(c)) && !nome.startsWith(".") && !/[ .]$/.test(nome) && !nomeRiservato(nome);
-}
-
 /** Il gruppo dove va un esempio aggiunto, fra i gruppi che ci sono: quello col nome scelto a meno delle maiuscole (è la
  * stessa cartella), altrimenti il nome scelto. */
 export function gruppoDi(gruppi: readonly string[], scelto: string): string {
   return gruppi.find((g) => uguali(g, scelto)) ?? scelto;
 }
 
-/** Un nome di file libero nella cartella per un progetto di quel nome: `Nome.algo`, poi `Nome (2).algo`… Dal
- * nome si tolgono i caratteri che un nome di file non ammette; un nome che Windows riserva parte da `(2)` («nul
- * (2).algo»), e se il nome riservato è seguito da un punto il punto diventa un trattino basso («CON_x.algo»). */
-export function nomeLibero(nomeDelProgetto: string, esistenti: readonly string[]): string {
-  // I caratteri di controllo come `is_control` del guscio (anche U+007F e U+0080…U+009F), come in `gruppoValido`.
-  const pulito = [...nomeDelProgetto].filter((c) => !'\\/:*?"<>|'.includes(c) && !/\p{Cc}/u.test(c)).join("").trim().replace(/^\.+/, "");
-  const intero = pulito === "" ? "esempio" : pulito;
-  const base = nomeRiservato(intero) && intero.includes(".") ? intero.replace(".", "_") : intero;
+/** Un nome di file libero nella cartella per un progetto di quel nome: `Nome.algo`, poi `Nome (2).algo`… Il nome è
+ * `baseDelNome` (`ripiego` se non resta nulla); un nome che Windows riserva parte da `(2)` («nul (2).algo»). */
+export function nomeLibero(nomeDelProgetto: string, esistenti: readonly string[], ripiego: string): string {
+  const base = baseDelNome(nomeDelProgetto, ripiego);
   const usati = new Set(esistenti.map((n) => n.toLowerCase()));
   for (let i = 1; ; i++) {
     const nome = i === 1 ? `${base}.algo` : `${base} (${i}).algo`;
@@ -214,10 +195,28 @@ export function nomeLibero(nomeDelProgetto: string, esistenti: readonly string[]
   }
 }
 
-/** Il motivo per cui un esempio non si apre, nella lingua dell'interfaccia (il primo, se sono più d'uno). */
-export function testoDelProblema(p: Problema, testi: Dizionario, lingua: Lingua): string {
+/** Un errore del guscio con le parole della lingua dell'interfaccia, genere per genere. */
+export function testoDellErrore(e: ErroreDelFile, testi: Dizionario): string {
+  switch (e.genere) {
+    case "non_testo":
+      return testi.erroreNonTesto;
+    case "sistema":
+      return riempi(testi.erroreDelSistema, { dettaglio: e.dettaglio });
+    case "nome_non_valido":
+      return riempi(testi.erroreNomeNonValido, { nome: e.dettaglio });
+    case "gruppo_con_altro":
+      return riempi(testi.erroreGruppoConAltro, { altro: e.dettaglio });
+    case "gruppo_bloccato":
+      return testi.erroreGruppoBloccato;
+    case "sola_lettura":
+      return riempi(testi.erroreSolaLettura, { nome: e.dettaglio });
+  }
+}
+
+/** Il motivo per cui un esempio non si apre, nella lingua dell'interfaccia. Per un file che il lettore rifiuta, la
+ * frase per lo studente: il percorso del campo e il motivo li dà «Apri», nei dettagli della finestra degli errori. */
+export function testoDelProblema(p: Problema, testi: Dizionario): string {
   if (p.genere === "fuori_tappa") return testi.apriFuoriTappa;
-  if (p.genere === "file") return p.errore.genere === "non_testo" ? testi.erroreNonTesto : riempi(testi.erroreDelSistema, { dettaglio: p.errore.dettaglio });
-  const primo = p.errori[0]!;
-  return `${primo.percorso === "" ? testi.erroreDelFileIntero : primo.percorso}: ${testiDeiMotivi[lingua][primo.motivo]}`;
+  if (p.genere === "file") return testoDellErrore(p.errore, testi);
+  return testi.apriNonEUnProgetto;
 }

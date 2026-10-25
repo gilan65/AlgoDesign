@@ -436,3 +436,19 @@ export function differenze(a: unknown, b: unknown, percorso = ""): string[] {
   }
   return Object.is(a, b) ? [] : [percorso === "" ? "(il file intero)" : percorso];
 }
+
+/** Un pezzo di testo da mostrare in un messaggio: fra virgolette, coi caratteri che non si vedono in forma di fuga (il BOM
+ * e gli spazi diversi dallo spazio, che `JSON.stringify` lascia com'è). */
+const visibile = (t: string) => JSON.stringify(t).replace(/[\p{Cf}\p{Z}]/gu, (c) => (c === " " ? c : `${String.fromCharCode(92)}u${c.codePointAt(0)!.toString(16).padStart(4, "0")}`));
+
+/** Dove due testi cominciano a essere diversi, per il messaggio di un confronto per byte: il byte (in UTF-8), la riga e la
+ * colonna, e i pezzi che seguono; vuoto se sono uguali. */
+export function primaDifferenza(scritto: string, atteso: string): string {
+  if (scritto === atteso) return "";
+  let i = 0;
+  while (i < scritto.length && i < atteso.length && scritto[i] === atteso[i]) i++;
+  const prima = scritto.slice(0, i);
+  const riga = prima.split("\n").length;
+  const colonna = i - prima.lastIndexOf("\n");
+  return `dal byte ${Buffer.byteLength(prima)} (riga ${riga}, colonna ${colonna}): ${visibile(scritto.slice(i, i + 24))} invece di ${visibile(atteso.slice(i, i + 24))}`;
+}
