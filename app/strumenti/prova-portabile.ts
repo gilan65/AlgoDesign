@@ -1532,7 +1532,8 @@ async function giroDelCodice(lingua: Lingua): Promise<void> {
   if (!esito.avviso.startsWith("visto")) rosso("CODICE", `«Salva…» col progetto «con» non ha aperto l'avviso del nome (${esito.avviso})`);
   if (esito.campo !== "con (2)") rosso("CODICE", `nell'avviso il nome proposto è «${esito.campo}» invece di «con (2)»`);
   if (esito.compilata !== "salvato") rosso("CODICE", `la finestra del sistema per salvare il codice non è stata compilata: ${esito.compilata}`);
-  if (esito.proposto !== "con (2).py") rosso("CODICE", `la finestra del sistema proponeva «${esito.proposto}» invece di «con (2).py»`);
+  // Con le estensioni dei file nascoste (il predefinito di un profilo nuovo) la finestra mostra il nome senza «.py».
+  if (esito.proposto !== "con (2).py" && esito.proposto !== "con (2)") rosso("CODICE", `la finestra del sistema proponeva «${esito.proposto}» invece di «con (2).py» (o «con (2)», con le estensioni nascoste)`);
   if (esito.scritto !== esito.testo) rosso("CODICE", `${salvato}: ${esito.scritto === null ? "non scritto" : primaDifferenza(esito.scritto, esito.testo)}; avviso «${esito.detto}»`);
   verde(
     "CODICE",

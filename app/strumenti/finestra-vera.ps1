@@ -80,6 +80,7 @@ public static class FinestraVera {
   [DllImport("user32.dll")] public static extern int GetDlgCtrlID(IntPtr h);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr SendMessage(IntPtr h, uint m, IntPtr w, string l);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr SendMessage(IntPtr h, uint m, IntPtr w, StringBuilder l);
+  [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
   /** La finestra di dialogo del sistema (classe #32770), visibile, del processo. */
   public static IntPtr DialogoDelProcesso(uint pid) {
     IntPtr trovata = IntPtr.Zero;
@@ -132,7 +133,12 @@ if ($azione -eq "salva") {
   # Il nome che l'app ha proposto, prima di scriverci sopra: si stampa nella seconda riga.
   $proposto = New-Object System.Text.StringBuilder 1024
   [void][FinestraVera]::SendMessage($campi[0], 0x000D, [IntPtr]1024, $proposto)
-  [void][FinestraVera]::SendMessage($campi[0], 0x000C, [IntPtr]::Zero, $tasto)
+  # Il nome si digita (tutto il testo selezionato, poi un WM_CHAR per carattere), come lo scrive una persona: con le
+  # estensioni dei file nascoste (il predefinito di un profilo nuovo) la finestra ignora un testo messo con WM_SETTEXT e
+  # salva col nome proposto, anche se il campo, riletto, ha il nome nuovo (misurato su un utente senza diritti e su un
+  # banco con le due impostazioni).
+  [void][FinestraVera]::SendMessage($campi[0], 0x00B1, [IntPtr]0, [IntPtr](-1))
+  foreach ($c in $tasto.ToCharArray()) { [void][FinestraVera]::SendMessage($campi[0], 0x0102, [IntPtr][int]$c, [IntPtr]1) }
   # Il testo si rilegge dal campo: un nome che non c'e non e mai "salvato".
   $letto = New-Object System.Text.StringBuilder 1024
   [void][FinestraVera]::SendMessage($campi[0], 0x000D, [IntPtr]1024, $letto)
