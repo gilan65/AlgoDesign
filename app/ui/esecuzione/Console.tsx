@@ -4,7 +4,8 @@
 // subito sopra: sta qui e non sopra il flowchart, e non copre gli ultimi valori scritti. Un
 // valore non valido lo dice, e la riga torna vuota per la stessa lettura. A esecuzione finita, la fine o l'errore, e
 // sotto l'errore il suo suggerimento, in un riquadro; per un caso d'uso, in fondo, il suo esito (dal nucleo, con le
-// parole di chi monta la console), e il nome del caso nel titolo. Il nucleo tiene le ultime 1000 righe:
+// parole di chi monta la console), e il nome del caso nel titolo; sotto, se chi la monta lo offre, il comando che salva
+// l'esecuzione come caso d'uso. Il nucleo tiene le ultime 1000 righe:
 // sopra la console una riga dice quante ne ha tolte, come la tabella; una riga tenuta dalla fine comincia con «…».
 // L'ultima riga resta in vista a ogni cambio del contenuto, non solo del numero delle righe: una riga che si allunga
 // e le righe che entrano mentre altrettante escono in cima lo cambiano senza cambiare il numero. Dopo la fine, un
@@ -33,6 +34,7 @@ export function Console({
   inserisci,
   fine,
   caso,
+  salva,
   testi,
   lingua,
 }: {
@@ -49,6 +51,8 @@ export function Console({
   fine: { readonly testo: string; readonly errore: boolean; readonly accaduto?: string; readonly suggerimento?: string; readonly esito?: { readonly testo: string; readonly raggiunto: boolean } } | null;
   /** Il nome del caso d'uso eseguito, se l'esecuzione è di un caso. */
   caso?: string;
+  /** A esecuzione finita, «Salva l'esecuzione come caso d'uso», solo quando l'esecuzione dà un caso. */
+  salva?: (() => void) | undefined;
   testi: Dizionario;
   lingua: Lingua;
 }): ReactElement {
@@ -135,6 +139,14 @@ export function Console({
           <span className={stili.esito} data-esito-del-caso="" data-raggiunto={fine.esito.raggiunto ? "" : undefined}>
             {fine.esito.testo}
           </span>
+        )}
+        {fine && salva && (
+          <>
+            {"\n"}
+            <button type="button" className={stili.spiegazione} data-salva-esecuzione="" onClick={salva}>
+              {testi.salvaEsecuzione}
+            </button>
+          </>
         )}
       </div>
       {chiede && (

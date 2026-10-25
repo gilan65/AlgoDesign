@@ -38,9 +38,13 @@ export function CampiDelCaso({
   codici,
   nomeDi,
   parametri,
+  selezionaIlNome = false,
 }: {
   /** Il nome del caso com'è prima della modifica. */
   nome: string;
+  /** Il nome, dove va il fuoco all'apertura, è anche selezionato: scrivendo lo si sostituisce (il caso salvato da
+   * un'esecuzione, che aspetta solo il nome). */
+  selezionaIlNome?: boolean;
   /** Il caso com'è: l'errore e gli avvisi attesi. */
   caso: CasoDiUnaFunzione;
   bozza: BozzaDelCaso;
@@ -68,7 +72,9 @@ export function CampiDelCaso({
   const modulo = useRef<HTMLFormElement>(null);
   useConfermaFuori(modulo, conferma);
   useEffect(() => {
-    modulo.current?.querySelector<HTMLElement>("input")?.focus();
+    const campo = modulo.current?.querySelector<HTMLInputElement>("input");
+    campo?.focus();
+    if (selezionaIlNome) campo?.select();
   }, []);
 
   function tasto(e: KeyboardEvent): void {

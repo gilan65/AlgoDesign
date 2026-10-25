@@ -35,6 +35,8 @@
 //   della tabella, e si contano le tolte. Senza caso l'output non si tiene altrove: la console è ciò che resta. Col
 //   caso si tiene l'output fino alla lunghezza dell'atteso più il margine dell'esito, perché il confronto resti
 //   esatto senza che un ciclo che scrive senza fine riempia la memoria.
+// - Senza caso l'esecuzione tiene anche le righe date alle letture, intere, come voci di un caso (`lette`): un caso
+//   d'uso composto da un'esecuzione finita (`casi/dallEsecuzione.ts`) le prende da qui, non dalla console.
 // - I punti di interruzione si possono cambiare in pausa: valgono dal comando successivo.
 // - La pila delle chiamate attive si legge dagli eventi: a ogni evento il suo livello (la profondità) prende la funzione e
 //   il blocco dell'azione, e i livelli sotto si tolgono. Nei livelli sopra l'ultimo il blocco è quindi quello della
@@ -46,7 +48,7 @@
 import { esitoDelCaso, margineDellOutput, type EsitoDelCaso } from "../casi/esito";
 import { controlla, type EsitoDelControllo, type Tetti } from "../controllo/controllo";
 import { eseguiDopoIlControllo, senzaValore, type Esito, type FaseDelCiclo, type Passo, type Restituito, type Riga } from "../interprete/interprete";
-import type { Blocco, CasoDiUnaFunzione, CasoDUso, CodiceErrore, Progetto, Segnalazione } from "../progetto/modello";
+import type { Blocco, CasoDiUnaFunzione, CasoDUso, CodiceErrore, Progetto, Segnalazione, VoceDiUnaFunzione } from "../progetto/modello";
 import { fermati, fermatiSullaRipresa, type Comando } from "./controllore";
 import { Traccia } from "./traccia";
 
@@ -149,6 +151,10 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
   /** Il blocco di fine della radice (il programma principale, o la funzione eseguita da sola): quello di
    * `unused_inputs`. */
   readonly #fine: string;
+  /** Senza caso: le righe date alle letture, intere e nell'ordine, come voci di un caso (col dato che le ha chieste; la
+   * stessa riga a ogni elemento con `each`, nessun testo per un parametro arrivato senza valore). La console le spezza
+   * a righe, e può perderle: un caso d'uso composto dall'esecuzione le prende da qui. */
+  readonly #lette: VoceDiUnaFunzione[] = [];
   /** Le righe chiuse della console; la riga aperta (scritta senza a capo) sta a parte, come testo: un oggetto per
    * riga solo quando si chiude. */
   #console: VoceDellaConsole[] = [];
@@ -243,6 +249,11 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
   get consoleTolte(): number {
     const righe = this.#console.length + (this.#aperta === undefined ? 0 : 1);
     return this.#consoleTagliata + Math.max(0, righe - this.#massimoDiRighe);
+  }
+
+  /** Senza caso, le righe date alle letture come voci di un caso, intere e nell'ordine; nel modo caso nessuna. */
+  get lette(): readonly VoceDiUnaFunzione[] {
+    return [...this.#lette];
   }
 
   /** La pila delle chiamate attive all'ultima azione cominciata, dalla radice (prima della prima, la radice sola). */
@@ -359,11 +370,16 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
     // Una riga che non torna indietro come non valida è stata letta: va nella tabella prima che l'evento
     // successivo chiuda la riga della lettura. Un parametro senza valore non ha una riga: la console lo dice.
     const scritta = typeof riga === "object" ? riga.ognuno : riga;
+    const libera = this.caso === undefined;
     if (typeof scritta === "string" && (r.done || !("nonValido" in r.value))) {
       this.#traccia?.letto(scritta);
       this.#leggi(scritta);
+      if (libera) this.#lette.push({ data: this.#chiesto, text: scritta, ...(typeof riga === "object" ? { each: true } : {}) });
     } else if (typeof scritta === "string") this.#aggiungi({ genere: "nonValido", dato: this.#chiesto, ...this.#laFine(scritta) });
-    else if (scritta === senzaValore) this.#aggiungi({ genere: "senzaValore", dato: this.#chiesto, testo: "" });
+    else if (scritta === senzaValore) {
+      this.#aggiungi({ genere: "senzaValore", dato: this.#chiesto, testo: "" });
+      if (libera) this.#lette.push({ data: this.#chiesto, ...(typeof riga === "object" ? { each: true } : {}) });
+    }
     return r;
   }
 

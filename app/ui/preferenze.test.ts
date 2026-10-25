@@ -41,6 +41,7 @@ const tutte = {
   riquadroDellaScelta: true,
   chiusuraAutomatica: false,
   domandaNellaLettura: true,
+  offriCasoDallEsecuzione: false,
 };
 
 test("la presentazione dei pulsanti: tre valori, il predefinito è il testo sotto l'icona, e i due di prima valgono così come sono scritti", () => {
@@ -101,6 +102,7 @@ const rotti: Record<string, readonly unknown[]> = {
   riquadroDellaScelta: ["sì", 1, null],
   chiusuraAutomatica: ["no", 0, null],
   domandaNellaLettura: ["sì", 1, null],
+  offriCasoDallEsecuzione: ["no", 0, null],
 };
 
 test("un campo rotto scarta lui solo: gli altri restano", () => {
@@ -117,7 +119,7 @@ test("un campo rotto scarta lui solo: gli altri restano", () => {
     }
   // Ogni campo del file ha le sue prove (i limiti hanno la loro).
   expect(Object.keys(rotti).sort()).toEqual(Object.keys(tutte).filter((k) => k !== "limiti").sort());
-  expect(provati).toBe(100);
+  expect(provati).toBe(103);
 });
 
 test("un limite rotto scarta lui solo, e un oggetto dei limiti rotto li scarta tutti e tre", () => {
@@ -227,4 +229,10 @@ test("la chiusura automatica di parentesi e virgolette: accesa di partenza e in 
   expect(scelteIniziali.chiusuraAutomatica).toBe(true);
   expect(preferenzeDa({ lingua: "it" }).scelte.chiusuraAutomatica).toBe(true);
   for (const v of [true, false]) expect(fileDa("it", preferenzeDa({ chiusuraAutomatica: v }).scelte).chiusuraAutomatica).toBe(v);
+});
+
+test("il comando che salva un'esecuzione come caso d'uso: acceso di partenza e in un file scritto prima che la scelta esistesse; ogni valore torna uguale", () => {
+  expect(scelteIniziali.offriCasoDallEsecuzione).toBe(true);
+  expect(preferenzeDa({ lingua: "it" }).scelte.offriCasoDallEsecuzione).toBe(true);
+  for (const v of [true, false]) expect(fileDa("it", preferenzeDa({ offriCasoDallEsecuzione: v }).scelte).offriCasoDallEsecuzione).toBe(v);
 });
