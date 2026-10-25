@@ -129,6 +129,9 @@ const cambiatiInUnaChiamata = (c: FotografiaDiUnaChiamata, prima: FotografiaDiUn
 const posizioniInUnaChiamata = (c: FotografiaDiUnaChiamata, prima: FotografiaDiUnaChiamata | undefined): readonly boolean[] | undefined =>
   c.posizioni?.map((q, l) => (prima === undefined || prima.numero !== c.numero ? q !== undefined : q !== prima.posizioni?.[l]));
 
+/** Quante righe tengono la tabella di traccia e la console, se chi esegue non dice altro: le ultime. */
+export const righeTenute = 1000;
+
 export class Traccia {
   #iniziali: Fotografia | undefined;
   #ultimi: Fotografia | undefined;
@@ -140,7 +143,7 @@ export class Traccia {
   /** Per ogni livello attivo, l'ultima azione cominciata lì: quella che una ripresa a quel livello riprende. */
   #perLivello: Azione[] = [];
 
-  constructor(readonly massimo = 1000) {}
+  constructor(readonly massimo = righeTenute) {}
 
   /** I valori prima della prima azione (la riga 0, «Inizio»). */
   get valoriIniziali(): Fotografia | undefined {

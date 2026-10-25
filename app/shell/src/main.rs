@@ -182,7 +182,25 @@ mod prove {
         parti(corpo).iter().map(|p| p.rsplit("::").next().unwrap().to_owned()).collect()
     }
 
-    /// I comandi definiti con `#[tauri::command]`, coi nomi degli argomenti che arrivano dall'interfaccia (non quelli che
+    /// Il nome con cui l'interfaccia manda un argomento: Tauri 2 vuole in camelCase gli argomenti che nel guscio sono
+    /// scritti con le parole separate da `_` (`nome_file` arriva da `nomeFile`).
+    fn come_lo_manda_l_interfaccia(nome: &str) -> String {
+        let mut fuori = String::new();
+        let mut maiuscola = false;
+        for c in nome.chars() {
+            if c == '_' {
+                maiuscola = !fuori.is_empty();
+            } else if maiuscola {
+                fuori.extend(c.to_uppercase());
+                maiuscola = false;
+            } else {
+                fuori.push(c);
+            }
+        }
+        fuori
+    }
+
+    /// I comandi definiti con `#[tauri::command]`, coi nomi degli argomenti come li manda l'interfaccia (non quelli che
     /// dà Tauri: lo stato, la finestra).
     fn definiti(sorgenti: &[&str]) -> Comandi {
         let mut fuori = Comandi::new();
@@ -192,7 +210,7 @@ mod prove {
                 let nome_da = dopo.find("pub fn ").unwrap() + "pub fn ".len();
                 let aperta = nome_da + dopo[nome_da..].find('(').unwrap();
                 let (argomenti, _) = fino_alla_chiusa(dopo, aperta);
-                let nomi = parti(argomenti).into_iter().filter(|a| !a.contains("tauri::")).map(|a| a.split(':').next().unwrap().trim().to_owned()).collect();
+                let nomi = parti(argomenti).into_iter().filter(|a| !a.contains("tauri::")).map(|a| come_lo_manda_l_interfaccia(a.split(':').next().unwrap().trim())).collect();
                 fuori.insert(dopo[nome_da..aperta].to_owned(), nomi);
             }
         }
@@ -301,5 +319,9 @@ mod prove {
             assert!(!trovate.is_empty(), "controllo positivo spento: {cosa}");
             println!("controllo positivo, {cosa}: {trovate:?}");
         }
+        // Oggi ogni argomento ha una parola sola: un comando con un argomento di più parole si confronta col nome che
+        // l'interfaccia manda (in camelCase), non con quello scritto nel guscio.
+        let due_parole = "#[tauri::command]\npub fn prova(finestra: tauri::Window, nome_del_file: String, testo: String) {}";
+        assert_eq!(definiti(&[due_parole]), Comandi::from([("prova".to_owned(), BTreeSet::from(["nomeDelFile".to_owned(), "testo".to_owned()]))]));
     }
 }

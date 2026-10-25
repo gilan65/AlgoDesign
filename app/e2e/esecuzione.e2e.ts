@@ -26,7 +26,9 @@
 //   l'ultima riga è in vista, anche quando la riga che si allunga non cambia il numero delle righe.
 // - I tasti, uno per uno in ogni situazione (ferma, in pausa, in corso, in attesa di un valore, finita), contro la
 //   tabella scritta qui; i quattro con le Impostazioni aperte in ognuna delle cinque situazioni, e coi campi aperti
-//   di un blocco a esecuzione ferma.
+//   di un blocco a esecuzione ferma. F5 a esecuzione ferma con ognuna delle cose aperte che la finestra guarda (gli
+//   elenchi, i menu, le domande prima di eliminare o togliere, una finestra, gli errori): non parte nulla; chiusa la
+//   cosa, F5 parte (il controllo positivo di ciascun caso).
 // - Le scorciatoie dei file col fuoco in un campo, Canc su un «+», Ctrl+Z col menu di un dato.
 //
 // CHE COSA NON GUARDA:
@@ -35,12 +37,12 @@
 // - l'aspetto del blocco corrente e dei punti (colori, freccia): solo che ci siano e dove, dagli attributi;
 // - un lettore di schermo vero: l'albero dell'accessibilità del motore;
 // - la soglia di «Ferma» sotto carico diverso da quello del collaudo (quattro processi);
-// - nei tasti, le altre finestre (sono le Impostazioni a restare aperte), il menu di un dato e l'elenco dei blocchi
-//   aperti (la finestra li guarda insieme alle finestre, `Applicazione.tsx`), i campi aperti a esecuzione finita (in
-//   pausa, in corso e in attesa di un valore non si aprono) e F9 senza un blocco scelto (l'avviso che lo dice);
+// - nei tasti, con le altre cose aperte (oltre le Impostazioni) solo F5 a esecuzione ferma: la guardia è una sola per
+//   tutti i tasti (`Applicazione.tsx`); i campi aperti a esecuzione finita (in pausa, in corso e in attesa di un valore
+//   non si aprono) e F9 senza un blocco scelto (l'avviso che lo dice);
 // - la WebView2 vera e i tasti mandati dal sistema (lo fa la prova sul prodotto).
 
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { pausaSulValoreIniziale, sequenzaAttesa } from "../core/esecuzione/atteso-del-riferimento";
@@ -48,14 +50,13 @@ import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
 import { RIFERIMENTO } from "./albero";
 import type { Finzione } from "./finzione-tauri";
-import { apri, apriEsempio, apriVuota, costruisciFinzione, voceDelMenu } from "./pagina";
+import { apri, apriEsempio, apriVuota, costruisciFinzione, voceDelMenu, voceDellAiuto } from "./pagina";
+// La soglia di «Ferma» e della chiusura durante una corsa: dal tasto all'effetto nella pagina.
+import { SOGLIA_MS } from "./risposta";
 
 test.beforeAll(costruisciFinzione);
 test.use({ viewport: { width: 1920, height: 1080 } });
 test.describe.configure({ mode: "parallel" });
-
-/** La soglia di «Ferma» e della chiusura durante una corsa: dal tasto all'effetto nella pagina. */
-const SOGLIA_MS = 1_000;
 
 const delCorpus = (nome: string) => readFileSync(fileURLToPath(new URL(`../casi/tappa-1/${nome}.algo`, import.meta.url)), "utf8");
 const casoDel = (nome: string) => (JSON.parse(delCorpus(nome)) as { test_cases: { inputs: { data: string; text: string }[]; expected: { output: string } }[] }).test_cases[0]!;
@@ -611,6 +612,144 @@ test("ogni tasto dell'esecuzione in ogni situazione fa ciò che dice la tabella"
     `[${info.project.name}] tasti: ${tabella.length} situazioni × 4 tasti, ${tabella.length} con una finestra × 4, ${campiAperti.length} coi campi aperti; diversi ${esiti.length}`,
   );
   expect(esiti).toEqual([]);
+});
+
+/** Il riferimento con le funzioni e la costante comune `VOTO_MASSIMO` usata da `valido` (come `parametri.e2e.ts`). */
+const CON_LE_FUNZIONI = (() => {
+  const p = JSON.parse(readFileSync(fileURLToPath(new URL("../casi/tappa-3/riferimento-media-voti-funzioni.algo", import.meta.url)), "utf8"));
+  p.shared_constants = [{ name: "VOTO_MASSIMO", type: "integer", constant: true, initial: "10" }];
+  // Usata anche dal programma principale: togliendola da `valido` la finestra chiede (nomina chi altro la usa).
+  p.functions[0].body[1].body[1].else[0].values = ['"Voto ignorato (da 1 a "', "VOTO_MASSIMO", '"): "', "voto"];
+  p.functions[2].end.return_value = "voto >= 1 and voto <= VOTO_MASSIMO";
+  return JSON.stringify(p);
+})();
+const DELLE_FUNZIONI = "C:\\Documenti\\funzioni.algo";
+
+/** Ogni cosa aperta che la finestra guarda prima di un tasto (`conUnaFinestra` in `Applicazione.tsx`), una per caso:
+ * come si apre, e dove si vede. */
+const coseAperte: { nome: string; funzioni?: true; apri: (page: Page) => Promise<Locator>; chiudi?: (page: Page) => Promise<void> }[] = [
+  {
+    nome: "l'elenco dei blocchi su un «+»",
+    apri: async (page) => {
+      await page.locator("[data-punto]").first().click();
+      return page.getByRole("menu");
+    },
+  },
+  {
+    nome: "il menu di un dato",
+    apri: async (page) => {
+      await page.locator('tr[data-dato="dati-3"]').click({ button: "right" });
+      return page.getByRole("menu");
+    },
+  },
+  {
+    nome: "la domanda prima di eliminare un dato",
+    apri: async (page) => {
+      await page.locator('tr[data-dato="dati-3"]').focus();
+      await page.keyboard.press("Delete");
+      return page.getByRole("alertdialog").filter({ hasText: it.eliminaConferma });
+    },
+  },
+  {
+    nome: "la domanda prima di togliere un valore iniziale",
+    apri: async (page) => {
+      await page.locator('[data-iniziale-di="i"]').first().focus();
+      await page.keyboard.press("Delete");
+      return page.getByRole("alertdialog", { name: riempi(it.togliValoreTitolo, { nome: "i" }), exact: true });
+    },
+  },
+  {
+    nome: "la domanda prima di eliminare un caso d'uso",
+    apri: async (page) => {
+      await page.getByRole("tab", { name: /^Casi d'uso \(\d+\)$/ }).click();
+      const riga = page.locator("tr[data-caso]").first();
+      const nome = (await riga.locator("[data-nome-caso]").textContent()) ?? "";
+      await riga.click({ button: "right" });
+      await page.getByRole("menuitem", { name: it.menuElimina, exact: true }).click();
+      return page.getByRole("alertdialog", { name: riempi(it.eliminaCasoTitolo, { nome }), exact: true });
+    },
+  },
+  {
+    nome: "una finestra (Informazioni)",
+    apri: async (page) => {
+      await (await voceDellAiuto(page, it.informazioni)).click();
+      return page.getByRole("dialog", { name: it.informazioniTitolo, exact: true });
+    },
+  },
+  {
+    nome: "la finestra degli errori",
+    apri: async (page) => {
+      await imposta(page, { daAprire: "C:\\rotto.algo", file: { "C:\\rotto.algo": "{" } });
+      await (await voceDelMenu(page, it.apri)).click();
+      return page.getByRole("alertdialog", { name: riempi(it.apriErroreTitolo, { file: "rotto.algo" }), exact: true });
+    },
+  },
+  {
+    nome: "la domanda prima di togliere una costante comune da una funzione",
+    funzioni: true,
+    apri: async (page) => {
+      await page.locator("[data-elenco-funzioni]").click();
+      await page.locator('[data-voce-funzione="f3"]').click();
+      await page.locator('[data-dato="comuni-0"]').dblclick();
+      // Invio sulla casella: nel WebKit per Windows il clic non le dà il fuoco, e un Invio della pagina non arriverebbe.
+      const globale = page.getByRole("checkbox", { name: it.campoGlobale, exact: true });
+      await globale.uncheck();
+      await globale.press("Enter");
+      return page.getByRole("alertdialog", { name: riempi(it.comuneTogliTitolo, { nome: "VOTO_MASSIMO" }), exact: true });
+    },
+    // Rinunciato alla domanda restano i campi del dato con la casella tolta (confermati, la richiederebbero): Esc anche lì.
+    chiudi: async (page) => {
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("alertdialog")).toHaveCount(0);
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("checkbox", { name: it.campoGlobale, exact: true })).toHaveCount(0);
+    },
+  },
+  {
+    nome: "l'elenco delle procedure e delle funzioni",
+    funzioni: true,
+    apri: async (page) => {
+      await page.locator("[data-elenco-funzioni]").click();
+      return page.locator("[data-elenco]");
+    },
+  },
+];
+
+test("con ogni cosa aperta che la finestra guarda, F5 non fa partire l'esecuzione; chiusa la cosa, F5 parte", async ({ browser }, info) => {
+  test.setTimeout(180_000);
+  const esiti: string[] = [];
+  // Lo stato dal documento e non dall'albero dell'accessibilità: con una finestra aperta la riga di stato ne esce.
+  const statoDi = (page: Page) => page.locator("[data-stato-esecuzione]");
+  for (const c of coseAperte) {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    try {
+      if (c.funzioni) {
+        await apriVuota(page, { lingua: "it" }, { argomento: DELLE_FUNZIONI, file: { [DELLE_FUNZIONI]: CON_LE_FUNZIONI } });
+        await expect(page.getByRole("status")).toHaveText(riempi(it.apertoIl, { file: "funzioni.algo" }));
+      } else await apri(page, { lingua: "it" });
+      await expect(statoDi(page)).toHaveText(it.statoPronto);
+      const aperta = await c.apri(page);
+      await expect(aperta, `${c.nome} non si apre`).toBeVisible();
+      await page.keyboard.press("F5");
+      await giro(page);
+      await page.waitForTimeout(150);
+      const conLaCosa = await statoDi(page).textContent();
+      const ancoraAperta = await aperta.isVisible();
+      // Controllo positivo dello stesso caso: chiusa la cosa con Esc, lo stesso F5 fa partire l'esecuzione.
+      await (c.chiudi ?? ((p: Page) => p.keyboard.press("Escape")))(page);
+      await expect(aperta).toBeHidden();
+      await page.keyboard.press("F5");
+      await expect.poll(() => statoDi(page).textContent(), { message: `${c.nome}: chiusa, F5 non parte` }).not.toBe(it.statoPronto);
+      if (conLaCosa !== it.statoPronto || !ancoraAperta) esiti.push(`${c.nome}: con la cosa aperta F5 ha dato «${conLaCosa}»${ancoraAperta ? "" : " e la cosa si è chiusa"}`);
+    } catch (errore) {
+      esiti.push(`${c.nome}: interrotto, ${(errore as Error).message.split("\n")[0]}`);
+    } finally {
+      await page.close();
+    }
+  }
+  console.log(`[${info.project.name}] F5 con una cosa aperta: ${coseAperte.length} casi, diversi ${esiti.length}`);
+  expect(esiti, "F5 ha fatto partire l'esecuzione con una cosa aperta").toEqual([]);
+  expect(coseAperte.length).toBe(9);
 });
 
 test("le scorciatoie dei file valgono col fuoco in un campo; Canc su un «+» non cancella; Ctrl+Z col menu di un dato aperto non annulla", async ({ page }) => {

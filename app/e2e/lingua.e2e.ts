@@ -1,3 +1,11 @@
+// La lingua dell'interfaccia nei motori, col guscio simulato: senza preferenza salvata l'app parte nella lingua del
+// sistema (l'italiano, o l'inglese per ogni altra lingua), la preferenza salvata vince sul sistema, e il cambio di
+// lingua nelle Impostazioni cambia i testi e scrive la preferenza solo con «Conferma» («Annulla» non scrive nulla).
+// I testi si cercano interi (`exact`): un testo di una lingua contenuto in un altro non basta a trovarlo.
+//
+// CHE COSA NON GUARDA:
+// - la lingua del sistema sull'app vera (la prova sul prodotto, nelle due lingue del sistema su Linux);
+// - ogni testo tradotto: si guardano la premessa e il comando delle Impostazioni, e l'assenza del testo di prima.
 import { expect, test, type Page } from "@playwright/test";
 import { en } from "../i18n/en";
 import { it } from "../i18n/it";
@@ -34,25 +42,25 @@ test.describe("sistema in italiano", () => {
   test("la preferenza salvata vince sulla lingua del sistema", async ({ page }) => {
     await apri(page, { lingua: "en" });
     await expect(impostazioni(page, en)).toBeVisible();
-    await expect(page.getByText(en.premessa)).toBeVisible();
+    await expect(page.getByText(en.premessa, { exact: true })).toBeVisible();
   });
 
   test("il cambio di lingua, confermato, cambia i testi e scrive la preferenza", async ({ page }) => {
     await apri(page, null);
-    await expect(page.getByText(it.premessa)).toBeVisible();
+    await expect(page.getByText(it.premessa, { exact: true })).toBeVisible();
 
     await impostazioni(page, it).click();
     const finestra = page.getByRole("dialog", { name: it.impostazioniTitolo, exact: true });
     await finestra.getByRole("radio", { name: nomiLingue.en, exact: true }).check();
     // Prima di «Conferma» non cambia nulla.
-    await expect(page.getByText(it.premessa)).toBeVisible();
+    await expect(page.getByText(it.premessa, { exact: true })).toBeVisible();
     await finestra.getByRole("button", { name: it.progettoConferma, exact: true }).click();
     await expect(finestra).toBeHidden();
 
     await expect(impostazioni(page, en)).toBeVisible();
-    await expect(page.getByText(en.premessa)).toBeVisible();
+    await expect(page.getByText(en.premessa, { exact: true })).toBeVisible();
     // L'assenza si misura dopo che il testo nuovo è comparso.
-    await expect(page.getByText(it.premessa)).toHaveCount(0);
+    await expect(page.getByText(it.premessa, { exact: true })).toHaveCount(0);
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect.poll(() => page.evaluate(() => window.__finzione__.scritte)).toEqual([{ preferenze: fileDa("en", scelteIniziali) }]);
   });
@@ -64,7 +72,7 @@ test.describe("sistema in italiano", () => {
     await finestra.getByRole("radio", { name: nomiLingue.en, exact: true }).check();
     await finestra.getByRole("button", { name: it.annullaEsc, exact: true }).click();
     await expect(finestra).toBeHidden();
-    await expect(page.getByText(it.premessa)).toBeVisible();
+    await expect(page.getByText(it.premessa, { exact: true })).toBeVisible();
     expect(await page.evaluate(() => window.__finzione__.scritte)).toEqual([]);
     // Riaperta, la finestra riparte dalla lingua in uso.
     expect(await linguaScelta(page, it)).toBe("it");

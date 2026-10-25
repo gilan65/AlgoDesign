@@ -50,7 +50,7 @@ import { controlla, type EsitoDelControllo, type Tetti } from "../controllo/cont
 import { eseguiDopoIlControllo, senzaValore, type Esito, type FaseDelCiclo, type Passo, type Restituito, type Riga } from "../interprete/interprete";
 import type { Blocco, CasoDiUnaFunzione, CasoDUso, CodiceErrore, Progetto, Segnalazione, VoceDiUnaFunzione } from "../progetto/modello";
 import { fermati, fermatiSullaRipresa, type Comando } from "./controllore";
-import { Traccia } from "./traccia";
+import { righeTenute, Traccia } from "./traccia";
 
 export type { Comando } from "./controllore";
 
@@ -107,7 +107,7 @@ export interface RigheLunghe {
 }
 export const righeLunghePredefinite: RigheLunghe = { caratteri: 250, modo: "a-capo" };
 
-/** `righe`: quante righe tengono la tabella di traccia e la console (1000); `righeLunghe`: come la console tiene una
+/** `righe`: quante righe tengono la tabella di traccia e la console (`righeTenute`); `righeLunghe`: come la console tiene una
  * riga più lunga dei suoi caratteri; `caso`: il caso d'uso, nel modo caso; `tabella: false`: nessuna riga nella
  * tabella di traccia (la riga di comando dei casi, che non la mostra: è metà del tempo di un caso lungo, misurato);
  * `funzione`: l'`id` della procedura o della funzione eseguita da sola (il caso è allora uno dei suoi); `controllo`:
@@ -187,7 +187,7 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
   readonly controllo: EsitoDelControllo;
 
   constructor(p: Progetto, limiti: Tetti, opzioni: OpzioniDellEsecuzione<C> = {}) {
-    const { funzione, righe = 1000, righeLunghe = righeLunghePredefinite, caso, tabella = true, controllo } = opzioni;
+    const { funzione, righe = righeTenute, righeLunghe = righeLunghePredefinite, caso, tabella = true, controllo } = opzioni;
     // Andare a capo ogni zero caratteri non finirebbe: le Impostazioni danno da 50 a 1000, qui si rifiuta il resto.
     if (!Number.isInteger(righeLunghe.caratteri) || righeLunghe.caratteri < 1) throw new Error(`caratteri di una riga non validi: ${righeLunghe.caratteri}`);
     this.progetto = p;

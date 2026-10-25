@@ -54,13 +54,23 @@ export function residuo(voci: readonly Voce[], base: readonly Voce[], dati: stri
   return r;
 }
 
-/** Il controllo positivo del giro senza `data/`: le cartelle col nome dell'identificatore sotto la casa, ciascuna vista
- * da ENTRAMBI i rilevatori. Restituisce quelle viste e, vuoto se acceso, che cosa è spento. */
+/** Le cartelle che l'app crea sotto la casa quando accanto non c'è `data/` (misurato: le preferenze e il profilo della
+ * WebView), scritte prima e non ricavate dall'uscita dei rilevatori che devono provare. */
+export function cartelleSenzaData(casa: string, identificatore: string): string[] {
+  return [`${casa}/.config/${identificatore}`, `${casa}/.local/share/${identificatore}`];
+}
+
+/** Il controllo positivo del giro senza `data/`: OGNUNA delle cartelle attese (`cartelleSenzaData`) vista da ENTRAMBI i
+ * rilevatori. Restituisce quelle viste e, vuoto se acceso, che cosa è spento. */
 export function controlloPositivo(senza: Residuo, casa: string, identificatore: string): { viste: string[]; spente: string[] } {
-  const viste = senza.conIdentificatore.filter((v) => v.percorso.startsWith(`${casa}/`) && v.percorso.endsWith(`/${identificatore}`)).map((v) => v.percorso);
+  const conIdentificatore = new Set(senza.conIdentificatore.map((v) => v.percorso));
   const fuori = new Set(senza.fuori.map((v) => v.percorso));
+  const attese = cartelleSenzaData(casa, identificatore);
   return {
-    viste,
-    spente: [...(viste.length > 0 ? [] : [`nessuna cartella dell'identificatore sotto ${casa}`]), ...viste.filter((p) => !fuori.has(p)).map((p) => `rilevatore voci fuori dall'elenco cieco su ${p}`)],
+    viste: attese.filter((p) => conIdentificatore.has(p) && fuori.has(p)),
+    spente: attese.flatMap((p) => [
+      ...(conIdentificatore.has(p) ? [] : [`rilevatore dell'identificatore cieco su ${p}`]),
+      ...(fuori.has(p) ? [] : [`rilevatore voci fuori dall'elenco cieco su ${p}`]),
+    ]),
   };
 }

@@ -203,7 +203,7 @@ test("dal blocco al dato: campi, Elimina con e senza conferma, il valore vuotato
   console.log(`[${info.project.name}] dal blocco al dato: situazioni confrontate coi quattro lettori ${passi}`);
   expect(passi).toBe(12);
   // Controllo positivo: un valore atteso diverso fa rosso.
-  await expect(controlla(page, "controllo positivo", ["contati ← 0", "insufficienti ← 0", "somma ← 8", "i ← 0", "v ← {0, 0, 0}", "MAX ← 5"], senzaJ)).rejects.toThrow();
+  await expect(controlla(page, "controllo positivo", ["contati ← 0", "insufficienti ← 0", "somma ← 8", "i ← 0", "v ← {0, 0, 0}", "MAX ← 5"], senzaJ)).rejects.toThrow("controllo positivo: i blocchi");
 });
 
 test("dalla vista dei dati al blocco: la dimensione, la forma, il file aperto", async ({ page }) => {

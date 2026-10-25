@@ -1,6 +1,6 @@
 // La divisione delle tracce per specie (`tracce.ts`), con una casa qualunque: quella di root nel container e quella
 // dell'utente della CI devono dare le stesse specie. Controllo positivo: il giro senza `data/` accende i due rilevatori
-// sulla cartella dell'identificatore, e un residuo senza quella cartella li dice spenti.
+// su ciascuna delle due cartelle dell'identificatore, e un residuo senza una delle due li dice spenti su quella.
 import { expect, test } from "bun:test";
 import { controlloPositivo, residuo, type Voce } from "./tracce";
 
@@ -21,15 +21,16 @@ for (const casa of ["/root", "/home/runner"]) {
       "/tmp/appimage_extracted_0123abcd",
       `${casa}/.local/share/recently-used.xbel`,
       `${casa}/.config/${id}`,
+      `${casa}/.local/share/${id}`,
     );
     const r = residuo(giro, base, dati, casa, id);
     expect(r.inData.map((v) => v.percorso)).toEqual([dati, `${dati}/preferenze.json`]);
     expect(r.ammesse.map((v) => v.percorso)).toEqual([`${casa}/.cache/mesa_shader_cache`, `${casa}/.cache/mesa_shader_cache/index`, "/tmp/appimage_extracted_0123abcd"]);
     expect(r.cartelle.map((v) => v.percorso)).toEqual([`${casa}/.cache`]);
-    expect(r.fuori.map((v) => v.percorso)).toEqual([`${casa}/.local/share/recently-used.xbel`, `${casa}/.config/${id}`]);
+    expect(r.fuori.map((v) => v.percorso)).toEqual([`${casa}/.local/share/recently-used.xbel`, `${casa}/.config/${id}`, `${casa}/.local/share/${id}`]);
     // I due rilevatori sono indipendenti: la cartella dell'identificatore è fuori dall'elenco E con l'identificatore.
-    expect(r.conIdentificatore.map((v) => v.percorso)).toEqual([`${casa}/.config/${id}`]);
-    expect(controlloPositivo(r, casa, id)).toEqual({ viste: [`${casa}/.config/${id}`], spente: [] });
+    expect(r.conIdentificatore.map((v) => v.percorso)).toEqual([`${casa}/.config/${id}`, `${casa}/.local/share/${id}`]);
+    expect(controlloPositivo(r, casa, id)).toEqual({ viste: [`${casa}/.config/${id}`, `${casa}/.local/share/${id}`], spente: [] });
   });
 }
 
@@ -47,10 +48,14 @@ test("una cartella che contiene solo voci giuste e cartelle giuste è giusta anc
   expect(conEstranea.fuori.map((v) => v.percorso).sort()).toEqual([casa, `${casa}/estranea.txt`]);
 });
 
-test("il controllo positivo si dice spento senza la cartella dell'identificatore", () => {
+test("il controllo positivo si dice spento senza le cartelle dell'identificatore, e anche con una sola delle due", () => {
+  const cieche = (p: string) => [`rilevatore dell'identificatore cieco su ${p}`, `rilevatore voci fuori dall'elenco cieco su ${p}`];
   const r = residuo(voci("/root/.cache/dconf/user"), [], "/prova/data", "/root", id);
-  expect(controlloPositivo(r, "/root", id)).toEqual({ viste: [], spente: ["nessuna cartella dell'identificatore sotto /root"] });
-  // Una casa diversa da quella delle voci non trova la cartella: la casa conta.
-  const altrove = residuo(voci(`/root/.config/${id}`), [], "/prova/data", "/root", id);
-  expect(controlloPositivo(altrove, "/home/runner", id).spente).toEqual(["nessuna cartella dell'identificatore sotto /home/runner"]);
+  expect(controlloPositivo(r, "/root", id)).toEqual({ viste: [], spente: [...cieche(`/root/.config/${id}`), ...cieche(`/root/.local/share/${id}`)] });
+  // Una sola delle due: «almeno una» non basta più.
+  const una = residuo(voci(`/root/.config/${id}`), [], "/prova/data", "/root", id);
+  expect(controlloPositivo(una, "/root", id)).toEqual({ viste: [`/root/.config/${id}`], spente: cieche(`/root/.local/share/${id}`) });
+  // Una casa diversa da quella delle voci non trova le cartelle: la casa conta.
+  const altrove = residuo(voci(`/root/.config/${id}`, `/root/.local/share/${id}`), [], "/prova/data", "/root", id);
+  expect(controlloPositivo(altrove, "/home/runner", id).viste).toEqual([]);
 });

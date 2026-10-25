@@ -330,13 +330,13 @@ async function testiDelFlowchart(page: Page): Promise<string[]> {
 
 test("gli operatori a parola nella lingua dell'interfaccia, letterali e nomi intatti", async ({ page }) => {
   await apri(page, { lingua: "it" }, [{ nome: "operatori", funzione: conOperatori }]);
-  await expect(page.getByRole("img", { name: `${it.flowchart}: operatori` })).toBeVisible();
+  await expect(page.getByRole("img", { name: `${it.flowchart}: operatori`, exact: true })).toBeVisible();
   const italiani = await testiDelFlowchart(page);
   expect(mancanti(italiani, attesi.it)).toEqual([]);
   expect(italiani).toContain(it.disegnoInizio);
 
   await scegliLingua(page, "en");
-  await expect(page.getByRole("img", { name: `${en.flowchart}: operatori` })).toBeVisible();
+  await expect(page.getByRole("img", { name: `${en.flowchart}: operatori`, exact: true })).toBeVisible();
   const inglesi = await testiDelFlowchart(page);
   expect(mancanti(inglesi, attesi.en)).toEqual([]);
   expect(inglesi).toContain(en.disegnoInizio);
@@ -421,7 +421,7 @@ test("al 100% il carattere del flowchart è di almeno 14 px; lo zoom lo cambia",
   await apri(page, { lingua: "it" });
   const flowchart = page.getByRole("group", { name: `${it.flowchart}: riferimento-media-voti`, exact: true });
   await expect(flowchart).toBeVisible();
-  const zoom = page.getByRole("group", { name: it.zoom });
+  const zoom = page.getByRole("group", { name: it.zoom, exact: true });
   /** Il carattere più piccolo dei testi del flowchart, in pixel dello schermo. */
   const carattereMinimo = () =>
     flowchart.evaluate((svg: SVGSVGElement) => {
@@ -434,13 +434,13 @@ test("al 100% il carattere del flowchart è di almeno 14 px; lo zoom lo cambia",
   const cento = await carattereMinimo();
   expect(cento).toBeGreaterThanOrEqual(14);
 
-  await zoom.getByRole("button", { name: it.zoomIngrandisci }).click();
+  await zoom.getByRole("button", { name: it.zoomIngrandisci, exact: true }).click();
   await expect(zoom.locator('[data-comando="cento"]')).toHaveText("125%");
-  await zoom.getByRole("button", { name: it.zoomRiduci }).click();
+  await zoom.getByRole("button", { name: it.zoomRiduci, exact: true }).click();
   await expect(zoom.locator('[data-comando="cento"]')).toHaveText("100%");
 
   // Controllo positivo: con «Adatta alla finestra» il riferimento si rimpicciolisce e scende sotto i 14 px.
-  await zoom.getByRole("button", { name: it.zoomAdatta }).click();
+  await zoom.getByRole("button", { name: it.zoomAdatta, exact: true }).click();
   await expect(zoom.locator('[data-comando="cento"]')).not.toHaveText("100%");
   const adattato = await carattereMinimo();
   console.log(`[${info.project.name}] carattere: al 100% ${cento.toFixed(2)} px; adattato a ${page.viewportSize()?.width}×${page.viewportSize()?.height} ${adattato.toFixed(2)} px`);

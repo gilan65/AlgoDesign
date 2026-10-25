@@ -235,8 +235,11 @@ import { join, relative, resolve } from "node:path";
 import { apri as apriProgetto, salva as testoDel } from "../core/progetto/formato";
 import { csvIngleseAtteso, csvItalianoAtteso } from "../core/esecuzione/atteso-del-riferimento";
 import { costruisci as costruisciIlRiferimento, differenze, primaDifferenza, riferimentoDellaTappa2, riferimentoDellaTappa3 } from "../e2e/costruzione";
+// La soglia della finestra che risponde: la stessa della prova nei motori.
+import { SOGLIA_MS } from "../e2e/risposta";
 import { vettoreRiempito } from "../e2e/vettore-riempito";
 import { differenzeDallElenco, elencoDelPacchetto } from "./elenco-del-pacchetto";
+import { finestraVera as finestraDelProcesso, type AzioneDellaFinestra } from "./finestra-vera";
 import { politicaDelProdotto } from "./politica";
 import { direttiveSenzaSonda, provaLaSonda, sonde } from "./sonde-della-politica";
 import { testiDeiCodici } from "../i18n/codici";
@@ -517,25 +520,13 @@ async function uscita(a: Avvio, ms: number): Promise<boolean> {
   return true;
 }
 
-/** La finestra vera del processo (`finestra-vera.ps1`): il messaggio di un tasto o quello di chiusura. Una
- * PowerShell che non risponde entro 30 s si ferma, e l'esito lo dice (mai un'attesa senza fine). */
-async function finestraVera(pid: number, azione: "tasto" | "chiudi" | "coperta" | "salva", argomento?: string): Promise<string> {
-  const cmd = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(import.meta.dir, "finestra-vera.ps1"), String(pid), azione, ...(argomento === undefined ? [] : [argomento])];
-  log(`$ ${cmd.join(" ")}`);
-  const proc = Bun.spawn({ cmd, stdout: "pipe", stderr: "pipe" });
-  const letto = Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited]).then(([out, err, codice]) => ({ out, err, codice }));
-  const esito = await Promise.race([letto, Bun.sleep(30_000).then(() => null)]);
-  if (esito === null) {
-    proc.kill();
-    log("(PowerShell fermata dopo 30 s)");
-    return "NON inviato: PowerShell non ha risposto in 30 s";
-  }
-  log(`${esito.out}${esito.err}(PowerShell: exit ${esito.codice})`);
-  // L'esito è la prima riga (dopo «salvato» c'è il nome proposto: `righeDellaFinestraVera`). Una PowerShell che non arriva
-  // a stampare l'esito (per esempio `Add-Type` che fallisce): il motivo è il suo errore.
-  righeDellaFinestraVera = esito.out.trim().split(/\r?\n/);
-  const riga = righeDellaFinestraVera[0] ?? "";
-  return riga !== "" ? riga : `NON inviato: PowerShell senza esito (exit ${esito.codice}): ${esito.err.trim().split("\n")[0] ?? ""}`;
+/** La finestra vera del processo (`finestra-vera.ts`): il messaggio di un tasto o quello di chiusura, lo stato della
+ * finestra, il nome nella finestra del sistema per salvare. L'esito è la prima riga (dopo «salvato» c'è il nome
+ * proposto: `righeDellaFinestraVera`); ogni guasto dello strumento è un «NON inviato». */
+async function finestraVera(pid: number, azione: AzioneDellaFinestra, argomento?: string): Promise<string> {
+  const { esito, righe } = await finestraDelProcesso(pid, azione, argomento, { log });
+  righeDellaFinestraVera = righe;
+  return esito;
 }
 
 /** Le righe stampate dall'ultima chiamata dello strumento della finestra vera. */
@@ -1182,9 +1173,6 @@ async function giroDellEsecuzione(lingua: Lingua): Promise<void> {
   verde("SICUREZZA", `nessuna violazione della politica di sicurezza dei contenuti dall'apertura del file all'esportazione | controllo positivo acceso (${sonde.length} sonde per ${new Set(sonde.map((s) => s.direttiva)).size} direttive, ognuna fermata con la sua violazione)`);
 }
 
-/** La soglia della finestra che risponde, la stessa della prova nei motori (`e2e/programmi-pesanti.e2e.ts`). */
-const SOGLIA_MS = 1_000;
-
 /** Una corsa del vettore di 1000 elementi, misurata come nella prova nei motori: la risposta della pagina (un giro di
  * andata e ritorno) due secondi dopo F5 e alla fine, il fotogramma più lungo dal tasto alla fine (un campionatore
  * nella pagina, acceso prima di F5, che conta anche i fotogrammi: senza fotogrammi il suo «più lungo» non direbbe
@@ -1682,6 +1670,8 @@ if (esito === 0 && verdi.join(" → ") !== dichiarate.join(" → ")) {
 }
 // Ultima riga, dopo la pulizia: dice le clausole eseguite, nell'ordine, e concorda con l'exit code.
 const nellEsito = clausole.map(([c, nome]) => (c === "BUILD" ? clausolaBuild : nome));
-riga(esito === 0 ? `ESITO: VERDE (${nellEsito.join(", ")}: ${verdi.length} righe verdi su ${dichiarate.length} clausole)` : "ESITO: ROSSO");
+// Il build saltato ha la sua riga (per l'ordine) ma non è verde: non si conta fra le verdi né fra le clausole eseguite.
+const saltato = senzaBuild ? 1 : 0;
+riga(esito === 0 ? `ESITO: VERDE (${nellEsito.join(", ")}: ${verdi.length - saltato} righe verdi su ${dichiarate.length - saltato} clausole eseguite${saltato ? ", il build saltato" : ""})` : "ESITO: ROSSO");
 log("=== FINE PROVA PORTABILE ===");
 process.exit(esito);
