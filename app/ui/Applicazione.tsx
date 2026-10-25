@@ -81,6 +81,7 @@ import { apri as apriTesto, salva as testoDi } from "../core/progetto/formato";
 import type { Blocco, CasoDiUnaFunzione, Dato, Funzione, Progetto } from "../core/progetto/modello";
 import { bozzaDelCaso, casoDaBozza, datiDelleVoci, nomeDelCasoNuovo, stessoCaso, vociDelCasoNuovo, type BozzaDelCaso } from "./casi/bozza";
 import { casiDella, chiaveDelCaso, chiaviDeiCasi, selezioneDopoIlPasso, TuttiICasi } from "./casi/tutti";
+import { casoDallEsecuzione, casoUguale, stessoProgramma, type DallEsecuzione } from "../core/casi/dall-esecuzione";
 import { riassunto, rigaDelCaso, segnoDi, VistaCasi, type SegnoDelCaso } from "./casi/VistaCasi";
 import { chiaveDelPosto, nomeDelBlocco, nomeDellaFase, nomeDelValoreIniziale, strutturaAccessibile, trovaPosto, vociDeiValori } from "./disegno/accessibile";
 import { ConfermaValoreIniziale } from "./disegno/ConfermaValoreIniziale";
@@ -498,7 +499,7 @@ export function Applicazione({
   // aggiunto con la cronologia di prima (rinunciando ai suoi campi sparisce senza lasciare un passo, come un dato), quello
   // che si sta per eliminare (la finestra di conferma è aperta).
   const [casoScelto, setCasoScelto] = useState<number | null>(null);
-  const [casoInModifica, setCasoInModifica] = useState<{ indice: number; bozza: BozzaDelCaso } | null>(null);
+  const [casoInModifica, setCasoInModifica] = useState<{ indice: number; bozza: BozzaDelCaso; seleziona?: true } | null>(null);
   const [casoAggiunto, setCasoAggiunto] = useState<{ indice: number; prima: Cronologia } | null>(null);
   const [eliminandoCaso, setEliminandoCaso] = useState<{ indice: number; nome: string } | null>(null);
   // «Esegui tutti» (o i selezionati) in corso, e l'ultimo esito di ogni caso, per funzione e nome (`chiaveDelCaso`: i nomi
@@ -528,13 +529,17 @@ export function Applicazione({
     selezioniRicordate.current.set(progetto, selezionati);
   }, [progetto, selezionati]);
   // Un'altra scheda mostra altri casi: la scelta e i campi della scheda di prima si chiudono (i campi sono già un passo);
-  // il caso finito in una scheda tornata da sola alla sua radice si sceglie qui.
+  // il caso finito in una scheda tornata da sola alla sua radice si sceglie qui, e qui si aprono i campi del caso salvato
+  // da un'esecuzione nella scheda della sua radice.
   const casoDopoLaScheda = useRef<number | null>(null);
+  const campiDopoLaScheda = useRef<{ indice: number; bozza: BozzaDelCaso; prima: Cronologia } | null>(null);
   useEffect(() => {
     setCasoScelto(casoDopoLaScheda.current);
     casoDopoLaScheda.current = null;
-    setCasoInModifica(null);
-    setCasoAggiunto(null);
+    const campi = campiDopoLaScheda.current;
+    campiDopoLaScheda.current = null;
+    setCasoInModifica(campi ? { indice: campi.indice, bozza: campi.bozza, seleziona: true } : null);
+    setCasoAggiunto(campi ? { indice: campi.indice, prima: campi.prima } : null);
   }, [mostrata.id]);
   const nomi = nomiDegliOperatori[lingua];
   // Una Scrittura che il disegno mostra dentro la sua Lettura non ha un blocco: la scelta è quella della Lettura.
@@ -570,6 +575,18 @@ export function Applicazione({
   // Durante l'esecuzione (e durante «Esegui tutti») flowchart, dati e casi sono in sola lettura; a esecuzione finita si
   // modificano di nuovo.
   const inEsecuzione = situazione === "in pausa" || situazione === "in corso" || situazione === "chiede" || tutti !== null;
+  // Il caso d'uso dall'ultima esecuzione: nessun comando con la casella delle Impostazioni spenta; se no il caso (della
+  // radice dell'esecuzione), o il motivo per cui non c'è. Il programma (o i limiti) cambiato dopo la fine non lo dà più:
+  // il caso non sarebbe di quel programma; un caso d'uso cambiato sì, e Annulla fino al programma di allora lo riporta.
+  const stessoProgrammaDellEsecuzione = useMemo(() => esecuzione !== null && stessoProgramma(esecuzione.progetto, progetto) && JSON.stringify(esecuzione.limiti) === JSON.stringify(limiti), [esecuzione, progetto, limiti]);
+  const composto = esecuzione !== null && situazione === "finita" ? casoDallEsecuzione(esecuzione) : ({ ok: false, motivo: "non finita" } as const);
+  const dallUltima: { readonly motivo: string } | { readonly caso: Extract<DallEsecuzione, { ok: true }>; readonly radice: string | undefined } | undefined = !scelte.offriCasoDallEsecuzione
+    ? undefined
+    : !composto.ok
+      ? { motivo: composto.motivo === "output perso" ? testi.casoDallEsecuzioneOutputPerso : testi.casoDallEsecuzioneNonFinita }
+      : !stessoProgrammaDellEsecuzione
+        ? { motivo: testi.casoDallEsecuzioneCambiato }
+        : { caso: composto, radice: esecuzione!.funzione };
   // Il blocco della pausa; sul valore iniziale di un dato, il suo blocco sotto «Inizio», o «Inizio» se le Impostazioni
   // nascondono i valori iniziali (l'esecuzione non cambia: cambia solo che cosa si evidenzia).
   // Il valore iniziale si evidenzia solo nella scheda della sua funzione (un'altra può avere un dato con lo stesso nome).
@@ -2226,6 +2243,44 @@ export function Applicazione({
     setCasoInModifica({ indice: esistenti.length, bozza: bozzaDelCaso(nuovo) });
     setCasoAggiunto({ indice: esistenti.length, prima });
   }
+  /** «Salva l'esecuzione come caso d'uso» (nella console) e «Nuovo caso dall'ultima esecuzione» (nella scheda dei casi):
+   * prima i campi aperti diventano un passo. Il caso va alla radice dell'esecuzione (il programma, o la funzione eseguita da
+   * sola), non alla scheda mostrata: un errore in una funzione chiamata mostra la sua. Un caso uguale c'è già: nessun
+   * passo, si sceglie lui col fuoco sulla sua riga, e l'avviso lo dice. Se no un caso nuovo («caso N», un passo) coi campi
+   * aperti sul nome selezionato; in un'altra scheda i campi si aprono dopo il cambio, che chiude quelli di prima. */
+  function salvaLEsecuzione(): void {
+    if (dallUltima === undefined || !("caso" in dallUltima)) return;
+    const { caso, radice } = dallUltima;
+    const prima = confermaIApertiCampi();
+    if (!prima) return;
+    const id = radice ?? principaleDi(prima.presente).id;
+    const altraScheda = id !== mostrata.id;
+    const esistenti = casiDella(prima.presente, radice);
+    setAperto(true);
+    setScheda("casi");
+    const uguale = casoUguale(esistenti, caso);
+    if (uguale >= 0) {
+      if (altraScheda) {
+        casoDopoLaScheda.current = uguale;
+        apriScheda(id);
+      } else setCasoScelto(uguale);
+      setFuocoDato(rigaDelCaso(uguale));
+      setAvviso(riempi(testi.annuncioCasoUguale, { nome: esistenti[uguale]!.name || testi.casoSenzaNome }));
+      return;
+    }
+    const nuovo: CasoDiUnaFunzione = { name: nomeDelCasoNuovo(esistenti, (n) => riempi(testi.nomeDelCasoNuovo, { n: String(n) })), inputs: caso.inputs, expected: caso.expected };
+    if (!modifica(aggiungiCaso(nuovo, radice), undefined, prima)) return;
+    const campi = { indice: esistenti.length, bozza: bozzaDelCaso(nuovo), prima };
+    if (altraScheda) {
+      casoDopoLaScheda.current = campi.indice;
+      campiDopoLaScheda.current = campi;
+      apriScheda(id);
+      return;
+    }
+    setCasoScelto(campi.indice);
+    setCasoInModifica({ indice: campi.indice, bozza: campi.bozza, seleziona: true });
+    setCasoAggiunto({ indice: campi.indice, prima });
+  }
   /** Canc, «Elimina» nel menu o nei campi: prima i campi aperti diventano un passo, poi la conferma, sempre. */
   function chiediDiEliminareIlCaso(indice: number): void {
     const c = confermaIApertiCampi();
@@ -3128,6 +3183,7 @@ export function Applicazione({
                 eseguiSelezionati={!inEsecuzione ? () => eseguiICasi(true) : undefined}
                 ferma={fermaTutti}
                 eseguiCaso={!inEsecuzione ? eseguiUnCaso : undefined}
+                dallEsecuzione={dallUltima && ("caso" in dallUltima ? { salva: salvaLEsecuzione } : { motivo: dallUltima.motivo })}
                 dallEsito={
                   !inEsecuzione
                     ? {
@@ -3317,6 +3373,7 @@ export function Applicazione({
                     : null
                 }
                 {...(esecuzione.caso ? { caso: esecuzione.caso.name } : {})}
+                salva={dallUltima && "caso" in dallUltima ? salvaLEsecuzione : undefined}
                 testi={testi}
                 lingua={lingua}
               />}

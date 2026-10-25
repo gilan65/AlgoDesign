@@ -1,8 +1,9 @@
 // La scheda «Casi d'uso» del pannello: l'elenco dei casi del progetto, ognuno con la sua casella, il nome coi valori che
 // scrive nella console, «Esegui» e «Passo passo» (due icone in un gruppo, staccato dal pallino) e, in fondo alla riga, il
 // pallino dell'ultimo esito; sotto il caso scelto le sue differenze; sopra, «Esegui tutti», «Esegui i
-// selezionati» (con l'avanzamento e «Ferma» mentre corre) e «Aggiungi un caso». La casella in testa all'elenco seleziona
-// o toglie tutti i casi, e la sua scritta dice quale dei due.
+// selezionati» (con l'avanzamento e «Ferma» mentre corre), «Aggiungi un caso» e, se le Impostazioni lo offrono, «Nuovo
+// caso dall'ultima esecuzione» (spento, col motivo nel suggerimento, quando l'ultima esecuzione non dà un caso). La
+// casella in testa all'elenco seleziona o toglie tutti i casi, e la sua scritta dice quale dei due.
 //
 // Il pallino: verde con ✓ (raggiunto), rosso con ✗ (non raggiunto), giallo con ✗ (non raggiunto, e il progetto è
 // cambiato da allora: da eseguire di nuovo), vuoto (mai eseguito, o raggiunto prima di una modifica). Lo stato lo dà chi
@@ -31,7 +32,8 @@ import stili from "./VistaCasi.module.css";
 type Codici = (typeof testiDeiCodici)["it"];
 
 export interface ModificaDeiCasi {
-  readonly inModifica: { readonly indice: number; readonly bozza: BozzaDelCaso } | null;
+  /** `seleziona`: il nome dei campi appena aperti è selezionato (il caso salvato da un'esecuzione). */
+  readonly inModifica: { readonly indice: number; readonly bozza: BozzaDelCaso; readonly seleziona?: true } | null;
   readonly apri: (indice: number) => void;
   readonly cambia: (indice: number, bozza: BozzaDelCaso) => void;
   /** `torna` dice se il fuoco torna sulla riga (dopo Invio). */
@@ -121,6 +123,7 @@ export function VistaCasi({
   ferma,
   eseguiCaso,
   dallEsito,
+  dallEsecuzione,
   testi,
   codici,
   nomeDi,
@@ -153,6 +156,9 @@ export function VistaCasi({
   eseguiCaso: ((indice: number, passoPasso: boolean) => void) | undefined;
   /** Dall'esito, nell'atteso; senza, la scheda non cambia l'atteso (durante un'esecuzione). */
   dallEsito: DallEsito | undefined;
+  /** «Nuovo caso dall'ultima esecuzione»: `salva` se si offre, se no il motivo (il suggerimento del pulsante spento);
+   * senza, il pulsante non c'è (la casella delle Impostazioni spenta). */
+  dallEsecuzione?: { readonly salva?: () => void; readonly motivo?: string } | undefined;
   testi: Dizionario;
   codici: Codici;
   nomeDi: (blocco: string) => string;
@@ -259,6 +265,20 @@ export function VistaCasi({
                 {testi.aggiungiCaso}
               </button>
             )}
+            {modifica && dallEsecuzione && (
+              <button
+                type="button"
+                className={stiliDati.comando}
+                data-nuovo-dall-esecuzione=""
+                data-conferma-lui=""
+                aria-disabled={dallEsecuzione.salva ? undefined : true}
+                title={dallEsecuzione.motivo}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={dallEsecuzione.salva}
+              >
+                {testi.nuovoCasoDallEsecuzione}
+              </button>
+            )}
           </>
         )}
       </div>
@@ -352,6 +372,7 @@ export function VistaCasi({
                         codici={codici}
                         nomeDi={nomeDi}
                         parametri={parametri}
+                        selezionaIlNome={aperto.seleziona === true}
                       />
                     </td>
                   </tr>

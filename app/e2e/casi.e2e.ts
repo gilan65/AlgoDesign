@@ -15,6 +15,9 @@
 //   finestra senza cambiarne il contenuto: la console resta dove l'utente l'ha portata.
 // - «Passo passo» sul caso di una funzione importata da una libreria: a ogni pausa un solo blocco acceso nel disegno, la
 //   prima volta l'«Inizio» (la costante comune, che la scheda della funzione non disegna); alla fine il pallino.
+// - Un'esecuzione salvata come caso d'uso: l'errore in una funzione chiamata ne mostra la scheda; dalla console il caso va
+//   al programma, coi campi aperti e il fuoco sul nome selezionato, che scrivendo si sostituisce; dalla scheda dei casi lo
+//   stesso caso non si ripete (il fuoco sulla sua riga, l'avviso).
 //
 // CHE COSA NON GUARDA:
 // - l'esito dei casi (lo confronta con la riga di comando la prova sotto happy-dom, `ui/casi/casi.test.tsx`), e il caso
@@ -268,4 +271,55 @@ test("un caso nella colonna: «Esegui» apre la tabella e la console, l'esito in
   await expect(blocco).toHaveAttribute("aria-pressed", "true");
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
   expect(await posizione()).toMatchObject({ sopra: 0, inFondo: false });
+});
+
+/** Il programma legge `n` e scrive `inverso(n)`, la funzione che divide 100 per il suo parametro: con 0 l'errore cade
+ * nella funzione, e la scheda la segue. */
+const inverso = JSON.stringify({
+  format: "algodesign",
+  schema_version: 1,
+  metadata: { name: "inverso" },
+  functions: [
+    {
+      id: "f1",
+      kind: "main",
+      data: [
+        { name: "n", type: "integer", role: "input" },
+        { name: "r", type: "integer", role: "output" },
+      ],
+      body: [
+        { id: "b1", kind: "read", target: "n" },
+        { id: "b2", kind: "assignment", target: "r", value: "inverso(n)" },
+        { id: "b3", kind: "write", values: ["r"], newline: true },
+      ],
+      end: { id: "b4" },
+    },
+    { id: "f2", kind: "function", name: "inverso", return_type: "integer", data: [{ name: "x", type: "integer", parameter: "value" }], body: [], end: { id: "e2", return_value: "100 / x" } },
+  ],
+});
+
+test("l'esecuzione salvata come caso d'uso: dalla console il caso va al programma col fuoco sul nome selezionato; dalla scheda lo stesso caso non si ripete", async ({ page }) => {
+  await apriICasi(page, inverso);
+  await page.keyboard.press("F5");
+  const riga = page.getByRole("textbox", { name: riempi(it.consoleValore, { dato: "n" }), exact: true });
+  await expect(riga).toBeFocused();
+  await page.keyboard.type("0");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("[data-stato-esecuzione]")).toHaveText(it.statoFermataDaUnErrore);
+  // La scheda ha seguito l'errore nella funzione; il caso va al programma, da cui l'esecuzione è partita.
+  await expect(page.locator('[data-scheda][aria-selected="true"]')).toHaveAttribute("data-scheda", "f2");
+  await page.locator("[data-salva-esecuzione]").click();
+  await expect(page.locator('[data-scheda][aria-selected="true"]')).toHaveAttribute("data-scheda", "f1");
+  const nome = page.getByRole("textbox", { name: it.casoNome, exact: true });
+  await expect(nome).toBeFocused();
+  await expect(nome).toHaveValue("caso 1");
+  expect(await nome.evaluate((e: HTMLInputElement) => [e.selectionStart, e.selectionEnd])).toEqual([0, 6]);
+  // Il nome selezionato si sostituisce scrivendo.
+  await page.keyboard.type("zero");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("tr[data-caso] [data-nome-caso]")).toHaveText(["zero"]);
+  await page.locator("[data-nuovo-dall-esecuzione]").click();
+  await expect(page.locator('tr[data-caso="0"]')).toBeFocused();
+  await expect(page.locator("tr[data-caso]")).toHaveCount(1);
+  await expect(page.locator('output[role="status"]')).toHaveText(riempi(it.annuncioCasoUguale, { nome: "zero" }));
 });

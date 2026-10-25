@@ -92,6 +92,8 @@ export interface Scelte {
   /** Una Scrittura subito prima di una Lettura si mostra come la domanda della Lettura, se la console resta identica. Il
    * file non cambia. */
   readonly domandaNellaLettura: boolean;
+  /** A esecuzione finita, il comando che la salva come caso d'uso: nella console e nella scheda dei casi. */
+  readonly offriCasoDallEsecuzione: boolean;
 }
 
 export const scelteIniziali: Scelte = {
@@ -123,6 +125,7 @@ export const scelteIniziali: Scelte = {
   riquadroDellaScelta: false,
   chiusuraAutomatica: true,
   domandaNellaLettura: false,
+  offriCasoDallEsecuzione: true,
 };
 
 export const voci = {
@@ -248,6 +251,7 @@ export function preferenzeDa(file: unknown): { lingua: Lingua | undefined; scelt
       riquadroDellaScelta: typeof f.riquadroDellaScelta === "boolean" ? f.riquadroDellaScelta : scelteIniziali.riquadroDellaScelta,
       chiusuraAutomatica: typeof f.chiusuraAutomatica === "boolean" ? f.chiusuraAutomatica : scelteIniziali.chiusuraAutomatica,
       domandaNellaLettura: typeof f.domandaNellaLettura === "boolean" ? f.domandaNellaLettura : scelteIniziali.domandaNellaLettura,
+      offriCasoDallEsecuzione: typeof f.offriCasoDallEsecuzione === "boolean" ? f.offriCasoDallEsecuzione : scelteIniziali.offriCasoDallEsecuzione,
     },
   };
 }
@@ -284,6 +288,7 @@ export function fileDa(lingua: Lingua, s: Scelte): Record<string, unknown> {
     riquadroDellaScelta: s.riquadroDellaScelta,
     chiusuraAutomatica: s.chiusuraAutomatica,
     domandaNellaLettura: s.domandaNellaLettura,
+    offriCasoDallEsecuzione: s.offriCasoDallEsecuzione,
   };
 }
 

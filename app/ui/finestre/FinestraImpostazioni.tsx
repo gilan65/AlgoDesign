@@ -420,6 +420,13 @@ function Contenuto({
               {testi.chiusuraAutomatica}
             </label>
           </fieldset>
+          <fieldset className={stili.scelta}>
+            <legend>{testi.casiDalleEsecuzioni}</legend>
+            <label className={stili.opzione}>
+              <input type="checkbox" checked={s.offriCasoDallEsecuzione} onChange={(e) => cambia({ offriCasoDallEsecuzione: e.target.checked })} />
+              {testi.offriCasoDallEsecuzione}
+            </label>
+          </fieldset>
         </Tabs.Content>
         <Tabs.Content value="limiti" className={stili.scheda}>
           <p className={stili.spiegazione}>{testi.limitiSpiegazione}</p>
