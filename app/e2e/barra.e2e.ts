@@ -71,8 +71,9 @@ const RIGHE_ATTESE: Righe = {
   en: { "icone-e-testo": [1, 2, 2], icone: [1, 1, 1], "testo-sotto": [1, 1, 1] },
 };
 /** Su Linux, col carattere DejaVu Sans (il `system-ui` della macchina della CI e di molte distribuzioni, più largo di
- * quello di Windows), misurate nel WebKit per Linux sulle diciotto combinazioni: tre cambiano di una riga, e il gruppo di
- * destra resta in prima riga. Un desktop con un altro carattere può dare altre righe: la prova non lo guarda. */
+ * quello di Windows), misurate nel WebKit per Linux sulle diciotto combinazioni: quattro cambiano di una riga, e il gruppo
+ * di destra resta in prima riga. Si scelgono per sistema, quindi anche per Chromium su Linux, che non è stato misurato; un
+ * desktop con un altro carattere può dare altre righe: la prova non lo guarda. */
 const RIGHE_ATTESE_SU_LINUX: Righe = {
   it: { "icone-e-testo": [2, 3, 3], icone: [1, 1, 1], "testo-sotto": [1, 1, 2] },
   en: { "icone-e-testo": [2, 2, 3], icone: [1, 1, 1], "testo-sotto": [1, 1, 1] },

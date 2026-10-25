@@ -149,6 +149,22 @@ test("con una riga tenuta dalla fine non si compone", () => {
   expect(casoDallEsecuzione(e)).toEqual({ ok: false, motivo: "output perso" });
 });
 
+test("una riga NON VALIDA tenuta dalla fine non toglie nulla all'output: si compone", () => {
+  // Legge un intero e lo riscrive: una riga di 300 lettere non è un intero, e la console la tiene dalla fine anche col
+  // modo predefinito; l'output (le sole righe scritte) è intero.
+  const leggeUnIntero = programma(
+    [{ name: "n", type: "integer", role: "input" }],
+    [
+      { id: "b1", kind: "read", target: "n" },
+      { id: "b2", kind: "write", values: ["n"], newline: true },
+    ],
+  );
+  const e = libera(leggeUnIntero, ["x".repeat(300), "5"]);
+  // Premessa: la riga non valida è tagliata.
+  expect(e.console.some((v) => v.genere !== "scrive" && "tagliata" in v && v.tagliata)).toBe(true);
+  expect(casoDallEsecuzione(e)).toMatchObject({ ok: true, expected: { output: "5\n" } });
+});
+
 test("una riga letta più lunga di una riga della console è una voce intera, e l'output spezzato torna intero", () => {
   const e = libera(leggeEScrive, ["abcdefg", "x"], { righeLunghe: { caratteri: 3, modo: "a-capo" } });
   // La console spezza la riga letta in tre righe «letto»: le voci non si prendono da lì.

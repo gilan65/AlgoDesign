@@ -10,7 +10,7 @@
 //   di una funzione con più chiamate in corso ne dice il livello; la lettura in un parametro per riferimento nomina il
 //   dato vero anche quando una funzione in mezzo ha un dato con lo stesso nome (dedotto dai nomi sarebbe il suo).
 // - I giri della ricorsione nell'elenco delle procedure e delle funzioni e nella riga di stato: la prima frase e quante
-//   altre, e l'elenco a richiesta.
+//   altre, e l'elenco a richiesta, che si chiude quando resta una ricorsione sola.
 // - Le righe delle chiamate nel codice: con dieci chiamate dallo stesso blocco, una volta sola, con lo sfondo del livello
 //   più profondo; un `per` che chiama dai suoi limiti accende solo la riga della sua partenza.
 //
@@ -27,7 +27,9 @@ import { join } from "node:path";
 import { it as testi } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
 import { Applicazione } from "../Applicazione";
+import type { Azioni } from "../Barra";
 import { scelteIniziali } from "../preferenze";
+import { RigaDiStato } from "../RigaDiStato";
 import { DoveSei, type LivelloMostrato } from "./DoveSei";
 
 const misura = (t: string) => [...t].length * 10;
@@ -312,6 +314,31 @@ test("con più ricorsioni la riga di stato dice la prima e quante altre, e l'ele
   await clic(comandoDelleRicorsioni(), "«Nascondi le ricorsioni»");
   expect(elenco().hidden).toBe(true);
 }, 60_000);
+
+test("l'elenco delle ricorsioni aperto, rimasta una ricorsione sola, si chiude: tornate due, non si riapre da sé", async () => {
+  const riga = (ricorsioni: readonly string[]) => (
+    <RigaDiStato
+      file={null}
+      modificato={false}
+      voci={[]}
+      fuoriTappa={false}
+      ricorsioni={ricorsioni}
+      testi={testi}
+      vai={() => {}}
+      esecuzione=""
+      zoom={{ scala: 1, azioni: {} as Azioni }}
+      lingua={{ attuale: "it", scegli: () => {} }}
+    />
+  );
+  const { rerender } = render(riga(["prima", "seconda"]));
+  const elenco = () => document.querySelector<HTMLElement>("[data-ricorsioni]");
+  await clic(comandoDelleRicorsioni(), "«Mostra le ricorsioni»");
+  expect(elenco()?.hidden).toBe(false);
+  await act(async () => void rerender(riga(["prima"])));
+  expect(comandoDelleRicorsioni()).toBeNull();
+  await act(async () => void rerender(riga(["prima", "seconda"])));
+  expect({ chiuso: elenco()?.hidden, comando: comandoDelleRicorsioni()?.textContent }).toEqual({ chiuso: true, comando: testi.ricorsioniMostra });
+});
 
 // ---------------------------------------------------------------------------------- le righe delle chiamate nel codice
 

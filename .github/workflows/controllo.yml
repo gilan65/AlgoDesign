@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       prove:
-        description: "Esegui anche le prove di bun test (circa 20 minuti)"
+        description: "Esegui anche le prove di bun test (circa 13 minuti)"
         type: boolean
         default: true
 

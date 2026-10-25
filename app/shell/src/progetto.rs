@@ -63,7 +63,12 @@ pub fn leggi(percorso: &Path) -> Result<String, ErroreDelFile> {
     String::from_utf8(byte).map_err(|e| ErroreDelFile { genere: "non_testo", dettaglio: e.to_string() })
 }
 
+/// Scrive il file, salvo un nome che Windows riserva: quello digitato nella finestra del sistema («aux» diventa
+/// «aux.algo») non passa dall'avviso del nome, e Windows 11 lo scriverebbe, ma Windows 10 lo porta al dispositivo.
 pub fn scrivi(percorso: &Path, testo: &str) -> Result<(), ErroreDelFile> {
+    if let Some(nome) = percorso.file_name().and_then(|n| n.to_str()).filter(|n| nome_riservato(n)) {
+        return Err(non_valido(nome));
+    }
     scrittura::atomica(percorso, testo.as_bytes()).map_err(di_sistema)
 }
 
@@ -331,6 +336,15 @@ pub fn togli_gruppo_da(cartella: &Path, gruppo: &str) -> Result<(), ErroreDelFil
         .find(|p| fs::symlink_metadata(p).is_err())
         .expect("un nome libero per la sottocartella da eliminare");
     fs::rename(&dentro, &via).map_err(|e| ErroreDelFile { genere: "gruppo_bloccato", dettaglio: e.to_string() })?;
+    // La sola lettura di una cartella (Esplora risorse la mette alle cartelle personalizzate) su Windows ferma solo la
+    // sua eliminazione, a file già cancellati: la si toglie prima, e torna se il gruppo resta.
+    let permessi = fs::metadata(&via).map_err(di_sistema)?.permissions();
+    if permessi.readonly() {
+        let mut scrivibile = permessi.clone();
+        #[allow(clippy::permissions_set_readonly_false)]
+        scrivibile.set_readonly(false);
+        fs::set_permissions(&via, scrivibile).map_err(di_sistema)?;
+    }
     let tolti = (|| {
         for nome in &da_togliere {
             fs::remove_file(via.join(nome))?;
@@ -338,6 +352,7 @@ pub fn togli_gruppo_da(cartella: &Path, gruppo: &str) -> Result<(), ErroreDelFil
         fs::remove_dir(&via)
     })();
     tolti.map_err(|e| {
+        let _ = fs::set_permissions(&via, permessi);
         let _ = fs::rename(&via, &dentro);
         di_sistema(e)
     })
@@ -714,6 +729,49 @@ mod prove {
         fs::set_permissions(&b, permessi).unwrap();
         togli_gruppo_da(&cartella, "Verifica").unwrap();
         assert!(!cartella.join("Verifica").exists());
+        fs::remove_dir_all(&base).unwrap();
+    }
+
+    /// Un nome che Windows riserva scritto nella finestra del sistema («aux», che diventa «aux.algo») non si scrive:
+    /// l'errore del nome, e nessun file (nemmeno il temporaneo) nella cartella. La regola dei nomi vale per ogni scrittura.
+    #[test]
+    fn un_nome_riservato_scelto_nella_finestra_del_sistema_non_si_scrive() {
+        let base = cartella_di_prova("nome-riservato");
+        let elenco = || -> Vec<String> { fs::read_dir(&base).unwrap().map(|v| v.unwrap().file_name().to_string_lossy().into_owned()).collect() };
+        let (percorso, _) = da_salvare(base.join("aux"), ALGO);
+        let esito = scrivi(&percorso, "x");
+        println!("esito {esito:?}, nella cartella {:?}", elenco());
+        assert_eq!(esito, Err(non_valido("aux.algo")));
+        assert_eq!(elenco(), Vec::<String>::new());
+        // Controllo positivo: un nome libero si scrive.
+        let (libero, _) = da_salvare(base.join("aux2"), ALGO);
+        scrivi(&libero, "x").unwrap();
+        assert_eq!(elenco(), vec!["aux2.algo".to_owned()]);
+        fs::remove_dir_all(&base).unwrap();
+    }
+
+    /// La sottocartella del gruppo con l'attributo di sola lettura (Esplora risorse lo mette alle cartelle
+    /// personalizzate): su Windows non ferma la cancellazione dei file, ma quella della cartella sì. Il gruppo va via
+    /// intero, e non resta vuoto col suo nome dopo aver perso gli esempi.
+    #[test]
+    fn un_gruppo_nella_cartella_in_sola_lettura_va_via_intero() {
+        let base = cartella_di_prova("gruppo-cartella-sola-lettura");
+        let cartella = base.join("esempi");
+        for nome in ["a.algo", "b.algo"] {
+            scrivi_in(&cartella, Some("Verifica"), nome, "x").unwrap();
+        }
+        let dentro = cartella.join("Verifica");
+        let mut permessi = fs::metadata(&dentro).unwrap().permissions();
+        permessi.set_readonly(true);
+        fs::set_permissions(&dentro, permessi).unwrap();
+        // Controllo positivo della premessa: la cartella è davvero in sola lettura.
+        assert!(fs::metadata(&dentro).unwrap().permissions().readonly());
+        let esito = togli_gruppo_da(&cartella, "Verifica");
+        let restano: Vec<bool> = ["a.algo", "b.algo"].iter().map(|n| dentro.join(n).exists()).collect();
+        println!("esito {esito:?}, la cartella c'è {}, restano {restano:?}", dentro.exists());
+        assert_eq!(esito, Ok(()));
+        assert!(!dentro.exists());
+        assert_eq!(fs::read_dir(&cartella).unwrap().count(), 0, "nessuna cartella nascosta rimasta");
         fs::remove_dir_all(&base).unwrap();
     }
 

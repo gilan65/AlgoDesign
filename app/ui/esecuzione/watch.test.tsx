@@ -482,6 +482,21 @@ test("dalla tastiera: Maiusc+F9 su un blocco ferma il riquadro del suo primo dat
   // Dopo l'ultimo nome del blocco si torna al primo.
   await maiuscF9(fermo()!);
   expect(conIlFuoco().nome).toBe("i");
+  // Un nome scritto due volte nel blocco («somma ← somma + voto») è un dato solo: il secondo Maiusc+F9 passa a «voto».
+  const b10 = document.querySelector<SVGGElement>('[data-blocco="b10"]')!;
+  expect(b10.querySelectorAll('[data-watch-dato="somma"]').length).toBe(2);
+  act(() => b10.focus());
+  await maiuscF9(b10);
+  expect(conIlFuoco().nome).toBe("somma");
+  await maiuscF9(fermo()!);
+  expect(conIlFuoco().nome).toBe("voto");
+  await act(async () => {
+    fireEvent.keyDown(fermo()!, { key: "Escape" });
+  });
+  await giro();
+  act(() => b7.focus());
+  await maiuscF9(b7);
+  expect(conIlFuoco().nome).toBe("i");
   await act(async () => {
     fireEvent.keyDown(fermo()!, { key: "Escape" });
   });

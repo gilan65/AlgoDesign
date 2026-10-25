@@ -129,6 +129,8 @@ export function RigaDiStato({
   const idElenco = useId();
   const idDelleRicorsioni = useId();
   const altre = (ricorsioni?.length ?? 0) - 1;
+  // Rimasta una ricorsione sola (o nessuna), l'elenco aperto si chiude: tornate più ricorsioni, non si riapre da sé.
+  if (altre <= 0 && ricorsioniAperte) setRicorsioniAperte(false);
   const ricorsioniMostrate = ricorsioniAperte && altre > 0;
   const errori = voci.filter((v) => v.genere === "errore").length;
   const avvisi = voci.length - errori;

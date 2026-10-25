@@ -2,7 +2,7 @@
 
 Le novità e le correzioni di ogni versione, dalla più recente. Il dettaglio di una versione è nelle sue note di rilascio (`NOTE-DI-RILASCIO.md`); come si usa AlgoDesign è nella guida per lo studente (`GUIDA-PER-LO-STUDENTE.md`).
 
-## 0.5.0-beta.1, 25 ottobre 2026
+## 0.5.0-beta.1, 26 ottobre 2026
 
 Prima versione beta, per Windows.
 
@@ -16,7 +16,7 @@ Prima versione beta, per Windows.
 - **La guida per lo studente dentro AlgoDesign**: «Guida per lo studente», nel menu «Aiuto», la apre in una finestra a destra, nella lingua dell'interfaccia, che resta aperta mentre si lavora; la ricerca si toglie e la finestra si può spostare, nelle Impostazioni.
 - **La lingua nella riga di stato**: «ITA» o «ENG» all'estrema destra, e un clic apre il menu delle due lingue.
 - **La guida per lo studente anche in inglese** (`STUDENT-GUIDE.md`), e il README in due lingue (`LEGGIMI.md` in italiano, `README.md` in inglese).
-- **Il formato dei file `.algo`** spiegato campo per campo (`docs/FORMATO-FILE-ALGO.md`) e scritto come JSON Schema (`docs/algo.schema.json`), per gli editor che lo conoscono.
+- **Il formato dei file `.algo`** spiegato campo per campo (`FORMATO-FILE-ALGO.md`) e scritto come JSON Schema (`algo.schema.json`), per gli editor che lo conoscono, nella cartella `docs/` del repository del progetto.
 
 ### Correzioni
 

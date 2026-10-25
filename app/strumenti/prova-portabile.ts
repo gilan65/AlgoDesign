@@ -1482,7 +1482,7 @@ async function giroDelCodice(lingua: Lingua): Promise<void> {
   const sentinella = `sentinella di AlgoDesign ${Date.now()}`;
   scriviAppunti(sentinella);
   const a = await avvia([progettoFuori]);
-  let esito: { righe: number; copiato: string | null; avviso: string; campo: string; compilata: string; proposto: string; detto: string; scritto: string | null; testo: string };
+  let esito: { righe: number; copiato: string | null; letture: number; avviso: string; campo: string; compilata: string; proposto: string; detto: string; scritto: string | null; testo: string };
   try {
     await a.pagina.getByRole("banner").getByRole("button", { name: testi.pannelloCodice, exact: true }).click();
     const riquadro = a.pagina.getByRole("region", { name: testi.codiceGenerato, exact: true });
@@ -1500,7 +1500,14 @@ async function giroDelCodice(lingua: Lingua): Promise<void> {
     };
     await riquadro.getByRole("button", { name: testi.codiceCopia, exact: true }).click();
     const copiato = await attendiStato(riempi(testi.codiceCopiato, { linguaggio: testi.linguaggioPython }));
-    const negliAppunti = appunti();
+    // Chi scrive negli appunti prima li svuota e poi ci mette il testo: letti in mezzo non hanno testo. Si rileggono
+    // finché c'è un testo diverso dalla sentinella, per al più 5 s; un rosso dopo l'attesa è un difetto, non la corsa.
+    let negliAppunti = appunti();
+    let letture = 1;
+    for (; (negliAppunti === null || negliAppunti === sentinella) && letture < 20; letture++) {
+      await Bun.sleep(250);
+      negliAppunti = appunti();
+    }
     await riquadro.getByRole("button", { name: testi.codiceSalva, exact: true }).click();
     const avviso = a.pagina.getByRole("dialog", { name: testi.nomeCambiaTitolo, exact: true });
     const avvisoVisto = await avviso.waitFor({ timeout: 10_000 }).then(
@@ -1512,7 +1519,7 @@ async function giroDelCodice(lingua: Lingua): Promise<void> {
     const compilata = await finestraVera(a.proc.pid, "salva", join(cartellaProva, nomeDelCodice));
     const proposto = (righeDellaFinestraVera[1] ?? "").replace(/^proposto: /, "");
     const detto = await attendiStato(riempi(testi.codiceSalvatoIn, { file: `${nomeDelCodice}.py` }));
-    esito = { righe, copiato: negliAppunti, avviso: `${avvisoVisto}; ${copiato}`, campo, compilata, proposto, detto, scritto: existsSync(salvato) ? readFileSync(salvato, "utf8") : null, testo };
+    esito = { righe, copiato: negliAppunti, letture, avviso: `${avvisoVisto}; ${copiato}`, campo, compilata, proposto, detto, scritto: existsSync(salvato) ? readFileSync(salvato, "utf8") : null, testo };
   } finally {
     await chiudi(a);
     if (dellUtente !== null) scriviAppunti(dellUtente);
@@ -1520,8 +1527,8 @@ async function giroDelCodice(lingua: Lingua): Promise<void> {
     rmSync(salvato, { force: true });
   }
   if (esito.righe === 0) rosso("CODICE", "la colonna del codice non ha righe");
-  if (esito.copiato === sentinella) rosso("CODICE", `«Copia» non ha cambiato gli appunti di Windows (c'è ancora la sentinella); avviso «${esito.avviso}»`);
-  if ((esito.copiato ?? "").replaceAll("\r\n", "\n") !== esito.testo) rosso("CODICE", `negli appunti di Windows c'è ${visibile(esito.copiato ?? undefined)} invece del codice Python mostrato; avviso «${esito.avviso}»`);
+  if (esito.copiato === sentinella) rosso("CODICE", `«Copia» non ha cambiato gli appunti di Windows (c'è ancora la sentinella dopo ${esito.letture} letture in 5 s); avviso «${esito.avviso}»`);
+  if ((esito.copiato ?? "").replaceAll("\r\n", "\n") !== esito.testo) rosso("CODICE", `negli appunti di Windows c'è ${visibile(esito.copiato ?? undefined)} invece del codice Python mostrato (${esito.letture} letture); avviso «${esito.avviso}»`);
   if (!esito.avviso.startsWith("visto")) rosso("CODICE", `«Salva…» col progetto «con» non ha aperto l'avviso del nome (${esito.avviso})`);
   if (esito.campo !== "con (2)") rosso("CODICE", `nell'avviso il nome proposto è «${esito.campo}» invece di «con (2)»`);
   if (esito.compilata !== "salvato") rosso("CODICE", `la finestra del sistema per salvare il codice non è stata compilata: ${esito.compilata}`);
@@ -1529,7 +1536,7 @@ async function giroDelCodice(lingua: Lingua): Promise<void> {
   if (esito.scritto !== esito.testo) rosso("CODICE", `${salvato}: ${esito.scritto === null ? "non scritto" : primaDifferenza(esito.scritto, esito.testo)}; avviso «${esito.detto}»`);
   verde(
     "CODICE",
-    `in «${lingua}», la colonna del codice con ${esito.righe} righe di Python; «Copia»: il codice negli appunti di Windows (${Buffer.byteLength(esito.testo)} byte); «Salva…» col progetto «con»: l'avviso del nome con «${esito.campo}», poi la finestra vera del sistema che proponeva «${esito.proposto}», e il file scritto uguale al codice mostrato | controllo positivo: prima di «Copia» negli appunti c'era una sentinella`,
+    `in «${lingua}», la colonna del codice con ${esito.righe} righe di Python; «Copia»: il codice negli appunti di Windows (${Buffer.byteLength(esito.testo)} byte, alla lettura ${esito.letture}); «Salva…» col progetto «con»: l'avviso del nome con «${esito.campo}», poi la finestra vera del sistema che proponeva «${esito.proposto}», e il file scritto uguale al codice mostrato | controllo positivo: prima di «Copia» negli appunti c'era una sentinella`,
   );
 }
 

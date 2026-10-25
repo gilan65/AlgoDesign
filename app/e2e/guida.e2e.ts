@@ -7,7 +7,8 @@
 //   aperto con la guida aperta sta sopra di lei (un clic sulla voce arriva alla voce); F10 fa un passo; Esc la chiude.
 // - La lingua cambiata dalla riga di stato con la guida aperta: la guida in inglese, sullo stesso capitolo.
 // - La ricerca: le parole trovate come nel Markdown, Invio porta la successiva dentro il testo visibile.
-// - Con la preferenza la guida si sposta dal titolo e si ridimensiona dall'angolo; chiusa e riaperta torna lì.
+// - Con la preferenza la guida si sposta dal titolo e si ridimensiona dall'angolo; chiusa e riaperta torna lì, e in una
+//   finestra diventata più stretta rientra tutta.
 //
 // CHE COSA NON GUARDA: ogni parola del testo contro il Markdown (la prova di unità `ui/guida/guida.test.ts`, sull'HTML
 // della stessa conversione); la WebView2 vera (la prova sul prodotto).
@@ -27,7 +28,7 @@ const capitoliDi = (md: string) => [...md.matchAll(/^## (.*)$/gm)].map((m) => m[
 const capitoliIt = capitoliDi(markdown("GUIDA-PER-LO-STUDENTE.md"));
 const capitoliEn = capitoliDi(markdown("STUDENT-GUIDE.md"));
 
-const guida = (page: Page) => page.locator("[data-guida]");
+const guida = (page: Page) => page.locator("[data-finestra-guida]");
 
 async function apriLaGuida(page: Page, testi = it): Promise<void> {
   await (await voceDellAiuto(page, testi.guida, testi)).click();
@@ -47,7 +48,7 @@ test("la guida dal menu «Aiuto»: a destra fra la barra e la riga di stato, i c
   await apriLaGuida(page);
   // Il posto: a destra, sotto la barra e sopra la riga di stato.
   const posto = await page.evaluate(() => {
-    const g = document.querySelector("[data-guida]")!.getBoundingClientRect();
+    const g = document.querySelector("[data-finestra-guida]")!.getBoundingClientRect();
     const barra = document.querySelector("header")!.getBoundingClientRect();
     const riga = document.querySelector("[data-riga-di-stato]")!.getBoundingClientRect();
     return { sottoLaBarra: g.top >= barra.bottom, sopraLaRiga: g.bottom <= riga.top, aDestra: Math.round(innerWidth - g.right) };
@@ -70,7 +71,7 @@ test("la guida dal menu «Aiuto»: a destra fra la barra e la riga di stato, i c
   });
   const sullaGuida = await esempi.evaluate((v) => {
     const r = v.getBoundingClientRect();
-    const g = document.querySelector("[data-guida]")!.getBoundingClientRect();
+    const g = document.querySelector("[data-finestra-guida]")!.getBoundingClientRect();
     return r.right > g.left && r.left < g.right && r.bottom > g.top && r.top < g.bottom;
   });
   expect({ sopra, sullaGuida }).toEqual({ sopra: true, sullaGuida: true });
@@ -99,7 +100,7 @@ test("la lingua cambiata dalla riga di stato con la guida aperta: la guida in in
   await expect(lingua).toHaveText("ITA");
   await lingua.click();
   await page.getByRole("menuitemradio", { name: "English", exact: true }).click();
-  await expect(guida(page)).toHaveAttribute("data-guida", "en");
+  await expect(guida(page)).toHaveAttribute("data-finestra-guida", "en");
   await expect(guida(page).getByRole("heading", { name: en.guidaTitolo, exact: true })).toBeVisible();
   await expect(guida(page).getByRole("navigation", { name: en.guidaIndice, exact: true }).getByRole("button")).toHaveText(capitoliEn);
   await expect.poll(() => capitoloInCima(page)).toBe(7);
@@ -158,4 +159,33 @@ test("con la preferenza la guida si sposta dal titolo e si allarga dall'angolo; 
   await expect(guida(page)).toHaveCount(0);
   await apriLaGuida(page);
   expect(await misura()).toEqual(dopo);
+});
+
+test("la guida spostata, chiusa e riaperta in una finestra più stretta: rientra tutta, col titolo da trascinare", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await apri(page, { lingua: "it", guidaSpostabile: true });
+  await apriLaGuida(page);
+  const titolo = guida(page).getByRole("heading", { name: it.guidaTitolo, exact: true });
+  const t = (await titolo.boundingBox())!;
+  await page.mouse.move(t.x + 20, t.y + t.height / 2);
+  await page.mouse.down();
+  for (let i = 1; i <= 3; i++) await page.mouse.move(t.x + 20 - 10 * i, t.y + t.height / 2);
+  await page.mouse.up();
+  await expect.poll(async () => Math.round((await titolo.boundingBox())!.x)).toBe(Math.round(t.x - 30));
+  await guida(page).locator("article").focus();
+  await page.keyboard.press("Escape");
+  await expect(guida(page)).toHaveCount(0);
+  // Premessa: la sinistra della guida spostata sta oltre la larghezza della finestra nuova.
+  expect(t.x - 30).toBeGreaterThan(840);
+  await page.setViewportSize({ width: 840, height: 700 });
+  await apriLaGuida(page);
+  const posto = await guida(page).evaluate((g) => {
+    const r = g.getBoundingClientRect();
+    const h = g.querySelector("h2")!.getBoundingClientRect();
+    return {
+      dentro: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight,
+      titolo: g.querySelector("h2")!.contains(document.elementFromPoint(h.left + h.width / 2, h.top + h.height / 2)),
+    };
+  });
+  expect(posto).toEqual({ dentro: true, titolo: true });
 });

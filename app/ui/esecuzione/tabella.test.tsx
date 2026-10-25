@@ -251,8 +251,9 @@ test("a esecuzione finita la tabella è l'atteso del riferimento cella per cella
   expect(attesi.length).toBe(29);
 }, 60_000);
 
-/** Esporta la tabella dal menu «Progetto», e restituisce ciò che il guscio ha scritto. */
-async function esporta(testi: typeof it): Promise<{ percorso: string; testo: string }> {
+/** Esporta la tabella dal menu «Progetto», e restituisce ciò che il guscio ha scritto; `nelMezzo` risponde a ciò che si
+ * apre prima della finestra del sistema (l'avviso del nome). */
+async function esporta(testi: typeof it, nelMezzo: () => Promise<void> = async () => {}): Promise<{ percorso: string; testo: string }> {
   const menu = document.querySelector<HTMLButtonElement>('[data-menu="progetto"]');
   if (!menu) throw new Error("manca il menu «Progetto»");
   await act(async () => {
@@ -273,9 +274,25 @@ async function esporta(testi: typeof it): Promise<{ percorso: string; testo: str
   await act(async () => {
     fireEvent.keyDown(contenuto, { key: "Enter" });
   });
+  await nelMezzo();
   await aspetta("la tabella scritta", () => scritti.length > 0);
   return scritti[0]!;
 }
+
+test("con un nome del progetto che un file non può avere, l'avviso propone il nome della tabella con «.csv» una volta sola", async () => {
+  const conDuePunti = JSON.stringify({ ...JSON.parse(riferimento), metadata: { ...JSON.parse(riferimento).metadata, name: "Media: voti?" } });
+  await apriLaFinestra("riferimento-media-voti.algo", conDuePunti);
+  await riferimentoFinoAllaFine(() => {});
+  let visto = { frase: "", campo: "", accanto: "" };
+  await esporta(it, async () => {
+    await aspetta("l'avviso del nome", () => document.querySelector('[role="dialog"] form') !== null);
+    const form = document.querySelector<HTMLFormElement>('[role="dialog"] form')!;
+    visto = { frase: form.firstElementChild?.textContent ?? "", campo: form.querySelector("input")!.value, accanto: form.querySelector("input")!.nextElementSibling?.textContent ?? "" };
+    await act(async () => void fireEvent.submit(form));
+  });
+  expect(visto).toEqual({ frase: riempi(it.nomeCambiaCaratteri, { proposto: "Media voti - traccia.csv" }), campo: "Media voti - traccia", accanto: ".csv" });
+  expect(proposti.map((p) => p.proposto)).toEqual(["Media voti - traccia.csv"]);
+}, 60_000);
 
 test("«Esporta la tabella» scrive il CSV dell'atteso byte per byte, in italiano e in inglese coi separatori della lingua", async () => {
   for (const [lingua, testi, atteso] of [

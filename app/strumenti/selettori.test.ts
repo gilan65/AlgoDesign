@@ -36,3 +36,24 @@ test("non contano `exact`, i nomi regex, getByRole senza nome, né le chiamate d
   // Controllo positivo dello stesso testo: le chiamate di codice ci sono tutte (otto), quelle nelle stringhe no.
   expect(chiamate(sonda, "sonda.ts").length).toBe(8);
 });
+
+test("contano `exact: false` e il nome abbreviato `{ name }`, che cercano per sottostringa", () => {
+  const sonda = [`page.getByRole("button", { name: it.salva, exact: false });`, `page.getByText(it.premessa, { exact: false });`, `page.getByRole("tab", { name });`].join("\n");
+  expect(trovate(sonda)).toEqual(["getByRole:1", "getByText:2", "getByRole:3"]);
+});
+
+test("un modello annidato con un apice, una virgoletta o `//` non nasconde le chiamate che vengono dopo", () => {
+  const dopo = `\npage.getByRole("button", { name: it.salva });`;
+  const annidati = [
+    "const t = `${xs.map((y) => `l'${y}`)}`;",
+    '`${a ? `"x` : b}`;',
+    "const u = `${a ? `https://x.invalid/` : b}`;",
+    "const v = `${f({ a: `}` })} e ${'`'}`;",
+  ];
+  expect(annidati.map((t) => trovate(t + dopo))).toEqual(annidati.map(() => ["getByRole:2"]));
+});
+
+test("una stringa o un modello senza fine fanno fermare il rilevatore, che altrimenti perderebbe il resto del file", () => {
+  expect(() => chiamate("const s = 'aperta;\npage.getByText(a);", "sonda.ts")).toThrow("sonda.ts: una stringa senza fine dalla riga 1");
+  expect(() => chiamate("const t = `${a}\npage.getByText(a);", "sonda.ts")).toThrow("sonda.ts: una stringa senza fine dalla riga 1");
+});

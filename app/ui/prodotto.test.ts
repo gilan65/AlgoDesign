@@ -170,14 +170,18 @@ test("la politica di sicurezza dei contenuti è quella scritta qui, direttiva pe
   expect(politicaDelProdotto().split("; ")).toEqual(attese);
 });
 
-test("il registro delle modifiche comincia dalla versione dei file e dalla sua data; i due README dicono la stessa versione", () => {
+test("il registro delle modifiche comincia dalla versione dei file e dalla sua data; i due README dicono la stessa versione e la stessa data", () => {
   // Il pacchetto controlla solo che la voce della versione ci sia, con una data qualsiasi: una data cambiata in
-  // `package.json` e non nel registro (la release che slitta) uscirebbe con due date diverse.
+  // `package.json` e non nel registro o in un README (la release che slitta) uscirebbe con due date diverse.
   const radice = dirname(app);
   const registro = readFileSync(join(radice, "CHANGELOG.md"), "utf8");
   const prima = registro.split("\n").find((r) => r.startsWith("## "));
   expect(prima).toBe(`## ${versione}, ${dataMostrata(dataDellaVersione, "it")}`);
-  for (const readme of ["README.md", "LEGGIMI.md"]) expect([readme, readFileSync(join(radice, readme), "utf8").includes(versione)]).toEqual([readme, true]);
+  const readme = [
+    { nome: "README.md", riga: `Version ${versione} of ${dataMostrata(dataDellaVersione, "en")},` },
+    { nome: "LEGGIMI.md", riga: `Versione ${versione} del ${dataMostrata(dataDellaVersione, "it")},` },
+  ];
+  expect(readme.map((r) => [r.nome, readFileSync(join(radice, r.nome), "utf8").includes(r.riga)])).toEqual(readme.map((r) => [r.nome, true]));
 });
 
 test("la data della versione è una data vera, e si legge nelle due lingue", () => {
