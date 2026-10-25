@@ -47,6 +47,7 @@ export const motivi = [
   "duplicate_id",
   "duplicate_test_case_name",
   "error_and_static_error",
+  "output_with_static_error",
   "too_deep",
 ] as const;
 
@@ -276,7 +277,7 @@ function atteso(v: unknown, p: string, c: Contesto): unknown {
   if (letto === undefined) return undefined;
   if ("error" in letto && "static_error" in letto) segnala(c, p, "error_and_static_error");
   // Con un errore statico atteso l'output è vuoto: il progetto non parte, e niente è stato scritto.
-  if ("static_error" in letto && typeof letto.output === "string" && letto.output !== "") segnala(c, sotto(p, "output"), "invalid_value");
+  if ("static_error" in letto && typeof letto.output === "string" && letto.output !== "") segnala(c, sotto(p, "output"), "output_with_static_error");
   return letto;
 }
 

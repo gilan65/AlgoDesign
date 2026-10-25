@@ -13,15 +13,17 @@
 //   sposta, e l'avviso lo dice.
 // - Solo dalla tastiera: Spazio sul blocco, Maiusc+Tab fino al «+», Invio; il fuoco resta sul blocco
 //   spostato. Esc annulla lo spostamento, e dopo Invio sul «+» apre di nuovo l'elenco dei blocchi.
+// - L'aspetto durante il trascinamento, col mouse premuto: una copia (con la sua opacità), i «+» spenti (con la loro),
+//   il «+» sotto il puntatore pieno; Esc lo annulla. Il blocco ha `touch-action` e `user-select` a `none`. Un rilascio
+//   fuori dal disegno prima che il trascinamento parta, poi un movimento senza tasti sul disegno: nessun trascinamento.
 //
 // Gli esiti si raccolgono e si confrontano alla fine: un blocco rimasto dov'era è un esito, non un'attesa
 // scaduta.
 //
 // CHE COSA NON GUARDA:
 // - un trascinamento che fa scorrere la vista (il bersaglio fuori dallo schermo), né il trascinamento col
-//   tocco;
-// - l'aspetto durante il trascinamento (la copia che segue il puntatore, i «+» spenti): lo guarda la prova di
-//   unità della scelta del bersaglio, sui numeri;
+//   tocco (nessun profilo dei motori ha il tocco; lo stile che lo permette sì);
+// - la finestra che perde il fuoco a metà del trascinamento (Alt+Tab): la annulla come Esc, non provato;
 // - il clic che cade su un «+» quando due aree si toccano alla scala minima (qui si mira il centro).
 
 import { expect, test, type Locator, type Page } from "@playwright/test";
@@ -90,6 +92,30 @@ async function allaScala(page: Page, s: (typeof scale)[number]): Promise<void> {
   await expect(page.getByRole("group", { name: it.zoom, exact: true }).locator('[data-comando="cento"]')).toHaveText(s.atteso);
 }
 
+/** Il centro di un elemento portato al centro della vista. */
+async function centro(page: Page, el: Locator): Promise<{ x: number; y: number }> {
+  await el.evaluate((e) => e.scrollIntoView({ block: "center", inline: "center" }));
+  await dueGiri(page);
+  const riquadro = await el.boundingBox();
+  if (!riquadro) throw new Error("l'elemento non ha una posizione");
+  const { x: sinistra, y: alto, width: larghezza, height: altezza } = riquadro;
+  return { x: sinistra + larghezza / 2, y: alto + altezza / 2 };
+}
+
+/** Che cosa mostra il disegno del trascinamento: le copie, i «+» spenti e il bersaglio, con lo stile che li fa vedere. */
+const aspetto = (flowchart: Locator) =>
+  flowchart.evaluate((svg) => {
+    const copia = svg.querySelector("[data-copia]");
+    const spento = svg.querySelector("[data-punto][data-spento]");
+    return {
+      copie: svg.querySelectorAll("[data-copia]").length,
+      opacitaDellaCopia: copia ? getComputedStyle(copia).opacity : null,
+      spenti: svg.querySelectorAll("[data-punto][data-spento]").length,
+      opacitaDelloSpento: spento ? getComputedStyle(spento).opacity : null,
+      bersagli: [...svg.querySelectorAll("[data-punto][data-bersaglio]")].map((e) => e.getAttribute("aria-label")),
+    };
+  });
+
 // ------------------------------------------------------------------------------- col mouse
 
 test("trascinato su un «+», il blocco va nella sequenza e nella posizione di quel posto, a tre scale; è un passo solo", async ({ page }, info) => {
@@ -132,6 +158,55 @@ test("trascinato su un «+», il blocco va nella sequenza e nella posizione di q
   const visti = doveSta(await albero(flowchart), casi[0]!.blocco);
   expect(visti).toHaveLength(1);
   expect(visti[0]).not.toEqual(casi[0]!.atteso);
+});
+
+test("durante il trascinamento la copia segue il puntatore, i «+» dove il blocco non va sono spenti, quello sotto è pieno; un rilascio fuori dal disegno prima di partire non lascia un trascinamento", async ({ page }, info) => {
+  await apri(page, { lingua: "it" });
+  const flowchart = flowchartDi(page);
+  await expect(flowchart).toBeVisible();
+  const iniziale = await stato(flowchart);
+  const blocco = pulsante(flowchart, nomeBlocco(se));
+  const bersaglio = nomeDelPunto(PRINCIPALE, 1, 6);
+  // Il blocco non fa scorrere la vista col tocco e non seleziona il testo che attraversa.
+  expect(await blocco.evaluate((e) => [getComputedStyle(e).touchAction, getComputedStyle(e).userSelect])).toEqual(["none", "none"]);
+  // Fermo: niente copia, niente «+» spenti.
+  expect(await aspetto(flowchart)).toEqual({ copie: 0, opacitaDellaCopia: null, spenti: 0, opacitaDelloSpento: null, bersagli: [] });
+
+  // Col mouse premuto sopra il «+» in cima alla sequenza principale.
+  const da = await centro(page, blocco);
+  const a = await pulsante(flowchart, bersaglio).boundingBox();
+  if (!a) throw new Error("il «+» bersaglio non ha una posizione");
+  await page.mouse.move(da.x, da.y);
+  await page.mouse.down();
+  await page.mouse.move(da.x + 8, da.y + 8, { steps: 4 });
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2, { steps: 10 });
+  await dueGiri(page);
+  const durante = await aspetto(flowchart);
+  console.log(`[${info.project.name}] durante il trascinamento: ${JSON.stringify(durante)}`);
+  // I «+» spenti sono quelli dentro il «se» e i due accanto a lui (rilasciato lì non si sposta): almeno uno.
+  expect(durante).toEqual({ copie: 1, opacitaDellaCopia: "0.6", spenti: expect.any(Number), opacitaDelloSpento: "0.25", bersagli: [bersaglio] });
+  expect(durante.spenti).toBeGreaterThan(0);
+  // Esc lo annulla: il disegno torna fermo, il blocco resta dov'è.
+  await page.keyboard.press("Escape");
+  await page.mouse.up();
+  await dueGiri(page);
+  expect(await aspetto(flowchart)).toEqual({ copie: 0, opacitaDellaCopia: null, spenti: 0, opacitaDelloSpento: null, bersagli: [] });
+  expect(await stato(flowchart)).toBe(iniziale);
+
+  // Premuto sul blocco e rilasciato fuori dal disegno prima di partire (sulla barra, in un passo solo: il disegno non
+  // vede né il movimento né il rilascio); poi il puntatore torna sul disegno senza tasti premuti: nessun trascinamento.
+  const fuori = await page.getByRole("banner").boundingBox();
+  if (!fuori) throw new Error("la barra non ha una posizione");
+  await page.mouse.move(da.x, da.y);
+  await page.mouse.down();
+  await page.mouse.move(fuori.x + fuori.width / 2, fuori.y + fuori.height / 2);
+  await page.mouse.up();
+  await page.mouse.move(da.x + 40, da.y + 40, { steps: 6 });
+  await dueGiri(page);
+  const dopo = await aspetto(flowchart);
+  console.log(`[${info.project.name}] dopo un rilascio fuori dal disegno e un movimento senza tasti: ${JSON.stringify(dopo)}`);
+  expect(dopo).toEqual({ copie: 0, opacitaDellaCopia: null, spenti: 0, opacitaDelloSpento: null, bersagli: [] });
+  expect(await stato(flowchart)).toBe(iniziale);
 });
 
 test("un blocco rilasciato dentro sé stesso non si sposta, e l'avviso lo dice, col mouse e dalla tastiera", async ({ page }) => {

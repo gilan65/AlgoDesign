@@ -10,7 +10,8 @@
 #   finestra-vera.ps1 <pid> salva <nome>    nella finestra del sistema per salvare un file, aperta dal processo (classe
 #                                           #32770, attesa fino a 10 s): <nome> nel campo del nome del file (il campo di
 #                                           testo 1001, o quello nella casella 1148, contato una volta se li trovano
-#                                           tutti e due) e il clic su "Salva" (il pulsante con l'identificativo 1, IDOK)
+#                                           tutti e due) e il clic su "Salva" (il pulsante con l'identificativo 1, IDOK);
+#                                           dopo "salvato", una seconda riga "proposto: <nome>" col nome che c'era
 #
 # Stampa una riga: "inviato", "chiusura spedita", "libera", "coperta: <finestre>", "ridotta a icona", "salvato"
 # oppure "NON inviato: <perche>".
@@ -128,6 +129,9 @@ if ($azione -eq "salva") {
     $tutti = [FinestraVera]::Tutte($dialogo) -join ", "
     "NON inviato: campi del nome del file $($campi.Count) invece di 1; controlli della finestra: $tutti"; exit 0
   }
+  # Il nome che l'app ha proposto, prima di scriverci sopra: si stampa nella seconda riga.
+  $proposto = New-Object System.Text.StringBuilder 1024
+  [void][FinestraVera]::SendMessage($campi[0], 0x000D, [IntPtr]1024, $proposto)
   [void][FinestraVera]::SendMessage($campi[0], 0x000C, [IntPtr]::Zero, $tasto)
   # Il testo si rilegge dal campo: un nome che non c'e non e mai "salvato".
   $letto = New-Object System.Text.StringBuilder 1024
@@ -137,6 +141,7 @@ if ($azione -eq "salva") {
   if ($salva.Count -ne 1) { "NON inviato: pulsanti Salva (IDOK) $($salva.Count) invece di 1"; exit 0 }
   if (-not [FinestraVera]::PostMessage($salva[0], 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero)) { "NON inviato: PostMessage ha rifiutato il clic su Salva"; exit 0 }
   "salvato"
+  "proposto: $($proposto.ToString())"
   exit 0
 }
 

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { campoDiTesto, comandoDelFile, comandoDellaCronologia, nelCampo, ricarica, tastoCheElimina } from "./modifiche";
+import { campoDiTesto, comandoDelFile, comandoDellaCronologia, lasciaLaPagina, nelCampo, ricarica, tastoCheElimina } from "./modifiche";
 
 const tasto = (key: string, o: { ctrl?: boolean; meta?: boolean; shift?: boolean; alt?: boolean } = {}) => ({
   key,
@@ -49,6 +49,15 @@ test("F5 (anche con Ctrl) e Ctrl+R (anche con Maiusc, o Cmd) ricaricano; gli alt
   for (const t of [tasto("F5"), tasto("F5", { ctrl: true }), tasto("r", { ctrl: true }), tasto("R", { ctrl: true, shift: true }), tasto("r", { meta: true })]) expect(ricarica(t)).toBe(true);
   // Controllo positivo dei «no»: R da sola, con Alt, F4, Ctrl+T.
   for (const t of [tasto("r"), tasto("r", { ctrl: true, alt: true }), tasto("F4"), tasto("t", { ctrl: true })]) expect(ricarica(t)).toBe(false);
+});
+
+test("lasciano la pagina i tasti che la ricaricano, «Aggiorna», «Indietro», «Avanti» e Alt+freccia a sinistra e a destra; gli altri no", () => {
+  const lasciano = [tasto("F5"), tasto("r", { ctrl: true }), tasto("BrowserRefresh"), tasto("BrowserBack"), tasto("BrowserForward"), tasto("ArrowLeft", { alt: true }), tasto("ArrowRight", { alt: true })];
+  for (const t of lasciano) expect({ t, lascia: lasciaLaPagina(t) }).toEqual({ t, lascia: true });
+  // Controllo positivo dei «no»: le frecce da sole, con Maiusc (la scelta di più blocchi), con Ctrl+Alt; Alt da solo;
+  // Alt+freccia in su e in giù.
+  const restano = [tasto("ArrowLeft"), tasto("ArrowRight", { shift: true }), tasto("ArrowLeft", { ctrl: true, alt: true }), tasto("Alt", { alt: true }), tasto("ArrowUp", { alt: true }), tasto("ArrowDown", { alt: true })];
+  for (const t of restano) expect({ t, lascia: lasciaLaPagina(t) }).toEqual({ t, lascia: false });
 });
 
 test("Ctrl+R ricarica anche con una tastiera non latina: conta il tasto fisico R, non la lettera", () => {

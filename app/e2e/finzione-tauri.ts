@@ -9,9 +9,12 @@
 // finisce in `.algo`, e se chiedere di sostituire), coi nomi confrontati esatti come su Linux. La scrittura
 // cattura il testo. Un guasto si chiede con lo stato: la scrittura dei file e quella delle preferenze rifiutano come
 // il guscio vero (un errore del sistema col dettaglio, un testo), la lettura delle preferenze rifiuta. I comandi e
-// gli argomenti che legge li appaia coi comandi del guscio una prova di `cargo test` (`main.rs`).
+// gli argomenti che legge li appaia coi comandi del guscio una prova di `cargo test` (`main.rs`). I nomi degli esempi e
+// dei gruppi seguono le regole del guscio (`ui/nomi.ts`, provate sulla tabella comune col guscio): l'elenco mostra solo
+// quelli validi, e le scritture rifiutano gli altri col genere `nome_non_valido`.
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { eventoDiChiusura } from "../ui/file";
+import { esempioValido, gruppoValido } from "../ui/nomi";
 import { daSalvare } from "./salva-con-nome";
 
 export interface Finzione {
@@ -91,6 +94,13 @@ mockIPC((comando, argomenti) => {
   // Un file in un gruppo è la chiave «gruppo/nome»; il gruppo esiste anche vuoto, con la chiave «gruppo/».
   const gruppo = typeof a.gruppo === "string" ? a.gruppo : null;
   const chiave = (nome: string) => (gruppo === null ? nome : `${gruppo}/${nome}`);
+  // Come `percorso_di` e `togli_gruppo_da` del guscio: un nome d'esempio o di gruppo non valido è rifiutato col suo genere.
+  const nonValido = (): { genere: "nome_non_valido"; dettaglio: string } | null => {
+    const nome = typeof a.nome === "string" ? a.nome : null;
+    if (nome !== null && !esempioValido(nome)) return { genere: "nome_non_valido", dettaglio: nome };
+    if (gruppo !== null && !gruppoValido(gruppo)) return { genere: "nome_non_valido", dettaglio: gruppo };
+    return null;
+  };
   switch (comando) {
     case "leggi_preferenze":
       if (f.preferenzeIlleggibili) return Promise.reject("le preferenze non si leggono");
@@ -140,10 +150,10 @@ mockIPC((comando, argomenti) => {
       const chiavi = Object.keys(cartella ?? {});
       const fileDi = (g: string) =>
         chiavi
-          .filter((k) => k.startsWith(g) && k.length > g.length && !k.slice(g.length).includes("/"))
+          .filter((k) => k.startsWith(g) && k.length > g.length && !k.slice(g.length).includes("/") && esempioValido(k.slice(g.length)))
           .sort()
           .map((k) => ({ nome: k.slice(g.length), testo: cartella![k] }));
-      const gruppi = [...new Set(chiavi.filter((k) => k.includes("/")).map((k) => k.slice(0, k.indexOf("/"))))].sort();
+      const gruppi = [...new Set(chiavi.filter((k) => k.includes("/")).map((k) => k.slice(0, k.indexOf("/"))))].filter(gruppoValido).sort();
       return {
         cartella: sceltaPresente ? scelta : predefinita,
         predefinita,
@@ -155,9 +165,11 @@ mockIPC((comando, argomenti) => {
     }
     case "scrivi_esempio":
     case "scrivi_libreria":
+      if (nonValido()) return Promise.reject(nonValido());
       metti({ ...(inUso() ?? {}), ...(gruppo === null ? {} : { [`${gruppo}/`]: "" }), [chiave(a.nome as string)]: a.testo as string });
       return null;
     case "togli_esempio": {
+      if (nonValido()) return Promise.reject(nonValido());
       const cartella = inUso();
       const k = chiave(a.nome as string);
       if (cartella === null || !(k in cartella)) throw new Error(`file non trovato: ${k}`);
@@ -167,6 +179,7 @@ mockIPC((comando, argomenti) => {
     }
     case "togli_gruppo": {
       // Come il guscio: tutti i file del gruppo (qui sono solo esempi) e il gruppo stesso.
+      if (nonValido()) return Promise.reject(nonValido());
       const cartella = inUso();
       const dentro = `${String(a.gruppo)}/`;
       if (cartella === null || !Object.keys(cartella).some((k) => k.startsWith(dentro))) throw new Error(`gruppo non trovato: ${String(a.gruppo)}`);

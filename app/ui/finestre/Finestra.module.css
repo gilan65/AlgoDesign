@@ -345,6 +345,22 @@ textarea.campo {
   font-family: var(--carattere-codice);
 }
 
+/* L'avviso del nome del file: il campo prende la riga, accanto all'estensione; le regole dei nomi in elenco. */
+.nomeDelFile {
+  flex: 1;
+}
+
+.regole {
+  margin: 0px;
+  padding-inline-start: 1.2rem;
+}
+
+/* Le voci di un file che il lettore rifiuta, sotto la frase per lo studente: chiuse di partenza. */
+.dettagli > summary {
+  cursor: pointer;
+  margin-bottom: 0.4rem;
+}
+
 /* La finestra delle informazioni del prodotto: il nome grande, la versione in evidenza, i file in piccolo. */
 .prodotto {
   margin: 0px;

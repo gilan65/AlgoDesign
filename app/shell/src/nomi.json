@@ -1,0 +1,15 @@
+{
+  "spiegazione": "I nomi degli esempi, dei gruppi e quelli che Windows riserva, buoni e cattivi: li leggono la prova del guscio (cargo test, progetto.rs) e quella dell'interfaccia (bun test, ui/esempi.test.ts), così le due regole restano le stesse. Un carattere di controllo si scrive <U+XXXX> e ogni lettore lo costruisce.",
+  "esempi": {
+    "buoni": ["media.algo", "Media dei voti.algo", "è (2).algo", "Prova.ALGO", "media.Algo", "CONSOLE.algo", "con2.algo", "COM10.algo", "nul (2).algo", "LPT.algo"],
+    "cattivi": ["", ".algo", " .algo", "media", "media.txt", "media.algo.txt", "../media.algo", "a/b.algo", "a\\b.algo", "C:media.algo", "a:b.algo", "..algo", "._media.algo", ".nascosto.algo", "a?.algo", "a<U+0007>.algo", "a<U+007F>.algo", "a<U+0085>.algo", "CON.algo", "nul.algo", "Aux.algo", "prn.algo", "COM1.algo", "lpt9.algo", "COM¹.algo", "con .algo", "NUL.tar.algo"]
+  },
+  "gruppi": {
+    "buoni": ["Primi passi", "Funzioni e procedure", "I miei esempi (2)", "Verifica (2)", "è"],
+    "cattivi": ["", " ", "..", ".", "../fuori", "a/b", "a\\b", "C:", "C:fuori", "/fuori", "\\\\server\\x", "nascosta/..", ".nascosta", "fine.", "fine ", "a?", "a<U+0007>", "a<U+007F>", "a<U+0085>", "a<U+009F>", "CON", "nul", "Com3", "LPT1", "aux.txt", "COM¹", "con "]
+  },
+  "riservati": {
+    "si": ["CON", "nul", "Com3", "LPT1", "aux.txt", "COM¹", "con ", "NUL.tar.algo", "con .algo"],
+    "no": ["CONSOLE", "con2", "COM10", "LPT", "nul (2)", "Primi passi", "LPT.algo", "COM10.algo"]
+  }
+}

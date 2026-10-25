@@ -18,12 +18,13 @@ export const testiDeiMotivi: Record<Lingua, Record<Motivo, string>> = {
     duplicate_id: "Due blocchi o due funzioni hanno lo stesso identificatore.",
     duplicate_test_case_name: "Due casi d'uso hanno lo stesso nome.",
     error_and_static_error: "Il caso d'uso attende insieme un errore prima di partire e uno durante l'esecuzione.",
+    output_with_static_error: "Con un errore atteso prima dell'esecuzione l'output deve essere vuoto.",
     too_deep: "I blocchi sono annidati troppo: un blocco dentro l'altro, si arriva al più a 50 livelli.",
   },
   en: {
     invalid_json: "The text is not valid JSON: it may be cut short, or have a bracket or a comma out of place.",
     duplicate_key: "The same field appears twice in the same object.",
-    unknown_field: "The format has no such field: perhaps its name is misspelt.",
+    unknown_field: "The format has no such field: perhaps its name is misspelled.",
     missing_field: "This field is required and missing.",
     field_not_allowed: "This field is not allowed here.",
     wrong_type: "The value has the wrong type: for instance text where a number belongs.",
@@ -33,6 +34,7 @@ export const testiDeiMotivi: Record<Lingua, Record<Motivo, string>> = {
     duplicate_id: "Two blocks or two functions share the same identifier.",
     duplicate_test_case_name: "Two test cases share the same name.",
     error_and_static_error: "The test case expects both an error before starting and one while running.",
+    output_with_static_error: "With an error expected before running, the output must be empty.",
     too_deep: "The blocks are nested too deeply: one block inside another, at most 50 levels are allowed.",
   },
 };

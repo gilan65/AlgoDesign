@@ -6,8 +6,9 @@ import { tetti } from "../core/controllo/controllo";
 import { apri } from "../core/progetto/formato";
 import { en } from "../i18n/en";
 import { it } from "../i18n/it";
-import { cerca, daSpostare, eGruppoFornito, esempiDa, forniti, gruppoDi, gruppoValido, mancanti, nomeLibero, nomeRiservato } from "./esempi";
-import { cartellaDi, erroreDelFile, nomeDelFile, nomeProposto, type CartellaDegliEsempi, type FileDiEsempio } from "./file";
+import { cerca, daSpostare, eGruppoFornito, esempiDa, forniti, gruppoDi, mancanti, nomeLibero } from "./esempi";
+import { cartellaDi, erroreDelFile, nomeDelFile, type CartellaDegliEsempi, type FileDiEsempio } from "./file";
+import { esempioValido, gruppoValido, nomeRiservato } from "./nomi";
 
 /** Gli undici esempi forniti, scritti qui gruppo per gruppo: i quattro primi, i due coi cicli `per` e `per ogni`, i cinque
  * con le procedure e le funzioni (gli ultimi due ricorsivi). */
@@ -207,13 +208,34 @@ test("la ricerca trova nel nome, nella descrizione e nel nome del file, senza ma
   expect(cerca(esempiDa(cartella({ "rotto.algo": "{" }), tetti), "rott").sciolti.map((e) => e.nome)).toEqual(["rotto.algo"]);
 });
 
-test("il nome di un gruppo nuovo segue le regole del guscio; un gruppo che c'è già a meno delle maiuscole è lo stesso; i gruppi dei forniti si riconoscono", () => {
-  for (const buono of ["I miei esempi", "Verifica (2)", "è"]) expect(gruppoValido(buono)).toBe(true);
-  for (const cattivo of ["", "  ", ".", "..", ".nascosto", "a/b", "a\\b", "C:", "fine.", "fine ", "a?", `a${String.fromCharCode(7)}`, `a${String.fromCharCode(0x7f)}`, `a${String.fromCharCode(0x85)}`]) expect({ cattivo, valido: gruppoValido(cattivo) }).toEqual({ cattivo, valido: false });
-  // I nomi che Windows riserva, a meno delle maiuscole e con un'estensione; accanto, quelli che ci assomigliano e non lo
-  // sono (le stesse liste della prova del guscio, `il_gruppo_di_un_esempio_non_esce_dalla_cartella`).
-  for (const riservato of ["CON", "nul", "Com3", "LPT1", "aux.txt", "COM¹", "con "]) expect({ riservato, valido: gruppoValido(riservato), riservatoPer: nomeRiservato(riservato) }).toEqual({ riservato, valido: false, riservatoPer: true });
-  for (const simile of ["CONSOLE", "con2", "COM10", "LPT", "nul (2)", "Primi passi"]) expect({ simile, riservato: nomeRiservato(simile) }).toEqual({ simile, riservato: false });
+/** La tabella dei nomi comune con la prova del guscio (`shell/src/nomi.json`, letta anche da `cargo test`), coi caratteri
+ * di controllo scritti `<U+XXXX>` costruiti qui. */
+const tabella = (() => {
+  const letti = JSON.parse(readFileSync(new URL("../shell/src/nomi.json", import.meta.url), "utf8")) as Record<"esempi" | "gruppi", { buoni: string[]; cattivi: string[] }> & { riservati: { si: string[]; no: string[] } };
+  const costruito = (n: string) => n.replace(/<U\+([0-9A-F]{4})>/g, (_, h: string) => String.fromCharCode(parseInt(h, 16)));
+  const coppia = (c: { buoni: string[]; cattivi: string[] }) => ({ buoni: c.buoni.map(costruito), cattivi: c.cattivi.map(costruito) });
+  return { esempi: coppia(letti.esempi), gruppi: coppia(letti.gruppi), riservati: { si: letti.riservati.si.map(costruito), no: letti.riservati.no.map(costruito) } };
+})();
+
+test("i nomi degli esempi, dei gruppi e quelli riservati seguono la tabella comune col guscio", () => {
+  const sbagliati = [
+    ...tabella.esempi.buoni.filter((n) => !esempioValido(n)).map((n) => `esempio buono rifiutato: ${JSON.stringify(n)}`),
+    ...tabella.esempi.cattivi.filter(esempioValido).map((n) => `esempio cattivo accettato: ${JSON.stringify(n)}`),
+    ...tabella.gruppi.buoni.filter((n) => !gruppoValido(n)).map((n) => `gruppo buono rifiutato: ${JSON.stringify(n)}`),
+    ...tabella.gruppi.cattivi.filter(gruppoValido).map((n) => `gruppo cattivo accettato: ${JSON.stringify(n)}`),
+    ...tabella.riservati.si.filter((n) => !nomeRiservato(n)).map((n) => `riservato non visto: ${JSON.stringify(n)}`),
+    ...tabella.riservati.no.filter(nomeRiservato).map((n) => `simile visto riservato: ${JSON.stringify(n)}`),
+  ];
+  console.log(`esempi ${tabella.esempi.buoni.length} + ${tabella.esempi.cattivi.length}, gruppi ${tabella.gruppi.buoni.length} + ${tabella.gruppi.cattivi.length}, riservati ${tabella.riservati.si.length} + ${tabella.riservati.no.length}`);
+  expect(sbagliati).toEqual([]);
+  // Le premesse: la tabella è letta, e i caratteri di controllo sono costruiti.
+  expect(tabella.esempi.cattivi.some((n) => n.includes(String.fromCharCode(0x7f)))).toBe(true);
+  expect(Math.min(tabella.esempi.buoni.length, tabella.esempi.cattivi.length, tabella.gruppi.buoni.length, tabella.gruppi.cattivi.length, tabella.riservati.si.length, tabella.riservati.no.length)).toBeGreaterThan(3);
+  // I nomi che `nomeLibero` dà sono nomi d'esempio validi.
+  for (const progetto of ["Media", "nul", "CON.x", "..nascosto", "  ", `Voti${String.fromCharCode(0x85)}`, "a:b"]) expect({ progetto, valido: esempioValido(nomeLibero(progetto, [], "esempio")) }).toEqual({ progetto, valido: true });
+});
+
+test("un gruppo che c'è già a meno delle maiuscole è lo stesso; i gruppi dei forniti si riconoscono", () => {
   const c = ["Primi passi", "Cicli"];
   expect(gruppoDi(c, "primi PASSI")).toBe("Primi passi");
   expect(gruppoDi(c, "Altro")).toBe("Altro");
@@ -232,19 +254,19 @@ test("un file della cartella che non si apre resta, col suo problema", () => {
 });
 
 test("un nome di file libero per un esempio: i caratteri vietati tolti, poi (2), (3)… senza badare alle maiuscole", () => {
-  expect(nomeLibero("Media", [])).toBe("Media.algo");
-  expect(nomeLibero("Media", ["media.algo"])).toBe("Media (2).algo");
-  expect(nomeLibero("Media", ["Media.algo", "Media (2).algo"])).toBe("Media (3).algo");
-  expect(nomeLibero('a/b:c*?"<>|', [])).toBe("abc.algo");
+  expect(nomeLibero("Media", [], "esempio")).toBe("Media.algo");
+  expect(nomeLibero("Media", ["media.algo"], "esempio")).toBe("Media (2).algo");
+  expect(nomeLibero("Media", ["Media.algo", "Media (2).algo"], "esempio")).toBe("Media (3).algo");
+  expect(nomeLibero('a/b:c*?"<>|', [], "esempio")).toBe("abc.algo");
   // I caratteri di controllo che il guscio rifiuta, anche oltre il 31: U+007F, U+0085, U+009F.
-  expect(nomeLibero(`Voti${String.fromCharCode(0x7f, 0x85, 0x9f)}`, [])).toBe("Voti.algo");
-  expect(nomeLibero("..nascosto", [])).toBe("nascosto.algo");
-  expect(nomeLibero("  ", [])).toBe("esempio.algo");
+  expect(nomeLibero(`Voti${String.fromCharCode(0x7f, 0x85, 0x9f)}`, [], "esempio")).toBe("Voti.algo");
+  expect(nomeLibero("..nascosto", [], "esempio")).toBe("nascosto.algo");
+  expect(nomeLibero("  ", [], "esempio")).toBe("esempio.algo");
   // Un nome che Windows riserva parte da (2); seguito da un punto, il punto diventa un trattino basso.
-  expect(nomeLibero("nul", [])).toBe("nul (2).algo");
-  expect(nomeLibero("CON", ["CON (2).algo"])).toBe("CON (3).algo");
-  expect(nomeLibero("CON.x", [])).toBe("CON_x.algo");
-  expect([nomeLibero("nul", []), nomeLibero("CON.x", [])].map(nomeRiservato)).toEqual([false, false]);
+  expect(nomeLibero("nul", [], "esempio")).toBe("nul (2).algo");
+  expect(nomeLibero("CON", ["CON (2).algo"], "esempio")).toBe("CON (3).algo");
+  expect(nomeLibero("CON.x", [], "esempio")).toBe("CON_x.algo");
+  expect([nomeLibero("nul", [], "esempio"), nomeLibero("CON.x", [], "esempio")].map(nomeRiservato)).toEqual([false, false]);
 });
 
 test("nome e cartella di un percorso, nome proposto, errore del guscio riconosciuto per forma", () => {
@@ -253,8 +275,6 @@ test("nome e cartella di un percorso, nome proposto, errore del guscio riconosci
   expect(cartellaDi("C:\\miei\\media voti.algo")).toBe("C:\\miei");
   expect(cartellaDi("/home/x/media.algo")).toBe("/home/x");
   expect(cartellaDi("media.algo")).toBeNull();
-  expect(nomeProposto("C:\\miei\\x.algo", "Altro")).toBe("x.algo");
-  expect(nomeProposto(null, "Media: voti?")).toBe("Media voti.algo");
   expect(erroreDelFile({ genere: "non_testo", dettaglio: "byte" })).toEqual({ genere: "non_testo", dettaglio: "byte" });
   expect(erroreDelFile(new Error("file non trovato"))).toEqual({ genere: "sistema", dettaglio: "file non trovato" });
 });

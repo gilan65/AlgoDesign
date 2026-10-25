@@ -60,7 +60,7 @@ fn main() {
             // E quella delle librerie, `librerie` accanto agli esempi; la crea solo la prima libreria aggiunta.
             app.manage(progetto::CartellaLibrerie(cartella.join("librerie")));
             let argomenti: Vec<_> = std::env::args_os().collect();
-            app.manage(progetto::FileDatoAllAvvio(progetto::dall_argomento(&argomenti, &std::env::current_dir()?)));
+            app.manage(progetto::FileDatoAllAvvio(progetto::dall_argomento(&argomenti, std::env::current_dir)));
             app.manage(progetto::Modificato(AtomicBool::new(false)));
             // Nella versione portabile le finestre del file partono, se non sanno da dove, dalla cartella
             // dell'eseguibile (quella che contiene `data`).

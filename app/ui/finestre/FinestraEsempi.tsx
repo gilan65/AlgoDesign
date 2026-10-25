@@ -10,7 +10,8 @@
 import { useRef, useState, type ReactElement, type RefObject } from "react";
 import type { Dizionario } from "../../i18n/it";
 import { riempi, type Lingua } from "../../i18n/lingue";
-import { cerca, eGruppoFornito, gruppoDi, gruppoValido, testoDelProblema, type Esempio, type EsempiDellaCartella, type GruppoDiEsempi } from "../esempi";
+import { cerca, eGruppoFornito, gruppoDi, testoDelProblema, type Esempio, type EsempiDellaCartella, type GruppoDiEsempi } from "../esempi";
+import { gruppoValido } from "../nomi";
 import { Descrizione, Finestra, Rinuncia, stili } from "./Finestra";
 
 /** La voce «Nuovo gruppo…» dell'elenco dei gruppi: una barra, che il nome di un gruppo non può avere. */
@@ -105,7 +106,7 @@ function Contenuto({
       <span className={stili.nome}>
         <strong className={stili.titoloDellEsempio}>{e.progetto?.metadata.name ?? e.nome}</strong>
         {e.progetto?.metadata.description && <span className={stili.descrizione}>{e.progetto.metadata.description}</span>}
-        {e.problema && <span className={stili.errore}>{riempi(testi.esempioNonSiApre, { motivo: testoDelProblema(e.problema, testi, lingua) })}</span>}
+        {e.problema && <span className={stili.errore}>{riempi(testi.esempioNonSiApre, { motivo: testoDelProblema(e.problema, testi) })}</span>}
         <span className={stili.etichetta}>{e.nome}</span>
       </span>
       <button type="button" className={stili.comando} aria-disabled={e.progetto === null} onClick={e.progetto === null ? undefined : () => apri(e)}>

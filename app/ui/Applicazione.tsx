@@ -92,7 +92,7 @@ import { applicaLaChiusura } from "./chiusura";
 import { suggerimento, tastoDelComando, tastoDiEliminazione, tastoMostrato, tastoSullaPiattaforma } from "./comandi";
 import { eventoDelMenu, impostaMenu, VOCI_DELL_INTERFACCIA, type VoceDellInterfaccia } from "./menu";
 import { sulMac } from "./piattaforma";
-import { bloccoNelPosto, campoDiTesto, comandoDelFile, comandoDellaCronologia, nelCampo, ricarica, tastoCheElimina } from "./modifiche";
+import { bloccoNelPosto, campoDiTesto, comandoDelFile, comandoDellaCronologia, lasciaLaPagina, nelCampo, tastoCheElimina } from "./modifiche";
 import { testiDeiCodici, testoDelMessaggio, testoDellaSegnalazione, type Codice } from "../i18n/codici";
 import { testiDeiMotivi } from "../i18n/motivi";
 import { dizionari, riempi, type Lingua } from "../i18n/lingue";
@@ -122,7 +122,7 @@ import { tipoDelDato } from "./dati/righe";
 import { ConfermaEliminazione, testiDelDato, type DaEliminare } from "./dati/ConfermaEliminazione";
 import { MenuNelPunto } from "./dati/MenuDellaRiga";
 import { chiaveDellaRiga, VistaDati, type Segni } from "./dati/VistaDati";
-import { daSpostare, esempiDa, forniti, gruppoDi, mancanti, nomeLibero, testoDelProblema, type Esempio } from "./esempi";
+import { daSpostare, esempiDa, forniti, gruppoDi, mancanti, nomeLibero, testoDelProblema, testoDellErrore, type Esempio } from "./esempi";
 import {
   chiudiFinestra,
   elencaEsempi,
@@ -134,8 +134,6 @@ import {
   cartellaDi,
   scegliCartella,
   nomeDelFile,
-  nomeAmmesso,
-  nomeProposto,
   scegliFileDaAprire,
   scegliFileDaEsportare,
   scegliFileDaSalvare,
@@ -148,6 +146,8 @@ import {
   togliGruppo,
   type CartellaDegliEsempi,
 } from "./file";
+import { baseProposta, motivoDelCambio, nomeCambiato, senzaVietati } from "./nomi";
+import { AvvisoDelNome, type NomeDaChiedere } from "./finestre/AvvisoDelNome";
 import { EliminaFunzione, type DaEliminare as FunzioneDaEliminare } from "./funzioni/EliminaFunzione";
 import { FinestraFunzione, type BozzaDellaFunzione, type ErroriDellaFunzione, type ModoDellaFinestra } from "./funzioni/FinestraFunzione";
 import { FinestraFunzioni } from "./funzioni/FinestraFunzioni";
@@ -164,7 +164,7 @@ import { FinestraImpostazioni } from "./finestre/FinestraImpostazioni";
 import { FinestraProgetto, type DatiDelProgetto } from "./finestre/FinestraProgetto";
 import { useSpostabile } from "./spostabile";
 import { righeDi, testoDelCodice } from "../core/genera/forma";
-import { codiceDi, estensioni, nomeDelCodice, type Linguaggio } from "./genera/codice";
+import { codiceDi, estensioni, type Linguaggio } from "./genera/codice";
 import { nomiDeiLinguaggi, PannelloDelCodice, type RigheEvidenziate } from "./genera/PannelloDelCodice";
 import { applicaIColori } from "./colori";
 import { durataDelPasso, righeLungheDi, scelteIniziali as predefinite, scriviPreferenze, separatoriDelCsv, voci as vociDelleScelte, type Scelte, type VelocitaAnimata } from "./preferenze";
@@ -258,6 +258,8 @@ type Aperta =
   | { readonly genere: "togli"; readonly cosa: DaTogliere }
   | { readonly genere: "modifiche"; readonly poi: () => void }
   | { readonly genere: "sostituire"; readonly percorso: string; readonly risposta: (sostituisci: boolean) => void }
+  /** L'avviso del nome del file, prima della finestra del sistema per salvare. */
+  | { readonly genere: "nome"; readonly chiesto: NomeDaChiedere; readonly risposta: (nome: string | null) => void }
   | { readonly genere: "impostazioni" }
   | { readonly genere: "informazioni" }
   /** La finestra di una procedura o di una funzione: nuova, le proprietà, il nome. */
@@ -1743,7 +1745,9 @@ export function Applicazione({
     const ordine = colonneMostrate(tabellaMostrata.colonne, disposizione.ordine).map((m) => m.cella);
     const testo = csv(es.traccia, tabellaMostrata, scelte.formaDelCsv, separatori.campo, ordine);
     const tolte = es.traccia.tolte;
-    const scelto = await scegliFileDaEsportare(riempi(testi.nomeDellaTabella, { nome: nomeAmmesso(es.progetto.metadata.name) }), testi.filtroDellaTabella, partenza);
+    const nome = await nomeDaUsare(es.progetto.metadata.name, ".csv", true);
+    if (nome === null) return;
+    const scelto = await scegliFileDaEsportare(nome, testi.filtroDellaTabella, partenza);
     if (scelto === null || (scelto.sostituire && !(await sostituire(scelto.percorso)))) return;
     try {
       await scriviProgetto(scelto.percorso, testo);
@@ -1784,7 +1788,9 @@ export function Applicazione({
     if (!codice?.generato) return;
     const testo = testoDelCodice(codice.righe);
     const filtro = testi[linguaggio === "pseudocodice" ? "filtroPseudocodice" : linguaggio === "python" ? "filtroPython" : "filtroC"];
-    const scelto = await scegliFileDelCodice(nomeDelCodice(progetto.metadata.name, linguaggio), filtro, estensioni[linguaggio], partenza);
+    const base = await nomeDaUsare(progetto.metadata.name, estensioni[linguaggio]);
+    if (base === null) return;
+    const scelto = await scegliFileDelCodice(`${base}${estensioni[linguaggio]}`, filtro, estensioni[linguaggio], partenza);
     if (scelto === null || (scelto.sostituire && !(await sostituire(scelto.percorso)))) return;
     try {
       await scriviProgetto(scelto.percorso, testo);
@@ -1918,7 +1924,7 @@ export function Applicazione({
     return () => document.removeEventListener("keydown", ascolta);
   });
 
-  // La pagina non si ricarica: i tasti del motore si fermano prima di ogni altro ascoltatore, e il menu del
+  // La pagina non si ricarica e non si lascia: i tasti del motore (`lasciaLaPagina`) si fermano prima di ogni altro ascoltatore, e il menu del
   // motore col tasto destro (che ha «Ricarica») resta solo nei campi di testo, dove servono Taglia, Copia e
   // Incolla. Se una ricarica arriva comunque, con modifiche non salvate (o dei campi aperti) il motore chiede
   // conferma; mai mentre la finestra si chiude dopo la domanda dell'app (`uscendo`: nella WebView2 la finestra
@@ -1929,7 +1935,7 @@ export function Applicazione({
   modificatoOra.current = daPerdere;
   useEffect(() => {
     const tasto = (e: KeyboardEvent) => {
-      if (ricarica(e)) e.preventDefault();
+      if (lasciaLaPagina(e)) e.preventDefault();
     };
     const menu = (e: MouseEvent) => {
       if (!campoDiTesto(e.target)) e.preventDefault();
@@ -2527,13 +2533,24 @@ export function Applicazione({
   }
 
   function erroreDiUnFile(titolo: string, percorso: string, e: unknown): void {
-    const errore = erroreDelFile(e);
-    const testo = errore.genere === "non_testo" ? testi.erroreNonTesto : riempi(testi.erroreDelSistema, { dettaglio: errore.dettaglio });
-    setErrori({ titolo: riempi(titolo, { file: nomeDelFile(percorso) }), voci: [{ testo }] });
+    setErrori({ titolo: riempi(titolo, { file: nomeDelFile(percorso) }), voci: [{ testo: testoDellErrore(erroreDelFile(e), testi) }] });
   }
 
   /** La domanda «Sostituire?» sul file in quel percorso: vero se l'utente sceglie di sostituirlo. */
   const sostituire = (percorso: string) => new Promise<boolean>((risposta) => setFinestra({ genere: "sostituire", percorso, risposta }));
+
+  /** Il nome (senza l'estensione) da proporre alla finestra del sistema per salvare il progetto, il codice o la tabella:
+   * quello del progetto come lo propone `baseProposta` (per la tabella «Tabella di …», dove un nome riservato non può
+   * nascere: si tolgono solo i caratteri). Se non è il nome del progetto, l'avviso lo dice e lo lascia cambiare; `null`
+   * se l'utente rinuncia. */
+  function nomeDaUsare(nomeDelProgetto: string, estensione: string, tabella = false): Promise<string | null> {
+    const ripiego = testi.ripiegoDelNomeDelFile;
+    const base = tabella ? senzaVietati(nomeDelProgetto) || ripiego : baseProposta(nomeDelProgetto, ripiego);
+    const proposto = tabella ? riempi(testi.nomeDellaTabella, { nome: base }) : base;
+    if (!nomeCambiato(nomeDelProgetto, base)) return Promise.resolve(proposto);
+    const motivo = tabella ? "caratteri" : motivoDelCambio(nomeDelProgetto);
+    return new Promise((risposta) => setFinestra({ genere: "nome", chiesto: { progetto: nomeDelProgetto, proposto, estensione, motivo }, risposta }));
+  }
 
   /** «Salva» va al file del progetto; senza file, e con «Salva con nome», chiede dove (e, se il file c'è e la
    * finestra del sistema non l'ha confermato, se sostituirlo). Vero se ha salvato. `p` è il progetto da
@@ -2542,7 +2559,10 @@ export function Applicazione({
     const testo = testoCompleto(p);
     let percorso = !conNome ? documento.percorso : null;
     if (percorso === null) {
-      const scelto = await scegliFileDaSalvare(nomeProposto(documento.percorso, p.metadata.name), testi.filtroDelFile, da);
+      // Il nome del file legato al progetto, o quello del progetto (l'avviso, se cambia).
+      const base = documento.percorso === null ? await nomeDaUsare(p.metadata.name, ".algo") : null;
+      if (documento.percorso === null && base === null) return false;
+      const scelto = await scegliFileDaSalvare(documento.percorso !== null ? nomeDelFile(documento.percorso) : `${base}.algo`, testi.filtroDelFile, da);
       if (scelto === null || (scelto.sostituire && !(await sostituire(scelto.percorso)))) return false;
       percorso = scelto.percorso;
     }
@@ -2614,10 +2634,10 @@ export function Applicazione({
     try {
       testo = await leggiProgetto(percorso);
     } catch (e) {
-      return nonSiApre(testoDelProblema({ genere: "file", errore: erroreDelFile(e) }, testi, lingua));
+      return nonSiApre(testoDelProblema({ genere: "file", errore: erroreDelFile(e) }, testi));
     }
     const esito = apriTesto(testo);
-    if (!esito.ok) return nonSiApre(testoDelProblema({ genere: "apertura", errori: esito.errori }, testi, lingua));
+    if (!esito.ok) return nonSiApre(testoDelProblema({ genere: "apertura", errori: esito.errori }, testi));
     if (controlla(esito.progetto, limiti).fuoriTappa) return nonSiApre(testi.apriFuoriTappa);
     setUltimaCartella(cartellaDi(percorso));
     return { sorgente: { nome: esito.progetto.metadata.name, percorso, progetto: esito.progetto } };
@@ -2709,9 +2729,8 @@ export function Applicazione({
     setCartella(c);
   }
   function erroreDegliEsempi(e: unknown): void {
-    const errore = erroreDelFile(e);
     setFinestra(null);
-    setErrori({ titolo: testi.esempiErroreTitolo, voci: [{ testo: riempi(testi.erroreDelSistema, { dettaglio: errore.dettaglio }) }] });
+    setErrori({ titolo: testi.esempiErroreTitolo, voci: [{ testo: testoDellErrore(erroreDelFile(e), testi) }] });
   }
   /** Un'operazione sulla cartella, poi la cartella riletta e la finestra degli esempi di nuovo aperta. */
   function nellaCartella(operazione: () => Promise<unknown>): void {
@@ -2729,9 +2748,8 @@ export function Applicazione({
     setCartellaLibrerie(await elencaLibrerie(scelta));
   }
   function erroreDelleLibrerie(e: unknown): void {
-    const errore = erroreDelFile(e);
     setFinestra(null);
-    setErrori({ titolo: testi.importaErroreTitolo, voci: [{ testo: riempi(testi.erroreDelSistema, { dettaglio: errore.dettaglio }) }] });
+    setErrori({ titolo: testi.importaErroreTitolo, voci: [{ testo: testoDellErrore(erroreDelFile(e), testi) }] });
   }
 
   // All'avvio, una volta: gli esempi aggiunti e tolti, e il file dato come argomento (se c'è, si apre al
@@ -2783,12 +2801,13 @@ export function Applicazione({
     return () => window.removeEventListener(eventoDelMenu, ascolta);
   });
 
-  // Una domanda «Sostituire?» rimpiazzata da un'altra finestra (la chiusura che chiede delle modifiche) vale
-  // «no»: il salvataggio che l'aspettava finisce senza scrivere. Dopo una risposta vera non cambia nulla.
+  // Una domanda «Sostituire?» (o l'avviso del nome) rimpiazzata da un'altra finestra (la chiusura che chiede delle
+  // modifiche) vale «no»: il salvataggio che l'aspettava finisce senza scrivere. Dopo una risposta vera non cambia nulla.
   const finestraPrima = useRef<Aperta | null>(null);
   useEffect(() => {
     const prima = finestraPrima.current;
     if (prima?.genere === "sostituire" && prima !== finestra) prima.risposta(false);
+    if (prima?.genere === "nome" && prima !== finestra) prima.risposta(null);
     finestraPrima.current = finestra;
   }, [finestra]);
 
@@ -3524,6 +3543,7 @@ export function Applicazione({
               nomeLibero(
                 progetto.metadata.name,
                 (cartella.gruppi.find((g) => g.nome === gruppo)?.file ?? []).map((f) => f.nome),
+                testi.ripiegoDelNomeDellEsempio,
               ),
               testoCompleto(progetto),
               cartellaScelta,
@@ -3562,6 +3582,15 @@ export function Applicazione({
           poi?.();
         }}
         rinuncia={() => setFinestra(null)}
+      />
+      <AvvisoDelNome
+        chiesto={finestra?.genere === "nome" ? finestra.chiesto : null}
+        testi={testi}
+        rispondi={(nome) => {
+          if (finestra?.genere !== "nome") return;
+          setFinestra(null);
+          finestra.risposta(nome);
+        }}
       />
       <ConfermaSostituzione
         file={finestra?.genere === "sostituire" ? nomeDelFile(finestra.percorso) : null}
@@ -3634,7 +3663,7 @@ export function Applicazione({
                   cartellaLibrerie.gruppi.map((g) => g.nome),
                   scelto,
                 );
-                const nome = nomeLibero(progetto.metadata.name, (cartellaLibrerie.gruppi.find((g) => g.nome === gruppo)?.file ?? []).map((f) => f.nome));
+                const nome = nomeLibero(progetto.metadata.name, (cartellaLibrerie.gruppi.find((g) => g.nome === gruppo)?.file ?? []).map((f) => f.nome), testi.ripiegoDelNomeDellEsempio);
                 scriviLibreria(nome, testoCompleto(progetto), scelte.cartellaLibrerie, gruppo)
                   .then(() => rileggiLibrerie())
                   .then(() => setFinestra({ genere: "importa" }))

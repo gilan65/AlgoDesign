@@ -49,6 +49,7 @@ import { en } from "../i18n/en";
 import { it } from "../i18n/it";
 import { fileDa, scelteIniziali } from "../ui/preferenze";
 import { politicaDelProdotto } from "../strumenti/politica";
+import { direttiveSenzaSonda, provaLaSonda, sonde } from "../strumenti/sonde-della-politica";
 import { apri, costruisciFinzione, scegliLingua, voceDellAiuto } from "./pagina";
 
 test.beforeAll(costruisciFinzione);
@@ -395,12 +396,21 @@ test("l'anteprima manda la politica di sicurezza dei contenuti del prodotto, e l
   await expect(page.getByRole("region", { name: it.rigaDiStato, exact: true }).locator("[data-stato-esecuzione]")).toHaveText(new RegExp(`^${it.statoInPausa.replace("{n}", "\\d+")}$`));
   expect(await violazioni(page)).toEqual([]);
 
-  // Controllo positivo: uno stile scritto nella pagina, che la politica del prodotto non ammette.
-  await page.evaluate(() => {
-    const stile = document.createElement("style");
-    stile.textContent = "body { outline: 1px solid red; }";
-    document.head.append(stile);
-  });
-  if (anteprima) await expect.poll(() => violazioni(page)).toEqual([expect.stringMatching(/^style-src-elem inline$/)]);
-  else expect(await violazioni(page)).toEqual([]);
+  if (!anteprima) {
+    // Il server di sviluppo non manda la politica: uno stile scritto nella pagina passa.
+    await page.evaluate(() => {
+      const stile = document.createElement("style");
+      stile.textContent = "body { outline: 1px solid red; }";
+      document.head.append(stile);
+    });
+    expect(await violazioni(page)).toEqual([]);
+    return;
+  }
+  // Controllo positivo direttiva per direttiva: per ognuna una cosa vietata fatta nella pagina, fermata con la sua
+  // violazione (`strumenti/sonde-della-politica.ts`); le direttive della politica e quelle delle sonde nei due versi.
+  expect(direttiveSenzaSonda(politicaDelProdotto())).toEqual([]);
+  const viste: { sonda: string; violazione: string }[] = [];
+  for (const s of sonde) viste.push({ sonda: s.nome, violazione: await page.evaluate(provaLaSonda, s.nome) });
+  console.log(`[${info.project.name}] sonde della politica: ${viste.map((v) => `${v.sonda} → ${v.violazione}`).join("; ")}`);
+  expect(viste).toEqual(sonde.map((s) => ({ sonda: s.nome, violazione: s.attesa })));
 });
