@@ -122,6 +122,7 @@ export const it = {
   esempioTreLivelli: "Una funzione che ne chiama un'altra",
   esempioFattorialeRicorsivo: "Fattoriale con la ricorsione",
   esempioSequenzaDiFibonacci: "Sequenza di Fibonacci con la ricorsione",
+  esempioRicorsioneSenzaUscita: "Ricorsione senza uscita",
   // I gruppi degli esempi forniti (i nomi delle sottocartelle), e quello proposto per gli esempi aggiunti.
   esempiGruppoPrimiPassi: "Primi passi",
   esempiGruppoCicli: "Cicli per e per ogni",
@@ -138,6 +139,7 @@ export const it = {
   esempioCopieDescrizione: "Un vettore e una stringa passati per valore: la procedura cambia le sue copie, e il programma principale non vede nulla.",
   esempioTreLivelliDescrizione: "Chiamate su tre livelli: una procedura scrive il risultato di una funzione, che usa un'altra funzione. Il quadrato di 4, più uno.",
   esempioFattorialeRicorsivoDescrizione: "La funzione «fatt» chiama sé stessa: il fattoriale di n è n per il fattoriale di n - 1, fino a 1.",
+  esempioRicorsioneSenzaUscitaDescrizione: "La procedura «scendi» scrive il livello e richiama sé stessa senza mai fermarsi: la pila delle chiamate di questo progetto ha 10 posti, e l'esecuzione si ferma sull'undicesima chiamata. Guardala arrivare con Passo.",
   esempioSequenzaDiFibonacciDescrizione: "Legge n e scrive i primi n numeri di Fibonacci: la funzione «fibonacci» chiama sé stessa due volte, fibonacci(n - 1) + fibonacci(n - 2), fino a 0 e 1.",
   // Il progetto e i suoi file: i comandi della barra, la finestra Progetto, la finestra degli esempi, la
   // conferma delle modifiche non salvate, quella prima di sostituire un file, gli errori di apertura e di
@@ -189,12 +191,15 @@ export const it = {
   progettoOpzioni: "Opzioni che cambiano il risultato",
   progettoDecimali: "Cifre decimali dei reali",
   progettoDecimaliAiuto: "Quante cifre dopo la virgola ha un reale scritto da un blocco Scrittura: da 0 a 15 (predefinito 2).",
+  progettoPila: "Pila delle chiamate",
+  progettoPilaAiuto: "Quante chiamate di procedure e funzioni che richiamano sé stesse possono essere in corso insieme: la successiva ferma l'esecuzione, anche nel codice generato. Da 5 a 500 (predefinito 500).",
   progettoRiempimento: "Carattere di riempimento",
   progettoRiempimentoAiuto: "Riempie gli elementi in più quando una stringa va in un vettore di caratteri più lungo (predefinito lo spazio).",
   progettoLibreria: "È una libreria",
   progettoLibreriaAiuto: "Il segno si salva nel file: un progetto segnato si aggiunge alla cartella delle librerie. Procedure e funzioni si importano da qualunque progetto, segnato o no.",
   progettoNomeVuoto: "Il nome è obbligatorio.",
   progettoDecimaliFuori: "Serve un numero intero da 0 a 15.",
+  progettoPilaFuori: "Serve un numero intero da 5 a 500.",
   progettoRiempimentoUno: "Serve un carattere solo, diverso da quello di codice 0.",
   progettoCrea: "Crea",
   progettoConferma: "Conferma",
@@ -279,6 +284,7 @@ export const it = {
   importaOmonima: "Un'altra più sopra ha lo stesso nome: si importa solo quella.",
   /** Le opzioni diverse fra il programma e la sorgente, quando entrano dei casi d'uso. */
   importaDecimaliDiversi: "I reali hanno {programma} cifre decimali nel programma e {sorgente} in «{nome}»: un caso d'uso importato che scrive un reale può non essere raggiunto. Si corregge il suo output atteso, o le cifre nelle Proprietà del progetto.",
+  importaPilaDiversa: "La pila delle chiamate ha {programma} posti nel programma e {sorgente} in «{nome}»: un caso d'uso importato che si ferma al tetto della pila può non essere raggiunto. Si corregge il suo output atteso, o i posti nelle Proprietà del progetto.",
   importaRiempimentoDiverso: "Il carattere di riempimento è {programma} nel programma e {sorgente} in «{nome}»: un caso d'uso importato può non essere raggiunto. Si corregge il suo output atteso, o il carattere nelle Proprietà del progetto.",
   importaLoSpazio: "lo spazio",
   importaIlCarattere: "«{carattere}»",
@@ -835,6 +841,8 @@ export const it = {
   limitePredefinito: "Predefinito: {n}.",
   limiteFuori: "Serve un numero intero da {minimo} a {massimo}: vale ancora il limite di prima.",
   limitiPredefiniti: "Torna ai predefiniti",
+  pilaSpiegazione: "Quante chiamate di procedure e funzioni che richiamano sé stesse possono essere in corso insieme. Ogni progetto ha il suo numero, nelle Proprietà del progetto: questo è quello con cui nasce un progetto nuovo.",
+  pilaDeiProgettiNuovi: "Pila delle chiamate dei progetti nuovi",
   impostazioniPercorsi: "Percorsi",
   percorsiLibrerie: "Cartella delle librerie",
   percorsiEsempi: "Cartella degli esempi",

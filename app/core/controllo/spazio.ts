@@ -14,12 +14,13 @@
 // fra lo spazio fisso e la pila più piccola misurata, 1 MB del clang.
 
 import { analizza, type Espressione } from "../espressioni/analizzatore";
-import type { Dato, Funzione, Progetto, Tipo } from "../progetto/modello";
+import { opzioniPredefinite, type Dato, type Funzione, type Progetto, type Tipo } from "../progetto/modello";
 import { figliDelBlocco, lunghezzaPredefinita, testiDelBlocco } from "./controllo";
 import { lunghezzaMassima } from "./lunghezza";
 
-/** Le chiamate in corso delle funzioni del giro: la successiva ferma l'esecuzione (`recursion_too_deep`). */
-export const tettoDelleChiamate = 500;
+/** Le chiamate in corso delle funzioni del giro: la successiva ferma l'esecuzione (`recursion_too_deep`). È un'opzione
+ * del progetto (`call_stack_limit`, da 5 a 500); un progetto senza l'opzione ha il predefinito, 500. */
+export const tettoDelleChiamate = (p: Pick<Progetto, "options">): number => p.options?.call_stack_limit ?? opzioniPredefinite.call_stack_limit;
 /** Lo spazio dei dati delle chiamate in corso delle funzioni del giro, in byte: oltre, la chiamata ferma l'esecuzione
  * (`recursion_data_too_large`). Un quarto della pila del clang. */
 export const spazioDellaPila = 262_144;

@@ -93,6 +93,6 @@ test("la ricorsione: ogni caso della tappa 4 ha l'esito della riga di comando", 
     casi += t.totale;
   }
   console.log(`la tappa 4 con «Esegui tutti»: file ${file.length}, casi ${casi}`);
-  expect({ file: file.length, casi }).toEqual({ file: 21, casi: 29 });
+  expect({ file: file.length, casi }).toEqual({ file: 22, casi: 30 });
   // Due volte ciascuno dei due casi al milione di passi (qui e con la riga di comando).
 }, 60_000);

@@ -455,7 +455,8 @@ describe("le omonime e le opzioni della sorgente", () => {
     const con = (p: Progetto, options: Json): Progetto => progetto({ ...JSON.parse(salva(p)), options });
     expect(opzioniDiverse(programma(), libreria)).toEqual([]);
     // Un predefinito scritto è uguale a uno sottinteso.
-    expect(opzioniDiverse(con(programma(), { real_decimals: 2, fill_character: " " }), libreria)).toEqual([]);
+    expect(opzioniDiverse(con(programma(), { real_decimals: 2, fill_character: " ", call_stack_limit: 500 }), libreria)).toEqual([]);
+    expect(opzioniDiverse(programma(), con(libreria, { call_stack_limit: 10 }))).toEqual([{ opzione: "call_stack_limit", programma: 500, sorgente: 10 }]);
     expect(opzioniDiverse(programma(), con(libreria, { real_decimals: 3 }))).toEqual([{ opzione: "real_decimals", programma: 2, sorgente: 3 }]);
     expect(opzioniDiverse(con(programma(), { fill_character: "*" }), con(libreria, { real_decimals: 0 }))).toEqual([
       { opzione: "real_decimals", programma: 2, sorgente: 0 },
@@ -470,7 +471,7 @@ describe("le omonime e le opzioni della sorgente", () => {
     // Le opzioni sono le chiavi dei predefiniti: un'opzione nuova senza un valore qui, o senza la sua riga nel riepilogo,
     // fa rosso (l'elenco nel riepilogo è scritto a mano, opzione per opzione).
     const con = (p: Progetto, options: Json): Progetto => progetto({ ...JSON.parse(salva(p)), options });
-    const diversi: Record<string, unknown> = { real_decimals: 5, fill_character: "*" };
+    const diversi: Record<string, unknown> = { real_decimals: 5, fill_character: "*", call_stack_limit: 10 };
     const chiavi = Object.keys(opzioniPredefinite);
     expect(chiavi.filter((k) => !(k in diversi))).toEqual([]);
     for (const k of chiavi) expect(opzioniDiverse(programma(), con(libreria, { [k]: diversi[k] })).map((o): string => o.opzione)).toEqual([k]);

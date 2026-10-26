@@ -27,7 +27,7 @@ As an example, a program that reads a whole number and writes whether it is even
 
 ### The project
 
-From the **Project** menu choose **New** (Ctrl+N). Write the name of the project, which is required, and, if you like, the author, a description and some notes; confirm with **Create**. The same information can be changed later with **Properties**, which also has two options that change the result: how many decimal digits a real number has when it is written (2 unless you say otherwise) and the character that fills an array of characters.
+From the **Project** menu choose **New** (Ctrl+N). Write the name of the project, which is required, and, if you like, the author, a description and some notes; confirm with **Create**. The same information can be changed later with **Properties**, which also has three options that change the result: how many decimal digits a real number has when it is written (2 unless you say otherwise), the character that fills an array of characters and the places of the call stack (§9).
 
 Save the project with **Save as** (Ctrl+Shift+S): the file has the `.algo` extension. From then on **Save** (Ctrl+S) writes the same file. The file takes the name of the project; if that name has characters a file name cannot have, or is a name Windows reserves (such as `CON` or `NUL`), before the Windows dialog AlgoDesign says so and suggests another name, which can be changed: **Which names can be used?** tells the rules.
 
@@ -367,7 +367,7 @@ Each call in progress is a **level**. Step in (F11) on `fatt(n - 1)` goes down o
 
 ### When the recursion does not end
 
-If the case that stops the recursion is missing, or if the call does not get closer to it, the calls never end. AlgoDesign stops the run on the call that would be the five hundred and first still in progress: “The procedure or function has been called 500 times without any call ending.”. Each call in progress keeps its data on the **call stack**, which has 256 KB: when each call receives copies of large arrays or strings, or gets them from the functions it calls, the run stops sooner, with “The data of the calls in progress no longer fit on the stack.”. A procedure that does not change the array it receives can take it by reference (*ref*), and then the calls do not make a copy each. Only the calls of the procedures and functions that call themselves, directly or through others, count: a program without recursion does not have these limits. A job that is too long, like the Fibonacci sequence with a large number, stops instead after a million actions, like a loop that does not end.
+If the case that stops the recursion is missing, or if the call does not get closer to it, the calls never end. Each call in progress takes a place on the **call stack**, which has 500 places unless the project Properties give another number, from 5 to 500: AlgoDesign stops the run on the call that no longer fits, with “The procedure or function has been called 500 times without any call ending.”, with the number of the project. With few places the end is seen at once even with **Step**: the example “Recursion without an exit” has 10. The generated code uses the same number. The stack also keeps the data of each call in progress, and for those it has 256 KB: when each call receives copies of large arrays or strings, or gets them from the functions it calls, the run stops sooner, with “The data of the calls in progress no longer fit on the stack.”. A procedure that does not change the array it receives can take it by reference (*ref*), and then the calls do not make a copy each. Only the calls of the procedures and functions that call themselves, directly or through others, count: a program without recursion does not have these limits. A job that is too long, like the Fibonacci sequence with a large number, stops instead after a million actions, like a loop that does not end.
 
 ### The generated code
 
@@ -398,7 +398,7 @@ If the program already has a procedure, a function or a shared constant with the
 
 If after the import the program had errors it did not have before (for example a call with the wrong arguments), the summary says so below: the test cases do not run until you fix them. “Import” stays active: you can import and fix afterwards.
 
-When test cases go in and the chosen project has in its Properties an option different from the program's (the decimal digits of reals or the fill character), the summary has a line for each one, with the two values: an imported case may not pass, and you fix its expected output, or the option in the Properties. The options of the program stay its own.
+When test cases go in and the chosen project has in its Properties an option different from the program's (the decimal digits of reals, the fill character or the places of the call stack), the summary has a line for each one, with the two values: an imported case may not pass, and you fix its expected output, or the option in the Properties. The options of the program stay its own.
 
 If the name already belongs to a data item or to another kind (an imported function named like a data item of the program), it can only be renamed. The box **with their use cases**, ticked at first, also brings the test cases of what goes in.
 
@@ -428,7 +428,7 @@ The **Settings** button opens a window with six tabs; the choices apply after **
 
 - **Appearance**: the language (Italian or English; it can also be changed from the status bar, §2), the flowchart colors (Soft, High contrast, Black and white) and the block colors (further below), long conditions on one or two lines, the initial values shown in the flowchart below “Start” or hidden, and the initial value of an array in a list or with a single value, how the “For” and “For each” loops and their frame are drawn (§4), the frame around the selected blocks (§3), the copy of an array by its name, compact or expanded (§4), the question in the Read block (§3), the look of the toolbar buttons, the run commands in a small bar above the flowchart, the search in the guide and its window, fixed or movable (§11);
 - **Editing**: where the fields of a block are written (in a box next to the block or in a panel on the right) and those of a data item (in a card below the row or in every cell), when to ask for confirmation before deleting a data item, whether brackets and quotes close by themselves as you type (§3), whether to offer to save a run as a test case (§6);
-- **Limits**: the elements of an array, the characters of a string and the characters of an array of strings (elements × maximum length), which can only be lowered;
+- **Limits**: the elements of an array, the characters of a string and the characters of an array of strings (elements × maximum length), which can only be lowered; and the places of the call stack a new project starts with, from 5 to 500, which each project then changes in its Properties (§9);
 - **Paths**: the libraries folder (§10) and the examples one (§11);
 - **Trace table**: how an array is shown, what the CSV file has, the columns that stay in place, the separators;
 - **Console**: what a line that is too long does.

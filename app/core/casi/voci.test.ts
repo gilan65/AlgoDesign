@@ -112,5 +112,5 @@ test("sul corpus nessuna radice ha dati letti altrove; controllo positivo: le le
   console.log(`dati letti altrove sul corpus: radici ${radici.length}, con dati ${conDati.length}; coi parametri come dati di lavoro ${letture}`);
   expect(conDati).toEqual([]);
   expect(letture).toBe(4);
-  expect(radici.length).toBe(252);
+  expect(radici.length).toBe(254);
 });

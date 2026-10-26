@@ -107,6 +107,7 @@ export const esecutori: readonly Esecutore[] = [
       "ricorsione-profonda": "-Winfinite-recursion",
       "ricorsione-allo-spazio": "-Winfinite-recursion",
       "spazio-al-byte": "-Winfinite-recursion",
+      "ricorsione-senza-uscita": "-Winfinite-recursion",
     },
   },
 ];

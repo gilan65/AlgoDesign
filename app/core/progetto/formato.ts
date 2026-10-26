@@ -26,6 +26,7 @@ import {
   codiciErroreStatico,
   generiDiBlocco,
   generiDiFunzione,
+  limitiDellaPila,
   modalita,
   opzioniPredefinite,
   ruoli,
@@ -222,7 +223,11 @@ const carattereDiRiempimento = lettore(
   { type: "string", minLength: 1, maxLength: 1, not: { const: String.fromCodePoint(0) } },
 );
 
-const campiDelleOpzioni: Campi = { fill_character: facoltativo(carattereDiRiempimento), real_decimals: facoltativo(intero(0, 15)) };
+const campiDelleOpzioni: Campi = {
+  fill_character: facoltativo(carattereDiRiempimento),
+  real_decimals: facoltativo(intero(0, 15)),
+  call_stack_limit: facoltativo(intero(limitiDellaPila.minimo, limitiDellaPila.massimo)),
+};
 
 /** Le opzioni uguali al predefinito si tolgono, e con esse un oggetto rimasto vuoto: salvando, l'app le omette. */
 const opzioni = lettore((v, p, c) => {

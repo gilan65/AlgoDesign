@@ -207,7 +207,7 @@ describe("il progetto che non si genera", () => {
 describe("la ricorsione", () => {
   test("ogni file della tappa 4 si genera, e la chiamata ricorsiva si scrive come ogni chiamata", () => {
     const tappa4 = readdirSync(join(cartella, "tappa-4")).filter((f) => f.endsWith(".algo"));
-    expect(tappa4.length).toBe(21);
+    expect(tappa4.length).toBe(22);
     for (const f of tappa4) for (const l of lingue) expect(pseudocodice(leggi(`tappa-4/${f}`), tetti, paroleDelloPseudocodice(l)).generato, `${f} (${l})`).toBe(true);
     const r = pseudocodice(leggi("tappa-4/fattoriale.algo"), tetti, paroleDelloPseudocodice("it"));
     expect(r.generato && testoDelCodice(r.righe)).toContain("        f ← n * fatt(n - 1)");

@@ -419,7 +419,9 @@ function CheCosa({ sorgente, cambiaSorgente, progetto, prossimo, limiti, testi, 
                 <p key={o.opzione} className={stili.avvisoDelCampo} data-opzione={o.opzione}>
                   {o.opzione === "real_decimals"
                     ? riempi(testi.importaDecimaliDiversi, { programma: String(o.programma), sorgente: String(o.sorgente), nome: sorgente.nome })
-                    : riempi(testi.importaRiempimentoDiverso, { programma: carattere(o.programma), sorgente: carattere(o.sorgente), nome: sorgente.nome })}
+                    : o.opzione === "call_stack_limit"
+                      ? riempi(testi.importaPilaDiversa, { programma: String(o.programma), sorgente: String(o.sorgente), nome: sorgente.nome })
+                      : riempi(testi.importaRiempimentoDiverso, { programma: carattere(o.programma), sorgente: carattere(o.sorgente), nome: sorgente.nome })}
                 </p>
               ))}
             {entrano.length === 0 ? (

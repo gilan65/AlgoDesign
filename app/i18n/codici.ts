@@ -3,9 +3,10 @@
 // nessun altro: una chiave mancante o in più è un errore di `tsc`. `same_reference` e `reference_without_value` sono
 // un codice solo ciascuno, statico o dell'interprete secondo il caso, e hanno un testo solo.
 //
-// I nomi degli operatori a parola e dei blocchi sono quelli della lingua del testo.
+// I nomi degli operatori a parola e dei blocchi sono quelli della lingua del testo. I tetti della ricorsione dicono il
+// numero del progetto (`call_stack_limit`): `{tetto}`, riempito da `testoDelMessaggio` e da `testiDeiCodiciCol`.
 
-import type { CodiceAvviso, CodiceErrore, CodiceErroreStatico } from "../core/progetto/modello";
+import { opzioniPredefinite, type CodiceAvviso, type CodiceErrore, type CodiceErroreStatico } from "../core/progetto/modello";
 import type { Causa, Fermata } from "../core/espressioni/analizzatore";
 import { riempi, type Lingua } from "./lingue";
 
@@ -160,13 +161,13 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
       suggerimento: "Se è evidenziato un ciclo, eseguilo un passo alla volta e guarda, nella tabella di traccia, i dati della sua condizione: se da un giro all'altro non si avvicinano mai al valore che la cambia, il ciclo non finirà da solo. Se è dentro una funzione che richiama sé stessa due volte a ogni chiamata, come Fibonacci, il lavoro raddoppia a ogni livello: prova con un numero più piccolo.",
     },
     recursion_too_deep: {
-      breve: "La procedura o la funzione è stata richiamata 500 volte, e nessuna è finita.",
-      accaduto: "La procedura o la funzione è stata richiamata 500 volte, direttamente o passando per altre, e nessuna di quelle chiamate è ancora finita. Ogni chiamata in corso occupa un posto nella pila delle chiamate, e la pila ha un limite: l'esecuzione si ferma sulla chiamata che sarebbe la cinquecentunesima.",
-      suggerimento: "Controlla il caso in cui la procedura o la funzione non richiama più sé stessa, come «n <= 1» nel fattoriale. Esegui un passo alla volta, scegli i livelli in «Dove sei» e guarda se, da un livello all'altro, il dato che lo decide si avvicina a quel valore.",
+      breve: "La procedura o la funzione è stata richiamata {tetto} volte, e nessuna è finita.",
+      accaduto: "La procedura o la funzione è stata richiamata {tetto} volte, direttamente o passando per altre, e nessuna di quelle chiamate è ancora finita. Ogni chiamata in corso occupa un posto nella pila delle chiamate, e in questo progetto la pila ha {tetto} posti: l'esecuzione si ferma sulla chiamata che non ci sta più.",
+      suggerimento: "Controlla il caso in cui la procedura o la funzione non richiama più sé stessa, come «n <= 1» nel fattoriale. Esegui un passo alla volta, scegli i livelli in «Dove sei» e guarda se, da un livello all'altro, il dato che lo decide si avvicina a quel valore. I posti della pila si scelgono nelle Proprietà del progetto.",
     },
     recursion_data_too_large: {
       breve: "I dati delle chiamate in corso non stanno più nella pila.",
-      accaduto: "Ogni chiamata in corso di una procedura o funzione che richiama sé stessa tiene nella pila delle chiamate i propri dati: le copie dei vettori e delle stringhe ricevuti senza rif, i vettori e le stringhe restituiti dalle funzioni che chiama, e i testi uniti con +. La pila ha 256 KB, e con questa chiamata i dati non ci starebbero più. Succede prima delle 500 chiamate quando ogni chiamata ha dati grandi.",
+      accaduto: "Ogni chiamata in corso di una procedura o funzione che richiama sé stessa tiene nella pila delle chiamate i propri dati: le copie dei vettori e delle stringhe ricevuti senza rif, i vettori e le stringhe restituiti dalle funzioni che chiama, e i testi uniti con +. La pila ha 256 KB, e con questa chiamata i dati non ci starebbero più. Succede prima delle {tetto} chiamate quando ogni chiamata ha dati grandi.",
       suggerimento: "Riduci la dimensione dei vettori o la lunghezza massima delle stringhe che la procedura o la funzione riceve, usa o ottiene dalle funzioni che chiama. Se è una procedura e non cambia il vettore o la stringa che riceve, passali con rif: così le chiamate non ne fanno una copia ciascuna.",
     },
     out_of_memory: {
@@ -451,13 +452,13 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
       suggerimento: "If a loop is highlighted, run it one step at a time and watch, in the trace table, the data of its condition: if from one round to the next they never get closer to the value that changes it, the loop will not end by itself. If it is inside a function that calls itself twice at each call, like Fibonacci, the work doubles at every level: try a smaller number.",
     },
     recursion_too_deep: {
-      breve: "The procedure or function has been called 500 times without any call ending.",
-      accaduto: "The procedure or function has been called 500 times, directly or through others, and none of those calls has ended yet. Each call in progress takes a place on the call stack, and the stack has a limit: the run stops on the call that would be the five hundred and first.",
-      suggerimento: "Check the case in which the procedure or function no longer calls itself, such as \"n <= 1\" in the factorial. Run one step at a time, choose the levels in “Where you are” and watch whether, from one level to the next, the data that decides it gets closer to that value.",
+      breve: "The procedure or function has been called {tetto} times without any call ending.",
+      accaduto: "The procedure or function has been called {tetto} times, directly or through others, and none of those calls has ended yet. Each call in progress takes a place on the call stack, and in this project the stack has {tetto} places: the run stops on the call that no longer fits.",
+      suggerimento: "Check the case in which the procedure or function no longer calls itself, such as \"n <= 1\" in the factorial. Run one step at a time, choose the levels in “Where you are” and watch whether, from one level to the next, the data that decides it gets closer to that value. The places on the stack are chosen in the Project properties.",
     },
     recursion_data_too_large: {
       breve: "The data of the calls in progress no longer fit on the stack.",
-      accaduto: "Each call in progress of a procedure or function that calls itself keeps its own data on the call stack: the copies of the arrays and strings received without ref, the arrays and strings returned by the functions it calls, and the texts joined with +. The stack holds 256 KB, and with this call the data would no longer fit. It happens before 500 calls when each call has large data.",
+      accaduto: "Each call in progress of a procedure or function that calls itself keeps its own data on the call stack: the copies of the arrays and strings received without ref, the arrays and strings returned by the functions it calls, and the texts joined with +. The stack holds 256 KB, and with this call the data would no longer fit. It happens before {tetto} calls when each call has large data.",
       suggerimento: "Reduce the size of the arrays or the maximum length of the strings that the procedure or function receives, uses or gets from the functions it calls. If it is a procedure and does not change the array or string it receives, pass them with ref: then the calls do not each make a copy.",
     },
     out_of_memory: {
@@ -727,9 +728,23 @@ export const testiSulRisultato: Record<Lingua, Record<CodiceSulRisultato, TestoD
   },
 };
 
-/** Il testo di un codice: quello del risultato di una funzione, se l'errore è lì e il codice ne ha uno. */
-export function testoDelMessaggio(lingua: Lingua, codice: Codice, sulRisultato: boolean): TestoDelCodice {
-  return sulRisultato && (codiciSulRisultato as readonly string[]).includes(codice) ? testiSulRisultato[lingua][codice as CodiceSulRisultato] : testiDeiCodici[lingua][codice];
+/** Il testo di un codice col tetto delle chiamate del progetto al posto di `{tetto}` (i tetti della ricorsione). */
+function colTetto(t: TestoDelCodice, tetto: number): TestoDelCodice {
+  if (!`${t.breve}${t.accaduto}${t.suggerimento}`.includes("{tetto}")) return t;
+  const r = (s: string) => s.split("{tetto}").join(String(tetto));
+  return { breve: r(t.breve), accaduto: r(t.accaduto), suggerimento: r(t.suggerimento) };
+}
+
+/** I testi dei codici di una lingua col tetto delle chiamate del progetto (`tettoDelleChiamate` di
+ * `core/controllo/spazio.ts`). */
+export function testiDeiCodiciCol(lingua: Lingua, tetto: number): Record<Codice, TestoDelCodice> {
+  return Object.fromEntries(Object.entries(testiDeiCodici[lingua]).map(([c, t]) => [c, colTetto(t, tetto)])) as Record<Codice, TestoDelCodice>;
+}
+
+/** Il testo di un codice: quello del risultato di una funzione, se l'errore è lì e il codice ne ha uno; col tetto delle
+ * chiamate del progetto (il predefinito, se non è detto). */
+export function testoDelMessaggio(lingua: Lingua, codice: Codice, sulRisultato: boolean, tetto: number = opzioniPredefinite.call_stack_limit): TestoDelCodice {
+  return colTetto(sulRisultato && (codiciSulRisultato as readonly string[]).includes(codice) ? testiSulRisultato[lingua][codice as CodiceSulRisultato] : testiDeiCodici[lingua][codice], tetto);
 }
 
 /** Il testo di una causa precisa: la frase breve, che può citare il pezzo di testo (`{segno}`), e il suggerimento. */

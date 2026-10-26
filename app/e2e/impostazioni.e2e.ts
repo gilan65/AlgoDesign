@@ -160,14 +160,14 @@ test("vettori e stringhe fino a 1000; i caratteri di un vettore di stringhe dagl
   await expect(statoDi(page)).toContainText(it.statoNessuno);
 });
 
-test("ogni numero ha il cursore accanto, che lo segue nei due versi; i caratteri di una riga da 50 a 1000", async ({ page }) => {
+test("ogni numero ha il cursore accanto, che lo segue nei due versi; i caratteri di una riga da 50 a 1000, la pila dei progetti nuovi da 5 a 500", async ({ page }) => {
   await apriVuota(page, { lingua: "it" });
   const f = await apriLe(page);
   const cursore = (nome: string) => f.getByRole("slider", { name: nome, exact: true });
-  // Ogni campo numerico ha il suo cursore, col suo nome (controllo positivo: i campi contati sono quattro).
+  // Ogni campo numerico ha il suo cursore, col suo nome (controllo positivo: i campi contati sono cinque).
   let numeri = 0;
   for (const [s, nomi] of [
-    [it.impostazioniLimiti, [it.limiteVettore, it.limiteStringa, it.limiteCaratteri]],
+    [it.impostazioniLimiti, [it.limiteVettore, it.limiteStringa, it.limiteCaratteri, it.pilaDeiProgettiNuovi]],
     [it.impostazioniConsole, [it.caratteriPerRiga]],
   ] as const) {
     await scheda(f, s);
@@ -178,7 +178,7 @@ test("ogni numero ha il cursore accanto, che lo segue nei due versi; i caratteri
     }
     expect(await f.getByRole("tabpanel", { name: s, exact: true }).getByRole("spinbutton").count()).toBe(nomi.length);
   }
-  expect(numeri).toBe(4);
+  expect(numeri).toBe(5);
   // Il cursore dalla tastiera cambia il campo; il numero scritto sposta il cursore.
   await cursore(it.caratteriPerRiga).focus();
   await page.keyboard.press("ArrowRight");
@@ -197,6 +197,22 @@ test("ogni numero ha il cursore accanto, che lo segue nei due versi; i caratteri
   await expect(f.getByRole("tab", { name: it.impostazioniConsole, exact: true })).toHaveAttribute("aria-selected", "true");
   await expect(campo(f, it.caratteriPerRiga)).toBeFocused();
   expect(await scritte(page)).toEqual([]);
+  // La pila delle chiamate dei progetti nuovi: 5 e 500 sì, 4 e 501 no; sbagliata, la conferma torna su «Limiti».
+  await campo(f, it.caratteriPerRiga).fill("700");
+  await scheda(f, it.impostazioniLimiti);
+  const pila = riempi(it.limiteFuori, { minimo: "5", massimo: "500" });
+  for (const [v, ok] of [["5", true], ["500", true], ["4", false], ["501", false]] as const) {
+    await campo(f, it.pilaDeiProgettiNuovi).fill(v);
+    await expect(f.getByText(pila, { exact: true }), `pila ${v}`).toHaveCount(ok ? 0 : 1);
+  }
+  await scheda(f, it.impostazioniDisegno);
+  await f.getByRole("button", { name: it.progettoConferma, exact: true }).click();
+  await expect(f.getByRole("tab", { name: it.impostazioniLimiti, exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(campo(f, it.pilaDeiProgettiNuovi)).toBeFocused();
+  expect(await scritte(page)).toEqual([]);
+  await campo(f, it.pilaDeiProgettiNuovi).fill("20");
+  await f.getByRole("button", { name: it.progettoConferma, exact: true }).click();
+  expect((await scritte(page)).at(-1)).toEqual({ preferenze: fileDa("it", { ...scelteIniziali, caratteriPerRiga: 700, pilaDeiProgettiNuovi: 20 }) });
 });
 
 test("«Annulla» non applica e non scrive nulla; riaperta, la finestra riparte dalle scelte in uso", async ({ page }) => {

@@ -17,7 +17,7 @@ import type { Tetti } from "../controllo/controllo";
 import type { Progetto } from "../progetto/modello";
 import { c } from "./c";
 import type { Generato } from "./forma";
-import { motivi } from "./motivi";
+import { motiviCol, type TabellaDeiMotivi } from "./motivi";
 import { nomiDelleIntestazioni, riservatiDelC, riservatiDelPython, type LinguaDelCodice } from "./nomi";
 import { pseudocodice, type ParoleDelloPseudocodice } from "./pseudocodice";
 import { python, type Prova } from "./python";
@@ -43,8 +43,9 @@ export type VoceDelLinguaggio =
   | (VoceComune & { readonly genere: "da-leggere" })
   | (VoceComune & {
       readonly genere: "da-eseguire";
-      /** Il motivo di ogni codice d'errore con cui il programma si ferma, nelle lingue del codice. */
-      readonly motivi: typeof motivi;
+      /** Il motivo di ogni codice d'errore con cui il programma si ferma, nelle lingue del codice, col tetto delle
+       * chiamate del progetto (che i motivi dei tetti della ricorsione dicono). */
+      readonly motivi: (tetto: number) => TabellaDeiMotivi;
       /** La riga che il programma scrive sullo standard error quando si ferma: il numero della riga e il motivo. */
       readonly rigaDErrore: RegExp;
     });
@@ -68,7 +69,7 @@ export const linguaggi = [
     genera: (p, limiti, lingua, parole, prova) => python(p, limiti, lingua, parole, prova),
     riservati: riservatiDelPython,
     riservatiNelFile: [],
-    motivi,
+    motivi: motiviCol,
     rigaDErrore,
   },
   {
@@ -78,7 +79,7 @@ export const linguaggi = [
     genera: (p, limiti, lingua, parole, prova) => c(p, limiti, lingua, parole, prova),
     riservati: riservatiDelC,
     riservatiNelFile: nomiDelleIntestazioni,
-    motivi,
+    motivi: motiviCol,
     rigaDErrore,
   },
 ] as const satisfies readonly VoceDelLinguaggio[];

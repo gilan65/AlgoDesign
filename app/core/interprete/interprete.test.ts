@@ -842,7 +842,9 @@ const mutazioni: Record<string, [string, string]> = {
   // La fotografia con una chiamata per funzione, la più esterna, come prima della ricorsione: ogni livello mostra la prima.
   "una cornice per funzione": ["  const fotoDi = (c: Cornice): FotografiaDiUnaChiamata => {\n    const prima = c.foto;", "  const fotoDi = (c: Cornice): FotografiaDiUnaChiamata => {\n    c = pila.find((x) => x.funzione === c.funzione)!;\n    const prima = c.foto;"],
   // Il tetto delle chiamate a 501: la cinquecentunesima passa.
-  "tetto 501": ["    if (chiamateDelGiro + 1 > tettoDelleChiamate) ferma(\"recursion_too_deep\");", "    if (chiamateDelGiro > tettoDelleChiamate) ferma(\"recursion_too_deep\");"],
+  "tetto 501": ["    if (chiamateDelGiro + 1 > tettoDelleChiamate(p)) ferma(\"recursion_too_deep\");", "    if (chiamateDelGiro > tettoDelleChiamate(p)) ferma(\"recursion_too_deep\");"],
+  // Il tetto del progetto ignorato: ogni progetto si ferma al predefinito, anche quello col tetto 10.
+  "tetto del progetto ignorato": ["    if (chiamateDelGiro + 1 > tettoDelleChiamate(p)) ferma(\"recursion_too_deep\");", "    if (chiamateDelGiro + 1 > tettoDelleChiamate({})) ferma(\"recursion_too_deep\");"],
   // Lo spazio dei dati che non si conta: un vettore grande copiato a ogni livello arriva alle 500 chiamate.
   "spazio non contato": ["      spazioInUso += spazioDi.get(f)!;\n    }\n    return {", "    }\n    return {"],
   // La chiamata sulla pila del motore, come prima: i generatori annidati si rompono coi 49 «se» e coi 63 livelli.

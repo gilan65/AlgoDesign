@@ -49,7 +49,7 @@ const partenza = () => ({
   format: "algodesign",
   schema_version: 1,
   metadata: { name: "Prova", library: true },
-  options: { real_decimals: 3 },
+  options: { real_decimals: 3, call_stack_limit: 10 },
   shared_constants: [{ name: "MASSIMO", type: "integer", constant: true, initial: "10" }],
   functions: [
     {
@@ -113,6 +113,9 @@ const sondeDellaForma: readonly Sonda[] = [
   ["un valore per ogni elemento con un campo in più", (p) => (main(p).data[1]!.initial = { each: "0", altro: "1" })],
   ["la libreria che non è un booleano", (p) => ((p.metadata as Record<string, unknown>).library = "sì")],
   ["i decimali oltre 15", (p) => (p.options.real_decimals = 16)],
+  ["il tetto delle chiamate sotto 5", (p) => ((p.options as Record<string, unknown>).call_stack_limit = 4)],
+  ["il tetto delle chiamate oltre 500", (p) => ((p.options as Record<string, unknown>).call_stack_limit = 501)],
+  ["il tetto delle chiamate non intero", (p) => ((p.options as Record<string, unknown>).call_stack_limit = 10.5)],
   ["il carattere di riempimento di due caratteri", (p) => ((p.options as Record<string, unknown>).fill_character = "ab")],
   ["il carattere di riempimento di codice 0", (p) => ((p.options as Record<string, unknown>).fill_character = String.fromCodePoint(0))],
   ["un caso del programma con una voce senza testo", (p) => delete (p.test_cases[0]!.inputs[0] as Record<string, unknown>).text],

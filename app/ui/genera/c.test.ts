@@ -15,15 +15,15 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { eseguiCaso } from "../../core/casi/esecutore";
 import { funzioniDelGiro, tetti } from "../../core/controllo/controllo";
-import { spazioDiUnaChiamata } from "../../core/controllo/spazio";
+import { spazioDiUnaChiamata, tettoDelleChiamate } from "../../core/controllo/spazio";
 import { c } from "../../core/genera/c";
 import { testoDelCodice, type Riga } from "../../core/genera/forma";
-import { codiceDelMotivo, motivi } from "../../core/genera/motivi";
+import { codiceDelMotivo, motivi, motiviCol } from "../../core/genera/motivi";
 import { voceDel } from "../../core/genera/linguaggi";
 import { nomeDellaRiga, nomiDelC, nomiDelSupporto, nomiDelSupportoDelC } from "../../core/genera/nomi";
 import { apri } from "../../core/progetto/formato";
 import type { Blocco, CasoDiUnaFunzione, Funzione, Progetto } from "../../core/progetto/modello";
-import { testiDeiCodici } from "../../i18n/codici";
+import { testoDelMessaggio } from "../../i18n/codici";
 import type { Lingua } from "../../i18n/lingue";
 import {
   altreFormeAttese,
@@ -202,7 +202,7 @@ describe("il progetto che non si genera", () => {
 
 describe("la ricorsione", () => {
   test("ogni file della tappa 4 si genera nelle due lingue", () => {
-    expect(tappa4.length).toBe(21);
+    expect(tappa4.length).toBe(22);
     for (const { f, p } of tappa4) for (const l of lingue) expect(c(p, tetti, l, paroleDelloPseudocodice(l)).generato, `${f} (${l})`).toBe(true);
   });
 
@@ -226,7 +226,7 @@ describe("la ricorsione", () => {
         else senzaGiro++;
       }
     // Il controllo positivo: le due specie ci sono.
-    expect(conGiro).toBe(2 * 21);
+    expect(conGiro).toBe(2 * 22);
     expect(senzaGiro).toBeGreaterThan(100);
   });
 
@@ -280,18 +280,20 @@ describe("i nomi che il C usa per sé", () => {
 });
 
 describe("i motivi d'errore", () => {
-  test("i due tetti della ricorsione hanno il testo breve dei messaggi dell'interfaccia", () => {
+  test("i due tetti della ricorsione hanno il testo breve dei messaggi dell'interfaccia, col tetto del progetto", () => {
     for (const l of lingue)
-      for (const codice of ["recursion_too_deep", "recursion_data_too_large"] as const) expect(motivi[l][codice], `${codice} (${l})`).toBe(testiDeiCodici[l][codice].breve);
+      for (const codice of ["recursion_too_deep", "recursion_data_too_large"] as const)
+        for (const tetto of [500, 10]) expect(motiviCol(tetto)[l][codice], `${codice} (${l}, ${tetto})`).toBe(testoDelMessaggio(l, codice, false, tetto).breve);
   });
 
   test("le funzioni di supporto scrivono solo motivi della tabella, e la tabella intera", () => {
     for (const l of lingue) {
       const scritti = new Set<string>();
       for (const p of programmi)
-        for (const [, m] of codice(p, l).matchAll(new RegExp(`${nomiDelSupporto[l].fermati}\\(\\w+, "([^"]*)"\\)`, "g"))) scritti.add(m!);
-      expect([...scritti].filter((m) => codiceDelMotivo(l, m) === undefined)).toEqual([]);
-      expect([...scritti].sort()).toEqual(Object.values(motivi[l]).sort());
+        // Ogni motivo si legge con la tabella del tetto del suo progetto (la ricorsione senza uscita ha la pila a 10).
+        for (const [, m] of codice(p, l).matchAll(new RegExp(`${nomiDelSupporto[l].fermati}\\(\\w+, "([^"]*)"\\)`, "g")))
+          scritti.add(codiceDelMotivo(l, m!, motiviCol(tettoDelleChiamate(p))) ?? `senza codice: ${m}`);
+      expect([...scritti].sort()).toEqual(Object.keys(motivi[l]).sort());
     }
   });
 });

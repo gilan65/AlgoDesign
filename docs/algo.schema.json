@@ -52,6 +52,11 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 15
+        },
+        "call_stack_limit": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 500
         }
       },
       "required": [],

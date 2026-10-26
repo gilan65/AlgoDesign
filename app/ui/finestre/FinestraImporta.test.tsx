@@ -307,7 +307,7 @@ const CON_ALTRE_OPZIONI = JSON.stringify({
   format: "algodesign",
   schema_version: 1,
   metadata: { name: "altre-opzioni" },
-  options: { real_decimals: 3, fill_character: "*" },
+  options: { real_decimals: 3, fill_character: "*", call_stack_limit: 10 },
   shared_constants: [{ name: "K", type: "integer", constant: true, initial: "3" }],
   functions: [
     { id: "f1", kind: "main", data: [], body: [], end: { id: "b1" } },
@@ -355,10 +355,11 @@ test("le opzioni diverse (coi casi che entrano), la costante sostituita, i dati 
   await clic(casella(/urta/));
   const opzioni = () => [...finestra()!.querySelectorAll<HTMLElement>("[data-opzione]")].map((p) => p.textContent);
   const conCasi = riempi(testi.importaConCasi, { n: "1" });
-  // Le due opzioni diverse, coi valori del programma e della sorgente; lo spazio a parole.
+  // Le tre opzioni diverse, coi valori del programma e della sorgente; lo spazio a parole.
   expect(opzioni()).toEqual([
     riempi(testi.importaDecimaliDiversi, { programma: "2", sorgente: "3", nome: "altre-opzioni" }),
     riempi(testi.importaRiempimentoDiverso, { programma: testi.importaLoSpazio, sorgente: riempi(testi.importaIlCarattere, { carattere: "*" }), nome: "altre-opzioni" }),
+    riempi(testi.importaPilaDiversa, { programma: "500", sorgente: "10", nome: "altre-opzioni" }),
   ]);
   // I dati di «urta» col nome della costante e della procedura del programma.
   const testo = () => finestra()!.textContent!;

@@ -31,6 +31,7 @@ import { Tabs } from "@ark-ui/react/tabs";
 import type { EsitoDelCaso } from "../core/casi/esito";
 import { datiLettiAltrove } from "../core/casi/voci";
 import { causaDelNome, controlla, giriDellaRicorsione, type FermataDelBlocco, type Tetti } from "../core/controllo/controllo";
+import { tettoDelleChiamate } from "../core/controllo/spazio";
 import {
   aggiungiCaso,
   aggiungiDato,
@@ -93,7 +94,7 @@ import { suggerimento, tastoDelComando, tastoDiEliminazione, tastoMostrato, tast
 import { eventoDelMenu, impostaMenu, VOCI_DELL_INTERFACCIA, type VoceDellInterfaccia } from "./menu";
 import { sulMac } from "./piattaforma";
 import { bloccoNelPosto, campoDiTesto, comandoDelFile, comandoDellaCronologia, lasciaLaPagina, nelCampo, tastoCheElimina } from "./modifiche";
-import { testiDeiCodici, testoDelMessaggio, testoDellaSegnalazione, type Codice } from "../i18n/codici";
+import { testiDeiCodiciCol, testoDelMessaggio, testoDellaSegnalazione, type Codice } from "../i18n/codici";
 import { testiDeiMotivi } from "../i18n/motivi";
 import { dizionari, riempi, type Lingua } from "../i18n/lingue";
 import { nomiDegliOperatori } from "../i18n/operatori";
@@ -246,11 +247,13 @@ function funzioneCambiata(prima: Progetto, dopo: Progetto, mostrata: string): st
   return ids.find((id) => testo(prima, id) !== testo(dopo, id));
 }
 
-/** Il progetto nuovo dell'avvio: Inizio e Fine, nessun dato, il nome da scrivere nella finestra Progetto. */
-function progettoVuoto(nome: string): Progetto {
+/** Il progetto nuovo dell'avvio: Inizio e Fine, nessun dato, il nome da scrivere nella finestra Progetto, la pila delle
+ * chiamate dei progetti nuovi (delle Impostazioni; uguale al predefinito non si scrive). */
+function progettoVuoto(nome: string, pila: number): Progetto {
   const r = progettoNuovo({ name: nome });
-  if (!r.ok) throw new Error("il progetto nuovo non si costruisce");
-  return r.progetto;
+  const p = r.ok ? opzioniDelProgetto({ call_stack_limit: pila })(r.progetto, r.prossimo) : r;
+  if (!p.ok) throw new Error("il progetto nuovo non si costruisce");
+  return p.progetto;
 }
 
 /** La finestra di dialogo aperta (una sola alla volta), oltre alla conferma di cancellazione di un dato. */
@@ -359,7 +362,7 @@ export function Applicazione({
   // Come la vista dei dati mostra i valori iniziali: lo stesso testo del blocco, dal nucleo.
   const valoriMostrati = useMemo(() => ({ testi: testiDelDisegno(lingua), ripetuto: valoreRipetuto }), [lingua, valoreRipetuto]);
   const diProva = disegniDiProva();
-  const [documento, setDocumento] = useState(() => documentoDi(progettoVuoto(dizionari[linguaIniziale].progettoSenzaNome), null));
+  const [documento, setDocumento] = useState(() => documentoDi(progettoVuoto(dizionari[linguaIniziale].progettoSenzaNome, scelteIniziali.pilaDeiProgettiNuovi), null));
   const cronologia = documento.cronologia;
   const progetto = cronologia.presente;
   const interruzioni = documento.interruzioni;
@@ -610,7 +613,7 @@ export function Applicazione({
   // Il testo dell'errore che ha fermato l'esecuzione: quello del risultato, sulla fine di una funzione (la stringa
   // restituita troppo lunga).
   const testoDellErroreFinale =
-    erroreFinale && esecuzione ? testoDelMessaggio(lingua, erroreFinale.code, esecuzione.progetto.functions.some((f) => f.kind === "function" && f.end.id === erroreFinale.block)) : undefined;
+    erroreFinale && esecuzione ? testoDelMessaggio(lingua, erroreFinale.code, esecuzione.progetto.functions.some((f) => f.kind === "function" && f.end.id === erroreFinale.block), tettoDelleChiamate(esecuzione.progetto)) : undefined;
   // Il codice del linguaggio mostrato, rigenerato a ogni modifica del progetto e al cambio di lingua; solo con «Genera»
   // premuto.
   const codice = useMemo(() => (conCodice ? codiceDi(progetto, limiti, linguaggio, lingua) : null), [conCodice, progetto, limiti, linguaggio, lingua]);
@@ -859,7 +862,8 @@ export function Applicazione({
   // dati. Le segnalazioni della vista dei dati vengono dato per dato (`controllo.dati`); quelle della
   // funzione, che non dicono il dato, non si ripetono. Quelle dell'elemento appena nato si tacciono.
   const controllo = useMemo(() => controlla(progetto, limiti), [progetto, limiti]);
-  const codici = testiDeiCodici[lingua];
+  // I testi dei codici col tetto delle chiamate del progetto (i tetti della ricorsione ne dicono il numero).
+  const codici = useMemo(() => testiDeiCodiciCol(lingua, tettoDelleChiamate(progetto)), [lingua, progetto]);
   const voci = useMemo((): VoceDelControllo[] => {
     if (controllo.fuoriTappa) return [];
     const disegnoDiOra = testiDelDisegno(lingua);
@@ -3542,7 +3546,11 @@ export function Applicazione({
       <FinestraProgetto
         aperta={finestra?.genere === "progetto"}
         nuovo={finestra?.genere === "progetto" && finestra.nuovo}
-        iniziali={finestra?.genere === "progetto" && finestra.nuovo ? { metadati: { name: "" }, opzioni: {} } : { metadati: progetto.metadata, opzioni: progetto.options ?? {} }}
+        iniziali={
+          finestra?.genere === "progetto" && finestra.nuovo
+            ? { metadati: { name: "" }, opzioni: { call_stack_limit: scelte.pilaDeiProgettiNuovi } }
+            : { metadati: progetto.metadata, opzioni: progetto.options ?? {} }
+        }
         testi={testi}
         conferma={confermaProgetto}
         rinuncia={() => setFinestra(null)}

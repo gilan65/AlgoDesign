@@ -1317,7 +1317,7 @@ test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l
     "tappa-3/uscita-letta-prima.algo b4 x",
     "tappa-3/uscita-non-assegnata.algo b2 n",
   ]);
-  expect([file, controllati]).toEqual([145, 145]);
+  expect([file, controllati]).toEqual([146, 146]);
 });
 
 test("i limiti sono un parametro senza predefinito: chi chiama il controllo li passa sempre", () => {
@@ -1609,7 +1609,7 @@ test("censimento: i codici d'errore statico e d'avviso e le regole statiche del 
   );
   expect(esito).toEqual({ senzaVoce: [], vociSenzaCodice: [], senzaTest: [], provatiFuori: [], senzaPosto: [], postoSenzaRegola: [], postoNonProvato: [] });
   // Controllo positivo della lettura del file del formato: il denominatore è il censimento intero.
-  expect(voci.length).toBe(78);
+  expect(voci.length).toBe(79);
   expect([codici.length, daProvare.length]).toEqual([39, 39]);
 
   // Controlli positivi, uno per rilevatore, ognuno su una copia degli elenchi veri con un difetto solo.

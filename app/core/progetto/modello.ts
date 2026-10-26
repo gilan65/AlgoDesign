@@ -168,9 +168,15 @@ export interface Metadati {
 export interface Opzioni {
   readonly fill_character?: string;
   readonly real_decimals?: number;
+  /** Le chiamate in corso delle funzioni del giro (la ricorsione) che la pila delle chiamate tiene: la successiva ferma
+   * l'esecuzione (`recursion_too_deep`), nell'app e nel codice generato. */
+  readonly call_stack_limit?: number;
 }
 
-export const opzioniPredefinite = { fill_character: " ", real_decimals: 2 } as const;
+/** I valori ammessi di `call_stack_limit`: il predefinito è il massimo. */
+export const limitiDellaPila = { minimo: 5, massimo: 500 } as const;
+
+export const opzioniPredefinite = { fill_character: " ", real_decimals: 2, call_stack_limit: limitiDellaPila.massimo } as const;
 
 export interface Progetto {
   readonly format: "algodesign";

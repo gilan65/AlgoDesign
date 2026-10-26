@@ -14,6 +14,7 @@ import { tetti, type Tetti } from "../core/controllo/controllo";
 import type { CondizioniLunghe, FormaDellaCopia, FormaDelPer, FormaDelPerOgni, ValoreRipetuto, ValoriIniziali } from "../core/disegno/impaginazione";
 import { righeLunghePredefinite, type RigheLunghe } from "../core/esecuzione/esecuzione";
 import { separatoriPredefiniti, type FormaDeiVettori, type FormaDelCsv, type Separatori } from "../core/esecuzione/traccia";
+import { limitiDellaPila, opzioniPredefinite } from "../core/progetto/modello";
 import { linguaValida, type Lingua } from "../i18n/lingue";
 import { coloriDa, type ColoriDeiBlocchi } from "./colori";
 
@@ -59,6 +60,9 @@ export interface Scelte {
   readonly modoDeiDati: ModoDeiDati;
   readonly conferma: ConfermaDelDato;
   readonly limiti: Tetti;
+  /** Il tetto delle chiamate (la pila delle chiamate, `call_stack_limit`) con cui nasce un progetto nuovo: all'avvio e con
+   * «Nuovo». Ogni progetto ha il suo, nelle Proprietà del progetto. */
+  readonly pilaDeiProgettiNuovi: number;
   /** La cartella degli esempi scelta; `null`, la predefinita. */
   readonly cartellaEsempi: string | null;
   /** La cartella delle librerie scelta; `null`, la predefinita. */
@@ -110,6 +114,7 @@ export const scelteIniziali: Scelte = {
   modoDeiDati: "scheda",
   conferma: "se-usato",
   limiti: tetti,
+  pilaDeiProgettiNuovi: opzioniPredefinite.call_stack_limit,
   cartellaEsempi: null,
   cartellaLibrerie: null,
   separatoreCsv: "lingua",
@@ -204,6 +209,11 @@ export function caratteriValidi(valore: unknown): valore is number {
   return typeof valore === "number" && Number.isInteger(valore) && valore >= caratteriPerRiga.minimo && valore <= caratteriPerRiga.massimo;
 }
 
+/** Un tetto delle chiamate valido per i progetti nuovi: un intero dei valori che il file del progetto ammette. */
+export function pilaValida(valore: unknown): valore is number {
+  return typeof valore === "number" && Number.isInteger(valore) && valore >= limitiDellaPila.minimo && valore <= limitiDellaPila.massimo;
+}
+
 /** Come la console tiene le righe lunghe, per l'esecuzione. */
 export const righeLungheDi = (s: Scelte): RigheLunghe => ({ caratteri: s.caratteriPerRiga, modo: s.righeLunghe });
 
@@ -238,6 +248,7 @@ export function preferenzeDa(file: unknown): { lingua: Lingua | undefined; scelt
       modoDeiDati: uno(voci.modoDeiDati, f.modoDeiDati) ?? scelteIniziali.modoDeiDati,
       conferma: uno(voci.conferma, f.conferma) ?? scelteIniziali.conferma,
       limiti: { elementiDiUnVettore: limite("elementiDiUnVettore"), lunghezzaDiUnaStringa: limite("lunghezzaDiUnaStringa"), caratteriDiUnVettoreDiStringhe: limite("caratteriDiUnVettoreDiStringhe") },
+      pilaDeiProgettiNuovi: pilaValida(f.pilaDeiProgettiNuovi) ? f.pilaDeiProgettiNuovi : scelteIniziali.pilaDeiProgettiNuovi,
       cartellaEsempi: cartella(f.cartellaEsempi),
       cartellaLibrerie: cartella(f.cartellaLibrerie),
       separatoreCsv: uno(voci.separatoreCsv, f.separatoreCsv) ?? scelteIniziali.separatoreCsv,
@@ -277,6 +288,7 @@ export function fileDa(lingua: Lingua, s: Scelte): Record<string, unknown> {
     modoDeiDati: s.modoDeiDati,
     conferma: s.conferma,
     limiti: { ...s.limiti },
+    pilaDeiProgettiNuovi: s.pilaDeiProgettiNuovi,
     ...(s.cartellaEsempi !== null ? { cartellaEsempi: s.cartellaEsempi } : {}),
     ...(s.cartellaLibrerie !== null ? { cartellaLibrerie: s.cartellaLibrerie } : {}),
     separatoreCsv: s.separatoreCsv,

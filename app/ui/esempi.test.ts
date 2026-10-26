@@ -10,13 +10,13 @@ import { cerca, daSpostare, eGruppoFornito, esempiDa, forniti, gruppoDi, mancant
 import { cartellaDi, erroreDelFile, nomeDelFile, type CartellaDegliEsempi, type FileDiEsempio } from "./file";
 import { esempioValido, gruppoValido, nomeRiservato } from "./nomi";
 
-/** Gli undici esempi forniti, scritti qui gruppo per gruppo: i quattro primi, i due coi cicli `per` e `per ogni`, i cinque
- * con le procedure e le funzioni (gli ultimi due ricorsivi). */
-const undiciNomi = (testi: typeof it) =>
+/** I dodici esempi forniti, scritti qui gruppo per gruppo: i quattro primi, i due coi cicli `per` e `per ogni`, i sei
+ * con le procedure e le funzioni (gli ultimi tre ricorsivi). */
+const dodiciNomi = (testi: typeof it) =>
   [
     [testi.esempiGruppoPrimiPassi, [testi.esempioMediaVoti, testi.esempioPariDispari, testi.esempioPrimoQuadrato, testi.esempioFattoriale]],
     [testi.esempiGruppoCicli, [testi.esempioMediaVotiPer, testi.esempioParolaAlContrario]],
-    [testi.esempiGruppoFunzioni, [testi.esempioMediaVotiFunzioni, testi.esempioCopie, testi.esempioTreLivelli, testi.esempioFattorialeRicorsivo, testi.esempioSequenzaDiFibonacci]],
+    [testi.esempiGruppoFunzioni, [testi.esempioMediaVotiFunzioni, testi.esempioCopie, testi.esempioTreLivelli, testi.esempioFattorialeRicorsivo, testi.esempioSequenzaDiFibonacci, testi.esempioRicorsioneSenzaUscita]],
   ].flatMap(([gruppo, nomi]) => (nomi as string[]).map((n) => `${gruppo as string}/${n}.algo`));
 
 /** Una cartella coi file dati: «nome» fuori da ogni gruppo, «gruppo/nome» in un gruppo; «gruppo/» un gruppo vuoto. */
@@ -36,12 +36,12 @@ function cartella(file: Record<string, string | FileDiEsempio["errore"]>): Carte
 const daForniti = (f: readonly { gruppo: string; nome: string; testo: string }[]) => cartella(Object.fromEntries(f.map((x) => [`${x.gruppo}/${x.nome}`, x.testo])));
 const nomi = (f: readonly { gruppo: string; nome: string }[]) => f.map((x) => `${x.gruppo}/${x.nome}`);
 
-test("gli undici esempi forniti: un file per lingua nel suo gruppo, col nome e la descrizione tradotti, che il lettore accetta e la cartella apre, coi casi d'uso verdi, anche quelli delle funzioni", () => {
+test("i dodici esempi forniti: un file per lingua nel suo gruppo, col nome e la descrizione tradotti, che il lettore accetta e la cartella apre, coi casi d'uso verdi, anche quelli delle funzioni", () => {
   let casi = 0;
   let casiDiFunzioni = 0;
   for (const testi of [it, en]) {
     const f = forniti(testi);
-    expect(nomi(f)).toEqual(undiciNomi(testi));
+    expect(nomi(f)).toEqual(dodiciNomi(testi));
     for (const x of f) {
       const esito = apri(x.testo);
       expect(esito.ok).toBe(true);
@@ -67,14 +67,15 @@ test("gli undici esempi forniti: un file per lingua nel suo gruppo, col nome e l
     expect(esempi.gruppi.flatMap((g) => g.esempi.map((e) => [`${g.nome}/${e.nome}`, e.problema?.genere ?? null]))).toEqual(f.map((x) => [`${x.gruppo}/${x.nome}`, null]));
   }
   // Un caso del programma per esempio, due per il fattoriale ricorsivo (dieci e uno) e tre per la sequenza di Fibonacci
-  // (dieci, uno, ventisei: quest'ultimo atteso fermo al tetto dei passi); i casi delle procedure e funzioni del
-  // riferimento (tre) e della procedura che riceve le copie (uno), in due lingue.
-  expect([casi, casiDiFunzioni]).toEqual([28, 8]);
+  // (dieci, uno, ventisei: quest'ultimo atteso fermo al tetto dei passi), uno per la ricorsione senza uscita (atteso fermo
+  // alla pila del progetto); i casi delle procedure e funzioni del riferimento (tre) e della procedura che riceve le copie
+  // (uno), in due lingue.
+  expect([casi, casiDiFunzioni]).toEqual([30, 8]);
   // Il caso al tetto dei passi fa un milione di azioni per lingua: qualche secondo.
 }, 60_000);
 
-test("gli esempi ricorsivi: nel gruppo delle funzioni, il fattoriale e la sequenza di Fibonacci con la funzione che chiama sé stessa", () => {
-  const [fattoriale, sequenza] = forniti(it).slice(-2).map((x) => {
+test("gli esempi ricorsivi: nel gruppo delle funzioni, il fattoriale e la sequenza di Fibonacci con la funzione che chiama sé stessa, e la procedura senza uscita con la pila del progetto a 10", () => {
+  const [fattoriale, sequenza] = forniti(it).slice(-3, -1).map((x) => {
     const esito = apri(x.testo);
     if (!esito.ok) throw new Error(x.nome);
     const f = esito.progetto.functions.find((g) => g.kind === "function")!;
@@ -85,6 +86,13 @@ test("gli esempi ricorsivi: nel gruppo delle funzioni, il fattoriale e la sequen
   expect(sequenza!.slice(0, 3)).toEqual([it.esempiGruppoFunzioni, "fibonacci", it.esempioSequenzaDiFibonacciDescrizione]);
   expect(sequenza![3]).toContain("fibonacci(n - 1) + fibonacci(n - 2)");
   expect(sequenza![4]).toBe("dieci uno ventisei");
+  const senzaUscita = apri(forniti(it).at(-1)!.testo);
+  if (!senzaUscita.ok) throw new Error("la ricorsione senza uscita non si apre");
+  expect([forniti(it).at(-1)!.gruppo, senzaUscita.progetto.options, senzaUscita.progetto.metadata.description]).toEqual([
+    it.esempiGruppoFunzioni,
+    { call_stack_limit: 10 },
+    it.esempioRicorsioneSenzaUscitaDescrizione,
+  ]);
 });
 
 test("un esempio con procedure o funzioni si apre, su ogni file della tappa 3 (anche quelli con una stringa o un vettore restituiti) e della tappa 4 (la ricorsione)", () => {
@@ -114,17 +122,17 @@ test("un esempio con procedure o funzioni si apre, su ogni file della tappa 3 (a
   const esempi = (tappa: string) => esempiDa(cartella(file(tappa)), tetti).sciolti;
   expect(esempi("tappa-3").map((e) => [e.nome, e.problema?.genere ?? null])).toEqual(Object.keys(file("tappa-3")).map((n) => [n, null]));
   expect(esempi("tappa-4").map((e) => [e.nome, e.problema?.genere ?? null])).toEqual(Object.keys(file("tappa-4")).map((n) => [n, null]));
-  expect(esempi("tappa-4").filter((e) => e.progetto !== null).length).toBe(21);
+  expect(esempi("tappa-4").filter((e) => e.progetto !== null).length).toBe(22);
   // Controllo positivo: i denominatori sono le tappe intere (la tappa 3 con le sue procedure e funzioni), e i file con
   // un risultato nuovo ci sono tutti, e si aprono.
-  expect([Object.keys(file("tappa-3")).length, Object.keys(file("tappa-4")).length]).toEqual([53, 21]);
+  expect([Object.keys(file("tappa-3")).length, Object.keys(file("tappa-4")).length]).toEqual([53, 22]);
   expect(Object.keys(file("tappa-3")).filter((n) => conRisultato.has(n)).length).toBe(12);
   expect(esempi("tappa-3").filter((e) => conRisultato.has(e.nome) && e.progetto !== null).length).toBe(12);
   expect(esempi("tappa-3").filter((e) => (e.progetto?.functions.length ?? 0) > 1).length).toBe(53);
 });
 
 test("mancano i forniti che il loro gruppo non ha in nessuna lingua, e vanno nel gruppo che c'è già col suo nome; in un gruppo riempito quando i forniti erano meno mancano i nuovi", () => {
-  expect(nomi(mancanti(cartella({}), it))).toEqual(undiciNomi(it));
+  expect(nomi(mancanti(cartella({}), it))).toEqual(dodiciNomi(it));
   // Il gruppo in inglese, scritto con altre maiuscole, è quello dei primi passi: ci vanno i due che mancano, col suo nome.
   const c = cartella({
     [`first STEPS/${en.esempioMediaVoti}.algo`]: "",
@@ -138,12 +146,12 @@ test("mancano i forniti che il loro gruppo non ha in nessuna lingua, e vanno nel
   expect(nomi(mancanti(c, it))).toEqual([
     `first STEPS/${it.esempioPrimoQuadrato}.algo`,
     `first STEPS/${it.esempioFattoriale}.algo`,
-    ...undiciNomi(it).slice(6),
+    ...dodiciNomi(it).slice(6),
   ]);
-  // «Ripristina» in una cartella riempita coi sei forniti di prima nei loro gruppi: arrivano i cinque nuovi; coi nove di
-  // prima, i due ricorsivi.
-  expect(nomi(mancanti(daForniti(forniti(it).slice(0, 6)), it))).toEqual(undiciNomi(it).slice(6));
-  expect(nomi(mancanti(daForniti(forniti(it).slice(0, 9)), it))).toEqual(undiciNomi(it).slice(9));
+  // «Ripristina» in una cartella riempita coi sei forniti di prima nei loro gruppi: arrivano i sei nuovi; coi nove di
+  // prima, i tre ricorsivi.
+  expect(nomi(mancanti(daForniti(forniti(it).slice(0, 6)), it))).toEqual(dodiciNomi(it).slice(6));
+  expect(nomi(mancanti(daForniti(forniti(it).slice(0, 9)), it))).toEqual(dodiciNomi(it).slice(9));
   expect(mancanti(daForniti(forniti(en)), it)).toEqual([]);
 });
 
