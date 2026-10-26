@@ -15,6 +15,7 @@
 // parametri come letture, nell'ordine: `parametriDelCaso` dice come, dalle voci del caso, uguale per ogni generatore.
 
 import { controlla, type Tetti } from "../controllo/controllo";
+import type { OperatoreUnario } from "../espressioni/analizzatore";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import type { CasoDiUnaFunzione, Dato, Funzione, Progetto } from "../progetto/modello";
 
@@ -30,16 +31,41 @@ export interface Riga {
   readonly fasi?: readonly FaseDelCiclo[];
 }
 
+/** Le specie di ciò che un linguaggio con meno costrutti del flowchart non sa scrivere (oggi «Accademico»): i tipi, la
+ * lettura, i modi dei parametri, i letterali, gli operatori, un nome che è una parola del linguaggio, una condizione
+ * usata come valore. I testi per chi legge sono dell'interfaccia. */
+export const specieDelleMancanze = [
+  "reale", "carattere", "stringa", "lettura", "rif", "out", "letterale-reale", "letterale-carattere", "letterale-stringa",
+  "potenza", "radice", "valore-assoluto", "arrotondamento", "conversione", "lunghezza", "pi", "parola-del-linguaggio",
+  "condizione-come-valore",
+] as const;
+export type SpecieDellaMancanza = (typeof specieDelleMancanze)[number];
+
+/** Una cosa che manca, col suo posto come quello di una riga: il blocco, o il dato con la funzione che lo possiede (né
+ * l'uno né l'altra per un dato del programma principale o una costante comune), o la sola funzione (il nome, il
+ * risultato). Le specie che sono un operatore dicono anche quale. */
+export interface Mancanza {
+  readonly specie: SpecieDellaMancanza;
+  readonly operatore?: OperatoreUnario | "raised_to";
+  readonly blocco?: string;
+  readonly dato?: string;
+  readonly funzione?: string;
+}
+
 export type Generato =
   | { readonly generato: true; readonly righe: readonly Riga[] }
-  | { readonly generato: false; readonly perche: "fuori-tappa" | "errori-statici" };
+  | { readonly generato: false; readonly perche: "fuori-tappa" | "errori-statici" }
+  | { readonly generato: false; readonly perche: "non-ci-sta"; readonly mancanze: readonly Mancanza[] };
 
 /** Il codice di un progetto, se il controllo statico lo lascia eseguire. `limiti` sono i tetti delle impostazioni,
- * come per il controllo. */
-export function genera(p: Progetto, limiti: Tetti, scrivi: (p: Progetto) => readonly Riga[]): Generato {
+ * come per il controllo. Un linguaggio con meno costrutti dà con `manca` ciò che non sa scrivere: dopo gli errori
+ * statici, e tutto insieme. */
+export function genera(p: Progetto, limiti: Tetti, scrivi: (p: Progetto) => readonly Riga[], manca?: (p: Progetto) => readonly Mancanza[]): Generato {
   const c = controlla(p, limiti);
   if (c.fuoriTappa) return { generato: false, perche: "fuori-tappa" };
   if (c.errori.length > 0) return { generato: false, perche: "errori-statici" };
+  const mancanze = manca?.(p) ?? [];
+  if (mancanze.length > 0) return { generato: false, perche: "non-ci-sta", mancanze };
   return { generato: true, righe: scrivi(p) };
 }
 

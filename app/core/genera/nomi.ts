@@ -113,6 +113,10 @@ export const nomeDellaRiga: Readonly<Record<LinguaDelCodice, string>> = { it: "_
  * prova (`_risultato`), e alla sorgente di un `per ogni` su una funzione, chiamata una volta (`_sorgente`, `_sorgente2`). */
 export const nomeDelRisultato: Readonly<Record<LinguaDelCodice, string>> = { it: "_risultato", en: "_result" };
 export const nomeDellaSorgente: Readonly<Record<LinguaDelCodice, string>> = { it: "_sorgente", en: "_source" };
+/** In «Accademico», l'intero 0/1 «ancora un giro» del `while` che scrive un ripeti: `_ancora`, poi `_ancora2` per un
+ * ripeti dentro un altro. */
+export const nomeDellAncora: Readonly<Record<LinguaDelCodice, string>> = { it: "_ancora", en: "_again" };
+export const ancoraDelLivello = (lingua: LinguaDelCodice, n: number): string => (n === 1 ? nomeDellAncora[lingua] : `${nomeDellAncora[lingua]}${n}`);
 /** Nel Python, l'elemento di un vettore di stringhe che passa dal controllo della lunghezza in una lista nuova
  * (`[al_piu(_elemento, 5) for _elemento in nomi()]`). */
 export const nomeDellElemento: Readonly<Record<LinguaDelCodice, string>> = { it: "_elemento", en: "_element" };
