@@ -15,7 +15,8 @@ import { controlla, funzioniDelGiro, tetti } from "../../core/controllo/controll
 import { spazioDiUnaChiamata } from "../../core/controllo/spazio";
 import { testoDelCodice, type Riga } from "../../core/genera/forma";
 import { codiceDelMotivo, motivi, type CodiceDiUnMotivo } from "../../core/genera/motivi";
-import { indiceDelLivello, nomeDellIndice, nomiDelSupporto, nomiDiPython, nomiRiservatiDeiGeneratori } from "../../core/genera/nomi";
+import { voceDel } from "../../core/genera/linguaggi";
+import { indiceDelLivello, nomeDellIndice, nomiDelSupporto, nomiDiPython } from "../../core/genera/nomi";
 import { c } from "../../core/genera/c";
 import { pseudocodice } from "../../core/genera/pseudocodice";
 import { python } from "../../core/genera/python";
@@ -44,6 +45,9 @@ import { formeDelRisultato } from "./attesi-del-c";
 import { formeDeiCicli, tutteLeForme } from "./attesi-dello-pseudocodice";
 import { paroleDelloPseudocodice } from "./parole";
 import { provenienzaConLeFasi, provaIlCorpusDeiCicli, rifiutatiDellaTappa2 } from "./provenienza-dei-cicli";
+
+/** I nomi che la voce del Python dichiara nel registro dei linguaggi: il Python generato definisce solo questi. */
+const riservatiDelPython = voceDel("python").riservati;
 
 const lingue: readonly Lingua[] = ["it", "en"];
 const cartella = join(import.meta.dir, "..", "..", "casi");
@@ -282,18 +286,18 @@ describe("i nomi che il Python usa per sé", () => {
   });
 
   test("nessun dato può chiamarsi come uno di loro, in nessuna lingua", () => {
-    expect(nomiRiservatiDeiGeneratori.length).toBeGreaterThanOrEqual(2 * 20);
+    expect(riservatiDelPython.length).toBeGreaterThanOrEqual(2 * 20);
     const accettato = (n: string) => {
       const c = controlla(conUnDato(n), tetti);
       return !c.fuoriTappa && c.errori.length === 0;
     };
-    expect(nomiRiservatiDeiGeneratori.filter(accettato)).toEqual([]);
+    expect(riservatiDelPython.filter(accettato)).toEqual([]);
     // Controllo positivo: lo stesso progetto con un nome libero non ha errori.
     expect(controlla(conUnDato("voto"), tetti)).toMatchObject({ errori: [] });
   });
 
   test("la copia di un dato non prende mai un nome riservato: nessuno finisce con _<numero>", () => {
-    expect(nomiRiservatiDeiGeneratori.filter((n) => /_\d+$/.test(n))).toEqual([]);
+    expect(riservatiDelPython.filter((n) => /_\d+$/.test(n))).toEqual([]);
     expect(Object.values(nomeDellIndice).every((n) => n.startsWith("_"))).toBe(true);
     // gli indici dei livelli dopo il primo: col trattino basso, e mai la forma della copia di un dato
     const livelli = lingue.flatMap((l) => [2, 3, 10].map((k) => indiceDelLivello(l, k)));
@@ -327,7 +331,7 @@ describe("i nomi che il Python usa per sé", () => {
         for (const [, modulo] of t.matchAll(/^import (\w+)$/gm)) expect(nomiDiPython as readonly string[]).toContain(modulo!);
         // Le procedure e le funzioni del progetto hanno i loro nomi; ogni altra definizione è del generatore.
         const delProgetto = new Set(p.functions.flatMap((f) => (f.name === undefined ? [] : [f.name])));
-        for (const d of definite) if (!delProgetto.has(d)) expect(nomiRiservatiDeiGeneratori, `${p.metadata.name} (${l}): ${d}`).toContain(d);
+        for (const d of definite) if (!delProgetto.has(d)) expect(riservatiDelPython, `${p.metadata.name} (${l}): ${d}`).toContain(d);
       }
     expect(chiamate).toBeGreaterThan(500);
   });

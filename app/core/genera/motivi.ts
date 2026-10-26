@@ -41,8 +41,9 @@ export const motivi: Readonly<Record<LinguaDelCodice, Readonly<Record<CodiceDiUn
   },
 };
 
-/** Il codice d'errore di un motivo scritto dal programma generato in quella lingua; `undefined` se non è un motivo. */
-export function codiceDelMotivo(lingua: LinguaDelCodice, motivo: string): CodiceDiUnMotivo | undefined {
-  const voce = Object.entries(motivi[lingua]).find(([, testo]) => testo === motivo);
+/** Il codice d'errore di un motivo scritto dal programma generato in quella lingua; `undefined` se non è un motivo. La
+ * tabella è quella del linguaggio (nel registro dei linguaggi), oggi la stessa per il Python e per il C. */
+export function codiceDelMotivo(lingua: LinguaDelCodice, motivo: string, tabella: typeof motivi = motivi): CodiceDiUnMotivo | undefined {
+  const voce = Object.entries(tabella[lingua]).find(([, testo]) => testo === motivo);
   return voce?.[0] as CodiceDiUnMotivo | undefined;
 }

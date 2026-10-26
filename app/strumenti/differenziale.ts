@@ -25,8 +25,8 @@
 //   programma senza esito;
 // - uscita 0 e stderr vuoto: l'output;
 // - uscita 1 e stderr che è UNA riga «Errore alla riga N: motivo» (o «Error at line N: reason»): l'output e l'errore,
-//   col codice dal motivo (`core/genera/motivi.ts`) e il blocco dalla riga N (la provenienza delle righe del
-//   generatore: nessuno la ricalcola);
+//   col codice dal motivo e il blocco dalla riga N (la provenienza delle righe del generatore: nessuno la ricalcola);
+//   la forma della riga e la tabella dei motivi sono della voce del linguaggio nel registro (`core/genera/linguaggi.ts`);
 // - l'output si tiene fino all'atteso più il margine dell'esito, come nell'esecuzione: oltre, è tagliato;
 // - gli avvisi sono quelli del controllo statico da cui il generatore parte (il programma generato non ne ha di suoi);
 //   un progetto con errori statici non si genera (il generatore lo rifiuta, e lo strumento lo controlla), e l'ottenuto
@@ -79,6 +79,7 @@ import { esitoDelCaso, margineDellOutput } from "../core/casi/esito";
 import { controlla, tetti, type EsitoDelControllo } from "../core/controllo/controllo";
 import { c } from "../core/genera/c";
 import { parametriDelCaso, testoDelCodice, type Generato, type Riga } from "../core/genera/forma";
+import { voceDel, type VoceDelLinguaggio } from "../core/genera/linguaggi";
 import { codiceDelMotivo } from "../core/genera/motivi";
 import type { LinguaDelCodice } from "../core/genera/nomi";
 import { python } from "../core/genera/python";
@@ -251,11 +252,11 @@ async function inParallelo<T>(lavori: (() => Promise<T>)[], quanti: number): Pro
 const utf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 /** I messaggi dei compilatori, solo da leggere. */
 const testoDelCompilatore = new TextDecoder("utf-8", { fatal: false });
-const rigaDErrore = /^(?:Errore alla riga|Error at line) (\d+): (.+)\n$/;
 
 /** L'ottenuto di un programma generato nella forma dell'atteso, o il motivo per cui non ha un esito. Con `tagliato`:
  * l'output è stato tenuto solo fino all'atteso più il margine. */
-function ottenuto(f: Fine, righe: readonly Riga[], lingua: LinguaDelCodice, atteso: Atteso, controllo: ControlloCheParte): { atteso: Atteso; tagliato: boolean } | { senzaEsito: string } {
+function ottenuto(f: Fine, voce: VoceDelLinguaggio, righe: readonly Riga[], lingua: LinguaDelCodice, atteso: Atteso, controllo: ControlloCheParte): { atteso: Atteso; tagliato: boolean } | { senzaEsito: string } {
+  if (voce.genere !== "da-eseguire") throw new Error(`${voce.id} non è un linguaggio da eseguire`);
   if (f.scaduto) return { senzaEsito: `non finito in ${secondiDiUnProgramma} s` };
   let tutto: string;
   let err: string;
@@ -272,9 +273,9 @@ function ottenuto(f: Fine, righe: readonly Riga[], lingua: LinguaDelCodice, atte
   const output = tagliato ? tutto.slice(0, fine) : tutto;
   const avvisi = { warnings: controllo.avvisi };
   if (f.uscita === 0 && err === "") return { atteso: { output, ...avvisi }, tagliato };
-  const m = rigaDErrore.exec(err);
+  const m = voce.rigaDErrore.exec(err);
   if (m === null || f.uscita !== 1) return { senzaEsito: `uscita ${f.uscita}, stderr ${JSON.stringify(err.slice(-300))}` };
-  const code = codiceDelMotivo(lingua, m[2]!);
+  const code = codiceDelMotivo(lingua, m[2]!, voce.motivi);
   if (code === undefined) return { senzaEsito: `motivo che la tabella dei motivi non conosce: ${JSON.stringify(m[2])}` };
   const block = righe[Number(m[1]) - 1]?.blocco;
   if (block === undefined) return { senzaEsito: `la riga ${m[1]} non viene da un blocco: ${JSON.stringify(righe[Number(m[1]) - 1]?.testo ?? "(oltre la fine)")}` };
@@ -499,7 +500,7 @@ for (const d of daConfrontare) {
     }
     esecuzioni.push(async () => {
       const f = await lancia(cmd as string[], input, secondiDiUnProgramma, linguaggio === "python" ? py!.percorso : compilatore!.percorso);
-      const o = ottenuto(f, codice.righe, l as LinguaDelCodice, d.caso.expected, d.controllo);
+      const o = ottenuto(f, voceDel(linguaggio), codice.righe, l as LinguaDelCodice, d.caso.expected, d.controllo);
       risultati.set(chi, "senzaEsito" in o ? { genere: "rosso", righe: [`ROSSO ${chi} senza esito: ${o.senzaEsito}`] } : confronta(d.caso.expected, o.atteso, o.tagliato, chi));
     });
   }

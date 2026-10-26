@@ -1,8 +1,9 @@
 // I nomi che il codice generato usa per sé, nelle lingue del codice: le funzioni di supporto (quelle che fanno ciò
 // che fa il C, nella lingua dell'interfaccia), i nomi di Python che il programma generato legge (le funzioni
-// predefinite, i moduli, `main`) e quelli del C (la libreria, le macro delle intestazioni). Nessun dato può chiamarsi
-// così: il controllo statico li aggiunge ai nomi riservati, in tutte le lingue insieme, perché un progetto non cambi
-// validità cambiando la lingua.
+// predefinite, i moduli, `main`) e quelli del C (la libreria, le macro delle intestazioni), con le parole riservate dei
+// due linguaggi. Nessun dato può chiamarsi così: ogni linguaggio del registro (`linguaggi.ts`) dichiara i suoi, e il
+// controllo statico riserva l'unione di tutti, in tutte le lingue insieme, perché un progetto non cambi validità cambiando
+// la lingua.
 //
 // I nomi scelti per sé dal generatore quando serve un dato in più (l'indice calcolato prima del valore o della
 // chiamata, l'indice nascosto di un `per ogni`, con un numero dal secondo livello: `_indice2`; un argomento calcolato
@@ -238,22 +239,36 @@ export const nomiDelleIntestazioni: readonly string[] = (
   "wcsxfrm wctomb wctomb_s wctype_t wint_t wprintf wprintf_s write wscanf wscanf_s"
 ).split(" ");
 
-/** I nomi che il C generato usa per sé, nelle due lingue: le funzioni di supporto (comuni col Python e sue), quelle
- * vere dietro le macro, la libreria, le macro delle intestazioni. */
+/** I nomi che il C generato usa per sé, nelle due lingue: le funzioni di supporto sue, quelle vere dietro le macro. */
 const nomiDelCGenerato = (Object.keys(nomiDelSupporto) as LinguaDelCodice[]).flatMap((l) => [
   ...Object.values(nomiDelSupportoDelC[l]),
   ...conLaRigaNelC.map((f) => nomiDelSupporto[l][f] + seguitoDellaRiga[l]),
   nomiDelSupportoDelC[l].concatena + seguitoDellArea[l],
 ]);
 
-/** Tutti i nomi che il codice generato usa per sé, in ogni lingua: riservati. */
-export const nomiRiservatiDeiGeneratori: readonly string[] = [
-  ...new Set([
-    ...Object.values(nomiDelSupporto).flatMap((n) => Object.values(n)),
-    ...Object.values(contatoriDellaRicorsione).flatMap((n) => Object.values(n)),
-    ...nomiDiPython,
-    ...nomiDelCGenerato,
-    ...nomiDelC,
-    ...macroDelleIntestazioni,
-  ]),
+/** Le parole riservate del C11 (6.4.1; quelle col trattino basso iniziale non sono nomi validi comunque). */
+export const paroleDelC11 = (
+  "auto break case char const continue default do double else enum extern float for goto if inline int long " +
+  "register restrict return short signed sizeof static struct switch typedef union unsigned void volatile while"
+).split(" ");
+
+/** Le parole riservate di Python 3. */
+export const paroleDiPython = (
+  "False None True and as assert async await break class continue def del elif else except finally for from " +
+  "global if import in is lambda nonlocal not or pass raise return try while with yield"
+).split(" ");
+
+/** I nomi comuni al Python e al C generati, in ogni lingua: le funzioni di supporto e i contatori della ricorsione. */
+const nomiComuniDelGenerato = [
+  ...Object.values(nomiDelSupporto).flatMap((n) => Object.values(n)),
+  ...Object.values(contatoriDellaRicorsione).flatMap((n) => Object.values(n)),
 ];
+
+/** I nomi che nessun dato può avere per il Python generato, in ogni lingua: le parole del linguaggio e i nomi che il
+ * codice usa per sé. */
+export const riservatiDelPython: readonly string[] = [...new Set([...paroleDiPython, ...nomiComuniDelGenerato, ...nomiDiPython])];
+
+/** I nomi che nessun dato può avere per il C generato, in ogni lingua: le parole del linguaggio, i nomi che il codice usa
+ * per sé, la libreria che legge e le macro delle intestazioni. I nomi che le intestazioni dichiarano a livello di file
+ * sono a parte (`nomiDelleIntestazioni`): valgono solo per ciò che sta a livello di file. */
+export const riservatiDelC: readonly string[] = [...new Set([...paroleDelC11, ...nomiComuniDelGenerato, ...nomiDelCGenerato, ...nomiDelC, ...macroDelleIntestazioni])];
