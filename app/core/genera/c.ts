@@ -76,7 +76,7 @@ import { analizza, type Espressione } from "../espressioni/analizzatore";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import { opzioniPredefinite, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione as FunzioneDelProgetto, type Progetto, type Tipo } from "../progetto/modello";
 import { genera, parametriDelCaso, type Generato, type Riga } from "./forma";
-import { motivi } from "./motivi";
+import { motiviCol } from "./motivi";
 import {
   contatoriDellaRicorsione,
   indiceDelLivello,
@@ -227,6 +227,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
   const parametriDi = (f: FunzioneDelProgetto) => f.data.filter((d) => d.parameter !== undefined);
   const decimali = p.options?.real_decimals ?? opzioniPredefinite.real_decimals;
   const riempimento = (p.options?.fill_character ?? opzioniPredefinite.fill_character).codePointAt(0)!;
+  const tetto = tettoDelleChiamate(p);
 
   const usate = new Set<Funzione>(["preparaConsole"]);
   const intestazioni = new Set<string>(["stdio.h"]);
@@ -1263,7 +1264,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       { testo: "" },
     );
   righe.push({ testo: `/* ${w.prototipi} */` });
-  const testoDi = (f: Funzione) => funzione(f, lingua, n, riempimento);
+  const testoDi = (f: Funzione) => funzione(f, lingua, n, riempimento, tetto);
   for (const f of funzioni) righe.push(...testoDi(f).prototipo.map((testo) => ({ testo })));
   righe.push({ testo: "" }, ...principale);
   for (const f of delProgetto) righe.push({ testo: "" }, ...scritte.get(f)!);
@@ -1281,10 +1282,11 @@ function funzione(
   lingua: LinguaDelCodice,
   n: Readonly<Record<Funzione, string>>,
   riempimento: number,
+  tetto: number,
 ): { prototipo: string[]; definizione: string[] } {
   const it = lingua === "it";
   const d = (a: string, b: string) => (it ? a : b);
-  const m = motivi[lingua];
+  const m = motiviCol(tetto)[lingua];
   const riga = d("riga", "line");
   const testo = d("testo", "text");
   const passo = d("passo", "step");
@@ -1686,12 +1688,12 @@ function funzione(
           `static int ${k.spazio} = 0;`,
           "",
           d(
-            `/* Una chiamata in più, con i suoi dati: oltre ${tettoDelleChiamate} chiamate in corso, o oltre ${spazioDellaPila} byte, si ferma sulla`,
-            `/* One more call, with its data: beyond ${tettoDelleChiamate} calls in progress, or beyond ${spazioDellaPila} bytes, stops at the line`,
+            `/* Una chiamata in più, con i suoi dati: oltre ${tetto} chiamate in corso, o oltre ${spazioDellaPila} byte, si ferma sulla`,
+            `/* One more call, with its data: beyond ${tetto} calls in progress, or beyond ${spazioDellaPila} bytes, stops at the line`,
           ),
           d(" * riga della chiamata. */", " * of the call. */"),
           `static void ${n.entraNellaRicorsione}(int ${riga}, int ${spazio}) {`,
-          `    if (++${k.chiamate} > ${tettoDelleChiamate}) ${ferma(m.recursion_too_deep)};`,
+          `    if (++${k.chiamate} > ${tetto}) ${ferma(m.recursion_too_deep)};`,
           `    if ((${k.spazio} += ${spazio}) > ${spazioDellaPila}) ${ferma(m.recursion_data_too_large)};`,
           "}",
         ],

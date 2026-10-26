@@ -257,7 +257,7 @@ for (const { lingua, condizioni, cicliPer, cicliPerOgni, copiaDeiVettori, domand
     await expect(page.locator("html")).toHaveAttribute("lang", lingua);
     expect(premesse.flowchart).toBe(tuttiGliAlberi.length);
     expect(corpus.length).toBe(71);
-    expect([corpusTappa3.length, coiSalti.length]).toEqual([181, 45]);
+    expect([corpusTappa3.length, coiSalti.length]).toEqual([183, 45]);
     // Le forme di procedure e funzioni: due righe ai lati per salto, i nomi in grassetto, *rif* e i tipi in corsivo.
     expect(salti).toBeGreaterThan(30);
     expect(lati).toBe(2 * salti);

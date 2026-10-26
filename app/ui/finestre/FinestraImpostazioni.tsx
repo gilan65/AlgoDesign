@@ -5,7 +5,8 @@
 // si scrivono nelle preferenze, con «Conferma»; «Annulla» ed Esc le lasciano com'erano. Le scelte fra poche voci sono
 // pulsanti di opzione nativi (il Tab li raggiunge nei due motori), un interruttore è una casella nativa (la barretta
 // dell'esecuzione); un numero fra un minimo e un massimo (i limiti, i caratteri di una riga della console) è un campo
-// dove si scrive col cursore accanto, che lo segue nei due versi, con l'errore sotto il campo mentre si scrive.
+// dove si scrive col cursore accanto, che lo segue nei due versi, con l'errore sotto il campo mentre si scrive. In
+// «Limiti» anche la pila delle chiamate con cui nasce un progetto nuovo (ogni progetto ha la sua, nelle Proprietà).
 // «Conferma» con un numero sbagliato porta alla sua scheda e al campo.
 import { Tabs } from "@ark-ui/react/tabs";
 import { useId, useRef, useState, type FormEvent, type ReactElement, type ReactNode, type RefObject } from "react";
@@ -13,7 +14,8 @@ import { tetti, type Tetti } from "../../core/controllo/controllo";
 import { separatoriPredefiniti } from "../../core/esecuzione/traccia";
 import type { Dizionario } from "../../i18n/it";
 import { nomiLingue, riempi, type Lingua } from "../../i18n/lingue";
-import { caratteriPerRiga, caratteriValidi, intervalli, limiteValido, minimoDel, scelteIniziali, voci, type Scelte } from "../preferenze";
+import { limitiDellaPila } from "../../core/progetto/modello";
+import { caratteriPerRiga, caratteriValidi, intervalli, limiteValido, minimoDel, pilaValida, scelteIniziali, voci, type Scelte } from "../preferenze";
 import { ColoriDeiBlocchi } from "./ColoriDeiBlocchi";
 import { Finestra, Rinuncia, stili } from "./Finestra";
 
@@ -87,6 +89,8 @@ interface Bozza {
   readonly limiti: Record<ChiaveDelLimite, string>;
   /** I caratteri di una riga della console, come sono scritti. */
   readonly caratteri: string;
+  /** La pila delle chiamate dei progetti nuovi, come è scritta. */
+  readonly pila: string;
 }
 
 const scrittiDa = (l: Tetti): Record<ChiaveDelLimite, string> =>
@@ -110,7 +114,12 @@ function Contenuto({
   primo: RefObject<HTMLButtonElement | null>;
 }): ReactElement {
   const id = useId();
-  const [bozza, setBozza] = useState<Bozza>(() => ({ ...iniziale, limiti: scrittiDa(iniziale.scelte.limiti), caratteri: String(iniziale.scelte.caratteriPerRiga) }));
+  const [bozza, setBozza] = useState<Bozza>(() => ({
+    ...iniziale,
+    limiti: scrittiDa(iniziale.scelte.limiti),
+    caratteri: String(iniziale.scelte.caratteriPerRiga),
+    pila: String(iniziale.scelte.pilaDeiProgettiNuovi),
+  }));
   const [scheda, setScheda] = useState<Scheda>("aspetto");
   const [tentato, setTentato] = useState(false);
   const modulo = useRef<HTMLFormElement>(null);
@@ -214,6 +223,7 @@ function Contenuto({
     });
   };
   const caratteriScritti = (testo: string) => (/^\d+$/.test(testo.trim()) && caratteriValidi(Number(testo.trim())) ? Number(testo.trim()) : null);
+  const pilaScritta = (testo: string) => (/^\d+$/.test(testo.trim()) && pilaValida(Number(testo.trim())) ? Number(testo.trim()) : null);
   const predefiniti = chiavi.every((k) => limiteScritto(k, bozza.limiti[k], bozza.limiti) === tetti[k]);
 
   /** Il riquadro di una cartella, degli esempi o delle librerie: la cartella mostrata è quella della copia (scelta ora, o
@@ -258,6 +268,12 @@ function Contenuto({
       requestAnimationFrame(() => modulo.current?.querySelector<HTMLElement>(`[data-limite="${sbagliato}"]`)?.focus());
       return;
     }
+    const pila = pilaScritta(bozza.pila);
+    if (pila === null) {
+      setScheda("limiti");
+      requestAnimationFrame(() => modulo.current?.querySelector<HTMLElement>("[data-pila]")?.focus());
+      return;
+    }
     const caratteri = caratteriScritti(bozza.caratteri);
     if (caratteri === null) {
       setScheda("console");
@@ -265,7 +281,7 @@ function Contenuto({
       return;
     }
     const limiti = Object.fromEntries(chiavi.map((k) => [k, limiteScritto(k, bozza.limiti[k], bozza.limiti)!])) as unknown as Tetti;
-    conferma(bozza.lingua, { ...s, limiti, caratteriPerRiga: caratteri });
+    conferma(bozza.lingua, { ...s, limiti, caratteriPerRiga: caratteri, pilaDeiProgettiNuovi: pila });
   }
 
   return (
@@ -454,6 +470,20 @@ function Contenuto({
               {testi.limitiPredefiniti}
             </button>
           </div>
+          <p className={stili.spiegazione}>{testi.pilaSpiegazione}</p>
+          {numero({
+            nome: "pila",
+            etichetta: testi.pilaDeiProgettiNuovi,
+            testo: bozza.pila,
+            dapprima: String(iniziale.scelte.pilaDeiProgettiNuovi),
+            minimo: limitiDellaPila.minimo,
+            massimo: limitiDellaPila.massimo,
+            predefinito: scelteIniziali.pilaDeiProgettiNuovi,
+            avviso: null,
+            valido: pilaScritta(bozza.pila) !== null,
+            cambia: (pila) => setBozza((b) => ({ ...b, pila })),
+            dati: { "data-pila": "" },
+          })}
         </Tabs.Content>
         <Tabs.Content value="percorsi" className={stili.scheda}>
           {riquadroDellaCartella("cartellaLibrerie", librerie, testi.percorsiLibrerie, testi.librerieSpiegazione)}

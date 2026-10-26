@@ -67,7 +67,7 @@ import { analizza, type Espressione } from "../espressioni/analizzatore";
 import { opzioniPredefinite, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto, type Ruolo, type Tipo } from "../progetto/modello";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import { genera, parametriDelCaso, type Generato, type Riga } from "./forma";
-import { motivi } from "./motivi";
+import { motiviCol } from "./motivi";
 import {
   contatoriDellaRicorsione,
   funzioniDiSupporto,
@@ -165,7 +165,7 @@ const spiegazioni: Readonly<Record<LinguaDelCodice, Readonly<Record<Exclude<Funz
     alPiu: "La stringa, se non ha più di n caratteri; altrimenti si ferma.",
     elementiDiversi: "Gli elementi di un vettore passati per riferimento nella stessa chiamata devono essere diversi.",
     booleano: "Un booleano come lo scrive il flowchart: true o false.",
-    entraNellaRicorsione: `Una chiamata in più di una funzione che richiama sé stessa, con i suoi dati: oltre ${tettoDelleChiamate} chiamate in corso, o oltre ${spazioDellaPila} byte, si ferma sulla riga della chiamata.`,
+    entraNellaRicorsione: `Una chiamata in più di una funzione che richiama sé stessa, con i suoi dati: oltre {tetto} chiamate in corso, o oltre {spazio} byte, si ferma sulla riga della chiamata.`,
     esciDallaRicorsione: "La chiamata è finita: i suoi dati lasciano la pila.",
   },
   en: {
@@ -191,7 +191,7 @@ const spiegazioni: Readonly<Record<LinguaDelCodice, Readonly<Record<Exclude<Funz
     alPiu: "The string, if it has at most n characters; otherwise stops.",
     elementiDiversi: "The elements of an array passed by reference in the same call must be different.",
     booleano: "A boolean as the flowchart writes it: true or false.",
-    entraNellaRicorsione: `One more call of a function that calls itself, with its data: beyond ${tettoDelleChiamate} calls in progress, or beyond ${spazioDellaPila} bytes, stops at the line of the call.`,
+    entraNellaRicorsione: `One more call of a function that calls itself, with its data: beyond {tetto} calls in progress, or beyond {spazio} bytes, stops at the line of the call.`,
     esciDallaRicorsione: "The call has ended: its data leave the stack.",
   },
 };
@@ -262,6 +262,7 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
   const perNome = new Map(p.functions.flatMap((f) => (f.name === undefined ? [] : [[f.name, f] as const])));
   const decimali = p.options?.real_decimals ?? opzioniPredefinite.real_decimals;
   const riempimento = (p.options?.fill_character ?? opzioniPredefinite.fill_character).codePointAt(0)!;
+  const tetto = tettoDelleChiamate(p);
 
   const usate = new Set<FunzioneDiSupporto>();
   const altriModuli = new Set<"math" | "re">();
@@ -924,7 +925,7 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
   const risale = delProgramma.length === 0 ? undefined : ["main", ...delProgramma.map((f) => f.name!)];
   if (funzioni.length > 0) {
     righe.push({ testo: "" }, { testo: "" }, { testo: `# ${w.supporto}` });
-    for (const f of funzioni) righe.push({ testo: "" }, { testo: "" }, ...funzione(f, lingua, decimali, riempimento, risale, usate.has("entraNellaRicorsione")).map((testo) => ({ testo })));
+    for (const f of funzioni) righe.push({ testo: "" }, { testo: "" }, ...funzione(f, lingua, decimali, riempimento, tetto, risale, usate.has("entraNellaRicorsione")).map((testo) => ({ testo })));
   }
   // L'output e i motivi d'errore in UTF-8 e con l'a capo `\n` anche su Windows, dove uno standard error rediretto
   // scriverebbe nella codifica del sistema (misurato: «più» non arrivava).
@@ -943,12 +944,14 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
 /** Il testo di una funzione di supporto: la riga `def`, la spiegazione, il corpo. `risale`, le funzioni del programma
  * fino a cui `fermati` cerca la riga (senza procedure né funzioni, il solo `main`); `ricorsione`, se il programma ha
  * funzioni del giro: allora `fermati` sa partire da una cornice data. */
-function funzione(f: FunzioneDiSupporto, lingua: LinguaDelCodice, decimali: number, riempimento: number, risale: readonly string[] | undefined, ricorsione: boolean): string[] {
+function funzione(f: FunzioneDiSupporto, lingua: LinguaDelCodice, decimali: number, riempimento: number, tetto: number, risale: readonly string[] | undefined, ricorsione: boolean): string[] {
   const n = nomiDelSupporto[lingua];
   const w = testi[lingua];
-  const m = motivi[lingua];
+  const m = motiviCol(tetto)[lingua];
   const ferma = (motivo: string) => `${n.fermati}("${motivo}")`;
-  const spiegazione = (testo: string) => `    """${testo}"""`;
+  // Il tetto e lo spazio si riempiono qui, non dove i testi nascono: il modulo si carica dentro un ciclo d'import
+  // (il controllo statico legge il registro, che legge i generatori, che leggono i tetti del controllo).
+  const spiegazione = (testo: string) => `    """${testo.split("{tetto}").join(String(tetto)).split("{spazio}").join(String(spazioDellaPila))}"""`;
   const s = (x: Exclude<FunzioneDiSupporto, "reale" | "convertiAVettore">) => spiegazione(spiegazioni[lingua][x]);
   const riga = w.riga;
   /** Una lettura: la riga, la condizione che la rifiuta, il valore. */
@@ -1092,7 +1095,7 @@ function funzione(f: FunzioneDiSupporto, lingua: LinguaDelCodice, decimali: numb
         `    global ${k.chiamate}, ${k.spazio}`,
         `    ${k.chiamate} += 1`,
         `    ${k.spazio} += ${w.spazio}`,
-        `    if ${k.chiamate} > ${tettoDelleChiamate}:`,
+        `    if ${k.chiamate} > ${tetto}:`,
         `        ${n.fermati}("${m.recursion_too_deep}", 3)`,
         `    if ${k.spazio} > ${spazioDellaPila}:`,
         `        ${n.fermati}("${m.recursion_data_too_large}", 3)`,

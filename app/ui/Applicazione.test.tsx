@@ -184,12 +184,12 @@ test("all'avvio un progetto nuovo; dalla finestra «Esempi» si apre ogni esempi
   expect([...gruppi.at(-1)!.querySelectorAll("button")].map((c) => c.querySelector("[data-testo]")?.textContent)).toEqual([it.impostazioni, it.menuAiuto]);
 
   await voceDellAiuto("esempi");
-  // La cartella (in memoria) ha ricevuto gli undici esempi forniti nei loro tre gruppi, ognuno in ordine di nome del
+  // La cartella (in memoria) ha ricevuto i dodici esempi forniti nei loro tre gruppi, ognuno in ordine di nome del
   // file; quelli coi cicli, con le funzioni e con la ricorsione si aprono come gli altri.
   const perGruppo = [
     [it.esempioMediaVoti, it.esempioPariDispari, it.esempioPrimoQuadrato, it.esempioFattoriale],
     [it.esempioMediaVotiPer, it.esempioParolaAlContrario],
-    [it.esempioMediaVotiFunzioni, it.esempioCopie, it.esempioTreLivelli, it.esempioFattorialeRicorsivo, it.esempioSequenzaDiFibonacci],
+    [it.esempioMediaVotiFunzioni, it.esempioCopie, it.esempioTreLivelli, it.esempioFattorialeRicorsivo, it.esempioSequenzaDiFibonacci, it.esempioRicorsioneSenzaUscita],
   ];
   const forniti = perGruppo.flat();
   await apriIGruppi(finestraAperta(it.esempiTitolo));

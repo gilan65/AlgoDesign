@@ -11,7 +11,8 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { causaDelNome } from "../controllo/controllo";
 import { linguaggi, nomiRiservati, nomiRiservatiNelFile, voceDel } from "./linguaggi";
-import type { CodiceDiUnMotivo } from "./motivi";
+import { motivi, type CodiceDiUnMotivo } from "./motivi";
+import { opzioniPredefinite } from "../progetto/modello";
 
 /** Le estensioni che stanno da una parte sola. */
 function appaia(registro: readonly string[], guscio: readonly string[]): { soloNelRegistro: string[]; soloNelGuscio: string[] } {
@@ -86,10 +87,14 @@ test("ogni linguaggio da eseguire ha i motivi di tutti i codici, diversi fra lor
   expect(daEseguire.map((v) => v.id)).toEqual(["python", "c"]);
   for (const v of daEseguire)
     for (const lingua of ["it", "en"] as const) {
-      expect(Object.keys(v.motivi[lingua]).sort()).toEqual([...codici].sort());
-      expect(new Set(Object.values(v.motivi[lingua])).size).toBe(codici.length);
-      const scritto = `${lingua === "it" ? "Errore alla riga" : "Error at line"} 12: ${v.motivi[lingua].input_exhausted}\n`;
-      expect([...(v.rigaDErrore.exec(scritto) ?? [])].slice(1)).toEqual(["12", v.motivi[lingua].input_exhausted]);
+      expect(Object.keys(v.motivi(10)[lingua]).sort()).toEqual([...codici].sort());
+      expect(new Set(Object.values(v.motivi(10)[lingua])).size).toBe(codici.length);
+      const scritto = `${lingua === "it" ? "Errore alla riga" : "Error at line"} 12: ${v.motivi(10)[lingua].input_exhausted}\n`;
+      expect([...(v.rigaDErrore.exec(scritto) ?? [])].slice(1)).toEqual(["12", v.motivi(10)[lingua].input_exhausted]);
+      // Il motivo del tetto delle chiamate dice il numero del progetto; senza l'opzione, quello di sempre.
+      expect(v.motivi(10)[lingua].recursion_too_deep).toContain(" 10 ");
+      expect(v.motivi(opzioniPredefinite.call_stack_limit)[lingua]).toEqual(motivi[lingua]);
+      expect(motivi[lingua].recursion_too_deep).toContain(" 500 ");
       // Due righe, o la riga senza l'a capo, non sono la riga d'errore.
       expect(v.rigaDErrore.exec(`${scritto}${scritto}`)).toBeNull();
       expect(v.rigaDErrore.exec(scritto.trimEnd())).toBeNull();

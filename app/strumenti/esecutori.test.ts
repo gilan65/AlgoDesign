@@ -40,7 +40,7 @@ describe("gli esecutori richiesti dal contratto", () => {
   });
 
   test("i programmi con gli avvisi attesi sono quelli dell'esecutore del C", () => {
-    expect(programmiConAvvisiAttesi(linguaggi, esecutori)).toBe(7);
+    expect(programmiConAvvisiAttesi(linguaggi, esecutori)).toBe(8);
     expect(programmiConAvvisiAttesi(senzaIlC, esecutori)).toBe(0);
   });
 

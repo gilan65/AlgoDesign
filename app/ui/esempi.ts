@@ -3,10 +3,10 @@
 // file fuori da ogni gruppo si mostrano sopra i gruppi. Un esempio si apre come copia, non legata a un file;
 // «Aggiungi» salva lì, nel gruppo scelto, una copia del progetto aperto, «Elimina» cancella il file.
 //
-// L'app ne fornisce undici, in tre gruppi: «Primi passi» (il programma di riferimento della tappa 1 e tre casi del corpus
+// L'app ne fornisce dodici, in tre gruppi: «Primi passi» (il programma di riferimento della tappa 1 e tre casi del corpus
 // con una condizione o un ciclo), «Cicli per e per ogni» (quello della tappa 2 e «parola al contrario»), «Funzioni e
-// procedure» (quello della tappa 3, due casi del corpus, il fattoriale ricorsivo e la sequenza di Fibonacci della tappa
-// 4), ognuno coi suoi casi d'uso. Al primo avvio, quando la cartella
+// procedure» (quello della tappa 3, due casi del corpus, il fattoriale ricorsivo, la sequenza di Fibonacci e la
+// ricorsione senza uscita della tappa 4, con la pila delle chiamate del progetto a 10), ognuno coi suoi casi d'uso. Al primo avvio, quando la cartella
 // non c'è ancora, si copiano lì col nome del gruppo, il nome e la descrizione nella lingua dell'interfaccia;
 // «Ripristina» ricopia quelli che mancano nel loro gruppo (un fornito c'è se nel suo gruppo c'è un file col suo nome,
 // gruppo e nome in una qualunque delle lingue), anche in una cartella riempita quando i forniti erano meno. Un fornito
@@ -26,6 +26,7 @@ import testoCopie from "../casi/tappa-3/copie-senza-riferimento.algo" with { typ
 import testoRiferimentoDelleFunzioni from "../casi/tappa-3/riferimento-media-voti-funzioni.algo" with { type: "text" };
 import testoTreLivelli from "../casi/tappa-3/tre-livelli.algo" with { type: "text" };
 import testoFattorialeRicorsivo from "../casi/tappa-4/fattoriale.algo" with { type: "text" };
+import testoRicorsioneSenzaUscita from "../casi/tappa-4/ricorsione-senza-uscita.algo" with { type: "text" };
 import testoSequenzaDiFibonacci from "../casi/tappa-4/sequenza-di-fibonacci.algo" with { type: "text" };
 import { controlla, type Tetti } from "../core/controllo/controllo";
 import { apri, salva, type ErroreDiApertura } from "../core/progetto/formato";
@@ -86,6 +87,7 @@ const fornitiConLAapp: readonly Fornito[] = [
   { testo: testoTreLivelli, titolo: "esempioTreLivelli", descrizione: "esempioTreLivelliDescrizione", gruppo: "esempiGruppoFunzioni" },
   { testo: testoFattorialeRicorsivo, titolo: "esempioFattorialeRicorsivo", descrizione: "esempioFattorialeRicorsivoDescrizione", gruppo: "esempiGruppoFunzioni" },
   { testo: testoSequenzaDiFibonacci, titolo: "esempioSequenzaDiFibonacci", descrizione: "esempioSequenzaDiFibonacciDescrizione", gruppo: "esempiGruppoFunzioni" },
+  { testo: testoRicorsioneSenzaUscita, titolo: "esempioRicorsioneSenzaUscita", descrizione: "esempioRicorsioneSenzaUscitaDescrizione", gruppo: "esempiGruppoFunzioni" },
 ];
 
 /** I nomi senza badare alle maiuscole, come il disco di Windows e del Mac: «primi passi» e «Primi passi» sono la
@@ -102,7 +104,7 @@ export const eGruppoFornito = (nome: string) => gruppiForniti.some((chiave) => e
 /** Il file di un fornito in una qualunque lingua. */
 const eDelFornito = (nome: string, f: Fornito) => Object.values(dizionari).some((d) => uguali(`${d[f.titolo]}.algo`, nome));
 
-/** Gli undici esempi forniti, come file da copiare: gruppo, nome e descrizione nella lingua data. */
+/** I dodici esempi forniti, come file da copiare: gruppo, nome e descrizione nella lingua data. */
 export function forniti(testi: Dizionario): FileDaScrivere[] {
   return fornitiConLAapp.map((f) => {
     const esito = apri(f.testo);

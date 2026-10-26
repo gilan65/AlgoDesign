@@ -27,6 +27,7 @@ const regole: readonly { id: string; regola: string; dove: Dove }[] = [
   { id: "F3.4", regola: "real_decimals: intero da 0 a 15", dove: "lettura" },
   { id: "F3.5", regola: "un'opzione uguale al predefinito si omette salvando", dove: "salvataggio" },
   { id: "F3.6", regola: "library: booleano facoltativo; false si legge come assente e salvando si omette", dove: "lettura" },
+  { id: "F3.7", regola: "call_stack_limit: intero da 5 a 500", dove: "lettura" },
   { id: "F4.1", regola: "dato: name obbligatorio, stringa", dove: "lettura" },
   { id: "F4.2", regola: "dato: name secondo le regole dei nomi, non riservato", dove: "statico" },
   { id: "F4.3", regola: "dato: type obbligatorio, uno dei cinque", dove: "lettura" },
@@ -348,11 +349,21 @@ describe("metadati e opzioni", () => {
     rifiuta((p) => (p.options.real_decimals = -1), e("options.real_decimals", "invalid_value"));
     rifiuta((p) => (p.options.real_decimals = 2.5), e("options.real_decimals", "wrong_type"));
   });
+  regola("F3.7", () => {
+    accetta((p) => (p.options.call_stack_limit = 5));
+    accetta((p) => (p.options.call_stack_limit = 500));
+    rifiuta((p) => (p.options.call_stack_limit = 4), e("options.call_stack_limit", "invalid_value"));
+    rifiuta((p) => (p.options.call_stack_limit = 501), e("options.call_stack_limit", "invalid_value"));
+    rifiuta((p) => (p.options.call_stack_limit = 10.5), e("options.call_stack_limit", "wrong_type"));
+    rifiuta((p) => (p.options.call_stack_limit = "10"), e("options.call_stack_limit", "wrong_type"));
+  });
   regola("F3.5", () => {
     const p = base();
     p.options = { fill_character: " ", real_decimals: 3 };
     expect(JSON.parse(salva(p)).options).toEqual({ real_decimals: 3 });
-    p.options = { fill_character: " ", real_decimals: 2 };
+    p.options = { fill_character: " ", real_decimals: 3, call_stack_limit: 10 };
+    expect(JSON.parse(salva(p)).options).toEqual({ real_decimals: 3, call_stack_limit: 10 });
+    p.options = { fill_character: " ", real_decimals: 2, call_stack_limit: 500 };
     expect("options" in JSON.parse(salva(p))).toBe(false);
     const aperto = leggi(p);
     expect(aperto.ok && "options" in aperto.progetto).toBe(false);

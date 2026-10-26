@@ -68,6 +68,7 @@ Testo libero, mai tradotto.
 |---|---|---|---|
 | `fill_character` | `string` | no | un solo carattere, mai quello di codice 0; il predefinito è lo spazio. Riempie gli elementi in più quando una stringa diventa un vettore di caratteri |
 | `real_decimals` | `integer` | no | da 0 a 15, il predefinito è 2: le cifre decimali con cui si scrive un reale |
+| `call_stack_limit` | `integer` | no | da 5 a 500, il predefinito è 500: le chiamate in corso delle procedure e delle funzioni che richiamano sé stesse, direttamente o passando per altre, che la pila delle chiamate tiene. La chiamata successiva ferma l'esecuzione (`recursion_too_deep`), nell'app e nel codice generato |
 
 ## 5. I dati
 

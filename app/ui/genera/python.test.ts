@@ -12,9 +12,9 @@ import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { controlla, funzioniDelGiro, tetti } from "../../core/controllo/controllo";
-import { spazioDiUnaChiamata } from "../../core/controllo/spazio";
+import { spazioDiUnaChiamata, tettoDelleChiamate } from "../../core/controllo/spazio";
 import { testoDelCodice, type Riga } from "../../core/genera/forma";
-import { codiceDelMotivo, motivi, type CodiceDiUnMotivo } from "../../core/genera/motivi";
+import { codiceDelMotivo, motivi, motiviCol, type CodiceDiUnMotivo } from "../../core/genera/motivi";
 import { voceDel } from "../../core/genera/linguaggi";
 import { indiceDelLivello, nomeDellIndice, nomiDelSupporto, nomiDiPython } from "../../core/genera/nomi";
 import { c } from "../../core/genera/c";
@@ -240,7 +240,7 @@ describe("la ricorsione", () => {
     .map((f) => ({ f, p: leggi(`tappa-4/${f}`) }));
 
   test("ogni file della tappa 4 si genera nelle due lingue, e la chiamata resta come nel flowchart", () => {
-    expect(tappa4.length).toBe(21);
+    expect(tappa4.length).toBe(22);
     for (const { f, p } of tappa4)
       for (const l of lingue) {
         expect(python(p, tetti, l, paroleDelloPseudocodice(l)).generato, `${f} (${l})`).toBe(true);
@@ -266,7 +266,7 @@ describe("la ricorsione", () => {
         if (delGiro.length > 0) conGiro++;
         else senzaGiro++;
       }
-    expect(conGiro).toBe(2 * 21);
+    expect(conGiro).toBe(2 * 22);
     expect(senzaGiro).toBeGreaterThan(100);
   });
 
@@ -354,9 +354,10 @@ describe("i motivi d'errore", () => {
       const tappa4 = readdirSync(join(cartella, "tappa-4")).filter((f) => f.endsWith(".algo")).map((f) => leggi(`tappa-4/${f}`));
       // Gli arresti della ricorsione dicono anche la cornice da cui cercare la riga.
       for (const p of [...corpus.map((x) => x.p), tutteLeForme, altreForme, ...generatiDellaTappa3, ...tappa4])
-        for (const [, m] of codice(p, l).matchAll(new RegExp(`${nomiDelSupporto[l].fermati}\\("([^"]*)"(?:, \\d+)?\\)`, "g"))) scritti.add(m!);
-      expect([...scritti].filter((m) => codiceDelMotivo(l, m) === undefined)).toEqual([]);
-      expect([...scritti].sort()).toEqual(Object.values(motivi[l]).sort());
+        // Ogni motivo si legge con la tabella del tetto del suo progetto (la ricorsione senza uscita ha la pila a 10).
+        for (const [, m] of codice(p, l).matchAll(new RegExp(`${nomiDelSupporto[l].fermati}\\("([^"]*)"(?:, \\d+)?\\)`, "g")))
+          scritti.add(codiceDelMotivo(l, m!, motiviCol(tettoDelleChiamate(p))) ?? `senza codice: ${m}`);
+      expect([...scritti].sort()).toEqual(Object.keys(motivi[l]).sort());
     }
   });
 });

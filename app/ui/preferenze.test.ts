@@ -22,6 +22,7 @@ const tutte = {
   modoDeiDati: "celle",
   conferma: "sempre",
   limiti: { elementiDiUnVettore: 500, lunghezzaDiUnaStringa: 300, caratteriDiUnVettoreDiStringhe: 6000 },
+  pilaDeiProgettiNuovi: 20,
   cartellaEsempi: "D:\\esempi",
   cartellaLibrerie: "D:\\librerie",
   separatoreCsv: ",",
@@ -85,6 +86,8 @@ const rotti: Record<string, readonly unknown[]> = {
   modoDeiBlocchi: ["finestra", 0, false],
   modoDeiDati: ["foglio", {}, null],
   conferma: ["mai", true, 1],
+  // La pila delle chiamate dei progetti nuovi: un intero da 5 a 500, come nel file del progetto.
+  pilaDeiProgettiNuovi: [4, 501, 0, 10.5, "20", null],
   cartellaEsempi: [5, null, "", ["D:\\"], {}],
   cartellaLibrerie: [5, null, "", ["D:\\"], {}],
   separatoreCsv: ["\t", ";;", 1, null],
@@ -124,7 +127,7 @@ test("un campo rotto scarta lui solo: gli altri restano", () => {
     }
   // Ogni campo del file ha le sue prove (i limiti hanno la loro).
   expect(Object.keys(rotti).sort()).toEqual(Object.keys(tutte).filter((k) => k !== "limiti").sort());
-  expect(provati).toBe(109);
+  expect(provati).toBe(115);
 });
 
 test("un limite rotto scarta lui solo, e un oggetto dei limiti rotto li scarta tutti e tre", () => {

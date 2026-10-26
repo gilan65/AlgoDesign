@@ -252,16 +252,19 @@ export function riepilogoDellImportazione(p: Progetto, sorgente: Progetto, spunt
 /** Un'opzione del progetto con un valore diverso nel programma e nella sorgente (contano i predefiniti). */
 export type OpzioneDiversa =
   | { readonly opzione: "real_decimals"; readonly programma: number; readonly sorgente: number }
-  | { readonly opzione: "fill_character"; readonly programma: string; readonly sorgente: string };
+  | { readonly opzione: "fill_character"; readonly programma: string; readonly sorgente: string }
+  | { readonly opzione: "call_stack_limit"; readonly programma: number; readonly sorgente: number };
 
 /** Le opzioni che il programma `p` e la sorgente hanno diverse: dopo l'importazione valgono quelle del programma, e un caso
  * importato scritto con quelle della sorgente può non essere raggiunto. */
 export function opzioniDiverse(p: Progetto, sorgente: Progetto): OpzioneDiversa[] {
   const decimali = (x: Progetto) => x.options?.real_decimals ?? opzioniPredefinite.real_decimals;
   const riempimento = (x: Progetto) => x.options?.fill_character ?? opzioniPredefinite.fill_character;
+  const pila = (x: Progetto) => x.options?.call_stack_limit ?? opzioniPredefinite.call_stack_limit;
   return [
     ...(decimali(p) !== decimali(sorgente) ? [{ opzione: "real_decimals", programma: decimali(p), sorgente: decimali(sorgente) } as const] : []),
     ...(riempimento(p) !== riempimento(sorgente) ? [{ opzione: "fill_character", programma: riempimento(p), sorgente: riempimento(sorgente) } as const] : []),
+    ...(pila(p) !== pila(sorgente) ? [{ opzione: "call_stack_limit", programma: pila(p), sorgente: pila(sorgente) } as const] : []),
   ];
 }
 

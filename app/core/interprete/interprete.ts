@@ -978,7 +978,7 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
   /** Ferma la chiamata di `f`, del giro, che porterebbe oltre un tetto della ricorsione: le chiamate in corso, poi lo
    * spazio dei loro dati. */
   function entraNelGiro(f: Funzione): void {
-    if (chiamateDelGiro + 1 > tettoDelleChiamate) ferma("recursion_too_deep");
+    if (chiamateDelGiro + 1 > tettoDelleChiamate(p)) ferma("recursion_too_deep");
     if (spazioInUso + spazioDi.get(f)! > spazioDellaPila) ferma("recursion_data_too_large");
   }
 

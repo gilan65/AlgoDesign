@@ -242,7 +242,7 @@ import { differenzeDallElenco, elencoDelPacchetto } from "./elenco-del-pacchetto
 import { finestraVera as finestraDelProcesso, type AzioneDellaFinestra } from "./finestra-vera";
 import { politicaDelProdotto } from "./politica";
 import { direttiveSenzaSonda, provaLaSonda, sonde } from "./sonde-della-politica";
-import { testiDeiCodici } from "../i18n/codici";
+import { testoDelMessaggio } from "../i18n/codici";
 import { dizionari, linguaDelSistema, nomiLingue, riempi, type Lingua } from "../i18n/lingue";
 
 if (process.platform !== "win32") {
@@ -1333,7 +1333,7 @@ async function corsaDellaRicorsione(lingua: Lingua, fino: number) {
 /** La clausola RICORSIONE: il tetto della ricorsione nella WebView2 vera (vedi in testa). */
 async function giroDellaRicorsione(lingua: Lingua): Promise<void> {
   const testi = dizionari[lingua];
-  const breve = testiDeiCodici[lingua].recursion_too_deep.breve;
+  const breve = testoDelMessaggio(lingua, "recursion_too_deep", false).breve;
   const sotto = await corsaDellaRicorsione(lingua, 499);
   if (sotto.stato !== testi.statoFinita) rosso("RICORSIONE", `conta(499): lo stato è «${sotto.stato}» invece di «${testi.statoFinita}» (controllo positivo: il tetto non deve scattare prima)`);
   if (!sotto.console.split("\n").some((r) => r.trim() === "499")) rosso("RICORSIONE", `conta(499): la console non ha la riga 499 (ha ${JSON.stringify(sotto.console)})`);

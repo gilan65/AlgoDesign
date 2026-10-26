@@ -74,6 +74,7 @@ import { basename, join } from "node:path";
 import { eseguiCaso } from "../core/casi/esecutore";
 import { esitoDelCaso, margineDellOutput } from "../core/casi/esito";
 import { controlla, tetti, type EsitoDelControllo } from "../core/controllo/controllo";
+import { tettoDelleChiamate } from "../core/controllo/spazio";
 import { parametriDelCaso, testoDelCodice, type Generato, type Riga } from "../core/genera/forma";
 import { linguaggi, type Linguaggio, type VoceDelLinguaggio } from "../core/genera/linguaggi";
 import { codiceDelMotivo } from "../core/genera/motivi";
@@ -169,8 +170,9 @@ const utf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 const testoDelCompilatore = new TextDecoder("utf-8", { fatal: false });
 
 /** L'ottenuto di un programma generato nella forma dell'atteso, o il motivo per cui non ha un esito. Con `tagliato`:
- * l'output è stato tenuto solo fino all'atteso più il margine. */
-function ottenuto(f: Fine, voce: VoceDelLinguaggio, righe: readonly Riga[], lingua: LinguaDelCodice, atteso: Atteso, controllo: ControlloCheParte): { atteso: Atteso; tagliato: boolean } | { senzaEsito: string } {
+ * l'output è stato tenuto solo fino all'atteso più il margine. `pila` è il tetto delle chiamate del progetto, che il motivo
+ * del tetto dice. */
+function ottenuto(f: Fine, voce: VoceDelLinguaggio, righe: readonly Riga[], lingua: LinguaDelCodice, atteso: Atteso, controllo: ControlloCheParte, pila: number): { atteso: Atteso; tagliato: boolean } | { senzaEsito: string } {
   if (voce.genere !== "da-eseguire") throw new Error(`${voce.id} non è un linguaggio da eseguire`);
   if (f.scaduto) return { senzaEsito: `non finito in ${secondiDiUnProgramma} s` };
   let tutto: string;
@@ -190,7 +192,7 @@ function ottenuto(f: Fine, voce: VoceDelLinguaggio, righe: readonly Riga[], ling
   if (f.uscita === 0 && err === "") return { atteso: { output, ...avvisi }, tagliato };
   const m = voce.rigaDErrore.exec(err);
   if (m === null || f.uscita !== 1) return { senzaEsito: `uscita ${f.uscita}, stderr ${JSON.stringify(err.slice(-300))}` };
-  const code = codiceDelMotivo(lingua, m[2]!, voce.motivi);
+  const code = codiceDelMotivo(lingua, m[2]!, voce.motivi(pila));
   if (code === undefined) return { senzaEsito: `motivo che la tabella dei motivi non conosce: ${JSON.stringify(m[2])}` };
   const block = righe[Number(m[1]) - 1]?.blocco;
   if (block === undefined) return { senzaEsito: `la riga ${m[1]} non viene da un blocco: ${JSON.stringify(righe[Number(m[1]) - 1]?.testo ?? "(oltre la fine)")}` };
@@ -415,7 +417,7 @@ for (const d of daConfrontare) {
     }
     esecuzioni.push(async () => {
       const f = await lancia(esecutore.esegui(macchina, daLanciare), input, secondiDiUnProgramma, macchina.percorso);
-      const o = ottenuto(f, voce, codice.righe, l, d.caso.expected, d.controllo);
+      const o = ottenuto(f, voce, codice.righe, l, d.caso.expected, d.controllo, tettoDelleChiamate(d.progetto));
       risultati.set(chi, "senzaEsito" in o ? { genere: "rosso", righe: [`ROSSO ${chi} senza esito: ${o.senzaEsito}`] } : confronta(d.caso.expected, o.atteso, o.tagliato, chi));
     });
   }

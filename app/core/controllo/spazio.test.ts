@@ -7,8 +7,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { motivi } from "../genera/motivi";
-import { testiDeiCodici } from "../../i18n/codici";
+import { motiviCol } from "../genera/motivi";
+import { testoDelMessaggio } from "../../i18n/codici";
 import { leggi } from "../progetto/formato";
 import type { Progetto } from "../progetto/modello";
 import * as spazio from "./spazio";
@@ -29,7 +29,7 @@ const funzione = (id: string, name: string, risultato: Json, data: Json[], retur
 });
 const assegna = (id: string, target: string, value: string) => ({ id, kind: "assignment", target, value });
 
-// Una procedura o una funzione per termine; gli attesi a mano accanto.
+// Per ogni termine una funzione o una procedura; gli attesi a mano accanto.
 const p: Progetto = (() => {
   const r = leggi({
     format: "algodesign",
@@ -86,9 +86,20 @@ describe("lo spazio di una chiamata, termine per termine", () => {
     expect(misurati(spazio)).toEqual(attesi);
   });
 
-  test("il numero delle chiamate nei messaggi è quello del tetto, nell'interfaccia e nel codice generato", () => {
-    const testi = [motivi.it.recursion_too_deep, motivi.en.recursion_too_deep, testiDeiCodici.it.recursion_too_deep.breve, testiDeiCodici.en.recursion_too_deep.breve];
-    for (const t of testi) expect(t.match(/\d+/g)).toEqual([String(tettoDelleChiamate)]);
+  test("il numero delle chiamate nei messaggi è quello del tetto del progetto, nell'interfaccia e nel codice generato", () => {
+    for (const [conIlTetto, atteso] of [[{}, "500"], [{ options: { call_stack_limit: 10 } }, "10"]] as const) {
+      const tetto = tettoDelleChiamate(conIlTetto);
+      const testi = [
+        motiviCol(tetto).it.recursion_too_deep,
+        motiviCol(tetto).en.recursion_too_deep,
+        testoDelMessaggio("it", "recursion_too_deep", false, tetto).breve,
+        testoDelMessaggio("en", "recursion_too_deep", false, tetto).breve,
+      ];
+      for (const t of testi) expect(t.match(/\d+/g)).toEqual([atteso]);
+      // L'«accaduto» dice due volte il numero; quello dello spazio dei dati lo dice una volta, coi 256 KB.
+      expect(testoDelMessaggio("it", "recursion_too_deep", false, tetto).accaduto.match(/\d+/g)).toEqual([atteso, atteso]);
+      expect(testoDelMessaggio("en", "recursion_data_too_large", false, tetto).accaduto.match(/\d+/g)).toEqual(["256", atteso]);
+    }
     expect(spazioDiUnaChiamata(p.functions[1]!, p)).toBeGreaterThan(0);
   });
 
