@@ -296,6 +296,16 @@ describe("i motivi d'errore", () => {
       expect([...scritti].sort()).toEqual(Object.keys(motivi[l]).sort());
     }
   });
+
+  test("il conto delle chiamate si ferma oltre il tetto del progetto", () => {
+    // Il numero del confronto viene dal tetto del progetto: con la pila a 10 e senza il campo (500).
+    for (const [file, tetto] of [["tappa-4/ricorsione-senza-uscita.algo", 10], ["tappa-4/ricorsione-profonda.algo", 500]] as const)
+      for (const l of lingue) {
+        const p = leggi(file);
+        expect(tettoDelleChiamate(p)).toBe(tetto);
+        expect([...codice(p, l).matchAll(/if \(\+\+\w+ > (\d+)\) /g)].map(([, n]) => Number(n)), `${file} (${l})`).toEqual([tetto]);
+      }
+  });
 });
 
 describe("procedure e funzioni", () => {

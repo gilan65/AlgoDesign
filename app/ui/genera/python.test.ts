@@ -15,7 +15,7 @@ import { controlla, funzioniDelGiro, tetti } from "../../core/controllo/controll
 import { spazioDiUnaChiamata, tettoDelleChiamate } from "../../core/controllo/spazio";
 import { testoDelCodice, type Riga } from "../../core/genera/forma";
 import { codiceDelMotivo, motivi, motiviCol, type CodiceDiUnMotivo } from "../../core/genera/motivi";
-import { linguaggi, voceDel } from "../../core/genera/linguaggi";
+import { linguaggi, nomiRiservati, voceDel } from "../../core/genera/linguaggi";
 import { indiceDelLivello, nomeDellIndice, nomiDelSupporto, nomiDiPython } from "../../core/genera/nomi";
 import { python } from "../../core/genera/python";
 import { duplicaDato } from "../../core/modifica/operazioni";
@@ -287,6 +287,11 @@ describe("i nomi che il Python usa per sé", () => {
       return !c.fuoriTappa && c.errori.length === 0;
     };
     expect(riservatiDelPython.filter(accettato)).toEqual([]);
+    // Lo stesso per i nomi di tutti i linguaggi del registro, anche quelli del solo C: il controllo li riserva tutti.
+    const tutti = [...nomiRiservati()];
+    expect(tutti).toContain("printf");
+    expect(tutti.length).toBeGreaterThan(riservatiDelPython.length);
+    expect(tutti.filter(accettato)).toEqual([]);
     // Controllo positivo: lo stesso progetto con un nome libero non ha errori.
     expect(controlla(conUnDato("voto"), tetti)).toMatchObject({ errori: [] });
   });
@@ -354,6 +359,18 @@ describe("i motivi d'errore", () => {
           scritti.add(codiceDelMotivo(l, m!, motiviCol(tettoDelleChiamate(p))) ?? `senza codice: ${m}`);
       expect([...scritti].sort()).toEqual(Object.keys(motivi[l]).sort());
     }
+  });
+
+  test("il conto delle chiamate si ferma oltre il tetto del progetto, col motivo dello stesso tetto", () => {
+    // Il numero del confronto e il motivo vengono dallo stesso tetto: con la pila a 10 e senza il campo (500).
+    for (const [file, tetto] of [["tappa-4/ricorsione-senza-uscita.algo", 10], ["tappa-4/ricorsione-profonda.algo", 500]] as const)
+      for (const l of lingue) {
+        const p = leggi(file);
+        expect(tettoDelleChiamate(p)).toBe(tetto);
+        const presi = [...codice(p, l).matchAll(/^ {4}if \w+ > (\d+):\n {8}\w+\("([^"]*)", 3\)$/gm)].map(([, n, m]) => [Number(n), m]);
+        // Il confronto dopo è quello dello spazio dei dati: si guarda solo quello delle chiamate.
+        expect(presi.filter(([, m]) => m === motiviCol(tetto)[l].recursion_too_deep), `${file} (${l})`).toEqual([[tetto, motiviCol(tetto)[l].recursion_too_deep]]);
+      }
   });
 });
 

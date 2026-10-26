@@ -30,7 +30,7 @@ Tutto il resto **non** impedisce di aprire il file: le regole dei nomi, i valori
 - **Il file non dipende dalla lingua.** Chiavi, valori degli elenchi e operatori a parola nelle espressioni sono in inglese: AlgoDesign li mostra tradotti nella lingua dell'interfaccia, e lo stesso file si apre identico in italiano e in inglese.
 - **Espressioni come testo.** Le condizioni, i valori, le destinazioni, gli argomenti e i valori iniziali sono stringhe, scritte come nei campi dei blocchi, con gli operatori a parola in inglese (`and`, `or`, `not`, `mod`, …) e i letterali come in un'espressione: `"5"`, `"2.0"`, `"'è'"`, `"\"ciao\""`, `"true"`.
 - **I dati non stanno nei blocchi.** I dati di una funzione sono nell'elenco `data`, nell'ordine della vista dei dati; nessun blocco crea un dato.
-- **Ciò che cambia il risultato sta nel file.** Le opzioni che cambiano l'output (il carattere di riempimento, i decimali dei reali) sono nel progetto; i limiti delle Impostazioni no, perché proteggono il computer e non cambiano l'output.
+- **Ciò che cambia il risultato sta nel file.** Le opzioni che cambiano il risultato (il carattere di riempimento, i decimali dei reali, i posti nella pila delle chiamate) sono nel progetto; i limiti delle Impostazioni no, perché proteggono il computer e non cambiano l'output.
 - **Il salvataggio** scrive i campi nell'ordine delle tabelle qui sotto, con un rientro di 2 spazi e un a capo finale, e omette un'opzione uguale al suo valore predefinito.
 - **La versione dello schema** è `1`. Un campo facoltativo nuovo non la cambia: un file scritto prima resta valido.
 

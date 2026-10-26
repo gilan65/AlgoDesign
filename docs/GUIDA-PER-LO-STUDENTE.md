@@ -410,11 +410,11 @@ La cartella delle librerie si sceglie nelle Impostazioni, scheda «Percorsi» (�
 
 ## 11. Gli esempi
 
-Dal menu **Aiuto**, **Esempi…** apre la finestra degli esempi: i progetti di una cartella, divisi in **gruppi**, uno per ogni sua sottocartella. Al primo avvio la cartella riceve undici esempi forniti con AlgoDesign, in tre gruppi:
+Dal menu **Aiuto**, **Esempi…** apre la finestra degli esempi: i progetti di una cartella, divisi in **gruppi**, uno per ogni sua sottocartella. Al primo avvio la cartella riceve dodici esempi forniti con AlgoDesign, in tre gruppi:
 
 - **Primi passi**: «Media dei voti», «Pari o dispari», «Primo quadrato oltre 20», «Fattoriale di 13»;
 - **Cicli per e per ogni**: «Media dei voti coi cicli per», «Parola al contrario»;
-- **Funzioni e procedure**: «Media dei voti con le funzioni», «Una procedura riceve copie», «Una funzione che ne chiama un'altra», «Fattoriale con la ricorsione», «Sequenza di Fibonacci con la ricorsione».
+- **Funzioni e procedure**: «Media dei voti con le funzioni», «Una procedura riceve copie», «Una funzione che ne chiama un'altra», «Fattoriale con la ricorsione», «Sequenza di Fibonacci con la ricorsione», «Ricorsione senza uscita».
 
 Un gruppo si apre e si chiude con un clic sul suo nome; la **ricerca** in cima trova un esempio dal nome o dalla descrizione. **Apri** ne apre una copia, che non è legata al file: per conservarla si usa «Salva con nome». **Aggiungi il progetto aperto** lo mette fra gli esempi, nel gruppo scelto lì accanto («I miei esempi», oppure uno nuovo con «Nuovo gruppo…»). **Elimina** cancella un esempio, ed **Elimina il gruppo** cancella un gruppo creato da te, coi suoi esempi (i gruppi degli esempi forniti no): tutti e due chiedono prima. **Ripristina gli esempi forniti** rimette quelli originali, ognuno nel suo gruppo.
 

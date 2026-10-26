@@ -10,7 +10,7 @@ import { expect, test } from "bun:test";
 import { tetti } from "../core/controllo/controllo";
 import { righeLunghePredefinite } from "../core/esecuzione/esecuzione";
 import { linguaggi } from "../core/genera/linguaggi";
-import { caratteriPerRiga, durataDelPasso, fileDa, intervalli, limiteValido, preferenzeDa, righeDelMenu, scelteIniziali, separatoriDelCsv } from "./preferenze";
+import { accesiDiPartenza, caratteriPerRiga, durataDelPasso, fileDa, intervalli, limiteValido, preferenzeDa, righeDelMenu, scelteIniziali, separatoriDelCsv } from "./preferenze";
 
 const tutte = {
   lingua: "en",
@@ -249,10 +249,13 @@ test("il comando che salva un'esecuzione come caso d'uso: acceso di partenza e i
   for (const v of [true, false]) expect(fileDa("it", preferenzeDa({ offriCasoDallEsecuzione: v }).scelte).offriCasoDallEsecuzione).toBe(v);
 });
 
-test("i linguaggi del codice generato: tutti quelli del registro nel suo ordine di partenza e in un file senza il campo; l'ordine scritto torna uguale, uno sconosciuto o ripetuto si ignora", () => {
+test("i linguaggi del codice generato: i tre di partenza e in un file senza il campo; l'ordine scritto torna uguale, uno sconosciuto o ripetuto si ignora", () => {
   const delRegistro = linguaggi.map((v) => v.id);
-  expect(scelteIniziali.linguaggiDelCodice).toEqual(delRegistro);
-  expect(preferenzeDa({ lingua: "it" }).scelte.linguaggiDelCodice).toEqual(delRegistro);
+  expect(scelteIniziali.linguaggiDelCodice).toEqual(["pseudocodice", "python", "c"]);
+  expect(preferenzeDa({ lingua: "it" }).scelte.linguaggiDelCodice).toEqual(["pseudocodice", "python", "c"]);
+  // Un linguaggio che il registro aggiunge dopo non è di partenza: per chi non ha ancora scelto nasce spento.
+  const conUnoNuovo = [...linguaggi.map((v) => ({ id: v.id as string, diPartenza: v.diPartenza })), { id: "linguaggio-nuovo", diPartenza: false }];
+  expect(accesiDiPartenza(conUnoNuovo)).toEqual(["pseudocodice", "python", "c"]);
   // Ogni ordine e ogni scelta tornano uguali (la prova distingue: non è il predefinito che torna).
   for (const v of [["c"], ["python", "pseudocodice"], ["c", "pseudocodice", "python"]] as const) expect(fileDa("it", preferenzeDa({ linguaggiDelCodice: v }).scelte).linguaggiDelCodice).toEqual(v);
   // Uno che l'app non conosce (un linguaggio di una versione dopo, aperto da questa) si ignora; uno ripetuto vale una volta.

@@ -3,6 +3,11 @@
 // toolchain, come si compila (se serve) e si esegue il programma generato, quali avvisi del compilatore sono attesi e per
 // quali programmi. Lo leggono il differenziale (che fa girare i programmi) e il collaudo (che ne ricava gli esecutori
 // richiesti e i programmi con gli avvisi attesi): nessuno dei due elenca i linguaggi a mano.
+// Tre controlli del collaudo sono però scritti per i linguaggi di oggi, un solo linguaggio che si compila (il C) più il
+// Python: il conto delle compilazioni con gli avvisi attesi (i programmi attesi per le macchine che compilano, non la
+// somma per esecutore), la corsa «senza toolchain» (le due variabili d'ambiente per nome) e il controllo «registro senza
+// il C» (l'identificatore per nome). Con un secondo linguaggio che si compila diventano rossi: si derivano allora per
+// esecutore (`strumenti/collaudo.ts`, la porta del differenziale).
 //
 // Un esecutore ha una o più FAMIGLIE della sua toolchain (il C: gcc e clang), tutte richieste: il collaudo è rosso se ne
 // manca una, il differenziale lo dice nella riga della toolchain e corre con quelle che trova. Ogni eseguibile trovato

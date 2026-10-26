@@ -129,7 +129,7 @@ export const scelteIniziali: Scelte = {
   formaDelCsv: "uguale",
   righeLunghe: righeLunghePredefinite.modo,
   caratteriPerRiga: righeLunghePredefinite.caratteri,
-  linguaggiDelCodice: linguaggi.map((v) => v.id),
+  linguaggiDelCodice: accesiDiPartenza(linguaggi),
   valoriIniziali: "mostrati",
   valoreRipetuto: "elenco",
   cicliPer: "aperto",
@@ -226,6 +226,12 @@ export function linguaggiDa(valore: unknown): readonly Linguaggio[] | undefined 
   const noti: readonly string[] = linguaggi.map((v) => v.id);
   const letti = [...new Set(valore.filter((x): x is Linguaggio => typeof x === "string" && noti.includes(x)))];
   return letti.length > 0 ? letti : undefined;
+}
+
+/** I linguaggi accesi per chi non ha ancora scelto: quelli di partenza del registro, nel suo ordine. Uno aggiunto da una
+ * versione dopo non è di partenza: nasce spento, in fondo al menu. */
+export function accesiDiPartenza<T extends string>(registro: readonly { readonly id: T; readonly diPartenza: boolean }[]): readonly T[] {
+  return registro.filter((v) => v.diPartenza).map((v) => v.id);
 }
 
 /** Le righe del menu dei linguaggi nelle Impostazioni: gli accesi nel loro ordine, poi gli spenti in quello del registro. */
