@@ -410,11 +410,11 @@ The libraries folder is chosen in the Settings, “Paths” tab (§12): for exam
 
 ## 11. The examples
 
-From the **Help** menu, **Examples…** opens the examples window: the projects of a folder, divided into **groups**, one for each of its subfolders. At the first start the folder receives eleven examples supplied with AlgoDesign, in three groups (the data, procedures and functions inside them have Italian names: a project does not change with the interface language):
+From the **Help** menu, **Examples…** opens the examples window: the projects of a folder, divided into **groups**, one for each of its subfolders. At the first start the folder receives twelve examples supplied with AlgoDesign, in three groups (the data, procedures and functions inside them have Italian names: a project does not change with the interface language):
 
 - **First steps**: “Average of marks”, “Even or odd”, “First square over 20”, “Factorial of 13”;
 - **For and For each loops**: “Average of marks with For loops”, “Word backwards”;
-- **Functions and procedures**: “Average of marks with functions”, “A procedure receives copies”, “A function that calls another”, “Factorial with recursion”, “Fibonacci sequence with recursion”.
+- **Functions and procedures**: “Average of marks with functions”, “A procedure receives copies”, “A function that calls another”, “Factorial with recursion”, “Fibonacci sequence with recursion”, “Recursion without an exit”.
 
 A group is opened and closed with a click on its name; the **search** at the top finds an example by its name or its description. **Open** opens a copy of it, which is not tied to the file: to keep it use “Save as”. **Add the open project** puts it among the examples, in the group chosen next to it (“My examples”, or a new one with “New group…”). **Delete** deletes an example, and **Delete the group** deletes a group you created, with its examples (not the groups of the supplied examples): both ask first. **Restore the supplied examples** puts back the original ones, each in its group.
 

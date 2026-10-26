@@ -3,7 +3,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { linguaggi } from "../core/genera/linguaggi";
-import { appaia, compila, esecutori, esecutoriRichiesti, programmiConAvvisiAttesi } from "./esecutori";
+import { appaia, compila, esecutori, esecutoriRichiesti, programmiConAvvisiAttesi, type Esecutore } from "./esecutori";
 
 const senzaIlC = linguaggi.filter((v) => v.id !== "c");
 
@@ -21,6 +21,15 @@ describe("il registro e gli esecutori", () => {
     expect(appaia(linguaggi, esecutori.filter((e) => e.linguaggio !== "c"))).toEqual({ vociSenzaEsecutore: ["c"], esecutoriSenzaVoce: [] });
     const conUnoFinto = [...linguaggi, { id: "linguaggio-finto-senza-esecutore", genere: "da-eseguire" as const }];
     expect(appaia(conUnoFinto, esecutori).vociSenzaEsecutore).toEqual(["linguaggio-finto-senza-esecutore"]);
+  });
+
+  test("un esecutore che compila legge gli avvisi del compilatore: senza, ogni avviso varrebbe zero", () => {
+    const compilaSenzaAvvisi = (es: readonly Esecutore[]) => es.filter((e) => e.compila !== undefined && e.avvisi === undefined).map((e) => e.linguaggio);
+    expect(esecutori.filter((e) => e.compila !== undefined).length).toBeGreaterThan(0);
+    expect(compilaSenzaAvvisi(esecutori)).toEqual([]);
+    // Controllo positivo: un esecutore che compila e non legge gli avvisi si vede.
+    const { avvisi: _, ...senzaAvvisi } = esecutori.find((e) => e.compila !== undefined)!;
+    expect(compilaSenzaAvvisi([senzaAvvisi])).toEqual(["c"]);
   });
 
   test("una voce da leggere non chiede un esecutore", () => {

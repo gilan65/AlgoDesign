@@ -37,6 +37,9 @@ interface VoceComune {
   /** I nomi vietati solo a ciò che sta a livello di file (una procedura, una funzione, una costante comune): un dato
    * dentro una funzione può averli. */
   readonly riservatiNelFile: readonly string[];
+  /** Acceso nel menu dei linguaggi per chi non l'ha ancora scelto (le preferenze senza il campo): i linguaggi di
+   * partenza sì; uno aggiunto da una versione dopo no, e nasce spento in fondo al menu. */
+  readonly diPartenza: boolean;
 }
 
 export type VoceDelLinguaggio =
@@ -61,6 +64,7 @@ export const linguaggi = [
     genera: (p, limiti, _lingua, parole) => pseudocodice(p, limiti, parole),
     riservati: [],
     riservatiNelFile: [],
+    diPartenza: true,
   },
   {
     id: "python",
@@ -69,6 +73,7 @@ export const linguaggi = [
     genera: (p, limiti, lingua, parole, prova) => python(p, limiti, lingua, parole, prova),
     riservati: riservatiDelPython,
     riservatiNelFile: [],
+    diPartenza: true,
     motivi: motiviCol,
     rigaDErrore,
   },
@@ -79,6 +84,7 @@ export const linguaggi = [
     genera: (p, limiti, lingua, parole, prova) => c(p, limiti, lingua, parole, prova),
     riservati: riservatiDelC,
     riservatiNelFile: nomiDelleIntestazioni,
+    diPartenza: true,
     motivi: motiviCol,
     rigaDErrore,
   },

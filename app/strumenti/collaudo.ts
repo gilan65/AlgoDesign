@@ -980,8 +980,16 @@ async function portaElenco(): Promise<void> {
   const problemi = problemiDegliSpec(elencate, progetti, suDisco);
   if (problemi.length > 0) rosso("elenco", `spec o prove diversi dall'atteso: ${problemi.join("; ")}`);
   const sonde = sondeDegliSpec("elenco", elencate, progetti, suDisco);
+  // Le prove fuori da un bersaglio, per titolo; il controllo positivo dichiara fuori un'altra prova dello stesso spec.
+  const escluse = problemiDelleEscluse(prove);
+  if (escluse.length > 0) rosso("elenco", `prove fuori da un bersaglio diverse da quelle dichiarate: ${escluse.join("; ")}`);
+  const [specFuori, fuori] = Object.entries(proveFuoriDalBersaglio)[0]!;
+  const altraProva = prove.find((p) => p.file === specFuori && !fuori.titoli.some((t) => p.titolo.startsWith(t)))!.titolo;
+  const sondaEscluse = problemiDelleEscluse(prove, { [specFuori]: { ...fuori, titoli: [altraProva] } });
+  if (!sondaEscluse.some((p) => p.includes("non dichiarate")) || !sondaEscluse.some((p) => p.includes("dichiarate fuori")))
+    rosso("elenco", `controllo positivo delle prove fuori da un bersaglio SPENTO: ${JSON.stringify(sondaEscluse)}`);
   riga(
-    `PORTA elenco: VERDE | modo ${modo}: progetti ${progetti.join(", ")} | ${prove.length} prove elencate (${progetti.map((p) => `${p} ${prove.filter((x) => x.progetto === p).length}`).join(", ")}), spec come l'atteso | controllo positivo dei progetti acceso sui due rami (${sondeDelModo.map((s) => s.ramo).join("; ")}) | controllo positivo degli spec acceso sui tre rami (${sonde})`,
+    `PORTA elenco: VERDE | modo ${modo}: progetti ${progetti.join(", ")} | ${prove.length} prove elencate (${progetti.map((p) => `${p} ${prove.filter((x) => x.progetto === p).length}`).join(", ")}), spec come l'atteso, le prove fuori da un bersaglio per titolo (${Object.values(proveFuoriDalBersaglio).flatMap((x) => x.titoli).length}; controllo positivo acceso: ${sondaEscluse.length} problemi con un'altra prova dichiarata) | controllo positivo dei progetti acceso sui due rami (${sondeDelModo.map((s) => s.ramo).join("; ")}) | controllo positivo degli spec acceso sui tre rami (${sonde})`,
   );
 }
 
@@ -1115,13 +1123,37 @@ const proveAttesePerSpec: Record<string, number> = {
 /** Le prove che un bersaglio (`sviluppo`, `anteprima`: la fine del nome del progetto) non corre, per spec: quelle con
  * l'etichetta che `playwright.config.ts` esclude da quel bersaglio, per un difetto noto che lì le fa fallire a
  * intermittenza. Non sono prove saltate: per quel bersaglio non ci sono, e l'atteso le toglie, nei suoi progetti soli. */
-const proveFuoriDalBersaglio: Readonly<Record<string, { bersaglio: string; prove: number; ragione: string }>> = {
+const proveFuoriDalBersaglio: Readonly<Record<string, { bersaglio: string; prove: number; titoli: readonly string[]; ragione: string }>> = {
   "progetto-file.e2e.ts": {
     bersaglio: "anteprima",
     prove: 1,
+    titoli: ["ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto,"],
     ragione: "«ogni finestra trattiene il fuoco»: nella corsa intera, sul build di produzione, il menu che si chiude riprende il fuoco per un istante mentre la finestra aperta da lui lo prende",
   },
 };
+
+/** Le prove che mancano davvero da un bersaglio, per titolo: per ogni progetto di quel bersaglio, quelle che lo stesso
+ * motore ha sull'altro e lui no, confrontate con l'inizio dei titoli dichiarati. Il conto per spec non basta: l'etichetta
+ * spostata su un'altra prova dello stesso spec lascia il numero uguale. */
+function problemiDelleEscluse(prove: readonly ProvaPlaywright[], fuoriDalBersaglio = proveFuoriDalBersaglio): string[] {
+  const problemi: string[] = [];
+  const titoliDi = (f: string, progetto: string) => new Set(prove.filter((p) => p.file === f && p.progetto === progetto).map((p) => p.titolo));
+  for (const [f, fuori] of Object.entries(fuoriDalBersaglio))
+    for (const progetto of new Set(prove.map((p) => p.progetto))) {
+      if (!progetto.endsWith(`-${fuori.bersaglio}`)) continue;
+      const altri = [...new Set(prove.map((p) => p.progetto))].filter((x) => x !== progetto && x.startsWith(progetto.slice(0, -fuori.bersaglio.length)));
+      for (const altro of altri) {
+        const qui = titoliDi(f, progetto);
+        const mancanti = [...titoliDi(f, altro)].filter((t) => !qui.has(t));
+        const attese = (t: string) => fuori.titoli.some((inizio) => t.startsWith(inizio));
+        const fuoriPosto = mancanti.filter((t) => !attese(t));
+        const assenti = fuori.titoli.filter((inizio) => !mancanti.some((t) => t.startsWith(inizio)));
+        if (fuoriPosto.length > 0 || assenti.length > 0)
+          problemi.push(`${f} su ${progetto} rispetto a ${altro}: mancano ${JSON.stringify(fuoriPosto)} non dichiarate, ci sono ${JSON.stringify(assenti)} dichiarate fuori`);
+      }
+    }
+  return problemi;
+}
 
 /** Le prove attese di uno spec in un progetto. */
 function proveAttese(f: string, progetto: string): number {

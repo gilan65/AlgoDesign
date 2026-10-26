@@ -1520,14 +1520,16 @@ function appunti(): string | null {
   return t === "<nessun testo>" ? null : t;
 }
 
-/** Il motivo per cui gli appunti di Windows non si aprono (l'errore di `OpenClipboard`), o `null` se si aprono. */
+/** Il motivo per cui gli appunti di Windows non si aprono (l'errore di `OpenClipboard`), o `null` se si aprono. Un'altra
+ * applicazione che li tiene aperti per un istante dà lo stesso errore dello schermo bloccato: la sonda riprova cinque
+ * volte, a 200 ms l'una dall'altra, prima di dirli negati. */
 function appuntiNegati(): string | null {
   const sonda =
     "Add-Type -Namespace Prova -Name Appunti -MemberDefinition '[DllImport(\"user32.dll\", SetLastError=true)] public static extern bool OpenClipboard(System.IntPtr h); [DllImport(\"user32.dll\")] public static extern bool CloseClipboard();'; " +
-    "if ([Prova.Appunti]::OpenClipboard([IntPtr]::Zero)) { [void][Prova.Appunti]::CloseClipboard(); 'aperti' } else { 'errore ' + [Runtime.InteropServices.Marshal]::GetLastWin32Error() }";
+    "$e = ''; for ($i = 0; $i -lt 5; $i++) { if ([Prova.Appunti]::OpenClipboard([IntPtr]::Zero)) { [void][Prova.Appunti]::CloseClipboard(); $e = 'aperti'; break } else { $e = 'errore ' + [Runtime.InteropServices.Marshal]::GetLastWin32Error(); Start-Sleep -Milliseconds 200 } }; $e";
   const r = Bun.spawnSync(["powershell", "-NoProfile", "-Command", sonda], { stdout: "pipe", stderr: "pipe" });
   const esito = r.stdout.toString().trim();
-  return esito === "aperti" ? null : esito === "errore 5" ? "errore 5, accesso negato" : esito || `nessuna risposta, ${r.stderr.toString().trim()}`;
+  return esito === "aperti" ? null : esito === "errore 5" ? "errore 5, accesso negato per cinque volte in un secondo" : esito || `nessuna risposta, ${r.stderr.toString().trim()}`;
 }
 
 /** La schermata di blocco di Windows è attiva (il processo LogonUI c'è solo mentre si vede). */
@@ -1556,7 +1558,7 @@ async function giroDelCodice(lingua: Lingua): Promise<void> {
   // La premessa: gli appunti si aprono. Con lo schermo bloccato Windows li nega a ogni processo (accesso negato), e
   // senza questa domanda il rosso diceva «negli appunti c'è null» (misurato: la schermata di blocco attiva).
   const negati = appuntiNegati();
-  if (negati !== null) rosso("PREMESSA", `gli appunti di Windows non si aprono (${negati})${schermoBloccato() ? ": lo schermo è bloccato (la schermata di blocco, LogonUI, è attiva)" : ""}; la clausola CODICE vuole la sessione sbloccata`);
+  if (negati !== null) rosso("PREMESSA", `gli appunti di Windows non si aprono (${negati})${schermoBloccato() ? ": lo schermo è bloccato (la schermata di blocco, LogonUI, è attiva)" : ": lo schermo non è bloccato, quindi un'altra applicazione li tiene aperti"}; la clausola CODICE vuole la sessione sbloccata e gli appunti liberi`);
   const dellUtente = appunti();
   const sentinella = `sentinella di AlgoDesign ${Date.now()}`;
   scriviAppunti(sentinella);
