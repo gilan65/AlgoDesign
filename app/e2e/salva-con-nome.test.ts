@@ -5,6 +5,7 @@
 // confrontano esatti. Le cartelle della tabella non sono file, quindi non fanno chiedere.
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
+import { linguaggi } from "../core/genera/linguaggi";
 import { daSalvare, type Estensione } from "./salva-con-nome";
 
 const casi = JSON.parse(readFileSync(new URL("../shell/src/salva-con-nome.json", import.meta.url), "utf8")) as {
@@ -28,9 +29,11 @@ test("il guscio simulato decide «Salva con nome», «Esporta la tabella» e «S
     return JSON.stringify(visto) === JSON.stringify(atteso) ? [] : [`${c.scelto} (${estensione}) con ${JSON.stringify(c.esistono)}: ${JSON.stringify(visto)}`];
   });
   expect(sbagliati).toEqual([]);
-  // La tabella ha le due risposte (una decisione sempre uguale non passerebbe) e tutte le estensioni.
+  // La tabella ha le due risposte (una decisione sempre uguale non passerebbe) e tutte le estensioni: il progetto, la
+  // tabella e quella di ogni linguaggio del registro (un linguaggio con un'estensione nuova vuole le sue righe).
   const chiede = casi.casi.filter((c) => c.sostituire).length;
   expect(chiede > 0 && chiede < casi.casi.length).toBe(true);
   const estensioni = new Set(casi.casi.map((c) => c.estensione ?? ".algo"));
-  expect([...estensioni].sort()).toEqual([".algo", ".c", ".csv", ".py", ".txt"]);
+  const attese: Estensione[] = [".algo", ".csv", ...linguaggi.map((v) => v.estensione)];
+  expect([...estensioni].sort()).toEqual([...new Set(attese)].sort());
 });

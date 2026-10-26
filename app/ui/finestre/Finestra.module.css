@@ -236,6 +236,34 @@ textarea.campo {
   color: var(--colore-avviso);
 }
 
+/* Il menu dei linguaggi nella scheda «Console»: una riga per linguaggio, la casella e i due pulsanti che la spostano. */
+.menuDeiLinguaggi {
+  display: grid;
+  row-gap: 0.25rem;
+  max-inline-size: 24rem;
+  margin: 0px;
+  padding: 0px;
+  list-style: none;
+}
+
+.rigaDelMenu {
+  display: flex;
+  align-items: center;
+  column-gap: 0.4rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--colore-riga);
+  border-radius: 4px;
+}
+
+.rigaDelMenu > .opzione {
+  flex: 1 1 auto;
+}
+
+.rigaDelMenu > .comando {
+  min-inline-size: 2.2rem;
+  padding-block: 0.1rem;
+}
+
 /* L'elenco degli esempi e quello degli errori d'apertura. */
 .elenco {
   display: grid;

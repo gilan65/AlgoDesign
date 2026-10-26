@@ -6,9 +6,12 @@
 // cartella no). Il guscio vero decide sull'identità del file sul disco: su Windows «media.ALGO» e «media.algo»
 // sono lo stesso file, e lo prova solo `cargo test` su Windows.
 
-export type Estensione = ".algo" | ".csv" | ".txt" | ".py" | ".c";
+import type { EstensioneDelCodice } from "../core/genera/linguaggi";
 
-/** Il nome scelto finisce nell'`estensione` («.algo», «.csv» per la tabella, «.txt», «.py» o «.c» per il codice
+/** Le estensioni dei file che l'app salva: il progetto, la tabella, e il codice generato di ogni linguaggio del registro. */
+export type Estensione = ".algo" | ".csv" | EstensioneDelCodice;
+
+/** Il nome scelto finisce nell'`estensione` («.algo», «.csv» per la tabella, quella del linguaggio per il codice
  * generato): quella scritta con altre maiuscole si riscrive, chi non ce l'ha la riceve; si chiede di sostituire solo
  * se così si arriva a un file che c'è e che non è quello scelto. */
 export function daSalvare(scelto: string, eUnFile: (percorso: string) => boolean, estensione: Estensione): { percorso: string; sostituire: boolean } {

@@ -7,6 +7,9 @@
 // dell'esecuzione); un numero fra un minimo e un massimo (i limiti, i caratteri di una riga della console) è un campo
 // dove si scrive col cursore accanto, che lo segue nei due versi, con l'errore sotto il campo mentre si scrive. In
 // «Limiti» anche la pila delle chiamate con cui nasce un progetto nuovo (ogni progetto ha la sua, nelle Proprietà).
+// In «Console», dopo le righe lunghe, il menu dei linguaggi del codice generato: una riga per linguaggio del registro,
+// con la casella che lo accende e i pulsanti ▲ ▼ che lo spostano (il fuoco resta sul pulsante della riga spostata,
+// anche in cima o in fondo, dove il pulsante resta raggiungibile e non fa nulla); l'ultimo acceso non si spegne.
 // «Conferma» con un numero sbagliato porta alla sua scheda e al campo.
 import { Tabs } from "@ark-ui/react/tabs";
 import { useId, useRef, useState, type FormEvent, type ReactElement, type ReactNode, type RefObject } from "react";
@@ -15,7 +18,8 @@ import { separatoriPredefiniti } from "../../core/esecuzione/traccia";
 import type { Dizionario } from "../../i18n/it";
 import { nomiLingue, riempi, type Lingua } from "../../i18n/lingue";
 import { limitiDellaPila } from "../../core/progetto/modello";
-import { caratteriPerRiga, caratteriValidi, intervalli, limiteValido, minimoDel, pilaValida, scelteIniziali, voci, type Scelte } from "../preferenze";
+import { paroleDeiLinguaggi, type Linguaggio } from "../genera/codice";
+import { caratteriPerRiga, caratteriValidi, intervalli, limiteValido, minimoDel, pilaValida, righeDelMenu, scelteIniziali, voci, type Scelte } from "../preferenze";
 import { ColoriDeiBlocchi } from "./ColoriDeiBlocchi";
 import { Finestra, Rinuncia, stili } from "./Finestra";
 
@@ -91,6 +95,9 @@ interface Bozza {
   readonly caratteri: string;
   /** La pila delle chiamate dei progetti nuovi, come è scritta. */
   readonly pila: string;
+  /** Le righe del menu dei linguaggi, accesi e spenti, nell'ordine in cui stanno ora: «Conferma» tiene gli accesi
+   * (`scelte.linguaggiDelCodice`) in quest'ordine. */
+  readonly righe: readonly Linguaggio[];
 }
 
 const scrittiDa = (l: Tetti): Record<ChiaveDelLimite, string> =>
@@ -119,6 +126,7 @@ function Contenuto({
     limiti: scrittiDa(iniziale.scelte.limiti),
     caratteri: String(iniziale.scelte.caratteriPerRiga),
     pila: String(iniziale.scelte.pilaDeiProgettiNuovi),
+    righe: righeDelMenu(iniziale.scelte.linguaggiDelCodice),
   }));
   const [scheda, setScheda] = useState<Scheda>("aspetto");
   const [tentato, setTentato] = useState(false);
@@ -256,6 +264,20 @@ function Contenuto({
         </div>
       </fieldset>
     );
+  };
+
+  /** Il menu dei linguaggi: accendere o spegnere un linguaggio, e spostarlo di una riga (il fuoco resta sul pulsante
+   * premuto, che segue la sua riga). */
+  const accesi = s.linguaggiDelCodice;
+  const accendi = (l: Linguaggio, acceso: boolean) => cambia({ linguaggiDelCodice: bozza.righe.filter((x) => (x === l ? acceso : accesi.includes(x))) });
+  const sposta = (l: Linguaggio, verso: -1 | 1) => {
+    const righe = [...bozza.righe];
+    const i = righe.indexOf(l);
+    const j = i + verso;
+    if (j < 0 || j >= righe.length) return;
+    [righe[i], righe[j]] = [righe[j]!, righe[i]!];
+    setBozza((b) => ({ ...b, righe, scelte: { ...b.scelte, linguaggiDelCodice: righe.filter((x) => b.scelte.linguaggiDelCodice.includes(x)) } }));
+    requestAnimationFrame(() => modulo.current?.querySelector<HTMLElement>(`[data-linguaggio="${l}"] [data-verso="${verso}"]`)?.focus());
   };
 
   function invia(e: FormEvent): void {
@@ -555,6 +577,44 @@ function Contenuto({
             cambia: (caratteri) => setBozza((b) => ({ ...b, caratteri })),
             dati: { "data-caratteri": "" },
           })}
+          <fieldset className={stili.scelta} data-menu-dei-linguaggi="">
+            <legend>{testi.linguaggiDelCodice}</legend>
+            <p className={stili.spiegazione}>{testi.linguaggiSpiegazione}</p>
+            <ul className={stili.menuDeiLinguaggi}>
+              {bozza.righe.map((l, i) => {
+                const nome = testi[paroleDeiLinguaggi[l].nome];
+                const acceso = accesi.includes(l);
+                const ultimo = acceso && accesi.length === 1;
+                const pulsante = (verso: -1 | 1, fermo: boolean) => (
+                  <button
+                    type="button"
+                    className={stili.comando}
+                    data-verso={verso}
+                    aria-label={riempi(verso < 0 ? testi.linguaggioSu : testi.linguaggioGiu, { linguaggio: nome })}
+                    aria-disabled={fermo}
+                    onClick={fermo ? undefined : () => sposta(l, verso)}
+                  >
+                    {verso < 0 ? "▲" : "▼"}
+                  </button>
+                );
+                return (
+                  <li key={l} className={stili.rigaDelMenu} data-linguaggio={l}>
+                    <label className={stili.opzione}>
+                      <input type="checkbox" checked={acceso} disabled={ultimo} aria-describedby={ultimo ? `${id}-ultimo` : undefined} onChange={(e) => accendi(l, e.target.checked)} />
+                      {nome}
+                    </label>
+                    {pulsante(-1, i === 0)}
+                    {pulsante(1, i === bozza.righe.length - 1)}
+                  </li>
+                );
+              })}
+            </ul>
+            {accesi.length === 1 && (
+              <p id={`${id}-ultimo`} className={stili.spiegazione}>
+                {testi.almenoUnLinguaggio}
+              </p>
+            )}
+          </fieldset>
         </Tabs.Content>
       </Tabs.Root>
       <div className={stili.comandi}>

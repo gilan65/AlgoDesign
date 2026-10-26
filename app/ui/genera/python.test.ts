@@ -15,10 +15,8 @@ import { controlla, funzioniDelGiro, tetti } from "../../core/controllo/controll
 import { spazioDiUnaChiamata, tettoDelleChiamate } from "../../core/controllo/spazio";
 import { testoDelCodice, type Riga } from "../../core/genera/forma";
 import { codiceDelMotivo, motivi, motiviCol, type CodiceDiUnMotivo } from "../../core/genera/motivi";
-import { voceDel } from "../../core/genera/linguaggi";
+import { linguaggi, voceDel } from "../../core/genera/linguaggi";
 import { indiceDelLivello, nomeDellIndice, nomiDelSupporto, nomiDiPython } from "../../core/genera/nomi";
-import { c } from "../../core/genera/c";
-import { pseudocodice } from "../../core/genera/pseudocodice";
 import { python } from "../../core/genera/python";
 import { duplicaDato } from "../../core/modifica/operazioni";
 import { apri } from "../../core/progetto/formato";
@@ -204,16 +202,13 @@ describe("il nome del progetto e i commenti", () => {
     expect(codifica.test("# Esercizi di coding: cicli")).toBe(true);
   });
 
-  test("un a capo nel nome o in un commento non spezza una riga in nessuno dei tre generatori", () => {
+  test("un a capo nel nome o in un commento non spezza una riga in nessun linguaggio del registro", () => {
     const p = conNome("primo\nsecondo\rterzo\r\nquarto", "uno\rdue\ntre\r\nquattro");
-    const generatori = {
-      pseudocodice: (l: Lingua) => pseudocodice(p, tetti, paroleDelloPseudocodice(l)),
-      python: (l: Lingua) => python(p, tetti, l, paroleDelloPseudocodice(l)),
-      c: (l: Lingua) => c(p, tetti, l, paroleDelloPseudocodice(l)),
-    };
+    // Controllo positivo nel numero: il registro ha i linguaggi da provare.
+    expect(linguaggi.length).toBeGreaterThan(0);
     for (const l of lingue)
-      for (const [nome, g] of Object.entries(generatori)) {
-        const r = g(l);
+      for (const { id: nome } of linguaggi) {
+        const r = voceDel(nome).genera(p, tetti, l, paroleDelloPseudocodice(l));
         if (!r.generato) throw new Error(`${nome} non generato`);
         expect(r.righe.filter((x) => /[\r\n]/.test(x.testo)).map((x) => x.testo), `${nome} (${l})`).toEqual([]);
         // I quattro pezzi del commento sono quattro righe; il nome resta su una riga.

@@ -166,7 +166,7 @@ import { FinestraImpostazioni } from "./finestre/FinestraImpostazioni";
 import { FinestraProgetto, type DatiDelProgetto } from "./finestre/FinestraProgetto";
 import { useSpostabile } from "./spostabile";
 import { righeDi, testoDelCodice } from "../core/genera/forma";
-import { linguaggi, voceDel } from "../core/genera/linguaggi";
+import { voceDel } from "../core/genera/linguaggi";
 import { codiceDi, paroleDeiLinguaggi, type Linguaggio } from "./genera/codice";
 import { PannelloDelCodice, type RigheEvidenziate } from "./genera/PannelloDelCodice";
 import { applicaIColori } from "./colori";
@@ -326,9 +326,12 @@ export function Applicazione({
   const idTabella = useId();
   // Il codice generato nella colonna, con «Genera» premuto: anche senza esecuzione, al posto della tabella di traccia
   // (le due si escludono: si vede l'ultima scelta). Il linguaggio mostrato e, durante un'esecuzione, l'altezza del
-  // codice sopra la console, se l'utente ne ha scelta una. All'avvio il primo linguaggio del registro.
+  // codice sopra la console, se l'utente ne ha scelta una. Il linguaggio mostrato è uno di quelli accesi nel menu delle
+  // Impostazioni: all'avvio il primo, e il primo anche quando quello scelto si spegne (`null`: nessuno scelto).
   const [conCodice, setConCodice] = useState(false);
-  const [linguaggio, setLinguaggio] = useState<Linguaggio>(linguaggi[0].id);
+  const [linguaggioScelto, setLinguaggio] = useState<Linguaggio | null>(null);
+  const menuDeiLinguaggi = scelte.linguaggiDelCodice;
+  const linguaggio = linguaggioScelto !== null && menuDeiLinguaggi.includes(linguaggioScelto) ? linguaggioScelto : menuDeiLinguaggi[0]!;
   const [altezzaCodice, setAltezzaCodice] = useState<number | null>(null);
   const pannelloCodice = useRef<HTMLDivElement>(null);
   const idCodice = useId();
@@ -3425,6 +3428,7 @@ export function Applicazione({
                 >
                   <PannelloDelCodice
                     testi={testi}
+                    linguaggi={menuDeiLinguaggi}
                     linguaggio={linguaggio}
                     scegli={setLinguaggio}
                     codice={codice}

@@ -18,6 +18,9 @@
 // - Se il guscio non dà le preferenze, l'app parte lo stesso nella lingua del sistema coi colori predefiniti, e
 //   l'errore va nella console.
 // - Un campo rotto nel file delle preferenze scarta lui solo: gli altri restano (la lingua compresa).
+// - Il menu dei linguaggi nella scheda «Console»: ▲ ▼ col fuoco sul pulsante della riga spostata (anche in cima, dove il
+//   pulsante non fa nulla), l'ultimo acceso che non si spegne, le linguette nell'ordine dopo «Conferma», le preferenze
+//   scritte, e le stesse linguette (mostrata la prima) dopo un riavvio con quel file.
 // - I valori iniziali nel flowchart: nascosti, i blocchi sotto «Inizio» spariscono, e tornano mostrati. Il valore
 //   iniziale di un vettore: le due forme danno disegni e righe dei dati diverse; un vettore nuovo nasce nel modo
 //   scelto, ognuno lo scavalca con la sua casella, e passare dal valore ripetuto all'elenco riempie il campo.
@@ -376,8 +379,57 @@ test("ogni gruppo di opzioni sta in un riquadro, con la sua domanda dentro", asy
   // Controllo positivo della premessa: i gruppi sono quelli che le schede hanno (14 in Aspetto, coi tre dei cicli, quello
   // della copia di un vettore, quello dei blocchi selezionati, quello del blocco di Lettura, quello dei colori dei
   // blocchi e quello della guida; 5 in Modifica, con quello delle parentesi e quello dei casi d'uso; 5 nella tabella di
-  // traccia, 1 nella console).
-  expect({ gruppi, senzaRiquadro: esiti }).toEqual({ gruppi: 25, senzaRiquadro: [] });
+  // traccia, 2 nella console, con quello dei linguaggi del codice generato).
+  expect({ gruppi, senzaRiquadro: esiti }).toEqual({ gruppi: 26, senzaRiquadro: [] });
+});
+
+test("il menu dei linguaggi: ▲ ▼ spostano una riga col fuoco sul pulsante, l'ultimo acceso non si spegne, «Conferma» dà le linguette nell'ordine e le scrive, e al riavvio tornano", async ({ page }) => {
+  await apriVuota(page, { lingua: "it" });
+  const genera = page.getByRole("banner").getByRole("button", { name: it.pannelloCodice, exact: true });
+  const linguette = () => page.getByRole("region", { name: it.codiceGenerato, exact: true }).getByRole("tab");
+  await genera.click();
+  await expect(linguette()).toHaveText([it.linguaggioPseudocodice, it.linguaggioPython, it.linguaggioC]);
+  await page.getByRole("region", { name: it.codiceGenerato, exact: true }).getByRole("tab", { name: it.linguaggioPython, exact: true }).click();
+
+  let f = await apriLe(page);
+  await scheda(f, it.impostazioniConsole);
+  const menu = () => f.getByRole("group", { name: it.linguaggiDelCodice, exact: true });
+  const righe = () => menu().getByRole("listitem").evaluateAll((r) => r.map((x) => `${(x as HTMLElement).dataset.linguaggio}${x.querySelector("input")!.checked ? "" : " (spento)"}`));
+  const pulsante = (nome: string, su: boolean) => menu().getByRole("button", { name: riempi(su ? it.linguaggioSu : it.linguaggioGiu, { linguaggio: nome }), exact: true });
+  const casella = (nome: string) => menu().getByRole("checkbox", { name: nome, exact: true });
+  expect(await righe()).toEqual(["pseudocodice", "python", "c"]);
+  // ▲ sul C due volte: sale in cima, e il fuoco resta sul suo ▲ (fermo, raggiungibile); dalla tastiera, Invio.
+  await pulsante(it.linguaggioC, true).click();
+  await expect(pulsante(it.linguaggioC, true)).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect.poll(righe).toEqual(["c", "pseudocodice", "python"]);
+  await expect(pulsante(it.linguaggioC, true)).toBeFocused();
+  await expect(pulsante(it.linguaggioC, true)).toHaveAttribute("aria-disabled", "true");
+  await page.keyboard.press("Enter");
+  expect(await righe()).toEqual(["c", "pseudocodice", "python"]);
+  // Spenti lo pseudocodice e il Python, il C non si spegne e la riga lo dice; riacceso il Python, sì.
+  await casella(it.linguaggioPseudocodice).uncheck();
+  await casella(it.linguaggioPython).uncheck();
+  await expect(casella(it.linguaggioC)).toBeDisabled();
+  await expect(menu().getByText(it.almenoUnLinguaggio, { exact: true })).toBeVisible();
+  await casella(it.linguaggioPython).check();
+  await expect(casella(it.linguaggioC)).toBeEnabled();
+  await expect(menu().getByText(it.almenoUnLinguaggio, { exact: true })).toHaveCount(0);
+  await conferma(f);
+  // La linguetta guardata (Python) c'è ancora e resta mostrata; l'ordine è quello del menu.
+  await expect(linguette()).toHaveText([it.linguaggioC, it.linguaggioPython]);
+  await expect(page.getByRole("region", { name: it.codiceGenerato, exact: true }).getByRole("tab", { selected: true })).toHaveText(it.linguaggioPython);
+  const scritta = (await scritte(page)).at(-1);
+  expect(scritta).toEqual({ preferenze: fileDa("it", { ...scelteIniziali, linguaggiDelCodice: ["c", "python"] }) });
+
+  // Il riavvio con le preferenze scritte: le linguette nell'ordine, mostrata la prima; il menu con lo spento in fondo.
+  await apriVuota(page, scritta!.preferenze);
+  await genera.click();
+  await expect(linguette()).toHaveText([it.linguaggioC, it.linguaggioPython]);
+  await expect(page.getByRole("region", { name: it.codiceGenerato, exact: true }).getByRole("tab", { selected: true })).toHaveText(it.linguaggioC);
+  f = await apriLe(page);
+  await scheda(f, it.impostazioniConsole);
+  expect(await righe()).toEqual(["c", "python", "pseudocodice (spento)"]);
 });
 
 test.describe("col sistema in italiano, le preferenze che non si leggono", () => {

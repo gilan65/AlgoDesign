@@ -2,14 +2,15 @@
 // limiti coi loro intervalli (vettori e stringhe fino a 1000, i caratteri di un vettore di stringhe fino a 10 000), i separatori del CSV, la
 // velocità dell'esecuzione animata, la forma dei vettori nella tabella e quella del CSV, le righe lunghe della console
 // e i suoi caratteri per riga (da 50 a 1000), le forme dei cicli nel flowchart e il fondo del loro riquadro, i colori dei
-// generi di blocco, la ricerca e la finestra della guida.
+// generi di blocco, la ricerca e la finestra della guida, i linguaggi del codice generato accesi e il loro ordine.
 //
 // CHE COSA NON GUARDA: le Impostazioni a schermo (i campi e i messaggi: `e2e/impostazioni.e2e.ts`)
 // né il file sul disco (lo scrive il guscio: `cargo test`).
 import { expect, test } from "bun:test";
 import { tetti } from "../core/controllo/controllo";
 import { righeLunghePredefinite } from "../core/esecuzione/esecuzione";
-import { caratteriPerRiga, durataDelPasso, fileDa, intervalli, limiteValido, preferenzeDa, scelteIniziali, separatoriDelCsv } from "./preferenze";
+import { linguaggi } from "../core/genera/linguaggi";
+import { caratteriPerRiga, durataDelPasso, fileDa, intervalli, limiteValido, preferenzeDa, righeDelMenu, scelteIniziali, separatoriDelCsv } from "./preferenze";
 
 const tutte = {
   lingua: "en",
@@ -33,6 +34,7 @@ const tutte = {
   formaDelCsv: "per-elemento",
   righeLunghe: "la-fine",
   caratteriPerRiga: 80,
+  linguaggiDelCodice: ["c", "python"],
   valoriIniziali: "nascosti",
   valoreRipetuto: "un-valore",
   cicliPer: "chiuso",
@@ -99,6 +101,8 @@ const rotti: Record<string, readonly unknown[]> = {
   formaDelCsv: ["tutti", true, null],
   righeLunghe: ["taglia", 0, null],
   caratteriPerRiga: [0, 49, 1001, 2.5, "80", null],
+  // I linguaggi accesi: un elenco di identificatori del registro, almeno uno (uno sconosciuto da solo non basta).
+  linguaggiDelCodice: [[], ["linguaggio-finto"], "c", null, 1, [1, 2], { c: true }],
   valoriIniziali: ["nascosto", true, null],
   valoreRipetuto: ["ripetuto", 1, null],
   cicliPer: ["aperti", "chiusi", true, null],
@@ -127,7 +131,7 @@ test("un campo rotto scarta lui solo: gli altri restano", () => {
     }
   // Ogni campo del file ha le sue prove (i limiti hanno la loro).
   expect(Object.keys(rotti).sort()).toEqual(Object.keys(tutte).filter((k) => k !== "limiti").sort());
-  expect(provati).toBe(115);
+  expect(provati).toBe(122);
 });
 
 test("un limite rotto scarta lui solo, e un oggetto dei limiti rotto li scarta tutti e tre", () => {
@@ -243,6 +247,20 @@ test("il comando che salva un'esecuzione come caso d'uso: acceso di partenza e i
   expect(scelteIniziali.offriCasoDallEsecuzione).toBe(true);
   expect(preferenzeDa({ lingua: "it" }).scelte.offriCasoDallEsecuzione).toBe(true);
   for (const v of [true, false]) expect(fileDa("it", preferenzeDa({ offriCasoDallEsecuzione: v }).scelte).offriCasoDallEsecuzione).toBe(v);
+});
+
+test("i linguaggi del codice generato: tutti quelli del registro nel suo ordine di partenza e in un file senza il campo; l'ordine scritto torna uguale, uno sconosciuto o ripetuto si ignora", () => {
+  const delRegistro = linguaggi.map((v) => v.id);
+  expect(scelteIniziali.linguaggiDelCodice).toEqual(delRegistro);
+  expect(preferenzeDa({ lingua: "it" }).scelte.linguaggiDelCodice).toEqual(delRegistro);
+  // Ogni ordine e ogni scelta tornano uguali (la prova distingue: non è il predefinito che torna).
+  for (const v of [["c"], ["python", "pseudocodice"], ["c", "pseudocodice", "python"]] as const) expect(fileDa("it", preferenzeDa({ linguaggiDelCodice: v }).scelte).linguaggiDelCodice).toEqual(v);
+  // Uno che l'app non conosce (un linguaggio di una versione dopo, aperto da questa) si ignora; uno ripetuto vale una volta.
+  expect(preferenzeDa({ linguaggiDelCodice: ["linguaggio-finto", "c", "c", 3, "python"] }).scelte.linguaggiDelCodice).toEqual(["c", "python"]);
+  // Le righe del menu: gli accesi nel loro ordine, poi gli spenti in quello del registro.
+  expect(righeDelMenu(["c"])).toEqual(["c", "pseudocodice", "python"]);
+  expect(righeDelMenu(["python", "c"])).toEqual(["python", "c", "pseudocodice"]);
+  expect(righeDelMenu(delRegistro)).toEqual(delRegistro);
 });
 
 test("la guida: la ricerca accesa e la finestra fissa di partenza, anche in un file scritto prima che le scelte esistessero; ogni valore torna uguale", () => {

@@ -220,7 +220,7 @@ A procedure or a function also has its own test cases, which test it on its own:
 
 ## 7. The generated code
 
-The **Code** button, in the group of the views, opens on the right of the flowchart the panel of the **generated code**, with three tabs: **Pseudocode** (in the language of the interface), **Python** and **C**. The code follows every change of the flowchart; with a project that has errors, instead of the code there is the invitation to fix them. “Code” and “Table” take turns in the same panel.
+The **Code** button, in the group of the views, opens on the right of the flowchart the panel of the **generated code**, with the tabs of the languages: at first **Pseudocode** (in the language of the interface), **Python** and **C**, but which languages have a tab, and in what order, is chosen in the Settings (§12); at the start the first one is shown. The code follows every change of the flowchart; with a project that has errors, instead of the code there is the invitation to fix them. “Code” and “Table” take turns in the same panel.
 
 During the run with Step or with Animate the code highlights the line (or the lines) of the current block; with Run, the line where the run stops on a breakpoint or on an error. This way you see, action by action, what each block corresponds to.
 
@@ -431,7 +431,7 @@ The **Settings** button opens a window with six tabs; the choices apply after **
 - **Limits**: the elements of an array, the characters of a string and the characters of an array of strings (elements × maximum length), which can only be lowered; and the places of the call stack a new project starts with, from 5 to 500, which each project then changes in its Properties (§9);
 - **Paths**: the libraries folder (§10) and the examples one (§11);
 - **Trace table**: how an array is shown, what the CSV file has, the columns that stay in place, the separators;
-- **Console**: what a line that is too long does.
+- **Console**: what a line that is too long does, and the **languages of the generated code** (§7): a row for each language, with the box that gives it a tab and the ▲ and ▼ buttons that move it up and down the list, which is the order of the tabs; at least one language stays on.
 
 **The block colors.** In the “Appearance” tab, under “Flowchart colors”, the **Block colors** box has a row per kind: Start and end, Assignment, Procedure, Read, Write, If, Loops (the diamond of each loop), Comment and Frame of the loops. Each row has a sample block, drawn with the color it will have, and the hues to choose from: the first, **As in the set**, keeps the color of the set chosen above; then seventeen hues for the blocks (nine soft and eight deep) and eight for the line of the frame of the loops. A chosen hue holds with every set: changing the set it stays, and the other kinds take the colors of the new one. **All as in the set** brings every kind back to the color of the set. At first, in “Soft”, start and end are gray, the assignment mauve, the procedure sand, the read green, the write light blue, the “If” orange, the loops deep orange and the comment white; in “High contrast” the same colors are stronger. Yellow is not there: it is the color of the current block during the run.
 

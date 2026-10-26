@@ -14,6 +14,7 @@ import { tetti, type Tetti } from "../core/controllo/controllo";
 import type { CondizioniLunghe, FormaDellaCopia, FormaDelPer, FormaDelPerOgni, ValoreRipetuto, ValoriIniziali } from "../core/disegno/impaginazione";
 import { righeLunghePredefinite, type RigheLunghe } from "../core/esecuzione/esecuzione";
 import { separatoriPredefiniti, type FormaDeiVettori, type FormaDelCsv, type Separatori } from "../core/esecuzione/traccia";
+import { linguaggi, type Linguaggio } from "../core/genera/linguaggi";
 import { limitiDellaPila, opzioniPredefinite } from "../core/progetto/modello";
 import { linguaValida, type Lingua } from "../i18n/lingue";
 import { coloriDa, type ColoriDeiBlocchi } from "./colori";
@@ -75,6 +76,9 @@ export interface Scelte {
   readonly formaDelCsv: FormaDelCsv;
   readonly righeLunghe: ModoDelleRigheLunghe;
   readonly caratteriPerRiga: number;
+  /** I linguaggi del codice generato che hanno una linguetta, nel loro ordine: solo quelli accesi, almeno uno. Gli altri
+   * linguaggi del registro sono spenti (anche quelli che una versione dopo aggiunge). */
+  readonly linguaggiDelCodice: readonly Linguaggio[];
   /** I valori iniziali dei dati nel flowchart, sotto «Inizio», o nascosti. */
   readonly valoriIniziali: ValoriIniziali;
   /** Il valore iniziale di un vettore: come nasce nella vista dei dati (un elenco, o un valore per tutti gli elementi) e
@@ -125,6 +129,7 @@ export const scelteIniziali: Scelte = {
   formaDelCsv: "uguale",
   righeLunghe: righeLunghePredefinite.modo,
   caratteriPerRiga: righeLunghePredefinite.caratteri,
+  linguaggiDelCodice: linguaggi.map((v) => v.id),
   valoriIniziali: "mostrati",
   valoreRipetuto: "elenco",
   cicliPer: "aperto",
@@ -214,6 +219,18 @@ export function pilaValida(valore: unknown): valore is number {
   return typeof valore === "number" && Number.isInteger(valore) && valore >= limitiDellaPila.minimo && valore <= limitiDellaPila.massimo;
 }
 
+/** I linguaggi accesi letti dal file: gli identificatori del registro, nell'ordine scritto e senza ripetizioni (uno che
+ * l'app non conosce si ignora); senza almeno uno, `undefined`. */
+export function linguaggiDa(valore: unknown): readonly Linguaggio[] | undefined {
+  if (!Array.isArray(valore)) return undefined;
+  const noti: readonly string[] = linguaggi.map((v) => v.id);
+  const letti = [...new Set(valore.filter((x): x is Linguaggio => typeof x === "string" && noti.includes(x)))];
+  return letti.length > 0 ? letti : undefined;
+}
+
+/** Le righe del menu dei linguaggi nelle Impostazioni: gli accesi nel loro ordine, poi gli spenti in quello del registro. */
+export const righeDelMenu = (accesi: readonly Linguaggio[]): readonly Linguaggio[] => [...accesi, ...linguaggi.map((v) => v.id).filter((id) => !accesi.includes(id))];
+
 /** Come la console tiene le righe lunghe, per l'esecuzione. */
 export const righeLungheDi = (s: Scelte): RigheLunghe => ({ caratteri: s.caratteriPerRiga, modo: s.righeLunghe });
 
@@ -259,6 +276,7 @@ export function preferenzeDa(file: unknown): { lingua: Lingua | undefined; scelt
       formaDelCsv: uno(voci.formaDelCsv, f.formaDelCsv) ?? scelteIniziali.formaDelCsv,
       righeLunghe: uno(voci.righeLunghe, f.righeLunghe) ?? scelteIniziali.righeLunghe,
       caratteriPerRiga: caratteriValidi(f.caratteriPerRiga) ? f.caratteriPerRiga : scelteIniziali.caratteriPerRiga,
+      linguaggiDelCodice: linguaggiDa(f.linguaggiDelCodice) ?? scelteIniziali.linguaggiDelCodice,
       valoriIniziali: uno(voci.valoriIniziali, f.valoriIniziali) ?? scelteIniziali.valoriIniziali,
       valoreRipetuto: uno(voci.valoreRipetuto, f.valoreRipetuto) ?? scelteIniziali.valoreRipetuto,
       cicliPer: uno(voci.cicliPer, f.cicliPer) ?? scelteIniziali.cicliPer,
@@ -299,6 +317,7 @@ export function fileDa(lingua: Lingua, s: Scelte): Record<string, unknown> {
     formaDelCsv: s.formaDelCsv,
     righeLunghe: s.righeLunghe,
     caratteriPerRiga: s.caratteriPerRiga,
+    linguaggiDelCodice: [...s.linguaggiDelCodice],
     valoriIniziali: s.valoriIniziali,
     valoreRipetuto: s.valoreRipetuto,
     cicliPer: s.cicliPer,
