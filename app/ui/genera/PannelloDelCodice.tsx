@@ -1,4 +1,4 @@
-// Il codice generato, nella colonna a destra del flowchart: le linguette dei tre linguaggi (Pseudocodice, Python, C),
+// Il codice generato, nella colonna a destra del flowchart: le linguette dei linguaggi del registro, nel suo ordine,
 // «Copia» e «Salva…», e sotto il codice del linguaggio scelto coi numeri di riga. Il codice e le righe da evidenziare
 // li dà la finestra: qui non si genera e non si cerca nulla. Le righe evidenziate sono quelle del blocco corrente (o
 // dell'errore che ha fermato l'esecuzione), e a ogni fermata si portano in vista, tutte se ci stanno. Agli ausili sono
@@ -8,12 +8,10 @@
 import { Tabs } from "@ark-ui/react/tabs";
 import { memo, useEffect, useRef, type ReactElement } from "react";
 import type { Generato } from "../../core/genera/forma";
+import { linguaggi } from "../../core/genera/linguaggi";
 import type { Dizionario } from "../../i18n/it";
-import { LINGUAGGI, type Linguaggio } from "./codice";
+import { paroleDeiLinguaggi, type Linguaggio } from "./codice";
 import stili from "./PannelloDelCodice.module.css";
-
-/** Il nome di ogni linguetta, nel dizionario. */
-export const nomiDeiLinguaggi = { pseudocodice: "linguaggioPseudocodice", python: "linguaggioPython", c: "linguaggioC" } as const satisfies Record<Linguaggio, keyof Dizionario>;
 
 /** Le righe da evidenziare (numeri da 0) e perché: il blocco corrente, o quello dell'errore; il passo dell'esecuzione
  * dice quando portarle in vista (a ogni fermata, non a ogni disegno: in pausa l'utente può scorrere altrove). Le righe
@@ -66,9 +64,9 @@ export const PannelloDelCodice = memo(function PannelloDelCodice({
       <Tabs.Root value={linguaggio} onValueChange={(d) => scegli(d.value as Linguaggio)} className={stili.pannello}>
         <div className={stili.testa}>
           <Tabs.List className={stili.linguette} aria-label={testi.codiceGenerato}>
-            {LINGUAGGI.map((l) => (
-              <Tabs.Trigger key={l} value={l} className={stili.linguetta}>
-                {testi[nomiDeiLinguaggi[l]]}
+            {linguaggi.map(({ id }) => (
+              <Tabs.Trigger key={id} value={id} className={stili.linguetta}>
+                {testi[paroleDeiLinguaggi[id].nome]}
               </Tabs.Trigger>
             ))}
           </Tabs.List>
@@ -80,10 +78,10 @@ export const PannelloDelCodice = memo(function PannelloDelCodice({
             {testi.codiceSalva}
           </button>
         </div>
-        {LINGUAGGI.map((l) => (
-          <Tabs.Content key={l} value={l} className={stili.scheda}>
-            {l !== linguaggio ? null : codice.generato ? (
-              <pre ref={area} className={stili.codice} tabIndex={0} aria-label={testi[nomiDeiLinguaggi[l]]}>
+        {linguaggi.map(({ id }) => (
+          <Tabs.Content key={id} value={id} className={stili.scheda}>
+            {id !== linguaggio ? null : codice.generato ? (
+              <pre ref={area} className={stili.codice} tabIndex={0} aria-label={testi[paroleDeiLinguaggi[id].nome]}>
                 <div className={stili.righe}>
                   {codice.righe.map((r, i) => (
                     <div
