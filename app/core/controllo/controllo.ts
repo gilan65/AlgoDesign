@@ -69,8 +69,9 @@
 // - quale elemento di un vettore ha un valore: un elemento scritto vale per tutto il vettore (un avviso in meno:
 //   `w[0] ← 1` seguito dalla lettura di `w[1]` non avvisa, e l'esecuzione si ferma lì);
 // - fra i nomi riservati, quelli delle intestazioni del C che il programma generato non legge (le funzioni della
-//   libreria che nessuna regola chiama: un dato dentro `main` le copre senza danno); ci sono le parole del C11, di
-//   Python 3, degli operatori e i nomi dei programmi generati (`genera/nomi.ts`);
+//   libreria che nessuna regola chiama: un dato dentro `main` le copre senza danno); ci sono le parole degli operatori
+//   e, dal registro dei linguaggi (`genera/linguaggi.ts`), le parole del C11 e di Python 3 e i nomi dei programmi
+//   generati;
 // - un letterale reale diverso da zero che diventa zero (`1e-400`): solo l'infinito è fuori intervallo;
 // - lo stesso avviso due volte sullo stesso blocco: se ne segnala uno;
 // - per il dato inutile, se la lettura si esegue davvero: un dato letto solo in un ramo che non si prende mai, o
@@ -88,7 +89,7 @@
 //   cambiare più).
 
 import { analizza, parole, type Causa, type Espressione, type Fermata } from "../espressioni/analizzatore";
-import { nomiDelleIntestazioni, nomiRiservatiDeiGeneratori } from "../genera/nomi";
+import { nomiRiservati, nomiRiservatiNelFile } from "../genera/linguaggi";
 import type { Blocco, CodiceAvviso, CodiceErroreStatico, Dato, Funzione, GenereDiFunzione, Progetto, Segnalazione, Tipo } from "../progetto/modello";
 
 /** I tetti delle impostazioni dell'app. */
@@ -157,29 +158,25 @@ export interface LetturaSenzaValore {
   readonly indice: number;
 }
 
-const riservati = new Set(
-  [
-    // C11, 6.4.1 (quelle col trattino basso iniziale non sono nomi validi comunque)
-    "auto break case char const continue default do double else enum extern float for goto if inline int long",
-    "register restrict return short signed sizeof static struct switch typedef union unsigned void volatile while",
-    // Python 3
-    "False None True and as assert async await break class continue def del elif else except finally for from",
-    "global if import in is lambda nonlocal not or pass raise return try while with yield",
-    // Gli operatori a parola nelle due lingue
-    "and or not mod true false pi pi_greco to_integer to_real to_character to_array to_string length absolute_value",
-    "square_root raised_to round round_down round_up integer_part converti_a_intero converti_a_reale",
-    "converti_a_carattere converti_a_vettore converti_a_stringa lunghezza valore_assoluto radice_quadrata elevato_a",
-    "arrotonda per_difetto per_eccesso parte_intera",
-  ]
-    .join(" ")
-    .split(" ")
-    // I nomi che il codice generato usa per sé, in ogni lingua.
-    .concat(nomiRiservatiDeiGeneratori),
-);
+/** Gli operatori a parola nelle due lingue: sono del linguaggio del flowchart, non di un linguaggio generato. */
+const operatoriAParola = [
+  "and or not mod true false pi pi_greco to_integer to_real to_character to_array to_string length absolute_value",
+  "square_root raised_to round round_down round_up integer_part converti_a_intero converti_a_reale",
+  "converti_a_carattere converti_a_vettore converti_a_stringa lunghezza valore_assoluto radice_quadrata elevato_a",
+  "arrotonda per_difetto per_eccesso parte_intera",
+]
+  .join(" ")
+  .split(" ");
 
-/** Il nome di ciò che nel C sta a livello di file (una procedura, una funzione, una costante comune): nemmeno un nome
- * che le intestazioni del C dichiarano lì. */
-const delleIntestazioni = new Set(nomiDelleIntestazioni);
+/** I nomi riservati: gli operatori a parola e quelli di tutti i linguaggi del registro (le parole del linguaggio, i nomi
+ * che il codice generato usa per sé, in ogni lingua); `nelFile`, quelli vietati solo a ciò che sta a livello di file
+ * (nel C, i nomi che le intestazioni dichiarano lì). Si costruiscono alla prima domanda, non all'avvio del modulo: il
+ * registro importa i generatori, che importano questo modulo. */
+let riservati: { readonly ovunque: ReadonlySet<string>; readonly nelFile: ReadonlySet<string> } | undefined;
+function nomiRiservatiDelControllo(): NonNullable<typeof riservati> {
+  riservati ??= { ovunque: new Set([...operatoriAParola, ...nomiRiservati()]), nelFile: nomiRiservatiNelFile() };
+  return riservati;
+}
 
 /** Un nome valido: una lettera ASCII, poi lettere, cifre e trattino basso (`\w` senza il flag `u`), al più 63, e non
  * riservato; `nelFile` per un nome a livello di file. La causa del primo difetto (una lettera accentata o un segno
@@ -199,8 +196,9 @@ export function causaDelNome(nome: string, nelFile: boolean): Fermata | undefine
     return /\s/u.test(c) ? { causa: "nome_spazio" } : { causa: "nome_simbolo", segno: c };
   }
   if (nome.length > 63) return { causa: "nome_lungo" };
-  if (riservati.has(nome)) return { causa: "nome_riservato", segno: nome };
-  if (nelFile && delleIntestazioni.has(nome)) return { causa: "nome_della_libreria", segno: nome };
+  const { ovunque, nelFile: delFile } = nomiRiservatiDelControllo();
+  if (ovunque.has(nome)) return { causa: "nome_riservato", segno: nome };
+  if (nelFile && delFile.has(nome)) return { causa: "nome_della_libreria", segno: nome };
   return undefined;
 }
 /** Esportata per chi chiede un nome prima di crearlo (`motivoDelNome` delle operazioni sulle funzioni). */

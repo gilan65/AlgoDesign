@@ -1,13 +1,17 @@
 // Il registro dei linguaggi e l'elenco delle estensioni del guscio (`CODICE` in `shell/src/progetto.rs`, che rifiuta di
 // salvare il codice con un'estensione che non c'è) descrivono la stessa cosa in due lingue: questa prova li appaia come
 // insiemi, nei due versi (due linguaggi possono avere la stessa estensione). E il registro stesso: gli identificatori
-// unici, l'ordine delle linguette, il genere di ognuno.
+// unici, l'ordine delle linguette, il genere di ognuno; i nomi riservati di ogni linguaggio, che il controllo statico
+// rifiuta tutti; i motivi e la riga d'errore di ogni linguaggio da eseguire.
 //
 // CHE COSA NON GUARDA: un'estensione del guscio scritta fuori da `pub const CODICE` (il rilevatore legge solo quella
-// dichiarazione, e se non la trova la prova è rossa); che il guscio usi davvero `CODICE` quando salva.
+// dichiarazione, e se non la trova la prova è rossa); che il guscio usi davvero `CODICE` quando salva; che i nomi
+// dichiarati siano TUTTI quelli che il codice generato usa (lo guardano le prove del Python e del C sul generato).
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { linguaggi, voceDel } from "./linguaggi";
+import { causaDelNome } from "../controllo/controllo";
+import { linguaggi, nomiRiservati, nomiRiservatiNelFile, voceDel } from "./linguaggi";
+import type { CodiceDiUnMotivo } from "./motivi";
 
 /** Le estensioni che stanno da una parte sola. */
 function appaia(registro: readonly string[], guscio: readonly string[]): { soloNelRegistro: string[]; soloNelGuscio: string[] } {
@@ -54,4 +58,40 @@ test("il registro ha i tre linguaggi di oggi, nell'ordine delle linguette, ognun
   ]);
   expect(new Set(linguaggi.map((v) => v.id)).size).toBe(linguaggi.length);
   for (const v of linguaggi) expect(voceDel(v.id)).toBe(v);
+});
+
+test("il controllo statico rifiuta ogni nome riservato di ogni linguaggio, e quelli del file solo a livello di file", () => {
+  // Controllo positivo nel numero: il Python e il C dichiarano nomi, e il C quelli delle intestazioni.
+  expect(voceDel("python").riservati.length).toBeGreaterThan(50);
+  expect(voceDel("c").riservati.length).toBeGreaterThan(200);
+  expect(voceDel("c").riservatiNelFile.length).toBeGreaterThan(500);
+  for (const n of nomiRiservati()) expect({ n, causa: causaDelNome(n, false)?.causa }).toEqual({ n, causa: "nome_riservato" });
+  const soloNelFile = [...nomiRiservatiNelFile()].filter((n) => !nomiRiservati().has(n));
+  expect(soloNelFile.length).toBeGreaterThan(0);
+  for (const n of soloNelFile) expect({ n, fuori: causaDelNome(n, false), dentro: causaDelNome(n, true)?.causa }).toEqual({ n, fuori: undefined, dentro: "nome_della_libreria" });
+  // Un nome che nessun linguaggio riserva resta valido.
+  expect(causaDelNome("voto", true)).toBeUndefined();
+});
+
+test("nessun nome riservato ha la forma della copia di un dato (finisce con _<numero>) o comincia col trattino basso", () => {
+  const tutti = [...nomiRiservati(), ...nomiRiservatiNelFile()];
+  expect(tutti.filter((n) => /_\d+$/.test(n))).toEqual([]);
+  expect(tutti.filter((n) => n.startsWith("_"))).toEqual([]);
+  expect(["voto_2", "_indice"].filter((n) => /_\d+$/.test(n) || n.startsWith("_"))).toEqual(["voto_2", "_indice"]);
+});
+
+test("ogni linguaggio da eseguire ha i motivi di tutti i codici, diversi fra loro, e la riga d'errore delle due lingue", () => {
+  const codici: CodiceDiUnMotivo[] = ["invalid_input", "input_exhausted", "invalid_character_code", "string_too_long", "string_longer_than_array", "null_character_in_string", "index_out_of_range", "same_reference", "recursion_too_deep", "recursion_data_too_large"];
+  const daEseguire = linguaggi.filter((v) => v.genere === "da-eseguire");
+  expect(daEseguire.map((v) => v.id)).toEqual(["python", "c"]);
+  for (const v of daEseguire)
+    for (const lingua of ["it", "en"] as const) {
+      expect(Object.keys(v.motivi[lingua]).sort()).toEqual([...codici].sort());
+      expect(new Set(Object.values(v.motivi[lingua])).size).toBe(codici.length);
+      const scritto = `${lingua === "it" ? "Errore alla riga" : "Error at line"} 12: ${v.motivi[lingua].input_exhausted}\n`;
+      expect([...(v.rigaDErrore.exec(scritto) ?? [])].slice(1)).toEqual(["12", v.motivi[lingua].input_exhausted]);
+      // Due righe, o la riga senza l'a capo, non sono la riga d'errore.
+      expect(v.rigaDErrore.exec(`${scritto}${scritto}`)).toBeNull();
+      expect(v.rigaDErrore.exec(scritto.trimEnd())).toBeNull();
+    }
 });

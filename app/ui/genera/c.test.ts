@@ -19,7 +19,8 @@ import { spazioDiUnaChiamata } from "../../core/controllo/spazio";
 import { c } from "../../core/genera/c";
 import { testoDelCodice, type Riga } from "../../core/genera/forma";
 import { codiceDelMotivo, motivi } from "../../core/genera/motivi";
-import { nomeDellaRiga, nomiDelC, nomiDelSupporto, nomiDelSupportoDelC, nomiRiservatiDeiGeneratori } from "../../core/genera/nomi";
+import { voceDel } from "../../core/genera/linguaggi";
+import { nomeDellaRiga, nomiDelC, nomiDelSupporto, nomiDelSupportoDelC } from "../../core/genera/nomi";
 import { apri } from "../../core/progetto/formato";
 import type { Blocco, CasoDiUnaFunzione, Funzione, Progetto } from "../../core/progetto/modello";
 import { testiDeiCodici } from "../../i18n/codici";
@@ -47,6 +48,9 @@ import { altreForme, vettorePerRiferimento } from "./attesi-del-python";
 import { formeDeiCicli, tutteLeForme } from "./attesi-dello-pseudocodice";
 import { paroleDelloPseudocodice } from "./parole";
 import { provenienzaConLeFasi, provaIlCorpusDeiCicli, rifiutatiDellaTappa2 } from "./provenienza-dei-cicli";
+
+/** I nomi che la voce del C dichiara nel registro dei linguaggi: il C generato definisce solo questi. */
+const riservatiDelC = voceDel("c").riservati;
 
 const lingue: readonly Lingua[] = ["it", "en"];
 const cartella = join(import.meta.dir, "..", "..", "casi");
@@ -260,7 +264,7 @@ describe("i nomi che il C usa per sé", () => {
         }
         for (const d of definite) {
           definiti++;
-          expect(nomiRiservatiDeiGeneratori, `${p.metadata.name} (${l}): ${d}`).toContain(d);
+          expect(riservatiDelC, `${p.metadata.name} (${l}): ${d}`).toContain(d);
         }
       }
     expect(chiamate).toBeGreaterThan(1000);
@@ -269,9 +273,9 @@ describe("i nomi che il C usa per sé", () => {
 
   test("le macro delle intestazioni e le parole del C23 sono riservate", () => {
     for (const nome of ["EOF", "NULL", "INT_MAX", "stdin", "errno", "bool", "nullptr", "constexpr", "typeof", "leggi_intero_alla_riga", "read_integer_with_line", "concatena_in", "concatenate_into"])
-      expect(nomiRiservatiDeiGeneratori, nome).toContain(nome);
+      expect(riservatiDelC, nome).toContain(nome);
     // Nessun nome riservato finisce con _<numero>, la forma della copia di un dato.
-    expect(nomiRiservatiDeiGeneratori.filter((n) => /_\d+$/.test(n))).toEqual([]);
+    expect(riservatiDelC.filter((n) => /_\d+$/.test(n))).toEqual([]);
   });
 });
 
