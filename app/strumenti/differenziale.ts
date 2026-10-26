@@ -15,10 +15,12 @@
 //   bun run differenziale --corpus <cartella>  un'altra cartella con la forma del corpus
 //   bun run differenziale <file.algo> …        solo i file dati (i controlli positivi del collaudo)
 //
-// Gli esecutori di ogni caso: `interprete` (l'esecuzione del nucleo nel modo caso, la stessa di `bun run casi`);
-// `python it` e `python en`; `<compilatore> it` e `<compilatore> en` per ogni compilatore C, chiamato `gcc` o `clang`
-// da ciò che stampa con `--version` (non dal nome del file: un `gcc.exe` può essere clang). Il C si compila con
-// `-std=c11 -Wall -Wextra` (e `-lm` fuori da Windows), una volta per programma, lingua e compilatore.
+// I linguaggi da eseguire sono quelli del registro (`core/genera/linguaggi.ts`), ognuno col suo esecutore
+// (`strumenti/esecutori.ts`: toolchain, compilazione, esecuzione, avvisi attesi); una voce da eseguire senza esecutore,
+// o un esecutore senza voce, è un PROBLEMA. Gli esecutori di ogni caso: `interprete` (l'esecuzione del nucleo nel modo
+// caso, la stessa di `bun run casi`), poi per ogni linguaggio da eseguire, nell'ordine del registro, ogni macchina della
+// sua toolchain in ogni lingua del codice (`python it`, `python en`, `gcc it`, `gcc en`, `clang it`, `clang en`). Un
+// linguaggio che si compila si compila una volta per programma, lingua e macchina.
 //
 // L'ottenuto di un programma generato:
 // - lo stdout e lo stderr si leggono in byte: un `\r` e un BOM restano nel testo, un byte che non è UTF-8 lascia il
@@ -44,15 +46,10 @@
 // restano nel confronto). Sul corpus un nome escluso che non c'è fra i file o i casi delle tappe del confronto è un
 // PROBLEMA.
 //
-// La toolchain, per i compilatori C e per Python separatamente, nell'ordine:
-// 1. la variabile d'ambiente `ALGODESIGN_CC` (gli eseguibili dei compilatori, separati come nel PATH) o
-//    `ALGODESIGN_PYTHON` (l'eseguibile di Python);
-// 2. l'impostazione locale `.collaudo/toolchain.json` (non versionata): `{ "c": [ … ], "python": "…" }`, coi percorsi
-//    assoluti o relativi alla cartella dell'app;
-// 3. il PATH: `gcc` e `clang`; `python` (fuori da Windows prima `python3`).
-// Un eseguibile indicato che non risponde a `--version` è un PROBLEMA, come nessun compilatore C o nessun Python. I
-// processi partono con la cartella del loro eseguibile in testa al PATH (il gcc di MSYS e i suoi programmi vogliono la
-// sua libreria).
+// La toolchain di ogni esecutore (variabile d'ambiente, impostazione locale, PATH) è descritta in `esecutori.ts`. Un
+// eseguibile indicato che non risponde a `--version` è un PROBLEMA, come una toolchain senza nessun eseguibile; una
+// famiglia che manca (il C senza clang) la dice la riga della toolchain, e il caso corre con le macchine che ci sono
+// (il collaudo le richiede tutte). I processi partono con la cartella del loro eseguibile in testa al PATH.
 //
 // Righe: per ogni caso ed esecutore quelle di `righe-dei-casi.ts` precedute dall'esecutore (`VERDE gcc it
 // tappa-1/x#x`), o `ROSSO … senza esito: …`; `ESCLUSO <caso>: <ragione>`; `ERRORE STATICO <caso>: <codice> <blocco>,
@@ -60,10 +57,10 @@
 // in fondo la riga `toolchain: …` e quella del riepilogo `differenziale: …`. Un caso con gli avvisi diversi è rosso:
 // qui ogni differenza lo è. Esce con 1 se c'è un rosso o un problema.
 //
-// Gli avvisi dei compilatori: ogni programma della tappa (anche quelli dei casi esclusi) e ogni programma di prova si
-// generano e si compilano nelle due lingue con ogni compilatore; un programma fra `avvisiDelCAttesi` deve avvisare con la sua opzione e solo con
-// quella, ogni altro non deve avvisare. Un avviso non atteso, o uno atteso che manca, è un PROBLEMA; la riga
-// `avvisi del C: …` li conta. Il testo degli avvisi va sullo standard error.
+// Gli avvisi della compilazione: ogni programma della tappa (anche quelli dei casi esclusi) e ogni programma di prova si
+// generano e si compilano nelle due lingue con ogni macchina; un programma fra gli avvisi attesi del suo esecutore deve
+// avvisare con la sua opzione e solo con quella, ogni altro non deve avvisare. Un avviso non atteso, o uno atteso che
+// manca, è un PROBLEMA; la riga `avvisi della compilazione: …` li conta. Il testo degli avvisi va sullo standard error.
 //
 // Che cosa NON guarda: la console di Windows (stdin e stdout qui sono tubi); che i casi siano quelli giusti (lo dice la
 // specifica); l'elenco del corpus (lo appaia `bun run casi`; un file che non si apre qui è un PROBLEMA); i casi delle
@@ -71,21 +68,20 @@
 // avanzate (un programma generato legge righe senza nome: oggi nessun caso del corpus le ha); gli avvisi di un
 // programma che non è nel corpus (un dato mai usato avvisa: lo dice l'intestazione di `core/genera/c.ts`).
 
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { availableParallelism, tmpdir } from "node:os";
-import { basename, delimiter, dirname, isAbsolute, join, resolve } from "node:path";
+import { basename, join } from "node:path";
 import { eseguiCaso } from "../core/casi/esecutore";
 import { esitoDelCaso, margineDellOutput } from "../core/casi/esito";
 import { controlla, tetti, type EsitoDelControllo } from "../core/controllo/controllo";
-import { c } from "../core/genera/c";
 import { parametriDelCaso, testoDelCodice, type Generato, type Riga } from "../core/genera/forma";
-import { voceDel, type VoceDelLinguaggio } from "../core/genera/linguaggi";
+import { linguaggi, type Linguaggio, type VoceDelLinguaggio } from "../core/genera/linguaggi";
 import { codiceDelMotivo } from "../core/genera/motivi";
 import type { LinguaDelCodice } from "../core/genera/nomi";
-import { python } from "../core/genera/python";
 import { apri } from "../core/progetto/formato";
 import type { Atteso, CasoDiUnaFunzione, Funzione, Progetto } from "../core/progetto/modello";
 import { paroleDelloPseudocodice } from "../ui/genera/parole";
+import { ambienteDi, appaia, esecutoreDel, esecutori as tuttiGliEsecutori, lingueDelCodice as lingue, trovaToolchain, type Esecutore, type Macchina } from "./esecutori";
 import { righeDellEsito } from "./righe-dei-casi";
 
 /** Il controllo statico di un progetto della tappa: ha gli errori e gli avvisi. */
@@ -116,102 +112,21 @@ export const esclusi: Readonly<Record<string, string>> = {
   "per-overflow-contatore": "overflow del contatore di un per, che il C non definisce",
 };
 
-/** I programmi della tappa che avvisano compilati con `-Wall -Wextra`, per nome del file, con l'opzione dell'avviso: il
- * dato letto senza valore, e la funzione che richiama sé stessa per ogni via (si ferma solo al tetto della ricorsione:
- * l'avviso è vero, con gcc e con clang). Ogni altro programma della tappa compila senza avvisi. */
-export const avvisiDelCAttesi: Readonly<Record<string, string>> = {
-  "senza-valore-booleano": "-Wuninitialized",
-  "senza-valore-carattere": "-Wuninitialized",
-  "senza-valore-intero": "-Wuninitialized",
-  "senza-valore-reale": "-Wuninitialized",
-  "ricorsione-profonda": "-Winfinite-recursion",
-  "ricorsione-allo-spazio": "-Winfinite-recursion",
-  "spazio-al-byte": "-Winfinite-recursion",
-};
-
 const radice = join(import.meta.dir, "..");
-const lingue = ["it", "en"] as const;
 const secondiDiUnProgramma = 10;
-
-// ------------------------------------------------------------------------------------------------ la toolchain
-
-const chiaveDelPath = Object.keys(process.env).find((k) => k.toUpperCase() === "PATH") ?? "PATH";
-/** L'ambiente di un processo: la cartella dell'eseguibile in testa al PATH. Su Windows la variabile si chiama «Path»:
- * aggiungerne una «PATH» ne farebbe una seconda, che il figlio non legge. */
-const ambienteDi = (eseguibile: string): Record<string, string | undefined> => ({
-  ...process.env,
-  [chiaveDelPath]: `${dirname(eseguibile)}${delimiter}${process.env[chiaveDelPath] ?? ""}`,
-});
-
-type Impostazione = { c?: string[]; python?: string };
-const fileDellImpostazione = join(radice, ".collaudo", "toolchain.json");
-function impostazione(): Impostazione | undefined {
-  if (!existsSync(fileDellImpostazione)) return undefined;
-  return JSON.parse(readFileSync(fileDellImpostazione, "utf8")) as Impostazione;
-}
-const assoluto = (p: string) => (isAbsolute(p) ? p : resolve(radice, p));
-
-/** Gli eseguibili indicati, e da dove vengono. */
-function indicati(variabile: string, dallImpostazione: (i: Impostazione) => string[] | undefined, nomi: string[]): { percorsi: string[]; da: string } {
-  const v = process.env[variabile];
-  if (v !== undefined && v.trim() !== "") return { percorsi: v.split(delimiter).filter((x) => x.trim() !== ""), da: `variabile ${variabile}` };
-  const i = impostazione();
-  const daI = i === undefined ? undefined : dallImpostazione(i);
-  if (daI !== undefined && daI.length > 0) return { percorsi: daI.map(assoluto), da: "impostazione .collaudo/toolchain.json" };
-  return { percorsi: nomi.map((n) => Bun.which(n)).filter((x): x is string => x !== null), da: "PATH" };
-}
-
-type Compilatore = { nome: string; famiglia: "gcc" | "clang"; versione: string; percorso: string };
-type Python = { versione: string; percorso: string };
 const problemi: string[] = [];
 
-/** La prima riga di `--version`, o il motivo per cui non c'è. */
-function versione(percorso: string): { riga: string } | { errore: string } {
-  try {
-    const r = Bun.spawnSync([percorso, "--version"], { env: ambienteDi(percorso), stdout: "pipe", stderr: "pipe", timeout: 30_000 });
-    const testo = `${r.stdout.toString()}${r.stderr.toString()}`.trim();
-    if (r.exitCode !== 0) return { errore: `uscita ${r.exitCode}: ${JSON.stringify(testo.slice(0, 200))}` };
-    return { riga: testo.split(/\r?\n/)[0] ?? "" };
-  } catch (e) {
-    return { errore: (e as Error).message };
-  }
-}
+// ------------------------------------------------------------------------------------------------ il contratto
 
-function trovaCompilatori(): { compilatori: Compilatore[]; da: string } {
-  const { percorsi, da } = indicati("ALGODESIGN_CC", (i) => i.c, ["gcc", "clang"]);
-  const compilatori: Compilatore[] = [];
-  for (const percorso of percorsi) {
-    const v = versione(percorso);
-    if ("errore" in v) {
-      problemi.push(`toolchain: il compilatore C ${percorso} (da ${da}) non risponde a --version: ${v.errore}`);
-      continue;
-    }
-    const famiglia = /\bclang version\b/.test(v.riga) ? "clang" : /\bgcc\b|\bGCC\b/.test(v.riga) ? "gcc" : undefined;
-    if (famiglia === undefined) {
-      problemi.push(`toolchain: ${percorso} (da ${da}) non è né gcc né clang: ${JSON.stringify(v.riga)}`);
-      continue;
-    }
-    const stessa = compilatori.filter((x) => x.famiglia === famiglia).length;
-    compilatori.push({ nome: stessa === 0 ? famiglia : `${famiglia}-${stessa + 1}`, famiglia, versione: v.riga.match(/\d+\.\d+(\.\d+)?/)?.[0] ?? "?", percorso });
-  }
-  if (compilatori.length === 0) problemi.push(`toolchain: nessun compilatore C (cercato in ${da})`);
-  return { compilatori, da };
-}
-
-function trovaPython(): { python: Python | undefined; da: string } {
-  const { percorsi, da } = indicati("ALGODESIGN_PYTHON", (i) => (i.python === undefined ? undefined : [i.python]), process.platform === "win32" ? ["python"] : ["python3", "python"]);
-  const percorso = percorsi[0];
-  if (percorso === undefined) {
-    problemi.push(`toolchain: nessun Python (cercato in ${da})`);
-    return { python: undefined, da };
-  }
-  const v = versione(percorso);
-  if ("errore" in v || !/^Python \d/.test(v.riga)) {
-    problemi.push(`toolchain: il Python ${percorso} (da ${da}) non risponde a --version: ${"errore" in v ? v.errore : JSON.stringify(v.riga)}`);
-    return { python: undefined, da };
-  }
-  return { python: { versione: v.riga.slice("Python ".length), percorso }, da };
-}
+/** Le voci da eseguire del registro, ognuna col suo esecutore (quelle senza restano fuori, con un PROBLEMA). */
+type DaEseguire = { voce: VoceDelLinguaggio & { readonly id: Linguaggio }; esecutore: Esecutore };
+const { vociSenzaEsecutore, esecutoriSenzaVoce } = appaia(linguaggi, tuttiGliEsecutori);
+for (const id of vociSenzaEsecutore) problemi.push(`contratto: il linguaggio da eseguire ${id} non ha un esecutore`);
+for (const id of esecutoriSenzaVoce) problemi.push(`contratto: l'esecutore ${id} non ha un linguaggio da eseguire nel registro`);
+const daEseguire: DaEseguire[] = linguaggi.flatMap((voce) => {
+  const esecutore = voce.genere === "da-eseguire" ? esecutoreDel(voce.id) : undefined;
+  return esecutore === undefined ? [] : [{ voce, esecutore }];
+});
 
 // ------------------------------------------------------------------------------------------------ i processi
 
@@ -305,13 +220,14 @@ if (corpus) {
       file.push({ nome: `${tappa}/${f.slice(0, -".algo".length)}`, percorso: join(cartella, tappa, f) });
 } else file.push(...argomenti.map((a) => ({ nome: a, percorso: a })));
 
-const { compilatori, da: daC } = trovaCompilatori();
-const { python: py, da: daPython } = trovaPython();
-const esecutori = [
-  "interprete",
-  ...(py === undefined ? [] : lingue.map((l) => `python ${l}`)),
-  ...compilatori.flatMap((k) => lingue.map((l) => `${k.nome} ${l}`)),
-];
+// La toolchain di ogni linguaggio da eseguire, e gli esecutori: l'interprete, poi ogni macchina in ogni lingua.
+const toolchain = daEseguire.map((d) => ({ ...d, ...trovaToolchain(d.esecutore, problemi) }));
+/** Un esecutore di un programma generato: una macchina della toolchain di un linguaggio, in una lingua del codice. */
+type DiUnGenerato = { nome: string; voce: DaEseguire["voce"]; esecutore: Esecutore; macchina: Macchina; lingua: LinguaDelCodice };
+const generatiDa: DiUnGenerato[] = toolchain.flatMap(({ voce, esecutore, macchine }) =>
+  macchine.flatMap((macchina) => lingue.map((lingua) => ({ nome: `${macchina.nome} ${lingua}`, voce, esecutore, macchina, lingua }))),
+);
+const esecutori = ["interprete", ...generatiDa.map((g) => g.nome)];
 
 /** Un caso da confrontare: il progetto, il caso (del programma, o di una procedura o funzione eseguita da sola, con
  * la sua `funzione`), le righe del suo input e il controllo statico del progetto. */
@@ -395,22 +311,22 @@ if (corpus) for (const n of Object.keys(esclusi).filter((n) => !nomiTrovati.has(
 
 // Il codice generato di ogni file della tappa, scritto in una cartella temporanea.
 const tmp = mkdtempSync(join(tmpdir(), "differenziale-"));
-type Codice = { righe: readonly Riga[]; sorgente: string; file: number } | { statico: true };
+type Codice = { righe: readonly Riga[]; sorgente: string; file: number; linguaggio: Linguaggio; lingua: LinguaDelCodice } | { statico: true };
 const generati = new Map<string, Codice>();
 const chiave = (k: number, linguaggio: string, l: LinguaDelCodice) => `${k} ${linguaggio} ${l}`;
 for (const [k, { progetto: p, statico }] of daGenerare) {
   for (const l of lingue)
-    for (const [linguaggio, genera, estensione] of [["python", python, "py"], ["c", c, "c"]] as const) {
-      const g: Generato = genera(p, tetti, l, paroleDelloPseudocodice(l));
+    for (const { voce } of daEseguire) {
+      const g: Generato = voce.genera(p, tetti, l, paroleDelloPseudocodice(l));
       if (!g.generato) {
-        if (g.perche !== "errori-statici" || !statico) throw new Error(`${file[k]!.nome}: il generatore ${linguaggio} lo dice ${g.perche} e il controllo no`);
-        generati.set(chiave(k, linguaggio, l), { statico: true });
+        if (g.perche !== "errori-statici" || !statico) throw new Error(`${file[k]!.nome}: il generatore ${voce.id} lo dice ${g.perche} e il controllo no`);
+        generati.set(chiave(k, voce.id, l), { statico: true });
         continue;
       }
       if (statico) throw new Error(`${file[k]!.nome}: il controllo vi trova errori statici e il generatore lo traduce`);
-      const sorgente = join(tmp, `${k}-${l}.${estensione}`);
+      const sorgente = join(tmp, `${k}-${l}${voce.estensione}`);
       writeFileSync(sorgente, testoDelCodice(g.righe));
-      generati.set(chiave(k, linguaggio, l), { righe: g.righe, sorgente, file: k });
+      generati.set(chiave(k, voce.id, l), { righe: g.righe, sorgente, file: k, linguaggio: voce.id, lingua: l });
     }
 }
 // I programmi di prova dei casi delle funzioni, uno per caso, linguaggio e lingua: si compilano anche loro.
@@ -418,17 +334,18 @@ const prove = new Map<string, Codice>();
 daConfrontare.forEach((d, n) => {
   if (d.funzione === undefined || d.controllo.errori.length > 0) return;
   for (const l of lingue)
-    for (const [linguaggio, genera, estensione] of [["python", python, "py"], ["c", c, "c"]] as const) {
-      const g = genera(d.progetto, tetti, l, paroleDelloPseudocodice(l), { funzione: d.funzione.id, caso: d.caso });
+    for (const { voce } of daEseguire) {
+      const g = voce.genera(d.progetto, tetti, l, paroleDelloPseudocodice(l), { funzione: d.funzione.id, caso: d.caso });
       if (!g.generato) throw new Error(`${d.id}: il programma di prova non si genera (${g.perche})`);
-      const sorgente = join(tmp, `${d.file}-prova-${n}-${l}.${estensione}`);
+      const sorgente = join(tmp, `${d.file}-prova-${n}-${l}${voce.estensione}`);
       writeFileSync(sorgente, testoDelCodice(g.righe));
-      prove.set(`${d.id} ${linguaggio} ${l}`, { righe: g.righe, sorgente, file: d.file });
+      prove.set(`${d.id} ${voce.id} ${l}`, { righe: g.righe, sorgente, file: d.file, linguaggio: voce.id, lingua: l });
     }
 });
 
-// Le compilazioni, una per programma, lingua e compilatore. Gli avvisi di ognuna si contano: un programma fra gli
-// attesi (`avvisiDelCAttesi`) avvisa con la sua opzione e solo con quella, ogni altro non avvisa.
+// Le compilazioni, una per programma, lingua e macchina di un linguaggio che si compila. Gli avvisi di ognuna si
+// contano: un programma fra gli avvisi attesi del suo esecutore avvisa con la sua opzione e solo con quella, ogni altro
+// non avvisa.
 const quanti = Math.max(2, availableParallelism());
 const eseguibili = new Map<string, string>();
 const compilazioni: (() => Promise<void>)[] = [];
@@ -436,22 +353,22 @@ let compilazioniConAvvisiAttesi = 0;
 let avvisiNonAttesi = 0;
 let avvisiMancanti = 0;
 for (const [chiaveDelCodice, codice] of [...generati, ...prove]) {
-  if (!chiaveDelCodice.includes(" c ") || !("righe" in codice)) continue;
+  if (!("righe" in codice)) continue;
+  const { esecutore, macchine } = toolchain.find((t) => t.voce.id === codice.linguaggio)!;
+  const { compila, avvisi: avvisiDelTesto } = esecutore;
+  if (compila === undefined) continue;
   const { base } = daGenerare.get(codice.file)!;
-  const lingua = chiaveDelCodice.slice(-2);
-  const attesa = Object.hasOwn(avvisiDelCAttesi, base) ? avvisiDelCAttesi[base] : undefined;
-  for (const k of compilatori)
+  const attesa = Object.hasOwn(esecutore.avvisiAttesi, base) ? esecutore.avvisiAttesi[base] : undefined;
+  for (const k of macchine)
     compilazioni.push(async () => {
-      const exe = codice.sorgente.replace(/\.c$/, `-${k.nome}${process.platform === "win32" ? ".exe" : ""}`);
-      const f = await lancia([k.percorso, "-std=c11", "-Wall", "-Wextra", "-o", exe, codice.sorgente, ...(process.platform === "win32" ? [] : ["-lm"])], new Uint8Array(), 120);
+      const { comando, eseguibile } = compila(k, codice.sorgente);
+      const f = await lancia(comando, new Uint8Array(), 120);
       const testo = testoDelCompilatore.decode(f.err);
       if (f.uscita !== 0) problemi.push(`${k.nome}: non compila ${codice.sorgente}: ${f.scaduto ? "tempo scaduto" : JSON.stringify(testo.slice(0, 500))}`);
-      else eseguibili.set(`${chiaveDelCodice} ${k.nome}`, exe);
+      else eseguibili.set(`${chiaveDelCodice} ${k.nome}`, eseguibile);
       if (testo.trim() !== "") console.error(`[compilazione ${k.nome} ${basename(codice.sorgente)}]\n${testo}`);
-      // Le opzioni degli avvisi, una per avviso: «warning: … [-Wopzione]».
-      const opzioni = [...testo.matchAll(/\bwarning:.*\[(-W[\w=-]+)\]/g)].map((m) => m[1]!);
-      const avvisi = [...testo.matchAll(/\bwarning:/g)].length;
-      const chi = `${daGenerare.get(codice.file)!.base}: ${k.nome} ${lingua}`;
+      const { quanti: avvisi, opzioni } = avvisiDelTesto?.(testo) ?? { quanti: 0, opzioni: [] };
+      const chi = `${base}: ${k.nome} ${codice.lingua}`;
       if (attesa !== undefined && avvisi > 0 && opzioni.length === avvisi && opzioni.every((o) => o === attesa)) compilazioniConAvvisiAttesi++;
       else if (attesa !== undefined) {
         avvisiMancanti++;
@@ -477,30 +394,28 @@ const confronta = (atteso: Atteso, o: Atteso, tagliato: boolean, chi: string): R
 const esecuzioni: (() => Promise<void>)[] = [];
 for (const d of daConfrontare) {
   const input = new TextEncoder().encode(d.input.map((t) => `${t}\n`).join(""));
-  for (const esecutore of esecutori) {
-    const chi = `${esecutore} ${d.id}`;
-    if (esecutore === "interprete") {
-      const esito = eseguiCaso(d.progetto, d.caso, tetti, d.funzione?.id);
-      risultati.set(chi, esito.fuoriTappa ? { genere: "rosso", righe: [`ROSSO ${chi} fuori tappa per l'esecuzione`] } : righeDellEsito(chi, esito));
-      continue;
-    }
-    const [linguaggio, l] = esecutore.startsWith("python ") ? (["python", esecutore.slice(-2)] as const) : (["c", esecutore.slice(-2)] as const);
-    const delFile = generati.get(chiave(d.file, linguaggio, l as LinguaDelCodice))!;
+  {
+    const chi = `interprete ${d.id}`;
+    const esito = eseguiCaso(d.progetto, d.caso, tetti, d.funzione?.id);
+    risultati.set(chi, esito.fuoriTappa ? { genere: "rosso", righe: [`ROSSO ${chi} fuori tappa per l'esecuzione`] } : righeDellEsito(chi, esito));
+  }
+  for (const { nome, voce, esecutore, macchina, lingua: l } of generatiDa) {
+    const chi = `${nome} ${d.id}`;
+    const delFile = generati.get(chiave(d.file, voce.id, l))!;
     if ("statico" in delFile) {
       risultati.set(chi, confronta(d.caso.expected, { output: "", static_error: d.controllo.errori[0]!, warnings: d.controllo.avvisi }, false, chi));
       continue;
     }
-    const chiaveDelCodice = d.funzione === undefined ? chiave(d.file, linguaggio, l as LinguaDelCodice) : `${d.id} ${linguaggio} ${l}`;
+    const chiaveDelCodice = d.funzione === undefined ? chiave(d.file, voce.id, l) : `${d.id} ${voce.id} ${l}`;
     const codice = (d.funzione === undefined ? delFile : prove.get(chiaveDelCodice)!) as Extract<Codice, { righe: readonly Riga[] }>;
-    const compilatore = compilatori.find((k) => k.nome === esecutore.slice(0, -3));
-    const cmd = linguaggio === "python" ? [py!.percorso, "-I", codice.sorgente] : [eseguibili.get(`${chiaveDelCodice} ${compilatore!.nome}`)];
-    if (cmd[0] === undefined) {
+    const daLanciare = esecutore.compila === undefined ? codice.sorgente : eseguibili.get(`${chiaveDelCodice} ${macchina.nome}`);
+    if (daLanciare === undefined) {
       risultati.set(chi, { genere: "rosso", righe: [`ROSSO ${chi} senza esito: il programma non è stato compilato`] });
       continue;
     }
     esecuzioni.push(async () => {
-      const f = await lancia(cmd as string[], input, secondiDiUnProgramma, linguaggio === "python" ? py!.percorso : compilatore!.percorso);
-      const o = ottenuto(f, voceDel(linguaggio), codice.righe, l as LinguaDelCodice, d.caso.expected, d.controllo);
+      const f = await lancia(esecutore.esegui(macchina, daLanciare), input, secondiDiUnProgramma, macchina.percorso);
+      const o = ottenuto(f, voce, codice.righe, l, d.caso.expected, d.controllo);
       risultati.set(chi, "senzaEsito" in o ? { genere: "rosso", righe: [`ROSSO ${chi} senza esito: ${o.senzaEsito}`] } : confronta(d.caso.expected, o.atteso, o.tagliato, chi));
     });
   }
@@ -528,10 +443,11 @@ const n = daConfrontare.length;
 if (n === 0) problemi.push("nessun caso nel confronto");
 for (const p of problemi) console.log(`PROBLEMA ${p}`);
 console.log(
-  `toolchain: C da ${daC}: ${compilatori.map((k) => `${k.nome} ${k.versione} (${k.percorso})`).join(", ") || "nessuno"}; Python da ${daPython}: ${py === undefined ? "nessuno" : `${py.versione} (${py.percorso})`}`,
+  `toolchain: ${toolchain.map(({ esecutore, da, macchine, mancanti }) => `${esecutore.nome} da ${da}: ${macchine.map((k) => `${k.nome} ${k.versione} (${k.percorso})`).join(", ") || "nessuno"}${mancanti.length > 0 ? ` (manca: ${mancanti.join(", ")})` : ""}`).join("; ")}`,
 );
+const avvisiAttesi = daEseguire.flatMap(({ voce, esecutore }) => Object.entries(esecutore.avvisiAttesi).map(([f, o]) => `${voce.id} ${f} ${o}`));
 console.log(
-  `avvisi del C: compilazioni ${compilazioni.length}, con gli avvisi attesi ${compilazioniConAvvisiAttesi} (${Object.entries(avvisiDelCAttesi).map(([f, o]) => `${f} ${o}`).join(", ")}), non attesi ${avvisiNonAttesi}, attesi e mancanti ${avvisiMancanti}`,
+  `avvisi della compilazione: compilazioni ${compilazioni.length}, con gli avvisi attesi ${compilazioniConAvvisiAttesi} (${avvisiAttesi.join(", ")}), non attesi ${avvisiNonAttesi}, attesi e mancanti ${avvisiMancanti}`,
 );
 console.log(
   `differenziale: file ${file.length}, casi nel confronto ${n} (di funzioni ${diFunzioni}, con l'errore statico ${conErroreStatico}), esclusi ${quantiEsclusi}, fuori tappa ${fuoriTappa} in ${fileFuoriTappa} file; per esecutore: ${esecutori.map((e) => `${e} ${verdiPer.get(e)}/${corsiPer.get(e)}`).join(", ")}; rossi ${rossi}, problemi ${problemi.length}; compilazioni ${compilazioni.length} in ${secondiDelleCompilazioni.toFixed(1)} s, esecuzioni ${esecuzioni.length} in ${secondiDelleEsecuzioni.toFixed(1)} s, in tutto ${((performance.now() - inizio) / 1000).toFixed(1)} s`,

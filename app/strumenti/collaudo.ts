@@ -72,6 +72,8 @@
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync, appendFileSync, cpSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, relative } from "node:path";
+import { linguaggi } from "../core/genera/linguaggi";
+import { compila, esecutori as delContratto, esecutoriRichiesti as richiestiDal, programmiConAvvisiAttesi as avvisiAttesiDal } from "./esecutori";
 import { chiamate, senzaExact } from "./selettori";
 
 const argomenti = process.argv.slice(2);
@@ -566,9 +568,10 @@ async function portaCasi(): Promise<void> {
 // più gli esclusi tanti quanti i casi delle tappe del differenziale contati qui (del programma e delle funzioni), quelli
 // delle funzioni tanti quanti contati qui; gli esclusi, PER NOME nei due versi, quelli delle decisioni dei blocchi
 // (`esclusiDalDifferenziale`); i casi con l'errore statico tanti quanti i casi che lo attendono, contati qui; i fuori
-// tappa tanti quanti i casi e i file delle tappe fuori (oggi nessuna), contati qui; fra gli esecutori
-// l'interprete, il Python e il C con un gcc e con un clang, nelle due lingue (la toolchain che manca fa rossa la porta,
-// non la salta). La durata nella riga.
+// tappa tanti quanti i casi e i file delle tappe fuori (oggi nessuna), contati qui; gli esecutori eseguiti uguali,
+// nei due versi, a quelli richiesti dal contratto (`strumenti/esecutori.ts`): l'interprete, e ogni famiglia della
+// toolchain di ogni linguaggio da eseguire del registro nelle due lingue (oggi il Python, e il C con un gcc e con un
+// clang: la toolchain che manca fa rossa la porta, non la salta). La durata nella riga.
 // Controlli positivi, ciascuno in una corsa a parte:
 // - PER CAMPO, coi file dati: copie di casi del corpus con l'atteso alterato (l'output con un carattere in meno, cioè
 //   l'ottenuto con uno in più; l'errore atteso su un altro blocco; un carattere dell'output cambiato, anche in un caso
@@ -580,9 +583,11 @@ async function portaCasi(): Promise<void> {
 //   problemi della toolchain ed exit 1;
 // - AVVISI DEL C: una copia di un caso del corpus con un dato mai usato fa avvisare ogni compilatore in ogni lingua
 //   (`-Wunused-variable`), un PROBLEMA per ciascuno, e il caso resta verde per ogni esecutore;
-// - gli esecutori richiesti: la funzione che li cerca, senza UNO qualunque di loro, dice esattamente quello; e sono 7.
-// La riga `avvisi del C` della corsa vera: nessun avviso non atteso né mancante, e le compilazioni con gli avvisi
-// attesi tante quante i programmi attesi per i compilatori e le lingue.
+// - gli esecutori richiesti: il confronto, senza UNO qualunque di loro, dice esattamente quello mancante; col registro
+//   senza il C gli esecutori richiesti sono meno, e la corsa vera ha in più esattamente quelli che compilano.
+// La riga `avvisi della compilazione` della corsa vera: nessun avviso non atteso né mancante, i programmi attesi tanti
+// quanti ne dichiarano gli esecutori del contratto, e le compilazioni con gli avvisi attesi tante quante quei programmi
+// per i compilatori e le lingue.
 // Che cosa la porta NON guarda: i casi d'uso nel container Linux (alla chiusura del blocco); la console di Windows.
 
 /** Gli esclusi dalle decisioni dei blocchi (il codice generato non controlla ciò che il C non definisce, né il tetto dei
@@ -595,13 +600,20 @@ const esclusiDalDifferenziale: readonly string[] = [
   "tappa-3/riferimento-senza-valore-in-esecuzione", "tappa-3/uscita-con-valore-prima", "tappa-3/uscita-letta-prima", "tappa-3/uscita-non-assegnata",
   "tappa-4/passi-fuori-dal-ciclo", "tappa-4/sequenza-di-fibonacci",
 ];
-/** I programmi della tappa che avvisano compilati, come li dichiara il differenziale (`avvisiDelCAttesi`): quattro col
- * dato letto senza valore, tre con la funzione che richiama sé stessa per ogni via. */
-const programmiConAvvisiAttesi = 7;
-const esecutoriRichiesti = ["interprete", "python it", "python en", "gcc it", "gcc en", "clang it", "clang en"];
+/** Gli esecutori richiesti e i programmi che avvisano compilati, dal contratto: le voci da eseguire del registro dei
+ * linguaggi e il loro esecutore (le famiglie della toolchain, gli avvisi attesi). */
+const esecutoriRichiesti = richiestiDal(linguaggi, delContratto);
+const programmiConAvvisiAttesi = avvisiAttesiDal(linguaggi, delContratto);
 
-/** Gli esecutori richiesti che mancano fra quelli eseguiti (un compilatore ripetuto si chiama `gcc-2`). */
-const esecutoriMancanti = (eseguiti: readonly string[]) => esecutoriRichiesti.filter((r) => !eseguiti.some((e) => e === r || e.replace(/-\d+ /, " ") === r));
+/** Gli esecutori richiesti che mancano fra quelli eseguiti, e quelli eseguiti che nessuno richiede (un compilatore
+ * ripetuto si chiama `gcc-2`: conta come il primo). */
+const confrontoDegliEsecutori = (richiesti: readonly string[], eseguiti: readonly string[]) => {
+  const senzaNumero = (e: string) => e.replace(/-\d+ /, " ");
+  return {
+    mancanti: richiesti.filter((r) => !eseguiti.some((e) => senzaNumero(e) === r)),
+    inPiu: eseguiti.filter((e) => !richiesti.includes(senzaNumero(e))),
+  };
+};
 
 /** Lo script `differenziale` del package.json (`bun <file.ts>`), con gli argomenti dati. */
 function comandoDifferenziale(...argomenti: string[]): string[] {
@@ -679,7 +691,7 @@ const sondeDifferenziale: SondaDifferenziale[] = [
     },
     righe: (f, es) => [
       ...ogni(es, (e) => `VERDE ${e} ${f}#scrittura-intero`),
-      ...es.filter((e) => e !== "interprete" && !e.startsWith("python ")).map((e) => `PROBLEMA ${basename(f, ".algo")}: ${e} avvisa senza che l'avviso sia atteso: -Wunused-variable`),
+      ...es.filter((e) => compila(e, linguaggi, delContratto)).map((e) => `PROBLEMA ${basename(f, ".algo")}: ${e} avvisa senza che l'avviso sia atteso: -Wunused-variable`),
     ],
   },
 ];
@@ -698,9 +710,9 @@ async function portaDifferenziale(): Promise<void> {
   const perEsecutore = riepilogo[8]!.split(", ").map((x) => x.match(/^(.+) (\d+)\/(\d+)$/));
   const esecutori = perEsecutore.map((m) => m?.[1] ?? "?");
   const nonTutti = perEsecutore.filter((m) => !m || m[2] !== String(n) || m[3] !== String(n));
-  const mancanti = esecutoriMancanti(esecutori);
-  if (n === 0 || nonTutti.length > 0 || mancanti.length > 0)
-    rosso("differenziale", `casi nel confronto ${n}; esecutori non verdi su tutti: ${JSON.stringify(nonTutti.map((m) => m?.[0]))}; richiesti e mancanti: ${JSON.stringify(mancanti)} | ${toolchain}`);
+  const { mancanti, inPiu: eseguitiInPiu } = confrontoDegliEsecutori(esecutoriRichiesti, esecutori);
+  if (n === 0 || nonTutti.length > 0 || mancanti.length > 0 || eseguitiInPiu.length > 0)
+    rosso("differenziale", `casi nel confronto ${n}; esecutori non verdi su tutti: ${JSON.stringify(nonTutti.map((m) => m?.[0]))}; richiesti ${esecutoriRichiesti.length} dal contratto, mancanti: ${JSON.stringify(mancanti)}, eseguiti in più: ${JSON.stringify(eseguitiInPiu)} | ${toolchain}`);
   const cartellaDeiCasi = join(radice, "casi");
   const contati = casiDelleTappe(cartellaDeiCasi, tappeDelDifferenziale, "con");
   if (n + Number(riepilogo[5]) !== contati || Number(riepilogo[5]) !== esclusiDalDifferenziale.length)
@@ -735,17 +747,23 @@ async function portaDifferenziale(): Promise<void> {
   if (Number(riepilogo[6]) !== fuoriContati || Number(riepilogo[7]) !== fileFuori)
     rosso("differenziale", `fuori tappa ${riepilogo[6]} in ${riepilogo[7]} file; contati nelle tappe ${tappeFuoriDalDifferenziale.join(", ")}: ${fuoriContati} in ${fileFuori} file`);
 
-  // Gli avvisi del C della corsa vera: nessuno non atteso né mancante, e gli attesi su ogni compilatore e lingua.
-  const avvisi = vera.uscita.match(/^avvisi del C: compilazioni (\d+), con gli avvisi attesi (\d+) \((.*)\), non attesi (\d+), attesi e mancanti (\d+)$/m);
-  const compilatoriELingue = esecutori.filter((e) => e !== "interprete" && !e.startsWith("python ")).length;
-  const programmiAttesi = avvisi?.[3]?.split(", ").length ?? 0;
+  // Gli avvisi della compilazione nella corsa vera: nessuno non atteso né mancante, e gli attesi su ogni macchina che
+  // compila e lingua.
+  const avvisi = vera.uscita.match(/^avvisi della compilazione: compilazioni (\d+), con gli avvisi attesi (\d+) \((.*)\), non attesi (\d+), attesi e mancanti (\d+)$/m);
+  const compilatoriELingue = esecutori.filter((e) => compila(e, linguaggi, delContratto)).length;
+  const programmiAttesi = avvisi === null || avvisi[3] === "" ? 0 : avvisi[3]!.split(", ").length;
   if (!avvisi || avvisi[4] !== "0" || avvisi[5] !== "0" || Number(avvisi[2]) !== programmiAttesi * compilatoriELingue || programmiAttesi !== programmiConAvvisiAttesi)
-    rosso("differenziale", `avvisi del C: ${avvisi?.[0] ?? "nessuna riga"} (attesi ${programmiConAvvisiAttesi} programmi per ${compilatoriELingue} compilatori e lingue)`);
+    rosso("differenziale", `avvisi della compilazione: ${avvisi?.[0] ?? "nessuna riga"} (attesi dal contratto ${programmiConAvvisiAttesi} programmi per ${compilatoriELingue} compilatori e lingue)`);
 
-  // Controllo positivo degli esecutori richiesti: senza UNO qualunque di loro, quello e solo quello; e sono 7.
-  const membri = esecutoriRichiesti.map((x) => ({ x, mancanti: esecutoriMancanti(esecutoriRichiesti.filter((e) => e !== x)) }));
+  // Controlli positivi degli esecutori richiesti: senza UNO qualunque di loro, quello e solo quello mancante; e il
+  // registro senza il C chiede meno esecutori di quelli eseguiti, e la corsa vera risulta con quelli in più.
+  const membri = esecutoriRichiesti.map((x) => ({ x, mancanti: confrontoDegliEsecutori(esecutoriRichiesti, esecutoriRichiesti.filter((e) => e !== x)).mancanti }));
   const spenti = membri.filter(({ x, mancanti }) => JSON.stringify(mancanti) !== JSON.stringify([x]));
-  if (esecutoriRichiesti.length !== 7 || spenti.length > 0) rosso("differenziale", `controllo positivo degli esecutori richiesti SPENTO: ${esecutoriRichiesti.length} richiesti (attesi 7), ${JSON.stringify(spenti)}`);
+  const senzaIlC = richiestiDal(linguaggi.filter((v) => v.id !== "c"), delContratto);
+  const inPiuSenzaIlC = confrontoDegliEsecutori(senzaIlC, esecutori).inPiu;
+  const delC = esecutori.filter((e) => compila(e, linguaggi, delContratto));
+  if (esecutoriRichiesti.length < 2 || spenti.length > 0 || senzaIlC.length >= esecutoriRichiesti.length || delC.length === 0 || JSON.stringify(inPiuSenzaIlC) !== JSON.stringify(delC))
+    rosso("differenziale", `controllo positivo degli esecutori richiesti SPENTO: richiesti ${esecutoriRichiesti.length}, senza uno ${JSON.stringify(spenti)}; col registro senza il C richiesti ${senzaIlC.length}, in più ${JSON.stringify(inPiuSenzaIlC)} (attesi ${JSON.stringify(delC)})`);
 
   // Controllo positivo per campo, in una corsa a parte coi soli file sonda.
   const percorsi = sondeDifferenziale.map((s) => `.collaudo/__sonda__diff-${s.nome}.algo`);
@@ -776,7 +794,7 @@ async function portaDifferenziale(): Promise<void> {
     rosso("differenziale", `controllo positivo «senza toolchain» SPENTO (exit ${senza.codice}; problemi della toolchain ${problemiSenza.length}; solo l'interprete: ${soloInterprete})`);
 
   riga(
-    `PORTA differenziale: VERDE | ${secondi.toFixed(1)} s | exit 0, ${n} casi nel confronto (di funzioni ${riepilogo[3]}, contati nei file: ${diFunzioni}; con l'errore statico ${riepilogo[4]}, contati nei file: ${conStatico}; con gli esclusi ${riepilogo[5]}, per nome, contati nei file: ${contati}, contati nei file delle tappe ${tappeDelDifferenziale.join(", ")}), fuori tappa ${riepilogo[6]} in ${riepilogo[7]} file (contati nelle tappe ${tappeFuoriDalDifferenziale.join(", ")}) | per esecutore: ${riepilogo[8]} | ${toolchain} | avvisi del C: ${avvisi[1]} compilazioni, ${avvisi[2]} con gli avvisi attesi, nessun altro | controllo positivo acceso (corsa a parte: exit ${sonda.codice}; ${sondeDifferenziale.map((s) => s.nome).join(", ")}: ${attese.length} righe attese, tutte, nessuna in più) | controllo positivo «senza toolchain» acceso (exit ${senza.codice}, ${problemiSenza.length} problemi) | controllo positivo degli esecutori richiesti acceso`,
+    `PORTA differenziale: VERDE | ${secondi.toFixed(1)} s | exit 0, ${n} casi nel confronto (di funzioni ${riepilogo[3]}, contati nei file: ${diFunzioni}; con l'errore statico ${riepilogo[4]}, contati nei file: ${conStatico}; con gli esclusi ${riepilogo[5]}, per nome, contati nei file: ${contati}, contati nei file delle tappe ${tappeDelDifferenziale.join(", ")}), fuori tappa ${riepilogo[6]} in ${riepilogo[7]} file (contati nelle tappe ${tappeFuoriDalDifferenziale.join(", ")}) | per esecutore: ${riepilogo[8]} | ${toolchain} | avvisi della compilazione: ${avvisi[1]} compilazioni, ${avvisi[2]} con gli avvisi attesi, nessun altro | controllo positivo acceso (corsa a parte: exit ${sonda.codice}; ${sondeDifferenziale.map((s) => s.nome).join(", ")}: ${attese.length} righe attese, tutte, nessuna in più) | controllo positivo «senza toolchain» acceso (exit ${senza.codice}, ${problemiSenza.length} problemi) | esecutori dal contratto: richiesti ${esecutoriRichiesti.length}, eseguiti ${esecutori.length}, mancanti 0, in più 0; programmi con gli avvisi attesi ${programmiConAvvisiAttesi} | controllo positivo degli esecutori richiesti acceso (senza uno: ${membri.length} su ${membri.length}; registro senza il C: richiesti ${senzaIlC.length} invece di ${esecutoriRichiesti.length}, ROSSO con ${inPiuSenzaIlC.length} in più)`,
   );
 }
 
