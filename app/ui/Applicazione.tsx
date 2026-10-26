@@ -165,8 +165,9 @@ import { FinestraImpostazioni } from "./finestre/FinestraImpostazioni";
 import { FinestraProgetto, type DatiDelProgetto } from "./finestre/FinestraProgetto";
 import { useSpostabile } from "./spostabile";
 import { righeDi, testoDelCodice } from "../core/genera/forma";
-import { codiceDi, estensioni, type Linguaggio } from "./genera/codice";
-import { nomiDeiLinguaggi, PannelloDelCodice, type RigheEvidenziate } from "./genera/PannelloDelCodice";
+import { linguaggi, voceDel } from "../core/genera/linguaggi";
+import { codiceDi, paroleDeiLinguaggi, type Linguaggio } from "./genera/codice";
+import { PannelloDelCodice, type RigheEvidenziate } from "./genera/PannelloDelCodice";
 import { applicaIColori } from "./colori";
 import { durataDelPasso, righeLungheDi, scelteIniziali as predefinite, scriviPreferenze, separatoriDelCsv, voci as vociDelleScelte, type Scelte, type VelocitaAnimata } from "./preferenze";
 
@@ -322,9 +323,9 @@ export function Applicazione({
   const idTabella = useId();
   // Il codice generato nella colonna, con «Genera» premuto: anche senza esecuzione, al posto della tabella di traccia
   // (le due si escludono: si vede l'ultima scelta). Il linguaggio mostrato e, durante un'esecuzione, l'altezza del
-  // codice sopra la console, se l'utente ne ha scelta una.
+  // codice sopra la console, se l'utente ne ha scelta una. All'avvio il primo linguaggio del registro.
   const [conCodice, setConCodice] = useState(false);
-  const [linguaggio, setLinguaggio] = useState<Linguaggio>("pseudocodice");
+  const [linguaggio, setLinguaggio] = useState<Linguaggio>(linguaggi[0].id);
   const [altezzaCodice, setAltezzaCodice] = useState<number | null>(null);
   const pannelloCodice = useRef<HTMLDivElement>(null);
   const idCodice = useId();
@@ -1786,7 +1787,7 @@ export function Applicazione({
   /** «Copia» del codice generato: il testo del linguaggio mostrato negli appunti; l'avviso dice com'è andata. */
   function copiaIlCodice(): void {
     if (!codice?.generato) return;
-    const nome = testi[nomiDeiLinguaggi[linguaggio]];
+    const nome = testi[paroleDeiLinguaggi[linguaggio].nome];
     // Senza gli appunti del motore l'avviso dice il perché con parole sue, non col nome di un'interfaccia.
     const scritto = navigator.clipboard?.writeText(testoDelCodice(codice.righe)) ?? Promise.reject(new Error(testi.appuntiNonDisponibili));
     scritto.then(
@@ -1799,10 +1800,11 @@ export function Applicazione({
   async function salvaIlCodice(): Promise<void> {
     if (!codice?.generato) return;
     const testo = testoDelCodice(codice.righe);
-    const filtro = testi[linguaggio === "pseudocodice" ? "filtroPseudocodice" : linguaggio === "python" ? "filtroPython" : "filtroC"];
-    const base = await nomeDaUsare(progetto.metadata.name, estensioni[linguaggio]);
+    const filtro = testi[paroleDeiLinguaggi[linguaggio].filtro];
+    const { estensione } = voceDel(linguaggio);
+    const base = await nomeDaUsare(progetto.metadata.name, estensione);
     if (base === null) return;
-    const scelto = await scegliFileDelCodice(`${base}${estensioni[linguaggio]}`, filtro, estensioni[linguaggio], partenza);
+    const scelto = await scegliFileDelCodice(`${base}${estensione}`, filtro, estensione, partenza);
     if (scelto === null || (scelto.sostituire && !(await sostituire(scelto.percorso)))) return;
     try {
       await scriviProgetto(scelto.percorso, testo);

@@ -3,6 +3,7 @@
 // finestre del file non si aprono (come se l'utente rinunciasse) e le due cartelle sono in memoria, vuote a ogni
 // caricamento (come al primo avvio).
 import { invoke } from "@tauri-apps/api/core";
+import type { EstensioneDelCodice } from "../core/genera/linguaggi";
 
 /** I generi di un errore del guscio (`GENERI` in `shell/src/progetto.rs`, appaiati da una prova di `cargo test`): il
  * file non è testo UTF-8, il messaggio del sistema, e per gli esempi e i gruppi un nome non ammesso, un gruppo con dentro
@@ -38,8 +39,9 @@ export const scegliFileDaSalvare = async (proposto: string, filtro: string, cart
 export const scegliFileDaEsportare = async (proposto: string, filtro: string, cartella: string | null) =>
   nelGuscio() ? invoke<FileDaSalvare | null>("scegli_file_da_esportare", { proposto, filtro, cartella }) : null;
 
-/** Il file dove salvare il codice generato: come per «Salva con nome», col filtro e l'estensione del linguaggio. */
-export const scegliFileDelCodice = async (proposto: string, filtro: string, estensione: ".txt" | ".py" | ".c", cartella: string | null) =>
+/** Il file dove salvare il codice generato: come per «Salva con nome», col filtro e l'estensione del linguaggio (dal
+ * registro dei linguaggi). */
+export const scegliFileDelCodice = async (proposto: string, filtro: string, estensione: EstensioneDelCodice, cartella: string | null) =>
   nelGuscio() ? invoke<FileDaSalvare | null>("scegli_file_del_codice", { proposto, filtro, estensione, cartella }) : null;
 
 /** Rifiuta con un `ErroreDelFile`. */
