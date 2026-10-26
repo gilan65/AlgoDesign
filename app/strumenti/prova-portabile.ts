@@ -7,15 +7,18 @@
 //    - LINGUA: l'app parte nella lingua del sistema, si passa all'altra (nelle Impostazioni, con
 //      «Conferma»), si chiude per PID (come dopo ogni clausola, tranne la CHIUSURA), si riapre e la ritrova; `data\preferenze.json` contiene la lingua;
 //    - PREFERENZE: alla seconda apertura si scelgono nelle Impostazioni i colori «Contrasto forte», le
-//      condizioni lunghe su una riga e i campi dei blocchi nel pannello a destra; chiusa per PID e riaperta, l'app li ritrova (i colori applicati al
-//      documento, il modo scelto nella finestra) insieme alla lingua, e il file li contiene. Controllo
-//      positivo: tolto il file, si riapre nella lingua iniziale e coi colori predefiniti (è il file a
-//      ripristinarli);
+//      condizioni lunghe su una riga, i campi dei blocchi nel pannello a destra e, nel menu dei linguaggi della scheda
+//      «Console», lo pseudocodice spento e il C portato sopra il Python; chiusa per PID e riaperta, l'app li ritrova (i
+//      colori applicati al documento, il modo scelto nella finestra, le linguette del codice C e Python, col C mostrato)
+//      insieme alla lingua, e il file li contiene. Controllo positivo: tolto il file, si riapre nella lingua iniziale,
+//      coi colori predefiniti e le tre linguette (è il file a ripristinarli);
+//    - GUIDA: «Guida per lo studente» dal menu «Aiuto» apre sulla WebView2 vera la finestra della guida, col titolo e
+//      l'indice coi capitoli del Markdown della lingua; Esc la chiude. Controllo positivo: prima del clic non c'è;
 //    - FILE: l'app parte col file di un progetto dato come argomento, FUORI da `data\` (accanto
 //      all'eseguibile, con spazi nel nome); dall'interfaccia si cambia l'autore (finestra Proprietà) e «Salva»
 //      riscrive quel file senza chiedere dove: sul disco ci sono esattamente i byte attesi (il progetto del
 //      corpus con l'autore, salvato dal nucleo), e nessun temporaneo resta accanto. Al primo avvio la cartella
-//      `data\esempi` ha ricevuto gli undici esempi forniti, nei loro tre gruppi (le sottocartelle scritte dal guscio vero).
+//      `data\esempi` ha ricevuto i dodici esempi forniti, nei loro tre gruppi (le sottocartelle scritte dal guscio vero).
 //      Controllo positivo: il file prima del giro è
 //      diverso dall'atteso (la modifica è arrivata davvero sul disco);
 //    - LIBRERIA: l'app parte con la libreria del corpus (segnata) data come argomento, fuori da `data\`; dalla finestra
@@ -115,6 +118,9 @@
 // La premessa è asserita a ogni avvio dell'app: le finestre che le stanno SOPRA nell'ordine di Windows e la coprono
 // per intero (`finestra-vera.ps1 <pid> coperta`); se ce n'è una, il rosso è della PREMESSA e la nomina. Non dalla pagina: coperta, la WebView2 resta «visible» e continua a disegnare i fotogrammi
 // (misurato), quindi `document.visibilityState` non lo sa dire.
+// Vuole anche la sessione SBLOCCATA: con la schermata di blocco Windows nega gli appunti a ogni processo (accesso negato),
+// e la clausola CODICE usciva rossa con «negli appunti c'è null» (misurato, tre corse: il PC si era bloccato da solo).
+// Prima della clausola CODICE si apre gli appunti: se non si aprono, il rosso è della PREMESSA e dice perché.
 //
 // Che cosa questa prova NON guarda:
 // - il registro di Windows;
@@ -243,6 +249,7 @@ import { finestraVera as finestraDelProcesso, type AzioneDellaFinestra } from ".
 import { politicaDelProdotto } from "./politica";
 import { direttiveSenzaSonda, provaLaSonda, sonde } from "./sonde-della-politica";
 import { testoDelMessaggio } from "../i18n/codici";
+import { fileDelleGuide } from "../ui/guida/guide";
 import { dizionari, linguaDelSistema, nomiLingue, riempi, type Lingua } from "../i18n/lingue";
 
 if (process.platform !== "win32") {
@@ -311,6 +318,7 @@ const clausole: [string, string][] = [
   ["FINESTRA", "finestra"],
   ["LINGUA", "lingua"],
   ["PREFERENZE", "preferenze"],
+  ["GUIDA", "guida dal menu «Aiuto»"],
   ["FILE", "file"],
   ["LIBRERIA", "libreria aggiunta"],
   ["COSTRUZIONE", "costruzione"],
@@ -586,13 +594,13 @@ async function attendiLingua(pagina: Page, lingua: Lingua, clausola: string): Pr
   if (lang !== lingua) rosso(clausola, `<html lang> vale «${lang}» invece di «${lingua}»`);
 }
 
-/** Aspetta che il file delle preferenze contenga quei campi con quei valori. */
-async function attendiFile(percorso: string, attesi: Record<string, string>, clausola: string): Promise<void> {
+/** Aspetta che il file delle preferenze contenga quei campi con quei valori (un elenco, uguale elemento per elemento). */
+async function attendiFile(percorso: string, attesi: Record<string, string | readonly string[]>, clausola: string): Promise<void> {
   let letto: unknown = null;
   for (let i = 0; i < 40; i++) {
     try {
       letto = JSON.parse(readFileSync(percorso, "utf8"));
-      if (Object.entries(attesi).every(([k, v]) => (letto as Record<string, unknown>)[k] === v)) return;
+      if (Object.entries(attesi).every(([k, v]) => JSON.stringify((letto as Record<string, unknown>)[k]) === JSON.stringify(v))) return;
     } catch {
       // Non ancora scritto.
     }
@@ -751,14 +759,29 @@ async function giroPortabile(): Promise<void> {
     await f.getByRole("radio", { name: testi.condizioniUnaRiga, exact: true }).check();
     await f.getByRole("tab", { name: testi.impostazioniModifica, exact: true }).click();
     await f.getByRole("radio", { name: testi.modoPannello, exact: true }).check();
+    // Il menu dei linguaggi: lo pseudocodice spento e il C portato sopra il Python.
+    await f.getByRole("tab", { name: testi.impostazioniConsole, exact: true }).click();
+    const menu = f.getByRole("group", { name: testi.linguaggiDelCodice, exact: true });
+    await menu.getByRole("checkbox", { name: testi.linguaggioPseudocodice, exact: true }).uncheck();
+    await menu.getByRole("button", { name: riempi(testi.linguaggioSu, { linguaggio: testi.linguaggioC }), exact: true }).click();
   });
-  await attendiFile(preferenze, { lingua: opposta, colori: "contrasto", condizioni: "su-una-riga", modoDeiBlocchi: "pannello" }, "PREFERENZE");
+  await attendiFile(preferenze, { lingua: opposta, colori: "contrasto", condizioni: "su-una-riga", modoDeiBlocchi: "pannello", linguaggiDelCodice: ["c", "python"] }, "PREFERENZE");
   await chiudi(secondo);
 
+  /** Le linguette della colonna del codice, aperta con «Genera», e quella mostrata. */
+  const linguetteDi = async (p: Page, t: typeof testi) => {
+    await p.getByRole("banner").getByRole("button", { name: t.pannelloCodice, exact: true }).click();
+    const riquadro = p.getByRole("region", { name: t.codiceGenerato, exact: true });
+    await riquadro.getByRole("tab").first().waitFor();
+    return { linguette: await riquadro.getByRole("tab").allTextContents(), mostrata: await riquadro.getByRole("tab", { selected: true }).textContent() };
+  };
   const terzo = await avvia();
   await attendiLingua(terzo.pagina, opposta, "LINGUA");
   const coloriDopo = await coloriDi(terzo.pagina);
   if (coloriDopo !== "contrasto") rosso("PREFERENZE", `dopo il riavvio i colori sono «${coloriDopo}» invece di «contrasto»`);
+  const codiceDopo = await linguetteDi(terzo.pagina, testi);
+  const attese = { linguette: [testi.linguaggioC, testi.linguaggioPython], mostrata: testi.linguaggioC };
+  if (JSON.stringify(codiceDopo) !== JSON.stringify(attese)) rosso("PREFERENZE", `dopo il riavvio le linguette del codice sono ${JSON.stringify(codiceDopo)} invece di ${JSON.stringify(attese)}`);
   await comandoImpostazioni(terzo.pagina, opposta).click();
   const finestra = terzo.pagina.getByRole("dialog", { name: testi.impostazioniTitolo, exact: true });
   if (!(await finestra.getByRole("radio", { name: testi.condizioniUnaRiga, exact: true }).isChecked())) rosso("PREFERENZE", "dopo il riavvio la forma delle condizioni lunghe non è «su una riga»");
@@ -772,6 +795,10 @@ async function giroPortabile(): Promise<void> {
   await attendiLingua(quarto.pagina, iniziale, "LINGUA (controllo positivo)");
   const coloriSenza = await coloriDi(quarto.pagina);
   if (coloriSenza !== "tenue") rosso("PREFERENZE (controllo positivo)", `senza il file i colori sono «${coloriSenza}»`);
+  const tIniziale = dizionari[iniziale];
+  const codiceSenza = await linguetteDi(quarto.pagina, tIniziale);
+  const predefinite = { linguette: [tIniziale.linguaggioPseudocodice, tIniziale.linguaggioPython, tIniziale.linguaggioC], mostrata: tIniziale.linguaggioPseudocodice };
+  if (JSON.stringify(codiceSenza) !== JSON.stringify(predefinite)) rosso("PREFERENZE (controllo positivo)", `senza il file le linguette del codice sono ${JSON.stringify(codiceSenza)}`);
   await chiudi(quarto);
   verde(
     "LINGUA",
@@ -779,8 +806,9 @@ async function giroPortabile(): Promise<void> {
   );
   verde(
     "PREFERENZE",
-    `colori «tenue» → «contrasto», condizioni lunghe su una riga e campi dei blocchi nel pannello, ritrovati dopo la chiusura per PID (colori del documento, scelta nella finestra) e scritti nel file | controllo positivo acceso (senza il file tornano i colori «tenue»)`,
+    `colori «tenue» → «contrasto», condizioni lunghe su una riga, campi dei blocchi nel pannello e il menu dei linguaggi (lo pseudocodice spento, il C sopra il Python), ritrovati dopo la chiusura per PID (colori del documento, scelta nella finestra, linguette ${JSON.stringify(codiceDopo.linguette)} con «${codiceDopo.mostrata}» mostrata) e scritti nel file | controllo positivo acceso (senza il file tornano i colori «tenue» e le linguette ${JSON.stringify(codiceSenza.linguette)})`,
   );
+  await giroDellaGuida();
 
   await giroDelFile(iniziale);
   await giroDellaLibreria(iniziale);
@@ -843,9 +871,9 @@ async function giroDelFile(lingua: Lingua): Promise<void> {
   const forniti = [
     ...[testi.esempioMediaVoti, testi.esempioPariDispari, testi.esempioPrimoQuadrato, testi.esempioFattoriale].map((n) => `${testi.esempiGruppoPrimiPassi}\\${n}.algo`),
     ...[testi.esempioMediaVotiPer, testi.esempioParolaAlContrario].map((n) => `${testi.esempiGruppoCicli}\\${n}.algo`),
-    ...[testi.esempioMediaVotiFunzioni, testi.esempioCopie, testi.esempioTreLivelli, testi.esempioFattorialeRicorsivo, testi.esempioSequenzaDiFibonacci].map((n) => `${testi.esempiGruppoFunzioni}\\${n}.algo`),
+    ...[testi.esempioMediaVotiFunzioni, testi.esempioCopie, testi.esempioTreLivelli, testi.esempioFattorialeRicorsivo, testi.esempioSequenzaDiFibonacci, testi.esempioRicorsioneSenzaUscita].map((n) => `${testi.esempiGruppoFunzioni}\\${n}.algo`),
   ].sort();
-  if (JSON.stringify(esempi) !== JSON.stringify(forniti)) rosso("FILE", `data\\esempi non ha gli undici esempi forniti nei loro gruppi: ${JSON.stringify(esempi)}`);
+  if (JSON.stringify(esempi) !== JSON.stringify(forniti)) rosso("FILE", `data\\esempi non ha i dodici esempi forniti nei loro gruppi: ${JSON.stringify(esempi)}`);
   rmSync(progettoFuori);
   verde(
     "FILE",
@@ -1350,6 +1378,37 @@ async function giroDellaRicorsione(lingua: Lingua): Promise<void> {
   );
 }
 
+/** La clausola GUIDA: sulla WebView2 vera, «Guida per lo studente» dal menu «Aiuto» apre la finestra della guida col
+ * suo titolo e l'indice coi capitoli del Markdown della lingua dell'interfaccia (quello di `docs/`, che il build porta
+ * dentro l'app); Esc la chiude. Controllo positivo: prima del clic la guida non c'è. */
+async function giroDellaGuida(): Promise<void> {
+  const a = await avvia();
+  const { lingua } = await linguaMostrata(a.pagina);
+  const testi = dizionari[lingua];
+  const guida = a.pagina.locator("[data-finestra-guida]");
+  const prima = await guida.count();
+  if (prima !== 0) rosso("GUIDA", `prima del clic la guida c'è già (${prima}) (controllo positivo)`);
+  await a.pagina.getByRole("banner").getByRole("button", { name: testi.menuAiuto, exact: true }).click();
+  await a.pagina.getByRole("menu", { name: testi.menuAiuto, exact: true }).getByRole("menuitem", { name: testi.guida, exact: true }).click();
+  try {
+    await guida.getByRole("heading", { name: testi.guidaTitolo, exact: true }).waitFor({ timeout: 10_000 });
+  } catch {
+    rosso("GUIDA", `dal menu «${testi.menuAiuto}» la guida non si apre col titolo «${testi.guidaTitolo}» (finestre della guida: ${await guida.count()})`);
+  }
+  const markdown = readFileSync(join(radice, "..", "docs", fileDelleGuide[lingua]), "utf8");
+  const attesi = [...markdown.matchAll(/^## (.*)$/gm)].map((m) => m[1]!.replace(/[*`]/g, ""));
+  const capitoli = await guida.getByRole("navigation", { name: testi.guidaIndice, exact: true }).getByRole("button").allTextContents();
+  if (attesi.length === 0 || JSON.stringify(capitoli) !== JSON.stringify(attesi)) rosso("GUIDA", `l'indice della guida è ${JSON.stringify(capitoli)} invece dei ${attesi.length} capitoli del Markdown`);
+  await a.pagina.keyboard.press("Escape");
+  try {
+    await guida.waitFor({ state: "detached", timeout: 10_000 });
+  } catch {
+    rosso("GUIDA", "Esc non chiude la guida");
+  }
+  await chiudi(a);
+  verde("GUIDA", `in «${lingua}», «${testi.guida}» dal menu «${testi.menuAiuto}» apre la guida col titolo e i ${capitoli.length} capitoli del Markdown nell'indice; Esc la chiude | controllo positivo: prima del clic la guida non c'è`);
+}
+
 /** La clausola RICARICA: con un progetto modificato, F5 mandato come messaggio alla finestra d'input (la via dei
  * tasti veri, che sul codice di prima ricaricava) non ricarica; una ricarica chiesta dalla pagina fa chiedere
  * conferma al motore. */
@@ -1461,6 +1520,22 @@ function appunti(): string | null {
   return t === "<nessun testo>" ? null : t;
 }
 
+/** Il motivo per cui gli appunti di Windows non si aprono (l'errore di `OpenClipboard`), o `null` se si aprono. */
+function appuntiNegati(): string | null {
+  const sonda =
+    "Add-Type -Namespace Prova -Name Appunti -MemberDefinition '[DllImport(\"user32.dll\", SetLastError=true)] public static extern bool OpenClipboard(System.IntPtr h); [DllImport(\"user32.dll\")] public static extern bool CloseClipboard();'; " +
+    "if ([Prova.Appunti]::OpenClipboard([IntPtr]::Zero)) { [void][Prova.Appunti]::CloseClipboard(); 'aperti' } else { 'errore ' + [Runtime.InteropServices.Marshal]::GetLastWin32Error() }";
+  const r = Bun.spawnSync(["powershell", "-NoProfile", "-Command", sonda], { stdout: "pipe", stderr: "pipe" });
+  const esito = r.stdout.toString().trim();
+  return esito === "aperti" ? null : esito === "errore 5" ? "errore 5, accesso negato" : esito || `nessuna risposta, ${r.stderr.toString().trim()}`;
+}
+
+/** La schermata di blocco di Windows è attiva (il processo LogonUI c'è solo mentre si vede). */
+function schermoBloccato(): boolean {
+  const r = Bun.spawnSync(["tasklist", "/FI", "IMAGENAME eq LogonUI.exe", "/NH"], { stdout: "pipe", stderr: "pipe" });
+  return /LogonUI\.exe/i.test(r.stdout.toString());
+}
+
 /** Mette un testo negli appunti di Windows (passato per variabile d'ambiente: nessuna virgoletta da sfuggire). */
 function scriviAppunti(testo: string): void {
   Bun.spawnSync(["powershell", "-NoProfile", "-Command", "Set-Clipboard -Value $env:TESTO_DEGLI_APPUNTI"], { env: { ...process.env, TESTO_DEGLI_APPUNTI: testo }, stdout: "pipe", stderr: "pipe" });
@@ -1478,6 +1553,10 @@ async function giroDelCodice(lingua: Lingua): Promise<void> {
   const nomeDelCodice = "codice di prova";
   const salvato = join(cartellaProva, `${nomeDelCodice}.py`);
   rmSync(salvato, { force: true });
+  // La premessa: gli appunti si aprono. Con lo schermo bloccato Windows li nega a ogni processo (accesso negato), e
+  // senza questa domanda il rosso diceva «negli appunti c'è null» (misurato: la schermata di blocco attiva).
+  const negati = appuntiNegati();
+  if (negati !== null) rosso("PREMESSA", `gli appunti di Windows non si aprono (${negati})${schermoBloccato() ? ": lo schermo è bloccato (la schermata di blocco, LogonUI, è attiva)" : ""}; la clausola CODICE vuole la sessione sbloccata`);
   const dellUtente = appunti();
   const sentinella = `sentinella di AlgoDesign ${Date.now()}`;
   scriviAppunti(sentinella);

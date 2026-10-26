@@ -16,6 +16,10 @@
 //   «Tabella» la rimette, «Genera» tolto la riporta.
 // - «Copia» mette negli appunti il testo del linguaggio mostrato; «Salva…» propone il nome del progetto con l'estensione
 //   del linguaggio e scrive il testo nel file scelto.
+// - Il menu dei linguaggi: le linguette sono gli accesi delle preferenze nel loro ordine, all'avvio si mostra il primo e
+//   «Salva…» usa il mostrato; nelle Impostazioni (scheda «Console») ▲ ▼ spostano una riga col fuoco sul pulsante
+//   premuto, anche in cima o in fondo dove non fa nulla; l'ultimo acceso non si spegne; «Conferma» cambia le linguette e
+//   scrive le preferenze; spenta la linguetta guardata, si mostra la prima.
 //
 // Che cosa NON guarda:
 // - l'aspetto, lo scorrimento fino alla riga corrente, il fuoco dopo «Copia» e l'animata (nei motori,
@@ -26,7 +30,7 @@
 //   differenziale).
 
 import { afterAll, beforeAll, beforeEach, expect, test } from "bun:test";
-import { act, cleanup, fireEvent, render } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { readFileSync } from "node:fs";
 import { tetti } from "../../core/controllo/controllo";
@@ -82,6 +86,8 @@ let datoAllAvvio = { percorso: "", testo: "" };
 let scritti: { percorso: string; testo: string }[] = [];
 let finestreDelCodice: Record<string, unknown>[] = [];
 let sceltoPerIlCodice: { percorso: string; sostituire: boolean } | null = null;
+/** Le preferenze scritte dalle Impostazioni, una per «Conferma». */
+let preferenzeScritte: Record<string, unknown>[] = [];
 beforeAll(() => {
   mockIPC((comando, a) => {
     const argomenti = (a ?? {}) as Record<string, unknown>;
@@ -102,6 +108,9 @@ beforeAll(() => {
       case "scrivi_progetto":
         scritti.push({ percorso: String(argomenti.percorso), testo: String(argomenti.testo) });
         return null;
+      case "scrivi_preferenze":
+        preferenzeScritte.push(argomenti.preferenze as Record<string, unknown>);
+        return null;
     }
     throw new Error(`comando non simulato: ${comando}`);
   });
@@ -112,6 +121,7 @@ beforeEach(() => {
   scritti = [];
   finestreDelCodice = [];
   sceltoPerIlCodice = null;
+  preferenzeScritte = [];
 });
 
 const giro = () => act(async () => await new Promise((r) => setTimeout(r, 0)));
@@ -433,5 +443,74 @@ test("«Copia» mette negli appunti il codice mostrato; «Salva…» propone il 
     estensione: ".txt",
     filtro: it.filtroPseudocodice,
     prima: "PROGRAMMA doppio",
+  });
+});
+
+// ----------------------------------------------------------------------------------- il menu dei linguaggi
+
+const linguette = () => [...(regione()?.querySelectorAll('[role="tab"]') ?? [])].map((t) => t.textContent);
+
+test("le linguette sono i linguaggi accesi nelle preferenze, nel loro ordine: all'avvio si mostra il primo, e «Salva…» usa il mostrato", async () => {
+  await apriLaFinestra(DOPPIO, "it", { ...scelteIniziali, linguaggiDelCodice: ["c", "pseudocodice"] });
+  await clic(comando("genera"), "«Genera»");
+  expect({ linguette: linguette(), scelta: scelta() }).toEqual({ linguette: [it.linguaggioC, it.linguaggioPseudocodice], scelta: it.linguaggioC });
+  expect(righe()).toEqual(delGeneratore(c(progettoDoppio, tetti, "it", paroleDelloPseudocodice("it"))));
+  await clic(pulsanteNelRiquadro(it.codiceSalva), "«Salva…»");
+  await giro();
+  expect(finestreDelCodice).toEqual([{ proposto: "doppio.c", filtro: it.filtroC, estensione: ".c", cartella: "C:\\prove" }]);
+});
+
+test("il menu dei linguaggi nelle Impostazioni: ▲ ▼ col fuoco sul pulsante, l'ultimo acceso non si spegne, «Conferma» cambia le linguette e le scrive; spenta la linguetta guardata, si mostra la prima", async () => {
+  await apriLaFinestra();
+  await clic(comando("genera"), "«Genera»");
+  await clic(linguetta(it.linguaggioPython), "la linguetta Python");
+  expect(scelta()).toBe(it.linguaggioPython);
+  const finestra = () => screen.queryByRole("dialog", { name: it.impostazioniTitolo });
+  const apriIlMenu = async () => {
+    await clic(within(screen.getByRole("banner")).getByRole("button", { name: it.impostazioni }), "«Impostazioni»");
+    await clic(within(finestra()!).getByRole("tab", { name: it.impostazioniConsole }), "la scheda «Console»");
+  };
+  const menu = () => finestra()?.querySelector<HTMLElement>("[data-menu-dei-linguaggi]") ?? null;
+  const righeDelMenu = () => [...(menu()?.querySelectorAll<HTMLElement>("[data-linguaggio]") ?? [])].map((r) => `${r.dataset.linguaggio}${r.querySelector<HTMLInputElement>('input[type="checkbox"]')!.checked ? "" : " (spento)"}`);
+  const riga = (l: string) => menu()?.querySelector<HTMLElement>(`[data-linguaggio="${l}"]`) ?? null;
+  const pulsante = (l: string, verso: -1 | 1) => riga(l)?.querySelector<HTMLButtonElement>(`[data-verso="${verso}"]`) ?? null;
+  const casella = (l: string) => riga(l)?.querySelector<HTMLInputElement>('input[type="checkbox"]') ?? null;
+  const conferma = () => clic([...(finestra()?.querySelectorAll("button") ?? [])].find((b) => b.textContent === it.progettoConferma), "«Conferma»");
+
+  await apriIlMenu();
+  expect(menu()?.querySelector("legend")?.textContent).toBe(it.linguaggiDelCodice);
+  expect(righeDelMenu()).toEqual(["pseudocodice", "python", "c"]);
+  // Il primo non sale e l'ultimo non scende; i nomi dei pulsanti dicono il linguaggio.
+  expect([pulsante("pseudocodice", -1)?.getAttribute("aria-disabled"), pulsante("c", 1)?.getAttribute("aria-disabled"), pulsante("python", -1)?.getAttribute("aria-disabled")]).toEqual(["true", "true", "false"]);
+  expect(pulsante("python", 1)?.getAttribute("aria-label")).toBe(riempi(it.linguaggioGiu, { linguaggio: it.linguaggioPython }));
+  // ▼ due volte sullo pseudocodice: la riga scende, e il fuoco resta sul suo ▼ anche in fondo, dove non fa nulla.
+  await clic(pulsante("pseudocodice", 1), "▼ dello pseudocodice");
+  await aspetta("il fuoco sul ▼ dello pseudocodice", () => document.activeElement === pulsante("pseudocodice", 1));
+  expect(righeDelMenu()).toEqual(["python", "pseudocodice", "c"]);
+  await clic(pulsante("pseudocodice", 1), "▼ dello pseudocodice");
+  await aspetta("il fuoco sul ▼ dello pseudocodice, in fondo", () => document.activeElement === pulsante("pseudocodice", 1) && righeDelMenu().at(-1) === "pseudocodice");
+  expect({ righe: righeDelMenu(), fermo: pulsante("pseudocodice", 1)?.getAttribute("aria-disabled") }).toEqual({ righe: ["python", "c", "pseudocodice"], fermo: "true" });
+  await clic(pulsante("pseudocodice", 1), "▼ dello pseudocodice, in fondo");
+  expect(righeDelMenu()).toEqual(["python", "c", "pseudocodice"]);
+  // Spenti il Python e lo pseudocodice, il C resta: la sua casella non si spegne, e la riga sotto lo dice.
+  await clic(casella("python"), "la casella del Python");
+  await clic(casella("pseudocodice"), "la casella dello pseudocodice");
+  expect({ righe: righeDelMenu(), bloccata: casella("c")?.disabled, detto: menu()?.textContent?.includes(it.almenoUnLinguaggio) }).toEqual({ righe: ["python (spento)", "c", "pseudocodice (spento)"], bloccata: true, detto: true });
+  await clic(casella("c"), "la casella del C, bloccata");
+  expect(righeDelMenu()).toEqual(["python (spento)", "c", "pseudocodice (spento)"]);
+  await conferma();
+  // La linguetta guardata (Python) è spenta: si mostra la prima del menu.
+  expect({ linguette: linguette(), scelta: scelta(), scritte: preferenzeScritte.map((p) => p.linguaggiDelCodice) }).toEqual({ linguette: [it.linguaggioC], scelta: it.linguaggioC, scritte: [["c"]] });
+  // Riaperta: gli accesi in cima, gli spenti nell'ordine del registro; riacceso lo pseudocodice, va dopo il C.
+  await apriIlMenu();
+  expect(righeDelMenu()).toEqual(["c", "pseudocodice (spento)", "python (spento)"]);
+  expect(menu()?.textContent?.includes(it.almenoUnLinguaggio)).toBe(true);
+  await clic(casella("pseudocodice"), "la casella dello pseudocodice");
+  expect({ bloccata: casella("c")?.disabled, detto: menu()?.textContent?.includes(it.almenoUnLinguaggio) }).toEqual({ bloccata: false, detto: false });
+  await conferma();
+  expect({ linguette: linguette(), scelta: scelta(), scritte: preferenzeScritte.map((p) => p.linguaggiDelCodice) }).toEqual({
+    linguette: [it.linguaggioC, it.linguaggioPseudocodice],
+    scelta: it.linguaggioC,
+    scritte: [["c"], ["c", "pseudocodice"]],
   });
 });

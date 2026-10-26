@@ -220,7 +220,7 @@ Anche una procedura o una funzione ha i suoi casi d'uso, che la provano da sola:
 
 ## 7. Il codice generato
 
-Il pulsante **Genera**, nel gruppo delle viste, apre a destra del flowchart la colonna del **codice generato**, con tre linguette: **Pseudocodice** (nella lingua dell'interfaccia), **Python** e **C**. Il codice segue ogni modifica del flowchart; con un progetto che ha errori, al posto del codice c'è l'invito a correggerli. «Genera» e «Tabella» si alternano nella stessa colonna.
+Il pulsante **Genera**, nel gruppo delle viste, apre a destra del flowchart la colonna del **codice generato**, con le linguette dei linguaggi: di partenza **Pseudocodice** (nella lingua dell'interfaccia), **Python** e **C**, ma quali linguaggi hanno una linguetta, e in che ordine, si sceglie nelle Impostazioni (§12); all'avvio si vede la prima. Il codice segue ogni modifica del flowchart; con un progetto che ha errori, al posto del codice c'è l'invito a correggerli. «Genera» e «Tabella» si alternano nella stessa colonna.
 
 Durante l'esecuzione con Passo o con l'Animata il codice evidenzia la riga (o le righe) del blocco corrente; con Esegui, la riga dove l'esecuzione si ferma su un punto di interruzione o su un errore. Così si vede, azione per azione, a che cosa corrisponde ogni blocco.
 
@@ -431,7 +431,7 @@ Il pulsante **Impostazioni** apre una finestra a sei schede; le scelte valgono d
 - **Limiti**: gli elementi di un vettore, i caratteri di una stringa e i caratteri di un vettore di stringhe (elementi × lunghezza massima), che si possono solo abbassare; e i posti della pila delle chiamate con cui nasce un progetto nuovo, da 5 a 500, che ogni progetto cambia poi nelle sue Proprietà (§9);
 - **Percorsi**: la cartella delle librerie (§10) e quella degli esempi (§11);
 - **Tabella di traccia**: come si mostra un vettore, che cosa ha il file CSV, le colonne che restano ferme, i separatori;
-- **Console**: che cosa fa una riga troppo lunga.
+- **Console**: che cosa fa una riga troppo lunga, e i **linguaggi del codice generato** (§7): una riga per linguaggio, con la casella che gli dà la linguetta e i pulsanti ▲ e ▼ che lo spostano su e giù nell'elenco, che è l'ordine delle linguette; almeno un linguaggio resta acceso.
 
 **I colori dei blocchi.** Nella scheda «Aspetto», sotto «Colori del flowchart», il riquadro **Colori dei blocchi** ha una riga per genere: Inizio e fine, Assegnazione, Procedura, Lettura, Scrittura, Se, Cicli (il rombo di ogni ciclo), Commento e Riquadro dei cicli. Ogni riga ha un blocco d'esempio, disegnato col colore che avrà, e le tinte da scegliere: la prima, **Come l'insieme**, lascia il colore dell'insieme scelto sopra; poi diciassette tinte per i blocchi (nove tenui e otto intense) e otto per la linea del riquadro dei cicli. Una tinta scelta vale con ogni insieme: cambiando insieme resta, e gli altri generi prendono i colori del nuovo. **Tutti come l'insieme** riporta ogni genere al colore dell'insieme. Di partenza, nei «Tenui», inizio e fine sono grigi, l'assegnazione malva, la procedura sabbia, la lettura verde, la scrittura azzurra, il «se» arancione, i cicli arancione intenso e il commento bianco; nel «Contrasto forte» gli stessi colori sono più carichi. Il giallo non c'è: è il colore del blocco corrente durante l'esecuzione.
 

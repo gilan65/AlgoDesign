@@ -1034,6 +1034,12 @@ export const it = {
   righeACapo: "Va a capo e continua sulla riga seguente",
   righeLaFine: "Se ne tiene la fine, preceduta da «…»",
   caratteriPerRiga: "Caratteri di una riga della console",
+  // Il menu dei linguaggi, nella stessa scheda: quali linguaggi hanno una linguetta nella colonna del codice, e in che ordine.
+  linguaggiDelCodice: "Linguaggi del codice generato",
+  linguaggiSpiegazione: "Le linguette della colonna del codice, nell'ordine di questo elenco: ▲ e ▼ spostano un linguaggio.",
+  linguaggioSu: "Sposta su {linguaggio}",
+  linguaggioGiu: "Sposta giù {linguaggio}",
+  almenoUnLinguaggio: "Almeno un linguaggio resta nel menu.",
   // Il menu in cima allo schermo del Mac (`ui/menu.ts`): i testi che macOS usa nelle sue app, tranne «Ripeti», il
   // nome della barra. I tasti accanto alle voci li scrive macOS.
   macInformazioni: "Informazioni su AlgoDesign",

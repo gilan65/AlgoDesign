@@ -1,6 +1,7 @@
 // Il nome che l'app propone per un file del progetto, del codice o della tabella, e quando lo dice prima della finestra
 // del sistema: le regole dei nomi le prova sulla tabella comune col guscio `esempi.test.ts`.
 import { expect, test } from "bun:test";
+import { linguaggi } from "../core/genera/linguaggi";
 import { en } from "../i18n/en";
 import { it } from "../i18n/it";
 import { baseDelNome, baseProposta, esempioValido, motivoDelCambio, nomeCambiato, nomeDiFileValido, nomeRiservato, senzaVietati } from "./nomi";
@@ -29,8 +30,9 @@ test("il nome proposto toglie i caratteri vietati e invisibili, evita i nomi ris
     return [progetto, base, nomeCambiato(progetto, base)] as const;
   });
   expect(visti).toEqual([...casi]);
-  // Ogni nome proposto, con ognuna delle estensioni, è un nome che Windows ammette e che non è riservato.
-  for (const [, base] of casi) for (const estensione of [".algo", ".py", ".c", ".txt", ".csv"]) expect({ file: base + estensione, riservato: nomeRiservato(base + estensione) }).toEqual({ file: base + estensione, riservato: false });
+  // Ogni nome proposto, con ognuna delle estensioni (il progetto, la tabella, il codice di ogni linguaggio del registro),
+  // è un nome che Windows ammette e che non è riservato.
+  for (const [, base] of casi) for (const estensione of [".algo", ".csv", ...linguaggi.map((v) => v.estensione)]) expect({ file: base + estensione, riservato: nomeRiservato(base + estensione) }).toEqual({ file: base + estensione, riservato: false });
   for (const [, base] of casi) expect({ base, valido: esempioValido(`${base}.algo`) }).toEqual({ base, valido: true });
   // La base per la tabella e per gli esempi non aggiunge «(2)»: la tabella ha davanti «Tabella di», e gli esempi lo
   // aggiungono da sé fra i nomi che ci sono (`nomeLibero`).

@@ -15,6 +15,7 @@
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { eventoDiChiusura } from "../ui/file";
 import { esempioValido, gruppoValido } from "../ui/nomi";
+import type { EstensioneDelCodice } from "../core/genera/linguaggi";
 import { daSalvare } from "./salva-con-nome";
 
 export interface Finzione {
@@ -133,7 +134,7 @@ mockIPC((comando, argomenti) => {
       f.finestre.codice = (f.finestre.codice ?? 0) + 1;
       f.finestre.proposto = a.proposto as string;
       f.finestre.cartella = a.cartella as string | null;
-      return f.daSalvareIlCodice == null ? null : daSalvare(f.daSalvareIlCodice, (p) => p in f.file, a.estensione as ".txt" | ".py" | ".c");
+      return f.daSalvareIlCodice == null ? null : daSalvare(f.daSalvareIlCodice, (p) => p in f.file, a.estensione as EstensioneDelCodice);
     case "leggi_progetto": {
       const testo = f.file[a.percorso as string];
       if (testo === undefined) throw new Error(`file non trovato: ${String(a.percorso)}`);
