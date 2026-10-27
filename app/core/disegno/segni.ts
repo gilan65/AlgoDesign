@@ -1,8 +1,52 @@
 // I segni accanto a un blocco del disegno: il pallino del punto di interruzione, la punta arancione del blocco corrente,
 // il «↩» della ripresa e il bollino di un errore o di un avviso. Le posizioni si ricavano dal riquadro della forma; una
-// prova (`segni.test.ts`) controlla su ogni albero delle prove del disegno che non tocchino etichette, forme, linee,
-// unioni né punti di inserimento.
-import type { Elemento } from "../../core/disegno/impaginazione";
+// prova (`ui/disegno/segni.test.ts`) controlla su ogni albero delle prove del disegno che non tocchino etichette, forme,
+// linee, unioni né punti di inserimento.
+//
+// Qui anche le regole che dicono QUALI elementi hanno i segni dell'esecuzione (`segniDelDisegno`): le leggono la tela
+// della finestra e il disegno in SVG (`svg.ts`), così le due non possono dire due cose diverse.
+import type { FaseDelCiclo } from "../interprete/interprete";
+import type { Elemento } from "./impaginazione";
+
+/** L'esecuzione in pausa, come la dà chi esegue: il blocco (o la fine, o «Inizio») prima del quale è in pausa, la parte
+ * di un ciclo `per` o `per ogni`, la ripresa dell'azione dopo il ritorno da una funzione chiamata nella sua espressione,
+ * il dato prima del cui valore iniziale è in pausa, i blocchi coi punti di interruzione. */
+export interface SegniDellEsecuzione {
+  readonly corrente?: string | null;
+  readonly faseCorrente?: FaseDelCiclo | null;
+  readonly ripresa?: boolean;
+  readonly correnteValore?: string | null;
+  readonly interruzioni?: ReadonlySet<string>;
+}
+
+/** I segni di un elemento: blocco corrente, punto di interruzione, e di una Lettura con la domanda corrente la riga del
+ * passo (la domanda 0, la Lettura 1). */
+export interface SegniDellElemento {
+  readonly corrente: boolean;
+  readonly punto: boolean;
+  readonly riga: number | undefined;
+}
+
+/** Le regole dei segni per gli elementi di un disegno; senza esecuzione, nessun segno. Il blocco corrente: per `id`, o il
+ * valore iniziale per il nome del dato (il suo `id` è vuoto, come quello di ogni altro valore iniziale); di un ciclo la
+ * parte della fase se il disegno la ha (il ciclo aperto), l'intestazione se no. Una Lettura con la domanda è corrente anche
+ * sulla sua Scrittura (la domanda), e ha il punto se ce l'ha una delle due. Il punto c'è solo sui blocchi dell'albero
+ * (non sui valori iniziali, non sulle parti che il riquadro aggiunge). */
+export function segniDelDisegno(elementi: readonly Elemento[], esecuzione: SegniDellEsecuzione | undefined): (e: Elemento) => SegniDellElemento {
+  const corrente = esecuzione?.corrente;
+  const correnteValore = esecuzione?.correnteValore;
+  const fase = esecuzione?.faseCorrente;
+  const interruzioni = esecuzione?.interruzioni;
+  const faseDisegnata = fase != null && elementi.some((e) => e.dato === undefined && e.id === corrente && e.fase === fase) ? fase : undefined;
+  const eCorrente = (e: Elemento) =>
+    e.dato !== undefined ? correnteValore != null && e.dato === correnteValore : e.fase === faseDisegnata && (e.id === corrente || (e.scrittura !== undefined && e.scrittura === corrente));
+  const conPunto = (e: Elemento) =>
+    esecuzione !== undefined && e.dato === undefined && e.fase === undefined && (interruzioni?.has(e.id) === true || (e.scrittura !== undefined && interruzioni?.has(e.scrittura) === true));
+  return (e) => {
+    const c = eCorrente(e);
+    return { corrente: c, punto: conPunto(e), riga: e.scrittura === undefined || !c ? undefined : e.scrittura === corrente ? 0 : 1 };
+  };
+}
 
 export const RAGGIO_DEL_PALLINO = 6;
 /** Quanto il pallino del rombo resta staccato dal lato e dalla linea che entra. */
