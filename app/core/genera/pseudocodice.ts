@@ -27,7 +27,7 @@
 import type { Tetti } from "../controllo/controllo";
 import { eUnaCopia, nomiDeiVettori } from "../progetto/copia";
 import type { Blocco, Dato, Funzione, Progetto, Ruolo } from "../progetto/modello";
-import { genera, type Generato, type Riga } from "./forma";
+import { genera, segnate, type Generato, type Riga } from "./forma";
 
 /** Le parole dello pseudocodice in una lingua: le dà l'interfaccia. */
 export interface ParoleDelloPseudocodice {
@@ -183,11 +183,16 @@ function righeDelloPseudocodice(p: Progetto, w: ParoleDelloPseudocodice): Riga[]
     struttura("");
   }
   const main = p.functions.find((f) => f.kind === "main")!;
+  /** Le righe dalla `da` in poi sono della funzione: dall'intestazione alla fine. */
+  const segna = (da: number, f: Funzione) => righe.splice(da, righe.length - da, ...segnate(righe.slice(da), f.id));
+  const daMain = righe.length;
   // Un a capo nel nome (un file scritto a mano) non spezza la riga: ogni riga del codice è una riga del riquadro.
   struttura(`${w.programma} ${p.metadata.name.split(/\r\n|\r|\n/).join(" ")}`);
   sezioni(main);
+  segna(daMain, main);
   for (const f of p.functions.filter((g) => g.kind !== "main")) {
     struttura("");
+    const da = righe.length;
     const parametri = f.data.filter((d) => d.parameter !== undefined).map((d) => `${parolaDelModo(d)}${d.name}: ${w.tipo(d)}`);
     const firma = `${f.name}(${parametri.join(", ")})`;
     // Il risultato come un dato: con la dimensione di un vettore e la lunghezza massima di una stringa.
@@ -199,6 +204,7 @@ function righeDelloPseudocodice(p: Progetto, w: ParoleDelloPseudocodice): Riga[]
     });
     struttura(f.kind === "function" ? `${w.funzione} ${w.tipo(risultato())} ← ${firma}` : `${w.procedura} ${firma}`);
     sezioni(f);
+    segna(da, f);
   }
   return righe;
 

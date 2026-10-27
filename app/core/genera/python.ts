@@ -66,7 +66,7 @@ import { spazioDellaPila, spazioDiUnaChiamata, tettoDelleChiamate } from "../con
 import { analizza, type Espressione } from "../espressioni/analizzatore";
 import { opzioniPredefinite, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto, type Ruolo, type Tipo } from "../progetto/modello";
 import type { FaseDelCiclo } from "../interprete/interprete";
-import { genera, parametriDelCaso, type Generato, type Riga } from "./forma";
+import { genera, parametriDelCaso, segnate, type Generato, type Riga } from "./forma";
 import { motiviCol } from "./motivi";
 import {
   contatoriDellaRicorsione,
@@ -893,7 +893,7 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
   const delProgramma = p.functions.filter((f) => f.kind !== "main" && scritte.has(f));
 
   const costanti = dichiara(comuni, "", false);
-  const principale = prova === undefined ? scritte.get(main)! : scriviLaProva(radice, prova.caso);
+  const principale = prova === undefined ? segnate(scritte.get(main)!, main.id) : scriviLaProva(radice, prova.caso);
 
   // --------------------------------------------------------------------------------------- l'insieme
 
@@ -920,7 +920,7 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
   ];
   if (costanti.length > 0) righe.push({ testo: "" }, { testo: `# ${w.costantiComuni}` }, ...costanti);
   righe.push({ testo: "" }, { testo: "" }, ...principale);
-  for (const f of delProgramma) righe.push({ testo: "" }, { testo: "" }, ...scritte.get(f)!);
+  for (const f of delProgramma) righe.push({ testo: "" }, { testo: "" }, ...segnate(scritte.get(f)!, f.id));
   const funzioni = funzioniDiSupporto.filter((f) => usate.has(f));
   const risale = delProgramma.length === 0 ? undefined : ["main", ...delProgramma.map((f) => f.name!)];
   if (funzioni.length > 0) {

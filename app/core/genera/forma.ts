@@ -22,14 +22,20 @@ import type { CasoDiUnaFunzione, Dato, Funzione, Progetto } from "../progetto/mo
 /** Una riga del codice generato. Al più una provenienza: il blocco, o il dato di una dichiarazione (con la
  * funzione che lo possiede, se non è il programma principale: due funzioni possono avere un dato con lo stesso nome);
  * nessuna per le righe di struttura (l'intestazione, la chiusura di un ramo o di un ciclo, le righe vuote). Le righe di
- * un ciclo `per` o `per ogni`, e solo quelle, hanno le fasi. */
+ * un ciclo `per` o `per ogni`, e solo quelle, hanno le fasi. `nellaFunzione` è la funzione del cui pezzo il generatore
+ * fa la riga, con ogni riga di struttura: manca sulla testa del file, sulle righe fra due funzioni e su ciò che viene
+ * dopo l'ultima (le dà `partiDelCodice`, in `stampato.ts`). */
 export interface Riga {
   readonly testo: string;
   readonly blocco?: string;
   readonly dato?: string;
   readonly funzione?: string;
   readonly fasi?: readonly FaseDelCiclo[];
+  readonly nellaFunzione?: string;
 }
+
+/** Le righe di una funzione, segnate come sue. */
+export const segnate = (righe: readonly Riga[], funzione: string): Riga[] => righe.map((r) => ({ ...r, nellaFunzione: funzione }));
 
 /** Le specie di ciò che un linguaggio con meno costrutti del flowchart non sa scrivere (oggi «Accademico»): i tipi, la
  * lettura, i modi dei parametri, i letterali, gli operatori, un nome che è una parola del linguaggio, una condizione

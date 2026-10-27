@@ -34,7 +34,7 @@ import { analizza, type Espressione, type OperatoreUnario } from "../espressioni
 import type { FaseDelCiclo } from "../interprete/interprete";
 import { eUnaCopia, nomiDeiVettori } from "../progetto/copia";
 import type { Blocco, Dato, Funzione, Progetto, ValoreIniziale } from "../progetto/modello";
-import { genera, type Generato, type Mancanza, type Riga, type SpecieDellaMancanza } from "./forma";
+import { genera, segnate, type Generato, type Mancanza, type Riga, type SpecieDellaMancanza } from "./forma";
 import { ancoraDelLivello, indiceDelLivello, nomeDellaSorgente, type LinguaDelCodice } from "./nomi";
 
 /** Le parole della sintassi: un nome uguale non si può scrivere. */
@@ -323,8 +323,9 @@ function righeDiAccademico(p: Progetto, lingua: LinguaDelCodice): Riga[] {
     dichiara(righe, "", comuni, [], undefined, espressioni(p, comuni));
     parti.push(righe);
   }
-  for (const f of p.functions.filter((g) => g.kind !== "main")) parti.push(parte(f));
-  const main = parte(p.functions.find((f) => f.kind === "main")!);
+  for (const f of p.functions.filter((g) => g.kind !== "main")) parti.push(segnate(parte(f), f.id));
+  const principale = p.functions.find((f) => f.kind === "main")!;
+  const main = segnate(parte(principale), principale.id);
   if (main.length > 0) parti.push(main);
   return parti.flatMap((righe, k) => (k === 0 ? righe : [{ testo: "" }, ...righe]));
 

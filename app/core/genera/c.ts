@@ -75,7 +75,7 @@ import { spazioDellaPila, spazioDiUnaChiamata, tettoDelleChiamate } from "../con
 import { analizza, type Espressione } from "../espressioni/analizzatore";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import { opzioniPredefinite, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione as FunzioneDelProgetto, type Progetto, type Tipo } from "../progetto/modello";
-import { genera, parametriDelCaso, type Generato, type Riga } from "./forma";
+import { genera, parametriDelCaso, segnate, type Generato, type Riga } from "./forma";
 import { motiviCol } from "./motivi";
 import {
   contatoriDellaRicorsione,
@@ -1220,7 +1220,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
   const scritte = new Map<FunzioneDelProgetto, Riga[]>();
   for (const f of inOrdineDiChiamata) if (prova === undefined || f !== main) scritte.set(f, scriviFunzione(f));
   const delProgetto = p.functions.filter((f) => f.kind !== "main" && scritte.has(f));
-  const principale = prova === undefined ? scritte.get(main)! : scriviLaProva(radice, prova.caso);
+  const principale = prova === undefined ? segnate(scritte.get(main)!, main.id) : scriviLaProva(radice, prova.caso);
   dati = new Map<string, Dato>(comuni.map((d) => [d.name, d]));
   const costanti = dichiara(comuni, "", false);
 
@@ -1267,7 +1267,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
   const testoDi = (f: Funzione) => funzione(f, lingua, n, riempimento, tetto);
   for (const f of funzioni) righe.push(...testoDi(f).prototipo.map((testo) => ({ testo })));
   righe.push({ testo: "" }, ...principale);
-  for (const f of delProgetto) righe.push({ testo: "" }, ...scritte.get(f)!);
+  for (const f of delProgetto) righe.push({ testo: "" }, ...segnate(scritte.get(f)!, f.id));
   righe.push({ testo: "" }, { testo: w.supporto });
   for (const f of funzioni) righe.push({ testo: "" }, ...testoDi(f).definizione.map((testo) => ({ testo })));
   return righe;
