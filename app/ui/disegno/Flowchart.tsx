@@ -63,7 +63,7 @@ import type { Posto } from "../../core/modifica/operazioni";
 import { chiaveDelPosto, type Voce } from "./accessibile";
 import { bersaglio, latoDellArea, nelDisegno, type Bersaglio, type Coordinate, type Copia } from "./bersaglio";
 import stili from "./Flowchart.module.css";
-import { bollino, pallino, punta as puntaCorrente, RAGGIO_DEL_BOLLINO, RAGGIO_DEL_PALLINO, ripresa as segnoDellaRipresa } from "./segni";
+import { bollino, pallino, punta as puntaCorrente, RAGGIO_DEL_BOLLINO, RAGGIO_DEL_PALLINO, ripresa as segnoDellaRipresa, segniDelDisegno } from "../../core/disegno/segni";
 
 /** Il «+»: raggio del cerchio disegnato, nel sistema del disegno (12 px di diametro al 100%). */
 export const RAGGIO_DEL_PUNTO = 6;
@@ -551,22 +551,13 @@ export function Flowchart({
   );
   /** Linee, forme, etichette e unioni di un disegno (anche della copia che segue il puntatore); nel disegno
    * vero anche il blocco corrente (bordo, interno, punta che entra) e i punti di interruzione (pallino e contorno
-   * rosso): posizioni in `segni.ts`. */
+   * rosso): posizioni e regole in `core/disegno/segni.ts`, le stesse del disegno in SVG. */
   function parti(d: Disegno, vero = false): ReactElement {
-    const corrente = vero ? interazione?.corrente : undefined;
-    const correnteValore = vero ? interazione?.correnteValore : undefined;
-    // Di un ciclo, il blocco della fase se il disegno lo ha (il ciclo aperto), l'intestazione se no.
-    const fase = vero ? interazione?.faseCorrente : undefined;
     const ripresa = vero && interazione?.ripresa === true;
-    const faseDisegnata = fase != null && d.elementi.some((e) => e.dato === undefined && e.id === corrente && e.fase === fase) ? fase : undefined;
-    /** Il blocco corrente: per id, o il valore iniziale per il nome del dato; di un ciclo, quello della fase. */
-    // Una Lettura con la domanda è corrente anche sulla sua Scrittura (la domanda), e ha il punto se ce l'ha una delle due.
-    const eCorrente = (e: Elemento) =>
-      e.dato !== undefined ? correnteValore != null && e.dato === correnteValore : e.fase === faseDisegnata && (e.id === corrente || (e.scrittura !== undefined && e.scrittura === corrente));
-    const conPunto = (e: Elemento) =>
-      vero && e.dato === undefined && e.fase === undefined && (interazione?.interruzioni?.has(e.id) === true || (e.scrittura !== undefined && interazione?.interruzioni?.has(e.scrittura) === true));
-    /** Di una Lettura con la domanda corrente, la riga del passo: la domanda (0) o la Lettura (1). */
-    const rigaCorrente = (e: Elemento): number | undefined => (e.scrittura === undefined || !eCorrente(e) ? undefined : e.scrittura === corrente ? 0 : 1);
+    const segniDi = segniDelDisegno(d.elementi, vero ? interazione : undefined);
+    const eCorrente = (e: Elemento) => segniDi(e).corrente;
+    const conPunto = (e: Elemento) => segniDi(e).punto;
+    const rigaCorrente = (e: Elemento) => segniDi(e).riga;
     return (
     <>
       {d.riquadri.map((r) => (

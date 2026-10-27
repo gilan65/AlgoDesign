@@ -1,4 +1,4 @@
-// Il pallino del punto di interruzione e la punta del blocco corrente (`segni.ts`) su ogni albero delle prove
+// Il pallino del punto di interruzione e la punta del blocco corrente (`core/disegno/segni.ts`) su ogni albero delle prove
 // del disegno: il corpus delle tappe 1 e 2, 300 alberi generati a seme fisso e 150 coi cicli, le funzioni della tappa 3 e
 // di 60 progetti generati coi salti (le intestazioni e il blocco della chiamata), nelle due forme delle
 // condizioni lunghe e, per i cicli, in tre forme (aperti con la posizione, aperti a parole, chiusi). Per ogni blocco che si esegue (i commenti no: non hanno punti di interruzione e non sono mai il blocco
@@ -35,7 +35,7 @@ import { geometriaPredefinita } from "../../core/disegno/tema";
 import { cicliEn, cicliIt, funzioniEn, funzioniIt } from "../../core/esecuzione/testi-di-prova";
 import { apri } from "../../core/progetto/formato";
 import { tipi, type Dato, type Funzione } from "../../core/progetto/modello";
-import { bollino, pallino, punta, RAGGIO_DEL_BOLLINO, RAGGIO_DEL_PALLINO, ripresa } from "./segni";
+import { bollino, pallino, punta, RAGGIO_DEL_BOLLINO, RAGGIO_DEL_PALLINO, ripresa } from "../../core/disegno/segni";
 import { testiDelDisegno } from "./testi";
 
 test("le parole dei cicli e delle funzioni che le prove del disegno usano sono quelle dei dizionari, nelle due lingue", () => {

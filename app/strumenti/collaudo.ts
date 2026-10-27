@@ -1099,6 +1099,7 @@ const proveAttesePerSpec: Record<string, number> = {
   "espressioni.e2e.ts": 6,
   "finestra.e2e.ts": 9,
   "fluida.e2e.ts": 1,
+  "flowchart-in-svg.e2e.ts": 2,
   "funzioni.e2e.ts": 4,
   "guida.e2e.ts": 5,
   "impostazioni.e2e.ts": 11,
