@@ -220,7 +220,7 @@ Anche una procedura o una funzione ha i suoi casi d'uso, che la provano da sola:
 
 ## 7. Il codice generato
 
-Il pulsante **Genera**, nel gruppo delle viste, apre a destra del flowchart la colonna del **codice generato**, con le linguette dei linguaggi: di partenza **Pseudocodice** (nella lingua dell'interfaccia), **Python** e **C**, ma quali linguaggi hanno una linguetta, e in che ordine, si sceglie nelle Impostazioni (§12); all'avvio si vede la prima. Il codice segue ogni modifica del flowchart; con un progetto che ha errori, al posto del codice c'è l'invito a correggerli. «Genera» e «Tabella» si alternano nella stessa colonna.
+Il pulsante **Genera**, nel gruppo delle viste, apre a destra del flowchart la colonna del **codice generato**, con le linguette dei linguaggi: di partenza **Pseudocodice** (nella lingua dell'interfaccia), **Python** e **C**, ma quali linguaggi hanno una linguetta, e in che ordine, si sceglie nelle Impostazioni (§12); all'avvio si vede la prima. Il codice segue ogni modifica del flowchart; con un progetto che ha errori, al posto del codice c'è l'invito a correggerli. «Genera» e «Tabella» si alternano nella stessa colonna. Fra i linguaggi che si accendono nelle Impostazioni c'è anche **Accademico**, lo pseudocodice delle Selezioni scolastiche delle Olimpiadi di Informatica: come si usa per allenarsi lo spiega il file `GUIDA-AD-ACCADEMICO.md`.
 
 Durante l'esecuzione con Passo o con l'Animata il codice evidenzia la riga (o le righe) del blocco corrente; con Esegui, la riga dove l'esecuzione si ferma su un punto di interruzione o su un errore. Così si vede, azione per azione, a che cosa corrisponde ogni blocco.
 
