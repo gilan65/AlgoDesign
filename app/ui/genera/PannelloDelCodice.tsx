@@ -109,7 +109,7 @@ export const PannelloDelCodice = memo(function PannelloDelCodice({
                 </div>
               </pre>
             ) : codice.perche === "non-ci-sta" ? (
-              <div className={stili.mancanze} aria-label={testi[paroleDeiLinguaggi[id].nome]}>
+              <div className={stili.mancanze} role="group" aria-label={testi[paroleDeiLinguaggi[id].nome]}>
                 <p className={stili.introduzione}>
                   {riempi(testi.codiceNonCiSta, {
                     linguaggio: testi[paroleDeiLinguaggi[id].nome],

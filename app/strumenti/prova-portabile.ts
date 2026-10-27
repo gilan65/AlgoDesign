@@ -61,6 +61,10 @@
 //      una sentinella; quelli dell'utente si rimettono alla fine); «Salva…» apre prima l'avviso del nome col nome
 //      «con (2)», «Continua» apre la finestra vera del sistema, che propone «con (2).py» (letto dal campo prima di
 //      compilarlo), e il file scritto è il codice mostrato, byte per byte;
+//    - ACCADEMICO: «Accademico», spento di partenza, acceso nelle Impostazioni (scheda «Console»): con `tre-livelli` dato
+//      come argomento la sua linguetta mostra il testo del generatore del nucleo, riga per riga; riaperta l'app con
+//      `libreria-dei-voti`, che non ci sta, la linguetta c'è ancora, in fondo, e mostra l'elenco di ciò che manca, voce
+//      per voce (frase e posto) come lo costruisce la colonna del codice. Controllo positivo: prima la linguetta non c'è;
 //    - VETTORE: l'app parte col vettore di 1000 elementi riempito da un ciclo (`e2e/vettore-riempito.ts`, lo stesso
 //      programma della prova nei motori) dato come argomento; F5 lo esegue nella forma predefinita della tabella (le
 //      colonne dei primi dieci e una per gli altri), «Ferma», poi nelle Impostazioni si sceglie la forma in fila e F5
@@ -250,6 +254,14 @@ import { politicaDelProdotto } from "./politica";
 import { direttiveSenzaSonda, provaLaSonda, sonde } from "./sonde-della-politica";
 import { testoDelMessaggio } from "../i18n/codici";
 import { fileDelleGuide } from "../ui/guida/guide";
+import { tetti } from "../core/controllo/controllo";
+import { partiDellaFine } from "../core/disegno/impaginazione";
+import type { Generato } from "../core/genera/forma";
+import { trova } from "../core/modifica/operazioni";
+import { nomeDelBlocco } from "../ui/disegno/accessibile";
+import { testiDelDisegno } from "../ui/disegno/testi";
+import { codiceDi } from "../ui/genera/codice";
+import { vociDelleMancanze } from "../ui/genera/mancanze";
 import { dizionari, linguaDelSistema, nomiLingue, riempi, type Lingua } from "../i18n/lingue";
 
 if (process.platform !== "win32") {
@@ -327,6 +339,7 @@ const clausole: [string, string][] = [
   ["ESECUZIONE", "esecuzione"],
   ["SICUREZZA", "politica di sicurezza dei contenuti"],
   ["CODICE", "codice generato"],
+  ["ACCADEMICO", "«Accademico» dal menu dei linguaggi"],
   ["VETTORE", "vettore di 1000 elementi"],
   ["RICORSIONE", "ricorsione al tetto"],
   ["CHIUSURA", "chiusura"],
@@ -816,6 +829,7 @@ async function giroPortabile(): Promise<void> {
   await giroDelleFunzioni(iniziale);
   await giroDellEsecuzione(iniziale);
   await giroDelCodice(iniziale);
+  await giroDiAccademico(iniziale);
   await giroDelVettore(iniziale);
   await giroDellaRicorsione(iniziale);
   await giroDellaChiusura(iniziale);
@@ -1619,6 +1633,90 @@ async function giroDelCodice(lingua: Lingua): Promise<void> {
   verde(
     "CODICE",
     `in «${lingua}», la colonna del codice con ${esito.righe} righe di Python; «Copia»: il codice negli appunti di Windows (${Buffer.byteLength(esito.testo)} byte, alla lettura ${esito.letture}); «Salva…» col progetto «con»: l'avviso del nome con «${esito.campo}», poi la finestra vera del sistema che proponeva «${esito.proposto}», e il file scritto uguale al codice mostrato | controllo positivo: prima di «Copia» negli appunti c'era una sentinella`,
+  );
+}
+
+/** La clausola ACCADEMICO: sulla WebView2 vera «Accademico», spento di partenza, si accende nelle Impostazioni (scheda
+ * «Console»); con un programma che ci sta la sua linguetta mostra il testo del generatore del nucleo, riga per riga;
+ * riaperta l'app con un programma che non ci sta, la linguetta c'è ancora (la preferenza) e mostra l'elenco di ciò che
+ * manca, voce per voce (frase e posto) come lo costruisce la colonna del codice. Controllo positivo: prima di accenderlo
+ * la linguetta non c'è. */
+async function giroDiAccademico(lingua: Lingua): Promise<void> {
+  const testi = dizionari[lingua];
+  const delCorpus = (f: string) => readFileSync(join(radice, "casi", "tappa-3", `${f}.algo`), "utf8");
+  const progetto = (t: string) => {
+    const r = apriProgetto(t);
+    if (!r.ok) throw new Error("un file del corpus non si apre");
+    return r.progetto;
+  };
+  const ciSta = delCorpus("tre-livelli");
+  const nonCiSta = delCorpus("libreria-dei-voti");
+  const g = codiceDi(progetto(ciSta), tetti, "accademico", lingua);
+  if (!g.generato) rosso("ACCADEMICO", `tre-livelli non si scrive in «Accademico» nel nucleo (${g.perche})`);
+  const righeAttese = (g as Extract<Generato, { generato: true }>).righe.map((r) => r.testo);
+  const p = progetto(nonCiSta);
+  const m = codiceDi(p, tetti, "accademico", lingua);
+  if (m.generato || m.perche !== "non-ci-sta") rosso("ACCADEMICO", "libreria-dei-voti ci sta in «Accademico» nel nucleo");
+  const espressione = testiDelDisegno(lingua).espressione ?? ((t: string) => t);
+  const nomeDi = (id: string) => {
+    const b = trova(p, id);
+    if (b) return nomeDelBlocco(b, testi, espressione, p.functions);
+    const f = p.functions.find((x) => x.end.id === id)!;
+    return partiDellaFine(f, testiDelDisegno(lingua)).map((x) => x.testo).join("");
+  };
+  const vociAttese = vociDelleMancanze((m as Extract<Generato, { perche: "non-ci-sta" }>).mancanze, p, lingua, testi, nomeDi).map((v) => [v.breve, v.posto]);
+  const riquadroDi = (a: Avvio) => a.pagina!.getByRole("region", { name: testi.codiceGenerato, exact: true });
+  const linguetteDi = async (a: Avvio) => {
+    await a.pagina!.getByRole("banner").getByRole("button", { name: testi.pannelloCodice, exact: true }).click();
+    await riquadroDi(a).getByRole("tab").first().waitFor();
+    return riquadroDi(a).getByRole("tab").allTextContents();
+  };
+
+  writeFileSync(progettoFuori, ciSta);
+  let prima: string[];
+  let dopo: string[];
+  let righe: string[];
+  const a = await avvia([progettoFuori]);
+  try {
+    prima = await linguetteDi(a);
+    await nelleImpostazioni(a.pagina, lingua, async (f) => {
+      await f.getByRole("tab", { name: testi.impostazioniConsole, exact: true }).click();
+      await f.getByRole("group", { name: testi.linguaggiDelCodice, exact: true }).getByRole("checkbox", { name: testi.linguaggioAccademico, exact: true }).check();
+    });
+    await riquadroDi(a).getByRole("tab", { name: testi.linguaggioAccademico, exact: true }).click();
+    await riquadroDi(a).locator("[data-riga]").first().waitFor();
+    righe = (await riquadroDi(a).locator("[data-riga] > span:last-child").allTextContents()).map((t) => (t === " " ? "" : t));
+  } finally {
+    await chiudi(a);
+  }
+  if (prima.includes(testi.linguaggioAccademico)) rosso("ACCADEMICO (controllo positivo)", `prima di accenderlo c'è già la linguetta: ${JSON.stringify(prima)}`);
+  const diversa = righe.findIndex((r, i) => r !== righeAttese[i]);
+  if (righe.length !== righeAttese.length || diversa >= 0)
+    rosso("ACCADEMICO", `tre-livelli: ${righe.length} righe invece di ${righeAttese.length}; la prima diversa è la ${diversa + 1}: ${visibile(righe[diversa])} invece di ${visibile(righeAttese[diversa])}`);
+
+  writeFileSync(progettoFuori, nonCiSta);
+  let voci: string[][];
+  const b = await avvia([progettoFuori]);
+  try {
+    dopo = await linguetteDi(b);
+    await riquadroDi(b).getByRole("tab", { name: testi.linguaggioAccademico, exact: true }).click();
+    await riquadroDi(b).locator("[data-mancanza]").first().waitFor();
+    voci = await riquadroDi(b)
+      .locator("[data-mancanza]")
+      .evaluateAll((v) => v.map((x) => [x.firstChild?.textContent ?? "", x.lastElementChild?.textContent ?? ""]));
+  } finally {
+    await chiudi(b);
+    rmSync(progettoFuori, { force: true });
+  }
+  if (dopo.at(-1) !== testi.linguaggioAccademico) rosso("ACCADEMICO", `dopo il riavvio le linguette sono ${JSON.stringify(dopo)}: «${testi.linguaggioAccademico}» non è l'ultima`);
+  const chiave = (v: readonly string[]) => `${v[0]} | ${v[1]}`;
+  const mancanti = vociAttese.map(chiave).filter((x) => !voci.map(chiave).includes(x));
+  const inPiu = voci.map(chiave).filter((x) => !vociAttese.map(chiave).includes(x));
+  if (voci.length !== vociAttese.length || mancanti.length > 0 || inPiu.length > 0)
+    rosso("ACCADEMICO", `libreria-dei-voti: ${voci.length} voci invece di ${vociAttese.length}; mancanti ${JSON.stringify(mancanti)}, in più ${JSON.stringify(inPiu)}`);
+  verde(
+    "ACCADEMICO",
+    `in «${lingua}», «${testi.linguaggioAccademico}» acceso nelle Impostazioni: tre-livelli con le ${righe.length} righe del nucleo; dopo il riavvio la linguetta in fondo (${JSON.stringify(dopo)}) e libreria-dei-voti con le ${voci.length} voci di ciò che manca, appaiate una per una | controllo positivo: prima la linguetta non c'era (${JSON.stringify(prima)})`,
   );
 }
 

@@ -519,6 +519,66 @@ test("un progetto che non sta in «Accademico»: al posto del codice ciò che ma
   expect(avviso()).toBe("Usa un intero al suo posto: per esempio 1 per «sì» e 0 per «no» invece di 's' e 'n'.");
 });
 
+/** Il programma principale che sta in «Accademico» e una procedura con una Lettura, che non ci sta; per la domanda una
+ * Scrittura con un reale subito prima della Lettura. */
+const CON_UNA_PROCEDURA = JSON.stringify({
+  format: "algodesign",
+  schema_version: 1,
+  metadata: { name: "doppio" },
+  functions: [
+    {
+      id: "f1",
+      kind: "main",
+      data: [{ name: "x", type: "integer" }, { name: "i", type: "integer" }],
+      body: [{ id: "b1", kind: "for", counter: "i", from: "1", to: "3", body: [{ id: "b6", kind: "assignment", target: "x", value: "i" }] }],
+      end: { id: "b2" },
+    },
+    {
+      id: "f2",
+      kind: "procedure",
+      name: "chiedi",
+      data: [{ name: "n", type: "integer" }],
+      body: [
+        { id: "b3", kind: "write", values: ["2.5"], newline: true },
+        { id: "b4", kind: "read", target: "n" },
+      ],
+      end: { id: "b5" },
+    },
+  ],
+});
+
+test("il clic su ciò che manca in un'altra procedura coi campi aperti e rifiutati: la scheda non cambia e i campi restano, come col clic sulla riga di stato", async () => {
+  await apriLaFinestra(CON_UNA_PROCEDURA, "it", { ...scelteIniziali, linguaggiDelCodice: ["accademico"] });
+  await clic(comando("genera"), "«Genera»");
+  const voce = (i: number) => regione()?.querySelector<HTMLElement>(`[data-mancanza="${i}"]`) ?? null;
+  // I campi del «per» del programma principale con un passo che non si scrive nel file: la conferma li rifiuta.
+  await act(async () => void fireEvent.doubleClick(document.querySelector('[data-blocco="b1"]')!));
+  await giro();
+  const campi = () => document.querySelector<HTMLFormElement>("form[aria-label^='Modifica di']");
+  await act(async () => void fireEvent.change(within(campi()!).getByRole("textbox", { name: it.campoPasso }), { target: { value: "x" } }));
+  await act(async () => {
+    fireEvent.pointerDown(voce(1)!);
+    fireEvent.click(voce(1)!);
+  });
+  await giro();
+  expect({
+    campi: campi() !== null,
+    delPrincipale: document.querySelector('[data-blocco="b1"]') !== null,
+    dellaProcedura: document.querySelector('[data-blocco="b4"]') !== null,
+  }).toEqual({ campi: true, delPrincipale: true, dellaProcedura: false });
+});
+
+test("col segno della domanda nella Lettura, il clic su ciò che manca alla Scrittura unita sceglie la Lettura, il blocco che il disegno mostra", async () => {
+  await apriLaFinestra(CON_UNA_PROCEDURA, "it", { ...scelteIniziali, linguaggiDelCodice: ["accademico"], domandaNellaLettura: true });
+  await clic(comando("genera"), "«Genera»");
+  const voce = (i: number) => regione()?.querySelector<HTMLElement>(`[data-mancanza="${i}"]`) ?? null;
+  expect(voce(0)?.textContent).toBe("Un numero con la virgola non è supportato in Accademico.«Scrittura: 2.5», procedura chiedi");
+  await clic(voce(0), "la voce del reale nella Scrittura");
+  await aspetta("la scheda della procedura", () => document.querySelector('[data-blocco="b4"]') !== null);
+  await giro();
+  expect({ scrittura: document.querySelector('[data-blocco="b3"]') !== null, lettura: document.querySelector('[data-blocco="b4"]')?.getAttribute("aria-pressed") }).toEqual({ scrittura: false, lettura: "true" });
+});
+
 test("il menu dei linguaggi nelle Impostazioni: ▲ ▼ col fuoco sul pulsante, l'ultimo acceso non si spegne, «Conferma» cambia le linguette e le scrive; spenta la linguetta guardata, si mostra la prima", async () => {
   await apriLaFinestra();
   await clic(comando("genera"), "«Genera»");

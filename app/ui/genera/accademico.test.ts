@@ -54,6 +54,38 @@ describe("«Accademico» uguale all'atteso scritto a mano", () => {
   for (const [percorso, atteso] of Object.entries(delCorpus)) provaAttesi(percorso, () => leggi(percorso), atteso);
   provaAttesi("forme di Accademico", () => formeDiAccademico, formeDiAccademicoAttese);
 
+  // Le fini del `for` che non sono un letterale: `n` dà `n + 1`, `n - 3` dà `n - 2`, `n - 0` dà `n + 1`.
+  const per = (id: string, counter: string, to: string): Blocco => ({ id, kind: "for", counter, from: "1", to, body: [{ id: `${id}s`, kind: "write", values: [counter], newline: true }] });
+  const fini: Progetto = {
+    format: "algodesign",
+    schema_version: 1,
+    metadata: { name: "fini del per" },
+    functions: [
+      {
+        id: "f1",
+        kind: "main",
+        data: [{ name: "n", type: "integer", initial: "5" }, { name: "a", type: "integer" }, { name: "b", type: "integer" }, { name: "c", type: "integer" }],
+        body: [per("b1", "a", "n"), per("b2", "b", "n - 3"), per("b3", "c", "n - 0")],
+        end: { id: "b4" },
+      },
+    ],
+  };
+  const fineAttesa = [
+    "variable n: integer",
+    "n ← 5",
+    "for a in [1 ... n + 1) do",
+    "    output(a)",
+    "end for",
+    "for b in [1 ... n - 2) do",
+    "    output(b)",
+    "end for",
+    "for c in [1 ... n + 1) do",
+    "    output(c)",
+    "end for",
+    "",
+  ].join("\n");
+  provaAttesi("le fini del per", () => fini, { it: fineAttesa, en: fineAttesa });
+
   test("il campione: i cinque esempi forniti che ci stanno, più un file per costrutto", () => {
     expect(Object.keys(delCorpus).length).toBe(15);
     const esempi = ["tappa-1/overflow-fattoriale", "tappa-1/condizione-intero", "tappa-1/condizione-booleano", "tappa-3/tre-livelli", "tappa-4/ricorsione-senza-uscita"];

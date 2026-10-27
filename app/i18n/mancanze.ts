@@ -30,7 +30,7 @@ export const testiDelleMancanze: Record<Lingua, Record<SpecieDellaMancanza, Test
       suggerimento: "Fai restituire il valore da una funzione, o passa il parametro per valore se non va cambiato.",
     },
     out: {
-      breve: "Il parametro per uscita (out) non è supportato in Accademico.",
+      breve: "Il parametro di uscita (out) non è supportato in Accademico.",
       suggerimento: "Fai restituire il valore da una funzione invece di metterlo nel parametro.",
     },
     "letterale-reale": {
@@ -78,7 +78,7 @@ export const testiDelleMancanze: Record<Lingua, Record<SpecieDellaMancanza, Test
       suggerimento: "Cambia il nome: per esempio «massimo» invece di «max», «fine» invece di «end».",
     },
     "condizione-come-valore": {
-      breve: "Una condizione qui non si può scrivere: va solo dopo Se o Mentre.",
+      breve: "Una condizione qui non si può scrivere: va solo dopo Se, Mentre o Ripeti.",
       suggerimento: "Metti la condizione in un Se che assegna 1 o 0 a un dato intero, e usa il dato.",
     },
   },
@@ -152,7 +152,7 @@ export const testiDelleMancanze: Record<Lingua, Record<SpecieDellaMancanza, Test
       suggerimento: "Change the name: for example “maximum” instead of “max”, “finish” instead of “end”.",
     },
     "condizione-come-valore": {
-      breve: "A condition cannot be written here: it goes only after If or While.",
+      breve: "A condition cannot be written here: it goes only after If, While or Repeat.",
       suggerimento: "Put the condition in an If that assigns 1 or 0 to an integer data item, and use the data item.",
     },
   },

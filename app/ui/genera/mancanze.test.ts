@@ -70,7 +70,7 @@ test("le voci di un progetto del corpus: la frase, il posto e dove porta il clic
   const tipo = (t: string) => `Il tipo ${t} non è supportato in Accademico.`;
   const virgolette = "Un testo fra virgolette è supportato solo in una Scrittura.";
   expect(voci(p).map((v) => [v.breve, v.posto, v.clic]) as unknown).toEqual([
-    ["Il parametro per uscita (out) non è supportato in Accademico.", "Il dato «numero», procedura leggi_numero", { funzione: id("leggi_numero"), dato: "numero", comune: false }],
+    ["Il parametro di uscita (out) non è supportato in Accademico.", "Il dato «numero», procedura leggi_numero", { funzione: id("leggi_numero"), dato: "numero", comune: false }],
     ["La Lettura non è supportata in Accademico.", "«Lettura: numero», procedura leggi_numero", { funzione: id("leggi_numero"), blocco: "b4" }],
     ["Il tipo reale non è supportato in Accademico: ci sono solo gli interi.", "Il risultato, funzione media", { funzione: id("media") }],
     ["L'operatore converti_a_reale non è presente in Accademico.", "Ciò che restituisce, funzione media", { funzione: id("media"), fine: "b12" }],

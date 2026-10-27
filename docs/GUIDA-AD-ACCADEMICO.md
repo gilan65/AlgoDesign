@@ -23,7 +23,7 @@ Un programma si scrive in «Accademico» se usa solo ciò che la sintassi ha:
 - **le procedure e le funzioni**, coi parametri per valore e il risultato intero, booleano o vettore di interi, anche ricorsive;
 - **le operazioni** `+`, `-`, `*`, `/`, `mod`, i confronti, `and`, `or`, `not`.
 
-Non ci stanno: i tipi reale, carattere e stringa (un testo fra virgolette va bene solo in una Scrittura), la **Lettura**, i parametri *rif* e *out*, le operazioni a parola (`elevato_a`, `radice_quadrata`, `valore_assoluto`, `arrotonda` e le sue sorelle, le conversioni, `lunghezza`) e `pi_greco`. Un dato non può avere il nome di una parola di «Accademico»: `function`, `return`, `if`, `then`, `else`, `for`, `in`, `while`, `do`, `end`, `variable`, `and`, `or`, `not`, `mod`, `output`, `min`, `max`, `integer`. E una condizione può essere tutto il valore di un'assegnazione a un booleano, di una scrittura o di ciò che una funzione booleana restituisce (diventa un `if`, §4.2), ma non un pezzo di un'altra espressione, come l'argomento di una chiamata.
+Non ci stanno: i tipi reale, carattere e stringa (un testo fra virgolette va bene solo in una Scrittura), la **Lettura**, i parametri *rif* e *out*, le operazioni a parola (`elevato_a`, `radice_quadrata`, `valore_assoluto`, `arrotonda` e le sue sorelle, le conversioni, `lunghezza`) e `pi_greco`. Un dato, una procedura o una funzione non può avere il nome di una parola di «Accademico»: `function`, `return`, `if`, `then`, `else`, `for`, `in`, `while`, `do`, `end`, `variable`, `and`, `or`, `not`, `mod`, `output`, `min`, `max`, `integer`. E una condizione può essere tutto il valore di un'assegnazione a un booleano, di una scrittura o di ciò che una funzione booleana restituisce (diventa un `if`, §4.2), ma non un pezzo di un'altra espressione, come l'argomento di una chiamata.
 
 ### L'elenco di ciò che manca
 
@@ -205,7 +205,7 @@ output("somma delle cifre: ")
 output(somma)
 ```
 
-Il **commento** non si scrive: la sintassi non ne ha. Il commento `// cerco un divisore fra 2 e n - 1` del programma del §4.2 non compare nel suo testo.
+Il **commento** non si scrive: la sintassi non ne ha. Un commento come `// cerco un divisore fra 2 e n - 1` non compare nel testo.
 
 ### 4.8 I nomi aggiunti
 
@@ -216,6 +216,17 @@ I nomi che il testo aggiunge da sé cominciano col **trattino basso**, che nessu
 Le procedure e le funzioni vengono **prima** del programma principale, nell'ordine del progetto. Una funzione ha il tipo del risultato dopo `→` e finisce con `return`; una procedura non ha la freccia; i dati di lavoro si dichiarano in testa, con un rientro.
 
 ```text
+PROGRAMMA potenze
+
+DATI
+    k: intero
+
+REGOLE
+    PER k DA 0 A 5
+        SCRIVI potenza(2, k), " "
+    FINE PER
+FINE
+
 FUNZIONE intero ← potenza(base: intero, esponente: intero)
 
 DATI
@@ -263,7 +274,7 @@ Gli esercizi possono usare `min` e `max`, che il flowchart non ha. Lo strumento 
 ERRORE il-minimo.txt, riga 5: «min» non c'è nel flowchart: scrivila come una funzione
 ```
 
-Scrivi nel testo una funzione `minimo` (o `massimo`) e usa quella. Per lo stesso motivo un dato del flowchart non può chiamarsi `min` o `max` se il programma deve scriversi in «Accademico» (§3).
+Scrivi nel testo una funzione `minimo` (o `massimo`) e usa quella. Nel verso opposto, un dato, una procedura o una funzione del flowchart non può chiamarsi `min` o `max` se il programma deve scriversi in «Accademico» (§3).
 
 ### 5.3 L'a capo
 
@@ -280,7 +291,7 @@ Lo strumento fa il passaggio inverso: legge un testo in «Accademico» e ne fa u
 Per Windows lo strumento è un programma a sé, `algodesign-accademico.exe`, in un pacchetto a parte, `AlgoDesign-Accademico-<versione>-windows.zip`, accanto a quello di AlgoDesign: si estrae in una cartella e non chiede di installare nulla. Si usa dal **Terminale** di Windows (o dalla riga di comando), aperto nella cartella dei testi. Chi ha il codice di AlgoDesign e Bun scrive `bun run accademico` al posto di `algodesign-accademico`, dalla cartella `app`; le opzioni sono le stesse.
 
 ```sh
-algodesign-accademico <testo.txt> [-l libreria.algo] [-o uscita.algo] [-n nome] [-d dimensione] [-r]
+algodesign-accademico <testo.txt> [-l libreria.algo] [-o uscita.algo] [-n nome] [-d dimensione] [-r] [-s]
 ```
 
 | Opzione | Che cosa fa |
@@ -290,7 +301,8 @@ algodesign-accademico <testo.txt> [-l libreria.algo] [-o uscita.algo] [-n nome] 
 | `-o uscita.algo` | dove scrivere; senza, nella libreria di `-l`, oppure accanto al testo, col suo nome e `.algo` |
 | `-n nome` | il nome della procedura che porta il codice fuori dalle funzioni; senza, il nome del file (`conta-pari.txt` dà `conta_pari`) |
 | `-d dimensione` | la lunghezza di un vettore che il testo non dice; senza, 10 |
-| `-r` | rinomina un nome già nella libreria, o riservato dal flowchart, invece di fermarsi |
+| `-r` | rinomina le procedure, le funzioni e i dati del testo che hanno un nome già usato o riservato dal flowchart, invece di fermarsi |
+| `-s` | sostituisce il file d'uscita, se c'è già; senza, lo strumento si ferma |
 | `-h` | mostra l'aiuto |
 
 Il **codice fuori dalle funzioni** diventa una procedura, coi nomi che usa senza dichiararli come parametri: così si prova da sola con F5 sulla sua scheda, dando i valori dei parametri nella console. Una `function` del testo che c'è già, identica, nella libreria non entra di nuovo. Lo strumento accetta anche `−` per il meno, `…` per i tre punti e `int` per `integer`.
@@ -348,7 +360,7 @@ DATI
     finito: intero ← 0
 
 REGOLE
-    MENTRE i < 6 and finito == 0
+    MENTRE finito == 0 and i < 6
         SE v[i] < 0 ALLORA
             risultato ← i
             finito ← 1
@@ -363,7 +375,7 @@ RESTITUISCE risultato
 
 ### Quando si ferma
 
-Lo strumento non scrive nulla e si ferma, con la riga del testo, se il testo non si legge (una parola sbagliata, `min` o `max`, un `for` che cambia la sua fine o il suo contatore nel corpo), se un nome è già nella libreria e manca `-r`, o se la libreria che ne uscirebbe ha errori. Il nome della procedura del codice fuori dalle funzioni non si rinomina con `-r`: se c'è già, scegline un altro con `-n`.
+Lo strumento non scrive nulla e si ferma, con la riga del testo, se il testo non si legge (una parola sbagliata, `min` o `max`, un'operazione del flowchart come `length` chiamata come una funzione, un `for` che cambia la sua fine o il suo contatore nel corpo, un elenco che legge il vettore che lo riceve), se un nome è già nella libreria e manca `-r`, se la libreria che ne uscirebbe ha errori, o se il file d'uscita c'è già e non è la libreria di `-l` e manca `-s` (e sempre se `-o` è il testo stesso). Il nome della procedura del codice fuori dalle funzioni non si rinomina con `-r`: se c'è già, scegline un altro con `-n`; un dato che ha quel nome, con `-r`, sì.
 
 ## 7. Come allenarsi alle Selezioni scolastiche
 
