@@ -8,6 +8,7 @@
     "dev": "bun ./strumenti/dev.ts",
     "build": "bun build ./index.html --outdir dist --production",
     "casi": "bun ./strumenti/casi.ts",
+    "accademico": "bun ./strumenti/accademico.ts",
     "differenziale": "bun ./strumenti/differenziale.ts",
     "collaudo": "bun ./strumenti/collaudo.ts",
     "prova-portabile": "bun ./strumenti/prova-portabile.ts",
