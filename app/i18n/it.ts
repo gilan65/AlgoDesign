@@ -1006,6 +1006,38 @@ export const it = {
   filtroSvg: "Disegno SVG",
   flowchartEsportatoIn: "Flowchart esportato in «{file}».",
   esportaFlowchartErroreTitolo: "Il flowchart non si esporta in «{file}»",
+  // La stampa: la voce del menu e il pulsante, la finestra e la pagina stampata (le parti sono anche i nomi
+  // nell'intestazione dei fogli). {nome} è il nome di una procedura o funzione (o «Programma principale»), {punti} e
+  // {reali} numeri di punti tipografici, {elenco} voci di `stampaVoceRistretta` separate da virgole, {n} e {m} numeri.
+  stampa: "Stampa…",
+  stampaTitolo: "Stampa",
+  stampaQualiFunzioni: "Di quali procedure e funzioni",
+  stampaTutte: "Tutte",
+  stampaSoloMostrata: "Solo quella mostrata ({nome})",
+  stampaFoglioNuovo: "Ogni procedura e funzione da un foglio nuovo",
+  stampaSpiegazione: "Le parti da stampare, in quest'ordine:",
+  stampaProgetto: "Progetto",
+  stampaNotaProgetto: "il nome, l'autore, la descrizione e le note",
+  stampaDati: "Dati",
+  stampaFlowchart: "Flowchart",
+  stampaCasi: "Casi d'uso",
+  stampaAdatta: "Adatta al foglio",
+  stampaNotaAdatta: "tutto il flowchart di una funzione in un foglio, anche se il testo diventa piccolo",
+  stampaPunti: "Testo minimo del flowchart (punti)",
+  stampaNotaPunti: "sotto questa misura il flowchart va su più fogli",
+  stampaRistretto: "A {punti} punti il flowchart di «{nome}» è più largo del foglio: si stampa più piccolo, a {reali} punti.",
+  stampaRistretti: "A {punti} punti questi flowchart sono più larghi del foglio e si stampano più piccoli: {elenco}.",
+  stampaVoceRistretta: "{nome} ({reali} punti)",
+  stampaSegni: "Con i segni dell'esecuzione",
+  stampaNotaSegni: "il blocco corrente e i punti di interruzione",
+  stampaPiede: "Nel piè di pagina",
+  stampaNumeri: "il numero di pagina",
+  stampaData: "la data e l'ora",
+  stampaConsiglioPdf: "Per avere un PDF, nella finestra che si apre scegli la destinazione «Salva come PDF».",
+  stampaPagina: "pagina {n} di {m}",
+  stampaFoglio: "foglio {n} di {m} del flowchart",
+  stampaValori: "Valori scritti nella console",
+  stampaOutputAtteso: "Output atteso",
   // Il codice generato, nella colonna a destra del flowchart. {file} è il nome di un file, {linguaggio} il nome di una
   // linguetta, {dettaglio} la risposta del sistema.
   /** L'interruttore del codice nel gruppo Viste. */

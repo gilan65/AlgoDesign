@@ -1,0 +1,164 @@
+/* La finestra «Stampa»: le procedure e funzioni in cima, le parti in colonna con la nota sotto, le scelte del flowchart
+   rientrate sotto la sua casella; i colori e il piè di pagina in fondo. */
+.gruppo {
+  display: grid;
+  row-gap: 0.45rem;
+  margin: 0px;
+  padding: 0px;
+  border: none;
+}
+
+.titoloDelGruppo {
+  margin: 0.3rem 0px 0px;
+  padding: 0px;
+  font-weight: 600;
+}
+
+.voce {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.5rem;
+  align-items: start;
+}
+
+.voce input {
+  margin: 0.2rem 0px 0px;
+}
+
+.nota {
+  display: block;
+  font-size: 0.85em;
+  color: var(--colore-testo);
+}
+
+.rientro {
+  display: grid;
+  row-gap: 0.45rem;
+  margin-left: 1.6rem;
+}
+
+.punti {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.punti input[type="range"] {
+  flex: 1;
+}
+
+.punti input[type="number"] {
+  width: 3.5rem;
+  font: inherit;
+}
+
+/* Il flowchart che esce più piccolo dei punti scelti: una nota col bordo dell'avviso. */
+.ristretto {
+  margin: 0px;
+  padding-left: 0.4rem;
+  border-left: 3px solid var(--colore-avviso);
+  font-size: 0.85em;
+}
+
+/* Il consiglio per il PDF: la destinazione si sceglie nella finestra del motore, non qui. */
+.consiglio {
+  margin: 0.6rem 0px 0px;
+  font-size: 0.85em;
+  color: var(--colore-testo);
+}
+
+/* La pagina stampata: sullo schermo non c'è; in stampa è tutto ciò che si vede (il resto lo nascondono le regole dei
+   fogli). Colori fissi: la carta è bianca anche col tema scuro. */
+.pagina {
+  display: none;
+}
+
+@media print {
+  .pagina {
+    display: block;
+    color: #000000;
+    background: #ffffff;
+    font: 10pt system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+}
+
+/* Ogni sezione comincia su un foglio nuovo, con la sua regola `@page` (`parti.ts`). */
+.parte {
+  break-before: page;
+}
+
+.parte:first-of-type {
+  break-before: auto;
+}
+
+.titolo {
+  margin: 0px 0px 3mm;
+  font-size: 14pt;
+}
+
+.metadati {
+  margin: 0px;
+}
+
+.metadati dt {
+  margin-top: 4mm;
+  font-weight: 600;
+}
+
+.metadati dd {
+  margin: 1mm 0px 0px;
+  white-space: pre-wrap;
+  line-height: 1.35;
+}
+
+.titoloDellaFunzione {
+  margin: 6mm 0px 1mm;
+  font-size: 12pt;
+  break-after: avoid;
+}
+
+.parte > div:first-child > .titoloDellaFunzione {
+  margin-top: 0px;
+}
+
+.sottotitolo {
+  margin: 3mm 0px 1.5mm;
+  font-size: 10.5pt;
+  break-after: avoid;
+}
+
+.vuoto {
+  margin: 0px;
+  color: #444444;
+}
+
+.tabella {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.tabella thead {
+  display: table-header-group;
+}
+
+.tabella tr {
+  break-inside: avoid;
+}
+
+.tabella th,
+.tabella td {
+  border: 0.5pt solid #777777;
+  padding: 1.2mm 1.6mm;
+  text-align: left;
+  vertical-align: top;
+  white-space: pre-wrap;
+}
+
+.tabella th {
+  background: #eeeeee;
+}
+
+.flowchart {
+  display: flex;
+  justify-content: center;
+}

@@ -685,6 +685,14 @@ const coseAperte: { nome: string; funzioni?: true; apri: (page: Page) => Promise
     },
   },
   {
+    // Come l'esportazione: un genere della finestra, non uno stato nuovo della guardia; aperta con Ctrl+P.
+    nome: "la finestra «Stampa»",
+    apri: async (page) => {
+      await page.keyboard.press("Control+p");
+      return page.getByRole("dialog", { name: it.stampaTitolo, exact: true });
+    },
+  },
+  {
     nome: "la finestra degli errori",
     apri: async (page) => {
       await imposta(page, { daAprire: "C:\\rotto.algo", file: { "C:\\rotto.algo": "{" } });
@@ -757,7 +765,7 @@ test("con ogni cosa aperta che la finestra guarda, F5 non fa partire l'esecuzion
   }
   console.log(`[${info.project.name}] F5 con una cosa aperta: ${coseAperte.length} casi, diversi ${esiti.length}`);
   expect(esiti, "F5 ha fatto partire l'esecuzione con una cosa aperta").toEqual([]);
-  expect(coseAperte.length).toBe(10);
+  expect(coseAperte.length).toBe(11);
 });
 
 test("le scorciatoie dei file valgono col fuoco in un campo; Canc su un «+» non cancella; Ctrl+Z col menu di un dato aperto non annulla", async ({ page }) => {

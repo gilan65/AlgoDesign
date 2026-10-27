@@ -23,14 +23,14 @@ export function comandoDellaCronologia(e: { key: string; ctrlKey: boolean; metaK
   return null;
 }
 
-/** I comandi dei file dalla tastiera: Ctrl+N, Ctrl+O, Ctrl+S e Ctrl+Maiusc+S (anche col tasto Comando). */
-export function comandoDelFile(e: { key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean }): "nuovo" | "apri" | "salva" | "salvaConNome" | null {
+/** I comandi dei file dalla tastiera: Ctrl+N, Ctrl+O, Ctrl+S, Ctrl+Maiusc+S e Ctrl+P (anche col tasto Comando). */
+export function comandoDelFile(e: { key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean }): "nuovo" | "apri" | "salva" | "salvaConNome" | "stampa" | null {
   const conIlComando = e.ctrlKey || e.metaKey;
   if (!conIlComando || e.altKey) return null;
   const tasto = e.key.toLowerCase();
   if (tasto === "s") return e.shiftKey ? "salvaConNome" : "salva";
   if (e.shiftKey) return null;
-  return tasto === "n" ? "nuovo" : tasto === "o" ? "apri" : null;
+  return tasto === "n" ? "nuovo" : tasto === "o" ? "apri" : tasto === "p" ? "stampa" : null;
 }
 
 /** I tasti che nel motore ricaricano la pagina: F5 (anche con Ctrl) e Ctrl+R (anche con Maiusc; Cmd su macOS).

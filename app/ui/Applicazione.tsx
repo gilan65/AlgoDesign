@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useReducer, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactElement } from "react";
-import { funzioneChiamata, impagina, partiDellaFine, partiDellIntestazione, risultatoDi, type DomandaDellaLettura, type MisuraDelTesto } from "../core/disegno/impaginazione";
+import { funzioneChiamata, impagina, partiDellaFine, partiDellIntestazione, risultatoDi, type Disegno, type DomandaDellaLettura, type MisuraDelTesto } from "../core/disegno/impaginazione";
 import { coppie, perScrittura, stessaDomanda, type Coppia } from "../core/disegno/domanda";
 import { campiConLaDomanda, incollaDiSeguito, trattoDellaVista } from "../core/modifica/domanda";
 import { nomiDeiValoriIniziali, nomiDelDisegno } from "../core/disegno/nomi";
 import { geometriaPredefinita } from "../core/disegno/tema";
-import { svgDelDisegno } from "../core/disegno/svg";
+import { svgDelDisegno, svgDelFoglio } from "../core/disegno/svg";
+import { fogliDelDisegno } from "../core/disegno/fogli";
+import type { SegniDellEsecuzione } from "../core/disegno/segni";
+import { flushSync } from "react-dom";
 import {
   chiamataDa,
   chiamateDi,
@@ -163,6 +166,9 @@ import { ConfermaTogli, type DaTogliere } from "./finestre/ConfermaTogli";
 import { FinestraErrori, type VoceDiErrore } from "./finestre/FinestraErrori";
 import { FinestraEsempi } from "./finestre/FinestraEsempi";
 import { FinestraEsporta } from "./finestre/FinestraEsporta";
+import { FinestraStampa, type DaStampare } from "./stampa/FinestraStampa";
+import { PaginaStampata } from "./stampa/PaginaStampata";
+import { areeDellaStampa, flowchartRistretti, funzioniDellaStampa, nomeNellaStampa, notaDeiRistretti, partiPiene, sceltePredefinite as stampaPredefinita, sezioniDellaStampa, type ScelteDiStampa, type Sezione } from "./stampa/parti";
 import { estensioneDel, inBase64, nomeDellImmagine, pngDallSvg, sceltePredefinite as esportazionePredefinita, SFONDO_DELLA_CARTA, tavolozzaDellaPagina, type ScelteDellEsportazione } from "./disegno/esporta";
 import { FinestraImporta, nomiCheEntrano, type DaUnFile } from "./finestre/FinestraImporta";
 import { FinestraGuida, memoriaNuova } from "./finestre/FinestraGuida";
@@ -282,7 +288,9 @@ type Aperta =
   /** La conferma prima di eliminarne una (l'`id`). */
   | { readonly genere: "eliminaFunzione"; readonly id: string }
   /** «Esporta il flowchart…». */
-  | { readonly genere: "esporta" };
+  | { readonly genere: "esporta" }
+  /** «Stampa…». */
+  | { readonly genere: "stampa" };
 
 // La finestra: la barra in alto; sotto, le due viste affiancate, i dati a sinistra in un pannello che si
 // chiude dalla barra e si allarga dal bordo, il flowchart a destra con lo spazio che resta; in fondo la riga
@@ -383,6 +391,15 @@ export function Applicazione({
   const [finestra, setFinestra] = useState<Aperta | null>(null);
   // Le scelte di «Esporta il flowchart», ricordate per la sessione (non nelle preferenze).
   const [scelteDellEsportazione, setScelteDellEsportazione] = useState<ScelteDellEsportazione>(esportazionePredefinita);
+  // Le scelte di «Stampa», ricordate per la sessione; la pagina stampata, montata da «Stampa…» fino a `afterprint`.
+  const [scelteDellaStampa, setScelteDellaStampa] = useState<ScelteDiStampa>(stampaPredefinita);
+  const [stampata, setStampata] = useState<{
+    readonly progetto: Progetto;
+    readonly sezioni: readonly Sezione[];
+    readonly svg: (f: Funzione, foglio: number) => string;
+    readonly scelte: ScelteDiStampa;
+    readonly quando: Date;
+  } | null>(null);
   const [errori, setErrori] = useState<{ titolo: string; voci: readonly VoceDiErrore[] } | null>(null);
   const [cartella, setCartella] = useState<CartellaDegliEsempi>({ cartella: "", predefinita: "", mancante: false, esiste: false, file: [], gruppi: [] });
   // La cartella dell'ultimo file aperto o salvato in questa sessione: da lì partono le finestre del file
@@ -1809,6 +1826,83 @@ export function Applicazione({
     setMenuDellaFunzione(null);
     setFinestra({ genere: "esporta" });
   }
+
+  /** «Stampa…» (e Ctrl+P): disponibile quando lo è «Esporta il flowchart…»; la finestra con le scelte dell'ultima stampa
+   * della sessione (prima si confermano i campi aperti, come per i comandi dei file). */
+  const stampaDisponibile = situazione !== "in corso" && tutti === null;
+  function apriLaStampa(): void {
+    if (!inEsecuzione && !confermaIApertiCampi()) return;
+    setMenuDellaFunzione(null);
+    setFinestra({ genere: "stampa" });
+  }
+  /** Il disegno di una funzione per la stampa, come quello della sua scheda (le costanti comuni nel programma principale). */
+  const disegnoPerLaStampa = (f: Funzione) => disegna(f, f.kind === "main" ? costantiComuni : undefined, progetto.functions);
+  /** I segni dell'esecuzione sul flowchart di una funzione (il suo disegno `d`), con le regole della scheda mostrata: il
+   * blocco della pausa, o il valore iniziale nella funzione della pausa se il disegno lo mostra, o il suo «Inizio». */
+  const segniPerLaStampa = (f: Funzione, d: Disegno): SegniDellEsecuzione => {
+    const valore = pausa?.dato !== undefined && valoriIniziali === "mostrati" && funzioneDellaPausa === f.id && d.elementi.some((e) => e.dato === pausa.dato) ? pausa.dato : null;
+    const blocco = pausa === undefined ? null : pausa.dato === undefined ? pausa.blocco : valore === null ? funzioneDellaPausa! : null;
+    return { corrente: blocco, faseCorrente, ripresa: pausa?.ripresa !== undefined, correnteValore: valore, interruzioni };
+  };
+  /** I fogli del flowchart di una funzione con le scelte della stampa (i segni, se ci sono, sono ostacoli dei tagli). */
+  const fogliPerLaStampa = (d: Disegno, s: ScelteDiStampa, segni: SegniDellEsecuzione | undefined) => fogliDelDisegno(d, areeDellaStampa, { adatta: s.adatta, punti: s.punti }, geometriaPredefinita, segni);
+  /** Ciò che la finestra «Stampa» sa del progetto; i disegni si fanno una volta per apertura, quando servono. */
+  const daStampare: DaStampare | null = (() => {
+    if (finestra?.genere !== "stampa") return null;
+    const disegni = new Map<string, Disegno>();
+    const disegnoDi = (f: Funzione) => disegni.get(f.id) ?? disegni.set(f.id, disegnoPerLaStampa(f)).get(f.id)!;
+    return {
+      mostrata: nomeNellaStampa(mostrata, testi),
+      inPausa: inEsecuzione,
+      piene: (t) => partiPiene(progetto, funzioniDellaStampa(progetto, mostrata.id, t)),
+      ristretti: (s) => {
+        const conSegni = inEsecuzione && s.segni;
+        const ristretti = flowchartRistretti(funzioniDellaStampa(progetto, mostrata.id, s.tutte), s, (f) => fogliPerLaStampa(disegnoDi(f), s, conSegni ? segniPerLaStampa(f, disegnoDi(f)) : undefined), geometriaPredefinita);
+        return notaDeiRistretti(ristretti, s.punti, testi, lingua);
+      },
+    };
+  })();
+  /** «Stampa…» della finestra: la pagina stampata con le parti scelte (i flowchart dai fogli del nucleo, con la tavolozza
+   * della carta e i segni se scelti in pausa), montata subito; dopo il suo disegno la stampa del motore. `afterprint` la
+   * smonta. */
+  function stampaIlProgetto(s: ScelteDiStampa): void {
+    setScelteDellaStampa(s);
+    setFinestra(null);
+    const funzioni = funzioniDellaStampa(progetto, mostrata.id, s.tutte);
+    const conSegni = inEsecuzione && s.segni;
+    const tavolozza = tavolozzaDellaPagina();
+    const carattere = getComputedStyle(document.documentElement).getPropertyValue("--carattere").trim();
+    const disegni = new Map(
+      funzioni.map((f) => {
+        const d = disegnoPerLaStampa(f);
+        const segni = conSegni ? segniPerLaStampa(f, d) : undefined;
+        return [f.id, { d, segni, fogli: fogliPerLaStampa(d, s, segni) }] as const;
+      }),
+    );
+    const sezioni = sezioniDellaStampa(progetto, funzioni, s, (f) => disegni.get(f.id)!.fogli, testi);
+    const svg = (f: Funzione, i: number) => {
+      const x = disegni.get(f.id)!;
+      return svgDelFoglio(x.d, x.fogli.fogli[i]!, x.fogli.scala, {
+        geometria: geometriaPredefinita,
+        tavolozza,
+        modo: s.colori,
+        carattere,
+        fondoDeiCicli: scelte.fondoDeiCicli,
+        id: `stampa-${f.id}-${i}`,
+        ...(x.segni ? { segni: x.segni } : {}),
+      });
+    };
+    flushSync(() => setStampata({ progetto, sezioni, svg, scelte: s, quando: new Date() }));
+    // La pagina è nel documento; il motore la impagina al disegno dopo.
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+  }
+  // La stampa del motore finita (stampata o annullata): la pagina stampata esce dal documento.
+  useEffect(() => {
+    if (!stampata) return;
+    const dopo = () => setStampata(null);
+    window.addEventListener("afterprint", dopo);
+    return () => window.removeEventListener("afterprint", dopo);
+  }, [stampata]);
   /** Il flowchart della scheda mostrata, com'è adesso, nel file che l'utente sceglie (e, se il file c'è e la finestra del
    * sistema non l'ha confermato, se sostituirlo): l'SVG del nucleo coi colori del tema chiaro, nel modo scelto, coi segni
    * dell'esecuzione solo durante l'esecuzione; il PNG è quell'SVG al doppio. Il nome è quello del progetto, con la
@@ -2007,7 +2101,7 @@ export function Applicazione({
       const delFile = comandoDelFile(e);
       const tasto = tastoDellEsecuzione(e);
       // Le scorciatoie dei file e i tasti dell'esecuzione non arrivano mai al motore (Ctrl+N aprirebbe una
-      // finestra del browser, F10 il menu della finestra).
+      // finestra del browser, Ctrl+P la sua stampa, F10 il menu della finestra).
       if (delFile !== null || tasto !== null) e.preventDefault();
       if (conUnaFinestra()) return;
       // Durante «Esegui tutti» Maiusc+F5 lo ferma, e gli altri tasti dell'esecuzione non fanno nulla.
@@ -2017,7 +2111,9 @@ export function Applicazione({
       // La situazione letta adesso dal nucleo, non quella dell'ultimo disegno: un secondo tasto può arrivare
       // prima che la finestra si ridisegni (un tasto tenuto premuto), e il comando di prima è già in corso.
       else if (tasto !== null) fai(azioneDelTasto(situazioneDi(esecuzione), tasto));
-      else if (delFile !== null) comandiDelProgetto[delFile]();
+      else if (delFile === "stampa") {
+        if (stampaDisponibile) apriLaStampa();
+      } else if (delFile !== null) comandiDelProgetto[delFile]();
       else if (comando !== null && !nelCampo(e.target) && !campiAperti && !inEsecuzione) {
         e.preventDefault();
         passo(comando);
@@ -3023,6 +3119,7 @@ export function Applicazione({
     // Il flowchart si esporta sempre, tranne mentre l'esecuzione va avanti (il blocco corrente cambia) e durante «tutto
     // insieme».
     ...(situazione !== "in corso" && tutti === null ? { esportaFlowchart: apriLEsportazione } : {}),
+    ...(stampaDisponibile ? { stampa: apriLaStampa } : {}),
     riduci: () => scalaFissa((s) => limitaLaScala(s / PASSO)),
     cento: () => scalaFissa(() => 1),
     ingrandisci: () => scalaFissa((s) => limitaLaScala(s * PASSO)),
@@ -3729,6 +3826,21 @@ export function Applicazione({
         }}
         rinuncia={() => setFinestra(null)}
       />
+      <FinestraStampa cosa={finestra?.genere === "stampa" ? daStampare : null} scelte={scelteDellaStampa} testi={testi} stampa={stampaIlProgetto} rinuncia={() => setFinestra(null)} />
+      {stampata && (
+        <PaginaStampata
+          progetto={stampata.progetto}
+          sezioni={stampata.sezioni}
+          svgDelFoglio={stampata.svg}
+          scelte={stampata.scelte}
+          quando={stampata.quando}
+          lingua={lingua}
+          testi={testi}
+          valori={valoriMostrati}
+          codici={codici}
+          nomeDi={nomeDi}
+        />
+      )}
       <ConfermaSostituzione
         file={finestra?.genere === "sostituire" ? nomeDelFile(finestra.percorso) : null}
         testi={testi}

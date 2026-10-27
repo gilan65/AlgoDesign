@@ -21,12 +21,14 @@ test("Ctrl+Z annulla; Ctrl+Y e Ctrl+Maiusc+Z ripetono; Cmd vale come Ctrl; il re
   expect(comandoDellaCronologia(tasto("c", { ctrl: true }))).toBeNull();
 });
 
-test("Ctrl+N è Nuovo, Ctrl+O è Apri, Ctrl+S è Salva, Ctrl+Maiusc+S è Salva con nome; Cmd vale come Ctrl; il resto non è dei file", () => {
+test("Ctrl+N è Nuovo, Ctrl+O è Apri, Ctrl+S è Salva, Ctrl+Maiusc+S è Salva con nome, Ctrl+P è Stampa; Cmd vale come Ctrl; il resto non è dei file", () => {
   expect(comandoDelFile(tasto("n", { ctrl: true }))).toBe("nuovo");
   expect(comandoDelFile(tasto("o", { ctrl: true }))).toBe("apri");
   expect(comandoDelFile(tasto("s", { ctrl: true }))).toBe("salva");
   expect(comandoDelFile(tasto("S", { ctrl: true, shift: true }))).toBe("salvaConNome");
   expect(comandoDelFile(tasto("O", { meta: true }))).toBe("apri");
+  expect(comandoDelFile(tasto("p", { ctrl: true }))).toBe("stampa");
+  expect(comandoDelFile(tasto("P", { ctrl: true, shift: true }))).toBeNull();
   // Controllo positivo dei «no»: senza Ctrl, con Alt, con Maiusc su N e O, con un altro tasto.
   expect(comandoDelFile(tasto("n"))).toBeNull();
   expect(comandoDelFile(tasto("s", { ctrl: true, alt: true }))).toBeNull();
