@@ -5,7 +5,7 @@
 // non è mai un verde.
 import { join } from "node:path";
 
-export type AzioneDellaFinestra = "tasto" | "chiudi" | "coperta" | "salva";
+export type AzioneDellaFinestra = "tasto" | "chiudi" | "coperta" | "salva" | "salva-dai-figli";
 
 export type OpzioniDellaFinestra = {
   /** Dove scrivere il comando e l'uscita (il log della prova). */
