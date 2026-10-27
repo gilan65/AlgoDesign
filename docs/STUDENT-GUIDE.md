@@ -13,7 +13,7 @@ The words this guide uses are these: a **data item** is a constant or a variable
 
 ## 2. The window
 
-- **The toolbar**, at the top, with the commands in groups, in working order: **Project** (a menu with New, Open, Save, Save as, Save as library…, Properties, New procedure or function…, Procedures and functions…, Import procedures and functions… and Export the table…; outside the menu there are also the Function and Save buttons), **Edit** (Undo, Redo and the commands of the chosen block), **Run** (Run, Step, Step in and Step out when the project has procedures or functions, Animate, Stop, Breakpoint, Clear points), **Views** (Data, Table, Code), and on the right **Settings** and **Help**. With the mouse pointer on a button you read its name and its key.
+- **The toolbar**, at the top, with the commands in groups, in working order: **Project** (a menu with New, Open, Save, Save as, Save as library…, Properties, New procedure or function…, Procedures and functions…, Import procedures and functions…, Export the flowchart…, Export the table… and Print… (§12); outside the menu there are also the Function and Save buttons), **Edit** (Undo, Redo and the commands of the chosen block), **Run** (Run, Step, Step in and Step out when the project has procedures or functions, Animate, Stop, Breakpoint, Clear points), **Views** (Data, Table, Code), and on the right **Settings** and **Help**. With the mouse pointer on a button you read its name and its key.
 - **The data view**, on the left, with two tabs: “Data” and “Test cases”. The “Data” button closes and reopens it; its right edge can be dragged to widen it.
 - **The flowchart**, on the right, with the zoom in the bottom bar (zoom out, the percentage, which goes back to 100% with a click, zoom in, “Fit to window”). When the project has procedures or functions, above the flowchart there is a tab for each of them (§8).
 - **The status bar**, at the bottom: the file name, “modified” if there are unsaved changes, the errors and warnings of the project (a click on “Show the list” lists them, and a click on an item leads to the block or the data item), the state of the run and, at the far right, the interface language: “ITA” or “ENG”, and a click opens the menu with the two languages (the same choice as in the Settings).
@@ -87,7 +87,7 @@ For the example:
 
 A block is opened with a double click or with Enter; **Enter** confirms, **Esc** cancels. The **“?”** next to “Confirm” tells what to write in the fields of that block. If what you write has an error, under the fields the error appears in a sentence, as you type: the sentence tells the precise cause when AlgoDesign recognizes it, such as “A parenthesis is opened and never closed.” or “The name has a space.”, and this holds for expressions, names, data, arguments and loops; the same sentence is in the status bar. **Explanation** opens the hint for that cause and, when the cause is not known, the possible causes. In a block just inserted, instead, the error appears when you confirm: the fields stay open to fix it, and a second confirmation keeps the block as it is, marked in the flowchart. A block is moved by dragging it onto another “+” (or from the keyboard with Space), copied, cut and pasted onto a “+”, deleted with Del. The right mouse button on a block (or, from the keyboard, the Menu key or Shift+F10) opens its menu: Cut, Copy, Delete. **Undo** (Ctrl+Z) and **Redo** (Ctrl+Y) go back and forward by one change.
 
-**Several blocks together.** Shift+click on another block also chooses the blocks between the two; from the keyboard, Shift+↑ and Shift+↓ widen the choice one block at a time. You choose neighboring blocks, in the same sequence: a block inside a loop or an “If” brings the choice to the loop or the “If” that contains it, with all its content. Each chosen block has the border, and a command applies to all of them in a single step: they are dragged onto a “+” (from the keyboard Space, then Tab to a “+” and Enter), cut, copied, deleted with Del, and Undo brings them all back. The right mouse button opens the menu of the chosen blocks. In the Settings (§12) the box “With a frame around them” also encloses them in a dashed frame.
+**Several blocks together.** Shift+click on another block also chooses the blocks between the two; from the keyboard, Shift+↑ and Shift+↓ widen the choice one block at a time. You choose neighboring blocks, in the same sequence: a block inside a loop or an “If” brings the choice to the loop or the “If” that contains it, with all its content. Each chosen block has the border, and a command applies to all of them in a single step: they are dragged onto a “+” (from the keyboard Space, then Tab to a “+” and Enter), cut, copied, deleted with Del, and Undo brings them all back. The right mouse button opens the menu of the chosen blocks. In the Settings (§13) the box “With a frame around them” also encloses them in a dashed frame.
 
 ### How expressions are written
 
@@ -220,7 +220,7 @@ A procedure or a function also has its own test cases, which test it on its own:
 
 ## 7. The generated code
 
-The **Code** button, in the group of the views, opens on the right of the flowchart the panel of the **generated code**, with the tabs of the languages: at first **Pseudocode** (in the language of the interface), **Python** and **C**, but which languages have a tab, and in what order, is chosen in the Settings (§12); at the start the first one is shown. The code follows every change of the flowchart; with a project that has errors, instead of the code there is the invitation to fix them. “Code” and “Table” take turns in the same panel. Among the languages that can be turned on in the Settings there is also **Academic**, the pseudocode of the school selections of the Italian Olympiad in Informatics: how to use it for practice is explained in the file `GUIDA-AD-ACCADEMICO.md` (in Italian).
+The **Code** button, in the group of the views, opens on the right of the flowchart the panel of the **generated code**, with the tabs of the languages: at first **Pseudocode** (in the language of the interface), **Python** and **C**, but which languages have a tab, and in what order, is chosen in the Settings (§13); at the start the first one is shown. The code follows every change of the flowchart; with a project that has errors, instead of the code there is the invitation to fix them. “Code” and “Table” take turns in the same panel. Among the languages that can be turned on in the Settings there is also **Academic**, the pseudocode of the school selections of the Italian Olympiad in Informatics: how to use it for practice is explained in the file `GUIDA-AD-ACCADEMICO.md` (in Italian).
 
 During the run with Step or with Animate the code highlights the line (or the lines) of the current block; with Run, the line where the run stops on a breakpoint or on an error. This way you see, action by action, what each block corresponds to.
 
@@ -406,7 +406,7 @@ If the name already belongs to a data item or to another kind (an imported funct
 
 ### The libraries folder
 
-The libraries folder is chosen in the Settings, “Paths” tab (§12): for example a folder shared with the class. At first it sits next to the examples folder, and it does not exist until the first library goes in; AlgoDesign does not supply any. A project marked as a library goes in with **Add the open project**, at the bottom of the import window, in the group chosen next to it (“My libraries”, another group that exists, or a new one with “New group…”); if the file name is already used, the new file becomes “Name (2).algo”. With a project that is not marked the command is off, and the line next to it says to tick “It is a library” in the Properties. Libraries are not deleted from the window: they are deleted from the folder, with the system.
+The libraries folder is chosen in the Settings, “Paths” tab (§13): for example a folder shared with the class. At first it sits next to the examples folder, and it does not exist until the first library goes in; AlgoDesign does not supply any. A project marked as a library goes in with **Add the open project**, at the bottom of the import window, in the group chosen next to it (“My libraries”, another group that exists, or a new one with “New group…”); if the file name is already used, the new file becomes “Name (2).algo”. With a project that is not marked the command is off, and the line next to it says to tick “It is a library” in the Properties. Libraries are not deleted from the window: they are deleted from the folder, with the system.
 
 ## 11. The examples
 
@@ -418,11 +418,36 @@ From the **Help** menu, **Examples…** opens the examples window: the projects 
 
 A group is opened and closed with a click on its name; the **search** at the top finds an example by its name or its description. **Open** opens a copy of it, which is not tied to the file: to keep it use “Save as”. **Add the open project** puts it among the examples, in the group chosen next to it (“My examples”, or a new one with “New group…”). **Delete** deletes an example, and **Delete the group** deletes a group you created, with its examples (not the groups of the supplied examples): both ask first. **Restore the supplied examples** puts back the original ones, each in its group.
 
-In a folder used by an earlier version, the supplied examples move by themselves into their groups, your files stay where they are, and the new examples arrive with “Restore the supplied examples”. The folder is chosen in the Settings, “Paths” tab (§12), next to the libraries one: for example a folder shared with the class.
+In a folder used by an earlier version, the supplied examples move by themselves into their groups, your files stay where they are, and the new examples arrive with “Restore the supplied examples”. The folder is chosen in the Settings, “Paths” tab (§13), next to the libraries one: for example a folder shared with the class.
 
 From the same menu, **Student guide** opens this guide in a window on the right, in the language of the interface: on the left the chapters (a click leads to the chapter), on the right the text, with the search above it (a word, then Enter to go to the next one). The window stays open while you work: the app and its keys still work, and if the language changes the guide changes with it, staying on the same chapter. In the Settings, “Appearance” tab, it can also be moved, by dragging its title, and resized from its bottom corner. It closes with “Close” or with Esc. Finally, **About AlgoDesign** tells the version, its date and the licenses.
 
-## 12. The Settings
+## 12. Printing and exporting
+
+The project can be printed on paper or to a PDF, and the flowchart can be exported as an image, to put in a report or a presentation. The two commands are in the **Project** menu; during a run they are there in pause, not while the program goes on (nor during “Run all”).
+
+### Printing
+
+**Print…** (Ctrl+P) opens the “Print” window. At the top you choose **Which procedures and functions**: **All**, or **Only the one shown**, that is the one of the open tab. With “All”, the box **Each procedure and function on a new sheet** makes each one start on a sheet of its own. Below are the parts to print, in the order in which they come out, each with its box:
+
+- **Project**: the name, the author, the description and the notes;
+- **Data**: the tables of the data view;
+- **Flowchart**: with **Fit to the page** each flowchart stays on one page, even if the text gets small; otherwise the **Minimum flowchart text (points)**, from 6 to 12 (8 at first), decides when a flowchart goes on more pages. A flowchart wider than the page is printed smaller, and the window says so. In pause, **With the execution marks** also prints the current block and the breakpoints;
+- **Code in**, with the menu of the languages turned on in the Settings next to it (§13): the generated code, on portrait or landscape sheets;
+- **Flowchart and code side by side**: instead of the flowchart and the code, on landscape sheets, the flowchart on the left and the code on the right, in the language chosen next to “Code in”. It can be chosen only together with the flowchart and the code. Python and C end with the **Support functions**, at the bottom, with the code only;
+- **Test cases**: for each case the name, the description, the values typed in the console and the expected output.
+
+At first the flowchart and the code side by side are chosen, in the language of the tab shown. If the program cannot be written in the chosen language, or if the project has errors, the list of what must be changed is printed instead of the code. Further down you choose the colors (in color, in shades of gray, in black and white) and what goes in the footer (the page number, the date and time). Each sheet has at the top the name of the project and that of the part. The choices stay until AlgoDesign is closed.
+
+### A PDF
+
+**Print…**, at the bottom of the window, opens the Edge print window, the Windows component that draws the AlgoDesign window: there you choose the printer and see the sheets as they will come out. To get a PDF choose the destination **Save as PDF**, then **Save**, and write the file name in the Windows window. On the sheets there are only the AlgoDesign header and footer, not the date, the title and the address that Edge adds to web pages.
+
+### Exporting the flowchart
+
+**Export the flowchart…** exports the flowchart of the tab shown. The window says which flowchart it is and lets you choose the **Format**, **PNG (image)** or **SVG (drawing)**, the **Colors** (in color, in shades of gray, in black and white) and the **Transparent background**; without the box the background is white. **Export…** opens the Windows window to save, with the name of the project and, for a procedure or a function, its name in brackets: for example “media (leggi_numero).png”. The PNG is drawn at twice the size, so that it stays sharp; the SVG can be enlarged as much as you like without losing sharpness. In pause the image has the execution marks: the current block and the breakpoints. The choices stay until AlgoDesign is closed.
+
+## 13. The Settings
 
 The **Settings** button opens a window with six tabs; the choices apply after **Confirm** and stay after a restart:
 
@@ -435,6 +460,6 @@ The **Settings** button opens a window with six tabs; the choices apply after **
 
 **The block colors.** In the “Appearance” tab, under “Flowchart colors”, the **Block colors** box has a row per kind: Start and end, Assignment, Procedure, Read, Write, If, Loops (the diamond of each loop), Comment and Frame of the loops. Each row has a sample block, drawn with the color it will have, and the hues to choose from: the first, **As in the set**, keeps the color of the set chosen above; then seventeen hues for the blocks (nine soft and eight deep) and eight for the line of the frame of the loops. A chosen hue holds with every set: changing the set it stays, and the other kinds take the colors of the new one. **All as in the set** brings every kind back to the color of the set. At first, in “Soft”, start and end are gray, the assignment mauve, the procedure sand, the read green, the write light blue, the “If” orange, the loops deep orange and the comment white; in “High contrast” the same colors are stronger. Yellow is not there: it is the color of the current block during the run.
 
-## 13. License of this guide
+## 14. License of this guide
 
 This guide is by Giuseppe Lancellotti and is released under the Creative Commons Attribution 4.0 International license (CC BY 4.0): it can be copied, distributed and modified, also for commercial purposes, crediting the author and the license. The full text of the license is in the `LICENSE-DOCS` file.
