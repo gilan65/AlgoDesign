@@ -1086,7 +1086,7 @@ const proveAttesePerSpec: Record<string, number> = {
   "barra.e2e.ts": 14,
   "casi.e2e.ts": 7,
   "chiamate.e2e.ts": 7,
-  "codice.e2e.ts": 7,
+  "codice.e2e.ts": 8,
   "colonne.e2e.ts": 4,
   "colori.e2e.ts": 3,
   "costruzione.e2e.ts": 5,

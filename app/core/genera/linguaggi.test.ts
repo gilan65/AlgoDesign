@@ -51,12 +51,15 @@ test("l'appaiamento vede un'estensione in più da ognuna delle due parti, e non 
   expect(codiceDelGuscio('pub const CODICE: [&str; 2] = [".txt", ".py"];')).toEqual({ dichiarate: 2, estensioni: [".txt", ".py"] });
 });
 
-test("il registro ha i tre linguaggi di oggi, nell'ordine delle linguette, ognuno col suo genere", () => {
-  expect(linguaggi.map((v) => [v.id, v.estensione, v.genere])).toEqual([
-    ["pseudocodice", ".txt", "da-leggere"],
-    ["python", ".py", "da-eseguire"],
-    ["c", ".c", "da-eseguire"],
+test("il registro ha i quattro linguaggi di oggi, nell'ordine delle linguette, ognuno col suo genere; «Accademico» non è di partenza", () => {
+  expect(linguaggi.map((v) => [v.id, v.estensione, v.genere, v.diPartenza])).toEqual([
+    ["pseudocodice", ".txt", "da-leggere", true],
+    ["python", ".py", "da-eseguire", true],
+    ["c", ".c", "da-eseguire", true],
+    ["accademico", ".txt", "da-leggere", false],
   ]);
+  // Le parole di «Accademico» non sono nomi riservati: un nome uguale è una cosa che manca, e il progetto resta valido.
+  expect([voceDel("accademico").riservati, voceDel("accademico").riservatiNelFile]).toEqual([[], []]);
   expect(new Set(linguaggi.map((v) => v.id)).size).toBe(linguaggi.length);
   for (const v of linguaggi) expect(voceDel(v.id)).toBe(v);
 });

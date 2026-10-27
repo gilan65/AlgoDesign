@@ -15,6 +15,7 @@
 
 import type { Tetti } from "../controllo/controllo";
 import type { Progetto } from "../progetto/modello";
+import { accademico } from "./accademico";
 import { c } from "./c";
 import type { Generato } from "./forma";
 import { motiviCol, type TabellaDeiMotivi } from "./motivi";
@@ -87,6 +88,16 @@ export const linguaggi = [
     diPartenza: true,
     motivi: motiviCol,
     rigaDErrore,
+  },
+  {
+    // Le parole di «Accademico» non si riservano: un nome uguale è una cosa che manca, e il progetto resta valido.
+    id: "accademico",
+    estensione: ".txt",
+    genere: "da-leggere",
+    genera: (p, limiti, lingua) => accademico(p, limiti, lingua),
+    riservati: [],
+    riservatiNelFile: [],
+    diPartenza: false,
   },
 ] as const satisfies readonly VoceDelLinguaggio[];
 

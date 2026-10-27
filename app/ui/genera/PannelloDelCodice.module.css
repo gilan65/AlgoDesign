@@ -1,4 +1,4 @@
-/* Il codice generato: in testa le linguette dei tre linguaggi e i due comandi, sotto il codice coi numeri di riga, che
+/* Il codice generato: in testa le linguette dei linguaggi e i due comandi, sotto il codice coi numeri di riga, che
    scorre nei due versi e prende l'altezza che resta. */
 .pannello {
   flex: 1 1 0px;
@@ -153,6 +153,57 @@
 
 .riga[data-chiamata] {
   box-shadow: inset 4px 0px 0px var(--disegno-linea);
+}
+
+/* Ciò che manca: la frase in testa, sotto l'elenco che scorre; ogni voce è un pulsante largo quanto la colonna, col posto
+   sotto, nel colore dell'accento. */
+.mancanze {
+  flex: 1 1 0px;
+  min-height: 0px;
+  overflow: auto;
+  font-size: 0.9rem;
+  background: var(--colore-sopra);
+  border: 1px solid var(--colore-riga);
+  border-radius: 6px;
+  padding: 0.5rem;
+}
+
+.introduzione {
+  margin: 0px 0px 0.5rem;
+}
+
+.elenco {
+  list-style: none;
+  margin: 0px;
+  padding: 0px;
+}
+
+.mancanza {
+  display: block;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  color: var(--colore-testo);
+  background: transparent;
+  border: 0px;
+  border-radius: 4px;
+  padding: 0.3rem 0.45rem;
+  cursor: pointer;
+}
+
+.mancanza:hover {
+  background: var(--colore-premuto);
+}
+
+.mancanza:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: -2px;
+}
+
+.posto {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--colore-accento);
 }
 
 .nonGenerato {

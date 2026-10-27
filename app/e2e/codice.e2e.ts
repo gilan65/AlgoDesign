@@ -17,6 +17,9 @@
 //   le regole si aprono col clic; un altro nome va alla finestra del sistema; Esc rinuncia senza finestra del sistema.
 //   «Salva con nome» di un progetto nuovo «Media: voti?» propone «Media voti». Controllo positivo: un progetto che si
 //   chiama come il file proposto non apre l'avviso.
+// - Un progetto che non sta in «Accademico» (`libreria-dei-voti`): l'elenco di tutto ciò che manca, appaiato per elemento
+//   con le voci scritte a mano (controllo positivo: una voce tolta è colta); «Copia» e «Salva…» spenti; il clic porta alla
+//   scheda giusta e sceglie il blocco, dà il fuoco alla riga del dato o a ciò che restituisce.
 //
 // CHE COSA NON GUARDA:
 // - il contrasto dei testi del codice (`tabella.e2e.ts`, con quelli della colonna dell'esecuzione);
@@ -249,4 +252,76 @@ test("controllo positivo dell'avviso: un progetto che si chiama come il file non
   await expect(page.locator('output[role="status"]')).toHaveText(riempi(it.codiceSalvatoIn, { file: "uscita.txt" }));
   await expect(page.getByRole("dialog", { name: it.nomeCambiaTitolo, exact: true })).toBeHidden();
   expect(await finestreDelSistema(page)).toEqual({ codice: 1, salva: 0, proposto: "Media dei voti.txt" });
+});
+
+/** Le voci attese di ciò che manca a `libreria-dei-voti` in «Accademico», scritte a mano: la frase e il posto. */
+const tipoStringa = "Il tipo stringa non è supportato in Accademico.";
+const virgolette = "Un testo fra virgolette è supportato solo in una Scrittura.";
+const vociAttese = [
+  ["Il parametro per uscita (out) non è supportato in Accademico.", "Il dato «numero», procedura leggi_numero"],
+  ["La Lettura non è supportata in Accademico.", "«Lettura: numero», procedura leggi_numero"],
+  ["Il tipo reale non è supportato in Accademico: ci sono solo gli interi.", "Il risultato, funzione media"],
+  ["L'operatore converti_a_reale non è presente in Accademico.", "Ciò che restituisce, funzione media"],
+  [tipoStringa, "Il risultato, funzione stelle_di"],
+  [tipoStringa, "Il dato «s», funzione stelle_di"],
+  [virgolette, "«Assegnazione: s ← s + \"*\"», funzione stelle_di"],
+  [tipoStringa, "Il risultato, funzione giudizio"],
+  [tipoStringa, "Il dato «g», funzione giudizio"],
+  [virgolette, "«Assegnazione: g ← \"voto \" + stelle_di(voto)», funzione giudizio"],
+  [virgolette, "«Assegnazione: g ← \"non valido\"», funzione giudizio"],
+] as const;
+/** Le voci attese e quelle viste, appaiate per elemento nei due versi (un conteggio uguale non basta). */
+function appaia(attese: readonly (readonly [string, string])[], viste: readonly (readonly [string, string])[]) {
+  const chiave = (v: readonly [string, string]) => `${v[0]} | ${v[1]}`;
+  const [a, v] = [attese.map(chiave), viste.map(chiave)];
+  const togli = (da: string[], via: string[]) => {
+    const resto = [...via];
+    return da.filter((x) => {
+      const i = resto.indexOf(x);
+      if (i < 0) return true;
+      resto.splice(i, 1);
+      return false;
+    });
+  };
+  return { mancanti: togli(a, v), inPiu: togli(v, a), attese: a.length, viste: v.length };
+}
+
+test("un progetto che non sta in «Accademico»: l'elenco di tutto ciò che manca, coi posti; il clic porta al blocco, al dato, alla funzione, a ciò che restituisce", async ({ page }) => {
+  const testo = readFileSync(fileURLToPath(new URL("../casi/tappa-3/libreria-dei-voti.algo", import.meta.url)), "utf8");
+  const progetto = apriProgetto(testo);
+  if (!progetto.ok) throw new Error("libreria-dei-voti non si apre");
+  const id = (nome: string) => progetto.progetto.functions.find((f) => f.name === nome)!.id;
+  await apriVuota(page, { lingua: "it", linguaggiDelCodice: ["pseudocodice", "accademico"] }, { argomento: "C:\scuola\libreria-dei-voti.algo", file: { "C:\scuola\libreria-dei-voti.algo": testo } });
+  await genera(page).click();
+  await riquadro(page).getByRole("tab", { name: it.linguaggioAccademico, exact: true }).click();
+  const voci = riquadro(page).locator("[data-mancanza]");
+  await expect(voci).toHaveCount(vociAttese.length);
+  const viste = await voci.evaluateAll((v) => v.map((b) => [b.firstChild?.textContent ?? "", b.lastElementChild?.textContent ?? ""] as const));
+  const esito = appaia(vociAttese, viste);
+  console.log(`ciò che manca: ${esito.viste} voci viste, ${esito.attese} attese, ${esito.mancanti.length} mancanti, ${esito.inPiu.length} in più`);
+  expect(esito).toEqual({ mancanti: [], inPiu: [], attese: 11, viste: 11 });
+  // Controllo positivo: una voce tolta dall'elenco visto è colta, col suo testo.
+  expect(appaia(vociAttese, viste.slice(1)).mancanti).toEqual([`${vociAttese[0][0]} | ${vociAttese[0][1]}`]);
+  await expect(riquadro(page).getByText(riempi(it.codiceNonCiSta, { linguaggio: it.linguaggioAccademico, quante: riempi(it.mancanzeTante, { n: "11" }) }), { exact: true })).toBeVisible();
+  for (const nome of [it.codiceCopia, it.codiceSalva]) await expect(riquadro(page).getByRole("button", { name: nome, exact: true })).toHaveAttribute("aria-disabled", "true");
+  const scheda = (f: string) => page.locator(`[data-scheda="${f}"]`);
+  const stato = page.locator('output[role="status"]');
+  // Un blocco: la sua scheda, il blocco scelto, il suggerimento.
+  await voci.nth(6).click();
+  await expect(scheda(id("stelle_di"))).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('[data-blocco="b14"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(stato).toHaveText("Sposta il testo nella Scrittura che lo mostra: per esempio scrivi \"Totale: \" e poi il dato.");
+  // Il dato di una procedura: la sua scheda e il fuoco sulla riga del dato.
+  await voci.nth(0).click();
+  await expect(scheda(id("leggi_numero"))).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(":focus")).toHaveAttribute("data-dato", /.+/);
+  await expect(page.locator(":focus")).toContainText("numero");
+  // La sola funzione: la sua scheda.
+  await voci.nth(2).click();
+  await expect(scheda(id("media"))).toHaveAttribute("aria-selected", "true");
+  // Ciò che restituisce: il fuoco sulla sua forma.
+  await voci.nth(4).click();
+  await voci.nth(3).click();
+  await expect(scheda(id("media"))).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(":focus")).toHaveAttribute("data-restituisce", "b12");
 });

@@ -211,9 +211,11 @@ describe("il nome del progetto e i commenti", () => {
         const r = voceDel(nome).genera(p, tetti, l, paroleDelloPseudocodice(l));
         if (!r.generato) throw new Error(`${nome} non generato`);
         expect(r.righe.filter((x) => /[\r\n]/.test(x.testo)).map((x) => x.testo), `${nome} (${l})`).toEqual([]);
-        // I quattro pezzi del commento sono quattro righe; il nome resta su una riga.
-        expect(r.righe.filter((x) => /\b(uno|due|tre|quattro)\b/.test(x.testo)).length, `${nome} (${l})`).toBe(4);
-        expect(r.righe.some((x) => x.testo.includes("primo secondo terzo quarto")), `${nome} (${l})`).toBe(true);
+        // I quattro pezzi del commento sono quattro righe; il nome resta su una riga. «Accademico» non scrive né il
+        // commento né il nome (la sintassi non ha commenti): nessuna riga, contata.
+        const scrive = nome !== "accademico";
+        expect(r.righe.filter((x) => /\b(uno|due|tre|quattro)\b/.test(x.testo)).length, `${nome} (${l})`).toBe(scrive ? 4 : 0);
+        expect(r.righe.some((x) => x.testo.includes("primo secondo terzo quarto")), `${nome} (${l})`).toBe(scrive);
       }
   });
 });
