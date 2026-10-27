@@ -96,6 +96,38 @@
 //      browser di certe tastiere («Aggiorna», «Indietro»), Alt+freccia e i pulsanti «indietro» e «avanti» del mouse non
 //      passano da qui: mandati come messaggio non raggiungono il motore nemmeno su `about:blank` (misurato),
 //      e si misurano coi tasti veri, una tantum, col primo piano;
+//    - ESPORTA: col riferimento della tappa 3 dato come argomento e le preferenze tolte (i colori predefiniti),
+//      «Esporta il flowchart…» dal menu «Progetto» in SVG e in PNG, la finestra del sistema compilata coi messaggi di
+//      Windows; l'SVG scritto è uguale byte per byte a quello del nucleo col disegno impaginato con la misura del testo
+//      presa dal canvas della WebView2 (`e2e/disegno-nel-motore.ts`); il PNG, decodificato nella pagina, misura il
+//      doppio dell'SVG, ha l'angolo bianco e i pixel del colore dell'inizio e della fine. Controlli positivi: con un
+//      altro colore delle linee l'SVG del nucleo esce diverso; al fattore 1 la misura del PNG è un'altra;
+//    - STAMPA, con Playwright collegato (stesso avvio): la finestra «Stampa» con le predefinite (gli affiancati nel
+//      linguaggio mostrato, lo pseudocodice di partenza), `window.print` sostituito da un contatore; i fogli preparati
+//      hanno le intestazioni dell'atteso scritto a mano (cinque fogli: il programma principale su due, le altre
+//      funzioni su uno), e le righe del codice stanno nel loro lato alla larghezza della carta (il carattere del codice
+//      e il suo passo nella WebView2). Controllo positivo del rilevatore delle scritte del motore (data con l'anno in
+//      due cifre, titolo, indirizzo `tauri.localhost`, numero «n/m»): nel PDF del motore con le sue intestazioni, sulla
+//      pagina di tutti i giorni, le vede tutte e quattro;
+//    - STAMPA, SENZA Playwright collegato: il profilo della WebView e le preferenze tolti, un avviso all'utente (una
+//      finestra di Windows, la prova aspetta «OK»), l'avvio senza la porta di debug col riferimento della tappa 3;
+//      l'utente fa Ctrl+P, «Stampa…», «Salva come PDF» nella finestra di stampa di Edge e «Salva»; la «Salva con nome», che è
+//      del runtime WebView2 e sta in un processo discendente dell'app, la compila la prova col percorso del PDF
+//      (`finestra-vera.ps1 <pid> salva-dai-figli`; con Playwright collegato il PDF finirebbe nella cartella dove
+//      Playwright dirotta i download). Il PDF (`lettore-pdf.ts`): tanti fogli quanti nell'atteso, tutti A4
+//      orizzontali dalla `/MediaBox`, la nostra intestazione nel testo di ognuno, nessuna scritta del motore, l'area
+//      stampabile letta; si conserva accanto al log. Controllo positivo: lo stesso PDF contro l'atteso verticale è
+//      rosso su ogni foglio;
+//    - TRACCE (stampa): il registro dell'utente (`reg export HKCU`) in tre fotografie, prima dell'avvio della stampa,
+//      ad app aperta (il profilo nuovo si è scritto) e dopo la stampa, e in due intervalli a vuoto lunghi quanto quel
+//      giro (almeno 30 s) per il rumore; ogni cambiamento fuori dal rumore deve essere ammesso (`ammesso`): per nome
+//      la firma del profilo di Edge (`EdgeWebView\PreferenceMACs\Default`: `schedule_to_flush_to_disk`,
+//      `extensions.settings` e le sue due estensioni), che il runtime riscrive all'avvio con un profilo nuovo e alla
+//      prima stampa, e le voci di Windows per qualunque programma col percorso dell'eseguibile; per chiave le liste dei
+//      recenti della «Salva con nome», i passaggi fra le finestre e il conto d'uso dei programmi (i gesti
+//      dell'utente); per ramo la vista delle cartelle; per forma esatta l'appunto della shell sulla finestra aperta
+//      (`SessionInfo\<n>\ApplicationViewManagement\W32:<identificativo>`, aggiunto e tolto); la PowerShell della prova.
+//      Nei messaggi chiave e nome del valore, mai il dato;
 //    - TRACCE: nessuna cartella dell'identificatore e nessuna voce nuova al primo livello di
 //      %APPDATA%, %LOCALAPPDATA%, %TEMP% (e %TMP%, se è un'altra cartella); nella cartella di prova,
 //      accanto all'eseguibile, nient'altro che `data\`. Voci ammesse: nessuna. Il log dice quanto pesa `data\webview`.
@@ -105,6 +137,11 @@
 //    cartelle si descrivono nel log e si cancellano. Oltre a loro la prova cancella solo la propria
 //    cartella di prova (in `.collaudo\`, o sotto `--radice`), con la guardia descritta in fondo.
 //    Senza `data\` anche gli esempi vanno nella cartella dell'identificatore in %APPDATA%.
+// 3. REGISTRO (controllo positivo del rilevatore del registro e del filtro): una chiave della prova
+//    (`HKCU\Software\<identificatore>.sonda`) aggiunta, poi col dato cambiato, ciascun passo con la sua fotografia, deve
+//    uscire dal filtro che decide le TRACCE (stampa) come voce non ammessa, fuori dal rumore; il filtro accetta le sue
+//    voci e rifiuta quelle vicine (un altro valore della firma del profilo di Edge, un'altra sua estensione, un altro
+//    profilo, …); un valore di testo dell'export vero troncato al suo nome è la sola riga non letta. Poi la chiave si toglie.
 //
 // I due rilevatori delle tracce: (1) voci di primo livello il cui nome contiene l'identificatore;
 // (2) voci di primo livello nuove (assenti nella fotografia presa al marcatore d'inizio del giro). Le
@@ -127,7 +164,16 @@
 // Prima della clausola CODICE si apre gli appunti: se non si aprono, il rosso è della PREMESSA e dice perché.
 //
 // Che cosa questa prova NON guarda:
-// - il registro di Windows;
+// - il registro di Windows fuori dall'avvio della stampa; e, intorno a lei, un cambiamento dell'app su una chiave che
+//   anche altri processi cambiano negli intervalli a vuoto (finisce nel rumore), o su una voce ammessa per chiave o per
+//   ramo (ammettono ogni nome di valore); HKLM;
+// - nella STAMPA, i gesti dell'utente come tali (la prova vede solo la «Salva con nome» e il PDF: se l'utente scegliesse
+//   un'altra destinazione, la clausola resta rossa per tempo scaduto); le altre parti della finestra «Stampa» e le
+//   scelte che non sono le predefinite (le provano i motori, `e2e/stampa.e2e.ts`); il contenuto dei fogli oltre
+//   all'intestazione e alle scritte del motore (il disegno e il codice nel PDF si guardano a occhio, nel PDF conservato);
+//   la stampante vera e «Microsoft Print to PDF»; una lingua diversa da quella del sistema;
+// - nell'ESPORTA, i tre modi di colore e lo sfondo trasparente (li provano i motori, `e2e/esporta.e2e.ts`), i flowchart
+//   delle altre funzioni, il PNG pixel per pixel (la misura, l'angolo e i pixel di un colore);
 // - le scritture DENTRO cartelle già esistenti nelle radici (una cartella condivisa di Microsoft
 //   che riceve un file risulta solo «modificata»);
 // - una voce creata e cancellata durante il giro (la fotografia è prima e dopo);
@@ -231,8 +277,8 @@
 // - `--radice <cartella>`: la cartella di prova si crea lì (per esempio sulla chiavetta) invece che in
 //   `.collaudo\`. Ogni opzione si dà al più una volta, e il valore di `--radice` non comincia con `--`.
 // In ogni caso la cartella di prova si cancella solo se contiene ciò che ci mettono la prova e l'app:
-// al primo livello l'eseguibile e i file del pacchetto (file), `data` (una cartella), il file del progetto di prova e la
-// tabella esportata, e in
+// al primo livello l'eseguibile e i file del pacchetto (file), `data` (una cartella), il file del progetto di prova, la
+// tabella esportata, le due immagini esportate e il PDF stampato, e in
 // `data` solo `preferenze.json`, `webview`, `esempi` e `librerie` (con soli file `.algo`, anche nelle sottocartelle dei gruppi).
 // Altrimenti la prova si ferma
 // con un rosso e non tocca nulla.
@@ -241,8 +287,17 @@ import { chromium, type Browser, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { appendFileSync, cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { userInfo } from "node:os";
-import { join, relative, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
+import { opzioniPredefinite } from "../core/disegno/impaginazione";
+import { svgDelDisegno } from "../core/disegno/svg";
+import { geometriaPredefinita } from "../core/disegno/tema";
 import { apri as apriProgetto, salva as testoDel } from "../core/progetto/formato";
+import { disegnoNelMotore } from "../e2e/disegno-nel-motore";
+import { CARTA, righeNelLato } from "../e2e/stampa-pagina";
+import { misuraDelPng } from "../ui/disegno/esporta";
+import { nomeNellaStampa } from "../ui/stampa/parti";
+import { leggiPdf } from "./lettore-pdf";
+import { difettiDelPdf, scritteDiEdge, type FoglioAtteso } from "./pdf-stampato";
 import { csvIngleseAtteso, csvItalianoAtteso } from "../core/esecuzione/atteso-del-riferimento";
 import { costruisci as costruisciIlRiferimento, differenze, primaDifferenza, riferimentoDellaTappa2, riferimentoDellaTappa3 } from "../e2e/costruzione";
 // La soglia della finestra che risponde: la stessa della prova nei motori.
@@ -301,6 +356,13 @@ const nomeProgetto = "progetto di prova.algo";
 const progettoFuori = join(cartellaProva, nomeProgetto);
 // La tabella della clausola ESECUZIONE, accanto al progetto: il nome scritto nella finestra del sistema, senza `.csv`.
 const nomeEsportata = "tabella esportata";
+// Le immagini della clausola ESPORTA (il nome scritto nella finestra del sistema, senza l'estensione) e il PDF della
+// clausola STAMPA, accanto al progetto; tolti dopo la loro clausola (il PDF si conserva accanto al log).
+const nomeDellImmagineEsportata = "flowchart esportato";
+const pdfStampato = join(cartellaProva, "stampa di prova.pdf");
+// Il progetto delle clausole ESPORTA e STAMPA: il riferimento della tappa 3 (quattro funzioni), lo stesso delle prove
+// della stampa nei motori.
+const testoDellaStampa = readFileSync(join(radice, "casi", "tappa-3", "riferimento-media-voti-funzioni.algo"), "utf8");
 const testoDiPartenza = readFileSync(join(radice, "casi", "tappa-1", "riferimento-media-voti.algo"), "utf8");
 const radiciTracce: Record<string, string> = { APPDATA: process.env.APPDATA!, LOCALAPPDATA: process.env.LOCALAPPDATA!, TEMP: process.env.TEMP! };
 // `GetTempPath` usa `TMP` prima di `TEMP`: se sono due cartelle diverse, si guardano tutte e due.
@@ -344,8 +406,12 @@ const clausole: [string, string][] = [
   ["RICORSIONE", "ricorsione al tetto"],
   ["CHIUSURA", "chiusura"],
   ["RICARICA", "ricarica"],
+  ["ESPORTA", "flowchart esportato in SVG e PNG"],
+  ["STAMPA", "stampa in PDF dall'anteprima, senza Playwright collegato"],
+  ["TRACCE (stampa)", "registro intorno alla stampa"],
   ["TRACCE (portabile)", "tracce"],
   ["TRACCE (controllo positivo)", "controllo positivo delle tracce"],
+  ["REGISTRO (controllo positivo)", "controllo positivo del registro"],
 ];
 /** Le clausole che hanno stampato la riga verde, nell'ordine. */
 const verdi: string[] = [];
@@ -475,6 +541,180 @@ async function guardaECancella(): Promise<string[]> {
   }
   return trovate;
 }
+
+// ----------------------------------------------------------------------------------------- registro
+
+// Il registro dell'utente si guarda solo intorno all'avvio della STAMPA (tre fotografie da un profilo nuovo della
+// WebView: prima dell'avvio, ad app aperta, dopo la stampa) e nei due intervalli a vuoto che seguono, col rumore.
+// Nei messaggi la chiave e il nome del valore, mai il dato; l'export (che ha dati personali) si cancella appena letto.
+// La chiave della sonda: sotto `Software`, col nome dell'identificatore (non è di nessun altro).
+const chiaveSonda = `HKCU\\Software\\${identificatore}.sonda`;
+const chiaveSondaNellExport = `HKEY_CURRENT_USER\\Software\\${identificatore}.sonda`;
+// I cambiamenti che fanno Windows e il runtime WebView2 per qualunque programma con una finestra, non l'app (misurati su
+// altre app con Tauri 2.12.1, e gli stessi di Explorer con un programma di Windows copiato e lanciato allo stesso modo):
+// la chiave di EdgeUpdate è del «Microsoft Edge WebView2 Runtime», che ne aggiorna `lastrun` a ogni avvio e alza `dr`
+// al primo uso del giorno; MuiCache e UserAssist al primo avvio da un percorso nuovo; la ricerca di Windows annota il
+// profilo della WebView. Ammessi per nome esatto, col percorso dell'eseguibile di prova. Nell'export i nomi dei valori
+// raddoppiano la barra rovescia, e UserAssist li scrive in ROT13.
+const nellExport = (testo: string) => testo.replaceAll("\\", "\\\\");
+const rot13 = (testo: string) => testo.replace(/[a-z]/gi, (c) => String.fromCharCode(((c.toLowerCase().charCodeAt(0) - 97 + 13) % 26) + (c <= "Z" ? 65 : 97)));
+const diWindows = new Set([
+  `HKEY_CURRENT_USER\\Software\\Microsoft\\EdgeUpdate\\ClientState\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5} :: "lastrun"`,
+  `HKEY_CURRENT_USER\\Software\\Microsoft\\EdgeUpdate\\ClientState\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5} :: "dr"`,
+  `HKEY_CURRENT_USER\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\MuiCache :: "${nellExport(eseguibile)}.FriendlyAppName"`,
+  `HKEY_CURRENT_USER\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\MuiCache :: "${nellExport(eseguibile)}.ApplicationCompany"`,
+  `HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}\\Count :: "${nellExport(rot13(eseguibile))}"`,
+  `HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Search\\JumplistData :: "MSEdgeWebView.EBWebView.Default"`,
+]);
+// Le liste dei file e delle cartelle usati di recente e la misura della finestra, che la «Salva con nome» del PDF
+// aggiorna per qualunque programma, e i passaggi fra le finestre e il conto d'uso dei programmi, che Windows annota ai
+// gesti dell'utente (la stampa si fa coi suoi gesti). Ammesse per chiave: i nomi dei valori sono numeri che ruotano, o
+// sono i programmi a cui l'utente passa.
+const listeDeiRecenti = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ComDlg32";
+const diWindowsPerChiave = new Set([
+  `${listeDeiRecenti}\\LastVisitedPidlMRU`,
+  `${listeDeiRecenti}\\CIDSizeMRU`,
+  `${listeDeiRecenti}\\OpenSavePidlMRU\\pdf`,
+  `${listeDeiRecenti}\\OpenSavePidlMRU\\*`,
+  "HKEY_CURRENT_USER\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\BagMRU",
+  "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FeatureUsage\\AppSwitched",
+  "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}\\Count",
+]);
+// La vista delle cartelle che la finestra del sistema tocca, per ramo: una sotto-chiave per ogni cartella del percorso.
+const sottoChiaviDiWindows = ["HKEY_CURRENT_USER\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\Shell\\BagMRU\\"];
+// La data d'uso che Windows annota per le app di sistema installate come pacchetto: un programma che non è un pacchetto,
+// come l'app, lì non scrive. Rumore di Windows più raro degli intervalli a vuoto.
+const appDiSistema = /^HKEY_CURRENT_USER\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\SystemAppData\\[^\\]+\\HAM\\AUI\\/;
+// L'appunto che la shell di Windows tiene per ogni finestra aperta, col suo identificativo: aggiunto quando la finestra
+// dell'app si apre e tolto quando si chiude (misurato: aggiunto fra la prima e la seconda fotografia, tolto fra la
+// seconda e la terza; fra la prima e l'ultima non si vede). Ammesso solo in questa forma, come chiave aggiunta o tolta.
+const vistaDellaFinestra = /^HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\SessionInfo\\\d+\\ApplicationViewManagement\\W32:[0-9A-F]{16} :: <chiave (aggiunta|tolta)>$/;
+// Il rumore che cambia più di rado dei due intervalli a vuoto: OneDrive annota il suo ultimo aggiornamento ogni 2–4
+// minuti, con l'app chiusa.
+const rumoreLento = new Set([`HKEY_CURRENT_USER\\Software\\Microsoft\\OneDrive\\Accounts :: "LastUpdate"`]);
+// La firma delle impostazioni del profilo «Default» del runtime WebView2, una chiave che condividono tutti i suoi host:
+// la riscrive l'avvio con un profilo nuovo (`schedule_to_flush_to_disk`, `extensions.settings` tolta) e la stampa in PDF
+// (`extensions.settings` di nuovo, col visore PDF del motore e un'altra estensione interna). L'app non la evita (un
+// altro nome di profilo la sposterebbe soltanto). Ammessi questi nomi: un altro valore della stessa chiave resta rosso.
+const macDelProfilo = "HKEY_CURRENT_USER\\Software\\Microsoft\\EdgeWebView\\PreferenceMACs\\Default";
+const dellaStampa = new Set([
+  `${macDelProfilo} :: "schedule_to_flush_to_disk"`,
+  `${macDelProfilo}\\extensions.settings :: <chiave aggiunta>`,
+  `${macDelProfilo}\\extensions.settings :: <chiave tolta>`,
+  `${macDelProfilo}\\extensions.settings :: "mhjfbmdgcfjbbpaeojofohoefgiehjai"`,
+  `${macDelProfilo}\\extensions.settings :: "dgiklkfkllikcanfonkcabmbdfmgleag"`,
+]);
+// La PowerShell che la prova lancia per compilare la finestra del sistema e per l'avviso all'utente: Windows ne annota
+// l'avvio nella ricerca. L'app non avvia PowerShell.
+const dellaProva = new Set([`HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Search\\JumplistData :: "${nellExport("{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe")}"`]);
+/** Un cambiamento del registro scritto da Windows per qualunque programma, dal runtime WebView2 con la stampa, dalla
+ * prova o da un altro processo noto, non dall'app. */
+const ammesso = (c: string) => {
+  const chiave = c.slice(0, c.indexOf(" :: "));
+  return (
+    diWindows.has(c) ||
+    rumoreLento.has(c) ||
+    dellaStampa.has(c) ||
+    dellaProva.has(c) ||
+    vistaDellaFinestra.test(c) ||
+    diWindowsPerChiave.has(chiave) ||
+    sottoChiaviDiWindows.some((s) => chiave.startsWith(s)) ||
+    appDiSistema.test(chiave)
+  );
+};
+/** Il filtro che decide il giro e la sonda: i cambiamenti fuori dal rumore, ammessi o no. */
+function giudica(cambiati: Iterable<string>, rumore: Set<string>): { ammessi: string[]; fuori: string[] } {
+  const fuoriDalRumore = [...cambiati].filter((c) => !rumore.has(c));
+  return { ammessi: fuoriDalRumore.filter(ammesso), fuori: fuoriDalRumore.filter((c) => !ammesso(c)) };
+}
+
+type Registro = Map<string, Map<string, string>>;
+
+type LettoDallExport = { registro: Registro; intestazioni: number; nonLette: string[]; suPiuRighe: number };
+
+/** L'export di `reg` (testo già decodificato): chiave → (nome del valore → dato). Un dato esadecimale continua sulle
+ * righe dopo finché la riga finisce con la barra rovescia; un dato di testo continua, con gli a capo, finché l'apice che
+ * lo chiude. Ogni riga che non è l'intestazione del file, un'intestazione di chiave, un valore o una sua
+ * continuazione finisce in `nonLette`, col suo numero e la sua lunghezza. */
+function leggiExport(testo: string): LettoDallExport {
+  const righe = testo.split(/\r?\n/);
+  const registro: Registro = new Map();
+  const valore = /^(@|"(?:[^"\\]|\\.)*")=(.*)$/s;
+  const testoChiuso = /^"(?:[^"\\]|\\.)*"$/s;
+  const nonLette: string[] = [];
+  let intestazioni = 0;
+  let suPiuRighe = 0;
+  let corrente: Map<string, string> | undefined;
+  for (let i = righe[0] === "Windows Registry Editor Version 5.00" ? 1 : 0; i < righe.length; i++) {
+    const r = righe[i]!;
+    if (r === "") continue;
+    if (r.startsWith("[") && r.endsWith("]")) {
+      intestazioni++;
+      corrente = new Map();
+      registro.set(r.slice(1, -1), corrente);
+      continue;
+    }
+    const m = corrente ? r.match(valore) : null;
+    if (!corrente || !m) {
+      // Il numero della riga e la sua lunghezza, mai il testo: può essere un dato.
+      nonLette.push(`${i + 1}: ${r.length} caratteri`);
+      continue;
+    }
+    let dato = m[2]!;
+    const da = i;
+    if (dato.startsWith('"')) {
+      while (!testoChiuso.test(dato) && i + 1 < righe.length) dato += `\n${righe[++i]}`;
+      if (!testoChiuso.test(dato)) nonLette.push(`${da + 1}: testo senza l'apice che lo chiude`);
+    } else {
+      while (dato.endsWith("\\") && i + 1 < righe.length) dato = dato.slice(0, -1) + righe[++i]!.trim();
+    }
+    if (i > da) suPiuRighe++;
+    corrente.set(m[1]!, dato);
+  }
+  return { registro, intestazioni, nonLette, suPiuRighe };
+}
+
+// Le chiavi del registro dell'utente sono decine di migliaia: un export che ne porta meno di così è tronco o letto male,
+// non un registro piccolo.
+const minimoChiavi = 10_000;
+const fileRegistro = join(cartellaLog, "registro-utente.reg");
+/** Il testo dell'ultimo export, per il controllo positivo della lettura (`sondaDelRegistro`). */
+let ultimoExport = "";
+
+/** Il registro dell'utente, dall'export di `reg` in UTF-16: ogni riga letta, le chiavi tante quante le intestazioni. */
+async function fotografaRegistro(): Promise<Registro> {
+  let testo: string;
+  try {
+    const codice = await esegui(["reg", "export", "HKCU", fileRegistro, "/y"]);
+    if (codice !== 0 || !existsSync(fileRegistro)) rosso("REGISTRO", `reg export HKCU: exit ${codice}`);
+    testo = new TextDecoder("utf-16le").decode(readFileSync(fileRegistro));
+  } finally {
+    rmSync(fileRegistro, { force: true });
+  }
+  const letto = leggiExport(testo);
+  if (letto.nonLette.length > 0 || letto.registro.size !== letto.intestazioni || letto.registro.size < minimoChiavi)
+    rosso(
+      "REGISTRO",
+      `export letto male: ${letto.nonLette.length} righe non lette (${letto.nonLette.slice(0, 3).join(" · ")}), ${letto.registro.size} chiavi per ${letto.intestazioni} intestazioni, minimo ${minimoChiavi}`,
+    );
+  ultimoExport = testo;
+  return letto.registro;
+}
+
+/** I cambiamenti fra due fotografie del registro, come «chiave :: nome del valore» (o la chiave aggiunta o tolta). */
+function cambiamenti(a: Registro, b: Registro): Set<string> {
+  const fuori = new Set<string>();
+  for (const chiave of new Set([...a.keys(), ...b.keys()])) {
+    const va = a.get(chiave);
+    const vb = b.get(chiave);
+    if (!va) fuori.add(`${chiave} :: <chiave aggiunta>`);
+    else if (!vb) fuori.add(`${chiave} :: <chiave tolta>`);
+    else for (const nome of new Set([...va.keys(), ...vb.keys()])) if (va.get(nome) !== vb.get(nome)) fuori.add(`${chiave} :: ${nome}`);
+  }
+  return fuori;
+}
+
+const elenco = (voci: Iterable<string>) => JSON.stringify([...voci].sort());
 
 // ------------------------------------------------------------------------------------------ finestra
 
@@ -668,7 +908,8 @@ function estraneeAllaProva(): string[] {
   if (!existsSync(cartellaProva)) return [];
   // L'eseguibile e i file del pacchetto, di una prova fatta in un modo o nell'altro (Windows non bada alle maiuscole).
   const dellaProva = new Set(["algodesign.exe", ...elencoDelPacchetto.filter((v) => !v.endsWith("/")).map((v) => v.toLowerCase())]);
-  const estranee = readdirSync(cartellaProva).filter((v) => !dellaProva.has(v.toLowerCase()) && v !== "data" && v !== nomeProgetto && v !== `${nomeEsportata}.csv`);
+  const scritti = [nomeProgetto, `${nomeEsportata}.csv`, `${nomeDellImmagineEsportata}.svg`, `${nomeDellImmagineEsportata}.png`, basename(pdfStampato)];
+  const estranee = readdirSync(cartellaProva).filter((v) => !dellaProva.has(v.toLowerCase()) && v !== "data" && !scritti.includes(v));
   for (const v of readdirSync(cartellaProva).filter((v) => dellaProva.has(v.toLowerCase()))) if (!lstatSync(join(cartellaProva, v)).isFile()) estranee.push(`${v} (non è un file)`);
   if (existsSync(progettoFuori) && !lstatSync(progettoFuori).isFile()) estranee.push(`${nomeProgetto} (non è un file)`);
   if (existsSync(dati)) {
@@ -751,7 +992,8 @@ async function costruisci(): Promise<string> {
   return senzaBuild ? `build SALTATO, eseguibile esistente sha256 ${impronta}…` : "build";
 }
 
-async function giroPortabile(): Promise<void> {
+/** Il giro portabile; restituisce il rumore del registro preso dopo la stampa, per il controllo positivo. */
+async function giroPortabile(): Promise<Set<string>> {
   const { soglia, prima } = marcatore("portabile");
   const preferenze = join(dati, "preferenze.json");
 
@@ -834,6 +1076,7 @@ async function giroPortabile(): Promise<void> {
   await giroDellaRicorsione(iniziale);
   await giroDellaChiusura(iniziale);
   await giroDellaRicarica(iniziale);
+  const rumore = await giroDellaStampa(iniziale, await giroDellEsportazione(iniziale));
 
   const tracce = rileva(prima, soglia);
   descriviTracce(tracce);
@@ -845,6 +1088,7 @@ async function giroPortabile(): Promise<void> {
   const accanto = readdirSync(cartellaProva).filter((v) => !accantoAmmessi.includes(v) && v !== "data");
   if (accanto.length > 0) rosso("TRACCE", `accanto all'eseguibile, fuori da data\\: ${accanto.join(", ")}`);
   verde("TRACCE (portabile)", `zero | profilo della WebView in data\\webview (${nelProfilo} file, ${(byteDelProfilo / 1024 / 1024).toFixed(1)} MB) | accanto all'eseguibile solo data\\${pacchetto === undefined ? "" : " e i file del pacchetto"}`);
+  return rumore;
 }
 
 /** La clausola FILE: il progetto dato come argomento, fuori da `data\`, cambiato e salvato dall'interfaccia. */
@@ -1798,6 +2042,357 @@ async function giroDellaChiusura(lingua: Lingua): Promise<void> {
   );
 }
 
+/** La riga di stato della pagina, attesa fino a `ms`: l'ultima vista. */
+async function attendiLoStato(pagina: Page, atteso: string, ms = 10_000): Promise<string> {
+  let visto = "";
+  for (const fine = Date.now() + ms; Date.now() < fine && visto !== atteso; ) {
+    visto = (await pagina.locator('output[role="status"]').textContent({ timeout: 2_000 }).catch(() => "")) ?? "";
+    if (visto !== atteso) await Bun.sleep(100);
+  }
+  return visto;
+}
+
+/** Un file scritto per intero (lo dice `intero` sui suoi byte), atteso fino a `ms`; altrimenti null. */
+async function attendiScritto(percorso: string, intero: (b: Buffer) => boolean, ms: number): Promise<Buffer | null> {
+  for (const fine = Date.now() + ms; Date.now() < fine; await Bun.sleep(250)) {
+    try {
+      const b = readFileSync(percorso);
+      if (intero(b)) return b;
+    } catch {
+      // Non ancora scritto.
+    }
+  }
+  return null;
+}
+
+/** L'atteso della STAMPA, scritto a mano prima del codice e misurato in Chromium sulla stessa pagina: con le predefinite
+ * della finestra «Stampa» (gli affiancati nel linguaggio mostrato, lo pseudocodice di partenza) un foglio orizzontale
+ * per ogni foglio del flowchart di ogni funzione, nell'ordine del file: il programma principale su due, le altre su uno. */
+function fogliAttesi(lingua: Lingua): FoglioAtteso[] {
+  const testi = dizionari[lingua];
+  const r = apriProgetto(testoDellaStampa);
+  if (!r.ok) rosso("STAMPA", "il riferimento della tappa 3 non si apre");
+  const fogliPerFunzione = [2, 1, 1, 1];
+  const testa = `${r.progetto.metadata.name} · ${riempi(testi.stampaTestaAffiancati, { linguaggio: testi.linguaggioPseudocodice })}`;
+  return r.progetto.functions.flatMap((f, k) =>
+    Array.from({ length: fogliPerFunzione[k]! }, (_, i) => ({
+      testa: `${testa} · ${nomeNellaStampa(f, testi)}`,
+      destra: fogliPerFunzione[k]! > 1 ? riempi(testi.stampaFoglioDi, { n: String(i + 1), m: String(fogliPerFunzione[k]!) }) : "",
+    })),
+  );
+}
+
+type DallaPagina = { titolo: string; sezioni: FoglioAtteso[]; linguaggio: string; lato: Awaited<ReturnType<typeof righeNelLato>>; accese: string[]; fogliDelControllo: number };
+
+/** La clausola ESPORTA, e la parte della STAMPA che si legge con Playwright collegato: col riferimento della tappa 3 e le
+ * preferenze tolte (i colori predefiniti, non quelli della PREFERENZE), «Esporta il flowchart…» in SVG e in PNG dalla
+ * finestra, la finestra del sistema compilata coi messaggi di Windows; l'SVG uguale byte per byte a quello del nucleo col
+ * disegno impaginato con la misura del canvas della WebView2, il PNG decodificato nella pagina (misura = SVG × 2, l'angolo
+ * bianco, i pixel del colore dell'inizio e della fine). Poi la pagina preparata della stampa con le predefinite
+ * (`window.print` sostituito da un contatore: l'anteprima di Edge bloccherebbe la pagina): le intestazioni dei fogli e le
+ * righe del codice nel loro lato alla larghezza della carta; e il PDF del motore con le sue intestazioni sulla pagina di
+ * tutti i giorni, il controllo positivo del rilevatore delle scritte del motore. */
+async function giroDellEsportazione(lingua: Lingua): Promise<DallaPagina> {
+  const testi = dizionari[lingua];
+  const r = apriProgetto(testoDellaStampa);
+  if (!r.ok) rosso("ESPORTA", "il riferimento della tappa 3 non si apre");
+  const p = r.progetto;
+  rmSync(join(dati, "preferenze.json"), { force: true });
+  writeFileSync(progettoFuori, testoDellaStampa);
+  const fileSvg = join(cartellaProva, `${nomeDellImmagineEsportata}.svg`);
+  const filePng = join(cartellaProva, `${nomeDellImmagineEsportata}.png`);
+  for (const f of [fileSvg, filePng]) if (existsSync(f)) rosso("ESPORTA", `${f} c'è già prima dell'esportazione`);
+  const a = await avvia([progettoFuori]);
+  try {
+    const aperto = riempi(testi.apertoIl, { file: nomeProgetto });
+    if ((await attendiLoStato(a.pagina, aperto)) !== aperto) rosso("ESPORTA", `il progetto non si è aperto: la riga di stato non dice ${visibile(aperto)}`);
+    const esporta = async (formato: "svg" | "png", file: string) => {
+      await a.pagina.getByRole("banner").getByRole("button", { name: testi.menuProgetto, exact: true }).click();
+      await a.pagina.waitForFunction(() => document.activeElement?.closest('[role="menu"]') != null, undefined, { polling: "raf", timeout: 10_000 });
+      await a.pagina.getByRole("menu", { name: testi.menuProgetto, exact: true }).getByRole("menuitem", { name: testi.esportaFlowchart, exact: true }).click();
+      const finestra = a.pagina.getByRole("dialog", { name: testi.esportaFlowchartTitolo, exact: true });
+      await finestra.getByRole("radio", { name: formato === "svg" ? testi.esportaFormatoSvg : testi.esportaFormatoPng, exact: true }).check();
+      await finestra.getByRole("button", { name: testi.esportaConferma, exact: true }).click();
+      const compilata = await finestraVera(a.proc.pid, "salva", join(cartellaProva, nomeDellImmagineEsportata));
+      if (compilata !== "salvato") rosso("ESPORTA", `${formato}: la finestra del sistema non è stata compilata: ${compilata}`);
+      const avviso = riempi(testi.flowchartEsportatoIn, { file: basename(file) });
+      const detto = await attendiLoStato(a.pagina, avviso);
+      const byte = await attendiScritto(file, (b) => b.length > 0, 10_000);
+      if (byte === null || detto !== avviso) rosso("ESPORTA", `${formato}: ${byte === null ? `${file} non scritto` : "scritto"}; la riga di stato dice ${visibile(detto)} invece di ${visibile(avviso)}`);
+      return byte;
+    };
+    const svg = (await esporta("svg", fileSvg)).toString("utf8");
+    const png = await esporta("png", filePng);
+
+    // L'atteso dal nucleo, col disegno impaginato con la misura del canvas della WebView2.
+    const carattere = await a.pagina.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--carattere").trim());
+    const disegno = await disegnoNelMotore(a.pagina, p.functions[0]!, p.shared_constants ?? [], p.functions, opzioniPredefinite, lingua);
+    const opzioni = { geometria: geometriaPredefinita, tavolozza: CARTA, carattere, fondoDeiCicli: false };
+    const svgAtteso = svgDelDisegno(disegno, opzioni);
+    // Controllo positivo del confronto: con un altro colore delle linee l'SVG del nucleo esce diverso.
+    const svgAltro = svgDelDisegno(disegno, { ...opzioni, tavolozza: { ...CARTA, linea: "#9aa3ad" } });
+    if (svgAltro === svgAtteso) rosso("ESPORTA (controllo positivo)", "l'SVG con un altro colore delle linee è uguale: il confronto non sa dire no");
+    if (svg !== svgAtteso) rosso("ESPORTA", `l'SVG esportato (${Buffer.byteLength(svg)} byte) non è quello del nucleo (${Buffer.byteLength(svgAtteso)} byte): ${primaDifferenza(svg, svgAtteso)}`);
+    const [, , larghezza, altezza] = /viewBox="([^"]+)"/.exec(svgAtteso)![1]!.split(" ").map(Number);
+    const attesa = misuraDelPng(larghezza!, altezza!);
+    const alFattore1 = misuraDelPng(larghezza!, altezza!, 1);
+    const colore = [1, 3, 5].map((i) => parseInt(CARTA.forme.inizioEFine.slice(i, i + 2), 16));
+    const firma = [...png.subarray(0, 8)].join(",") === "137,80,78,71,13,10,26,10";
+    const letto = await a.pagina.evaluate(
+      async ({ base64, colore }) => {
+        const byte = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+        const immagine = await createImageBitmap(new Blob([byte], { type: "image/png" }));
+        const canvas = new OffscreenCanvas(immagine.width, immagine.height);
+        const contesto = canvas.getContext("2d")!;
+        contesto.drawImage(immagine, 0, 0);
+        const d = contesto.getImageData(0, 0, immagine.width, immagine.height).data;
+        let simili = 0;
+        for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i]! - colore[0]!) <= 3 && Math.abs(d[i + 1]! - colore[1]!) <= 3 && Math.abs(d[i + 2]! - colore[2]!) <= 3 && d[i + 3] === 255) simili++;
+        return { larghezza: immagine.width, altezza: immagine.height, angolo: [...d.subarray(0, 4)], simili };
+      },
+      { base64: png.toString("base64"), colore },
+    );
+    const difettiDelPng = [
+      ...(firma ? [] : ["senza la firma PNG"]),
+      ...(letto.larghezza !== attesa.larghezza || letto.altezza !== attesa.altezza ? [`${letto.larghezza} × ${letto.altezza} pixel invece di ${attesa.larghezza} × ${attesa.altezza}`] : []),
+      ...(letto.angolo.join(",") !== "255,255,255,255" ? [`l'angolo ${JSON.stringify(letto.angolo)} invece del bianco opaco`] : []),
+      ...(letto.simili < 100 ? [`${letto.simili} pixel del colore dell'inizio e della fine (${CARTA.forme.inizioEFine})`] : []),
+    ];
+    if (alFattore1.larghezza === attesa.larghezza) rosso("ESPORTA (controllo positivo)", "la misura al fattore 1 è uguale a quella al doppio");
+    if (difettiDelPng.length > 0) rosso("ESPORTA", `il PNG: ${difettiDelPng.join("; ")}`);
+    verde(
+      "ESPORTA",
+      `in «${lingua}», «${testi.esportaFlowchart}» del programma principale del riferimento della tappa 3, la finestra del sistema compilata coi messaggi di Windows: l'SVG (${Buffer.byteLength(svg)} byte) uguale byte per byte a quello del nucleo col disegno misurato nel canvas della WebView2 (viewBox ${larghezza} × ${altezza}); il PNG (${png.length} byte) decodificato nella pagina: ${letto.larghezza} × ${letto.altezza} pixel, l'angolo bianco, ${letto.simili} pixel del colore dell'inizio e della fine | controllo positivo: con un altro colore delle linee l'SVG del nucleo è diverso, al fattore 1 il PNG sarebbe ${alFattore1.larghezza} × ${alFattore1.altezza}`,
+    );
+
+    // La STAMPA con Playwright collegato. Prima il controllo positivo del rilevatore delle scritte del motore: il PDF
+    // della pagina di tutti i giorni (nessun riquadro di margine occupato) con le intestazioni del motore.
+    const titolo = await a.pagina.title();
+    const cdp = await a.pagina.context().newCDPSession(a.pagina);
+    const { data } = (await cdp.send("Page.printToPDF", { displayHeaderFooter: true, printBackground: true })) as { data: string };
+    await cdp.detach();
+    const controllo = leggiPdf(Buffer.from(data, "base64"));
+    const accese = [...new Set(controllo.pagine.flatMap((g) => scritteDiEdge(g.righe, titolo)))];
+    await a.pagina.evaluate(() => {
+      const w = window as unknown as { __stampe__: number };
+      w.__stampe__ = 0;
+      window.print = () => {
+        w.__stampe__++;
+      };
+    });
+    await a.pagina.keyboard.press("Control+p");
+    const finestra = a.pagina.getByRole("dialog", { name: testi.stampaTitolo, exact: true });
+    const linguaggio = await finestra.getByRole("combobox", { name: testi.stampaLinguaggio, exact: true }).inputValue();
+    await finestra.getByRole("button", { name: testi.stampa, exact: true }).click();
+    await a.pagina.waitForFunction(() => (window as unknown as { __stampe__: number }).__stampe__ === 1, undefined, { timeout: 10_000 });
+    const sezioni = await a.pagina.locator("[data-stampa] section").evaluateAll((ss) => ss.map((s) => ({ testa: s.getAttribute("data-testa") ?? "", destra: s.getAttribute("data-destra") ?? "" })));
+    await a.pagina.emulateMedia({ media: "print" });
+    const lato = await righeNelLato(a.pagina);
+    await a.pagina.emulateMedia({ media: null });
+    return { titolo, sezioni, linguaggio, lato, accese, fogliDelControllo: controllo.pagine.length };
+  } finally {
+    await chiudi(a);
+    for (const f of [fileSvg, filePng, progettoFuori]) rmSync(f, { force: true });
+  }
+}
+
+/** L'avviso all'utente, in una finestra di Windows sopra le altre: la prova aspetta il suo «OK» (fino a 10 minuti). */
+async function avvisaLUtente(testo: string): Promise<void> {
+  const cmd = [
+    "powershell",
+    "-NoProfile",
+    "-Command",
+    "Add-Type -AssemblyName System.Windows.Forms; [void][System.Windows.Forms.MessageBox]::Show($env:AVVISO_DELLA_PROVA, 'AlgoDesign', 'OK', 'Information', 'Button1', 'DefaultDesktopOnly')",
+  ];
+  log(`$ ${cmd.join(" ")}`);
+  const proc = Bun.spawn({ cmd, env: { ...process.env, AVVISO_DELLA_PROVA: testo }, stdout: "ignore", stderr: "ignore" });
+  const finito = await Promise.race([proc.exited.then(() => true), Bun.sleep(10 * 60_000).then(() => false)]);
+  if (!finito) {
+    proc.kill();
+    rosso("PREMESSA", "nessuno ha risposto all'avviso della stampa in 10 minuti: la clausola STAMPA vuole l'utente davanti al PC");
+  }
+}
+
+/** La clausola STAMPA senza Playwright collegato e la TRACCE (stampa): il profilo della WebView tolto (un profilo
+ * nuovo: la sua prima stampa scrive cose che le altre non scrivono), le preferenze tolte, l'avviso all'utente; poi la
+ * prima fotografia del registro, l'avvio SENZA la porta di debug col riferimento della tappa 3, la seconda fotografia ad
+ * app aperta; l'utente fa Ctrl+P, «Stampa…», «Salva come PDF» nella finestra di stampa di Edge e «Salva»; la prova compila la
+ * «Salva con nome», cercata nei soli processi discendenti dell'app (è del runtime WebView2), col percorso del PDF; la
+ * terza fotografia dopo la chiusura per PID; il rumore in due intervalli a vuoto. Restituisce il rumore, per la sonda. */
+async function giroDellaStampa(lingua: Lingua, pagina: DallaPagina): Promise<Set<string>> {
+  const testi = dizionari[lingua];
+  const attesi = fogliAttesi(lingua);
+  // Con Playwright collegato: la pagina preparata e il rilevatore delle scritte del motore.
+  const sezioniDiverse = pagina.sezioni.length !== attesi.length || pagina.sezioni.some((s, i) => s.testa !== attesi[i]!.testa || s.destra !== attesi[i]!.destra);
+  if (pagina.linguaggio !== "pseudocodice") rosso("STAMPA", `nella finestra «${testi.stampaTitolo}» il linguaggio è «${pagina.linguaggio}» invece dello pseudocodice di partenza`);
+  if (sezioniDiverse) rosso("STAMPA", `la pagina preparata nella WebView2 ha i fogli ${JSON.stringify(pagina.sezioni)} invece di ${JSON.stringify(attesi)}`);
+  if (pagina.lato.fuori > 0 || pagina.lato.latiStorti > 0 || pagina.lato.pre === 0) rosso("STAMPA", `il codice nella WebView2, alla larghezza della carta: ${JSON.stringify(pagina.lato)}`);
+  const tutte = ["indirizzo", "data", "titolo", "numero"];
+  const spente = tutte.filter((s) => !pagina.accese.includes(s));
+  if (spente.length > 0) rosso("STAMPA (controllo positivo)", `il PDF del motore con le sue intestazioni (${pagina.fogliDelControllo} fogli, titolo ${visibile(pagina.titolo)}): il rilevatore non vede ${spente.join(", ")}`);
+
+  if (existsSync(pdfStampato)) rosso("STAMPA", `${pdfStampato} c'è già prima della stampa`);
+  await cancella(join(dati, "webview"));
+  rmSync(join(dati, "preferenze.json"), { force: true });
+  writeFileSync(progettoFuori, testoDellaStampa);
+  await avvisaLUtente(
+    `Prova sul prodotto: la stampa.\n\nDopo «OK» si apre AlgoDesign col progetto «${nomeProgetto}». Fai tu, senza toccare altro:\n` +
+      `1. Ctrl+P\n2. «${testi.stampa}» nella finestra «${testi.stampaTitolo}»\n3. nella finestra di stampa di Edge, la destinazione «Salva come PDF»\n4. «Salva»\n\n` +
+      "Il nome del file lo scrive la prova. Poi AlgoDesign si chiude da sé e la prova continua per qualche minuto senza di te.",
+  );
+  const inizio = Date.now();
+  const r1 = await fotografaRegistro();
+  if (!(await portaLibera())) rosso("PROVA", `la porta ${portaDebug} è occupata prima dell'avvio`);
+  const proc = Bun.spawn([eseguibile, progettoFuori], { cwd: cartellaProva, stdout: "ignore", stderr: "ignore" });
+  aperta = { proc };
+  log(`avviato ${eseguibile} SENZA la porta di debug, PID ${proc.pid}`);
+  let schermo = "";
+  for (let i = 0; i < 60 && schermo !== "libera"; i++) {
+    schermo = await finestraVera(proc.pid, "coperta");
+    if (schermo !== "libera") await Bun.sleep(500);
+  }
+  if (schermo !== "libera") rosso("PREMESSA", `la finestra dell'app non si vede (${schermo})`);
+  // Nessuna porta di debug: senza Playwright collegato davvero.
+  if (!(await portaLibera())) rosso("STAMPA", `la porta ${portaDebug} è aperta: l'avvio della stampa non è senza Playwright`);
+  // Il profilo nuovo si scrive all'avvio: la seconda fotografia qualche secondo dopo che la finestra si vede.
+  await Bun.sleep(5_000);
+  const r2 = await fotografaRegistro();
+  riga(`  STAMPA: app aperta SENZA Playwright collegato (PID ${proc.pid}); l'utente fa Ctrl+P, «${testi.stampa}», «Salva come PDF», «Salva». Attesa fino a 5 minuti.`);
+  let esito = "";
+  for (const fine = Date.now() + 5 * 60_000; Date.now() < fine && proc.exitCode === null; ) {
+    esito = await finestraVera(proc.pid, "salva-dai-figli", pdfStampato);
+    if (esito === "salvato") break;
+  }
+  if (proc.exitCode !== null) rosso("STAMPA", `l'app si è chiusa (exit ${proc.exitCode}) prima del PDF`);
+  if (esito !== "salvato") rosso("STAMPA", `nessuna finestra «Salva con nome» della stampa compilata in 5 minuti: ${esito}`);
+  const pdf = await attendiScritto(pdfStampato, (b) => b.subarray(-1024).toString("latin1").includes("%%EOF"), 30_000);
+  await chiudi(aperta);
+  const r3 = await fotografaRegistro();
+  if (pdf === null) rosso("STAMPA", `la finestra compilata, ma ${pdfStampato} non è arrivato intero in 30 s`);
+  // Il PDF si conserva accanto al log, da guardare anche a occhio.
+  const conservato = fileLog.replace(/\.log$/, ".pdf");
+  cpSync(pdfStampato, conservato);
+  rmSync(pdfStampato);
+  rmSync(progettoFuori, { force: true });
+  const letto = leggiPdf(pdf);
+  const difetti = difettiDelPdf(letto, attesi, "o", pagina.titolo);
+  // Controllo positivo del giudizio: lo stesso PDF contro l'atteso verticale è rosso su ogni foglio.
+  const alRovescio = difettiDelPdf(letto, attesi, "v", pagina.titolo).filter((d) => d.includes("invece di A4 verticale"));
+  if (alRovescio.length !== letto.pagine.length) rosso("STAMPA (controllo positivo)", `contro l'atteso verticale ${alRovescio.length} fogli rossi su ${letto.pagine.length}`);
+  if (difetti.length > 0) rosso("STAMPA", `il PDF dell'anteprima (${pdf.length} byte, conservato in ${conservato}): ${difetti.join("; ")}`);
+  verde(
+    "STAMPA",
+    `in «${lingua}», le predefinite (affiancati in pseudocodice) del riferimento della tappa 3: nella WebView2 con Playwright collegato ${pagina.sezioni.length} fogli preparati con le intestazioni attese, il codice nel suo lato alla larghezza della carta (${pagina.lato.pre} blocchi di codice, il più largo ${(pagina.lato.piuLarga * 100).toFixed(1)}% del lato); senza Playwright collegato, «Salva come PDF» dall'anteprima di Edge con la «Salva con nome» del runtime WebView2 compilata coi messaggi di Windows: ${letto.pagine.length} fogli A4 orizzontali, ${pdf.length} byte, la nostra intestazione in ogni foglio, nessuna scritta del motore (conservato in ${conservato}) | controlli positivi: nel PDF del motore con le sue intestazioni il rilevatore vede ${pagina.accese.join(", ")}; contro l'atteso verticale ogni foglio è rosso`,
+  );
+
+  // Il rumore del registro: due intervalli a vuoto lunghi quanto il giro della stampa (almeno 30 s: un intervallo troppo
+  // corto non vede chi scrive di rado), con l'app chiusa.
+  const durata = Math.max(Date.now() - inizio, 30_000);
+  await Bun.sleep(durata);
+  const vuoto1 = await fotografaRegistro();
+  await Bun.sleep(durata);
+  const vuoto2 = await fotografaRegistro();
+  const rumore1 = cambiamenti(r3, vuoto1);
+  const rumore2 = cambiamenti(vuoto1, vuoto2);
+  const rumore = new Set([...rumore1, ...rumore2]);
+  // Le tre fotografie: dall'avvio col profilo nuovo e dalla stampa, ciascuna col suo tratto (una chiave tolta all'avvio e
+  // rimessa dalla stampa non si vede fra la prima e l'ultima).
+  const avvio = cambiamenti(r1, r2);
+  const stampa = cambiamenti(r2, r3);
+  const nelGiro = new Set([...avvio, ...stampa]);
+  const { ammessi, fuori } = giudica(nelGiro, rumore);
+  riga(
+    `  registro: chiavi ${r3.size}; all'avvio ${avvio.size} cambiamenti, con la stampa ${stampa.size}; ammessi ${ammessi.length} ${elenco(ammessi)}, altri fuori dal rumore ${fuori.length}; rumore ${rumore1.size} + ${rumore2.size} in due intervalli a vuoto di ${Math.round(durata / 1000)} s`,
+  );
+  log(`  registro, all'avvio: ${elenco(avvio)}`);
+  log(`  registro, con la stampa: ${elenco(stampa)}`);
+  log(`  registro, rumore: ${elenco(rumore)}`);
+  const condivise = fuori.some((c) => c.includes("\\Software\\Microsoft\\EdgeWebView\\"))
+    ? " — fra questi una chiave di EdgeWebView, condivisa con gli altri host WebView2 (per esempio la ricerca di Windows, SearchHost.exe): rilancia, e se ricompare non è il rumore"
+    : "";
+  if (fuori.length > 0) rosso("TRACCE (stampa)", `registro dell'utente cambiato intorno alla stampa, fuori dal rumore e dalle voci ammesse: ${elenco(fuori)}${condivise}`);
+  const firma = ammessi.filter((c) => dellaStampa.has(c));
+  verde(
+    "TRACCE (stampa)",
+    `da un profilo nuovo, tre fotografie del registro (${avvio.size} cambiamenti all'avvio, ${stampa.size} con la stampa): nessuno fuori dal rumore e dalle voci ammesse; della firma del profilo di Edge ${firma.length} ${elenco(firma)}; ammessi in tutto ${ammessi.length}`,
+  );
+  return rumore;
+}
+
+/** Il controllo positivo del rilevatore del registro E del filtro che decide il giro: `ammesso` provato sulle sue voci e
+ * su quelle vicine; poi una chiave della prova aggiunta, e il suo dato cambiato, ciascuno con la sua fotografia, deve
+ * uscire da `giudica` come voce non ammessa fuori dal rumore; la lettura dell'export, con un valore troncato. Poi la
+ * chiave tolta. */
+async function sondaDelRegistro(rumore: Set<string>): Promise<void> {
+  if ((await esegui(["reg", "query", chiaveSonda])) === 0) rosso("REGISTRO (controllo positivo)", `${chiaveSonda} esiste già prima della sonda: guardarla e toglierla a mano`);
+  const contrassegno = () => crypto.randomUUID();
+  const prima = await fotografaRegistro();
+  try {
+    if ((await esegui(["reg", "add", chiaveSonda, "/v", "contrassegno", "/d", contrassegno(), "/f"])) !== 0) rosso("REGISTRO (controllo positivo)", "reg add della sonda fallito");
+    const aggiunta = await fotografaRegistro();
+    if ((await esegui(["reg", "add", chiaveSonda, "/v", "contrassegno", "/d", contrassegno(), "/f"])) !== 0) rosso("REGISTRO (controllo positivo)", "reg add del dato cambiato fallito");
+    const cambiata = await fotografaRegistro();
+    const attese = [
+      { ramo: "chiave aggiunta", voce: `${chiaveSondaNellExport} :: <chiave aggiunta>`, visti: cambiamenti(prima, aggiunta) },
+      { ramo: "valore cambiato", voce: `${chiaveSondaNellExport} :: "contrassegno"`, visti: cambiamenti(aggiunta, cambiata) },
+    ];
+    const spenti = attese.filter((a) => !giudica(a.visti, rumore).fuori.includes(a.voce));
+    if (spenti.length > 0)
+      rosso("REGISTRO (controllo positivo)", `SPENTO: ${spenti.map((a) => `${a.ramo} non giudicato fuori dal rumore e non ammesso (visti ${elenco(a.visti)})`).join("; ")}`);
+    // Il filtro, sulle sue voci (accetta) e su quelle vicine (rifiuta): un altro valore della chiave di EdgeUpdate, un
+    // altro ramo di un'app di sistema, una lista dei recenti di un'altra estensione e la chiave madre delle liste, una
+    // chiave che comincia come la vista delle cartelle senza esserne un ramo, un'altra voce della ricerca di Windows, un
+    // altro valore e un'altra estensione della firma del profilo del runtime WebView2, un altro profilo, la sonda.
+    const sistema = "HKEY_CURRENT_USER\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\SystemAppData";
+    const viste = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\SessionInfo\\1\\ApplicationViewManagement";
+    const accettate = [
+      `${viste}\\W32:0000000000FC087E :: <chiave aggiunta>`,
+      `${viste}\\W32:0000000000FC087E :: <chiave tolta>`,
+      ...diWindows,
+      ...rumoreLento,
+      ...dellaStampa,
+      ...dellaProva,
+      ...[...diWindowsPerChiave].map((k) => `${k} :: "0"`),
+      `${sottoChiaviDiWindows[0]}2\\0 :: "MRUListEx"`,
+      `${sistema}\\Microsoft.AAD.BrokerPlugin_cw5n1h2txyewy\\HAM\\AUI\\App\\V1\\LU :: "PCT"`,
+    ];
+    const vicine = [
+      `${viste}\\W32:0000000000FC087E :: "0"`,
+      `${viste}\\Altro :: <chiave aggiunta>`,
+      `${viste} :: <chiave aggiunta>`,
+      `HKEY_CURRENT_USER\\Software\\Microsoft\\EdgeUpdate\\ClientState\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5} :: "altro"`,
+      `${sistema}\\Microsoft.AAD.BrokerPlugin_cw5n1h2txyewy\\Altro :: "0"`,
+      `${listeDeiRecenti}\\OpenSavePidlMRU\\exe :: "0"`,
+      `${listeDeiRecenti} :: "0"`,
+      `${sottoChiaviDiWindows[0]!.slice(0, -1)}Altro :: "0"`,
+      `HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Search\\JumplistData :: "Altro"`,
+      `${macDelProfilo} :: "altro"`,
+      `${macDelProfilo}\\extensions.settings :: "altraestensionedellaprovaaaaaaaaa"`,
+      `HKEY_CURRENT_USER\\Software\\Microsoft\\EdgeWebView\\PreferenceMACs\\Altro :: "schedule_to_flush_to_disk"`,
+      `${chiaveSondaNellExport} :: "contrassegno"`,
+    ];
+    const sbagliate = [...accettate.filter((c) => !ammesso(c)).map((c) => `rifiutata ${c}`), ...vicine.filter(ammesso).map((c) => `ammessa ${c}`)];
+    if (sbagliate.length > 0) rosso("REGISTRO (controllo positivo)", `il filtro delle voci ammesse: ${sbagliate.join("; ")}`);
+    // La lettura dell'export: il primo valore di testo dell'export vero, troncato al suo nome, deve uscire come la sola
+    // riga non letta, al suo numero.
+    const righe = ultimoExport.split(/\r?\n/);
+    const n = righe.findIndex((r) => /^"[^"\\]+"="[^"\\]*"$/.test(r));
+    if (n < 0) rosso("REGISTRO (controllo positivo)", "nell'export nessun valore di testo su una riga da troncare");
+    const troncato = [...righe.slice(0, n), righe[n]!.slice(0, righe[n]!.indexOf("=")), ...righe.slice(n + 1)].join("\r\n");
+    const nonLette = leggiExport(troncato).nonLette;
+    if (nonLette.length !== 1 || !nonLette[0]!.startsWith(`${n + 1}: `))
+      rosso("REGISTRO (controllo positivo)", `lettura dell'export SPENTA: troncato il valore della riga ${n + 1}, righe non lette ${JSON.stringify(nonLette.slice(0, 3))}`);
+    verde(
+      "REGISTRO (controllo positivo)",
+      `il filtro accetta le sue ${accettate.length} voci e rifiuta le ${vicine.length} vicine | acceso sui due rami, giudicati come il giro: non ammessi, fuori dal rumore (${attese.map((a) => `${a.ramo}: ${a.visti.size} cambiamenti, la sonda fra loro`).join("; ")}) | ` +
+        `lettura dell'export accesa (il valore della riga ${n + 1} troncato al nome: 1 riga non letta, quella)`,
+    );
+  } finally {
+    await esegui(["reg", "delete", chiaveSonda, "/f"]);
+    if ((await esegui(["reg", "query", chiaveSonda])) === 0) riga(`sonda del registro: NON tolta, togliere a mano ${chiaveSonda}`);
+  }
+}
+
 async function giroSenzaDati(): Promise<void> {
   await cancella(dati);
   const { soglia, prima } = marcatore("senza data");
@@ -1831,8 +2426,9 @@ try {
     rosso("PROVA", `radici non alla linea di base, cartelle dell'identificatore già presenti (guardarle e toglierle a mano): ${giaPresenti.join("; ")}`);
   pulire = true;
   clausolaBuild = await costruisci();
-  await giroPortabile();
+  const rumore = await giroPortabile();
   await giroSenzaDati();
+  await sondaDelRegistro(rumore);
 } catch (e) {
   riga(e instanceof ClausolaRossa ? e.message : `ERRORE DELLA PROVA: ${e instanceof Error ? e.stack : String(e)}`);
   esito = 1;

@@ -12,6 +12,10 @@
 #                                           testo 1001, o quello nella casella 1148, contato una volta se li trovano
 #                                           tutti e due) e il clic su "Salva" (il pulsante con l'identificativo 1, IDOK);
 #                                           dopo "salvato", una seconda riga "proposto: <nome>" col nome che c'era
+#   finestra-vera.ps1 <pid> salva-dai-figli <percorso>
+#                                           come "salva", ma la finestra la cerca solo nei processi discendenti del <pid>
+#                                           (quella di "Salva come PDF" dell'anteprima di stampa e del runtime WebView2,
+#                                           non dell'app: una finestra dell'app per un file non va compilata)
 #
 # Stampa una riga: "inviato", "chiusura spedita", "libera", "coperta: <finestre>", "ridotta a icona", "salvato"
 # oppure "NON inviato: <perche>".
@@ -81,10 +85,10 @@ public static class FinestraVera {
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr SendMessage(IntPtr h, uint m, IntPtr w, string l);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr SendMessage(IntPtr h, uint m, IntPtr w, StringBuilder l);
   [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
-  /** La finestra di dialogo del sistema (classe #32770), visibile, del processo. */
-  public static IntPtr DialogoDelProcesso(uint pid) {
+  /** La finestra di dialogo del sistema (classe #32770), visibile, di uno dei processi. */
+  public static IntPtr DialogoDelProcesso(uint[] pid) {
     IntPtr trovata = IntPtr.Zero;
-    EnumWindows((h, l) => { uint p; GetWindowThreadProcessId(h, out p); var c = new StringBuilder(256); GetClassName(h, c, 256); if (p == pid && IsWindowVisible(h) && c.ToString() == "#32770") { trovata = h; return false; } return true; }, IntPtr.Zero);
+    EnumWindows((h, l) => { uint p; GetWindowThreadProcessId(h, out p); var c = new StringBuilder(256); GetClassName(h, c, 256); if (Array.IndexOf(pid, p) >= 0 && IsWindowVisible(h) && c.ToString() == "#32770") { trovata = h; return false; } return true; }, IntPtr.Zero);
     return trovata;
   }
   /** Classe e identificativo di ogni discendente di `padre`. */
@@ -102,14 +106,26 @@ public static class FinestraVera {
 }
 '@
 
-if ($azione -eq "salva") {
+# I processi discendenti del PID (i processi del runtime WebView2 dell'app), letti una volta.
+function Discendenti([uint32]$radice) {
+  $tutti = @(Get-CimInstance Win32_Process | ForEach-Object { , @([uint32]$_.ProcessId, [uint32]$_.ParentProcessId) })
+  $trovati = New-Object System.Collections.Generic.List[uint32]
+  $trovati.Add($radice)
+  for ($k = 0; $k -lt $trovati.Count; $k++) { foreach ($p in $tutti) { if ($p[1] -eq $trovati[$k] -and -not $trovati.Contains($p[0])) { $trovati.Add($p[0]) } } }
+  $trovati.RemoveAt(0)
+  return , $trovati.ToArray()
+}
+
+if ($azione -eq "salva" -or $azione -eq "salva-dai-figli") {
   if ($tasto -eq "") { "NON inviato: manca il nome del file"; exit 2 }
+  $processi = if ($azione -eq "salva") { , @([uint32]$processo) } else { Discendenti $processo }
+  if ($processi.Count -eq 0) { "NON inviato: nessun processo discendente del PID $processo"; exit 0 }
   $dialogo = [IntPtr]::Zero
   for ($i = 0; $i -lt 100 -and $dialogo -eq [IntPtr]::Zero; $i++) {
-    $dialogo = [FinestraVera]::DialogoDelProcesso([uint32]$processo)
+    $dialogo = [FinestraVera]::DialogoDelProcesso([uint32[]]$processi)
     if ($dialogo -eq [IntPtr]::Zero) { Start-Sleep -Milliseconds 100 }
   }
-  if ($dialogo -eq [IntPtr]::Zero) { "NON inviato: nessuna finestra del sistema per il file (#32770) del PID $processo in 10 s"; exit 0 }
+  if ($dialogo -eq [IntPtr]::Zero) { "NON inviato: nessuna finestra del sistema per il file (#32770) dei PID $($processi -join ',') in 10 s"; exit 0 }
   # Il campo del nome (si aspetta che la finestra lo costruisca): il campo di testo con l'identificativo 1001 (misurato
   # su Windows 11 10.0.26300: la casella che lo contiene non ha identificativo) o quello dentro la casella 1148 (le
   # finestre di vecchio stampo: misurato sulla stessa versione con una finestra aperta con una funzione di aggancio,

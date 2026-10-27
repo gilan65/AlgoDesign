@@ -41,3 +41,15 @@ test("su un processo senza finestra ogni azione è «NON inviato», mai uno degl
     expect(esito).toStartWith(process.platform === "win32" ? `NON inviato: nessuna finestra visibile del PID ${process.pid}` : "NON inviato: ");
   }
 }, 60_000);
+
+test("la finestra per salvare cercata nei soli discendenti: un processo senza figli è «NON inviato», mai «salvato»", async () => {
+  // Un Bun figlio senza figli suoi: lo script non trova discendenti e non guarda il PID dato.
+  const figlio = Bun.spawn({ cmd: [process.execPath, "-e", "await Bun.sleep(20_000)"], stdout: "ignore", stderr: "ignore" });
+  try {
+    const { esito } = await finestraVera(figlio.pid, "salva-dai-figli", "C:\\prova\\stampa.pdf");
+    expect(riusciti).not.toContain(esito);
+    expect(esito).toStartWith(process.platform === "win32" ? `NON inviato: nessun processo discendente del PID ${figlio.pid}` : "NON inviato: ");
+  } finally {
+    figlio.kill();
+  }
+}, 60_000);
