@@ -4,7 +4,7 @@
 
 **Progettare algoritmi con i flowchart, eseguirli passo passo e tradurli in pseudocodice, Python e C.**
 
-Versione 0.5.0-beta.1 del 26 ottobre 2026, per Windows 10 e 11 a 64 bit.
+Versione 0.6.0-beta.2 del 27 ottobre 2026, per Windows 10 e 11 a 64 bit.
 
 AlgoDesign è un ambiente didattico per chi impara a programmare: prima si progetta e si prova l'algoritmo come flowchart, poi si guarda come lo stesso ragionamento diventa codice. È un'applicazione **locale e leggera**: funziona senza internet, senza installarla e senza diritti di amministratore.
 
@@ -23,22 +23,24 @@ AlgoDesign separa i due compiti: prima si **progetta** l'algoritmo come flowchar
 - **Procedure e funzioni**: un algoritmo si divide in pezzi con un nome, ognuno nella sua scheda, coi suoi dati e i suoi parametri, per valore, per riferimento o di uscita; una procedura compie un lavoro, una funzione calcola un risultato, anche una stringa o un vettore. Possono chiamare sé stesse (la ricorsione), e si importano da un altro progetto o da una cartella di librerie.
 - **Esecuzione passo passo**: tutto insieme, un'azione alla volta o in modo animato, dentro e fuori dalle procedure e dalle funzioni, con i punti di interruzione; si segue il blocco attivo, si scrivono i valori nella console e si guardano i dati cambiare valore nella tabella di traccia, che si esporta per un foglio di calcolo. Il valore di un dato si legge col puntatore del mouse sul suo nome, o da tastiera.
 - **Casi d'uso**: un algoritmo, o una sua procedura o funzione da sola, si prova su valori di ingresso e risultati attesi, come un piccolo collaudo, anche prima di scrivere le regole; un'esecuzione finita si salva come caso d'uso.
-- **Traduzione** del flowchart in pseudocodice (in italiano o in inglese), Python e C, accanto al disegno, con la riga corrente evidenziata durante l'esecuzione; il codice si copia o si salva in un file. Quali linguaggi mostrare, e in che ordine, si sceglie nelle Impostazioni.
+- **Traduzione** del flowchart in pseudocodice (in italiano o in inglese), Python, C e, se lo si accende, «Accademico», lo pseudocodice delle Selezioni scolastiche delle Olimpiadi di Informatica, accanto al disegno, con la riga corrente evidenziata durante l'esecuzione; il codice si copia o si salva in un file. Quali linguaggi mostrare, e in che ordine, si sceglie nelle Impostazioni.
 - **Stampa ed esportazione**: il progetto si stampa, anche in un PDF, coi dati, i flowchart, il codice e i casi d'uso, anche col flowchart e il codice affiancati; il flowchart si esporta come immagine PNG o SVG.
 - **Esempi** pronti da aprire e da modificare, in gruppi.
 - Interfaccia in **italiano** e **inglese**.
 
 Tipi e regole sono quelli del linguaggio C, con in più un tipo stringa, perché il passaggio dal flowchart al codice sia naturale. Il codice generato, però, è fatto per essere letto e non controlla i calcoli che escono dalle regole (un intero fuori dal suo intervallo, una divisione intera per zero, un indice fuori dal vettore e pochi altri, elencati nelle note di rilascio): AlgoDesign li ferma sempre, il Python e il C generati no, e su quei calcoli possono dare risultati diversi fra loro.
 
-Come si usa AlgoDesign è nella **guida per lo studente**, `GUIDA-PER-LO-STUDENTE.md` (in inglese `STUDENT-GUIDE.md`): nel pacchetto sta accanto al programma, nel repository nella cartella `docs`. Dentro AlgoDesign la guida si apre dal menu **Aiuto**, «Guida per lo studente», nella lingua dell'interfaccia. Le novità di ogni versione sono nel registro delle modifiche, `CHANGELOG.md`.
+Come si usa AlgoDesign è nella **guida per lo studente**, `GUIDA-PER-LO-STUDENTE.md` (in inglese `STUDENT-GUIDE.md`): nel pacchetto sta accanto al programma, nel repository nella cartella `docs`. Dentro AlgoDesign la guida si apre dal menu **Aiuto**, «Guida per lo studente», nella lingua dell'interfaccia. Come si usa «Accademico» per allenarsi alle Selezioni è nella **guida ad «Accademico»**, `GUIDA-AD-ACCADEMICO.md`, accanto alla guida per lo studente. Le novità di ogni versione sono nel registro delle modifiche, `CHANGELOG.md`.
 
 ## Scaricare e avviare
 
 Le versioni di prova si scaricano dalla pagina del progetto.
 
 1. Scarica lo zip e, se vuoi, controllane l'impronta: il file `.sha256` accanto allo zip contiene il suo codice SHA-256, che in PowerShell si calcola con `Get-FileHash <nome dello zip>` (PowerShell lo scrive in maiuscolo, il file in minuscolo: le lettere maiuscole e minuscole non contano).
-2. Estrai lo zip dove preferisci (il Desktop, una cartella dei documenti, una chiavetta): nasce la cartella `AlgoDesign-0.5.0-beta.1`.
+2. Estrai lo zip dove preferisci (il Desktop, una cartella dei documenti, una chiavetta): nasce la cartella `AlgoDesign-0.6.0-beta.2`.
 3. Apri la cartella e fai doppio clic su `AlgoDesign.exe`.
+
+**Lo strumento di «Accademico».** Accanto allo zip di AlgoDesign c'è un pacchetto a parte, `AlgoDesign-Accademico-0.6.0-beta.2-windows.zip`, con la sua impronta: `algodesign-accademico.exe` legge un testo scritto in «Accademico» e ne fa una libreria di AlgoDesign, da aprire ed eseguire passo passo. Si usa dal Terminale di Windows; come, lo dicono il `LEGGIMI.md` del pacchetto e il capitolo 6 della guida ad «Accademico», che il pacchetto porta con sé.
 
 **L'avviso di Windows al primo avvio.** AlgoDesign non è firmato digitalmente, e Windows avvisa quando si avvia un programma non firmato scaricato da internet. Se compare la finestra «Windows ha protetto il PC», scegli «Ulteriori informazioni» e poi «Esegui comunque». Per evitarla, prima di estrarre lo zip apri le sue Proprietà (tasto destro sullo zip), segna «Sblocca» in basso nella scheda «Generale» e conferma con «OK».
 
@@ -94,11 +96,12 @@ Tutti i comandi si danno nella cartella `app/`, dopo `bun install`.
 | L'app in sviluppo, in una finestra | `bun tauri dev` |
 | Browser per i test dell'interfaccia (solo la prima volta) | `bun --bun playwright install chromium webkit` |
 | Casi d'uso del corpus di esempi (`casi/`), oppure di un progetto dato | `bun run casi`, `bun run casi <progetto.algo>` |
+| Da un testo in «Accademico» una libreria di AlgoDesign (le opzioni nel capitolo 6 della guida ad «Accademico») | `bun run accademico <testo.txt>`, `bun run accademico -h` |
 | Collaudo (tipi, test di unità, casi d'uso, confronto del codice generato, build, test del guscio in Rust, test dell'interfaccia in Chromium) | `bun run collaudo` |
 | Collaudo completo, coi test dell'interfaccia anche in WebKit | `bun run collaudo --completo` |
 | Confronto del codice generato con l'esecuzione sui casi d'uso | `bun run differenziale` |
 | Eseguibile di release per Windows | `bun tauri build --no-bundle` → `shell/target/release/algodesign.exe` |
-| Pacchetto della release per Windows (cartella, zip e impronta in `dist/` alla radice; porta questo file, `README.md`, le due guide per lo studente da `docs/` e le note di rilascio, che si danno allo strumento) | `bun run pacchetto --testi ../rilascio/windows` (con `--prova` da un albero con modifiche, in `dist/prova/`) |
+| Pacchetti della release per Windows: quello di AlgoDesign e quello dello strumento di «Accademico», dallo stesso albero (cartelle, zip e impronte in `dist/` alla radice; il primo porta questo file, `README.md`, le due guide per lo studente e la guida ad «Accademico» da `docs/` e le note di rilascio, il secondo l'eseguibile dello strumento, la sua guida e i due testi brevi; i testi si danno allo strumento) | `bun run pacchetto --testi ../rilascio/windows` (con `--prova` da un albero con modifiche, in `dist/prova/`) |
 | Lo JSON Schema del formato, dopo un cambio del lettore dei file | `bun ./strumenti/schema-del-formato.ts` |
 
 ### Le prove sul prodotto

@@ -27,7 +27,7 @@ import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
 import { nomeApplicazione } from "../core/applicazione";
 import { FinestraInformazioni } from "./finestre/FinestraInformazioni";
-import { elencoDelPacchetto, nomiDelPacchetto } from "../strumenti/elenco-del-pacchetto";
+import { elencoDelloStrumento, elencoDelPacchetto, guidaAdAccademico, nomiDelloStrumento, nomiDelPacchetto } from "../strumenti/elenco-del-pacchetto";
 import { politicaDelProdotto } from "../strumenti/politica";
 import { dataDellaVersione, dataMostrata, versione, versioneDiProva } from "./prodotto";
 
@@ -95,6 +95,25 @@ test("la versione è la stessa in package.json, nella configurazione di Tauri, i
   // Nomi del pacchetto con una versione loro, non quella della fonte: discordano tutti e tre.
   const nomiAltrove = (t: string) => ({ ...nomiDelPacchetto(t), cartella: altrove, zip: `AlgoDesign-${altrove}-windows-x64.zip`, cartellaNelloZip: `AlgoDesign-${altrove}` });
   expect(discordi(copie(file(), nomiAltrove))).toEqual([`cartella del pacchetto: ${altrove}`, `zip del pacchetto: ${altrove}`, `cartella nello zip: ${altrove}`]);
+});
+
+test("i nomi del pacchetto dello strumento di «Accademico» seguono la versione; l'eseguibile ha i tre numeri e uno zero", () => {
+  const s = nomiDelloStrumento(file()["package.json"]!);
+  expect(s).toEqual({
+    versione,
+    versioneDellEseguibile: `${/^\d+\.\d+\.\d+/.exec(versione)![0]}.0`,
+    cartella: `${versione}-accademico`,
+    zip: `AlgoDesign-Accademico-${versione}-windows.zip`,
+    cartellaNelloZip: `AlgoDesign-Accademico-${versione}`,
+  });
+  // Controllo positivo: un'altra versione cambia tutti i nomi; una definitiva ha la stessa versione dell'eseguibile.
+  const conVersione = (v: string) => nomiDelloStrumento(JSON.stringify({ version: v }));
+  expect(conVersione("9.9.9-prova")).toEqual({ versione: "9.9.9-prova", versioneDellEseguibile: "9.9.9.0", cartella: "9.9.9-prova-accademico", zip: "AlgoDesign-Accademico-9.9.9-prova-windows.zip", cartellaNelloZip: "AlgoDesign-Accademico-9.9.9-prova" });
+  expect(conVersione("1.0.0").versioneDellEseguibile).toBe("1.0.0.0");
+  // La guida ad «Accademico» sta nei due pacchetti, e quello dello strumento ha le licenze come quello dell'app.
+  expect(elencoDelPacchetto).toContain(guidaAdAccademico);
+  expect(elencoDelloStrumento).toContain(guidaAdAccademico);
+  expect(elencoDelloStrumento.filter((v) => v.startsWith("LICEN")).sort()).toEqual(elencoDelPacchetto.filter((v) => v.startsWith("LICEN")).sort());
 });
 
 /** Il nome dell'app in ogni punto dove è scritto, letto dai testi dati; `null` se il punto non lo dice. */
