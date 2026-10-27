@@ -258,7 +258,7 @@ test("controllo positivo dell'avviso: un progetto che si chiama come il file non
 const tipoStringa = "Il tipo stringa non è supportato in Accademico.";
 const virgolette = "Un testo fra virgolette è supportato solo in una Scrittura.";
 const vociAttese = [
-  ["Il parametro per uscita (out) non è supportato in Accademico.", "Il dato «numero», procedura leggi_numero"],
+  ["Il parametro di uscita (out) non è supportato in Accademico.", "Il dato «numero», procedura leggi_numero"],
   ["La Lettura non è supportata in Accademico.", "«Lettura: numero», procedura leggi_numero"],
   ["Il tipo reale non è supportato in Accademico: ci sono solo gli interi.", "Il risultato, funzione media"],
   ["L'operatore converti_a_reale non è presente in Accademico.", "Ciò che restituisce, funzione media"],

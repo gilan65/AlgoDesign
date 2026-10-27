@@ -1805,7 +1805,8 @@ export function Applicazione({
     const v = vociDiCioCheManca[indice];
     if (!v || !progetto.functions.some((f) => f.id === v.clic.funzione)) return;
     const c = v.clic;
-    apriScheda(c.funzione);
+    // Come la voce della riga di stato: i campi aperti prima diventano un passo, e rifiutati si resta dove si è.
+    if (!mostra(c.funzione)) return;
     if ("blocco" in c) {
       impostaSelezionato(c.blocco);
       setFuoco(`[data-blocco="${c.blocco}"]`);

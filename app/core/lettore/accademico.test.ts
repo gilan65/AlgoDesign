@@ -81,7 +81,7 @@ describe("le trasformazioni", () => {
       { dimensione: 4 },
     );
     expect(trasformazioni(l)).toEqual(["return@4"]);
-    expect(rigenerato(l.progetto)).toContain("while i < 4 and finito == 0 do");
+    expect(rigenerato(l.progetto)).toContain("while finito == 0 and i < 4 do");
     const v = (...xs: string[]) => xs.map((x) => ["v", x] as [string, string]);
     expect(chiama(l.progetto, "primo_pari", ...v("3", "5", "8", "2")).output).toBe("→ 8\n");
     expect(chiama(l.progetto, "primo_pari", ...v("3", "5", "7", "9")).output).toBe("→ -1\n");
@@ -111,6 +111,28 @@ describe("le trasformazioni", () => {
     );
     expect(trasformazioni(l)).toEqual(["return@5", "dichiarazione@7", "dichiarazione@10", "scambio@12"]);
     expect([chiama(l.progetto, "ordina", ["a", "2"], ["b", "7"]), chiama(l.progetto, "ordina", ["a", "7"], ["b", "2"])].map((x) => x.output)).toEqual(["2\n7\n", "2\n7\n"]);
+  });
+
+  test("il return dentro un while: la condizione non si rivaluta dopo il return (finito per primo)", () => {
+    const l = letto(
+      testo(
+        "function f() → integer",
+        "    variable v: integer[]",
+        "    variable i: integer",
+        "    v ← [1, 1, 1]",
+        "    i ← 0",
+        "    while v[i] ≠ 0 do",
+        "        i ← i + 1",
+        "        if i == 3 then",
+        "            return 1",
+        "        end if",
+        "    end while",
+        "    return 0",
+        "end function",
+      ),
+    );
+    expect(rigenerato(l.progetto)).toContain("while finito == 0 and v[i] ≠ 0 do");
+    expect(chiama(l.progetto, "f")).toEqual({ output: "→ 1\n", errore: undefined });
   });
 
   test("le trasformazioni nella lingua dei nomi aggiunti", () => {
@@ -169,6 +191,45 @@ describe("gli errori, con la riga", () => {
     expect(errore(testo("variable a: integer", "a ← min(3, 4)"))).toBe("2: «min» non c'è nel flowchart: scrivila come una funzione");
     expect(errore(testo("variable n: integer", "n ← 3", "for i in [0 ... n) do", "    n ← n − 1", "end for"))).toBe("3: il ciclo cambia n, che dà la fine dell'intervallo: scrivilo con «while»");
   });
+  test("un for con un return dentro che cambia la sua fine o il suo indice: lo stesso arresto che senza il return", () => {
+    const conReturn = (cambia: string) =>
+      testo("function f(n: integer) → integer", "    for i in [0 ... n) do", `        ${cambia}`, "        if i == 5 then", "            return i", "        end if", "    end for", "    return 0", "end function");
+    expect(errore(conReturn("n ← n − 1"))).toBe("2: il ciclo cambia n, che dà la fine dell'intervallo: scrivilo con «while»");
+    expect(errore(conReturn("i ← i + 1"))).toBe("2: il ciclo cambia il suo indice i: il flowchart non lo ammette");
+  });
+  test("una chiamata col nome di un'operazione del flowchart, e un elenco che legge il vettore che lo riceve", () => {
+    for (const op of ["length", "round", "absolute_value"])
+      expect(errore(testo("variable v: integer[]", "variable n: integer", "v ← [1, 2, 3]", `n ← ${op}(v)`, "output(n)"))).toBe(`4: «${op}» non c'è in «Accademico»: scrivila come una funzione, con un altro nome`);
+    expect(errore(testo("variable v: integer[]", "v ← [1, 2]", "output(v[0])", "v ← [v[1], v[0]]", "output(v[0])"))).toBe("4: l'elenco legge v, il vettore che lo riceve: metti prima i valori in un vettore d'appoggio");
+  });
+  test("la procedura del codice fuori dalle funzioni: il suo nome si controlla solo se quel codice c'è; un dato col suo nome, rinominato a richiesta", () => {
+    const soloFunzioni = testo("function somma(a: integer, b: integer) → integer", "    return a + b", "end function");
+    expect(leggiAccademico(soloFunzioni, { procedura: "somma" }).ok).toBe(true);
+    expect(errore(testo("function somma(a: integer) → integer", "    return a", "end function", "", "output(somma(2))"), { procedura: "somma" })).toBe(
+      "0: la procedura del codice fuori dalle funzioni, somma, ha il nome di una procedura o funzione del testo",
+    );
+    const t = testo("totale ← 0", "output(totale)");
+    expect(errore(t, { procedura: "totale" })).toBe("1: il dato totale ha il nome della procedura del codice fuori dalle funzioni (con la rinomina diventa totale_2)");
+    const l = letto(t, { procedura: "totale", rinomina: true });
+    expect(trasformazioni(l)).toEqual(["nome-in-uso@1"]);
+    expect(l.progetto.functions.find((f) => f.name === "totale")!.data.map((d) => d.name)).toEqual(["totale_2"]);
+    // Dichiarato, o contatore di un `for`: lo stesso.
+    const dichiarato = testo("variable totale: integer", "totale ← 1", "output(totale)");
+    expect(errore(dichiarato, { procedura: "totale" })).toBe("1: il dato totale ha il nome della procedura del codice fuori dalle funzioni (con la rinomina diventa totale_2)");
+    expect(letto(dichiarato, { procedura: "totale", rinomina: true }).progetto.functions.find((f) => f.name === "totale")!.data.map((d) => d.name)).toEqual(["totale_2"]);
+    expect(errore(testo("for totale in [0 ... 3) do", "    output(totale)", "end for"), { procedura: "totale" })).toBe(
+      "1: il dato totale ha il nome della procedura del codice fuori dalle funzioni (con la rinomina diventa totale_2)",
+    );
+  });
+  test("la procedura del codice fuori dalle funzioni col nome di una costante comune: fermo", () => {
+    expect(errore(testo("variable limite: integer", "limite ← 10", "", "function f(x: integer) → integer", "    return x + limite", "end function", "", "output(f(1))"), { procedura: "limite" })).toBe(
+      "0: la procedura del codice fuori dalle funzioni, limite, ha il nome di una costante comune del testo",
+    );
+  });
+  test("il valore che una funzione restituisce in fondo passa dagli stessi controlli: un'operazione del flowchart, min", () => {
+    expect(errore(testo("function f(v: integer[]) → integer", "    return length(v)", "end function"))).toBe("2: «length» non c'è in «Accademico»: scrivila come una funzione, con un altro nome");
+    expect(errore(testo("function f(a: integer, b: integer) → integer", "    return min(a, b)", "end function"))).toBe("2: «min» non c'è nel flowchart: scrivila come una funzione");
+  });
   test("un nome che il flowchart riserva: fermo, o rinominato a richiesta", () => {
     const t = testo("variable length: integer", "length ← 2", "output(length)");
     expect(errore(t)).toBe("1: il nome length è riservato nel flowchart (con la rinomina diventa length_2)");
@@ -207,6 +268,13 @@ describe("l'aggiunta a una libreria", () => {
     expect(r.progetto.functions.slice(0, 2)).toEqual([...prima.progetto.functions]);
     expect(r.progetto.functions.find((f) => f.name === "doppio_conto")!.end.return_value).toBe("conto_2(n) + conto_2(n)");
     expect(erroriStatici(r.progetto)).toEqual([]);
+  });
+
+  test("la procedura del codice fuori dalle funzioni col nome di una della libreria: fermo", () => {
+    const prima = aggiungiAllaLibreria(vuota, letto(conto, {}, vuota), false);
+    if (!prima.ok) throw new Error("prima");
+    const l = leggiAccademico(testo("output(conto(3))"), { procedura: "conto" }, prima.progetto);
+    expect(l.ok ? "" : `${l.riga}: ${l.motivo}`).toBe("0: la procedura del codice fuori dalle funzioni, conto, ha il nome di una procedura o funzione della libreria");
   });
 
   test("un dato col nome di una funzione della libreria: fermo, o rinominato a richiesta", () => {

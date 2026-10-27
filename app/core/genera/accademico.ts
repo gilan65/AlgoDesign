@@ -481,7 +481,7 @@ function finePiuUno(a: Espressione, valore: (e: Espressione) => Testo): string {
   if (a.genere === "binario" && a.operatore === "-" && a.destro.genere === "intero") {
     const k = a.destro.valore;
     const s = valore(a.sinistro);
-    return k === 1 ? s.t : `${s.t} - ${k - 1}`;
+    return k === 0 ? `${s.t} + 1` : k === 1 ? s.t : `${s.t} - ${k - 1}`;
   }
   const x = valore(a);
   return `${fra(x, x.livello < 4)} + 1`;

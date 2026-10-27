@@ -34,7 +34,7 @@
 // funzioni con dichiarazioni in testa che erano costanti comuni (si leggono come dati del programma principale).
 
 import { causaDelNome } from "../controllo/controllo";
-import { analizza, type Espressione, type OperatoreBinario } from "../espressioni/analizzatore";
+import { analizza, paroleChiave as paroleDelFlowchart, type Espressione, type OperatoreBinario } from "../espressioni/analizzatore";
 import type { LinguaDelCodice } from "../genera/nomi";
 import { primoLibero } from "../modifica/identificatori";
 import { importa, riepilogoDellImportazione } from "../modifica/importa";
@@ -638,6 +638,14 @@ function liberoDa(nome: string, usati: ReadonlySet<string>): string {
   for (let k = 2; ; k++) if (!usati.has(`${nome}_${k}`)) return `${nome}_${k}`;
 }
 
+/** Un `for` del testo è un «per» solo se il corpo non cambia il suo indice né i nomi della sua fine. */
+function controllaIlPer(x: Extract<Istruzione, { k: "per" }>): void {
+  const corpo = assegnatiIn(x.corpo);
+  if (corpo.has(x.indice)) throw new Fermo(x.riga, `il ciclo cambia il suo indice ${x.indice}: il flowchart non lo ammette`);
+  const cambiati = nomiIn(x.fino).filter((n) => corpo.has(n));
+  if (cambiati.length > 0) throw new Fermo(x.riga, `il ciclo cambia ${cambiati[0]}, che dà la fine dell'intervallo: scrivilo con «while»`);
+}
+
 // ---------------------------------------------------------------------------------------- il return a metà
 
 const haReturn = (xs: readonly Istruzione[]): boolean => tutte(xs).some((x) => x.k === "restituisci");
@@ -659,7 +667,9 @@ function senzaReturn(corpo: readonly Istruzione[], risultato: string, finito: st
   };
   const seNonFinito = (riga: number, xs: Istruzione[]): Istruzione[] =>
     xs.length === 0 ? [] : [{ k: "se", riga, condizione: uguale(nome(finito), intero(0)), allora: xs, altrimenti: [] }];
-  const conFinito = (c: Espressione): Espressione => ({ genere: "binario", operatore: "and", sinistro: c, destro: uguale(nome(finito), intero(0)) });
+  // `finito` per primo: dopo il return la condizione del testo non si valuta più (potrebbe fermarsi, come un indice
+  // fuori dal vettore), e l'«and» del flowchart non valuta il secondo termine se il primo è falso.
+  const conFinito = (c: Espressione): Espressione => ({ genere: "binario", operatore: "and", sinistro: uguale(nome(finito), intero(0)), destro: c });
 
   const t = (xs: readonly Istruzione[], segna: boolean): Istruzione[] => {
     const fuori: Istruzione[] = [];
@@ -677,6 +687,8 @@ function senzaReturn(corpo: readonly Istruzione[], risultato: string, finito: st
         return [...fuori, { ...x, allora: t(x.allora, true), altrimenti: t(x.altrimenti, true) }, ...seNonFinito(resto[0]!.riga, t(resto, segna))];
       }
       if ((x.k === "mentre" || x.k === "per") && haReturn(x.corpo)) {
+        // Il `per` diventa un `mentre`, che rivaluta la fine a ogni giro: prima, gli stessi controlli del `per`.
+        if (x.k === "per" && !x.indice.startsWith("_")) controllaIlPer(x);
         usaFinito = true;
         const corpo = t(x.corpo, true);
         const ciclo: Istruzione[] =
@@ -789,15 +801,33 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
     const nuovo = riservato(f.nome, true, f.riga);
     if (nuovo !== undefined) funzioniRinominate.set(f.nome, nuovo);
   }
-  const procedura = opzioni.procedura;
-  if (procedura !== undefined && (nomiDelTesto.has(procedura) || dellaLibreria.has(procedura))) throw new Fermo(1, `la procedura del codice esterno, ${procedura}, ha il nome di una funzione`);
+  // La procedura del codice fuori dalle funzioni c'è solo se quel codice c'è: allora il suo nome non si rinomina (lo
+  // sceglie chi legge), e un nome già usato ferma la lettura (riga 0: il nome non viene dal testo).
+  const procedura = letto.esterno.length > 0 ? opzioni.procedura : undefined;
+  if (procedura !== undefined && (nomiDelTesto.has(procedura) || dellaLibreria.has(procedura)))
+    throw new Fermo(0, `la procedura del codice fuori dalle funzioni, ${procedura}, ha il nome di una procedura o funzione ${nomiDelTesto.has(procedura) ? "del testo" : "della libreria"}`);
+  // Una costante comune non si rinomina (la usano più funzioni): il nome da cambiare è quello della procedura.
+  const comuneDelTesto = letto.comuni.some((x) => x.k === "variabile" && x.nome === procedura);
+  if (procedura !== undefined && (comuneDelTesto || (libreria?.shared_constants ?? []).some((c) => c.name === procedura)))
+    throw new Fermo(0, `la procedura del codice fuori dalle funzioni, ${procedura}, ha il nome di una costante comune ${comuneDelTesto ? "del testo" : "della libreria"}`);
+  if (procedura !== undefined) usatiDovunque.add(procedura);
   const funzioni = new Set([...nomiDelTesto].map((n) => funzioniRinominate.get(n) ?? n));
   const eFunzione = (n: string) => funzioni.has(n) || dellaLibreria.has(n);
+  /** Il nome che un dato del codice fuori dalle funzioni ha uguale alla sua procedura: rinominato a richiesta. */
+  const nomeDellaProcedura = (n: string, riga: number): string => {
+    const proposto = liberoDa(n, usatiDovunque);
+    if (opzioni.rinomina !== true) throw new Fermo(riga, `il dato ${n} ha il nome della procedura del codice fuori dalle funzioni (con la rinomina diventa ${proposto})`);
+    usatiDovunque.add(proposto);
+    trasformazioni.push({ specie: "nome-in-uso", riga, nome: n, nuovo: proposto, dato: true });
+    return proposto;
+  };
   /** Il nome di un dato: rinominato se il flowchart lo riserva o se è quello di una funzione (anche della libreria, dove
-   * un dato non può avere il nome di una procedura o funzione). */
+   * un dato non può avere il nome di una procedura o funzione) o della procedura del codice fuori dalle funzioni. */
   const nomeDelDato = (n: string, riga: number): string | undefined => {
     const nuovo = riservato(n, false, riga);
-    if (nuovo !== undefined || !eFunzione(n)) return nuovo;
+    if (nuovo !== undefined) return nuovo;
+    if (n === procedura) return nomeDellaProcedura(n, riga);
+    if (!eFunzione(n)) return undefined;
     const proposto = liberoDa(n, usatiDovunque);
     if (opzioni.rinomina !== true) throw new Fermo(riga, `il dato ${n} ha il nome di una funzione${dellaLibreria.has(n) && !funzioni.has(n) ? " della libreria" : ""} (con la rinomina diventa ${proposto})`);
     usatiDovunque.add(proposto);
@@ -881,16 +911,20 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
     // I nomi mai dichiarati: parametri della procedura del codice esterno, altrimenti un errore.
     const dichiarati = new Set([...dati.map((d) => d.nome), ...nomiDelleComuni]);
     const nuovi: Parametro[] = [];
+    // Un nome mai dichiarato uguale alla procedura stessa: il parametro prende un altro nome, a richiesta.
+    const deiNuovi = new Map<string, string>();
     for (const x of tutte(corpo))
       for (const e of espressioniDi(x)) {
         const indicizzati = new Set(indicizzatiIn(e));
         for (const n of nomiIn(e)) {
-          if (dichiarati.has(n) || n.startsWith("_") || nuovi.some((p) => p.nome === n)) continue;
+          if (dichiarati.has(n) || n.startsWith("_") || nuovi.some((p) => p.nome === (deiNuovi.get(n) ?? n))) continue;
           if (eFunzione(n)) throw new Fermo(x.riga, `${n} è una funzione, e si chiama con le tonde`);
           if (f !== undefined || procedura === undefined) throw new Fermo(x.riga, `${n} non è dichiarata`);
-          nuovi.push({ nome: n, vettore: indicizzati.has(n), riga: x.riga });
+          if (n === procedura) deiNuovi.set(n, nomeDellaProcedura(n, x.riga));
+          nuovi.push({ nome: deiNuovi.get(n) ?? n, vettore: indicizzati.has(n), riga: x.riga });
         }
       }
+    if (deiNuovi.size > 0) corpo = rinominate(corpo, deiNuovi, new Map());
     // I parametri nuovi nell'ordine del primo uso, davanti agli altri dati.
     for (const p of nuovi) {
       if (causaDelNome(p.nome, false) !== undefined) throw new Fermo(p.riga, `il nome ${p.nome} è riservato nel flowchart: va dichiarato`);
@@ -1069,7 +1103,8 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
 
   // Le funzioni del progetto.
   const costruisci = (parte: Parte, genere: Funzione["kind"], nomeDellaParte: string | undefined, idDellaFunzione: string): Funzione => {
-    const blocchi = new Traduttore(parte, id).sequenza(parte.corpo);
+    const traduttore = new Traduttore(parte, id);
+    const blocchi = traduttore.sequenza(parte.corpo);
     const data: Dato[] = parte.dati.map((d) => ({
       name: d.nome,
       type: "integer",
@@ -1078,7 +1113,7 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
       ...(d.parametro ? { parameter: "value" as const } : {}),
     }));
     const risultato = parte.testa?.risultato;
-    const fine = { id: id(parte.testa?.fine ?? parte.rigaDelValore ?? parte.riga), ...(parte.valore !== undefined ? { return_value: testo(parte.valore, parte.rigaDelValore!) } : {}) };
+    const fine = { id: id(parte.testa?.fine ?? parte.rigaDelValore ?? parte.riga), ...(parte.valore !== undefined ? { return_value: traduttore.testo(parte.valore, parte.rigaDelValore!) } : {}) };
     if (parte.rigaDelValore !== undefined) righeDelBlocco.set(fine.id, parte.rigaDelValore);
     return {
       id: idDellaFunzione,
@@ -1100,7 +1135,7 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
   const progetto: Progetto = {
     format: "algodesign",
     schema_version: 1,
-    metadata: { name: opzioni.nome ?? procedura ?? "letto" },
+    metadata: { name: opzioni.nome ?? opzioni.procedura ?? "letto" },
     ...(comuni.length > 0 ? { shared_constants: comuni } : {}),
     functions: [principale, ...funzioniDelProgetto],
   };
@@ -1147,10 +1182,16 @@ class Traduttore {
     const n = nomiIn(e).find((x) => x.startsWith("_"));
     if (n !== undefined) throw new Fermo(riga, `${n}: un nome col trattino basso non può essere un dato del flowchart`);
   }
-  private testo(e: Espressione, riga: number): string {
+  /** Un'espressione nel flowchart, coi controlli di ciò che il flowchart non ha (anche per il valore che una funzione
+   * restituisce in fondo). */
+  testo(e: Espressione, riga: number): string {
     this.conTrattino(e, riga);
     const c = chiamateIn(e).find((n) => n === "min" || n === "max" || n === "output");
     if (c !== undefined) throw new Fermo(riga, c === "output" ? "«output» è un'istruzione, non un valore" : `«${c}» non c'è nel flowchart: scrivila come una funzione`);
+    // Un'operazione a parola del flowchart (`length`, `round`…) chiamata come una funzione: il testo non la definisce
+    // (una funzione del testo con quel nome è già stata rinominata, o ha fermato la lettura).
+    const parola = chiamateIn(e).find((n) => paroleDelFlowchart.has(n));
+    if (parola !== undefined) throw new Fermo(riga, `«${parola}» non c'è in «Accademico»: scrivila come una funzione, con un altro nome`);
     if (e.genere === "stringa" || sotto(e).some((x) => x.genere === "stringa")) throw new Fermo(riga, "una stringa si scrive solo con «output»");
     return testo(e, riga);
   }
@@ -1226,6 +1267,9 @@ class Traduttore {
         if (x.elenco !== undefined) {
           if (x.bersaglio.genere !== "nome") throw new Fermo(x.riga, "un elenco si assegna a un vettore intero");
           const v = this.testo(x.bersaglio, x.riga);
+          // Il testo valuta l'elenco intero prima di assegnarlo; un'assegnazione per elemento no.
+          const ricevente = x.bersaglio.nome;
+          if (x.elenco.some((e) => nomiIn(e).includes(ricevente))) throw new Fermo(x.riga, `l'elenco legge ${v}, il vettore che lo riceve: metti prima i valori in un vettore d'appoggio`);
           return x.elenco.map((e, k) => ({ id: this.id(x.riga), kind: "assignment", target: `${v}[${k}]`, value: this.testo(e, x.riga) }));
         }
         return [{ id: this.id(x.riga), kind: "assignment", target: this.testo(x.bersaglio, x.riga), value: this.testo(x.valore, x.riga) }];
@@ -1246,6 +1290,7 @@ class Traduttore {
           return [{ id: this.id(x.riga), kind: "write", values: [v.genere === "stringa" ? testo(v, x.riga) : this.testo(v, x.riga)], newline: true }];
         }
         if (x.nome === "min" || x.nome === "max") throw new Fermo(x.riga, `«${x.nome}» non c'è nel flowchart: scrivila come una funzione`);
+        if (paroleDelFlowchart.has(x.nome)) throw new Fermo(x.riga, `«${x.nome}» non c'è in «Accademico»: scrivila come una funzione, con un altro nome`);
         return [{ id: this.id(x.riga), kind: "call", callee: x.nome, arguments: x.argomenti.map((a) => this.testo(a, x.riga)) }];
       case "se": {
         const id = this.id(x.riga);
@@ -1257,10 +1302,7 @@ class Traduttore {
       }
       case "per": {
         if (x.indice.startsWith("_")) return [this.perOgni(x)];
-        const corpo = assegnatiIn(x.corpo);
-        if (corpo.has(x.indice)) throw new Fermo(x.riga, `il ciclo cambia il suo indice ${x.indice}: il flowchart non lo ammette`);
-        const cambiati = nomiIn(x.fino).filter((n) => corpo.has(n));
-        if (cambiati.length > 0) throw new Fermo(x.riga, `il ciclo cambia ${cambiati[0]}, che dà la fine dell'intervallo: scrivilo con «while»`);
+        controllaIlPer(x);
         const id = this.id(x.riga);
         return [{ id, kind: "for", counter: x.indice, from: this.testo(x.da, x.riga), to: this.testo(fineInclusa(x.fino), x.riga), body: this.sequenza(x.corpo) }];
       }
