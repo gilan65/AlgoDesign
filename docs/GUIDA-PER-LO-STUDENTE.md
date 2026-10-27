@@ -13,7 +13,7 @@ Le parole che la guida usa sono queste: un **dato** è una costante o una variab
 
 ## 2. La finestra
 
-- **La barra**, in alto, con i comandi in gruppi, in ordine di lavoro: **Progetto** (un menu con Nuovo, Apri, Salva, Salva con nome, Salva come libreria…, Proprietà, Nuova procedura o funzione…, Procedure e funzioni…, Importa procedure e funzioni… ed Esporta la tabella…; fuori dal menu ci sono anche i pulsanti Funzione e Salva), **Modifica** (Annulla, Ripeti e i comandi del blocco scelto), **Esecuzione** (Esegui, Passo, Entra ed Esci quando il progetto ha procedure o funzioni, Animata, Ferma, Interruzione, Togli i punti), **Viste** (Dati, Tabella, Genera), e a destra **Impostazioni** e **Aiuto**. Col puntatore del mouse su un pulsante se ne leggono il nome e il tasto.
+- **La barra**, in alto, con i comandi in gruppi, in ordine di lavoro: **Progetto** (un menu con Nuovo, Apri, Salva, Salva con nome, Salva come libreria…, Proprietà, Nuova procedura o funzione…, Procedure e funzioni…, Importa procedure e funzioni…, Esporta il flowchart…, Esporta la tabella… e Stampa… (§12); fuori dal menu ci sono anche i pulsanti Funzione e Salva), **Modifica** (Annulla, Ripeti e i comandi del blocco scelto), **Esecuzione** (Esegui, Passo, Entra ed Esci quando il progetto ha procedure o funzioni, Animata, Ferma, Interruzione, Togli i punti), **Viste** (Dati, Tabella, Genera), e a destra **Impostazioni** e **Aiuto**. Col puntatore del mouse su un pulsante se ne leggono il nome e il tasto.
 - **La vista dei dati**, a sinistra, con due schede: «Dati» e «Casi d'uso». Il pulsante «Dati» la chiude e la riapre; il suo bordo destro si trascina per allargarla.
 - **Il flowchart**, a destra, con lo zoom nella riga in fondo (meno, la percentuale che con un clic torna al 100%, più, «Adatta alla finestra»). Quando il progetto ha procedure o funzioni, sopra il flowchart c'è una scheda per ciascuna (§8).
 - **La riga di stato**, in fondo: il nome del file, «modificato» se ci sono modifiche non salvate, gli errori e gli avvisi del progetto (un clic su «Mostra l'elenco» li elenca, e un clic su una voce porta al blocco o al dato), lo stato dell'esecuzione e, all'estrema destra, la lingua dell'interfaccia: «ITA» o «ENG», e un clic apre il menu con le due lingue (la stessa scelta delle Impostazioni).
@@ -87,7 +87,7 @@ Per l'esempio:
 
 Un blocco si apre con il doppio clic o con Invio; **Invio** conferma, **Esc** annulla. Il **«?»** accanto a «Conferma» dice che cosa scrivere nei campi di quel blocco. Se ciò che scrivi ha un errore, sotto i campi compare l'errore in una frase, mentre scrivi: la frase dice la causa precisa quando AlgoDesign la riconosce, come «Una parentesi tonda è aperta e non è chiusa.» o «Nel nome c'è uno spazio.», e vale per le espressioni, i nomi, i dati, gli argomenti e i cicli; la stessa frase è nella riga di stato. **Spiegazione** apre il suggerimento per quella causa e, quando la causa non si sa, le cause possibili. In un blocco appena inserito, invece, l'errore compare quando confermi: i campi restano aperti per correggerlo, e una seconda conferma tiene il blocco così com'è, segnato nel flowchart. Un blocco si sposta trascinandolo su un altro «+» (o da tastiera con Spazio), si copia, si taglia e si incolla su un «+», si cancella con Canc. Il tasto destro su un blocco (o, da tastiera, il tasto Menu o Maiusc+F10) apre il suo menu: Taglia, Copia, Elimina. **Annulla** (Ctrl+Z) e **Ripeti** (Ctrl+Y) tornano indietro e avanti di una modifica.
 
-**Più blocchi insieme.** Maiusc+clic su un altro blocco sceglie anche i blocchi che stanno fra i due; da tastiera, Maiusc+↑ e Maiusc+↓ allargano la scelta di un blocco alla volta. Si scelgono blocchi vicini, nella stessa sequenza: un blocco dentro un ciclo o un «se» porta la scelta al ciclo o al «se» che lo contiene, con tutto il suo contenuto. Ogni blocco scelto ha il bordo, e un comando vale per tutti in un passo solo: si trascinano su un «+» (da tastiera Spazio, poi Tab fino a un «+» e Invio), si tagliano, si copiano, si eliminano con Canc, e Annulla li riporta tutti. Il tasto destro apre il menu dei blocchi scelti. Nelle Impostazioni (§12) la casella «Con un riquadro intorno» li racchiude anche in un riquadro tratteggiato.
+**Più blocchi insieme.** Maiusc+clic su un altro blocco sceglie anche i blocchi che stanno fra i due; da tastiera, Maiusc+↑ e Maiusc+↓ allargano la scelta di un blocco alla volta. Si scelgono blocchi vicini, nella stessa sequenza: un blocco dentro un ciclo o un «se» porta la scelta al ciclo o al «se» che lo contiene, con tutto il suo contenuto. Ogni blocco scelto ha il bordo, e un comando vale per tutti in un passo solo: si trascinano su un «+» (da tastiera Spazio, poi Tab fino a un «+» e Invio), si tagliano, si copiano, si eliminano con Canc, e Annulla li riporta tutti. Il tasto destro apre il menu dei blocchi scelti. Nelle Impostazioni (§13) la casella «Con un riquadro intorno» li racchiude anche in un riquadro tratteggiato.
 
 ### Come si scrivono le espressioni
 
@@ -220,7 +220,7 @@ Anche una procedura o una funzione ha i suoi casi d'uso, che la provano da sola:
 
 ## 7. Il codice generato
 
-Il pulsante **Genera**, nel gruppo delle viste, apre a destra del flowchart la colonna del **codice generato**, con le linguette dei linguaggi: di partenza **Pseudocodice** (nella lingua dell'interfaccia), **Python** e **C**, ma quali linguaggi hanno una linguetta, e in che ordine, si sceglie nelle Impostazioni (§12); all'avvio si vede la prima. Il codice segue ogni modifica del flowchart; con un progetto che ha errori, al posto del codice c'è l'invito a correggerli. «Genera» e «Tabella» si alternano nella stessa colonna. Fra i linguaggi che si accendono nelle Impostazioni c'è anche **Accademico**, lo pseudocodice delle Selezioni scolastiche delle Olimpiadi di Informatica: come si usa per allenarsi lo spiega il file `GUIDA-AD-ACCADEMICO.md`.
+Il pulsante **Genera**, nel gruppo delle viste, apre a destra del flowchart la colonna del **codice generato**, con le linguette dei linguaggi: di partenza **Pseudocodice** (nella lingua dell'interfaccia), **Python** e **C**, ma quali linguaggi hanno una linguetta, e in che ordine, si sceglie nelle Impostazioni (§13); all'avvio si vede la prima. Il codice segue ogni modifica del flowchart; con un progetto che ha errori, al posto del codice c'è l'invito a correggerli. «Genera» e «Tabella» si alternano nella stessa colonna. Fra i linguaggi che si accendono nelle Impostazioni c'è anche **Accademico**, lo pseudocodice delle Selezioni scolastiche delle Olimpiadi di Informatica: come si usa per allenarsi lo spiega il file `GUIDA-AD-ACCADEMICO.md`.
 
 Durante l'esecuzione con Passo o con l'Animata il codice evidenzia la riga (o le righe) del blocco corrente; con Esegui, la riga dove l'esecuzione si ferma su un punto di interruzione o su un errore. Così si vede, azione per azione, a che cosa corrisponde ogni blocco.
 
@@ -406,7 +406,7 @@ Se il nome è già di un dato o di un'altra specie (una funzione importata che s
 
 ### La cartella delle librerie
 
-La cartella delle librerie si sceglie nelle Impostazioni, scheda «Percorsi» (§12): per esempio una cartella condivisa con la classe. Di partenza sta accanto a quella degli esempi, e non c'è finché non ci entra la prima libreria; AlgoDesign non ne fornisce. Un progetto segnato come libreria ci entra con **Aggiungi il progetto aperto**, in fondo alla finestra dell'importazione, nel gruppo scelto lì accanto («Le mie librerie», un altro gruppo che c'è, o uno nuovo con «Nuovo gruppo…»); se il nome del file è già usato, il file nuovo diventa «Nome (2).algo». Con un progetto non segnato il comando è spento, e la riga accanto dice di spuntare «È una libreria» nelle Proprietà. Le librerie non si eliminano dalla finestra: si eliminano dalla cartella, col sistema.
+La cartella delle librerie si sceglie nelle Impostazioni, scheda «Percorsi» (§13): per esempio una cartella condivisa con la classe. Di partenza sta accanto a quella degli esempi, e non c'è finché non ci entra la prima libreria; AlgoDesign non ne fornisce. Un progetto segnato come libreria ci entra con **Aggiungi il progetto aperto**, in fondo alla finestra dell'importazione, nel gruppo scelto lì accanto («Le mie librerie», un altro gruppo che c'è, o uno nuovo con «Nuovo gruppo…»); se il nome del file è già usato, il file nuovo diventa «Nome (2).algo». Con un progetto non segnato il comando è spento, e la riga accanto dice di spuntare «È una libreria» nelle Proprietà. Le librerie non si eliminano dalla finestra: si eliminano dalla cartella, col sistema.
 
 ## 11. Gli esempi
 
@@ -418,11 +418,36 @@ Dal menu **Aiuto**, **Esempi…** apre la finestra degli esempi: i progetti di u
 
 Un gruppo si apre e si chiude con un clic sul suo nome; la **ricerca** in cima trova un esempio dal nome o dalla descrizione. **Apri** ne apre una copia, che non è legata al file: per conservarla si usa «Salva con nome». **Aggiungi il progetto aperto** lo mette fra gli esempi, nel gruppo scelto lì accanto («I miei esempi», oppure uno nuovo con «Nuovo gruppo…»). **Elimina** cancella un esempio, ed **Elimina il gruppo** cancella un gruppo creato da te, coi suoi esempi (i gruppi degli esempi forniti no): tutti e due chiedono prima. **Ripristina gli esempi forniti** rimette quelli originali, ognuno nel suo gruppo.
 
-In una cartella usata da una versione precedente, gli esempi forniti si spostano da soli nei loro gruppi, i tuoi file restano dove sono, e gli esempi nuovi arrivano con «Ripristina gli esempi forniti». La cartella si sceglie nelle Impostazioni, scheda «Percorsi» (§12), accanto a quella delle librerie: per esempio una cartella condivisa con la classe.
+In una cartella usata da una versione precedente, gli esempi forniti si spostano da soli nei loro gruppi, i tuoi file restano dove sono, e gli esempi nuovi arrivano con «Ripristina gli esempi forniti». La cartella si sceglie nelle Impostazioni, scheda «Percorsi» (§13), accanto a quella delle librerie: per esempio una cartella condivisa con la classe.
 
 Dallo stesso menu, **Guida per lo studente** apre questa guida in una finestra a destra, nella lingua dell'interfaccia: a sinistra i capitoli (un clic porta al capitolo), a destra il testo, con sopra la ricerca (una parola, poi Invio per andare alla successiva). La finestra resta aperta mentre si lavora: l'app e i suoi tasti funzionano, e se la lingua cambia la guida cambia con lei, restando sullo stesso capitolo. Nelle Impostazioni, scheda «Aspetto», la si può anche spostare, trascinandone il titolo, e ridimensionare dall'angolo in basso. Si chiude con «Chiudi» o con Esc. Infine **Informazioni su AlgoDesign** dice la versione, la sua data e le licenze.
 
-## 12. Le Impostazioni
+## 12. Stampare ed esportare
+
+Il progetto si stampa su carta o in un PDF, e il flowchart si esporta come immagine, da mettere in una relazione o in una presentazione. I due comandi sono nel menu **Progetto**; durante l'esecuzione ci sono in pausa, non mentre il programma avanza (né durante «Esegui tutti»).
+
+### Stampare
+
+**Stampa…** (Ctrl+P) apre la finestra «Stampa». In cima si sceglie **Di quali procedure e funzioni**: **Tutte**, oppure **Solo quella mostrata**, cioè quella della scheda aperta. Con «Tutte», la casella **Ogni procedura e funzione in un foglio nuovo** fa cominciare ognuna da un foglio suo. Sotto ci sono le parti da stampare, nell'ordine in cui escono, ognuna con la sua casella:
+
+- **Progetto**: il nome, l'autore, la descrizione e le note;
+- **Dati**: le tabelle della vista dei dati;
+- **Flowchart**: con **Adatta al foglio** ogni flowchart sta in un foglio solo, anche se il testo diventa piccolo; altrimenti il **Testo minimo del flowchart (punti)**, da 6 a 12 (8 di partenza), decide quando un flowchart va su più fogli. Un flowchart più largo del foglio si stampa più piccolo, e la finestra lo dice. In pausa, **Con i segni dell'esecuzione** stampa anche il blocco corrente e i punti di interruzione;
+- **Codice in**, col menu accanto dei linguaggi accesi nelle Impostazioni (§13): il codice generato, su fogli verticali o orizzontali;
+- **Flowchart e codice affiancati**: al posto del flowchart e del codice, su fogli orizzontali, il flowchart a sinistra e il codice a destra, nel linguaggio scelto accanto a «Codice in». Si sceglie solo insieme al flowchart e al codice. Il Python e il C finiscono con le **Funzioni di supporto**, in fondo, col solo codice;
+- **Casi d'uso**: per ogni caso il nome, la descrizione, i valori scritti nella console e l'output atteso.
+
+Di partenza sono scelti il flowchart e il codice affiancati, nel linguaggio della linguetta mostrata. Se il programma non si scrive nel linguaggio scelto, o se il progetto ha errori, al posto del codice si stampa l'elenco di ciò che va cambiato. Più sotto si scelgono i colori (a colori, a toni di grigio, in bianco e nero) e che cosa va nel piè di pagina (il numero di pagina, la data e l'ora). Ogni foglio ha in alto il nome del progetto e quello della parte. Le scelte restano fino alla chiusura di AlgoDesign.
+
+### Un PDF
+
+**Stampa…**, in fondo alla finestra, apre la finestra di stampa di Edge, il componente di Windows che disegna la finestra di AlgoDesign: lì si sceglie la stampante e si vedono i fogli come usciranno. Per avere un PDF scegli la destinazione **Salva come PDF**, poi **Salva**, e scrivi il nome del file nella finestra di Windows. Sui fogli ci sono solo l'intestazione e il piè di pagina di AlgoDesign, non la data, il titolo e l'indirizzo che Edge aggiunge alle pagine web.
+
+### Esportare il flowchart
+
+**Esporta il flowchart…** esporta il flowchart della scheda mostrata. La finestra dice di quale flowchart si tratta e fa scegliere il **Formato**, **PNG (immagine)** o **SVG (disegno)**, i **Colori** (a colori, a toni di grigio, in bianco e nero) e lo **Sfondo trasparente**; senza la casella lo sfondo è bianco. **Esporta…** apre la finestra di Windows per salvare, col nome del progetto e, per una procedura o una funzione, il suo nome fra parentesi: per esempio «media (leggi_numero).png». Il PNG è disegnato al doppio della misura, perché resti nitido; l'SVG si ingrandisce quanto si vuole senza perdere nitidezza. In pausa l'immagine ha i segni dell'esecuzione: il blocco corrente e i punti di interruzione. Le scelte restano fino alla chiusura di AlgoDesign.
+
+## 13. Le Impostazioni
 
 Il pulsante **Impostazioni** apre una finestra a sei schede; le scelte valgono dopo **Conferma** e restano dopo il riavvio:
 
@@ -435,6 +460,6 @@ Il pulsante **Impostazioni** apre una finestra a sei schede; le scelte valgono d
 
 **I colori dei blocchi.** Nella scheda «Aspetto», sotto «Colori del flowchart», il riquadro **Colori dei blocchi** ha una riga per genere: Inizio e fine, Assegnazione, Procedura, Lettura, Scrittura, Se, Cicli (il rombo di ogni ciclo), Commento e Riquadro dei cicli. Ogni riga ha un blocco d'esempio, disegnato col colore che avrà, e le tinte da scegliere: la prima, **Come l'insieme**, lascia il colore dell'insieme scelto sopra; poi diciassette tinte per i blocchi (nove tenui e otto intense) e otto per la linea del riquadro dei cicli. Una tinta scelta vale con ogni insieme: cambiando insieme resta, e gli altri generi prendono i colori del nuovo. **Tutti come l'insieme** riporta ogni genere al colore dell'insieme. Di partenza, nei «Tenui», inizio e fine sono grigi, l'assegnazione malva, la procedura sabbia, la lettura verde, la scrittura azzurra, il «se» arancione, i cicli arancione intenso e il commento bianco; nel «Contrasto forte» gli stessi colori sono più carichi. Il giallo non c'è: è il colore del blocco corrente durante l'esecuzione.
 
-## 13. Licenza di questa guida
+## 14. Licenza di questa guida
 
 Questa guida è di Giuseppe Lancellotti ed è rilasciata con licenza Creative Commons Attribuzione 4.0 Internazionale (CC BY 4.0): si può copiare, distribuire e modificare, anche per scopi commerciali, citando l'autore e la licenza. Il testo completo della licenza è nel file `LICENSE-DOCS`.
