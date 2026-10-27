@@ -138,7 +138,7 @@ function riconosciuto(e: ReturnType<typeof evento>): IdComando | null {
 test("ogni tasto del catalogo fa il suo comando", () => {
   const conTasto = Object.entries(catalogo).filter(([, c]) => c.tasto !== undefined);
   // Controllo positivo della premessa: i tasti dei file, di Annulla e Ripeti e dell'esecuzione sono scritti.
-  expect(conTasto.map(([id]) => id).sort()).toEqual(["annulla", "apri", "entra", "esci", "esegui", "ferma", "nuovo", "passo", "punto", "ripeti", "salva", "salvaConNome"]);
+  expect(conTasto.map(([id]) => id).sort()).toEqual(["annulla", "apri", "entra", "esci", "esegui", "ferma", "nuovo", "passo", "punto", "ripeti", "salva", "salvaConNome", "stampa"]);
   const sbagliati = conTasto.filter(([id, c]) => riconosciuto(evento(c.tasto!)) !== id).map(([id, c]) => `${id}: ${c.tasto} fa ${riconosciuto(evento(c.tasto!))}`);
   expect(sbagliati).toEqual([]);
 });
@@ -158,7 +158,7 @@ test("ogni tasto che la finestra riconosce è scritto nel catalogo sul comando c
       if (catalogo[id].tasto !== tasto) sbagliati.push(`${tasto} fa «${id}», che nel catalogo ha ${catalogo[id].tasto ?? "nessun tasto"}`);
     }
   console.log(`tasti riconosciuti: ${trovati.length} (${trovati.join(", ")})`);
-  expect(trovati.length).toBe(12);
+  expect(trovati.length).toBe(13);
   expect(sbagliati).toEqual([]);
 });
 
@@ -179,8 +179,9 @@ test("i tasti si scrivono con Ctrl fuori dal Mac e coi simboli del Mac sul Mac, 
     esci: "Maiusc+F11",
     ferma: "Maiusc+F5",
     punto: "F9",
+    stampa: "Ctrl+P",
   });
-  expect(scritti(true)).toEqual({ nuovo: "⌘N", apri: "⌘O", salva: "⌘S", salvaConNome: "⇧⌘S", annulla: "⌘Z", ripeti: "⇧⌘Z", esegui: "F5", passo: "F10", entra: "F11", esci: "⇧F11", ferma: "⇧F5", punto: "F9" });
+  expect(scritti(true)).toEqual({ nuovo: "⌘N", apri: "⌘O", salva: "⌘S", salvaConNome: "⇧⌘S", annulla: "⌘Z", ripeti: "⇧⌘Z", esegui: "F5", passo: "F10", entra: "F11", esci: "⇧F11", ferma: "⇧F5", punto: "F9", stampa: "⌘P" });
   const sbagliati = conTasto.filter((id) => riconosciuto(evento(tastoDelComando(id, true)!)) !== id);
   expect(sbagliati).toEqual([]);
   // Il tasto che elimina, nelle due lingue fuori dal Mac e sul Mac; e il suggerimento intero.

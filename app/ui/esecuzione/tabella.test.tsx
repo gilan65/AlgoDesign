@@ -262,12 +262,16 @@ async function esporta(testi: typeof it, nelMezzo: () => Promise<void> = async (
   await aspetta("il menu aperto", () => document.querySelector('[data-comando="esportaTabella"]') !== null);
   const voce = document.querySelector<HTMLElement>('[data-comando="esportaTabella"]')!;
   expect(voce.textContent).toContain(testi.esportaTabella);
-  // Dalla tastiera: Fine porta all'ultima voce, Invio la sceglie (sotto happy-dom il clic su una voce, anche coi
-  // gesti del puntatore, chiude il menu senza sceglierla: misurato).
+  // Dalla tastiera: Fine porta all'ultima voce («Stampa…»), la freccia in su a quella prima, Invio la sceglie (sotto
+  // happy-dom il clic su una voce, anche coi gesti del puntatore, chiude il menu senza sceglierla: misurato).
   await giro();
   const contenuto = document.querySelector<HTMLElement>('[role="menu"]')!;
   await act(async () => {
     fireEvent.keyDown(contenuto, { key: "End" });
+  });
+  await giro();
+  await act(async () => {
+    fireEvent.keyDown(contenuto, { key: "ArrowUp" });
   });
   await giro();
   expect(document.querySelector("[data-highlighted]")?.getAttribute("data-comando")).toBe("esportaTabella");

@@ -101,6 +101,12 @@ export const icone = {
       <path d="M10.5 2H4.5a1 1 0 00-1 1v12a1 1 0 001 1h9a1 1 0 001-1v-3M10.5 2v4h4v1.5M8 10h9M14.5 7.5L17 10l-2.5 2.5" />
     </Icona>
   ),
+  /** Una stampante col foglio che esce. */
+  stampa: (
+    <Icona>
+      <path d="M5 6.5v-4h8v4M5 12.5H3.5a1 1 0 01-1-1v-4a1 1 0 011-1h11a1 1 0 011 1v4a1 1 0 01-1 1H13M5 10.5h8v5H5z" />
+    </Icona>
+  ),
   riduci: (
     <Icona>
       <circle cx="7.5" cy="7.5" r="5" />

@@ -46,6 +46,7 @@ export const catalogo = {
   importa: { testo: "importaFunzioni", icona: "importa", gruppo: "progetto", posti: ["menu"] },
   esportaFlowchart: { testo: "esportaFlowchart", icona: "esporta", gruppo: "progetto", posti: ["menu"] },
   esportaTabella: { testo: "esportaTabella", icona: "esporta", gruppo: "progetto", posti: ["menu"] },
+  stampa: { testo: "stampa", icona: "stampa", tasto: "Control+P", gruppo: "progetto", posti: ["menu"] },
   annulla: { testo: "annulla", icona: "annulla", tasto: "Control+Z", gruppo: "modifica", posti: ["barra"] },
   ripeti: { testo: "ripeti", icona: "ripeti", tasto: "Control+Y", gruppo: "modifica", posti: ["barra"] },
   taglia: { testo: "taglia", icona: "taglia", gruppo: "modifica", posti: ["barra"] },
@@ -82,7 +83,7 @@ export const delGruppo = (g: Gruppo, posto: Posto): IdComando[] =>
   (Object.keys(catalogo) as IdComando[]).filter((id) => catalogo[id].gruppo === g && (catalogo[id].posti as readonly Posto[]).includes(posto));
 
 /** Le voci del menu «Progetto»: i comandi del gruppo che stanno nel menu, con le linee che li separano. */
-export const VOCI_DEL_MENU: readonly (IdComando | "—")[] = ["nuovo", "apri", "—", "salva", "salvaConNome", "salvaComeLibreria", "—", "proprieta", "—", "nuovaFunzione", "funzioni", "importa", "—", "esportaFlowchart", "esportaTabella"];
+export const VOCI_DEL_MENU: readonly (IdComando | "—")[] = ["nuovo", "apri", "—", "salva", "salvaConNome", "salvaComeLibreria", "—", "proprieta", "—", "nuovaFunzione", "funzioni", "importa", "—", "esportaFlowchart", "esportaTabella", "—", "stampa"];
 /** Le voci del menu «Aiuto», alla destra di «Impostazioni»: i comandi del gruppo dell'applicazione che stanno nel menu. */
 export const VOCI_DELL_AIUTO: readonly (IdComando | "—")[] = ["guida", "esempi", "—", "informazioni"];
 

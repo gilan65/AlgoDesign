@@ -124,8 +124,12 @@ async function esporta(): Promise<string> {
   await aspetta("il menu aperto", () => document.querySelector('[data-comando="esportaTabella"]') !== null);
   await giro();
   const contenuto = document.querySelector<HTMLElement>('[role="menu"]')!;
+  // Fine porta all'ultima voce («Stampa…»), la freccia in su a «Esporta la tabella…».
   await act(async () => void fireEvent.keyDown(contenuto, { key: "End" }));
   await giro();
+  await act(async () => void fireEvent.keyDown(contenuto, { key: "ArrowUp" }));
+  await giro();
+  expect(document.querySelector("[data-highlighted]")?.getAttribute("data-comando")).toBe("esportaTabella");
   await act(async () => void fireEvent.keyDown(contenuto, { key: "Enter" }));
   await aspetta("la tabella scritta", () => scritti.length > 0);
   return scritti[0]!.testo;
