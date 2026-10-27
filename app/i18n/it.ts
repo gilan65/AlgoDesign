@@ -998,6 +998,7 @@ export const it = {
   linguaggioPseudocodice: "Pseudocodice",
   linguaggioPython: "Python",
   linguaggioC: "C",
+  linguaggioAccademico: "Accademico",
   codiceCopia: "Copia",
   codiceSalva: "Salva…",
   codiceConErrori: "Il codice si genera da un progetto senza errori: l'elenco degli errori è nella riga di stato.",
@@ -1007,6 +1008,22 @@ export const it = {
   filtroPseudocodice: "Testo",
   filtroPython: "Python",
   filtroC: "C",
+  filtroAccademico: "Testo",
+  // Un progetto che non si scrive nel linguaggio scelto: al posto del codice l'elenco di ciò che manca, ognuno col suo
+  // posto. {quante} è «una cosa» o «{n} cose»; {blocco} il nome del blocco; {dove} il programma principale, una
+  // procedura o una funzione.
+  codiceNonCiSta: "Il programma non si scrive in {linguaggio}: {quante} da cambiare. Un clic su una voce la mostra nel programma.",
+  mancanzaUna: "una cosa",
+  mancanzeTante: "{n} cose",
+  postoBlocco: "«{blocco}», {dove}",
+  postoRestituisce: "Ciò che restituisce, {dove}",
+  postoDato: "Il dato «{dato}», {dove}",
+  postoCostanteComune: "La costante comune «{dato}»",
+  postoRisultato: "Il risultato, {dove}",
+  postoNome: "Il nome, {dove}",
+  doveProgramma: "programma principale",
+  doveProcedura: "procedura {nome}",
+  doveFunzione: "funzione {nome}",
   codiceSalvatoIn: "Codice salvato in «{file}».",
   codiceSalvaErroreTitolo: "Il codice non si salva in «{file}»",
   // Le Impostazioni del CSV.

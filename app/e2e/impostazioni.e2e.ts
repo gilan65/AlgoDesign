@@ -397,16 +397,16 @@ test("il menu dei linguaggi: ▲ ▼ spostano una riga col fuoco sul pulsante, l
   const righe = () => menu().getByRole("listitem").evaluateAll((r) => r.map((x) => `${(x as HTMLElement).dataset.linguaggio}${x.querySelector("input")!.checked ? "" : " (spento)"}`));
   const pulsante = (nome: string, su: boolean) => menu().getByRole("button", { name: riempi(su ? it.linguaggioSu : it.linguaggioGiu, { linguaggio: nome }), exact: true });
   const casella = (nome: string) => menu().getByRole("checkbox", { name: nome, exact: true });
-  expect(await righe()).toEqual(["pseudocodice", "python", "c"]);
+  expect(await righe()).toEqual(["pseudocodice", "python", "c", "accademico (spento)"]);
   // ▲ sul C due volte: sale in cima, e il fuoco resta sul suo ▲ (fermo, raggiungibile); dalla tastiera, Invio.
   await pulsante(it.linguaggioC, true).click();
   await expect(pulsante(it.linguaggioC, true)).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect.poll(righe).toEqual(["c", "pseudocodice", "python"]);
+  await expect.poll(righe).toEqual(["c", "pseudocodice", "python", "accademico (spento)"]);
   await expect(pulsante(it.linguaggioC, true)).toBeFocused();
   await expect(pulsante(it.linguaggioC, true)).toHaveAttribute("aria-disabled", "true");
   await page.keyboard.press("Enter");
-  expect(await righe()).toEqual(["c", "pseudocodice", "python"]);
+  expect(await righe()).toEqual(["c", "pseudocodice", "python", "accademico (spento)"]);
   // Spenti lo pseudocodice e il Python, il C non si spegne e la riga lo dice; riacceso il Python, sì.
   await casella(it.linguaggioPseudocodice).uncheck();
   await casella(it.linguaggioPython).uncheck();
@@ -429,7 +429,7 @@ test("il menu dei linguaggi: ▲ ▼ spostano una riga col fuoco sul pulsante, l
   await expect(page.getByRole("region", { name: it.codiceGenerato, exact: true }).getByRole("tab", { selected: true })).toHaveText(it.linguaggioC);
   f = await apriLe(page);
   await scheda(f, it.impostazioniConsole);
-  expect(await righe()).toEqual(["c", "python", "pseudocodice (spento)"]);
+  expect(await righe()).toEqual(["c", "python", "pseudocodice (spento)", "accademico (spento)"]);
 });
 
 test.describe("col sistema in italiano, le preferenze che non si leggono", () => {

@@ -4,11 +4,13 @@
 // dell'errore che ha fermato l'esecuzione), e a ogni fermata si portano in vista, tutte se ci stanno. Agli ausili sono
 // `aria-current="true"`, come la riga corrente della tabella: «step» resta del solo blocco corrente nel flowchart. Con
 // procedure e funzioni anche le righe delle chiamate in corso ai livelli di sopra, ognuna con lo sfondo del livello che
-// apre (quello delle sue righe nella tabella di traccia).
+// apre (quello delle sue righe nella tabella di traccia). Un progetto che non si scrive nel linguaggio scelto mostra, al
+// posto del codice, l'elenco di tutto ciò che manca, una voce per cosa col suo posto sotto: il clic la mostra nel programma.
 import { Tabs } from "@ark-ui/react/tabs";
 import { memo, useEffect, useRef, type ReactElement } from "react";
 import type { Generato } from "../../core/genera/forma";
 import type { Dizionario } from "../../i18n/it";
+import { riempi } from "../../i18n/lingue";
 import { paroleDeiLinguaggi, type Linguaggio } from "./codice";
 import stili from "./PannelloDelCodice.module.css";
 
@@ -34,6 +36,8 @@ export const PannelloDelCodice = memo(function PannelloDelCodice({
   evidenziate,
   copia,
   salva,
+  mancanze,
+  mostra,
 }: {
   testi: Dizionario;
   /** I linguaggi del menu, accesi e nel loro ordine (almeno uno); `linguaggio` è uno di loro. */
@@ -45,6 +49,10 @@ export const PannelloDelCodice = memo(function PannelloDelCodice({
   /** Senza codice (un progetto con errori) i due comandi non sono disponibili. */
   copia: () => void;
   salva: () => void;
+  /** Con un progetto che non si scrive nel linguaggio, ciò che manca, nell'ordine del nucleo: la frase e il posto. */
+  mancanze: readonly { readonly breve: string; readonly posto: string }[];
+  /** Il clic su una voce di ciò che manca, col suo numero: la finestra mostra il posto. */
+  mostra: (indice: number) => void;
 }): ReactElement {
   const area = useRef<HTMLPreElement>(null);
   const ridisegni = useRef(0);
@@ -100,6 +108,25 @@ export const PannelloDelCodice = memo(function PannelloDelCodice({
                   ))}
                 </div>
               </pre>
+            ) : codice.perche === "non-ci-sta" ? (
+              <div className={stili.mancanze} aria-label={testi[paroleDeiLinguaggi[id].nome]}>
+                <p className={stili.introduzione}>
+                  {riempi(testi.codiceNonCiSta, {
+                    linguaggio: testi[paroleDeiLinguaggi[id].nome],
+                    quante: mancanze.length === 1 ? testi.mancanzaUna : riempi(testi.mancanzeTante, { n: String(mancanze.length) }),
+                  })}
+                </p>
+                <ul className={stili.elenco}>
+                  {mancanze.map((m, i) => (
+                    <li key={i}>
+                      <button type="button" className={stili.mancanza} data-mancanza={i} onClick={() => mostra(i)}>
+                        {m.breve}
+                        <span className={stili.posto}>{m.posto}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ) : (
               <p className={stili.nonGenerato}>{codice.perche === "errori-statici" ? testi.codiceConErrori : testi.apriFuoriTappa}</p>
             )}

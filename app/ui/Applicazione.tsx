@@ -167,7 +167,8 @@ import { FinestraProgetto, type DatiDelProgetto } from "./finestre/FinestraProge
 import { useSpostabile } from "./spostabile";
 import { righeDi, testoDelCodice } from "../core/genera/forma";
 import { voceDel } from "../core/genera/linguaggi";
-import { codiceDi, paroleDeiLinguaggi, type Linguaggio } from "./genera/codice";
+import { codiceDi, nomeDelFileDelCodice, paroleDeiLinguaggi, type Linguaggio } from "./genera/codice";
+import { vociDelleMancanze } from "./genera/mancanze";
 import { PannelloDelCodice, type RigheEvidenziate } from "./genera/PannelloDelCodice";
 import { applicaIColori } from "./colori";
 import { durataDelPasso, righeLungheDi, scelteIniziali as predefinite, scriviPreferenze, separatoriDelCsv, voci as vociDelleScelte, type Scelte, type VelocitaAnimata } from "./preferenze";
@@ -837,6 +838,13 @@ export function Applicazione({
     return f ? partiDellaFine(f, testiDelDisegno(lingua)).map((x) => x.testo).join("") : testi.bloccoTolto;
   };
   const nomeDi = nomeIn(progetto);
+  // Ciò che manca al progetto nel linguaggio mostrato, coi posti in parole: la colonna del codice ne mostra frase e posto,
+  // il clic porta al posto. Lo stesso elenco finché non cambia il codice (il riquadro del codice non si ridisegna invano).
+  const vociDiCioCheManca = useMemo(
+    () => (codice && !codice.generato && codice.perche === "non-ci-sta" ? vociDelleMancanze(codice.mancanze, progetto, lingua, testi, nomeIn(progetto)) : []),
+    // `nomeIn` cambia a ogni disegno: dipende da progetto, testi, espressione e lingua, qui fra le dipendenze.
+    [codice, progetto, lingua, testi, espressione],
+  );
   /** Lo spostamento dei blocchi dal blocco `id` all'`ancora` (senza, il blocco solo), coi «+» su cui non vanno; `null` se
    * uno dei due non c'è più. Una Lettura con la domanda si sposta con la sua Scrittura. */
   const spostamentoFra = useCallback(
@@ -1787,9 +1795,32 @@ export function Applicazione({
 
   // «Copia» e «Salva…» del codice con funzioni che non cambiano (il riquadro del codice non si ridisegna a ogni fetta):
   // chiamano le ultime versioni, che leggono lo stato di adesso.
-  const comandiDelCodice = useRef({ copia: copiaIlCodice, salva: salvaIlCodice });
-  comandiDelCodice.current = { copia: copiaIlCodice, salva: salvaIlCodice };
+  const comandiDelCodice = useRef({ copia: copiaIlCodice, salva: salvaIlCodice, mostra: mostraLaMancanza });
+  comandiDelCodice.current = { copia: copiaIlCodice, salva: salvaIlCodice, mostra: mostraLaMancanza };
   const copiaStabile = useCallback(() => comandiDelCodice.current.copia(), []);
+  const mostraStabile = useCallback((i: number) => comandiDelCodice.current.mostra(i), []);
+  /** Il clic su una voce di ciò che manca: la scheda della sua procedura o funzione e, dentro, il blocco scelto, il fuoco
+   * su ciò che restituisce, o il fuoco sulla riga del dato nella vista dei dati; il suggerimento nella riga di stato. */
+  function mostraLaMancanza(indice: number): void {
+    const v = vociDiCioCheManca[indice];
+    if (!v || !progetto.functions.some((f) => f.id === v.clic.funzione)) return;
+    const c = v.clic;
+    apriScheda(c.funzione);
+    if ("blocco" in c) {
+      impostaSelezionato(c.blocco);
+      setFuoco(`[data-blocco="${c.blocco}"]`);
+    } else if ("fine" in c) setFuoco(`[data-restituisce="${c.fine}"]`);
+    else if ("dato" in c) {
+      const dati = c.comune ? (costantiComuni ?? []) : (progetto.functions.find((f) => f.id === c.funzione)?.data ?? []);
+      const i = dati.findIndex((d) => d.name === c.dato);
+      if (i >= 0) {
+        setAperto(true);
+        setScheda("dati");
+        setFuocoDato(rigaDelDato(i, c.comune));
+      }
+    }
+    setAvviso(v.suggerimento);
+  }
   const salvaStabile = useCallback(() => void comandiDelCodice.current.salva().catch((e: unknown) => console.error("codice non salvato:", e)), []);
   /** «Copia» del codice generato: il testo del linguaggio mostrato negli appunti; l'avviso dice com'è andata. */
   function copiaIlCodice(): void {
@@ -1811,7 +1842,7 @@ export function Applicazione({
     const { estensione } = voceDel(linguaggio);
     const base = await nomeDaUsare(progetto.metadata.name, estensione);
     if (base === null) return;
-    const scelto = await scegliFileDelCodice(`${base}${estensione}`, filtro, estensione, partenza);
+    const scelto = await scegliFileDelCodice(`${nomeDelFileDelCodice(base, linguaggio, testi)}${estensione}`, filtro, estensione, partenza);
     if (scelto === null || (scelto.sostituire && !(await sostituire(scelto.percorso)))) return;
     try {
       await scriviProgetto(scelto.percorso, testo);
@@ -3435,6 +3466,8 @@ export function Applicazione({
                     evidenziate={evidenziate}
                     copia={copiaStabile}
                     salva={salvaStabile}
+                    mancanze={vociDiCioCheManca}
+                    mostra={mostraStabile}
                   />
                 </div>
               )}

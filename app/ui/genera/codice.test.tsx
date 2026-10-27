@@ -19,7 +19,11 @@
 // - Il menu dei linguaggi: le linguette sono gli accesi delle preferenze nel loro ordine, all'avvio si mostra il primo e
 //   «Salva…» usa il mostrato; nelle Impostazioni (scheda «Console») ▲ ▼ spostano una riga col fuoco sul pulsante
 //   premuto, anche in cima o in fondo dove non fa nulla; l'ultimo acceso non si spegne; «Conferma» cambia le linguette e
-//   scrive le preferenze; spenta la linguetta guardata, si mostra la prima.
+//   scrive le preferenze; spenta la linguetta guardata, si mostra la prima; «Accademico» spento e in fondo.
+// - I due linguaggi di testo: «Salva…» propone «doppio.txt» per lo pseudocodice e «doppio (Accademico).txt» (in inglese
+//   «doppio (Academic).txt»), nella stessa cartella.
+// - Un progetto che non sta in «Accademico»: al posto del codice ciò che manca coi posti, «Copia» e «Salva…» spenti; il
+//   clic sceglie il blocco o dà il fuoco alla riga del dato, e la riga di stato dice il suggerimento.
 //
 // Che cosa NON guarda:
 // - l'aspetto, lo scorrimento fino alla riga corrente, il fuoco dopo «Copia» e l'animata (nei motori,
@@ -460,6 +464,61 @@ test("le linguette sono i linguaggi accesi nelle preferenze, nel loro ordine: al
   expect(finestreDelCodice).toEqual([{ proposto: "doppio.c", filtro: it.filtroC, estensione: ".c", cartella: "C:\\prove" }]);
 });
 
+/** Un progetto che sta in «Accademico»: un intero e una scrittura. */
+const INTERI = JSON.stringify({
+  format: "algodesign",
+  schema_version: 1,
+  metadata: { name: "doppio" },
+  functions: [{ id: "f1", kind: "main", data: [{ name: "n", type: "integer", initial: "3" }], body: [{ id: "b1", kind: "write", values: ["n * 2"], newline: true }], end: { id: "b2" } }],
+});
+
+test("«Salva…» dei due linguaggi di testo: lo pseudocodice propone «doppio.txt», «Accademico» «doppio (Accademico).txt» nella stessa cartella; in inglese «doppio (Academic).txt»", async () => {
+  for (const [lingua, t] of [["it", it], ["en", en]] as const) {
+    cleanup();
+    finestreDelCodice = [];
+    await apriLaFinestra(INTERI, lingua, { ...scelteIniziali, linguaggiDelCodice: ["pseudocodice", "accademico"] });
+    await clic(comando("genera"), "«Genera»");
+    const sezione = document.querySelector<HTMLElement>(`section[aria-label="${t.codiceGenerato}"]`);
+    for (const nome of [t.linguaggioPseudocodice, t.linguaggioAccademico]) {
+      await clic([...(sezione?.querySelectorAll('[role="tab"]') ?? [])].find((x) => x.textContent === nome), `la linguetta ${nome}`);
+      await clic([...(sezione?.querySelectorAll("button") ?? [])].find((b) => b.textContent === t.codiceSalva), "«Salva…»");
+      await giro();
+    }
+    expect(finestreDelCodice).toEqual([
+      { proposto: "doppio.txt", filtro: t.filtroPseudocodice, estensione: ".txt", cartella: "C:\\prove" },
+      { proposto: `doppio (${t.linguaggioAccademico}).txt`, filtro: t.filtroAccademico, estensione: ".txt", cartella: "C:\\prove" },
+    ]);
+  }
+});
+
+test("un progetto che non sta in «Accademico»: al posto del codice ciò che manca, coi posti; «Copia» e «Salva…» spenti; il clic sceglie il blocco o dà il fuoco al dato, e la riga di stato dice il suggerimento", async () => {
+  await apriLaFinestra(DOPPIO, "it", { ...scelteIniziali, linguaggiDelCodice: ["accademico"] });
+  await clic(comando("genera"), "«Genera»");
+  const voce = (i: number) => regione()?.querySelector<HTMLElement>(`[data-mancanza="${i}"]`) ?? null;
+  const voci = () => [...(regione()?.querySelectorAll<HTMLElement>("[data-mancanza]") ?? [])].map((b) => b.textContent);
+  expect({
+    testo: regione()?.querySelector("p")?.textContent,
+    voci: voci(),
+    righe: righe().length,
+    copia: pulsanteNelRiquadro(it.codiceCopia)?.getAttribute("aria-disabled"),
+    salva: pulsanteNelRiquadro(it.codiceSalva)?.getAttribute("aria-disabled"),
+  }).toEqual({
+    testo: riempi(it.codiceNonCiSta, { linguaggio: it.linguaggioAccademico, quante: riempi(it.mancanzeTante, { n: "2" }) }),
+    voci: ["Il tipo carattere non è supportato in Accademico.Il dato «c», programma principale", "La Lettura non è supportata in Accademico.«Lettura: n», programma principale"],
+    righe: 0,
+    copia: "true",
+    salva: "true",
+  });
+  const blocco = () => document.querySelector<HTMLElement>('[data-blocco="b1"]');
+  expect(blocco()?.getAttribute("aria-pressed")).toBe("false");
+  await clic(voce(1), "la voce della Lettura");
+  await aspetta("il blocco della Lettura scelto", () => blocco()?.getAttribute("aria-pressed") === "true");
+  expect(avviso()).toBe("Togli la Lettura e dai il valore con un'Assegnazione, o passalo come parametro a una procedura.");
+  await clic(voce(0), "la voce del dato");
+  await aspetta("il fuoco sulla riga del dato «c»", () => document.activeElement?.closest("[data-dato]")?.textContent?.includes("c") === true);
+  expect(avviso()).toBe("Usa un intero al suo posto: per esempio 1 per «sì» e 0 per «no» invece di 's' e 'n'.");
+});
+
 test("il menu dei linguaggi nelle Impostazioni: ▲ ▼ col fuoco sul pulsante, l'ultimo acceso non si spegne, «Conferma» cambia le linguette e le scrive; spenta la linguetta guardata, si mostra la prima", async () => {
   await apriLaFinestra();
   await clic(comando("genera"), "«Genera»");
@@ -479,31 +538,33 @@ test("il menu dei linguaggi nelle Impostazioni: ▲ ▼ col fuoco sul pulsante, 
 
   await apriIlMenu();
   expect(menu()?.querySelector("legend")?.textContent).toBe(it.linguaggiDelCodice);
-  expect(righeDelMenu()).toEqual(["pseudocodice", "python", "c"]);
+  expect(righeDelMenu()).toEqual(["pseudocodice", "python", "c", "accademico (spento)"]);
   // Il primo non sale e l'ultimo non scende; i nomi dei pulsanti dicono il linguaggio.
-  expect([pulsante("pseudocodice", -1)?.getAttribute("aria-disabled"), pulsante("c", 1)?.getAttribute("aria-disabled"), pulsante("python", -1)?.getAttribute("aria-disabled")]).toEqual(["true", "true", "false"]);
+  expect([pulsante("pseudocodice", -1)?.getAttribute("aria-disabled"), pulsante("accademico", 1)?.getAttribute("aria-disabled"), pulsante("python", -1)?.getAttribute("aria-disabled")]).toEqual(["true", "true", "false"]);
   expect(pulsante("python", 1)?.getAttribute("aria-label")).toBe(riempi(it.linguaggioGiu, { linguaggio: it.linguaggioPython }));
-  // ▼ due volte sullo pseudocodice: la riga scende, e il fuoco resta sul suo ▼ anche in fondo, dove non fa nulla.
+  // ▼ tre volte sullo pseudocodice: la riga scende, e il fuoco resta sul suo ▼ anche in fondo, dove non fa nulla.
   await clic(pulsante("pseudocodice", 1), "▼ dello pseudocodice");
   await aspetta("il fuoco sul ▼ dello pseudocodice", () => document.activeElement === pulsante("pseudocodice", 1));
-  expect(righeDelMenu()).toEqual(["python", "pseudocodice", "c"]);
+  expect(righeDelMenu()).toEqual(["python", "pseudocodice", "c", "accademico (spento)"]);
+  await clic(pulsante("pseudocodice", 1), "▼ dello pseudocodice");
+  await aspetta("il fuoco sul ▼ dello pseudocodice, sopra «Accademico»", () => document.activeElement === pulsante("pseudocodice", 1) && righeDelMenu().at(-2) === "pseudocodice");
   await clic(pulsante("pseudocodice", 1), "▼ dello pseudocodice");
   await aspetta("il fuoco sul ▼ dello pseudocodice, in fondo", () => document.activeElement === pulsante("pseudocodice", 1) && righeDelMenu().at(-1) === "pseudocodice");
-  expect({ righe: righeDelMenu(), fermo: pulsante("pseudocodice", 1)?.getAttribute("aria-disabled") }).toEqual({ righe: ["python", "c", "pseudocodice"], fermo: "true" });
+  expect({ righe: righeDelMenu(), fermo: pulsante("pseudocodice", 1)?.getAttribute("aria-disabled") }).toEqual({ righe: ["python", "c", "accademico (spento)", "pseudocodice"], fermo: "true" });
   await clic(pulsante("pseudocodice", 1), "▼ dello pseudocodice, in fondo");
-  expect(righeDelMenu()).toEqual(["python", "c", "pseudocodice"]);
+  expect(righeDelMenu()).toEqual(["python", "c", "accademico (spento)", "pseudocodice"]);
   // Spenti il Python e lo pseudocodice, il C resta: la sua casella non si spegne, e la riga sotto lo dice.
   await clic(casella("python"), "la casella del Python");
   await clic(casella("pseudocodice"), "la casella dello pseudocodice");
-  expect({ righe: righeDelMenu(), bloccata: casella("c")?.disabled, detto: menu()?.textContent?.includes(it.almenoUnLinguaggio) }).toEqual({ righe: ["python (spento)", "c", "pseudocodice (spento)"], bloccata: true, detto: true });
+  expect({ righe: righeDelMenu(), bloccata: casella("c")?.disabled, detto: menu()?.textContent?.includes(it.almenoUnLinguaggio) }).toEqual({ righe: ["python (spento)", "c", "accademico (spento)", "pseudocodice (spento)"], bloccata: true, detto: true });
   await clic(casella("c"), "la casella del C, bloccata");
-  expect(righeDelMenu()).toEqual(["python (spento)", "c", "pseudocodice (spento)"]);
+  expect(righeDelMenu()).toEqual(["python (spento)", "c", "accademico (spento)", "pseudocodice (spento)"]);
   await conferma();
   // La linguetta guardata (Python) è spenta: si mostra la prima del menu.
   expect({ linguette: linguette(), scelta: scelta(), scritte: preferenzeScritte.map((p) => p.linguaggiDelCodice) }).toEqual({ linguette: [it.linguaggioC], scelta: it.linguaggioC, scritte: [["c"]] });
   // Riaperta: gli accesi in cima, gli spenti nell'ordine del registro; riacceso lo pseudocodice, va dopo il C.
   await apriIlMenu();
-  expect(righeDelMenu()).toEqual(["c", "pseudocodice (spento)", "python (spento)"]);
+  expect(righeDelMenu()).toEqual(["c", "pseudocodice (spento)", "python (spento)", "accademico (spento)"]);
   expect(menu()?.textContent?.includes(it.almenoUnLinguaggio)).toBe(true);
   await clic(casella("pseudocodice"), "la casella dello pseudocodice");
   expect({ bloccata: casella("c")?.disabled, detto: menu()?.textContent?.includes(it.almenoUnLinguaggio) }).toEqual({ bloccata: false, detto: false });
