@@ -15,6 +15,7 @@ export const elencoDelPacchetto: readonly string[] = [
   "NOTE-DI-RILASCIO.md",
   "GUIDA-PER-LO-STUDENTE.md",
   "STUDENT-GUIDE.md",
+  "GUIDA-AD-ACCADEMICO.md",
   "CHANGELOG.md",
   "LICENSE",
   "LICENSE-DOCS",
@@ -34,6 +35,10 @@ export const documentiDellaRadice: readonly string[] = ["README.md", "LEGGIMI.md
 /** I documenti del repository che il pacchetto copia così come sono, dalla cartella `docs/`: le due guide per lo
  * studente, le stesse che la finestra «Guida» mostra (`ui/guida/guide.ts`, appaiate da `ui/guida/guida.test.ts`). */
 export const documentiDelPacchetto: readonly string[] = ["GUIDA-PER-LO-STUDENTE.md", "STUDENT-GUIDE.md"];
+
+/** La guida ad «Accademico», da `docs/` così com'è: nel pacchetto dell'app (la guida per lo studente la nomina) e in
+ * quello dello strumento. Fuori da `documentiDelPacchetto`, che sono le guide della finestra «Guida». */
+export const guidaAdAccademico = "GUIDA-AD-ACCADEMICO.md";
 
 export type NomiDelPacchetto = {
   versione: string;
@@ -67,6 +72,7 @@ export const elencoDiLinux: readonly string[] = [
   "NOTE-DI-RILASCIO.md",
   "GUIDA-PER-LO-STUDENTE.md",
   "STUDENT-GUIDE.md",
+  "GUIDA-AD-ACCADEMICO.md",
   "CHANGELOG.md",
   "LICENSE",
   "LICENSE-DOCS",
@@ -87,6 +93,38 @@ export const testiDiLinux: Readonly<Record<string, string>> = {
 export function nomiDiLinux(testoDelPackageJson: string): { versione: string; cartella: string; archivio: string; cartellaNellArchivio: string } {
   const { versione, cartellaNelloZip } = nomiDelPacchetto(testoDelPackageJson);
   return { versione, cartella: `${versione}-linux`, archivio: `AlgoDesign-${versione}-linux-x64.tar.gz`, cartellaNellArchivio: cartellaNelloZip };
+}
+
+/** Le voci al primo livello del pacchetto aggiuntivo dello strumento di «Accademico» (`pacchetto.ts`): l'eseguibile a
+ * sé, i due testi brevi, la sua guida e le licenze; niente `data/`, perché lo strumento scrive solo dove gli si dice. */
+export const elencoDelloStrumento: readonly string[] = [
+  "algodesign-accademico.exe",
+  "LEGGIMI.md",
+  "README.md",
+  guidaAdAccademico,
+  "LICENSE",
+  "LICENSE-DOCS",
+  fileDelleLicenze,
+];
+
+/** I testi brevi del pacchetto dello strumento, letti dalla cartella di `--testi` coi segnaposto sostituiti: il nome
+ * nella cartella e quello dentro il pacchetto. */
+export const testiDelloStrumento: Readonly<Record<string, string>> = {
+  "LEGGIMI-DI-ACCADEMICO.md": "LEGGIMI.md",
+  "README-OF-ACADEMIC.md": "README.md",
+};
+
+/** I nomi del pacchetto dello strumento, dal testo di `package.json`, con la stessa regola della versione dell'app; la
+ * versione delle proprietà dell'eseguibile ha i soli tre numeri e uno zero, perché Bun non ne accetta altre. */
+export function nomiDelloStrumento(testoDelPackageJson: string): { versione: string; versioneDellEseguibile: string; cartella: string; zip: string; cartellaNelloZip: string } {
+  const { versione } = nomiDelPacchetto(testoDelPackageJson);
+  return {
+    versione,
+    versioneDellEseguibile: `${/^\d+\.\d+\.\d+/.exec(versione)![0]}.0`,
+    cartella: `${versione}-accademico`,
+    zip: `AlgoDesign-Accademico-${versione}-windows.zip`,
+    cartellaNelloZip: `AlgoDesign-Accademico-${versione}`,
+  };
 }
 
 /** Le differenze fra le voci trovate e l'elenco, nei due versi: «manca X», «in più X». Vuoto se coincidono. */

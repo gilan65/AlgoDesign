@@ -40,3 +40,11 @@ export const collegate: readonly { nome: string; versione: string; licenza: stri
     file: ["webview2-sdk-LICENSE.txt", "webview2-sdk-NOTICE.txt"],
   },
 ];
+
+/** I testi delle licenze che la pagina della licenza di Bun nomina per le librerie che Bun collega e che l'eseguibile
+ * dello strumento di «Accademico» porta con sé: la LGPL 2.0 di JavaScriptCore e WebCore, la LGPL 2.1 di tinycc. Presi
+ * da gnu.org, coi salti pagina tolti (righe col solo carattere 12, nove per testo). */
+export const testiDiBun: readonly { file: string; titolo: string; fonte: string }[] = [
+  { file: "lgpl-2.0.txt", titolo: "GNU Library General Public License, versione 2 (JavaScriptCore e WebCore di WebKit)", fonte: "https://www.gnu.org/licenses/old-licenses/lgpl-2.0.txt" },
+  { file: "lgpl-2.1.txt", titolo: "GNU Lesser General Public License, versione 2.1 (tinycc)", fonte: "https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt" },
+];

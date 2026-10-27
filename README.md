@@ -4,7 +4,7 @@
 
 **Design algorithms as flowcharts, run them step by step and translate them into pseudocode, Python and C.**
 
-Version 0.5.0-beta.1 of 26 October 2026, for 64-bit Windows 10 and 11.
+Version 0.6.0-beta.2 of 27 October 2026, for 64-bit Windows 10 and 11.
 
 AlgoDesign is a teaching environment for people learning to program: first you design and test the algorithm as a flowchart, then you see how the same reasoning becomes code. It is a **local and lightweight** application: it works without internet, without installing it and without administrator rights.
 
@@ -23,22 +23,24 @@ AlgoDesign separates the two tasks: first you **design** the algorithm as a flow
 - **Procedures and functions**: an algorithm is split into named pieces, each in its own tab, with its data and its parameters, by value, by reference or output; a procedure does a job, a function computes a result, also a string or an array. They can call themselves (recursion), and they are imported from another project or from a libraries folder.
 - **Step-by-step run**: all at once, one action at a time or animated, in and out of procedures and functions, with breakpoints; you follow the active block, type the values in the console and watch the data change in the trace table, which can be exported for a spreadsheet. The value of a data item is read with the mouse pointer on its name, or from the keyboard.
 - **Test cases**: an algorithm, or one of its procedures or functions on its own, is tested on input values and expected results, like a small test, even before writing the rules; a finished run can be saved as a test case.
-- **Translation** of the flowchart into pseudocode (in Italian or in English), Python and C, next to the drawing, with the current line highlighted during the run; the code is copied or saved to a file. Which languages are shown, and in what order, is chosen in the Settings.
+- **Translation** of the flowchart into pseudocode (in Italian or in English), Python, C and, if it is turned on, “Academic”, the pseudocode of the school selections of the Italian Olympiad in Informatics, next to the drawing, with the current line highlighted during the run; the code is copied or saved to a file. Which languages are shown, and in what order, is chosen in the Settings.
 - **Printing and exporting**: the project is printed, also to a PDF, with the data, the flowcharts, the code and the test cases, also with the flowchart and the code side by side; the flowchart is exported as a PNG or SVG image.
 - **Examples** ready to open and change, in groups.
 - Interface in **Italian** and **English**.
 
 Types and rules are those of the C language, plus a string type, so that the step from the flowchart to the code is natural. The generated code, however, is made to be read and does not check the calculations that break the rules (an integer outside its range, an integer division by zero, an index outside the array and a few others, listed in the release notes): AlgoDesign always stops them, the generated Python and C do not, and on those calculations they may give different results from each other.
 
-How to use AlgoDesign is in the **student guide**, `STUDENT-GUIDE.md` (in Italian `GUIDA-PER-LO-STUDENTE.md`): in the package it sits next to the program, in the repository in the `docs` folder. Inside AlgoDesign the guide opens from the **Help** menu, “Student guide”, in the language of the interface. The news of each version is in the change log, `CHANGELOG.md` (in Italian).
+How to use AlgoDesign is in the **student guide**, `STUDENT-GUIDE.md` (in Italian `GUIDA-PER-LO-STUDENTE.md`): in the package it sits next to the program, in the repository in the `docs` folder. Inside AlgoDesign the guide opens from the **Help** menu, “Student guide”, in the language of the interface. How to use “Academic” to practise for the selections is in the **guide to “Academic”**, `GUIDA-AD-ACCADEMICO.md` (in Italian), next to the student guide. The news of each version is in the change log, `CHANGELOG.md` (in Italian).
 
 ## Download and start
 
 The test versions are downloaded from the project page.
 
 1. Download the zip and, if you like, check its fingerprint: the `.sha256` file next to the zip contains its SHA-256 code, which in PowerShell is computed with `Get-FileHash <zip name>` (PowerShell writes it in uppercase, the file in lowercase: upper and lower case do not matter).
-2. Extract the zip wherever you like (the Desktop, a documents folder, a USB stick): the folder `AlgoDesign-0.5.0-beta.1` is created.
+2. Extract the zip wherever you like (the Desktop, a documents folder, a USB stick): the folder `AlgoDesign-0.6.0-beta.2` is created.
 3. Open the folder and double-click `AlgoDesign.exe`.
+
+**The “Academic” tool.** Next to the AlgoDesign zip there is a separate package, `AlgoDesign-Accademico-0.6.0-beta.2-windows.zip`, with its fingerprint: `algodesign-accademico.exe` reads a text written in “Academic” and turns it into an AlgoDesign library, to open and run step by step. It is used from the Windows Terminal; how is told by the `README.md` of the package and by chapter 6 of the guide to “Academic”, which the package carries.
 
 **The Windows warning at the first start.** AlgoDesign is not digitally signed, and Windows warns when a program downloaded from the internet without a signature is started. If the window “Windows protected your PC” appears, choose “More info” and then “Run anyway”. To avoid it, before extracting the zip open its Properties (right-click on the zip), tick “Unblock” at the bottom of the “General” tab and confirm with “OK”.
 
@@ -94,11 +96,12 @@ All the commands are given in the `app/` folder, after `bun install`.
 | The app in development, in a window | `bun tauri dev` |
 | Browsers for the interface tests (only the first time) | `bun --bun playwright install chromium webkit` |
 | Test cases of the example corpus (`casi/`), or of a given project | `bun run casi`, `bun run casi <project.algo>` |
+| From a text in “Academic” an AlgoDesign library (the options in chapter 6 of the guide to “Academic”) | `bun run accademico <text.txt>`, `bun run accademico -h` |
 | Test run (types, unit tests, test cases, comparison of the generated code, build, tests of the Rust shell, interface tests in Chromium) | `bun run collaudo` |
 | Full test run, with the interface tests in WebKit too | `bun run collaudo --completo` |
 | Comparison of the generated code with the run on the test cases | `bun run differenziale` |
 | Release executable for Windows | `bun tauri build --no-bundle` → `shell/target/release/algodesign.exe` |
-| Release package for Windows (folder, zip and fingerprint in `dist/` at the root; it carries this file, `LEGGIMI.md`, the two student guides from `docs/` and the release notes, which are given to the tool) | `bun run pacchetto --testi ../rilascio/windows` (with `--prova` from a tree with changes, in `dist/prova/`) |
+| Release packages for Windows: the one of AlgoDesign and the one of the “Academic” tool, from the same tree (folders, zips and fingerprints in `dist/` at the root; the first carries this file, `LEGGIMI.md`, the two student guides and the guide to “Academic” from `docs/` and the release notes, the second the executable of the tool, its guide and the two short texts; the texts are given to the tool) | `bun run pacchetto --testi ../rilascio/windows` (with `--prova` from a tree with changes, in `dist/prova/`) |
 | The JSON Schema of the format, after a change to the file reader | `bun ./strumenti/schema-del-formato.ts` |
 
 ### The tests on the product

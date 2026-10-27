@@ -2,6 +2,20 @@
 
 Le novità e le correzioni di ogni versione, dalla più recente. Il dettaglio di una versione è nelle sue note di rilascio (`NOTE-DI-RILASCIO.md`); come si usa AlgoDesign è nella guida per lo studente (`GUIDA-PER-LO-STUDENTE.md`).
 
+## 0.6.0-beta.2, 27 ottobre 2026
+
+Seconda versione beta, per Windows.
+
+### Novità
+
+- **La stampa**: «Stampa…» (Ctrl+P), nel menu «Progetto», stampa su carta o in un PDF le parti scelte del progetto (progetto, dati, flowchart, codice, flowchart e codice affiancati, casi d'uso), a colori, a toni di grigio o in bianco e nero; di partenza il flowchart e il codice affiancati.
+- **Il flowchart come immagine**: «Esporta il flowchart…» lo salva in PNG o in SVG, con lo sfondo bianco o trasparente.
+- **I linguaggi del codice generato** si scelgono nelle Impostazioni, scheda «Console»: quali hanno una linguetta, e in che ordine.
+- **«Accademico»**, lo pseudocodice delle Selezioni scolastiche delle Olimpiadi di Informatica, fra i linguaggi che si accendono, con l'elenco di ciò che manca quando un programma non ci sta; la guida ad «Accademico» (`GUIDA-AD-ACCADEMICO.md`) accanto al programma.
+- **Lo strumento di «Accademico»**, in un pacchetto a parte (`AlgoDesign-Accademico-0.6.0-beta.2-windows.zip`): da un testo in «Accademico» una libreria di AlgoDesign.
+- **La pila delle chiamate nel progetto**: da 5 a 500 posti nelle Proprietà, anche per il Python e il C generati; nelle Impostazioni il numero dei progetti nuovi. Un progetto creato con questa versione, o di cui si sono confermate le Proprietà, non si apre con le versioni precedenti.
+- **Un esempio nuovo**, «Ricorsione senza uscita»: gli esempi forniti sono dodici.
+
 ## 0.5.0-beta.1, 26 ottobre 2026
 
 Prima versione beta, per Windows.
