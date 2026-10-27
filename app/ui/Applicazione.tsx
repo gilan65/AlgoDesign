@@ -4,6 +4,7 @@ import { coppie, perScrittura, stessaDomanda, type Coppia } from "../core/disegn
 import { campiConLaDomanda, incollaDiSeguito, trattoDellaVista } from "../core/modifica/domanda";
 import { nomiDeiValoriIniziali, nomiDelDisegno } from "../core/disegno/nomi";
 import { geometriaPredefinita } from "../core/disegno/tema";
+import { svgDelDisegno } from "../core/disegno/svg";
 import {
   chiamataDa,
   chiamateDi,
@@ -139,6 +140,8 @@ import {
   scegliFileDaEsportare,
   scegliFileDaSalvare,
   scegliFileDelCodice,
+  scegliFileDellImmagine,
+  scriviByte,
   scriviEsempio,
   scriviLibreria,
   scriviProgetto,
@@ -159,6 +162,8 @@ import { ConfermaSostituzione } from "./finestre/ConfermaSostituzione";
 import { ConfermaTogli, type DaTogliere } from "./finestre/ConfermaTogli";
 import { FinestraErrori, type VoceDiErrore } from "./finestre/FinestraErrori";
 import { FinestraEsempi } from "./finestre/FinestraEsempi";
+import { FinestraEsporta } from "./finestre/FinestraEsporta";
+import { estensioneDel, inBase64, nomeDellImmagine, pngDallSvg, sceltePredefinite as esportazionePredefinita, SFONDO_DELLA_CARTA, tavolozzaDellaPagina, type ScelteDellEsportazione } from "./disegno/esporta";
 import { FinestraImporta, nomiCheEntrano, type DaUnFile } from "./finestre/FinestraImporta";
 import { FinestraGuida, memoriaNuova } from "./finestre/FinestraGuida";
 import { FinestraInformazioni } from "./finestre/FinestraInformazioni";
@@ -275,7 +280,9 @@ type Aperta =
   /** «Importa procedure e funzioni…». */
   | { readonly genere: "importa" }
   /** La conferma prima di eliminarne una (l'`id`). */
-  | { readonly genere: "eliminaFunzione"; readonly id: string };
+  | { readonly genere: "eliminaFunzione"; readonly id: string }
+  /** «Esporta il flowchart…». */
+  | { readonly genere: "esporta" };
 
 // La finestra: la barra in alto; sotto, le due viste affiancate, i dati a sinistra in un pannello che si
 // chiude dalla barra e si allarga dal bordo, il flowchart a destra con lo spazio che resta; in fondo la riga
@@ -374,6 +381,8 @@ export function Applicazione({
   const testoCompleto = (p: Progetto) => testoDi(conPunti(p, interruzioni));
   const modificato = useMemo(() => testoDi(conPunti(progetto, interruzioni)) !== documento.riferimento, [progetto, interruzioni, documento.riferimento]);
   const [finestra, setFinestra] = useState<Aperta | null>(null);
+  // Le scelte di «Esporta il flowchart», ricordate per la sessione (non nelle preferenze).
+  const [scelteDellEsportazione, setScelteDellEsportazione] = useState<ScelteDellEsportazione>(esportazionePredefinita);
   const [errori, setErrori] = useState<{ titolo: string; voci: readonly VoceDiErrore[] } | null>(null);
   const [cartella, setCartella] = useState<CartellaDegliEsempi>({ cartella: "", predefinita: "", mancante: false, esiste: false, file: [], gruppi: [] });
   // La cartella dell'ultimo file aperto o salvato in questa sessione: da lì partono le finestre del file
@@ -1793,6 +1802,47 @@ export function Applicazione({
     );
   }
 
+  /** «Esporta il flowchart»: la finestra con le scelte dell'ultima esportazione della sessione (prima si confermano i
+   * campi aperti, come per i comandi dei file). */
+  function apriLEsportazione(): void {
+    if (!inEsecuzione && !confermaIApertiCampi()) return;
+    setMenuDellaFunzione(null);
+    setFinestra({ genere: "esporta" });
+  }
+  /** Il flowchart della scheda mostrata, com'è adesso, nel file che l'utente sceglie (e, se il file c'è e la finestra del
+   * sistema non l'ha confermato, se sostituirlo): l'SVG del nucleo coi colori del tema chiaro, nel modo scelto, coi segni
+   * dell'esecuzione solo durante l'esecuzione; il PNG è quell'SVG al doppio. Il nome è quello del progetto, con la
+   * procedura o la funzione fra parentesi. */
+  async function esportaIlFlowchart(s: ScelteDellEsportazione): Promise<void> {
+    setScelteDellEsportazione(s);
+    // Il disegno di adesso, prima delle finestre: ciò che si esporta è ciò che si vedeva quando si è scelto «Esporta…».
+    const segni = inEsecuzione ? { corrente, faseCorrente, ripresa: pausa?.ripresa !== undefined, correnteValore, interruzioni } : undefined;
+    const svg = svgDelDisegno(disegno, {
+      geometria: geometriaPredefinita,
+      tavolozza: tavolozzaDellaPagina(),
+      modo: s.colori,
+      carattere: getComputedStyle(document.documentElement).getPropertyValue("--carattere").trim(),
+      fondoDeiCicli: scelte.fondoDeiCicli,
+      trasparente: s.trasparente,
+      ...(segni ? { segni } : {}),
+    });
+    const { larghezza, altezza } = disegno;
+    const funzione = nelProgramma ? null : (mostrata.name ?? "");
+    const estensione = estensioneDel(s.formato);
+    const base = await nomeDaUsare(progetto.metadata.name, estensione);
+    if (base === null) return;
+    const scelto = await scegliFileDellImmagine(`${nomeDellImmagine(base, funzione)}${estensione}`, s.formato === "png" ? testi.filtroPng : testi.filtroSvg, estensione, partenza);
+    if (scelto === null || (scelto.sostituire && !(await sostituire(scelto.percorso)))) return;
+    try {
+      if (s.formato === "svg") await scriviProgetto(scelto.percorso, svg);
+      else await scriviByte(scelto.percorso, inBase64(await pngDallSvg(svg, larghezza, altezza, s.trasparente ? null : SFONDO_DELLA_CARTA)));
+    } catch (e) {
+      erroreDiUnFile(testi.esportaFlowchartErroreTitolo, scelto.percorso, e);
+      return;
+    }
+    setAvviso(riempi(testi.flowchartEsportatoIn, { file: nomeDelFile(scelto.percorso) }));
+  }
+
   // «Copia» e «Salva…» del codice con funzioni che non cambiano (il riquadro del codice non si ridisegna a ogni fetta):
   // chiamano le ultime versioni, che leggono lo stato di adesso.
   const comandiDelCodice = useRef({ copia: copiaIlCodice, salva: salvaIlCodice, mostra: mostraLaMancanza });
@@ -2970,6 +3020,9 @@ export function Applicazione({
       : {}),
     genera: () => setConCodice((c) => !c),
     ...(esecuzione && situazione !== "in corso" ? { esportaTabella: () => void esportaLaTabella().catch((e: unknown) => console.error("tabella non esportata:", e)) } : {}),
+    // Il flowchart si esporta sempre, tranne mentre l'esecuzione va avanti (il blocco corrente cambia) e durante «tutto
+    // insieme».
+    ...(situazione !== "in corso" && tutti === null ? { esportaFlowchart: apriLEsportazione } : {}),
     riduci: () => scalaFissa((s) => limitaLaScala(s / PASSO)),
     cento: () => scalaFissa(() => 1),
     ingrandisci: () => scalaFissa((s) => limitaLaScala(s * PASSO)),
@@ -3665,6 +3718,16 @@ export function Applicazione({
           setFinestra(null);
           finestra.risposta(nome);
         }}
+      />
+      <FinestraEsporta
+        cosa={finestra?.genere === "esporta" ? { nome: nelProgramma ? nomeDelProgetto : (mostrata.name ?? ""), inEsecuzione } : null}
+        scelte={scelteDellEsportazione}
+        testi={testi}
+        conferma={(s) => {
+          setFinestra(null);
+          void esportaIlFlowchart(s).catch((e: unknown) => console.error("flowchart non esportato:", e));
+        }}
+        rinuncia={() => setFinestra(null)}
       />
       <ConfermaSostituzione
         file={finestra?.genere === "sostituire" ? nomeDelFile(finestra.percorso) : null}

@@ -52,7 +52,8 @@ function elementiScritti(scritti: Record<ChiaveDelLimite, string>): number {
   return limiteValido("elementiDiUnVettore", n) ? n : intervalli.elementiDiUnVettore.minimo;
 }
 
-function Opzioni<V extends string>({
+/** Un riquadro di scelte fra poche voci, coi pulsanti di opzione nativi; lo usa anche «Esporta il flowchart». */
+export function Opzioni<V extends string>({
   legenda,
   nome,
   valore,

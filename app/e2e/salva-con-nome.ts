@@ -7,9 +7,11 @@
 // sono lo stesso file, e lo prova solo `cargo test` su Windows.
 
 import type { EstensioneDelCodice } from "../core/genera/linguaggi";
+import type { EstensioneDellImmagine } from "../ui/file";
 
-/** Le estensioni dei file che l'app salva: il progetto, la tabella, e il codice generato di ogni linguaggio del registro. */
-export type Estensione = ".algo" | ".csv" | EstensioneDelCodice;
+/** Le estensioni dei file che l'app salva: il progetto, la tabella, il codice generato di ogni linguaggio del registro e
+ * il flowchart esportato. */
+export type Estensione = ".algo" | ".csv" | EstensioneDelCodice | EstensioneDellImmagine;
 
 /** Il nome scelto finisce nell'`estensione` («.algo», «.csv» per la tabella, quella del linguaggio per il codice
  * generato): quella scritta con altre maiuscole si riscrive, chi non ce l'ha la riceve; si chiede di sostituire solo

@@ -725,7 +725,7 @@ async function fuoriDalla(page: Page, f: Locator, tasto: string, volte: number, 
 // una voce del menu «Progetto» vede a intermittenza il fuoco entrare per un istante nel menu che si sta chiudendo (un
 // `focusin` sul contenuto del menu pochi millisecondi dopo che la finestra l'ha preso, e subito di nuovo nella finestra).
 // Da sola è verde anche lì. È un difetto noto, non risolto: la prova resta sul bersaglio dove è stabile.
-test("ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, conferma delle modifiche, procedura o funzione nuova, «Procedure e funzioni…», «Importa procedure e funzioni…», Informazioni, conferma prima di togliere un esempio) trattiene il fuoco e si chiude con Esc; i giri appaiati coi componenti della finestra", { tag: "@solo-sviluppo" }, async ({ page }, info) => {
+test("ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, conferma delle modifiche, procedura o funzione nuova, «Procedure e funzioni…», «Importa procedure e funzioni…», «Esporta il flowchart…», Informazioni, conferma prima di togliere un esempio) trattiene il fuoco e si chiude con Esc; i giri appaiati coi componenti della finestra", { tag: "@solo-sviluppo" }, async ({ page }, info) => {
   test.setTimeout(150_000);
   await apriVuota(page, { lingua: "it" }, { file: { "C:\\rotto.algo": "{" } });
   const giri: [string, () => Promise<void>, () => Locator][] = [
@@ -745,6 +745,7 @@ test("ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, c
     ["funzione nuova", async () => (await voceDelMenu(page, it.nuovaProceduraOFunzione)).click(), () => finestra(page, it.funzioneNuovaTitolo)],
     ["procedure e funzioni", async () => (await voceDelMenu(page, it.gestisciFunzioni)).click(), () => finestra(page, it.funzioniTitolo)],
     ["importa", async () => (await voceDelMenu(page, it.importaFunzioni)).click(), () => finestra(page, it.importaTitolo)],
+    ["esporta", async () => (await voceDelMenu(page, it.esportaFlowchart)).click(), () => finestra(page, it.esportaFlowchartTitolo)],
     // La finestra il cui fuoco iniziale è sul solo pulsante che la chiude.
     ["Informazioni", async () => (await voceDellAiuto(page, it.informazioni)).click(), () => finestra(page, it.informazioniTitolo)],
     // Per ultima: chiusa con Esc torna la finestra degli esempi, che si chiude dopo il giro.
@@ -787,7 +788,7 @@ test("ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, c
     await expect(f, `la finestra ${nome} non si chiude con Esc`).toBeHidden();
   }
   await chiudiConEsc(page, finestra(page, it.esempiTitolo));
-  expect(giri.length).toBe(11);
+  expect(giri.length).toBe(12);
 
   // I giri appaiati coi componenti che usano la finestra comune (`<Finestra`), nei due versi: un componente nuovo senza
   // giro, o un giro senza componente, è un rosso. Quattro conferme si aprono dal lavoro su un dato, un valore iniziale, un
@@ -803,6 +804,7 @@ test("ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, c
     FinestraFunzione: ["funzione nuova"],
     FinestraFunzioni: ["procedure e funzioni"],
     FinestraImporta: ["importa"],
+    FinestraEsporta: ["esporta"],
   };
   const altrove: Record<string, readonly [string, keyof Dizionario]> = {
     ConfermaEliminazione: ["modifica-dati.e2e.ts", "eliminaDatoTitolo"],

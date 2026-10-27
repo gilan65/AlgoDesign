@@ -5,7 +5,7 @@
 // forme col testo per righe (e a pezzi con lo stile), i segni dell'esecuzione, le etichette Vero e Falso, le unioni. I
 // colori al posto delle variabili CSS vengono dalla tavolozza data (`tavolozza.ts`) nel modo scelto; il carattere è
 // quello con cui il testo è stato misurato (lo dà chi chiama); la geometria del tema dà la dimensione del testo e della
-// punta. Il disegno ha sotto un rettangolo del colore dello sfondo (il foglio).
+// punta. Il disegno ha sotto un rettangolo del colore dello sfondo (il foglio), salvo con lo sfondo trasparente.
 //
 // I segni dell'esecuzione (il blocco corrente, la punta che entra, il «↩» della ripresa, la riga di una Lettura con la
 // domanda, i punti di interruzione) ci sono solo se chi chiama li dà: le regole e le posizioni sono quelle della tela
@@ -39,6 +39,9 @@ export interface OpzioniDelSvg {
   readonly segni?: SegniDellEsecuzione;
   /** Il prefisso degli identificatori (la punta): distingue i disegni nella stessa pagina. Predefinito «disegno». */
   readonly id?: string;
+  /** Senza il rettangolo dello sfondo sotto il disegno (l'immagine esportata con lo sfondo trasparente): ciò che ha il
+   * colore dello sfondo per coprire le linee (le unioni, le intestazioni, il bordo del pallino) resta com'è. */
+  readonly trasparente?: boolean;
 }
 
 const n = (x: number) => String(x);
@@ -166,7 +169,7 @@ function testa(finestra: Rettangolo, scala: number, o: OpzioniDelSvg, t: Tavoloz
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n(x)} ${n(y)} ${n(larghezza)} ${n(altezza)}" width="${n(larghezza * scala)}" height="${n(altezza * scala)}" font-family="${testo(o.carattere)}" font-size="${n(g.carattere)}" font-weight="normal">`,
     `<defs><marker id="${testo(idDellaPunta)}" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="${n(g.punta)}" markerHeight="${n(g.punta)}" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${t.linea}"/></marker></defs>`,
-    `<rect data-fondo="" x="${n(x)}" y="${n(y)}" width="${n(larghezza)}" height="${n(altezza)}" fill="${t.sfondo}"/>`,
+    ...(o.trasparente === true ? [] : [`<rect data-fondo="" x="${n(x)}" y="${n(y)}" width="${n(larghezza)}" height="${n(altezza)}" fill="${t.sfondo}"/>`]),
   ];
 }
 

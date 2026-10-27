@@ -13,7 +13,7 @@
 // dei gruppi seguono le regole del guscio (`ui/nomi.ts`, provate sulla tabella comune col guscio): l'elenco mostra solo
 // quelli validi, e le scritture rifiutano gli altri col genere `nome_non_valido`.
 import { mockIPC } from "@tauri-apps/api/mocks";
-import { eventoDiChiusura } from "../ui/file";
+import { estensioniDellImmagine, eventoDiChiusura, type EstensioneDellImmagine } from "../ui/file";
 import { esempioValido, gruppoValido } from "../ui/nomi";
 import type { EstensioneDelCodice } from "../core/genera/linguaggi";
 import { daSalvare } from "./salva-con-nome";
@@ -29,9 +29,13 @@ export interface Finzione {
   daEsportare?: string | null;
   /** Il nome scelto nella finestra per salvare il codice generato; assente o `null`, l'utente rinuncia. */
   daSalvareIlCodice?: string | null;
+  /** Il nome scelto nella finestra per esportare il flowchart; assente o `null`, l'utente rinuncia. */
+  daEsportareLImmagine?: string | null;
   /** Quante volte si sono aperte le finestre del file, e il nome proposto nell'ultima di salvataggio o di
-   * esportazione. */
-  finestre: { apri: number; salva: number; esporta?: number; codice?: number; proposto: string | null; cartella: string | null };
+   * esportazione (con l'estensione chiesta, per l'immagine). */
+  finestre: { apri: number; salva: number; esporta?: number; codice?: number; immagine?: number; estensione?: string; proposto: string | null; cartella: string | null };
+  /** I file scritti coi byte (il PNG): percorso → i byte in base64, come li manda l'interfaccia. */
+  byte?: Record<string, string>;
   /** Il file dato come argomento all'avvio. */
   argomento: string | null;
   /** La cartella predefinita degli esempi (nome del file → testo; «gruppo/nome» per un file di un gruppo, e «gruppo/»
@@ -135,6 +139,18 @@ mockIPC((comando, argomenti) => {
       f.finestre.proposto = a.proposto as string;
       f.finestre.cartella = a.cartella as string | null;
       return f.daSalvareIlCodice == null ? null : daSalvare(f.daSalvareIlCodice, (p) => p in f.file, a.estensione as EstensioneDelCodice);
+    case "scegli_file_dell_immagine":
+      // Il flowchart esportato: lo stesso, con «.png» o «.svg» (un'altra estensione, come il guscio, non apre nulla).
+      if (!(estensioniDellImmagine as readonly unknown[]).includes(a.estensione)) return null;
+      f.finestre.immagine = (f.finestre.immagine ?? 0) + 1;
+      f.finestre.estensione = a.estensione as string;
+      f.finestre.proposto = a.proposto as string;
+      f.finestre.cartella = a.cartella as string | null;
+      return f.daEsportareLImmagine == null ? null : daSalvare(f.daEsportareLImmagine, (p) => p in f.file || p in (f.byte ?? {}), a.estensione as EstensioneDellImmagine);
+    case "scrivi_byte":
+      if (f.scritturaRifiutata != null) return Promise.reject({ genere: "sistema", dettaglio: f.scritturaRifiutata });
+      (f.byte ??= {})[a.percorso as string] = a.byte as string;
+      return null;
     case "leggi_progetto": {
       const testo = f.file[a.percorso as string];
       if (testo === undefined) throw new Error(`file non trovato: ${String(a.percorso)}`);

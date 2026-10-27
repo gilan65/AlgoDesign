@@ -9,8 +9,9 @@
 //   insieme, un ciclo `per` aperto, una funzione chiamata nell'espressione di una Scrittura, un punto di interruzione),
 //   F11 fino alla fine; a ogni pausa i segni della tela (blocco corrente, fase, «↩», riga della domanda, punti) dati al
 //   nucleo, e i due SVG confrontati. Si contano le pause con ogni genere di segno.
-// Il `Disegno` del nucleo si rifà qui con la misura del testo del motore, in passate: le stringhe che l'impaginazione
-// chiede si misurano nella pagina col canvas e col carattere del tema, come fa l'app, finché non ne manca nessuna.
+// Il `Disegno` del nucleo si rifà qui con la misura del testo del motore, in passate (`disegno-nel-motore.ts`): le
+// stringhe che l'impaginazione chiede si misurano nella pagina col canvas e col carattere del tema, come fa l'app, finché
+// non ne manca nessuna.
 //
 // Controlli positivi: l'SVG del nucleo con una forma tolta, con un colore sbagliato, coi segni tolti e con un punto in più
 // fa rosso il confronto.
@@ -27,7 +28,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { impagina, opzioniPredefinite, type Disegno, type MisuraDelTesto, type OpzioniDelDisegno, type StileDelTesto } from "../core/disegno/impaginazione";
+import { opzioniPredefinite, type Disegno } from "../core/disegno/impaginazione";
 import type { SegniDellEsecuzione } from "../core/disegno/segni";
 import { svgDelDisegno } from "../core/disegno/svg";
 import type { Tavolozza } from "../core/disegno/tavolozza";
@@ -36,45 +37,12 @@ import { apri as apriProgetto } from "../core/progetto/formato";
 import type { Dato, Funzione } from "../core/progetto/modello";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
-import { testiDelDisegno } from "../ui/disegno/testi";
+import { disegnoNelMotore } from "./disegno-nel-motore";
 import { apri, apriVuota, costruisciFinzione } from "./pagina";
 
 test.beforeAll(costruisciFinzione);
 // Nessuna transizione: il blocco corrente cambia colore senza sfumare, e lo stile calcolato è quello finale.
 test.use({ viewport: { width: 1600, height: 1000 }, reducedMotion: "reduce" });
-
-// ------------------------------------------------------------------------------------- il disegno con la misura del motore
-
-/** Il `Disegno` di una funzione con la misura del testo del motore: l'impaginazione chiede le stringhe, la pagina le misura
- * col canvas e col carattere del tema (come `ui/disegno/misura.ts`), e si rifà finché non ne manca nessuna. */
-async function disegnoNelMotore(page: Page, funzione: Funzione, comuni: readonly Dato[], funzioni: readonly Funzione[], opzioni: OpzioniDelDisegno = opzioniPredefinite): Promise<Disegno> {
-  const note = new Map<string, number>();
-  for (let passata = 0; passata < 10; passata++) {
-    const mancanti = new Map<string, readonly [string, StileDelTesto | undefined]>();
-    const misura: MisuraDelTesto = (t, s) => {
-      const k = `${s ?? ""}|${t}`;
-      const w = note.get(k);
-      if (w === undefined) mancanti.set(k, [t, s]);
-      return w ?? 0;
-    };
-    const d = impagina(funzione, tema, misura, testiDelDisegno("it"), opzioni, comuni, funzioni);
-    if (mancanti.size === 0) return d;
-    const larghezze = await page.evaluate(
-      ({ richieste, dimensione }) => {
-        const famiglia = getComputedStyle(document.documentElement).getPropertyValue("--carattere").trim();
-        const davanti: Record<string, string> = { normale: "", grassetto: "bold ", corsivo: "italic " };
-        const contesto = document.createElement("canvas").getContext("2d")!;
-        return richieste.map(([t, s]) => {
-          contesto.font = `${davanti[s ?? "normale"]}${dimensione}px ${famiglia}`;
-          return contesto.measureText(t).width;
-        });
-      },
-      { richieste: [...mancanti.values()], dimensione: tema.carattere },
-    );
-    [...mancanti.keys()].forEach((k, i) => note.set(k, larghezze[i]!));
-  }
-  throw new Error("la misura del testo non si ferma in 10 passate");
-}
 
 /** La tavolozza dalle variabili del tema, lette sulla tela; e il carattere. */
 const tavolozzaDellaTela = (page: Page, selettore: string) =>
