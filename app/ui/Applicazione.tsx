@@ -168,7 +168,24 @@ import { FinestraEsempi } from "./finestre/FinestraEsempi";
 import { FinestraEsporta } from "./finestre/FinestraEsporta";
 import { FinestraStampa, type DaStampare } from "./stampa/FinestraStampa";
 import { PaginaStampata } from "./stampa/PaginaStampata";
-import { areeDellaStampa, flowchartRistretti, funzioniDellaStampa, nomeNellaStampa, notaDeiRistretti, partiPiene, sceltePredefinite as stampaPredefinita, sezioniDellaStampa, type ScelteDiStampa, type Sezione } from "./stampa/parti";
+import {
+  areeAccanto,
+  areeDellaStampa,
+  flowchartRistretti,
+  fraseSenzaCodice,
+  funzioniDellaStampa,
+  misureDelCodice,
+  nomeNellaStampa,
+  notaDeiRistretti,
+  notaSenzaCodice,
+  partiPiene,
+  partiStampate,
+  PUNTI_DEL_CODICE,
+  sceltePredefinite as stampaPredefinita,
+  sezioniDellaStampa,
+  type ScelteDiStampa,
+  type Sezione,
+} from "./stampa/parti";
 import { estensioneDel, inBase64, nomeDellImmagine, pngDallSvg, sceltePredefinite as esportazionePredefinita, SFONDO_DELLA_CARTA, tavolozzaDellaPagina, type ScelteDellEsportazione } from "./disegno/esporta";
 import { FinestraImporta, nomiCheEntrano, type DaUnFile } from "./finestre/FinestraImporta";
 import { FinestraGuida, memoriaNuova } from "./finestre/FinestraGuida";
@@ -176,7 +193,7 @@ import { FinestraInformazioni } from "./finestre/FinestraInformazioni";
 import { FinestraImpostazioni } from "./finestre/FinestraImpostazioni";
 import { FinestraProgetto, type DatiDelProgetto } from "./finestre/FinestraProgetto";
 import { useSpostabile } from "./spostabile";
-import { righeDi, testoDelCodice } from "../core/genera/forma";
+import { righeDi, testoDelCodice, type Generato } from "../core/genera/forma";
 import { voceDel } from "../core/genera/linguaggi";
 import { codiceDi, nomeDelFileDelCodice, paroleDeiLinguaggi, type Linguaggio } from "./genera/codice";
 import { vociDelleMancanze } from "./genera/mancanze";
@@ -397,6 +414,8 @@ export function Applicazione({
     readonly progetto: Progetto;
     readonly sezioni: readonly Sezione[];
     readonly svg: (f: Funzione, foglio: number) => string;
+    readonly svgAccanto: (f: Funzione, foglio: number) => string;
+    readonly senzaCodice: { readonly frase: string; readonly voci: readonly { readonly breve: string; readonly posto?: string }[] };
     readonly scelte: ScelteDiStampa;
     readonly quando: Date;
   } | null>(null);
@@ -1844,24 +1863,43 @@ export function Applicazione({
     const blocco = pausa === undefined ? null : pausa.dato === undefined ? pausa.blocco : valore === null ? funzioneDellaPausa! : null;
     return { corrente: blocco, faseCorrente, ripresa: pausa?.ripresa !== undefined, correnteValore: valore, interruzioni };
   };
-  /** I fogli del flowchart di una funzione con le scelte della stampa (i segni, se ci sono, sono ostacoli dei tagli). */
-  const fogliPerLaStampa = (d: Disegno, s: ScelteDiStampa, segni: SegniDellEsecuzione | undefined) => fogliDelDisegno(d, areeDellaStampa, { adatta: s.adatta, punti: s.punti }, geometriaPredefinita, segni);
-  /** Ciò che la finestra «Stampa» sa del progetto; i disegni si fanno una volta per apertura, quando servono. */
+  /** I fogli del flowchart di una funzione con le scelte della stampa (i segni, se ci sono, sono ostacoli dei tagli), sul
+   * foglio intero o sul mezzo foglio degli affiancati. */
+  const fogliPerLaStampa = (d: Disegno, s: ScelteDiStampa, segni: SegniDellEsecuzione | undefined, aree = areeDellaStampa) => fogliDelDisegno(d, aree, { adatta: s.adatta, punti: s.punti }, geometriaPredefinita, segni);
+  /** Il linguaggio del codice stampato: quello scelto, se è ancora acceso nel menu, o quello mostrato. */
+  const linguaggioDellaStampa = (s: ScelteDiStampa): Linguaggio => (s.linguaggio !== null && menuDeiLinguaggi.includes(s.linguaggio) ? s.linguaggio : linguaggio);
+  /** Ciò che la finestra «Stampa» sa del progetto; i disegni e il codice si fanno una volta per apertura, quando servono. */
   const daStampare: DaStampare | null = (() => {
     if (finestra?.genere !== "stampa") return null;
     const disegni = new Map<string, Disegno>();
     const disegnoDi = (f: Funzione) => disegni.get(f.id) ?? disegni.set(f.id, disegnoPerLaStampa(f)).get(f.id)!;
+    const generati = new Map<Linguaggio, Generato>();
+    const generatoIn = (l: Linguaggio) => generati.get(l) ?? generati.set(l, codiceDi(progetto, limiti, l, lingua)).get(l)!;
     return {
       mostrata: nomeNellaStampa(mostrata, testi),
       inPausa: inEsecuzione,
       piene: (t) => partiPiene(progetto, funzioniDellaStampa(progetto, mostrata.id, t)),
       ristretti: (s) => {
         const conSegni = inEsecuzione && s.segni;
-        const ristretti = flowchartRistretti(funzioniDellaStampa(progetto, mostrata.id, s.tutte), s, (f) => fogliPerLaStampa(disegnoDi(f), s, conSegni ? segniPerLaStampa(f, disegnoDi(f)) : undefined), geometriaPredefinita);
+        const aree = partiStampate(s, partiPiene(progetto, funzioniDellaStampa(progetto, mostrata.id, s.tutte))).affiancati ? areeAccanto : areeDellaStampa;
+        const ristretti = flowchartRistretti(funzioniDellaStampa(progetto, mostrata.id, s.tutte), s, (f) => fogliPerLaStampa(disegnoDi(f), s, conSegni ? segniPerLaStampa(f, disegnoDi(f)) : undefined, aree), geometriaPredefinita);
         return notaDeiRistretti(ristretti, s.punti, testi, lingua);
       },
+      linguaggi: menuDeiLinguaggi.map((id) => ({ id, nome: testi[paroleDeiLinguaggi[id].nome] })),
+      senzaCodice: (l) => notaSenzaCodice(generatoIn(l), testi[paroleDeiLinguaggi[l].nome], testi),
     };
   })();
+  /** Il passo del carattere del codice stampato, in millimetri: misurato col carattere del tema, o 0,6 em. */
+  const passoDelCodice = (): number => {
+    const famiglia = getComputedStyle(document.documentElement).getPropertyValue("--carattere-codice").trim();
+    const c = famiglia === "" ? null : document.createElement("canvas").getContext("2d");
+    if (c) {
+      c.font = `${PUNTI_DEL_CODICE}pt ${famiglia}`;
+      const w = c.measureText("0".repeat(100)).width / 100;
+      if (w > 0) return (w * 25.4) / 96;
+    }
+    return (0.6 * PUNTI_DEL_CODICE * 25.4) / 72;
+  };
   /** «Stampa…» della finestra: la pagina stampata con le parti scelte (i flowchart dai fogli del nucleo, con la tavolozza
    * della carta e i segni se scelti in pausa), montata subito; dopo il suo disegno la stampa del motore. `afterprint` la
    * smonta. */
@@ -1876,23 +1914,36 @@ export function Applicazione({
       funzioni.map((f) => {
         const d = disegnoPerLaStampa(f);
         const segni = conSegni ? segniPerLaStampa(f, d) : undefined;
-        return [f.id, { d, segni, fogli: fogliPerLaStampa(d, s, segni) }] as const;
+        return [f.id, { d, segni, fogli: fogliPerLaStampa(d, s, segni), accanto: fogliPerLaStampa(d, s, segni, areeAccanto) }] as const;
       }),
     );
-    const sezioni = sezioniDellaStampa(progetto, funzioni, s, (f) => disegni.get(f.id)!.fogli, testi);
-    const svg = (f: Funzione, i: number) => {
+    // Il codice del linguaggio scelto (anche senza «Genera»), e al suo posto, se non c'è, la frase e l'elenco: ciò che
+    // manca come nella colonna del codice, o gli errori come nella riga di stato.
+    const l = linguaggioDellaStampa(s);
+    const nome = testi[paroleDeiLinguaggi[l].nome];
+    const generato = codiceDi(progetto, limiti, l, lingua);
+    const erroriDelProgetto = voci.filter((v) => v.genere === "errore").map((v) => ({ breve: riempi(testi.voceErrore, { dove: v.dove, breve: v.breve }) }));
+    const mancanze = !generato.generato && generato.perche === "non-ci-sta" ? vociDelleMancanze(generato.mancanze, progetto, lingua, testi, nomeIn(progetto)).map((v) => ({ breve: v.breve, posto: v.posto })) : [];
+    const senzaCodice = {
+      frase: fraseSenzaCodice(generato, nome, erroriDelProgetto.length, testi),
+      voci: generato.generato ? [] : generato.perche === "non-ci-sta" ? mancanze : generato.perche === "errori-statici" ? erroriDelProgetto : [],
+    };
+    const codice = { nome, generato, misure: misureDelCodice(passoDelCodice(), generato.generato ? generato.righe.length : 0), fogliAccanto: (f: Funzione) => disegni.get(f.id)!.accanto };
+    const sezioni = sezioniDellaStampa(progetto, funzioni, s, (f) => disegni.get(f.id)!.fogli, testi, codice);
+    const svgDi = (accanto: boolean) => (f: Funzione, i: number) => {
       const x = disegni.get(f.id)!;
-      return svgDelFoglio(x.d, x.fogli.fogli[i]!, x.fogli.scala, {
+      const g = accanto ? x.accanto : x.fogli;
+      return svgDelFoglio(x.d, g.fogli[i]!, g.scala, {
         geometria: geometriaPredefinita,
         tavolozza,
         modo: s.colori,
         carattere,
         fondoDeiCicli: scelte.fondoDeiCicli,
-        id: `stampa-${f.id}-${i}`,
+        id: `stampa-${accanto ? "accanto-" : ""}${f.id}-${i}`,
         ...(x.segni ? { segni: x.segni } : {}),
       });
     };
-    flushSync(() => setStampata({ progetto, sezioni, svg, scelte: s, quando: new Date() }));
+    flushSync(() => setStampata({ progetto, sezioni, svg: svgDi(false), svgAccanto: svgDi(true), senzaCodice, scelte: s, quando: new Date() }));
     // La pagina è nel documento; il motore la impagina al disegno dopo.
     requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
   }
@@ -3826,12 +3877,20 @@ export function Applicazione({
         }}
         rinuncia={() => setFinestra(null)}
       />
-      <FinestraStampa cosa={finestra?.genere === "stampa" ? daStampare : null} scelte={scelteDellaStampa} testi={testi} stampa={stampaIlProgetto} rinuncia={() => setFinestra(null)} />
+      <FinestraStampa
+        cosa={finestra?.genere === "stampa" ? daStampare : null}
+        scelte={{ ...scelteDellaStampa, linguaggio: linguaggioDellaStampa(scelteDellaStampa) }}
+        testi={testi}
+        stampa={stampaIlProgetto}
+        rinuncia={() => setFinestra(null)}
+      />
       {stampata && (
         <PaginaStampata
           progetto={stampata.progetto}
           sezioni={stampata.sezioni}
           svgDelFoglio={stampata.svg}
+          svgAccanto={stampata.svgAccanto}
+          senzaCodice={stampata.senzaCodice}
           scelte={stampata.scelte}
           quando={stampata.quando}
           lingua={lingua}

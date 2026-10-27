@@ -1,22 +1,28 @@
 // «Stampa…» (menu «Progetto» e Ctrl+P) nel motore, col guscio simulato e `window.print` sostituito da un contatore (la
 // pagina preparata resta nel documento: il motore vero la toglie con `afterprint`), sul programma di riferimento della
 // tappa 3 (quattro funzioni; casi d'uso nel programma, in `valido` e in `stelle`):
-// - la finestra con le predefinite e le parti piene; la pagina con le parti scelte e solo quelle, nell'ordine (Progetto,
-//   Dati, Flowchart, Casi d'uso), ognuna da un foglio nuovo con la sua regola `@page` nel foglio di stile costruito dal
-//   CSSOM; le intestazioni; ogni foglio del flowchart uguale all'SVG che il nucleo scrive per quel foglio; il contenuto
-//   dei dati e dei casi d'uso contato a mano; in stampa la sola pagina; il PDF di Chromium coi versi dei fogli dalla
-//   `/MediaBox`; `afterprint` toglie la pagina e le sue regole;
-// - «Ogni procedura e funzione da un foglio nuovo», «solo quella mostrata» (la parte vuota spenta), le predefinite che
-//   stampano il solo flowchart, «Annulla» che non stampa, le scelte ricordate per la sessione; la nota dei flowchart
+// - la finestra con le predefinite (gli affiancati) e le sei parti nell'ordine; la pagina con le parti scelte e solo
+//   quelle, nell'ordine (Progetto, Dati, Flowchart, Casi d'uso), ognuna da un foglio nuovo con la sua regola `@page` nel
+//   foglio di stile costruito dal CSSOM; le intestazioni; ogni foglio del flowchart uguale all'SVG che il nucleo scrive
+//   per quel foglio; il contenuto dei dati e dei casi d'uso contato a mano; in stampa la sola pagina; il PDF di Chromium
+//   coi versi dei fogli dalla `/MediaBox`; `afterprint` toglie la pagina e le sue regole;
+// - «Ogni procedura e funzione in un foglio nuovo», «solo quella mostrata» (la parte vuota spenta), le predefinite che
+//   stampano i soli affiancati, «Annulla» che non stampa, le scelte ricordate per la sessione; la nota dei flowchart
 //   ristretti coi punti del nucleo;
 // - Ctrl+P col fuoco in un campo; Ctrl+P fermato anche con un'altra finestra aperta; in pausa la casella dei segni, che
-//   mette o toglie il blocco corrente e il punto di interruzione dai fogli.
+//   mette o toglie il blocco corrente e il punto di interruzione dai fogli (degli affiancati);
+// - il codice: i linguaggi accesi nel menu accanto a «Codice in»; gli affiancati in Python per funzione (il flowchart sul
+//   mezzo foglio uguale all'SVG del nucleo, il codice coi numeri veri, ↪ sul seguito, la coda «Funzioni di supporto»),
+//   tutti orizzontali nel PDF; il codice da solo verticale e orizzontale dalla `/MediaBox`, e una funzione per foglio;
+//   ogni riga nel suo lato, misurato alla larghezza della carta; «Accademico» che non dà il codice: la nota, il foglio
+//   con la frase e l'elenco, poi i flowchart.
 // Gli attesi sono quelli scritti a mano prima del codice (`atteso.md` della misura); i fogli di ogni flowchart (quanti e
 // il verso) li dà il nucleo con la misura del testo del motore.
 //
 // CHE COSA NON GUARDA: la WebView2, la sua anteprima di stampa e le intestazioni che il motore aggiunge di suo (non ci
 // sono in `page.pdf`: la prova sul prodotto); il testo nei riquadri di margine del PDF (le regole li scrivono: lo guarda
-// `ui/stampa/parti.test.ts`; che il motore li renda lo dice la misura della sonda); WebKit.
+// `ui/stampa/parti.test.ts`; che il motore li renda lo dice la misura della sonda); un progetto con errori stampato (la
+// frase e l'elenco degli errori li guarda `parti.test.ts`; la pagina li disegna come le mancanze); WebKit.
 import { expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -28,7 +34,8 @@ import { apri as apriProgetto } from "../core/progetto/formato";
 import type { Funzione } from "../core/progetto/modello";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
-import { areeDellaStampa, notaDeiRistretti } from "../ui/stampa/parti";
+import { testiDelleMancanze } from "../i18n/mancanze";
+import { areeAccanto, areeDellaStampa, notaDeiRistretti } from "../ui/stampa/parti";
 import { disegnoNelMotore } from "./disegno-nel-motore";
 import { apriVuota, costruisciFinzione, voceDelMenu } from "./pagina";
 
@@ -62,7 +69,8 @@ const CARTA: Tavolozza = {
 };
 
 const finestra = (page: Page) => page.getByRole("dialog", { name: it.stampaTitolo, exact: true });
-const casella = (page: Page, nome: string) => finestra(page).getByRole("checkbox", { name: new RegExp(`^${nome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`) });
+/** La casella col testo dato (la nota sotto non conta: «Flowchart» non è «Flowchart e codice affiancati»). */
+const casella = (page: Page, nome: string) => finestra(page).locator("label", { has: page.locator(`xpath=./span/span[1][normalize-space(.)="${nome}"]`) }).getByRole("checkbox");
 const stampe = (page: Page) => page.evaluate(() => (window as unknown as { __stampe__: number }).__stampe__);
 /** Le sezioni della pagina preparata: la parte, l'intestazione, il nome della regola. */
 const sezioni = (page: Page) =>
@@ -99,13 +107,13 @@ async function dopoLaStampa(page: Page): Promise<void> {
 }
 
 /** I fogli del nucleo di ogni funzione, coi punti dati, con la misura del testo del motore. */
-async function fogliDelNucleo(page: Page, punti = 8, adatta = false, testo: unknown = progetto) {
+async function fogliDelNucleo(page: Page, punti = 8, adatta = false, testo: unknown = progetto, aree = areeDellaStampa) {
   const p = apriProgetto(typeof testo === "string" ? testo : JSON.stringify(testo));
   if (!p.ok) throw new Error("il progetto della prova non si apre");
   const fuori = [];
   for (const f of p.progetto.functions) {
     const d = await disegnoNelMotore(page, f, f.kind === "main" ? (p.progetto.shared_constants ?? []) : [], p.progetto.functions);
-    fuori.push({ f, d, g: fogliDelDisegno(d, areeDellaStampa, { adatta, punti }, tema) });
+    fuori.push({ f, d, g: fogliDelDisegno(d, aree, { adatta, punti }, tema) });
   }
   return fuori;
 }
@@ -122,9 +130,12 @@ test("[Stampa] tutte le parti del riferimento della tappa 3: le predefinite, le 
   const prima = await page.evaluate(() => document.adoptedStyleSheets.length);
   await (await voceDelMenu(page, it.stampa)).click();
   await expect(finestra(page)).toBeVisible();
-  // Le predefinite: tutte le funzioni, di seguito; solo il flowchart; nessuna parte spenta; nessuna casella dei segni.
-  const parti = [it.stampaProgetto, it.stampaDati, it.stampaFlowchart, it.stampaCasi];
-  const ordine = await finestra(page).locator("[data-parti] > div > label > span > span:first-child").allTextContents();
+  // Le predefinite: tutte le funzioni, di seguito; il flowchart e il codice affiancati; nessuna parte spenta; nessuna
+  // casella dei segni. Le sei parti nell'ordine.
+  const parti = [it.stampaProgetto, it.stampaDati, it.stampaFlowchart, it.stampaCodice, it.stampaAffiancati, it.stampaCasi];
+  const ordine = await finestra(page)
+    .locator("[data-parti] > div")
+    .evaluateAll((dd) => dd.map((d) => d.querySelector("label > span > span:first-child")!.textContent));
   const predefinite = await Promise.all(parti.map(async (n) => [await casella(page, n).isChecked(), await casella(page, n).isDisabled()]));
   expect({
     ordine,
@@ -132,8 +143,11 @@ test("[Stampa] tutte le parti del riferimento della tappa 3: le predefinite, le 
     tutte: await finestra(page).getByRole("radio", { name: it.stampaTutte, exact: true }).isChecked(),
     foglioNuovo: await casella(page, it.stampaFoglioNuovo).isChecked(),
     segni: await casella(page, it.stampaSegni).count(),
-  }).toEqual({ ordine: parti, predefinite: [[false, false], [false, false], [true, false], [false, false]], tutte: true, foglioNuovo: false, segni: 0 });
+  }).toEqual({ ordine: parti, predefinite: [[false, false], [false, false], [true, false], [true, false], [true, false], [false, false]], tutte: true, foglioNuovo: false, segni: 0 });
   for (const n of [it.stampaProgetto, it.stampaDati, it.stampaCasi]) await casella(page, n).check();
+  // Senza il codice gli affiancati sono spenti, e non escono: qui le parti del progetto, dei dati, del flowchart e dei casi.
+  await casella(page, it.stampaCodice).uncheck();
+  expect([await casella(page, it.stampaAffiancati).isDisabled(), await casella(page, it.stampaAffiancati).isChecked()]).toEqual([true, false]);
   await stampa(page, 1);
 
   // L'atteso scritto prima del codice; i fogli di ogni flowchart dal nucleo.
@@ -212,7 +226,7 @@ test("[Stampa] tutte le parti del riferimento della tappa 3: le predefinite, le 
   expect(await page.evaluate(() => document.adoptedStyleSheets.length)).toBe(prima);
 });
 
-test("[Stampa] le predefinite stampano il solo flowchart; «Annulla» non stampa; le scelte ricordate; ogni funzione da un foglio nuovo; solo quella mostrata, con la parte vuota spenta", async ({ page }) => {
+test("[Stampa] le predefinite stampano i soli affiancati; «Annulla» non stampa; le scelte ricordate; ogni funzione in un foglio nuovo; solo quella mostrata, con la parte vuota spenta", async ({ page }) => {
   test.setTimeout(120_000);
   await conStampa(page);
   await page.keyboard.press("Control+p");
@@ -220,19 +234,20 @@ test("[Stampa] le predefinite stampano il solo flowchart; «Annulla» non stampa
   await finestra(page).getByRole("button", { name: it.annullaEsc, exact: true }).click();
   await expect(finestra(page)).toHaveCount(0);
   expect({ stampe: await stampe(page), pagina: await page.locator("[data-stampa]").count() }).toEqual({ stampe: 0, pagina: 0 });
-  // Le predefinite: il solo flowchart di tutte le funzioni.
+  // Le predefinite: i soli affiancati di tutte le funzioni, nel linguaggio mostrato (lo Pseudocodice, il primo del menu:
+  // il codice di ogni funzione sta in un foglio, e non ha la coda).
   await page.keyboard.press("Control+p");
   await stampa(page, 1);
-  const nucleo = await fogliDelNucleo(page);
-  expect((await sezioni(page)).map((x) => x.parte)).toEqual(Array<string>(nucleo.reduce((n, { g }) => n + g.fogli.length, 0)).fill("flowchart"));
+  const accanto = await fogliDelNucleo(page, 8, false, progetto, areeAccanto);
+  expect((await sezioni(page)).map((x) => x.parte)).toEqual(Array<string>(accanto.reduce((n, { g }) => n + g.fogli.length, 0)).fill("affiancati"));
   await dopoLaStampa(page);
 
-  // Ogni funzione da un foglio nuovo: dati e casi d'uso una sezione per funzione, col nome nell'intestazione.
+  // Ogni funzione in un foglio nuovo: dati e casi d'uso una sezione per funzione, col nome nell'intestazione.
   await page.keyboard.press("Control+p");
   for (const n of [it.stampaDati, it.stampaCasi]) await casella(page, n).check();
   await casella(page, it.stampaFoglioNuovo).check();
   await stampa(page, 2);
-  const divise = (await sezioni(page)).filter((x) => x.parte !== "flowchart").map((x) => x.testa);
+  const divise = (await sezioni(page)).filter((x) => x.parte === "dati" || x.parte === "casi").map((x) => x.testa);
   expect(divise).toEqual([...NOMI.map((n) => `${N} · Dati · ${n}`), ...[NOMI[0], NOMI[2], NOMI[3]].map((n) => `${N} · Casi d'uso · ${n}`)]);
   await dopoLaStampa(page);
 
@@ -249,7 +264,7 @@ test("[Stampa] le predefinite stampano il solo flowchart; «Annulla» non stampa
   // Controllo positivo: la parte dei casi d'uso, scelta ma vuota, non c'è.
   expect(sola.map((x) => [x.parte, x.testa])).toEqual([
     ["dati", `${N} · Dati`],
-    ...nucleo[1]!.g.fogli.map(() => ["flowchart", `${N} · Flowchart · leggi_numero`]),
+    ...accanto[1]!.g.fogli.map(() => ["affiancati", `${N} · Flowchart e codice in Pseudocodice · leggi_numero`]),
   ]);
   await dopoLaStampa(page);
 });
@@ -280,7 +295,8 @@ test("[Ctrl+P] col fuoco in un campo apre la finestra; con un'altra finestra ape
   await page.keyboard.press("F5");
   await expect(page.locator("[data-stato-esecuzione]")).toHaveText(new RegExp(`^${riempi(it.statoInPausa, { n: "" })}`));
   // Sul primo foglio del programma (ogni foglio ha il disegno intero, e ne mostra la sua finestra).
-  const segni = () => page.locator('[data-stampa] [data-parte="flowchart"]').first().evaluate((s) => [s.querySelectorAll("[data-freccia]").length, s.querySelectorAll("[data-interruzione]").length]);
+  // Le predefinite: gli affiancati, coi segni anche lì.
+  const segni = () => page.locator('[data-stampa] [data-parte="affiancati"]').first().evaluate((s) => [s.querySelectorAll("[data-freccia]").length, s.querySelectorAll("[data-interruzione]").length]);
   await page.keyboard.press("Control+p");
   await expect(casella(page, it.stampaSegni)).toBeChecked();
   await stampa(page, 1);
@@ -322,6 +338,8 @@ test("[Stampa] la nota dei flowchart ristretti: ai punti scelti, coi punti del n
   await apriVuota(page, { lingua: "it" }, { argomento: percorso, file: { [percorso]: JSON.stringify(LARGO) } });
   await expect(page.getByRole("status")).toHaveText(riempi(it.apertoIl, { file: "largo.algo" }));
   await page.keyboard.press("Control+p");
+  // Il flowchart da solo, sul foglio intero (senza il codice gli affiancati non escono).
+  await casella(page, it.stampaCodice).uncheck();
   const nota = finestra(page).locator("[data-ristretti]");
   const campo = finestra(page).getByRole("spinbutton", { name: it.stampaPunti, exact: true });
   const cursore = finestra(page).getByRole("slider", { name: it.stampaPunti, exact: true });
@@ -350,4 +368,212 @@ test("[Stampa] la nota dei flowchart ristretti: ai punti scelti, coi punti del n
   expect({ regole: (await regole(page)).map((r) => r.verso), sezioni: (await sezioni(page)).map((x) => x.parte) }).toEqual({ regole: ["a4 landscape"], sezioni: ["flowchart"] });
   await page.emulateMedia({ media: "print" });
   expect(await fogliDelPdf(page)).toEqual(["o"]);
+});
+
+// Il codice stampato. Le righe del Python del riferimento della tappa 3, contate sul testo generato (`parti.test.ts`): il
+// programma principale 1–36, `leggi_numero` 37–48, `valido` 49–52, `stelle` 53–60, la coda 61–111; ognuna delle quattro
+// funzioni sta in un foglio del codice, la coda ne vuole due (sul mezzo foglio) e il file intero due verticali o tre
+// orizzontali.
+const RIGHE = [
+  [1, 36],
+  [37, 48],
+  [49, 52],
+  [53, 60],
+] as const;
+const menuDeiLinguaggi = (page: Page) => finestra(page).getByRole("combobox", { name: it.stampaLinguaggio, exact: true });
+/** Le righe del codice di ogni sezione: la prima e l'ultima vera (o null), quanti seguiti (↪), quanti SVG, se è il foglio
+ * senza codice. */
+const codiceStampato = (page: Page) =>
+  page.locator("[data-stampa] section").evaluateAll((ss) =>
+    ss.map((s) => {
+      const righe = [...s.querySelectorAll("[data-riga]")];
+      const vere = righe.filter((r) => r.getAttribute("data-pezzo") === "0").map((r) => Number(r.getAttribute("data-riga")));
+      return { prima: vere[0] ?? null, ultima: vere.at(-1) ?? null, seguiti: righe.length - vere.length, svg: s.querySelectorAll("svg").length, senza: s.querySelector("[data-senza-codice]") !== null };
+    }),
+  );
+/** In stampa: per ogni foglio del codice, se le righe stanno nel lato, misurato dalla carta e non dal contenitore (un lato
+ * che si allarga per la riga lunga la conterrebbe). Senza impaginazione `emulateMedia` dispone la pagina alla larghezza
+ * della finestra: qui ogni sezione ha la larghezza dell'area utile del suo foglio (273 mm orizzontale, 186 verticale),
+ * quella che le dà la sua regola `@page`. Negli affiancati il lato è metà meno metà dei 6 mm, e il lato del codice deve
+ * essere largo proprio così; da solo il foglio intero. */
+const righeNelLato = (page: Page, codiceOrizzontale = false) =>
+  page.evaluate((orizzontale) => {
+    const mm = 96 / 25.4;
+    const solco = 6 * mm;
+    const pre = [...document.querySelectorAll("[data-stampa] pre")] as HTMLElement[];
+    for (const p of pre) {
+      const s = p.closest("section")!;
+      s.style.width = `${s.getAttribute("data-parte") === "affiancati" || orizzontale ? 273 : 186}mm`;
+    }
+    const misure = pre.map((p) => {
+      const s = p.closest("section")!;
+      const lato = s.getAttribute("data-parte") === "affiancati" ? (s.clientWidth - solco) / 2 : s.clientWidth;
+      // La larghezza del testo: il bordo destro dell'ultima parte di ogni riga (`scrollWidth` non scende sotto quella
+      // dell'elemento, e misurerebbe il contenitore).
+      const sinistra = p.getBoundingClientRect().left;
+      const testo = Math.max(...[...p.children].map((r) => r.lastElementChild!.getBoundingClientRect().right - sinistra));
+      return { larga: Math.max(testo, p.scrollWidth > p.clientWidth + 1 ? p.scrollWidth : 0) / lato, giusta: Math.abs(p.clientWidth - lato) <= 1.5 };
+    });
+    const fuori = { pre: pre.length, fuori: misure.filter((m) => m.larga > 1.002).length, latiStorti: misure.filter((m) => !m.giusta).length, piuLarga: Math.max(...misure.map((m) => m.larga)) };
+    for (const p of pre) p.closest("section")!.style.removeProperty("width");
+    return fuori;
+  }, codiceOrizzontale);
+
+test("[Stampa] gli affiancati in Python: i linguaggi accesi nel menu, per funzione il flowchart sul mezzo foglio e il codice coi numeri veri, la coda «Funzioni di supporto», ogni riga nel suo lato, tutti orizzontali nel PDF", async ({ page }) => {
+  test.setTimeout(120_000);
+  await conStampa(page);
+  await page.keyboard.press("Control+p");
+  // I linguaggi accesi nel menu delle Impostazioni (quelli di partenza: «Accademico» non c'è); scelto quello mostrato.
+  expect({ voci: await menuDeiLinguaggi(page).locator("option").allTextContents(), scelto: await menuDeiLinguaggi(page).inputValue() }).toEqual({
+    voci: [it.linguaggioPseudocodice, it.linguaggioPython, it.linguaggioC],
+    scelto: "pseudocodice",
+  });
+  // Il verso del codice è spento con gli affiancati (sempre orizzontali).
+  expect(await finestra(page).getByRole("radio", { name: it.stampaVerticale, exact: true }).isDisabled()).toBe(true);
+  await menuDeiLinguaggi(page).selectOption("python");
+  await expect(finestra(page).locator("[data-senza-codice]")).toHaveCount(0);
+  await stampa(page, 1);
+
+  // L'atteso: per ogni funzione tanti fogli quanti quelli del suo flowchart sul mezzo foglio (il codice sta nel primo),
+  // poi i due della coda.
+  const accanto = await fogliDelNucleo(page, 8, false, progetto, areeAccanto);
+  const t = `${N} · Flowchart e codice in Python`;
+  const foglioDi = (i: number, n: number) => (n > 1 ? riempi(it.stampaFoglioDi, { n: String(i + 1), m: String(n) }) : "");
+  const attese = [
+    ...accanto.flatMap(({ g }, k) => g.fogli.map((_, i) => ({ parte: "affiancati", testa: `${t} · ${NOMI[k]}`, destra: foglioDi(i, g.fogli.length) }))),
+    ...[0, 1].map((i) => ({ parte: "affiancati", testa: `${t} · ${it.stampaSupporto}`, destra: foglioDi(i, 2) })),
+  ];
+  const s = await sezioni(page);
+  expect(s.map(({ parte, testa, destra }) => ({ parte, testa, destra }))).toEqual(attese);
+  const codice = await codiceStampato(page);
+  console.log(`affiancati: ${s.length} sezioni, fogli dei flowchart sul mezzo foglio ${accanto.map(({ g }) => g.fogli.length).join(" ")}, seguiti ${codice.reduce((n, c) => n + c.seguiti, 0)}`);
+  const primi = accanto.map(({ g }, k) => accanto.slice(0, k).reduce((n, x) => n + x.g.fogli.length, 0));
+  expect(primi.map((i) => [codice[i]!.prima, codice[i]!.ultima, codice[i]!.svg])).toEqual(RIGHE.map(([a, b]) => [a, b, 1]));
+  // Un flowchart più lungo continua col lato del codice vuoto; la coda col lato del flowchart vuoto, dalla 61 alla 111.
+  for (const [k, { g }] of accanto.entries()) for (let i = 1; i < g.fogli.length; i++) expect([codice[primi[k]! + i]!.prima, codice[primi[k]! + i]!.svg]).toEqual([null, 1]);
+  const [c1, c2] = codice.slice(-2) as [(typeof codice)[number], (typeof codice)[number]];
+  expect([c1.prima, c2.prima === c1.ultima! + 1, c2.ultima, c1.svg, c2.svg]).toEqual([61, true, 111, 0, 0]);
+  // Il seguito di una riga a capo: ↪ al posto del numero (le spiegazioni in testa al file vanno a capo).
+  expect(codice[0]!.seguiti).toBeGreaterThan(0);
+  expect(await page.locator('[data-stampa] [data-pezzo="1"] > span').first().textContent()).toBe("↪");
+
+  // Ogni foglio del flowchart è l'SVG che il nucleo scrive per quel foglio sul mezzo foglio.
+  const carattere = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--carattere").trim());
+  const svgAttesi = accanto.flatMap(({ f, d, g }) => g.fogli.map((foglio, i) => svgDelFoglio(d, foglio, g.scala, { geometria: tema, tavolozza: CARTA, modo: "colori", carattere, fondoDeiCicli: false, id: `stampa-accanto-${f.id}-${i}` })));
+  const confronto = await page.evaluate((aa) => {
+    const stampati = [...document.querySelectorAll('[data-stampa] [data-parte="affiancati"] svg')].map((e) => e.outerHTML);
+    return { stampati: stampati.length, uguali: aa.map((a, i) => {
+      const d = document.createElement("div");
+      d.innerHTML = a;
+      return d.querySelector("svg")!.outerHTML === stampati[i];
+    }) };
+  }, svgAttesi);
+  expect(confronto).toEqual({ stampati: svgAttesi.length, uguali: svgAttesi.map(() => true) });
+
+  // In stampa: ogni riga sta nel suo lato; il PDF ha un foglio orizzontale per sezione.
+  await page.emulateMedia({ media: "print" });
+  const lato = await righeNelLato(page);
+  console.log(`righe nel lato: ${JSON.stringify(lato)}`);
+  expect({ pre: lato.pre, fuori: lato.fuori, latiStorti: lato.latiStorti }).toEqual({ pre: RIGHE.length + 2, fuori: 0, latiStorti: 0 });
+  expect(await fogliDelPdf(page)).toEqual(attese.map(() => "o"));
+});
+
+test("[Stampa] il codice da solo: verticale, poi orizzontale dalla /MediaBox; ogni procedura e funzione in un foglio nuovo coi numeri veri e la coda in fondo", async ({ page }) => {
+  test.setTimeout(120_000);
+  await conStampa(page);
+  await page.keyboard.press("Control+p");
+  await menuDeiLinguaggi(page).selectOption("python");
+  await casella(page, it.stampaFlowchart).uncheck();
+  const verticale = finestra(page).getByRole("radio", { name: it.stampaVerticale, exact: true });
+  const orizzontale = finestra(page).getByRole("radio", { name: it.stampaOrizzontale, exact: true });
+  // Senza il flowchart gli affiancati sono spenti; il verso si sceglie, verticale per predefinito.
+  expect([await casella(page, it.stampaAffiancati).isDisabled(), await verticale.isChecked(), await verticale.isDisabled()]).toEqual([true, true, false]);
+  await stampa(page, 1);
+  const t = `${N} · Codice in Python`;
+  const di = async () => ({ sezioni: (await sezioni(page)).map((x) => [x.parte, x.testa, x.destra]), codice: (await codiceStampato(page)).map((c) => [c.prima, c.ultima]) });
+  const v = await di();
+  expect(v.sezioni).toEqual([["codice", t, ""], ["codice", t, ""]]);
+  expect([v.codice[0]![0], v.codice[1]![0] === v.codice[0]![1]! + 1, v.codice[1]![1]]).toEqual([1, true, 111]);
+  await page.emulateMedia({ media: "print" });
+  expect({ lato: ((l) => l.fuori + l.latiStorti)(await righeNelLato(page)), pdf: await fogliDelPdf(page) }).toEqual({ lato: 0, pdf: ["v", "v"] });
+  await page.emulateMedia({ media: "screen" });
+  await dopoLaStampa(page);
+
+  // Le scelte ricordate (Python, il flowchart spento); su fogli orizzontali: tre.
+  await page.keyboard.press("Control+p");
+  expect([await menuDeiLinguaggi(page).inputValue(), await casella(page, it.stampaFlowchart).isChecked()]).toEqual(["python", false]);
+  await orizzontale.check();
+  await stampa(page, 2);
+  const o = await di();
+  expect(o.sezioni).toEqual(Array(3).fill(["codice", t, ""]));
+  expect([o.codice[0]![0], o.codice[2]![1]]).toEqual([1, 111]);
+  await page.emulateMedia({ media: "print" });
+  expect({ lato: ((l) => l.fuori + l.latiStorti)(await righeNelLato(page, true)), pdf: await fogliDelPdf(page) }).toEqual({ lato: 0, pdf: ["o", "o", "o"] });
+  await page.emulateMedia({ media: "screen" });
+  await dopoLaStampa(page);
+
+  // Ogni procedura e funzione in un foglio nuovo, su fogli verticali: una sezione per parte del codice.
+  await page.keyboard.press("Control+p");
+  await casella(page, it.stampaFoglioNuovo).check();
+  await verticale.check();
+  await stampa(page, 3);
+  const d = await di();
+  expect(d).toEqual({
+    sezioni: [...NOMI.map((n) => ["codice", `${t} · ${n}`, ""]), ["codice", `${t} · ${it.stampaSupporto}`, ""]],
+    codice: [...RIGHE.map(([a, b]) => [a, b]), [61, 111]],
+  });
+  await page.emulateMedia({ media: "print" });
+  expect(await fogliDelPdf(page)).toEqual(Array(5).fill("v"));
+});
+
+test("[Stampa] un linguaggio che non dà il codice: «Accademico» acceso nel menu, la nota nella finestra, il foglio con la frase e l'elenco intero e poi i flowchart; il codice da solo, il solo foglio", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.addInitScript(() => {
+    (window as unknown as { __stampe__: number }).__stampe__ = 0;
+    window.print = () => {
+      (window as unknown as { __stampe__: number }).__stampe__++;
+    };
+  });
+  // Un programma con una procedura, che «Accademico» non scrive: una cosa da cambiare (il parametro per riferimento).
+  const percorso = "C:\\Documenti\\parametro-booleano.algo";
+  const testo = readFileSync(fileURLToPath(new URL("../casi/tappa-3/parametro-booleano.algo", import.meta.url)), "utf8");
+  await apriVuota(page, { lingua: "it", linguaggiDelCodice: ["python", "accademico"] }, { argomento: percorso, file: { [percorso]: testo } });
+  await expect(page.getByRole("status")).toHaveText(riempi(it.apertoIl, { file: "parametro-booleano.algo" }));
+  await page.keyboard.press("Control+p");
+  const nota = finestra(page).locator("[data-senza-codice]");
+  expect({ voci: await menuDeiLinguaggi(page).locator("option").allTextContents(), scelto: await menuDeiLinguaggi(page).inputValue(), nota: await nota.count() }).toEqual({
+    voci: [it.linguaggioPython, it.linguaggioAccademico],
+    scelto: "python",
+    nota: 0,
+  });
+  await menuDeiLinguaggi(page).selectOption("accademico");
+  await expect(nota).toHaveText(riempi(it.stampaNotaNonCiSta, { linguaggio: it.linguaggioAccademico, quante: it.mancanzaUna }));
+  await stampa(page, 1);
+  const flowchart = await fogliDelNucleo(page, 8, false, testo);
+  const nomi = [it.schedaPrincipale, "inverti"];
+  expect((await sezioni(page)).map(({ parte, testa, destra }) => ({ parte, testa, destra }))).toEqual([
+    { parte: "affiancati", testa: "parametro-booleano · Flowchart e codice in Accademico", destra: "" },
+    ...flowchart.flatMap(({ g }, k) =>
+      g.fogli.map((_, i) => ({ parte: "flowchart", testa: `parametro-booleano · Flowchart · ${nomi[k]}`, destra: g.fogli.length > 1 ? riempi(it.stampaFoglio, { n: String(i + 1), m: String(g.fogli.length) }) : "" })),
+    ),
+  ]);
+  const elenco = page.locator("[data-stampa] [data-senza-codice]");
+  expect({ frase: await elenco.locator("p").textContent(), voci: await elenco.locator("li").count(), prima: await elenco.locator("li").first().textContent() }).toMatchObject({
+    frase: riempi(it.stampaNonCiSta, { linguaggio: it.linguaggioAccademico, quante: it.mancanzaUna }),
+    voci: 1,
+  });
+  expect((await elenco.locator("li").first().textContent())!.startsWith(riempi(testiDelleMancanze.it.rif.breve, { operatore: "" }))).toBe(true);
+  await page.emulateMedia({ media: "print" });
+  expect(await fogliDelPdf(page)).toEqual(["v", ...flowchart.flatMap(({ g }) => g.fogli.map(() => (g.orizzontale ? "o" : "v")))]);
+  await page.emulateMedia({ media: "screen" });
+  await dopoLaStampa(page);
+
+  // Il codice da solo: il solo foglio dell'elenco.
+  await page.keyboard.press("Control+p");
+  await casella(page, it.stampaFlowchart).uncheck();
+  await stampa(page, 2);
+  expect((await sezioni(page)).map((x) => [x.parte, x.testa])).toEqual([["codice", "parametro-booleano · Codice in Accademico"]]);
+  expect(await page.locator("[data-stampa] [data-senza-codice] li").count()).toBe(1);
+  await page.emulateMedia({ media: "print" });
+  expect(await fogliDelPdf(page)).toEqual(["v"]);
 });

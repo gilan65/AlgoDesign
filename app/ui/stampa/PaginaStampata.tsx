@@ -9,10 +9,14 @@
 // il flowchart, un SVG del nucleo per foglio (mai la tela della finestra); i casi d'uso, una tabella per funzione col nome,
 // la descrizione, i valori scritti nella console e l'output atteso (con l'errore e gli avvisi attesi, come li dice la
 // scheda del caso). Le tabelle e i titoli delle funzioni si seguono; con una funzione per sezione il titolo resta.
+// Il codice: le righe del foglio a spaziatura fissa, col numero vero della riga a destra nella sua colonna; il seguito di
+// una riga a capo ha ↪ al posto del numero e una barretta grigia prima del testo. Gli affiancati: il foglio diviso a metà,
+// a sinistra l'SVG del flowchart sul mezzo foglio (se quel foglio ne ha), a destra il codice (se ne ha). Senza codice:
+// la frase e l'elenco (ciò che manca col suo posto, o gli errori).
 //
 // CHE COSA NON FA: stampare (`window.print` di chi la mostra); la tavolozza e il modo di colore del flowchart (gli SVG li
 // dà chi la mostra, con la tavolozza della carta).
-import { useLayoutEffect, type ReactElement } from "react";
+import { useLayoutEffect, type CSSProperties, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 import { risultatoDi, type TestiDelDisegno, type ValoreRipetuto } from "../../core/disegno/impaginazione";
 import type { Dato, Funzione, Progetto, Segnalazione } from "../../core/progetto/modello";
@@ -21,10 +25,31 @@ import type { Dizionario } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
 import { nomiDelleNature } from "../dati/CampiDelDato";
 import { rigaDelDato, tipoDelDato } from "../dati/righe";
-import { casiDi, comuniDi, nomeNellaStampa, regoleDeiFogli, type ScelteDiStampa, type Sezione } from "./parti";
+import { casiDi, comuniDi, nomeNellaStampa, regoleDeiFogli, type CodiceDelFoglio, type ScelteDiStampa, type Sezione } from "./parti";
 import stili from "./Stampa.module.css";
 
 type Codici = (typeof testiDeiCodici)["it"];
+
+/** Le righe di un foglio del codice. */
+function Codice({ codice }: { codice: CodiceDelFoglio }): ReactElement {
+  return (
+    <pre className={stili.codice} style={{ "--cifre": `${codice.cifre}ch` } as CSSProperties}>
+      {codice.righe.map((r) => (
+        <div key={`${r.riga}.${r.pezzo}`} className={stili.riga} data-riga={codice.primo + r.riga + 1} data-pezzo={r.pezzo}>
+          <span className={stili.numero}>{r.pezzo === 0 ? codice.primo + r.riga + 1 : "↪"}</span>
+          {r.pezzo === 0 ? (
+            <span>{" ".repeat(r.colonna) + r.testo}</span>
+          ) : (
+            <span>
+              {" ".repeat(r.colonna - 2)}
+              <span className={stili.barra}> </span> {r.testo}
+            </span>
+          )}
+        </div>
+      ))}
+    </pre>
+  );
+}
 
 function Tabella({ titolo, righe, piede }: { titolo?: string; righe: readonly (readonly string[])[]; piede?: string | undefined }): ReactElement {
   const [colonne, ...corpo] = righe;
@@ -64,6 +89,8 @@ export function PaginaStampata({
   progetto,
   sezioni,
   svgDelFoglio,
+  svgAccanto,
+  senzaCodice,
   scelte,
   quando,
   lingua,
@@ -76,6 +103,10 @@ export function PaginaStampata({
   sezioni: readonly Sezione[];
   /** L'SVG del nucleo per un foglio del flowchart di una funzione. */
   svgDelFoglio: (f: Funzione, foglio: number) => string;
+  /** L'SVG del nucleo per un foglio del flowchart di una funzione sul mezzo foglio degli affiancati. */
+  svgAccanto: (f: Funzione, foglio: number) => string;
+  /** Al posto del codice, se il linguaggio non lo dà: la frase e l'elenco. */
+  senzaCodice: { readonly frase: string; readonly voci: readonly { readonly breve: string; readonly posto?: string }[] };
   scelte: ScelteDiStampa;
   quando: Date;
   lingua: string;
@@ -164,6 +195,22 @@ export function PaginaStampata({
     );
   };
 
+  const elenco = (
+    <div data-senza-codice="">
+      <p className={stili.frase}>{senzaCodice.frase}</p>
+      {senzaCodice.voci.length > 0 && (
+        <ul className={stili.elenco}>
+          {senzaCodice.voci.map((v, i) => (
+            <li key={i}>
+              {v.breve}
+              {v.posto !== undefined && <span className={stili.posto}>{v.posto}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+
   const contenuto = (s: Sezione): ReactElement => {
     switch (s.parte) {
       case "progetto":
@@ -194,6 +241,18 @@ export function PaginaStampata({
         return <>{s.funzioni.map(casi)}</>;
       case "flowchart":
         return <div className={stili.flowchart} data-funzione={s.funzioni[0]!.id} dangerouslySetInnerHTML={{ __html: svgDelFoglio(s.funzioni[0]!, s.foglio!) }} />;
+      case "codice":
+        return s.codice ? <Codice codice={s.codice} /> : elenco;
+      case "affiancati": {
+        if (!s.codice && s.foglio === undefined) return elenco;
+        const f = s.funzioni[0];
+        return (
+          <div className={stili.accanto}>
+            {f && s.foglio !== undefined ? <div className={stili.flowchart} data-funzione={f.id} dangerouslySetInnerHTML={{ __html: svgAccanto(f, s.foglio) }} /> : <div />}
+            <div className={stili.latoDelCodice}>{s.codice && <Codice codice={s.codice} />}</div>
+          </div>
+        );
+      }
     }
   };
 

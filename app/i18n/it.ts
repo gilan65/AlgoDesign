@@ -1014,7 +1014,7 @@ export const it = {
   stampaQualiFunzioni: "Di quali procedure e funzioni",
   stampaTutte: "Tutte",
   stampaSoloMostrata: "Solo quella mostrata ({nome})",
-  stampaFoglioNuovo: "Ogni procedura e funzione da un foglio nuovo",
+  stampaFoglioNuovo: "Ogni procedura e funzione in un foglio nuovo",
   stampaSpiegazione: "Le parti da stampare, in quest'ordine:",
   stampaProgetto: "Progetto",
   stampaNotaProgetto: "il nome, l'autore, la descrizione e le note",
@@ -1038,6 +1038,22 @@ export const it = {
   stampaFoglio: "foglio {n} di {m} del flowchart",
   stampaValori: "Valori scritti nella console",
   stampaOutputAtteso: "Output atteso",
+  // Le parti del codice: «Codice in» è seguito dal menu dei linguaggi; {linguaggio} è il nome di una linguetta del codice,
+  // {quante} `mancanzaUna` o `mancanzeTante`, {quanti} `statoErrore` o `statoErrori`.
+  stampaCodice: "Codice in",
+  stampaLinguaggio: "Il linguaggio del codice",
+  stampaVerticale: "Su fogli verticali",
+  stampaOrizzontale: "Su fogli orizzontali",
+  stampaAffiancati: "Flowchart e codice affiancati",
+  stampaNotaAffiancati: "al posto del flowchart e del codice: su fogli orizzontali, il flowchart a sinistra e il codice a destra",
+  stampaNotaNonCiSta: "Il programma non si scrive in {linguaggio} ({quante} da cambiare): al posto del codice si stampa l'elenco.",
+  stampaNotaConErrori: "Il progetto ha errori: al posto del codice si stampa il loro elenco.",
+  stampaTestaCodice: "Codice in {linguaggio}",
+  stampaTestaAffiancati: "Flowchart e codice in {linguaggio}",
+  stampaSupporto: "Funzioni di supporto",
+  stampaFoglioDi: "foglio {n} di {m}",
+  stampaNonCiSta: "Il programma non si scrive in {linguaggio}: {quante} da cambiare.",
+  stampaConErrori: "Il codice si genera da un progetto senza errori, e questo ne ha {quanti}:",
   // Il codice generato, nella colonna a destra del flowchart. {file} è il nome di un file, {linguaggio} il nome di una
   // linguetta, {dettaglio} la risposta del sistema.
   /** L'interruttore del codice nel gruppo Viste. */
