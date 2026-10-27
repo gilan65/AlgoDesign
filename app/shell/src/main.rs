@@ -27,8 +27,10 @@ fn main() {
             progetto::scegli_file_da_salvare,
             progetto::scegli_file_da_esportare,
             progetto::scegli_file_del_codice,
+            progetto::scegli_file_dell_immagine,
             progetto::leggi_progetto,
             progetto::scrivi_progetto,
+            progetto::scrivi_byte,
             progetto::file_dato_all_avvio,
             progetto::elenca_esempi,
             progetto::scrivi_esempio,
@@ -303,8 +305,8 @@ mod prove {
         let argomenti: usize = c.values().map(BTreeSet::len).sum();
         println!("comandi: registrati {}, definiti {}, chiamati {} (con {argomenti} argomenti), simulati {}", r.len(), d.len(), c.len(), s.len());
         assert_eq!(differenze(main, &guscio, &interfaccia, finzione), Vec::<String>::new());
-        // Le premesse: i rilevatori trovano i comandi (diciannove, oggi) e gli argomenti.
-        assert_eq!([r.len(), d.len(), c.len(), s.len()], [19; 4]);
+        // Le premesse: i rilevatori trovano i comandi (ventuno, oggi) e gli argomenti.
+        assert_eq!([r.len(), d.len(), c.len(), s.len()], [21; 4]);
         assert!(argomenti >= 20, "{argomenti} argomenti chiamati");
         // Controllo positivo, un rilevatore per volta: un comando tolto dalla registrazione, un argomento rinominato
         // nell'interfaccia, un argomento letto dal guscio simulato che l'interfaccia non manda.

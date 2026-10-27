@@ -163,10 +163,11 @@ test("la politica di sicurezza dei contenuti è quella scritta qui, direttiva pe
   // Scritta a mano: una direttiva allargata (`'unsafe-inline'`, `'unsafe-eval'`, un indirizzo in più) cambia il testo, e
   // nessuna prova nei motori o sul prodotto la vedrebbe (provano lo stile in linea, non le altre direttive).
   // Le direttive per sorgente, nell'ordine della politica: prima quelle della pagina stessa, poi i comandi del guscio,
-  // poi quelle chiuse.
+  // poi quelle chiuse. Le immagini anche da `blob:`: il PNG del flowchart esportato è l'SVG del nucleo in un'immagine
+  // fatta nella pagina (`ui/disegno/esporta.ts`); le immagini `data:` e da fuori restano fermate (le sonde).
   const dallaPagina = ["default-src", "script-src", "style-src", "img-src", "font-src"];
   const chiuse = ["object-src", "base-uri", "form-action"];
-  const attese = [...dallaPagina.map((d) => `${d} 'self'`), "connect-src ipc: http://ipc.localhost", ...chiuse.map((d) => `${d} 'none'`)];
+  const attese = [...dallaPagina.map((d) => (d === "img-src" ? `${d} 'self' blob:` : `${d} 'self'`)), "connect-src ipc: http://ipc.localhost", ...chiuse.map((d) => `${d} 'none'`)];
   expect(politicaDelProdotto().split("; ")).toEqual(attese);
 });
 

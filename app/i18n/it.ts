@@ -987,6 +987,25 @@ export const it = {
   esportataSenzaLePrime: "Tabella esportata in «{file}»: come nella tabella, mancano le prime {n} righe.",
   esportataSenzaLaPrima: "Tabella esportata in «{file}»: come nella tabella, manca la prima riga.",
   esportaErroreTitolo: "La tabella non si esporta in «{file}»",
+  // Il flowchart della scheda mostrata esportato come immagine. {nome} è il nome della scheda (il progetto, o una
+  // procedura o funzione), {file} il nome di un file.
+  esportaFlowchart: "Esporta il flowchart…",
+  esportaFlowchartTitolo: "Esporta il flowchart",
+  esportaDiQualeFlowchart: "Il flowchart di «{nome}».",
+  esportaConISegni: "L'immagine ha i segni dell'esecuzione: il blocco corrente e i punti di interruzione.",
+  esportaFormato: "Formato",
+  esportaFormatoPng: "PNG (immagine)",
+  esportaFormatoSvg: "SVG (disegno)",
+  esportaColori: "Colori",
+  esportaAColori: "A colori",
+  esportaAGrigi: "A toni di grigio",
+  esportaInBiancoENero: "In bianco e nero",
+  esportaSfondoTrasparente: "Sfondo trasparente",
+  esportaConferma: "Esporta…",
+  filtroPng: "Immagine PNG",
+  filtroSvg: "Disegno SVG",
+  flowchartEsportatoIn: "Flowchart esportato in «{file}».",
+  esportaFlowchartErroreTitolo: "Il flowchart non si esporta in «{file}»",
   // Il codice generato, nella colonna a destra del flowchart. {file} è il nome di un file, {linguaggio} il nome di una
   // linguetta, {dettaglio} la risposta del sistema.
   /** L'interruttore del codice nel gruppo Viste. */

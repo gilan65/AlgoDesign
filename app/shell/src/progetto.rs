@@ -5,11 +5,12 @@
 //   sostituire il file che c'è: `da_salvare`), o `null` (le chiavi le appaia con `ui/file.ts` una prova qui
 //   sotto); `scegli_file_da_esportare`, con gli stessi argomenti, fa lo stesso con `.csv`, per la tabella di
 //   traccia (il testo lo scrive `scrivi_progetto`); `scegli_file_del_codice`, con in più `estensione` (`.txt`,
-//   `.py` o `.c`: un'altra non apre la finestra e vale `null`), per il codice generato. Le finestre sono quelle native del sistema (libreria `rfd`), modali sulla
+//   `.py` o `.c`: un'altra non apre la finestra e vale `null`), per il codice generato; `scegli_file_dell_immagine`,
+//   con `estensione` `.png` o `.svg`, per il flowchart esportato. Le finestre sono quelle native del sistema (libreria `rfd`), modali sulla
 //   finestra dell'app. Partono da `cartella` (quella del file aperto o dell'ultimo usato, se c'è ancora);
 //   altrimenti, nella versione portabile, dalla cartella dell'eseguibile; altrimenti da dove decide il sistema;
 // - `leggi_progetto` con `percorso` → il testo; `scrivi_progetto` con `percorso` e `testo`, scrittura
-//   atomica. Un errore arriva come `{ genere, dettaglio }`: `non_testo` (il file non è UTF-8) o `sistema`
+//   atomica; `scrivi_byte` con `percorso` e `byte` (i byte in base64, per il PNG), allo stesso modo. Un errore arriva come `{ genere, dettaglio }`: `non_testo` (il file non è UTF-8) o `sistema`
 //   (il messaggio del sistema); gli esempi e i gruppi hanno anche `nome_non_valido` (il nome), `gruppo_con_altro`
 //   (ciò che c'è oltre agli esempi), `gruppo_bloccato` (il messaggio del sistema: un file aperto in un altro programma)
 //   e `sola_lettura` (il nome dell'esempio). I generi sono in `GENERI`, appaiati con `ui/file.ts` da una prova;
@@ -66,10 +67,23 @@ pub fn leggi(percorso: &Path) -> Result<String, ErroreDelFile> {
 /// Scrive il file, salvo un nome che Windows riserva: quello digitato nella finestra del sistema («aux» diventa
 /// «aux.algo») non passa dall'avviso del nome, e Windows 11 lo scriverebbe, ma Windows 10 lo porta al dispositivo.
 pub fn scrivi(percorso: &Path, testo: &str) -> Result<(), ErroreDelFile> {
+    scrivi_i_byte(percorso, testo.as_bytes())
+}
+
+/// Come `scrivi`, coi byte com'è (il PNG del flowchart esportato).
+pub fn scrivi_i_byte(percorso: &Path, byte: &[u8]) -> Result<(), ErroreDelFile> {
     if let Some(nome) = percorso.file_name().and_then(|n| n.to_str()).filter(|n| nome_riservato(n)) {
         return Err(non_valido(nome));
     }
-    scrittura::atomica(percorso, testo.as_bytes()).map_err(di_sistema)
+    scrittura::atomica(percorso, byte).map_err(di_sistema)
+}
+
+/// I byte arrivati in base64 dall'interfaccia, scritti com'è; un testo che non è base64 è un errore del sistema, e non
+/// si scrive nulla.
+pub fn scrivi_da_base64(percorso: &Path, byte: &str) -> Result<(), ErroreDelFile> {
+    use base64::Engine;
+    let decodificati = base64::engine::general_purpose::STANDARD.decode(byte).map_err(|e| ErroreDelFile { genere: "sistema", dettaglio: e.to_string() })?;
+    scrivi_i_byte(percorso, &decodificati)
 }
 
 /// Il file da aprire all'avvio: il primo argomento, reso assoluto rispetto alla cartella di lavoro. La cartella di
@@ -98,6 +112,8 @@ pub const ALGO: &str = ".algo";
 pub const CSV: &str = ".csv";
 /// Le estensioni del codice generato: pseudocodice, Python, C.
 pub const CODICE: [&str; 3] = [".txt", ".py", ".c"];
+/// Le estensioni del flowchart esportato.
+pub const IMMAGINE: [&str; 2] = [".png", ".svg"];
 
 /// Il nome scelto nella finestra del sistema finisce nell'`estensione` (`.algo` per il progetto, `.csv` per la
 /// tabella): l'estensione scritta con altre maiuscole si riscrive («media.ALGO» → «media.algo»), e chi non ce l'ha
@@ -416,6 +432,26 @@ pub fn scegli_file_del_codice(
     scegli_dove_salvare(&finestra, proposto, &filtro, estensione, cartella.as_deref(), &portabile)
 }
 
+/// Dove esportare il flowchart: come «Salva con nome», con l'estensione dell'immagine, che deve essere una di
+/// `IMMAGINE`. L'SVG lo scrive `scrivi_progetto`, il PNG `scrivi_byte`.
+#[tauri::command]
+pub fn scegli_file_dell_immagine(
+    finestra: tauri::WebviewWindow,
+    proposto: String,
+    filtro: String,
+    estensione: String,
+    cartella: Option<String>,
+    portabile: tauri::State<'_, CartellaPortabile>,
+) -> Option<FileDaSalvare> {
+    let estensione = IMMAGINE.into_iter().find(|e| *e == estensione)?;
+    scegli_dove_salvare(&finestra, proposto, &filtro, estensione, cartella.as_deref(), &portabile)
+}
+
+#[tauri::command]
+pub fn scrivi_byte(percorso: String, byte: String) -> Result<(), ErroreDelFile> {
+    scrivi_da_base64(Path::new(&percorso), &byte)
+}
+
 #[tauri::command]
 pub fn leggi_progetto(percorso: String) -> Result<String, ErroreDelFile> {
     leggi(Path::new(&percorso))
@@ -519,6 +555,26 @@ mod prove {
         assert_eq!(fs::read(&percorso).unwrap(), testo.as_bytes());
         assert_eq!(leggi(&percorso).unwrap(), testo);
         assert_eq!(fs::read_dir(&base).unwrap().count(), 1, "resta un temporaneo accanto al file");
+        fs::remove_dir_all(&base).unwrap();
+    }
+
+    /// I byte del PNG arrivano in base64 e si scrivono com'è (anche quelli che non sono UTF-8); un testo che non è base64
+    /// non scrive nulla, e un nome riservato nemmeno.
+    #[test]
+    fn i_byte_in_base64_si_scrivono_come_sono() {
+        let base = cartella_di_prova("byte-base64");
+        // La firma del PNG e due byte che non sono UTF-8, in base64 scritto a mano: «iVBORw0KGgr/AA==».
+        let attesi: Vec<u8> = vec![0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a, 0xff, 0x00];
+        let percorso = base.join("flowchart è.png");
+        scrivi_da_base64(&percorso, "iVBORw0KGgr/AA==").unwrap();
+        assert_eq!(fs::read(&percorso).unwrap(), attesi);
+        let cattivo = scrivi_da_base64(&base.join("rotto.png"), "non è base64!").unwrap_err();
+        println!("base64 cattivo: {cattivo:?}");
+        assert_eq!(cattivo.genere, "sistema");
+        assert_eq!(scrivi_da_base64(&base.join("aux.png"), "iVBORw0KGgr/AA==").unwrap_err(), non_valido("aux.png"));
+        // Nella cartella solo il file buono: niente temporanei, niente file del base64 cattivo o del nome riservato.
+        let nomi: Vec<String> = fs::read_dir(&base).unwrap().map(|v| v.unwrap().file_name().to_string_lossy().into_owned()).collect();
+        assert_eq!(nomi, vec!["flowchart è.png".to_owned()]);
         fs::remove_dir_all(&base).unwrap();
     }
 
@@ -1001,7 +1057,8 @@ mod prove {
         sostituire: bool,
         #[serde(default, rename = "maiuscoleDistinte")]
         maiuscole_distinte: bool,
-        /// L'estensione del file: «.csv» per la tabella esportata; senza, quella del progetto.
+        /// L'estensione del file: «.csv» per la tabella esportata, quella del codice o dell'immagine; senza, quella del
+        /// progetto.
         #[serde(default = "estensione_del_progetto")]
         estensione: String,
     }
@@ -1058,13 +1115,15 @@ mod prove {
         fs::remove_dir_all(&base).unwrap();
         let tabella = casi.casi.iter().filter(|c| c.estensione == CSV).count();
         let codice = casi.casi.iter().filter(|c| CODICE.contains(&c.estensione.as_str())).count();
-        println!("casi {} (della tabella esportata {tabella}, del codice {codice}), saltati perché il disco non distingue le maiuscole {saltati}", casi.casi.len());
-        // La premessa: la tabella ha casi del progetto, della tabella e di ogni estensione del codice, e nessuna altra.
+        let immagine = casi.casi.iter().filter(|c| IMMAGINE.contains(&c.estensione.as_str())).count();
+        println!("casi {} (della tabella esportata {tabella}, del codice {codice}, del flowchart esportato {immagine}), saltati perché il disco non distingue le maiuscole {saltati}", casi.casi.len());
+        // La premessa: la tabella ha casi del progetto, della tabella e di ogni estensione del codice e dell'immagine, e
+        // nessuna altra.
         assert!(tabella > 0 && tabella < casi.casi.len(), "{tabella} casi «.csv» su {}", casi.casi.len());
-        for e in CODICE {
+        for e in CODICE.into_iter().chain(IMMAGINE) {
             assert!(casi.casi.iter().any(|c| c.estensione == e), "nessun caso «{e}»");
         }
-        assert!(casi.casi.iter().all(|c| c.estensione == ALGO || c.estensione == CSV || CODICE.contains(&c.estensione.as_str())));
+        assert!(casi.casi.iter().all(|c| c.estensione == ALGO || c.estensione == CSV || CODICE.contains(&c.estensione.as_str()) || IMMAGINE.contains(&c.estensione.as_str())));
         assert_eq!(sbagliati, Vec::<String>::new());
         assert!(!casi.descrizione.is_empty());
         // Le righe che un disco senza maiuscole salta: quante sono si scrive qui, non si legge dalla tabella (che

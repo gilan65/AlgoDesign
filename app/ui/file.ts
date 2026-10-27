@@ -44,6 +44,17 @@ export const scegliFileDaEsportare = async (proposto: string, filtro: string, ca
 export const scegliFileDelCodice = async (proposto: string, filtro: string, estensione: EstensioneDelCodice, cartella: string | null) =>
   nelGuscio() ? invoke<FileDaSalvare | null>("scegli_file_del_codice", { proposto, filtro, estensione, cartella }) : null;
 
+/** Le estensioni del flowchart esportato (`IMMAGINE` in `shell/src/progetto.rs`). */
+export const estensioniDellImmagine = [".png", ".svg"] as const;
+export type EstensioneDellImmagine = (typeof estensioniDellImmagine)[number];
+
+/** Il file dove esportare il flowchart: come per «Salva con nome», col filtro e l'estensione dell'immagine. */
+export const scegliFileDellImmagine = async (proposto: string, filtro: string, estensione: EstensioneDellImmagine, cartella: string | null) =>
+  nelGuscio() ? invoke<FileDaSalvare | null>("scegli_file_dell_immagine", { proposto, filtro, estensione, cartella }) : null;
+
+/** Rifiuta con un `ErroreDelFile`. Scrive i byte com'è (il PNG), in modo atomico: viaggiano in base64. */
+export const scriviByte = (percorso: string, byte: string) => invoke<void>("scrivi_byte", { percorso, byte });
+
 /** Rifiuta con un `ErroreDelFile`. */
 export const leggiProgetto = (percorso: string) => invoke<string>("leggi_progetto", { percorso });
 

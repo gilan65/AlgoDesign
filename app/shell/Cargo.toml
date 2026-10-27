@@ -17,6 +17,8 @@ tauri = { version = "=2.12.1", features = [] }
 # Le finestre native per aprire e salvare un file. Su Linux con GTK 3, che Tauri usa già (il portale
 # XDG predefinito vorrebbe un servizio D-Bus).
 rfd = { version = "=0.17.2", default-features = false, features = ["gtk3"] }
+# I byte del PNG esportato arrivano dall'interfaccia in base64: la versione che wry porta già.
+base64 = "=0.22.1"
 
 # Solo per le prove su Windows: il file system del disco (NTFS, exFAT, FAT32), che decide il nome dopo una rinomina. La
 # versione che Tauri porta già.
