@@ -40,11 +40,20 @@
 // percorre quel risultato). Il nome di un vettore assegnato a un vettore è la copia elemento per elemento, con le
 // azioni del «mentre» equivalente (la partenza, il controllo, la copia di un elemento, l'aumento), come il «per ogni».
 //
+// Un record si tiene come un vettore: la sua cella ha un valore per campo, nell'ordine dei campi, e un campo senza valore
+// resta vuoto come un elemento. Il campo si legge e si scrive col suo nome (`a.nome`); il nome di un record assegnato a un
+// record è la copia campo per campo, un'azione per campo (l'evento ne dice la posizione, `campo`), mentre da una funzione è
+// un'azione sola; per valore il parametro riceve una copia dei campi, per riferimento la cella di chi chiama, e un campo
+// passato per riferimento è come l'elemento di un vettore. Il campo del risultato di una funzione (`f(x).voto`): prima la
+// chiamata, poi il campo.
+//
 // Una procedura o una funzione si può eseguire da sola (la `radice`): i parametri si chiedono come letture, uno per
-// parametro nell'ordine (un vettore elemento per elemento, o tutti con la stessa riga data al primo, `ognuno`), tranne
+// parametro nell'ordine (un vettore elemento per elemento, o tutti con la stessa riga data al primo, `ognuno`; un record
+// campo per campo), tranne
 // quelli per uscita, che partono senza valore; poi la funzione; alla fine una funzione scrive «→ » e ciò che
-// restituisce (un vettore una riga per elemento, «→ [0] = 4»), una procedura con parametri per riferimento o per uscita va a capo e scrive «nome = valore» per ognuno
-// («v[0] = 1» per ogni elemento di un vettore), sempre, anche dopo un a capo: così il risultato non dipende da come la
+// restituisce (un vettore una riga per elemento, «→ [0] = 4», un record una per campo, «→ .nome = Anna»), una procedura
+// con parametri per riferimento o per uscita va a capo e scrive «nome = valore» per ognuno («v[0] = 1» per ogni elemento
+// di un vettore, «r.nome = Anna» per ogni campo di un record), sempre, anche dopo un a capo: così il risultato non dipende da come la
 // procedura ha finito di scrivere. La riga `senzaValore` data a un parametro per riferimento (un caso
 // scritto quando un riferimento poteva arrivare senza valore) ferma l'esecuzione sulla funzione.
 //
@@ -64,7 +73,7 @@ import { analizza, type Espressione } from "../espressioni/analizzatore";
 import { controlla, funzioniDelGiro, lunghezzaPredefinita, type EsitoDelControllo, type Tetti } from "../controllo/controllo";
 import { spazioDellaPila, spazioDiUnaChiamata, tettoDelleChiamate } from "../controllo/spazio";
 import { livelliDellePosizioni, nomiDeiVettori } from "../progetto/copia";
-import { opzioniPredefinite, type Blocco, type CodiceErrore, type Dato, type Funzione, type Progetto, type Segnalazione } from "../progetto/modello";
+import { opzioniPredefinite, type Blocco, type Campo, type CodiceErrore, type Dato, type Funzione, type Progetto, type Segnalazione } from "../progetto/modello";
 import { potenza } from "./potenza";
 
 /** Il tetto dei passi (un passo è un evento), uguale in ogni modalità. */
@@ -86,7 +95,8 @@ export type Valore =
 
 /**
  * I valori dei dati in un istante: le costanti comuni, poi i dati della radice (il programma principale, o la funzione
- * eseguita da sola), nell'ordine della vista dei dati; per ognuno i suoi elementi (uno per un dato semplice), `undefined`
+ * eseguita da sola), nell'ordine della vista dei dati; per ognuno i suoi elementi (uno per un dato semplice, uno per
+ * campo per un record), `undefined`
  * per un elemento non inizializzato. Letti dalle celle dell'interprete, mai ricalcolati; non cambiano più.
  */
 export interface Fotografia {
@@ -141,21 +151,24 @@ export const funzioniChiamabili = (p: Progetto, radice?: string): readonly Funzi
 export type FaseDelCiclo = "inizio" | "condizione" | "passo" | "elemento";
 
 export type Passo =
-  /** Prima di un'azione: il blocco, o il valore iniziale del dato `dato` (col blocco vuoto); la fase, in un ciclo; la
-   * funzione dell'azione, se non è il programma principale. */
-  | { readonly evento: string; readonly dato?: string; readonly fase?: FaseDelCiclo; readonly funzione?: string; readonly profondita: number; readonly dati: Fotografia }
+  /** Prima di un'azione: il blocco, o il valore iniziale del dato `dato` (col blocco vuoto); la fase, in un ciclo; nella
+   * copia di un record col suo nome, la posizione del campo copiato (da 0); la funzione dell'azione, se non è il programma
+   * principale. */
+  | { readonly evento: string; readonly dato?: string; readonly fase?: FaseDelCiclo; readonly campo?: number; readonly funzione?: string; readonly profondita: number; readonly dati: Fotografia }
   | { readonly condizione: boolean }
   /** Il ritorno da una funzione chiamata dentro un'espressione: l'azione di chi chiama, al livello `ripresa`, riprende
    * (non è un'azione: nessun passo), con il valore che la funzione ha restituito. */
   | { readonly ripresa: number; readonly dati: Fotografia; readonly restituito: Restituito }
   /** Una lettura; `parametro`, per il parametro di una funzione eseguita da sola (`riferimento` se può non avere un
-   * valore: la riga `senzaValore`), con `elemento` per un vettore (al primo si può dare `ognuno`). */
-  | { readonly chiedi: string; readonly parametro?: "valore" | "riferimento"; readonly elemento?: number }
+   * valore: la riga `senzaValore`), con `elemento` per un vettore (al primo si può dare `ognuno`) e `campo` (il nome) per
+   * un record. */
+  | { readonly chiedi: string; readonly parametro?: "valore" | "riferimento"; readonly elemento?: number; readonly campo?: string }
   | { readonly nonValido: string }
   | { readonly scrive: string };
 
 /** Il valore che una funzione chiamata dentro un'espressione ha restituito (l'`id` della funzione): un valore, o gli
- * elementi di un vettore (`undefined` per uno senza valore). Letto dall'interprete, mai ricalcolato. */
+ * elementi di un vettore o i campi di un record (`undefined` per uno senza valore). Letto dall'interprete, mai
+ * ricalcolato. */
 export interface Restituito {
   readonly funzione: string;
   readonly valore: Valore | { readonly elementi: readonly (Valore | undefined)[] };
@@ -169,27 +182,26 @@ export type Esito =
 type Numero = Extract<Valore, { v: number }>;
 type Testo = Extract<Valore, { tipo: "string" }>;
 
-/** Gli elementi di un vettore intero, `undefined` per uno senza valore. Un elenco non si modifica mai: chi lo riceve ne ha
- * una copia anche quando è lo stesso elenco della cella da cui viene. */
+/** Gli elementi di un vettore intero, o i campi di un record, `undefined` per uno senza valore. Un elenco non si modifica
+ * mai: chi lo riceve ne ha una copia anche quando è lo stesso elenco della cella da cui viene. */
 type Elementi = readonly (Valore | undefined)[];
-/** Il vettore restituito da una funzione. */
+/** Il vettore, o il record, restituito da una funzione. */
 type VettoreRestituito = { readonly elementi: Elementi };
 
-/** Un dato semplice è una cella di un elemento; un vettore, di `size`. L'elenco si sostituisce, mai si modifica. Un
- * parametro per riferimento è la cella stessa del dato di chi chiama, o un `ElementoDi` per un elemento di un vettore. */
+/** Un dato semplice è una cella di un elemento; un vettore, di `size`; un record, di un elemento per campo. L'elenco si
+ * sostituisce, mai si modifica. Un parametro per riferimento è la cella stessa del dato di chi chiama, o un `ElementoDi`
+ * per un elemento di un vettore o un campo di un record. */
 type Cella = { readonly dato: Dato; valori: readonly (Valore | undefined)[] };
 
-/** Un elemento di un vettore passato per riferimento: una cella di un elemento che legge e scrive in quella del vettore.
- * Il suo dato ha il nome del vettore (la voce di un caso lo nomina) e nessuna dimensione. */
+/** Un elemento di un vettore, o un campo di un record, passato per riferimento: una cella di un elemento che legge e scrive
+ * in quella del vettore o del record. Il suo dato (`dato`) ha il nome del vettore o del record (la voce di un caso lo
+ * nomina), senza dimensione, e per un campo il tipo del campo. */
 class ElementoDi implements Cella {
-  readonly dato: Dato;
   constructor(
     readonly vettore: Cella,
     readonly i: number,
-  ) {
-    const { size: _, ...semplice } = vettore.dato;
-    this.dato = semplice;
-  }
+    readonly dato: Dato,
+  ) {}
   get valori(): readonly (Valore | undefined)[] {
     return [this.vettore.valori[this.i]];
   }
@@ -266,7 +278,7 @@ const codiceValido = (n: number) => n >= 0 && n <= 0x10ffff && !(n >= 0xd800 && 
 
 /** Le parti di un'espressione. */
 const sotto = (e: Espressione): readonly Espressione[] =>
-  e.genere === "indice" ? [e.base, e.indice] : e.genere === "unario" ? [e.operando] : e.genere === "binario" ? [e.sinistro, e.destro] : e.genere === "chiamata" ? e.argomenti : [];
+  e.genere === "indice" ? [e.base, e.indice] : e.genere === "campo" ? [e.base] : e.genere === "unario" ? [e.operando] : e.genere === "binario" ? [e.sinistro, e.destro] : e.genere === "chiamata" ? e.argomenti : [];
 
 /**
  * Un reale a `decimali` cifre fisse come `%.Nf` di glibc: sul valore esatto del `double`,
@@ -386,7 +398,23 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
 
   // ---------------------------------------------------------------------------------------- i dati
 
-  const comuni = (p.shared_constants ?? []).map((d): Cella => ({ dato: d, valori: Array<Valore | undefined>(d.size ?? 1).fill(undefined) }));
+  const records = new Map((p.records ?? []).map((r) => [r.name, r.fields]));
+  /** I campi di un dato record (o di un risultato record), nessuno per un altro dato. */
+  const campiDi = (d: Pick<Dato, "type" | "record">): readonly Campo[] | undefined => (d.type === "record" ? records.get(d.record!)! : undefined);
+  /** Quanti valori tiene la cella di un dato: gli elementi di un vettore, i campi di un record, uno per un dato semplice. */
+  const pezzi = (d: Dato): number => d.size ?? campiDi(d)?.length ?? 1;
+  /** Il dato che riceve il valore `i` di una cella: il campo per un record (col nome del record, che la voce di un caso
+   * nomina), il dato stesso altrimenti. */
+  const datoDelPezzo = (d: Dato, i: number): Dato => {
+    const c = campiDi(d)?.[i];
+    return c === undefined ? d : { name: d.name, type: c.type, ...(c.max_length !== undefined ? { max_length: c.max_length } : {}) };
+  };
+  /** La posizione di un campo nel suo record. */
+  const campoIn = (d: Pick<Dato, "type" | "record">, nome: string): number => campiDi(d)!.findIndex((c) => c.name === nome);
+  /** Come un valore si nomina nell'output: `v[2]` un elemento, `r.nome` un campo, il nome un dato semplice. */
+  const nomeDelPezzo = (d: Dato, i: number): string => (d.size !== undefined ? `${d.name}[${i}]` : d.type === "record" ? `${d.name}.${campiDi(d)![i]!.name}` : d.name);
+
+  const comuni = (p.shared_constants ?? []).map((d): Cella => ({ dato: d, valori: Array<Valore | undefined>(pezzi(d)).fill(undefined) }));
   let chiamate = 0;
   /** Le chiamate attive: la radice per prima. */
   const pila: Cornice[] = [];
@@ -407,7 +435,7 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
    * parametro per riferimento. Conta per i tetti se `f` è del giro. */
   const cornice = (f: Funzione, riceve: (k: number) => Cella | undefined, riferimenti: (string | undefined)[], origini: (Origine | undefined)[]): Cornice => {
     const celle = new Map(comuni.map((c) => [c.dato.name, c]));
-    const inOrdine = f.data.map((d, k) => riceve(k) ?? { dato: d, valori: Array<Valore | undefined>(d.size ?? 1).fill(undefined) });
+    const inOrdine = f.data.map((d, k) => riceve(k) ?? { dato: d, valori: Array<Valore | undefined>(pezzi(d)).fill(undefined) });
     f.data.forEach((d, k) => celle.set(d.name, inOrdine[k]!));
     const livelli = livelliDi.get(f)!;
     const giro = delGiro.has(f);
@@ -459,10 +487,11 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
     return c.foto;
   };
 
-  /** Scrive un valore in un elemento: l'intero diventa reale, la stringa resta nella sua lunghezza. */
+  /** Scrive un valore in un elemento o in un campo: l'intero diventa reale, la stringa resta nella sua lunghezza. */
   const scriviIn = (c: Cella, i: number, v: Valore) => {
-    if (c.dato.type === "real" && v.tipo === "integer") v = { tipo: "real", v: v.v };
-    if (v.tipo === "string" && v.v.length > (c.dato.max_length ?? lunghezzaPredefinita)) ferma("string_too_long");
+    const d = datoDelPezzo(c.dato, i);
+    if (d.type === "real" && v.tipo === "integer") v = { tipo: "real", v: v.v };
+    if (v.tipo === "string" && v.v.length > (d.max_length ?? lunghezzaPredefinita)) ferma("string_too_long");
     const nuovi = [...c.valori];
     nuovi[i] = v;
     c.valori = nuovi;
@@ -495,8 +524,11 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
         return { tipo: "boolean", v: e.valore };
       case "nome":
         return leggiDa(cella(e.nome), 0);
-      case "campo":
-        throw new Error("il campo di un record: il controllo statico dice fuori tappa un progetto coi record");
+      case "campo": {
+        // Il campo di un dato record: senza chiamate, la base è il suo nome.
+        const c = cella((e.base as { nome: string }).nome);
+        return leggiDa(c, campoIn(c.dato, e.campo));
+      }
       case "indice": {
         // L'elemento di un vettore, o il carattere di una stringa (in sola lettura).
         const c = vettoreDi(e);
@@ -524,8 +556,12 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
     switch (e.genere) {
       case "chiamata":
         return (yield* chiamaDentro(e)) as Valore;
-      case "campo":
-        throw new Error("il campo di un record: il controllo statico dice fuori tappa un progetto coi record");
+      case "campo": {
+        // Il campo del record restituito da una funzione: prima la chiamata, poi il campo.
+        const f = perNome.get((e.base as { nome: string }).nome)!;
+        const { elementi } = (yield* chiamaDentro(e.base)) as VettoreRestituito;
+        return elementi[campoIn({ type: "record", record: f.return_record! }, e.campo)] ?? ferma("uninitialized");
+      }
       case "indice": {
         const c = vettoreDi(e);
         if (c !== undefined) return leggiDa(c, dentro(((yield* calcola(e.indice)) as Numero).v, c.dato.size!));
@@ -668,10 +704,12 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
   /** `to_string v`: tutti gli elementi, in ordine, mai uno inventato. */
   const daVettore = (elementi: Elementi): Valore => ({ tipo: "string", v: elementi.map((x) => codiciDi(x ?? ferma("uninitialized"))[0]!) });
 
-  /** Un vettore restituito che entra in un vettore dello stesso tipo e della stessa dimensione: gli elementi, ognuno nella
-   * lunghezza massima del dato. */
+  /** Un vettore restituito che entra in un vettore dello stesso tipo e della stessa dimensione, o un record in un record
+   * dello stesso tipo: gli elementi, ognuno nella lunghezza massima del suo dato o del suo campo. */
   const tuttiIn = (c: Cella, elementi: Elementi) => {
-    for (const v of elementi) if (v?.tipo === "string" && v.v.length > (c.dato.max_length ?? lunghezzaPredefinita)) ferma("string_too_long");
+    elementi.forEach((v, i) => {
+      if (v?.tipo === "string" && v.v.length > (datoDelPezzo(c.dato, i).max_length ?? lunghezzaPredefinita)) ferma("string_too_long");
+    });
     c.valori = elementi;
   };
 
@@ -681,9 +719,13 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
     c.valori = c.valori.map((_, i) => ({ tipo: "character", v: s[i] ?? riempimento }));
   };
 
-  /** Una destinazione: la cella e l'elemento. L'indice si calcola prima del valore (da sinistra). */
+  /** Una destinazione: la cella e l'elemento, o il campo. L'indice si calcola prima del valore (da sinistra). */
   function* destinazione(e: Espressione): Generator<Pausa, { cella: Cella; i: number }, Riga> {
     if (e.genere === "nome") return { cella: cella(e.nome), i: 0 };
+    if (e.genere === "campo") {
+      const c = cella((e.base as { nome: string }).nome);
+      return { cella: c, i: campoIn(c.dato, e.campo) };
+    }
     const x = e as Extract<Espressione, { genere: "indice" }>;
     const c = cella((x.base as { nome: string }).nome);
     const indice = conChiamate.has(x.indice) ? yield* calcola(x.indice) : valuta(x.indice);
@@ -715,36 +757,37 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
   };
 
   /** L'evento prima di un'azione: un passo. Oltre il tetto, l'errore va sul ciclo più interno attivo. */
-  const evento = (blocco: string, fase?: FaseDelCiclo): Passo => {
+  const evento = (blocco: string, fase?: FaseDelCiclo, campo?: number): Passo => {
     if (++passi > tettoDeiPassi) throw oltreIPassi(blocco);
     corrente = blocco;
     const f = qui.funzione;
-    return { evento: blocco, ...(fase !== undefined ? { fase } : {}), ...(f.kind !== "main" ? { funzione: f.id } : {}), profondita, dati: fotografia() };
+    return { evento: blocco, ...(fase !== undefined ? { fase } : {}), ...(campo !== undefined ? { campo } : {}), ...(f.kind !== "main" ? { funzione: f.id } : {}), profondita, dati: fotografia() };
   };
 
   function* sequenza(blocchi: readonly Blocco[]): Generator<Pausa, void, Riga> {
     for (const b of blocchi) yield* blocco(b);
   }
 
-  /** Una riga per la cella, finché non è valida. */
-  function* leggiRiga(c: Cella, blocco: string): Generator<Pausa, Valore, Riga> {
+  /** Una riga per l'elemento `i` della cella (il campo, in un record), finché non è valida. */
+  function* leggiRiga(c: Cella, i: number, blocco: string): Generator<Pausa, Valore, Riga> {
     for (;;) {
       const riga = yield { chiedi: c.dato.name };
       if (riga === undefined) return ferma("input_exhausted");
       if (typeof riga !== "string") throw new Error("riga di un parametro a una lettura");
-      const v = convertiRiga(riga, c.dato);
+      const v = convertiRiga(riga, datoDelPezzo(c.dato, i));
       if (v !== undefined) return v;
       yield { nonValido: blocco };
     }
   }
 
-  /** L'elemento `i` di un parametro della funzione eseguita da sola, finché la riga non è valida: il valore, o nessuno
-   * (`senzaValore`, solo per un riferimento); `ognuno` vale per tutti gli elementi (solo al primo di un vettore). Una riga
-   * non valida cade sulla funzione, il suo «Inizio». */
+  /** L'elemento (o il campo) `i` di un parametro della funzione eseguita da sola, finché la riga non è valida: il valore, o
+   * nessuno (`senzaValore`, solo per un riferimento); `ognuno` vale per tutti gli elementi (solo al primo di un vettore).
+   * Una riga non valida cade sulla funzione, il suo «Inizio». */
   function* leggiParametro(d: Dato, i: number): Generator<Pausa, { readonly valore: Valore | undefined; readonly ognuno: boolean }, Riga> {
     const parametro = d.parameter === "reference" ? "riferimento" : "valore";
+    const campo = campiDi(d)?.[i]?.name;
     for (;;) {
-      const riga = yield { chiedi: d.name, parametro, ...(d.size !== undefined ? { elemento: i } : {}) };
+      const riga = yield { chiedi: d.name, parametro, ...(d.size !== undefined ? { elemento: i } : {}), ...(campo !== undefined ? { campo } : {}) };
       if (riga === undefined) return ferma("input_exhausted");
       const ognuno = typeof riga === "object";
       if (ognuno && (d.size === undefined || i > 0)) throw new Error(`una riga per ogni elemento a ${d.name}, elemento ${i}`);
@@ -754,7 +797,7 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
         // Un riferimento vuole il valore anche qui (un caso scritto quando non lo voleva): si ferma sulla funzione.
         return ferma("reference_without_value");
       }
-      const v = convertiRiga(testo, d);
+      const v = convertiRiga(testo, datoDelPezzo(d, i));
       if (v !== undefined) return { valore: v, ognuno };
       yield { nonValido: pila[0]!.funzione.id };
     }
@@ -765,20 +808,23 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
       case "assignment": {
         const t = albero(b.target);
         const e = albero(b.value);
-        // Un vettore intero: dal nome di un vettore la copia elemento per elemento, da una funzione un'azione sola.
+        // Un vettore intero: dal nome di un vettore la copia elemento per elemento, da una funzione un'azione sola. Un
+        // record intero: dal nome di un record la copia campo per campo, da una funzione un'azione sola.
         const intero = t.genere === "nome" && cella(t.nome).dato.size !== undefined;
+        const record = t.genere === "nome" && cella(t.nome).dato.type === "record";
         if (intero && e.genere === "nome") return yield* copia(b.id, cella(t.nome), cella(e.nome));
+        if (record && e.genere === "nome") return yield* copiaDelRecord(b.id, cella(t.nome), cella(e.nome));
         yield evento(b.id);
         const { cella: c, i } = yield* destinazione(t);
         if (e.genere === "unario" && e.operatore === "to_array") inVettore(c, ((conChiamate.has(e.operando) ? yield* calcola(e.operando) : valuta(e.operando)) as Testo).v);
-        else if (intero) tuttiIn(c, yield* elementiDi(e));
+        else if (intero || record) tuttiIn(c, yield* elementiDi(e));
         else scriviIn(c, i, conChiamate.has(e) ? yield* calcola(e) : valuta(e));
         return;
       }
       case "read": {
         yield evento(b.id);
         const { cella: c, i } = yield* destinazione(albero(b.target));
-        scriviIn(c, i, yield* leggiRiga(c, b.id));
+        scriviIn(c, i, yield* leggiRiga(c, i, b.id));
         return;
       }
       case "write":
@@ -898,9 +944,19 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
     }
   }
 
-  /** Dove arriva un argomento per riferimento: la cella del vettore e l'elemento, o tutto il vettore (`-1`). */
+  /** La copia di un record col suo nome, campo per campo: un'azione per campo, nell'ordine dei campi, con la sua posizione
+   * nell'evento. Un campo senza valore ferma la copia, come la sua lettura. */
+  function* copiaDelRecord(blocco: string, verso: Cella, da: Cella): Generator<Pausa, void, Riga> {
+    for (let k = 0; k < verso.valori.length; k++) {
+      yield evento(blocco, undefined, k);
+      scriviIn(verso, k, leggiDa(da, k));
+    }
+  }
+
+  /** Dove arriva un argomento per riferimento: la cella del vettore (o del record) e l'elemento (o il campo), o tutto il
+   * vettore o il record (`-1`). */
   const doveArriva = (c: Cella, i: number | undefined): { vettore: Cella; i: number } =>
-    c instanceof ElementoDi ? { vettore: c.vettore, i: c.i } : { vettore: c, i: i ?? (c.dato.size !== undefined ? -1 : 0) };
+    c instanceof ElementoDi ? { vettore: c.vettore, i: c.i } : { vettore: c, i: i ?? (c.dato.size !== undefined || c.dato.type === "record" ? -1 : 0) };
 
   /**
    * Il salto da `blocco` a `f` con gli argomenti, il ritorno e il valore restituito (`undefined` per una procedura). Gli
@@ -917,16 +973,17 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
       const d = parametri[k]!;
       if (d.parameter !== "value") {
         const { cella: c, i } = yield* destinazione(a);
-        const vettore = c.dato.size !== undefined && a.genere === "indice";
-        const nome = vettore ? (a.base as { nome: string }).nome : (a as { nome: string }).nome;
+        // Un elemento di un vettore o un campo di un record: una cella di un elemento dentro quella di chi chiama.
+        const pezzo = c.dato.size !== undefined && a.genere === "indice" ? `[${i}]` : a.genere === "campo" ? `.${a.campo}` : undefined;
+        const nome = pezzo !== undefined ? (a as { base: { nome: string } }).base.nome : (a as { nome: string }).nome;
         // Il dato vero: quello di chi chiama, o quello che riceve il suo parametro per riferimento, risalendo.
         const suo = qui.origini[qui.funzione.data.findIndex((x) => x.name === nome)] ?? { nome, livello: profondita };
-        dati.push({
-          cella: vettore ? new ElementoDi(c, i) : c,
-          scritto: vettore ? `${nome}[${i}]` : nome,
-          origine: vettore ? { nome: `${suo.nome}[${i}]`, livello: suo.livello } : suo,
-        });
-      } else if (d.size !== undefined) dati.push({ copia: yield* elementiDi(a) });
+        if (pezzo === undefined) dati.push({ cella: c, scritto: nome, origine: suo });
+        else {
+          const { size: _, ...semplice } = datoDelPezzo(c.dato, i);
+          dati.push({ cella: new ElementoDi(c, i, semplice), scritto: `${nome}${pezzo}`, origine: { nome: `${suo.nome}${pezzo}`, livello: suo.livello } });
+        }
+      } else if (d.size !== undefined || d.type === "record") dati.push({ copia: yield* elementiDi(a) });
       else {
         const valore = conChiamate.has(a) ? yield* calcola(a) : valuta(a);
         if (valore.tipo === "string" && valore.v.length > (d.max_length ?? lunghezzaPredefinita)) ferma("string_too_long");
@@ -996,11 +1053,13 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
     yield* sequenza(f.body);
     yield evento(f.end.id);
     if (f.kind !== "function") return undefined;
-    // Un vettore torna come copia dei suoi elementi; una stringa più lunga della lunghezza massima si ferma sulla fine,
-    // anche se è un elemento del vettore.
-    if (f.return_size !== undefined) {
+    // Un vettore torna come copia dei suoi elementi, un record dei suoi campi; una stringa più lunga della lunghezza
+    // massima si ferma sulla fine, anche se è un elemento del vettore (i campi hanno già la lunghezza del record).
+    if (f.return_size !== undefined || f.return_type === "record") {
       const elementi = yield* elementiDi(albero(f.end.return_value!));
-      for (const v of elementi) if (v?.tipo === "string" && v.v.length > (f.return_max_length ?? lunghezzaPredefinita)) ferma("string_too_long");
+      if (f.return_size !== undefined) {
+        for (const v of elementi) if (v?.tipo === "string" && v.v.length > (f.return_max_length ?? lunghezzaPredefinita)) ferma("string_too_long");
+      }
       return { elementi };
     }
     const v = yield* calcolaTesto(f.end.return_value!);
@@ -1053,7 +1112,7 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
     for (const [k, d] of principale.data.entries()) {
       if (d.parameter === undefined || d.parameter === "out") continue;
       const c = qui.inOrdine[k]!;
-      for (let i = 0; i < (d.size ?? 1); i++) {
+      for (let i = 0; i < pezzi(d); i++) {
         const { valore, ognuno } = yield* leggiParametro(d, i);
         if (ognuno) {
           if (valore !== undefined) c.valori.forEach((_, j) => scriviIn(c, j, valore));
@@ -1066,13 +1125,14 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
     // programma di prova del C, dove la funzione si chiama dopo averli letti.
     if (qui.delGiro && spazioInUso > spazioDellaPila) ferma("recursion_data_too_large");
     const restituito = yield* corpo(principale);
-    if (restituito !== undefined && "elementi" in restituito)
-      for (const [i, v] of restituito.elementi.entries()) yield { scrive: `→ [${i}] = ${stampa(v ?? ferma("uninitialized"))}\n` };
-    else if (restituito !== undefined) yield { scrive: `→ ${stampa(restituito)}\n` };
+    if (restituito !== undefined && "elementi" in restituito) {
+      // Il nome di un elemento, o di un campo, senza quello del dato: `[0]`, `.nome`.
+      const risultato: Dato = { name: "", type: principale.return_type!, ...(principale.return_record !== undefined ? { record: principale.return_record } : { size: restituito.elementi.length }) };
+      for (const [i, v] of restituito.elementi.entries()) yield { scrive: `→ ${nomeDelPezzo(risultato, i)} = ${stampa(v ?? ferma("uninitialized"))}\n` };
+    } else if (restituito !== undefined) yield { scrive: `→ ${stampa(restituito)}\n` };
     const riferimenti = principale.data.flatMap((d, k) => (d.parameter === "reference" || d.parameter === "out" ? [{ d, c: qui.inOrdine[k]! }] : []));
     if (riferimenti.length > 0) yield { scrive: "\n" };
-    for (const { d, c } of riferimenti)
-      for (const [i] of c.valori.entries()) yield { scrive: `${d.size === undefined ? d.name : `${d.name}[${i}]`} = ${stampa(leggiDa(c, i))}\n` };
+    for (const { d, c } of riferimenti) for (const [i] of c.valori.entries()) yield { scrive: `${nomeDelPezzo(d, i)} = ${stampa(leggiDa(c, i))}\n` };
   }
 
   try {

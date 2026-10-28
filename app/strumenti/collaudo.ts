@@ -329,16 +329,18 @@ const tappeDelDifferenziale = [1, 2, 3, 4];
 const tappeFuoriDalDifferenziale: number[] = [];
 const casiDelleTappe = (cartella: string, tappe: readonly number[], funzioni: "con" | "senza" | "sole" = "senza") => tappe.reduce((n, t) => n + casiDellaTappa(cartella, t, funzioni), 0);
 
-/** I casi dei tipi non semplici (la cartella `tipi/`): il controllo li conosce, l'esecuzione e i generatori ancora no.
- * Quelli dei file che attendono il solo errore statico si eseguono (`bun run casi`, il differenziale senza programma);
- * gli altri file sono fuori tappa. */
-function casiDeiTipi(cartella: string): { siEseguono: number; fuori: number; fileFuori: number } {
+/** I casi dei tipi non semplici (la cartella `tipi/`): il controllo e l'esecuzione li conoscono, i generatori ancora no.
+ * `bun run casi` li esegue tutti (`tutti`); nel differenziale quelli dei file che attendono il solo errore statico entrano
+ * nel confronto senza programma (`siEseguono`), gli altri file sono fuori tappa. */
+function casiDeiTipi(cartella: string): { tutti: number; diFunzioni: number; siEseguono: number; fuori: number; fileFuori: number } {
   const dove = join(cartella, "tipi");
-  const conti = { siEseguono: 0, fuori: 0, fileFuori: 0 };
+  const conti = { tutti: 0, diFunzioni: 0, siEseguono: 0, fuori: 0, fileFuori: 0 };
   if (!existsSync(dove)) return conti;
   for (const f of readdirSync(dove).filter((x) => x.endsWith(".algo"))) {
     const p = JSON.parse(readFileSync(join(dove, f), "utf8"));
     const casi = [...(p.test_cases ?? []), ...(p.functions as { test_cases?: unknown[] }[]).flatMap((g) => g.test_cases ?? [])] as { expected: { static_error?: unknown } }[];
+    conti.tutti += casi.length;
+    conti.diFunzioni += casi.length - (p.test_cases ?? []).length;
     if (casi.length > 0 && casi.every((c) => c.expected.static_error !== undefined)) conti.siEseguono += casi.length;
     else {
       conti.fuori += casi.length;
@@ -476,11 +478,11 @@ async function portaCasi(): Promise<void> {
     rosso("casi", `exit ${vera.codice}; ${[...vera.uscita.matchAll(/^(ROSSO|AVVISI DIVERSI|PROBLEMA) .*$/gm)].map((m) => m[0]).join(" · ") || riepilogo?.[0] || "nessun riepilogo"}`);
   // Il numero dei casi: contato qui, confrontato con i dichiarati e con gli eseguiti dello strumento.
   const contati = casiDelleTappe(join(radice, "casi"), tappeDeiCasi, "con");
-  const deiTipi = casiDeiTipi(join(radice, "casi")).siEseguono;
+  const deiTipi = casiDeiTipi(join(radice, "casi")).tutti;
   if (contati !== dichiarati || contati !== eseguiti || String(contati + deiTipi) !== riepilogo[2])
-    rosso("casi", `casi delle tappe ${tappeDeiCasi.join(", ")} contati ${contati}, dichiarati ${dichiarati}, eseguiti ${eseguiti}; dei tipi che si eseguono ${deiTipi}; nel riepilogo ${riepilogo[2]}`);
+    rosso("casi", `casi delle tappe ${tappeDeiCasi.join(", ")} contati ${contati}, dichiarati ${dichiarati}, eseguiti ${eseguiti}; dei tipi ${deiTipi}; nel riepilogo ${riepilogo[2]}`);
   // I casi delle funzioni eseguite da sole: contati qui, e non zero (il riferimento della tappa 3 ne ha).
-  const diFunzioni = casiDelleTappe(join(radice, "casi"), tappeDeiCasi, "sole");
+  const diFunzioni = casiDelleTappe(join(radice, "casi"), tappeDeiCasi, "sole") + casiDeiTipi(join(radice, "casi")).diFunzioni;
   if (diFunzioni === 0 || String(diFunzioni) !== riepilogo[9])
     rosso("casi", `casi delle funzioni contati ${diFunzioni}, nel riepilogo ${riepilogo[9]}`);
   // I casi da eseguire: contati qui nei file delle loro tappe, e non zero se una tappa è da eseguire.

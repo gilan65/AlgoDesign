@@ -4,15 +4,21 @@
 // lunghezza vera: a loro non serve.
 //
 // Un testo fra virgolette ha la sua lunghezza; un dato stringa, un elemento di un vettore di stringhe e una funzione
-// che restituisce una stringa (o l'elemento di un vettore di stringhe restituito) la loro lunghezza massima; un
-// carattere, anche preso da una stringa, 1; una concatenazione la somma dei due lati.
+// che restituisce una stringa (o l'elemento di un vettore di stringhe restituito) la loro lunghezza massima; un campo
+// stringa di un record la sua (se chi chiama sa dire i campi, `campoDi`); un carattere, anche preso da una stringa, 1;
+// una concatenazione la somma dei due lati.
 
 import type { Espressione } from "../espressioni/analizzatore";
-import type { Dato, Funzione } from "../progetto/modello";
+import type { Campo, Dato, Funzione } from "../progetto/modello";
 import { lunghezzaPredefinita } from "./controllo";
 
-/** `datoDi` e `funzioneDi` danno il dato e la funzione di un nome, se ci sono. */
-export function lunghezzaMassima(e: Espressione, datoDi: (nome: string) => Dato | undefined, funzioneDi: (nome: string) => Funzione | undefined): number {
+/** `datoDi` e `funzioneDi` danno il dato e la funzione di un nome, se ci sono; `campoDi` il campo di un record. */
+export function lunghezzaMassima(
+  e: Espressione,
+  datoDi: (nome: string) => Dato | undefined,
+  funzioneDi: (nome: string) => Funzione | undefined,
+  campoDi?: (e: Extract<Espressione, { genere: "campo" }>) => Campo | undefined,
+): number {
   switch (e.genere) {
     case "stringa":
       return e.codici.length;
@@ -38,8 +44,12 @@ export function lunghezzaMassima(e: Espressione, datoDi: (nome: string) => Dato 
       }
       return 1;
     }
+    case "campo": {
+      const c = campoDi?.(e);
+      return c?.type === "string" ? (c.max_length ?? lunghezzaPredefinita) : 1;
+    }
     case "binario":
-      return lunghezzaMassima(e.sinistro, datoDi, funzioneDi) + lunghezzaMassima(e.destro, datoDi, funzioneDi);
+      return lunghezzaMassima(e.sinistro, datoDi, funzioneDi, campoDi) + lunghezzaMassima(e.destro, datoDi, funzioneDi, campoDi);
     default:
       return 1;
   }

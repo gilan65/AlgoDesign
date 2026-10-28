@@ -189,6 +189,22 @@ describe("il programma di riferimento contro l'atteso scritto a mano", () => {
     expect(viste).toEqual(["b1:condizione:0", "b1:condizione:1", "b1:condizione:2", "b1:condizione:3"]);
   });
 
+  test("un punto sulla copia di un record col suo nome ferma «continua» una volta, prima del primo campo; «dentro» su ogni campo", () => {
+    // `tipi/copia-di-un-record`: b1 `b ← a`, tre campi. A mano: con «continua» una pausa sola, col campo 0; con «dentro»
+    // il valore iniziale, i tre campi, poi i blocchi.
+    const pause = (comando: "continua" | "dentro") => {
+      const e = new Esecuzione(apriFile("tipi/copia-di-un-record"), tetti);
+      e.puntiDiInterruzione = new Set(["b1"]);
+      const viste: string[] = [];
+      finoAllaFine(e, comando, [], (x) => {
+        const s = x.stato as Extract<Stato, { genere: "pausa" }>;
+        viste.push(`${s.blocco || s.dato}${s.campo !== undefined ? `.${s.campo}` : ""}`);
+      });
+      return viste;
+    };
+    expect({ continua: pause("continua"), dentro: pause("dentro") }).toEqual({ continua: ["b1.0"], dentro: ["a", "b1.0", "b1.1", "b1.2", "b2", "b3", "b4", "b5", "fine"] });
+  });
+
   test("la tabella in CSV, in italiano e in inglese, uguale all'atteso riga per riga e byte per byte", () => {
     const e = new Esecuzione(riferimento, tetti);
     finoAllaFine(e, "continua", inputDelRiferimento);

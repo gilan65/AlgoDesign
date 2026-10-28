@@ -17,7 +17,9 @@
 // allora il livello dopo il numero, e il nome della funzione davanti a ogni colonna del suo gruppo.
 //
 // La tabella mostrata: una colonna per dato; un vettore nella forma scelta (le colonne dei primi dieci elementi
-// e una per gli altri, che dice quali cambiano; in fila in una colonna sola; una colonna per elemento); con i `per ogni`
+// e una per gli altri, che dice quali cambiano; in fila in una colonna sola; una colonna per elemento); un record una
+// colonna per campo (`a.nome`), in ogni forma, nel gruppo del dato; la copia di un record col suo nome ha una riga per
+// campo, con la regola del campo (`b.nome ← a.nome`); con i `per ogni`
 // disegnati con la posizione, dopo i dati una colonna per livello con la posizione dell'elemento (`_indice`, `_indice2`),
 // come la dà l'interprete. Un evento di un ciclo aperto ha per regola il testo del blocco della sua fase (la partenza, il
 // controllo, l'elemento preso, l'aumento: la stessa funzione del disegno); di un ciclo chiuso, l'intestazione. Il CSV
@@ -45,7 +47,7 @@ import {
 import { funzioniDelGiro } from "../controllo/controllo";
 import { funzioniChiamabili, testoDelValore, type FaseDelCiclo, type Fotografia, type FotografiaDiUnaChiamata, type Origine, type Restituito, type Valore } from "../interprete/interprete";
 import { livelliDellePosizioni, nomiDeiVettori } from "../progetto/copia";
-import { opzioniPredefinite, tipoSemplice, type Blocco, type Dato, type Funzione, type Progetto, type Tipo } from "../progetto/modello";
+import { opzioniPredefinite, type Blocco, type Dato, type Funzione, type Progetto, type Tipo } from "../progetto/modello";
 
 export interface Riga {
   /** L'azione: per una ripresa, quella che riprende. */
@@ -60,6 +62,8 @@ export interface Riga {
   readonly dato?: string;
   /** La parte del ciclo, in un ciclo `per` o `per ogni`. */
   readonly fase?: FaseDelCiclo;
+  /** Nella copia di un record col suo nome, la posizione del campo copiato. */
+  readonly campo?: number;
   /** Le chiamate attive durante l'azione: 0 nella radice. */
   readonly livello: number;
   /** La funzione dell'azione, se non è il programma principale. */
@@ -84,7 +88,7 @@ export interface Riga {
 }
 
 /** Ciò che una riga ha dall'evento che la apre: una ripresa lo copia dall'azione che riprende. */
-type Azione = { numero: number; blocco: string; dato?: string; fase?: FaseDelCiclo; livello: number; funzione?: string };
+type Azione = { numero: number; blocco: string; dato?: string; fase?: FaseDelCiclo; campo?: number; livello: number; funzione?: string };
 type Aperta = Azione & { ripresa?: true; condizione?: boolean; scrive?: string; letto?: string; restituito?: Restituito };
 
 const uguali = (a: Valore | undefined, b: Valore | undefined): boolean => {
@@ -169,11 +173,19 @@ export class Traccia {
 
   /** Un evento: chiude la riga dell'azione precedente coi valori di adesso e apre quella di questa azione (il
    * valore iniziale di `dato`, se c'è; la parte del ciclo, in un ciclo; il livello; la funzione, se non è il programma
-   * principale). */
-  evento(blocco: string, dati: Fotografia, dato?: string, fase?: FaseDelCiclo, livello = 0, funzione?: string): void {
+   * principale; la posizione del campo, nella copia di un record). */
+  evento(blocco: string, dati: Fotografia, dato?: string, fase?: FaseDelCiclo, livello = 0, funzione?: string, campo?: number): void {
     if (this.#iniziali === undefined) this.#iniziali = this.#ultimi = dati;
     else this.#chiudi(dati);
-    const azione: Azione = { numero: ++this.#azioni, blocco, ...(dato !== undefined ? { dato } : {}), ...(fase !== undefined ? { fase } : {}), livello, ...(funzione !== undefined ? { funzione } : {}) };
+    const azione: Azione = {
+      numero: ++this.#azioni,
+      blocco,
+      ...(dato !== undefined ? { dato } : {}),
+      ...(fase !== undefined ? { fase } : {}),
+      ...(campo !== undefined ? { campo } : {}),
+      livello,
+      ...(funzione !== undefined ? { funzione } : {}),
+    };
     this.#perLivello.length = livello;
     this.#perLivello.push(azione);
     this.#aperta = { ...azione };
@@ -382,9 +394,12 @@ export interface GruppoDiColonne {
 
 interface DatoMostrato {
   readonly nome: string;
+  /** Il tipo della vista dei dati; per un record, il suo nome. */
   readonly tipo: string;
   /** Gli elementi, se è un vettore. */
   readonly elementi?: number;
+  /** I campi col loro tipo, se è un record. */
+  readonly campi?: readonly { readonly nome: string; readonly tipo: string }[];
 }
 
 /**
@@ -464,6 +479,11 @@ export class TabellaMostrata {
       const fine = fini.get(r.blocco);
       if (fine !== undefined) return fine.kind === "function" ? `${testi.restituisce} ${(testi.espressione ?? ((t: string) => t))(fine.end.return_value!)}` : testi.fine;
       const { blocco: b, funzione: f } = blocchi.get(r.blocco)!;
+      // Un campo della copia di un record: l'assegnazione di quel campo.
+      if (r.campo !== undefined && b.kind === "assignment") {
+        const campo = campiDelRecord(datiDi(f).find((d) => d.name === b.target)!, p)![r.campo]!.name;
+        return testoDelBlocco({ ...b, target: `${b.target}.${campo}`, value: `${b.value}.${campo}` }, testi);
+      }
       if (b.kind === "call") return partiDellaChiamata(b, funzioneChiamata(p.functions, b.callee), testi).map((q) => q.testo).join("");
       // Una fase di un'assegnazione è della copia di un vettore col suo nome.
       const ciclo = b.kind === "for" || b.kind === "for_each" || b.kind === "assignment";
@@ -489,7 +509,11 @@ export class TabellaMostrata {
       const testo = testoDelValore(v, decimali);
       return v.tipo === "real" ? testo.replace(".", separatoreDeiDecimali) : testo;
     };
-    const mostrato = (d: Dato): DatoMostrato => ({ nome: d.name, tipo: testi.tipi[tipoSemplice(d.type)], ...(d.size !== undefined ? { elementi: d.size } : {}) });
+    const mostrato = (d: Dato): DatoMostrato => {
+      const campi = campiDelRecord(d, p);
+      if (campi !== undefined) return { nome: d.name, tipo: d.record!, campi: campi.map((c) => ({ nome: c.name, tipo: testi.tipi[c.type] })) };
+      return { nome: d.name, tipo: testi.tipi[d.type as Tipo], ...(d.size !== undefined ? { elementi: d.size } : {}) };
+    };
     this.#dati = datiDi(principale).map(mostrato);
     this.#comuni = comuni.length;
     this.#radiceDelGiro = radice !== undefined && funzioniDelGiro(p).has(principale);
@@ -500,7 +524,8 @@ export class TabellaMostrata {
     const colonneDi = (d: DatoMostrato, funzione?: string): ColonnaDiUnValore[] => {
       const n = d.elementi;
       const gruppo = funzione === undefined ? d.nome : `${funzione} › ${d.nome}`;
-      const colonna = (nome: string) => ({ nome, tipo: d.tipo, gruppo, ...(funzione !== undefined ? { funzione } : {}) });
+      const colonna = (nome: string, tipo = d.tipo) => ({ nome, tipo, gruppo, ...(funzione !== undefined ? { funzione } : {}) });
+      if (d.campi !== undefined) return d.campi.map((c) => colonna(`${d.nome}.${c.nome}`, c.tipo));
       if (n === undefined || forma === "in-fila") return [colonna(d.nome)];
       const elemento = (i: number) => colonna(`${d.nome}[${i}]`);
       if (forma === "per-elemento" || n <= tettoDelleColonne) return Array.from({ length: n }, (_, i) => elemento(i));
@@ -627,14 +652,15 @@ export class TabellaMostrata {
     const di = (r: Pick<Riga, "blocco" | "ripresa" | "restituito">) => r.ripresa === true && r.blocco === blocco && r.restituito?.funzione === f.id;
     const ultima = righe.findLast(di);
     const vettore = f.return_size !== undefined;
+    const campi = campiDelRecord({ type: f.return_type!, ...(f.return_record !== undefined ? { record: f.return_record } : {}) }, this.#progetto);
     const chiamate = righe
       .filter((r) => di(r) && r.numero === ultima?.numero)
       .map((r) => {
         const v = r.restituito!.valore;
         const elementi = "elementi" in v ? v.elementi : [v];
-        return elementi.map((x, i) => ({ nome: vettore ? `[${i}]` : nome, cella: this.#cella(x, false) }));
+        return elementi.map((x, i) => ({ nome: vettore ? `[${i}]` : campi !== undefined ? `.${campi[i]!.name}` : nome, cella: this.#cella(x, false) }));
       });
-    return { nome, tipo: this.#testi.tipi[tipoSemplice(f.return_type!)], vettore, chiamate };
+    return { nome, tipo: campi !== undefined ? f.return_record! : this.#testi.tipi[f.return_type as Tipo], vettore, chiamate };
   }
 
   #nelWatch(d: DatoMostrato, valori: readonly (Valore | undefined)[], cambiati: readonly boolean[] | undefined): DatoNelWatch {
@@ -642,7 +668,7 @@ export class TabellaMostrata {
       nome: d.nome,
       tipo: d.tipo,
       vettore: d.elementi !== undefined,
-      elementi: valori.map((v, i) => ({ nome: d.elementi === undefined ? d.nome : `${d.nome}[${i}]`, cella: this.#cella(v, cambiati?.[i] === true) })),
+      elementi: valori.map((v, i) => ({ nome: nomeDelValore(d, i), cella: this.#cella(v, cambiati?.[i] === true) })),
     };
   }
 
@@ -707,13 +733,14 @@ export class TabellaMostrata {
 
   /** Quante colonne ha un dato nella forma della tabella. */
   #colonneDi(d: DatoMostrato): number {
+    if (d.campi !== undefined) return d.campi.length;
     const n = d.elementi;
     if (n === undefined || this.forma === "in-fila") return 1;
     return this.forma === "per-elemento" || n <= tettoDelleColonne ? n : tettoDelleColonne + 1;
   }
 
   /** Le celle dei dati di una funzione; un parametro per riferimento (`riferimenti`) dice fra parentesi il dato di chi
-   * chiama: «5 (a)», e per un elemento di un vettore «5 (v[2])». */
+   * chiama: «5 (a)», per un elemento di un vettore «5 (v[2])», per un campo di un record «7 (a.voto)». */
   #valoriDeiDati(
     dati: readonly DatoMostrato[],
     valori: Fotografia["valori"],
@@ -726,7 +753,8 @@ export class TabellaMostrata {
       const dato = dati[d]!;
       const n = dato.elementi;
       const rif = riferimenti?.[d];
-      const di = (cella: CellaDiUnValore, i?: number): CellaDiUnValore => (rif === undefined ? cella : { ...cella, testo: `${cella.testo} (${i === undefined ? rif : `${rif}[${i}]`})` });
+      const di = (cella: CellaDiUnValore, i?: number): CellaDiUnValore => (rif === undefined ? cella : { ...cella, testo: `${cella.testo} (${i === undefined ? rif : nomeDelValore({ ...dato, nome: rif }, i)})` });
+      if (dato.campi !== undefined) return elementi.map((v, i) => di(this.#cella(v, c?.[i] === true), i));
       if (n !== undefined && this.forma === "in-fila") return [di(this.#inFila(elementi, c))];
       const tutti = n === undefined || this.forma === "per-elemento" || n <= tettoDelleColonne;
       const primi = (tutti ? elementi : elementi.slice(0, tettoDelleColonne)).map((v, i) => di(this.#cella(v, c?.[i] === true), n === undefined ? undefined : i));
@@ -808,6 +836,13 @@ export class TabellaMostrata {
     return [...(zero ? [zero] : []), ...t.righe.map((r) => this.riga(r))];
   }
 }
+
+/** Il nome di un valore di un dato: l'elemento di un vettore (`v[2]`), il campo di un record (`a.nome`), il dato. */
+const nomeDelValore = (d: DatoMostrato, i: number): string => (d.campi !== undefined ? `${d.nome}.${d.campi[i]!.nome}` : d.elementi !== undefined ? `${d.nome}[${i}]` : d.nome);
+
+/** I campi di un dato (o di un risultato) record del progetto; nessuno per un altro tipo. */
+const campiDelRecord = (d: Pick<Dato, "type" | "record">, p: Progetto): readonly { readonly name: string; readonly type: Tipo }[] | undefined =>
+  d.type === "record" ? p.records?.find((r) => r.name === d.record)?.fields : undefined;
 
 /** Il nome della colonna degli elementi oltre il tetto. */
 const nomeDegliAltri = (nome: string, elementi: number) => (elementi - 1 === tettoDelleColonne ? `${nome}[${tettoDelleColonne}]` : `${nome}[${tettoDelleColonne}…${elementi - 1}]`);

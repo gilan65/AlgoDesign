@@ -1,0 +1,104 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "copia-di-un-record",
+    "description": "La copia di un record col suo nome, campo per campo: cambiata la copia, la sorgente resta; cambiata la sorgente, la copia resta."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "classe",
+          "type": "string",
+          "max_length": 3
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "record",
+          "record": "alunno",
+          "initial": [
+            "\"Anna\"",
+            "\"3A\"",
+            "7"
+          ]
+        },
+        {
+          "name": "b",
+          "type": "record",
+          "record": "alunno"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "b",
+          "value": "a"
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "b.voto",
+          "value": "9"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "a.voto",
+            "\" \"",
+            "b.voto"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "a.nome",
+          "value": "\"Bruno\""
+        },
+        {
+          "id": "b5",
+          "kind": "write",
+          "values": [
+            "a.nome",
+            "\" \"",
+            "b.nome"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "copia-di-un-record",
+      "inputs": [],
+      "expected": {
+        "output": "7 9\nBruno Anna\n"
+      }
+    }
+  ]
+}

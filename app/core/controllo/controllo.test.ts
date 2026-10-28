@@ -1314,7 +1314,7 @@ describe("avvisi delle tappe 1 e 2", () => {
   });
 });
 
-test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l'errore dell'interprete, i 2 elementi letti dopo un per ogni e i 4 dei parametri per riferimento e per uscita, nessun altro", () => {
+test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l'errore dell'interprete, i 2 elementi letti dopo un per ogni, i 4 dei parametri per riferimento e per uscita e il record per riferimento, nessun altro", () => {
   const cartella = fileURLToPath(new URL("../../casi", import.meta.url));
   const trovati: string[] = [];
   let [file, controllati] = [0, 0];
@@ -1343,9 +1343,10 @@ test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l
     "tappa-3/uscita-con-valore-prima.algo b4 x",
     "tappa-3/uscita-letta-prima.algo b4 x",
     "tappa-3/uscita-non-assegnata.algo b2 n",
+    "tipi/riferimento-a-un-record-senza-valore.algo b4 c",
   ]);
-  // Col corpus dei record: un file giusto è fuori tappa, i cinque sbagliati non hanno il dato senza valore.
-  expect([file, controllati]).toEqual([152, 151]);
+  // Col corpus dei record: nessuno è fuori tappa; quello del riferimento senza valore ha l'avviso, i cinque sbagliati no.
+  expect([file, controllati]).toEqual([157, 157]);
 });
 
 test("i limiti sono un parametro senza predefinito: chi chiama il controllo li passa sempre", () => {
@@ -1560,7 +1561,7 @@ describe("mutazioni del controllo del riferimento che vuole il valore", () => {
     unElemento: conFunzioni(tutti, [], procedura("f20", "p", [par("m", "integer", "reference", { size: 3 })], [assegna("b30", "m[0]", "1")])),
   };
   const attesi = { errori: [e("reference_without_value", "b1")], versoOut: { leggePrima: [], inUnRamo: [], unElemento: [] } };
-  const condizione = 'd.parameter === "reference" && d.size === undefined && !lettiPrima.has(d.name) && daranno.has(d.name) ?';
+  const condizione = 'd.parameter === "reference" && d.size === undefined && d.type !== "record" && !lettiPrima.has(d.name) && daranno.has(d.name) ?';
   const mutazioni = [
     ["nessuna (controllo positivo)", "", ""],
     ["un riferimento senza valore passa il controllo", 'trovati.push({ code: "reference_without_value", block: b.id });', "void b;"],
@@ -1621,7 +1622,7 @@ function censimento({ codici, tappaDi, provati, statiche, regoleDelFormato }: Ce
 // Ultima prova del file: il censimento nei due versi. Un codice è «provato» solo se la sua prova è arrivata in fondo
 // (`prova` lo registra dopo il corpo), non quando la prova è dichiarata.
 // I record: il progetto di partenza e gli errori attesi sono quelli scritti a mano prima del codice. Un progetto giusto coi
-// record è fuori tappa (l'interprete e i generatori non li conoscono ancora); uno sbagliato ha i suoi errori statici.
+// record è dentro la tappa (gli strati che non li conoscono lo rifiutano da sé); uno sbagliato ha i suoi errori statici.
 describe("i record", () => {
   const pagella = (): Json => ({
     format: "algodesign",
@@ -1680,12 +1681,47 @@ describe("i record", () => {
     p.functions[1].return_record = nome;
   };
 
-  test("il progetto giusto coi record è fuori tappa, coi posti che li hanno", () => {
-    expect(controllato()).toEqual({ fuoriTappa: true, blocchi: ["", "f1", "f2"] });
-    // Senza la costante comune (e col blocco che la usava che scrive un campo).
-    expect(controllato((p) => (delete p.shared_constants, Object.assign(blocco(p, "b1"), { target: "a.voto", value: "7" })))).toEqual({ fuoriTappa: true, blocchi: ["", "f1", "f2"] });
-    // Controllo positivo: senza record (e senza i dati che li usano) il progetto torna dentro la tappa.
-    expect(controllato((p) => ((p.records = []), delete p.shared_constants, (p.functions = [{ ...main(p), data: [], body: [] }]))).fuoriTappa).toBe(false);
+  test("il progetto giusto coi record è dentro la tappa, senza errori né avvisi", () => {
+    const giusto = (modifica?: (p: Json) => void) => {
+      const r = controllato(modifica);
+      return r.fuoriTappa ? "fuori tappa" : { errori: r.errori.length, avvisi: r.avvisi.map((a) => `${a.code}@${a.block}`) };
+    };
+    expect(giusto()).toEqual({ errori: 0, avvisi: [] });
+    // Senza la costante comune (e col blocco che la usava che scrive un campo: il record ha un valore da un campo).
+    expect(giusto((p) => (delete p.shared_constants, Object.assign(blocco(p, "b1"), { target: "a.voto", value: "7" })))).toEqual({ errori: 0, avvisi: [] });
+    // Controllo positivo: senza il blocco che dà un valore, il campo letto è un dato letto prima del valore.
+    expect(giusto((p) => (delete p.shared_constants, (main(p).body = main(p).body.slice(1))))).toEqual({ errori: 0, avvisi: ["maybe_uninitialized@b2"] });
+  });
+
+  test("le analisi dopo gli errori conoscono il campo: il valore, il riferimento, l'uscita, il passaggio verso «out»", () => {
+    const conProcedure = (corpo: Json[], ...procedure: Json[]) => (p: Json) => {
+      delete p.shared_constants;
+      main(p).body = corpo;
+      p.functions.push(...procedure);
+    };
+    const r = (modifica: (p: Json) => void) => {
+      const c = controllato(modifica);
+      if (c.fuoriTappa) throw new Error("fuori tappa");
+      return { errori: c.errori.map((x) => `${x.code}@${x.block}`), prima: c.primaDelValore.map((x) => x.block), versoOut: c.versoOut.map((x) => `${x.funzione}:${x.indice}`) };
+    };
+    const dai = { id: "f3", kind: "procedure", name: "dai", data: [par("r", "record", "reference", { record: "alunno" })], body: [assegna("b20", "r.voto", "1")], end: { id: "b21" } };
+    const daiUscita = { ...dai, name: "esce", id: "f4", data: [par("r", "record", "out", { record: "alunno" })], end: { id: "b22" } };
+    const daiIntero = { id: "f5", kind: "procedure", name: "uno", data: [par("n", "integer", "out")], body: [assegna("b23", "n", "1")], end: { id: "b24" } };
+    // Un campo scritto dà il valore al record: il riferimento e la lettura dopo non avvisano.
+    expect(r(conProcedure([assegna("b1", "a.nome", '"x"'), salta("b2", "dai", "a"), scrivi("b3", "a.voto")], dai))).toEqual({ errori: [], prima: [], versoOut: [] });
+    // Un campo passato per uscita a chi gli dà un valore: il record ha un valore dopo il salto.
+    expect(r(conProcedure([salta("b1", "uno", "a.voto"), scrivi("b2", "a.voto")], daiIntero))).toEqual({ errori: [], prima: [], versoOut: [] });
+    // Sonde vere: il record senza valore al riferimento, e il record intero passato per uscita a chi non dà un valore lo
+    // perde, mentre un suo campo no.
+    expect(r(conProcedure([salta("b1", "dai", "a")], dai))).toEqual({ errori: ["reference_without_value@b1"], prima: [], versoOut: [] });
+    const vuota = { ...daiUscita, body: [] };
+    expect(r(conProcedure([assegna("b1", "a.nome", '"x"'), salta("b2", "esce", "a"), scrivi("b3", "a.voto")], vuota)).prima).toEqual(["b3"]);
+    const nonDa = { ...daiIntero, body: [] };
+    expect(r(conProcedure([assegna("b1", "a.nome", '"x"'), salta("b2", "uno", "a.voto"), scrivi("b3", "a.nome")], nonDa)).prima).toEqual([]);
+    // Il riferimento a un record che la procedura scrive senza leggerlo non propone «out» (come il vettore: un campo solo
+    // conta come valore); a un intero sì (controllo positivo).
+    const scriveSoltanto = { ...daiIntero, id: "f6", name: "rif", data: [par("n", "integer", "reference")], end: { id: "b25" } };
+    expect(r(conProcedure([assegna("b1", "a.voto", "2"), salta("b2", "dai", "a"), salta("b3", "rif", "a.voto")], dai, scriveSoltanto)).versoOut).toEqual(["f6:0"]);
   });
 
   prova("unknown_record", () => {
@@ -1742,7 +1778,10 @@ describe("i record", () => {
 
   test("le forme giuste: il campo letto e scritto, per valore e per riferimento, la copia e il risultato", () => {
     const procedura = { id: "f3", kind: "procedure", name: "alza", data: [par("v", "integer", "reference"), par("y", "record", "value", { record: "alunno" })], body: [], end: { id: "b8" } };
-    const giusto = (modifica: (p: Json) => void) => controllato((p) => (p.functions.push(procedura), modifica(p))).fuoriTappa;
+    const giusto = (modifica: (p: Json) => void) => {
+      const r = controllato((p) => (p.functions.push(procedura), modifica(p)));
+      return !r.fuoriTappa && r.errori.length === 0;
+    };
     expect(giusto((p) => main(p).body.push(salta("b9", "alza", "a.voto", "a")))).toBe(true);
     expect(giusto((p) => main(p).body.push(leggiIn("b9", "a.nome")))).toBe(true);
     expect(giusto((p) => main(p).body.push(assegna("b9", "a", "promosso(primo)")))).toBe(true);

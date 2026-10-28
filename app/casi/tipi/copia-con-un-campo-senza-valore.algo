@@ -1,0 +1,85 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "copia-con-un-campo-senza-valore",
+    "description": "La copia di un record che ha un campo senza valore si ferma su quel campo."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "classe",
+          "type": "string",
+          "max_length": 3
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "record",
+          "record": "alunno"
+        },
+        {
+          "name": "b",
+          "type": "record",
+          "record": "alunno"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "a.nome",
+          "value": "\"Anna\""
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "b",
+          "value": "a"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "b.nome"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "copia-con-un-campo-senza-valore",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "uninitialized",
+          "block": "b2"
+        }
+      }
+    }
+  ]
+}

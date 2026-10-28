@@ -84,8 +84,8 @@ let diFunzioni = 0;
 const tappeEseguite = [1, 2, 3, 4];
 const tappeDaEseguire: number[] = [];
 const tappaDi = (nome: string) => Number(/^tappa-(\d+)\//.exec(nome)?.[1]);
-/** I tipi non semplici (la cartella `tipi/`): il controllo statico li conosce, l'esecuzione ancora no. Un file che attende
- * il solo errore statico si esegue (non parte, ed è l'esito atteso); un file giusto è fuori tappa. */
+/** I tipi non semplici (la cartella `tipi/`): ogni file si esegue, come quelli delle tappe; uno che attende il solo errore
+ * statico non parte, ed è l'esito atteso. */
 const deiTipi = (nome: string) => nome.startsWith("tipi/");
 
 /** I casi dichiarati nei file delle tappe che si eseguono, quelli eseguiti, e i casi di ogni file che si apre (per
@@ -120,7 +120,7 @@ for (const { nome, percorso } of file) {
     ...p.functions.flatMap((f) => (f.test_cases ?? []).map((caso) => ({ id: `${nome}#${f.name}/${caso.name}`, caso, funzione: f.id }))),
   ];
   nelFile.set(nome, suoi.map((c) => c.id));
-  const deveEseguirsi = dellaTappa || (deiTipi(nome) && suoi.length > 0 && suoi.every((c) => c.caso.expected.static_error !== undefined));
+  const deveEseguirsi = dellaTappa || deiTipi(nome);
   if (corpus && dellaTappa) {
     if (delProgramma.length === 0) problemi.push(`${nome} è della tappa ${tappaDi(nome)} ma non ha casi d'uso`);
     dichiarati.push(...suoi.map((c) => c.id));
