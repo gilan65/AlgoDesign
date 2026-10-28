@@ -2,7 +2,8 @@
 // `riferimento-media-voti.algo` contro quello della tappa 1, `riferimento-media-voti-per.algo` contro quello della
 // tappa 2 (coi cicli `per`), `riferimento-media-voti-funzioni.algo` contro quello della tappa 3 (le procedure e la
 // funzione nascono quando servono: la mappa segue l'ordine in cui la costruzione crea blocchi e fini, e ogni numero da
-// `b1` all'ultimo è usato una volta).
+// `b1` all'ultimo è usato una volta), `copia-di-un-record.algo` contro quello dei record (la fine del riferimento si
+// chiama `fine`, e la mappa la nomina).
 //
 // La mappa degli identificatori, dichiarata: un progetto nuovo ha la fine come `b1`; i blocchi creati dopo
 // prendono `b2`, `b3`, … nell'ordine di creazione, che è l'ordine del flusso. Nella tappa 1 il blocco `bN` del
@@ -33,7 +34,7 @@ const leggi = (percorso: string): { testo: string; progetto: Progetto } => {
 function rinumera(v: unknown, mappa: Record<string, string>): unknown {
   if (Array.isArray(v)) return v.map((x) => rinumera(x, mappa));
   if (v === null || typeof v !== "object") return v;
-  return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, k === "id" && typeof x === "string" && x.startsWith("b") ? (mappa[x] ?? `NON MAPPATO ${x}`) : rinumera(x, mappa)]));
+  return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, k === "id" && typeof x === "string" && (x.startsWith("b") || x in mappa) ? (mappa[x] ?? `NON MAPPATO ${x}`) : rinumera(x, mappa)]));
 }
 
 /** Gli identificatori dei blocchi nell'ordine del flusso (ogni blocco, poi il suo contenuto), e la fine. */
@@ -75,6 +76,14 @@ const coppie = [
       b23: "b23", b24: "b24", b25: "b25", b26: "b26", b27: "b22",
     } as Record<string, string>,
     blocchi: 27,
+  },
+  {
+    // Il record definito dal menu, i due dati record (uno col valore iniziale), la copia col nome e i campi letti e scritti.
+    nome: "record",
+    atteso: leggi("./copia-di-un-record.algo"),
+    riferimento: leggi("../../casi/tipi/copia-di-un-record.algo"),
+    mappa: { b1: "b2", b2: "b3", b3: "b4", b4: "b5", b5: "b6", fine: "b1" } as Record<string, string>,
+    blocchi: 5,
   },
 ];
 

@@ -41,6 +41,8 @@ export const catalogo = {
   // Segna il progetto come libreria e lo salva con nome, partendo dalla cartella delle librerie.
   salvaComeLibreria: { testo: "salvaComeLibreria", icona: "libreria", gruppo: "progetto", posti: ["menu"] },
   proprieta: { testo: "progetto", icona: "progetto", gruppo: "progetto", posti: ["menu"] },
+  // Il primo record nasce da qui: il pulsante nella vista dei dati senza record c'è solo se le Impostazioni lo chiedono.
+  aggiungiRecord: { testo: "aggiungiRecord", icona: "dati", gruppo: "progetto", posti: ["menu"] },
   nuovaFunzione: { testo: "nuovaProceduraOFunzione", icona: "funzione", gruppo: "progetto", posti: ["menu"] },
   funzioni: { testo: "gestisciFunzioni", icona: "funzioni", gruppo: "progetto", posti: ["menu"] },
   importa: { testo: "importaFunzioni", icona: "importa", gruppo: "progetto", posti: ["menu"] },
@@ -83,7 +85,7 @@ export const delGruppo = (g: Gruppo, posto: Posto): IdComando[] =>
   (Object.keys(catalogo) as IdComando[]).filter((id) => catalogo[id].gruppo === g && (catalogo[id].posti as readonly Posto[]).includes(posto));
 
 /** Le voci del menu «Progetto»: i comandi del gruppo che stanno nel menu, con le linee che li separano. */
-export const VOCI_DEL_MENU: readonly (IdComando | "—")[] = ["nuovo", "apri", "—", "salva", "salvaConNome", "salvaComeLibreria", "—", "proprieta", "—", "nuovaFunzione", "funzioni", "importa", "—", "esportaFlowchart", "esportaTabella", "—", "stampa"];
+export const VOCI_DEL_MENU: readonly (IdComando | "—")[] = ["nuovo", "apri", "—", "salva", "salvaConNome", "salvaComeLibreria", "—", "proprieta", "—", "aggiungiRecord", "nuovaFunzione", "funzioni", "importa", "—", "esportaFlowchart", "esportaTabella", "—", "stampa"];
 /** Le voci del menu «Aiuto», alla destra di «Impostazioni»: i comandi del gruppo dell'applicazione che stanno nel menu. */
 export const VOCI_DELL_AIUTO: readonly (IdComando | "—")[] = ["guida", "esempi", "—", "informazioni"];
 

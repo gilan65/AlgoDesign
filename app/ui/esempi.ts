@@ -30,7 +30,7 @@ import testoRicorsioneSenzaUscita from "../casi/tappa-4/ricorsione-senza-uscita.
 import testoSequenzaDiFibonacci from "../casi/tappa-4/sequenza-di-fibonacci.algo" with { type: "text" };
 import { controlla, type Tetti } from "../core/controllo/controllo";
 import { apri, salva, type ErroreDiApertura } from "../core/progetto/formato";
-import { usaIRecord, type Progetto } from "../core/progetto/modello";
+import type { Progetto } from "../core/progetto/modello";
 import type { Dizionario } from "../i18n/it";
 import { dizionari, riempi } from "../i18n/lingue";
 import type { CartellaDegliEsempi, ErroreDelFile, FileDiEsempio } from "./file";
@@ -147,8 +147,7 @@ function esempioDa(f: FileDiEsempio, gruppo: string | null, limiti: Tetti): Esem
   if (f.testo === undefined) return { nome: f.nome, gruppo, progetto: null, problema: { genere: "file", errore: f.errore ?? { genere: "sistema", dettaglio: "" } } };
   const esito = apri(f.testo);
   if (!esito.ok) return { nome: f.nome, gruppo, progetto: null, problema: { genere: "apertura", errori: esito.errori } };
-  // Un progetto coi record si esegue nel nucleo, ma la finestra non li mostra ancora: come un costrutto fuori tappa.
-  if (usaIRecord(esito.progetto) || controlla(esito.progetto, limiti).fuoriTappa) return { nome: f.nome, gruppo, progetto: null, problema: { genere: "fuori_tappa" } };
+  if (controlla(esito.progetto, limiti).fuoriTappa) return { nome: f.nome, gruppo, progetto: null, problema: { genere: "fuori_tappa" } };
   return { nome: f.nome, gruppo, progetto: esito.progetto, problema: null };
 }
 

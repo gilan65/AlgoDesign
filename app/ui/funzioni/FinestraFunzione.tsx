@@ -8,14 +8,15 @@
 // - RINOMINA: il nome nuovo (le chiamate lo prendono).
 // Che cosa restituisce si scrive coi campi della vista dei dati per un dato di quel tipo: il tipo, la forma (un valore
 // solo o un vettore) con gli elementi, e per una stringa la lunghezza massima nelle opzioni avanzate. Un vettore non ha
-// valore predefinito: il campo non c'è. Una dimensione o una lunghezza che non è un numero la segnala il controllo, come
+// valore predefinito: il campo non c'è, e nemmeno per un record (scelto dopo i cinque tipi, fra i record del progetto).
+// Una dimensione o una lunghezza che non è un numero la segnala il controllo, come
 // per un dato.
 // Il valore predefinito segue il tipo (0, 0.0, ' ', "", false) finché l'utente non lo scrive. Gli errori (il nome vuoto, non
 // valido o già usato; il valore predefinito che non è del tipo) li dice chi apre la finestra con le regole del
 // controllo; si mostrano sotto il campo dopo il primo tentativo di conferma, o su un campo cambiato, e la conferma con un
 // errore mette il fuoco sul campo sbagliato. Invio conferma.
 import { useId, useRef, useState, type FormEvent, type ReactElement } from "react";
-import { tipi, tipoSemplice, valorePredefinito, type Funzione, type TipoRestituito } from "../../core/progetto/modello";
+import { tipi, valorePredefinito, type Funzione, type TipoRestituito } from "../../core/progetto/modello";
 import type { GenereDiSottoprogramma } from "../../core/modifica/funzioni";
 import type { Dizionario } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
@@ -32,7 +33,9 @@ export type ModoDellaFinestra =
 export interface BozzaDellaFunzione {
   readonly genere: GenereDiSottoprogramma;
   readonly nome: string;
-  readonly tipo: TipoRestituito;
+  readonly tipo: TipoRestituito | "record";
+  /** Col tipo `record`, il nome del record; altrimenti vuoto. */
+  readonly record: string;
   /** Restituisce un vettore, coi suoi elementi come li scrive il campo. */
   readonly vettore: boolean;
   readonly dimensione: string;
@@ -48,17 +51,18 @@ const nomiDeiTipi: Record<TipoRestituito, keyof Dizionario> = { integer: "tipoIn
 function bozzaIniziale(m: ModoDellaFinestra): BozzaDellaFunzione {
   const misure = { vettore: false, dimensione: "", lunghezza: "" };
   if (m.modo === "nuova")
-    return { genere: m.salto !== undefined ? "procedure" : m.soloFunzione ? "function" : (m.genere ?? "procedure"), nome: "", tipo: "integer", ...misure, predefinito: valorePredefinito.integer };
+    return { genere: m.salto !== undefined ? "procedure" : m.soloFunzione ? "function" : (m.genere ?? "procedure"), nome: "", tipo: "integer", record: "", ...misure, predefinito: valorePredefinito.integer };
   const f = m.funzione;
-  const tipo = tipoSemplice(f.return_type ?? "integer");
+  const tipo = f.return_type ?? "integer";
   return {
     genere: f.kind === "function" ? "function" : "procedure",
     nome: f.name ?? "",
     tipo,
+    record: f.return_record ?? "",
     vettore: f.return_size !== undefined,
     dimensione: f.return_size === undefined ? "" : String(f.return_size),
     lunghezza: f.return_max_length === undefined ? "" : String(f.return_max_length),
-    predefinito: f.default_result ?? valorePredefinito[tipo],
+    predefinito: f.default_result ?? (tipo === "record" ? "" : valorePredefinito[tipo]),
   };
 }
 
@@ -67,9 +71,11 @@ function Campi({
   testi,
   errori,
   conferma,
+  records,
 }: {
   modo: ModoDellaFinestra;
   testi: Dizionario;
+  records: readonly string[];
   errori: (b: BozzaDellaFunzione) => ErroriDellaFunzione;
   conferma: (b: BozzaDellaFunzione) => void;
 }): ReactElement {
@@ -85,7 +91,8 @@ function Campi({
   const conNome = modo.modo !== "proprieta";
   const conGenere = modo.modo === "proprieta" || (modo.modo === "nuova" && !modo.soloFunzione && modo.salto === undefined);
   const conTipo = modo.modo !== "rinomina" && bozza.genere === "function";
-  const conPredefinito = conTipo && !bozza.vettore;
+  const conPredefinito = conTipo && !bozza.vettore && bozza.tipo !== "record";
+  const nomiDeiRecord = bozza.tipo === "record" && !records.includes(bozza.record) ? [...records, bozza.record] : records;
   // Le opzioni avanzate si aprono da sé se la lunghezza è scritta, poi le apre e le chiude solo l'utente.
   const [avanzate, setAvanzate] = useState(iniziale.lunghezza !== "");
 
@@ -171,15 +178,26 @@ function Campi({
             id={`${id}-tipo`}
             className={stili.campo}
             data-campo="tipo"
-            value={bozza.tipo}
+            value={bozza.tipo === "record" ? `record:${bozza.record}` : bozza.tipo}
             onChange={(ev) => {
-              const tipo = ev.target.value as TipoRestituito;
-              setBozza({ ...bozza, tipo, ...(predefinitoScritto ? {} : { predefinito: valorePredefinito[tipo] }) });
+              const v = ev.target.value;
+              if (v.startsWith("record:")) {
+                setBozza({ ...bozza, tipo: "record", record: v.slice("record:".length) });
+                return;
+              }
+              const tipo = v as TipoRestituito;
+              setBozza({ ...bozza, tipo, record: "", ...(predefinitoScritto ? {} : { predefinito: valorePredefinito[tipo] }) });
             }}
           >
             {tipi.map((t) => (
               <option key={t} value={t}>
                 {testi[nomiDeiTipi[t]]}
+              </option>
+            ))}
+            {nomiDeiRecord.length > 0 && <option disabled>──────</option>}
+            {nomiDeiRecord.map((r) => (
+              <option key={`record:${r}`} value={`record:${r}`}>
+                {r}
               </option>
             ))}
           </select>
@@ -220,10 +238,13 @@ export function FinestraFunzione({
   errori,
   conferma,
   rinuncia,
+  records = [],
 }: {
   /** `null`: la finestra è chiusa. */
   modo: ModoDellaFinestra | null;
   testi: Dizionario;
+  /** I nomi dei record del progetto, che il tipo restituito offre dopo i cinque. */
+  records?: readonly string[];
   errori: (b: BozzaDellaFunzione) => ErroriDellaFunzione;
   conferma: (b: BozzaDellaFunzione) => void;
   rinuncia: () => void;
@@ -240,7 +261,7 @@ export function FinestraFunzione({
         : riempi(modo.modo === "rinomina" ? testi.funzioneRinominaTitolo : testi.funzioneProprietaTitolo, { nome: modo.funzione.name ?? "" });
   return (
     <Finestra aperta={modo !== null} titolo={titolo} rinuncia={rinuncia} iniziale={() => document.querySelector<HTMLElement>('[role="dialog"] [data-campo="nome"]')}>
-      {modo && <Campi modo={modo} testi={testi} errori={errori} conferma={conferma} />}
+      {modo && <Campi modo={modo} testi={testi} errori={errori} conferma={conferma} records={records} />}
     </Finestra>
   );
 }

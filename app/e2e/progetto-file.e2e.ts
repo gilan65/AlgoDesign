@@ -166,17 +166,28 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
   console.log(`apri e salva: corpus ${delleTappe.length} file, della ricorsione ${ricorsione}: identici ${identici.length}, diversi ${diversi.length}`);
   expect(diversi).toEqual([]);
   expect({ ricorsione, identici: identici.length, corpus: delleTappe.length }).toEqual({ ricorsione: 22, identici: 146, corpus: 146 });
-  // I record: l'interfaccia non li conosce ancora, e un file che li usa non si apre, anche con un errore statico.
+  // I record: ogni file si apre, anche con un errore statico (lo dice il controllo nella finestra), con una riga per record
+  // nella tabella «Record» della vista dei dati, e salvato resta identico.
   const deiRecord = corpus.filter((c) => c.tappa === "tipi");
-  for (const c of deiRecord) {
+  const identiciDeiRecord: string[] = [];
+  let righe = 0;
+  for (const [i, c] of deiRecord.entries()) {
     await apriIl(page, c.percorso);
-    const errore = page.getByRole("alertdialog", { name: riempi(it.apriErroreTitolo, { file: c.percorso.split("\\").at(-1)! }), exact: true });
-    await expect(errore).toBeVisible();
-    await expect(errore.getByRole("listitem")).toHaveText([it.apriFuoriTappa]);
-    await chiudiConEsc(page, errore);
+    await expect(flowchart(page, nomeDi(c.testo))).toBeVisible();
+    const attese = (JSON.parse(c.testo).records ?? []).length;
+    await expect(page.locator("[data-record]"), c.percorso).toHaveCount(attese);
+    righe += attese;
+    if ((await salvaConNome(page, `C:\\uscita\\record-${i}.algo`)) === c.testo) identiciDeiRecord.push(c.percorso);
   }
+  console.log(`apri e salva: i record, ${deiRecord.length} file, ${righe} righe nella tabella «Record», identici ${identiciDeiRecord.length}`);
+  // La finestra non esegue ancora i record: F5 sull'ultimo file aperto lo dice, e l'esecuzione non parte (nessun
+  // comando «Ferma» disponibile).
+  await page.keyboard.press("F5");
+  await expect(page.getByText(it.apriFuoriTappa, { exact: true }).first()).toBeVisible();
+  await expect(page.locator('header [data-comando="ferma"]')).toHaveAttribute("aria-disabled", "true");
   // Sei giusti (che il nucleo esegue) e cinque con un errore statico.
-  expect(deiRecord.length).toBe(11);
+  expect({ identici: identiciDeiRecord.length, corpus: deiRecord.length }).toEqual({ identici: 11, corpus: 11 });
+  expect(righe).toBeGreaterThanOrEqual(11);
 });
 
 // ------------------------------------------------------------------------------- i motivi d'apertura

@@ -106,6 +106,8 @@ export interface Scelte {
   readonly ricercaNellaGuida: boolean;
   /** La finestra della guida si sposta dal titolo e si ridimensiona dall'angolo; altrimenti sta fissa a destra. */
   readonly guidaSpostabile: boolean;
+  /** «Aggiungi un record» nella vista dei dati anche senza record (altrimenti il primo nasce dal menu «Progetto»). */
+  readonly pulsanteDeiRecord: boolean;
 }
 
 export const scelteIniziali: Scelte = {
@@ -142,6 +144,7 @@ export const scelteIniziali: Scelte = {
   offriCasoDallEsecuzione: true,
   ricercaNellaGuida: true,
   guidaSpostabile: false,
+  pulsanteDeiRecord: false,
 };
 
 export const voci = {
@@ -295,6 +298,7 @@ export function preferenzeDa(file: unknown): { lingua: Lingua | undefined; scelt
       offriCasoDallEsecuzione: typeof f.offriCasoDallEsecuzione === "boolean" ? f.offriCasoDallEsecuzione : scelteIniziali.offriCasoDallEsecuzione,
       ricercaNellaGuida: typeof f.ricercaNellaGuida === "boolean" ? f.ricercaNellaGuida : scelteIniziali.ricercaNellaGuida,
       guidaSpostabile: typeof f.guidaSpostabile === "boolean" ? f.guidaSpostabile : scelteIniziali.guidaSpostabile,
+      pulsanteDeiRecord: typeof f.pulsanteDeiRecord === "boolean" ? f.pulsanteDeiRecord : scelteIniziali.pulsanteDeiRecord,
     },
   };
 }
@@ -336,6 +340,7 @@ export function fileDa(lingua: Lingua, s: Scelte): Record<string, unknown> {
     offriCasoDallEsecuzione: s.offriCasoDallEsecuzione,
     ricercaNellaGuida: s.ricercaNellaGuida,
     guidaSpostabile: s.guidaSpostabile,
+    pulsanteDeiRecord: s.pulsanteDeiRecord,
   };
 }
 

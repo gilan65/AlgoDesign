@@ -287,7 +287,7 @@ test("nome e cartella di un percorso, nome proposto, errore del guscio riconosci
   expect(erroreDelFile(new Error("file non trovato"))).toEqual({ genere: "sistema", dettaglio: "file non trovato" });
 });
 
-test("un esempio coi record non si apre ancora: ogni file della cartella dei record, anche con un errore statico, dice il costrutto che manca", () => {
+test("un esempio coi record si apre: ogni file della cartella dei record, anche con un errore statico (lo dice il controllo nella finestra)", () => {
   const radice = join(import.meta.dir, "..", "casi", "tipi");
   const file = Object.fromEntries(
     readdirSync(radice)
@@ -295,9 +295,9 @@ test("un esempio coi record non si apre ancora: ogni file della cartella dei rec
       .map((nome) => [nome, readFileSync(join(radice, nome), "utf8")]),
   );
   const esempi = esempiDa(cartella(file), tetti).sciolti;
-  expect(esempi.map((e) => [e.nome, e.progetto !== null, e.problema?.genere ?? null])).toEqual(Object.keys(file).map((n) => [n, false, "fuori_tappa"]));
+  expect(esempi.map((e) => [e.nome, e.progetto !== null, e.problema?.genere ?? null])).toEqual(Object.keys(file).map((n) => [n, true, null]));
   // Controllo positivo: il denominatore è la cartella intera (sei file giusti, cinque sbagliati), e un esempio senza
-  // record accanto si apre.
+  // record accanto si apre come loro.
   expect(esempi.length).toBe(11);
   const [buono] = forniti(it);
   expect(esempiDa(cartella({ "a.algo": buono!.testo }), tetti).sciolti.map((e) => e.problema)).toEqual([null]);

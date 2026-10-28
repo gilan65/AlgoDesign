@@ -30,7 +30,7 @@ import { fileURLToPath } from "node:url";
 import { traduciEspressione } from "../core/disegno/lingua";
 import { paroleTolleranti } from "../core/espressioni/analizzatore";
 import { apri as apriProgetto } from "../core/progetto/formato";
-import { tipoSemplice, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto, type Tipo } from "../core/progetto/modello";
+import { type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto, type Tipo } from "../core/progetto/modello";
 import type { Dizionario } from "../i18n/it";
 import { dizionari, riempi, type Lingua } from "../i18n/lingue";
 import { nomiDegliOperatori } from "../i18n/operatori";
@@ -64,6 +64,12 @@ export const riferimentoDellaTappa3: DaCostruire = {
   atteso: leggiProgetto("./attesi/riferimento-media-voti-funzioni.algo"),
 };
 
+/** Il programma coi record: il record definito, un dato col valore iniziale, la copia col nome, i campi letti e scritti. */
+export const programmaDeiRecord: DaCostruire = {
+  progetto: leggiProgetto("../casi/tipi/copia-di-un-record.algo").progetto,
+  atteso: leggiProgetto("./attesi/copia-di-un-record.algo"),
+};
+
 export interface Modi {
   blocchi: "riquadro" | "pannello";
   dati: "scheda" | "celle";
@@ -84,6 +90,9 @@ export interface Osservato {
   valoriDelCaso: number;
   funzioni: number;
   casiDelleFunzioni: number;
+  /** I record definiti dal menu «Progetto», e i loro campi. */
+  records: number;
+  campi: number;
 }
 
 /** La voce dell'elenco del «+» di ogni genere (senza conversione di tipo: un genere nuovo del modello che manca qui è un
@@ -164,7 +173,7 @@ export async function costruisci(
   const nomeBlocco = (b: Blocco): string => `${genereNelNome(b)}: ${contenuto(b)}`;
   const nomeDellaFunzione = (f: Funzione) => (f.kind === "main" ? p.metadata.name : f.name!);
   const flowchartDi = (f: Funzione) => page.getByRole("group", { name: `${t.flowchart}: ${nomeDellaFunzione(f)}`, exact: true });
-  const osservato: Osservato = { riquadri: 0, pannelli: 0, blocchi: 0, cicli: 0, salti: 0, dati: 0, valoriDelCaso: 0, funzioni: 0, casiDelleFunzioni: 0 };
+  const osservato: Osservato = { riquadri: 0, pannelli: 0, blocchi: 0, cicli: 0, salti: 0, dati: 0, valoriDelCaso: 0, funzioni: 0, casiDelleFunzioni: 0, records: 0, campi: 0 };
   // Le procedure e le funzioni già create.
   const create = new Set<string>();
 
@@ -180,6 +189,29 @@ export async function costruisci(
   }
   await aspetta(flowchartDi(main), `il flowchart «${p.metadata.name}»`);
 
+  /** I record del progetto, prima dei dati che li usano: dal menu «Progetto», poi nella scheda del record nuovo il nome e i
+   * campi (il primo c'è già; gli altri con «Aggiungi un campo»), Invio. */
+  for (const r of p.records ?? []) {
+    await (await voceDelMenu(page, t.aggiungiRecord, t)).click();
+    const scheda = page.getByRole("form", { name: riempi(t.modificaDelRecord, { nome: t.datoSenzaNome }), exact: true });
+    await aspetta(scheda, `la scheda del record nuovo «${r.name}»`);
+    const nomeDelRecord = scheda.getByRole("textbox", { name: t.recordNome, exact: true });
+    await nomeDelRecord.fill(r.name);
+    for (const [k, c] of r.fields.entries()) {
+      const n = String(k + 1);
+      if (k > 0) await scheda.getByRole("button", { name: t.recordAggiungiCampo, exact: true }).click();
+      const campo = scheda.getByRole("textbox", { name: riempi(t.recordNomeDelCampo, { n }), exact: true });
+      await aspetta(campo, `il campo ${n} del record «${r.name}»`);
+      await campo.fill(c.name);
+      await scheda.getByRole("combobox", { name: riempi(t.recordTipoDelCampo, { n }), exact: true }).selectOption({ label: t[nomiDeiTipi[c.type]] });
+      if (c.max_length !== undefined) await scheda.getByRole("spinbutton", { name: riempi(t.recordLunghezzaDelCampo, { n }), exact: true }).fill(String(c.max_length));
+      osservato.campi++;
+    }
+    await nomeDelRecord.press("Enter");
+    await aspetta(scheda, `la scheda del record «${r.name}»`, "hidden");
+    osservato.records++;
+  }
+
   /** I dati di una funzione, nell'ordine della vista: un parametro con «Aggiungi un parametro» e la sua natura, un dato
    * con «Aggiungi un dato». */
   const scriviIDati = async (f: Funzione): Promise<void> => {
@@ -194,7 +226,7 @@ export async function costruisci(
       const campoNome = dove.getByRole("textbox", { name: nome(t.datiNome), exact: true });
       await aspetta(campoNome, `il campo «${nome(t.datiNome)}» del dato «${d.name}» (${modi.dati})`);
       await campoNome.fill(d.name);
-      await dove.getByRole("combobox", { name: nome(t.datiTipo), exact: true }).selectOption({ label: t[nomiDeiTipi[tipoSemplice(d.type)]] });
+      await dove.getByRole("combobox", { name: nome(t.datiTipo), exact: true }).selectOption({ label: d.type === "record" ? d.record! : t[nomiDeiTipi[d.type]] });
       await dove.getByRole("combobox", { name: nome(t.campoForma), exact: true }).selectOption({ label: t.formaSemplice });
       const natura =
         d.parameter === "reference" ? t.naturaParametroRiferimento
@@ -205,7 +237,9 @@ export async function costruisci(
       await dove.getByRole("combobox", { name: nome(t.datiNatura), exact: true }).selectOption({ label: natura });
       // Un parametro non ha valore iniziale né ruolo: i loro campi non ci sono.
       if (!parametro) {
-        await dove.getByRole("textbox", { name: nome(t.datiIniziale), exact: true }).fill(typeof d.initial === "string" ? espressione(d.initial) : "");
+        // Il valore di un record: un letterale per campo, fra graffe.
+        const iniziale = typeof d.initial === "string" ? espressione(d.initial) : Array.isArray(d.initial) && d.type === "record" ? `{${(d.initial as readonly string[]).map(espressione).join(", ")}}` : "";
+        await dove.getByRole("textbox", { name: nome(t.datiIniziale), exact: true }).fill(iniziale);
         // Una costante non ha la scelta del ruolo.
         if (!d.constant) await dove.getByRole("combobox", { name: nome(t.datiRuolo), exact: true }).selectOption({ label: d.role === undefined ? t.ruoloDiLavoro : t[nomiDeiRuoli[d.role]] });
       } else parametri++;
@@ -286,7 +320,7 @@ export async function costruisci(
       const finestra = page.getByRole("dialog", { name: t.funzioneNuovaSoloTitolo, exact: true });
       await aspetta(finestra, `la finestra «${t.funzioneNuovaSoloTitolo}»`);
       await finestra.getByRole("textbox", { name: t.funzioneNome, exact: true }).fill(nome);
-      await finestra.getByRole("combobox", { name: t.funzioneRestituisce, exact: true }).selectOption({ label: t[nomiDeiTipi[tipoSemplice(f.return_type!)]] });
+      await finestra.getByRole("combobox", { name: t.funzioneRestituisce, exact: true }).selectOption({ label: f.return_type === "record" ? f.return_record! : t[nomiDeiTipi[f.return_type!]] });
       if (f.default_result !== undefined) throw new Error(`costruzione: il valore predefinito di «${nome}» non si scrive qui`);
       await finestra.getByRole("button", { name: t.funzioneCrea, exact: true }).click();
       await aspetta(finestra, `la finestra «${t.funzioneNuovaSoloTitolo}»`, "hidden");

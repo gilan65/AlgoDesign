@@ -14,7 +14,7 @@
 
 import { nomeValidoNelFile } from "../controllo/controllo";
 import { paroleTolleranti, type Parola } from "../espressioni/analizzatore";
-import { tipoSemplice, valorePredefinito, type Blocco, type Funzione, type Progetto, type TipoRestituito, type VoceDiUnaFunzione } from "../progetto/modello";
+import { valorePredefinito, type Blocco, type Funzione, type Progetto, type TipoRestituito, type VoceDiUnaFunzione } from "../progetto/modello";
 import { conIdNuovi, idDelBlocco, idUsati, primoLibero, sottoblocchi } from "./identificatori";
 import { nomeDellaCopia, valida, type Operazione, type Risultato } from "./operazioni";
 import { conTestiPropri, eUnaParolaSola, seguitaDaParentesi, testiPropri } from "./rinomina";
@@ -27,7 +27,9 @@ export type GenereDiSottoprogramma = "procedure" | "function";
  * predefinita; assenti, restano come sono). Un vettore non ha valore predefinito. */
 export interface Proprieta {
   readonly genere: GenereDiSottoprogramma;
-  readonly tipo?: TipoRestituito;
+  /** Uno dei cinque, o un record (col nome in `record`). */
+  readonly tipo?: TipoRestituito | "record";
+  readonly record?: string;
   readonly predefinito?: string;
   readonly dimensione?: number | null;
   readonly lunghezza?: number | null;
@@ -199,7 +201,7 @@ export function idDellaFunzioneNuova(p: Progetto): string {
  * tre. La dimensione di un vettore restituito e la lunghezza massima, non date, restano alla funzione (la lunghezza solo
  * a una funzione che resta stringa). */
 function conProprieta(f: Funzione, pr: Proprieta): Funzione {
-  const { return_type: _t, return_size: dimensioneDi, return_max_length: lunghezzaDi, default_result: _d, ...resto } = f;
+  const { return_type: _t, return_record: recordDi, return_size: dimensioneDi, return_max_length: lunghezzaDi, default_result: _d, ...resto } = f;
   const { return_value, ...fine } = f.end;
   if (pr.genere === "procedure") {
     // Una funzione non scrive (E042): l'output atteso dei suoi casi è fatto delle righe di ciò che restituisce, che una
@@ -212,8 +214,18 @@ function conProprieta(f: Funzione, pr: Proprieta): Funzione {
     const casi = f.kind === "function" && resto.test_cases ? { test_cases: resto.test_cases.map((c) => ({ ...c, expected: { ...c.expected, output: senzaRisultato(c.expected.output) } })) } : {};
     return { ...resto, kind: "procedure", end: fine, ...casi };
   }
-  const tipo = pr.tipo ?? tipoSemplice(f.return_type ?? "integer");
   const return_size = pr.dimensione === undefined ? dimensioneDi : (pr.dimensione ?? undefined);
+  // Un record restituito non ha valore predefinito né lunghezza: il nome del record dato, o quello di prima.
+  if ((pr.tipo ?? f.return_type) === "record")
+    return {
+      ...resto,
+      kind: "function",
+      return_type: "record",
+      return_record: pr.record ?? recordDi ?? "",
+      ...(return_size !== undefined ? { return_size } : {}),
+      end: { ...fine, return_value: return_value ?? "" },
+    };
+  const tipo = (pr.tipo ?? f.return_type ?? "integer") as TipoRestituito;
   const return_max_length = pr.lunghezza === undefined ? lunghezzaDi : (pr.lunghezza ?? undefined);
   const predefinito = return_size !== undefined ? valorePredefinito[tipo] : (pr.predefinito ?? f.default_result ?? valorePredefinito[tipo]);
   return {
@@ -354,8 +366,8 @@ export type ChiamateDaTogliere =
   | { readonly come: "salti" }
   | { readonly come: "predefinito" | "assegnazioni"; readonly rombiTenuti?: readonly string[] };
 
-/** Il valore predefinito di una funzione: quello scritto, o quello del tipo. */
-export const predefinitoDi = (f: Funzione): string => f.default_result ?? valorePredefinito[tipoSemplice(f.return_type ?? "integer")];
+/** Il valore predefinito di una funzione: quello scritto, o quello del tipo; un record non ne ha (vuoto). */
+export const predefinitoDi = (f: Funzione): string => f.default_result ?? (f.return_type === "record" ? "" : valorePredefinito[f.return_type ?? "integer"]);
 
 /** Toglie la procedura o la funzione, e delle sue chiamate ciò che `chiamate` dice (vedi `ChiamateDaTogliere`). */
 export const eliminaFunzione =
@@ -373,7 +385,8 @@ export const eliminaFunzione =
     // senza segno), o in un'espressione farebbe una divisione intera.
     const scritto = predefinitoDi(f);
     const valore = f.return_type === "real" && /^-?\d+$/.test(scritto) ? (/^-?0+$/.test(scritto) ? "0.0" : `${scritto}.0`) : scritto;
-    const vettore = f.return_size !== undefined;
+    // Un vettore o un record restituito non ha un valore predefinito: come il vettore.
+    const vettore = f.return_size !== undefined || f.return_type === "record";
     const sostituisci = (t: string) => (vettore ? t : sostituisciLaChiamata(t, nome, valore));
     const togliAssegnazioni = vettore || chiamate.come === "assegnazioni";
     const functions = resto.map((x) =>

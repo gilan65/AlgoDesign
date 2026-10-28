@@ -48,6 +48,8 @@ const tutte = {
   // I valori diversi dai predefiniti (la ricerca accesa, la guida fissa), perché il ritorno si veda.
   ricercaNellaGuida: false,
   guidaSpostabile: true,
+  // Il pulsante dei record acceso (il predefinito è spento).
+  pulsanteDeiRecord: true,
 };
 
 test("la presentazione dei pulsanti: tre valori, il predefinito è il testo sotto l'icona, e i due di prima valgono così come sono scritti", () => {
@@ -115,6 +117,7 @@ const rotti: Record<string, readonly unknown[]> = {
   offriCasoDallEsecuzione: ["no", 0, null],
   ricercaNellaGuida: ["sì", 1, null],
   guidaSpostabile: ["no", 0, null],
+  pulsanteDeiRecord: ["sì", 1, null],
 };
 
 test("un campo rotto scarta lui solo: gli altri restano", () => {
@@ -131,7 +134,7 @@ test("un campo rotto scarta lui solo: gli altri restano", () => {
     }
   // Ogni campo del file ha le sue prove (i limiti hanno la loro).
   expect(Object.keys(rotti).sort()).toEqual(Object.keys(tutte).filter((k) => k !== "limiti").sort());
-  expect(provati).toBe(122);
+  expect(provati).toBe(125);
 });
 
 test("un limite rotto scarta lui solo, e un oggetto dei limiti rotto li scarta tutti e tre", () => {

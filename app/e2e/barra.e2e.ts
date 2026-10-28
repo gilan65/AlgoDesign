@@ -198,7 +198,7 @@ test("il menu «Progetto» si apre col clic e dalla tastiera, Esc lo chiude e il
   const voci = await menu(page)
     .getByRole("menuitem")
     .evaluateAll((v) => v.map((x) => `${x.querySelector("[data-testo]")?.textContent} ${x.getAttribute("aria-keyshortcuts") ?? "-"} ${x.querySelector("[data-tasto]")?.textContent ?? "-"}`));
-  expect(voci).toEqual(["Nuovo Control+N Ctrl+N", "Apri Control+O Ctrl+O", "Salva Control+S Ctrl+S", "Salva con nome Control+Shift+S Ctrl+Maiusc+S", `${it.salvaComeLibreria} - -`, "Proprietà - -", `${it.nuovaProceduraOFunzione} - -`, `${it.gestisciFunzioni} - -`, `${it.importaFunzioni} - -`, `${it.esportaFlowchart} - -`, `${it.esportaTabella} - -`, `${it.stampa} Control+P Ctrl+P`]);
+  expect(voci).toEqual(["Nuovo Control+N Ctrl+N", "Apri Control+O Ctrl+O", "Salva Control+S Ctrl+S", "Salva con nome Control+Shift+S Ctrl+Maiusc+S", `${it.salvaComeLibreria} - -`, "Proprietà - -", `${it.aggiungiRecord} - -`, `${it.nuovaProceduraOFunzione} - -`, `${it.gestisciFunzioni} - -`, `${it.importaFunzioni} - -`, `${it.esportaFlowchart} - -`, `${it.esportaTabella} - -`, `${it.stampa} Control+P Ctrl+P`]);
   // Senza un'esecuzione non c'è una tabella da esportare; il flowchart sì.
   await expect(menu(page).getByRole("menuitem", { name: it.esportaTabella, exact: true })).toHaveAttribute("aria-disabled", "true");
   await expect(menu(page).getByRole("menuitem", { name: it.esportaFlowchart, exact: true })).not.toHaveAttribute("aria-disabled", "true");
@@ -291,9 +291,9 @@ test("una voce non disponibile si raggiunge dalla tastiera e non fa nulla, né c
   await page.keyboard.press("ArrowUp");
   await expect(evidenziata(page)).toHaveAttribute("data-comando", "esportaFlowchart");
   await expect(evidenziata(page)).not.toHaveAttribute("aria-disabled", "true");
-  // Durante l'esecuzione non si creano, non si gestiscono e non si importano procedure e funzioni: le tre voci prima
-  // sono spente anche loro.
-  for (const comando of ["importa", "funzioni", "nuovaFunzione", "proprieta"]) {
+  // Durante l'esecuzione non si creano, non si gestiscono e non si importano procedure e funzioni, e non si aggiunge un
+  // record: le voci prima sono spente anche loro.
+  for (const comando of ["importa", "funzioni", "nuovaFunzione", "aggiungiRecord", "proprieta"]) {
     await page.keyboard.press("ArrowUp");
     await expect(evidenziata(page)).toHaveAttribute("data-comando", comando);
     await expect(evidenziata(page)).toHaveAttribute("aria-disabled", "true");

@@ -243,6 +243,31 @@
   padding-block: 0.25rem;
 }
 
+/* I campi di un record nella sua scheda: una riga per campo, stretta. */
+.campiDelRecord {
+  border-collapse: collapse;
+}
+
+.campiDelRecord th {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+  padding: 0px 0.4rem 0.15rem 0px;
+}
+
+.campiDelRecord td {
+  padding: 0.15rem 0.4rem 0.15rem 0px;
+}
+
+.campiDelRecord input[type="text"],
+.campiDelRecord input:not([type]) {
+  width: 8rem;
+}
+
+.campiDelRecord input[type="number"] {
+  width: 4.5rem;
+}
+
 /* La tabella dei parametri senza parametri, e ciò che una funzione restituisce sotto i parametri. */
 .vuota > td,
 .piede > td {

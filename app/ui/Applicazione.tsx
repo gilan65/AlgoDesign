@@ -127,6 +127,9 @@ import { tipoDelDato } from "./dati/righe";
 import { ConfermaEliminazione, testiDelDato, type DaEliminare } from "./dati/ConfermaEliminazione";
 import { MenuNelPunto } from "./dati/MenuDellaRiga";
 import { chiaveDellaRiga, VistaDati, type Segni } from "./dati/VistaDati";
+import { bozzaDelRecord, recordDaBozza, stessoRecord, type BozzaDelRecord } from "./dati/record";
+import { chiaveDelRecord } from "./dati/TabellaDeiRecord";
+import { aggiungiRecord, cambiaRecord, duplicaRecord, eliminaRecord, recordNuovo, spostaRecord, usiDelRecord } from "../core/modifica/record";
 import { daSpostare, esempiDa, forniti, gruppoDi, mancanti, nomeLibero, testoDelProblema, testoDellErrore, type Esempio } from "./esempi";
 import {
   chiudiFinestra,
@@ -535,6 +538,12 @@ export function Applicazione({
   // dei dati a cui dare il fuoco dopo il prossimo disegno.
   const [datoInModifica, setDatoInModifica] = useState<{ indice: number; bozza: BozzaDelDato; campo?: "iniziale"; comune?: boolean } | null>(null);
   const [eliminando, setEliminando] = useState<DaEliminare | null>(null);
+  // Il record di cui si scrivono i campi (la scheda sotto la sua riga); `nuovo`, appena aggiunto: la cronologia di prima e
+  // se la prima conferma ha già mostrato i suoi errori (finché i campi sono aperti tace, come un dato nuovo).
+  const [recordInModifica, setRecordInModifica] = useState<{ indice: number; bozza: BozzaDelRecord; nuovo?: { prima: Cronologia; mostrato: boolean } } | null>(null);
+  const [eliminandoRecord, setEliminandoRecord] = useState<{ indice: number; nome: string; usi: number } | null>(null);
+  // Un record appena aggiunto tace finché i suoi campi sono aperti e la prima conferma non li ha mostrati.
+  const recordInSilenzio = recordInModifica?.nuovo && !recordInModifica.nuovo.mostrato ? recordInModifica.indice : null;
   const [togliArgomenti, setTogliArgomenti] = useState(false);
   const [togliendoComune, setTogliendoComune] = useState<{ indice: number; nome: string; chi: readonly string[] } | null>(null);
   const [fuocoDato, setFuocoDato] = useState<string | null>(null);
@@ -1002,10 +1011,21 @@ export function Applicazione({
           breve: testoDellaSegnalazione(lingua, s.code as Codice, false, s.fermata).breve,
         };
       });
+    // Gli errori dei record (del progetto, col blocco vuoto, che nessun blocco né funzione ha): uno per record e codice.
+    const deiRecord = (controllo.record ?? [])
+      .filter((s) => s.indice !== recordInSilenzio)
+      .map((s): VoceDelControllo => ({
+        genere: "errore",
+        codice: s.code,
+        dove: riempi(testi.voceDelDato, { tabella: testi.recordTitolo, nome: progetto.records?.[s.indice]?.name || testi.datoSenzaNome }),
+        blocco: null,
+        dato: chiaveDelRecord(s.indice),
+        breve: testoDellaSegnalazione(lingua, s.code as Codice, false, s.fermata).breve,
+      }));
     const errori = dati.filter((v) => v.genere === "errore");
     const avvisi = dati.filter((v) => v.genere === "avviso");
-    return [...errori, ...controllo.errori.flatMap(delBlocco("errore")), ...controllo.avvisi.flatMap(delBlocco("avviso")), ...avvisi];
-  }, [controllo, progetto, mostrata, lingua, testi, espressione, codici, bloccoInSilenzio, datoInSilenzio]);
+    return [...deiRecord, ...errori, ...controllo.errori.flatMap(delBlocco("errore")), ...controllo.avvisi.flatMap(delBlocco("avviso")), ...avvisi];
+  }, [controllo, progetto, mostrata, lingua, testi, espressione, codici, bloccoInSilenzio, datoInSilenzio, recordInSilenzio]);
   // I segni sulle righe della vista dei dati: i dati della funzione mostrata e, nel programma principale, le costanti comuni.
   const segni = useMemo((): Segni => {
     const dati = new Map<number, SegnalazioneMostrata[]>();
@@ -1050,10 +1070,13 @@ export function Applicazione({
   const datoDeiCampi = datoInModifica ? (datoInModifica.comune ? (costantiComuni ?? []) : mostrata.data)[datoInModifica.indice] : undefined;
   // La funzione dei campi della sua fine, finché c'è (ed è una funzione).
   const funzioneDellaFine = fineInModifica ? progetto.functions.find((f) => f.id === fineInModifica.funzione && f.kind === "function") : undefined;
+  // Il record dei campi aperti, finché c'è.
+  const recordDeiCampi = recordInModifica ? progetto.records?.[recordInModifica.indice] : undefined;
   const campiAperti =
     inScrittura !== undefined ||
     funzioneDellaFine !== undefined ||
     datoDeiCampi !== undefined ||
+    recordDeiCampi !== undefined ||
     rigaInScrittura !== undefined ||
     (casoInModifica !== null && casi[casoInModifica.indice] !== undefined);
   // Un bersaglio che sparisce (cancellato, tolto da Annulla) chiude i suoi campi e lo spostamento da tastiera.
@@ -1061,6 +1084,7 @@ export function Applicazione({
     if (inModifica && !inScrittura) setInModifica(null);
     if (fineInModifica && !funzioneDellaFine) setFineInModifica(null);
     if (datoInModifica && datoDeiCampi === undefined) setDatoInModifica(null);
+    if (recordInModifica && recordDeiCampi === undefined) setRecordInModifica(null);
     if (casoInModifica && casi[casoInModifica.indice] === undefined) setCasoInModifica(null);
     if (valoreInModifica && !rigaInScrittura) setValoreInModifica(null);
     if (spostando !== null && inMovimento === null) setSpostando(null);
@@ -1123,6 +1147,29 @@ export function Applicazione({
 
   // I campi del dato in modifica: gli errori e gli avvisi di quel dato nel progetto CANDIDATO, dove va con la casella
   // «globale» (fra le costanti comuni, o fra i dati della funzione mostrata).
+  /** Gli errori del record in quella posizione col nome e i campi della bozza, nel progetto candidato. */
+  const erroriDelRecord = (p: Progetto, indice: number, bozza: BozzaDelRecord): SegnalazioneMostrata[] => {
+    const op = passoDelRecord(p, indice, bozza);
+    const r = op ? op(p, cronologia.prossimo) : ({ ok: true, progetto: p } as const);
+    if (!r.ok) return [];
+    const c = controlla(r.progetto, limiti);
+    if (c.fuoriTappa) return [];
+    return (c.record ?? []).filter((s) => s.indice === indice).map((s) => ({ genere: "errore", codice: s.code, ...testoDellaSegnalazione(lingua, s.code as Codice, false, s.fermata) }));
+  };
+  const candidatoDelRecord = useMemo(
+    (): SegnalazioneMostrata[] => (!recordInModifica || recordInSilenzio !== null ? [] : erroriDelRecord(progetto, recordInModifica.indice, recordInModifica.bozza)),
+    [recordInModifica, recordInSilenzio, progetto, cronologia.prossimo, lingua, limiti],
+  );
+  /** I segni sulle righe dei record: gli errori del controllo, record per record. */
+  const segniDeiRecord = useMemo((): ReadonlyMap<number, readonly SegnalazioneMostrata[]> => {
+    const m = new Map<number, SegnalazioneMostrata[]>();
+    if (!controllo.fuoriTappa)
+      for (const s of controllo.record ?? []) {
+        if (s.indice === recordInSilenzio) continue;
+        m.set(s.indice, [...(m.get(s.indice) ?? []), { genere: "errore", codice: s.code, ...testoDellaSegnalazione(lingua, s.code as Codice, false, s.fermata) }]);
+      }
+    return m;
+  }, [controllo, lingua, recordInSilenzio]);
   const candidatoDelDato = useMemo((): SegnalazioneMostrata[] => {
     if (!datoInModifica) return [];
     const scelto = { indice: datoInModifica.indice, comune: datoInModifica.comune === true };
@@ -1547,6 +1594,7 @@ export function Applicazione({
       : {
           genere: "function",
           tipo: b.tipo,
+          ...(b.tipo === "record" ? { record: b.record } : {}),
           predefinito: b.predefinito,
           dimensione: b.vettore ? intero(b.dimensione) : null,
           lunghezza: b.tipo === "string" && b.lunghezza.trim() !== "" ? intero(b.lunghezza) : null,
@@ -1625,6 +1673,11 @@ export function Applicazione({
   function avvia(comando: Comando, indiceDelCaso?: number): boolean {
     const c = confermaIApertiCampi();
     if (!c) return false;
+    // La finestra in esecuzione non mostra ancora i record (la tabella di traccia, il watch, le voci dei campi).
+    if (usaIRecord(c.presente)) {
+      setAvviso(testi.apriFuoriTappa);
+      return false;
+    }
     const dellaScheda = nelProgramma ? undefined : mostrata.id;
     const radice = indiceDelCaso === undefined && esecuzione !== null ? esecuzione.funzione : dellaScheda;
     const funzione = radice !== undefined && c.presente.functions.some((f) => f.id === radice) ? radice : undefined;
@@ -2410,6 +2463,85 @@ export function Applicazione({
     setDatoInModifica(null);
     setFuocoDato(parametro ? "[data-aggiungi-parametro]" : "[data-aggiungi]");
   }
+  // ------------------------------------------------------------------------------------- i record
+
+  const rigaDelRecord = (indice: number) => `[data-record="${chiaveDelRecord(indice)}"]`;
+  function apriRecord(indice: number): void {
+    const r = progetto.records?.[indice];
+    if (r) setRecordInModifica({ indice, bozza: bozzaDelRecord(r) });
+  }
+  /** Il passo che conferma la bozza del record in quella posizione nel progetto `p`; `null` se nulla cambia. */
+  function passoDelRecord(p: Progetto, indice: number, bozza: BozzaDelRecord): Operazione | null {
+    const r = p.records?.[indice];
+    if (!r) return null;
+    const { record, origini } = recordDaBozza(bozza);
+    return stessoRecord(r, record) ? null : cambiaRecord(indice, record, origini);
+  }
+  /** Invio, un clic fuori dalla scheda: i campi diventano un passo. Un record appena aggiunto e lasciato com'era sparisce
+   * senza passi; con un errore, la prima conferma lo mostra e i campi restano aperti. */
+  function confermaRecord(torna: boolean): boolean {
+    if (!recordInModifica) return true;
+    const { indice, bozza, nuovo } = recordInModifica;
+    if (nuovo && stessoRecord(recordDaBozza(bozza).record, recordNuovo)) {
+      togliIlRecordAggiunto(nuovo.prima);
+      return true;
+    }
+    if (nuovo && !nuovo.mostrato && erroriDelRecord(progetto, indice, bozza).length > 0) {
+      setRecordInModifica({ ...recordInModifica, nuovo: { ...nuovo, mostrato: true } });
+      return false;
+    }
+    const op = passoDelRecord(progetto, indice, bozza);
+    if (op && !modifica(op)) return false;
+    setRecordInModifica(null);
+    if (torna) setFuocoDato(rigaDelRecord(indice));
+    return true;
+  }
+  function rinunciaRecord(): void {
+    if (recordInModifica?.nuovo) {
+      togliIlRecordAggiunto(recordInModifica.nuovo.prima);
+      return;
+    }
+    if (recordInModifica) setFuocoDato(rigaDelRecord(recordInModifica.indice));
+    setRecordInModifica(null);
+  }
+  /** La cronologia torna quella di prima dell'aggiunta (nemmeno «Ripeti» la riporta). */
+  function togliIlRecordAggiunto(prima: Cronologia): void {
+    setDocumento((d) => ({ ...d, cronologia: prima }));
+    setRecordInModifica(null);
+  }
+  /** Un record nuovo in fondo (dal menu «Progetto» o dal pulsante): un passo; poi la sua scheda, nella vista dei dati. */
+  function aggiungiUnRecord(): void {
+    const prima = confermaIApertiCampi();
+    if (!prima) return;
+    const indice = (prima.presente.records ?? []).length;
+    if (!modifica(aggiungiRecord(), undefined, prima)) return;
+    setAperto(true);
+    setScheda("dati");
+    // Dal menu «Progetto» il fuoco torna al pulsante del menu anche al fotogramma dopo il comando (Ark): la scheda aperta
+    // subito lo prenderebbe per un «altrove» e confermerebbe il record ancora vuoto, che sparirebbe. Si apre dopo.
+    requestAnimationFrame(() => requestAnimationFrame(() => setRecordInModifica({ indice, bozza: bozzaDelRecord(recordNuovo), nuovo: { prima, mostrato: false } })));
+  }
+  /** Cancellare un record: prima i campi aperti; poi, se qualche dato ha il suo tipo (o se la conferma è chiesta sempre),
+   * la finestra. */
+  function chiediDiEliminareIlRecord(indice: number): void {
+    const c = confermaIApertiCampi();
+    if (!c) return;
+    const r = c.presente.records?.[indice];
+    if (!r) return;
+    const usi = usiDelRecord(c.presente, r.name);
+    if (usi > 0 || sempre) setEliminandoRecord({ indice, nome: r.name, usi });
+    else eliminaIlRecord(indice, c);
+  }
+  function eliminaIlRecord(indice: number, da: Cronologia = cronologia): void {
+    setEliminandoRecord(null);
+    modifica(eliminaRecord(indice), undefined, da);
+  }
+  /** Dal menu della riga: la copia sotto, o lo scambio col vicino; il fuoco sulla riga che ne esce. */
+  function suUnRecord(operazione: Operazione, fuocoSu: number): void {
+    const c = confermaIApertiCampi();
+    if (c && modifica(operazione, undefined, c)) setFuocoDato(rigaDelRecord(fuocoSu));
+  }
+
   /** Un dato nuovo in fondo, senza nome (o un parametro per valore, in fondo alla firma): un passo; poi i suoi campi, col
    * fuoco sul nome. Prima i campi aperti diventano un passo, come con un clic fuori (il pulsante non lo fa alla pressione:
    * `ui/fuori.ts`). */
@@ -2604,6 +2736,10 @@ export function Applicazione({
     const tuttiICasi = c ? casiDella(c.presente, funzioneDeiCasi) : [];
     const indici = tuttiICasi.flatMap((x, i) => (!soloSelezionati || selezionati.has(chiaveDiUnCaso(x.name)) ? [i] : []));
     if (!c || indici.length === 0) return;
+    if (usaIRecord(c.presente)) {
+      setAvviso(testi.apriFuoriTappa);
+      return;
+    }
     setEsecuzione(null);
     setTutti(new TuttiICasi(c.presente, limiti, indici, funzioneDeiCasi));
     setAvviso(null);
@@ -2669,6 +2805,8 @@ export function Applicazione({
     setInModifica(null);
     setFineInModifica(null);
     setDatoInModifica(null);
+    setRecordInModifica(null);
+    setEliminandoRecord(null);
     setValoreInModifica(null);
     setAggiunto(null);
     setEliminando(null);
@@ -2739,6 +2877,13 @@ export function Applicazione({
       if (nuovo.initial === undefined) senzaValore = true;
       else if (!stessoDato(r.dato, nuovo)) unPasso(cambiaDato(r.indice, nuovo, mostrata.id));
     }
+    // I campi di un record: uno appena aggiunto e lasciato com'era sparisce senza passi.
+    if (recordInModifica) {
+      const { indice, bozza, nuovo } = recordInModifica;
+      const passo = passoDelRecord(c.presente, indice, bozza);
+      if (nuovo && stessoRecord(recordDaBozza(bozza).record, recordNuovo)) c = nuovo.prima;
+      else if (passo) unPasso(passo, "dati");
+    }
     // I campi di un caso.
     if (casoInModifica) {
       const { indice, bozza } = casoInModifica;
@@ -2760,6 +2905,7 @@ export function Applicazione({
     setInModifica(null);
     setFineInModifica(null);
     setDatoInModifica(null);
+    setRecordInModifica(null);
     setValoreInModifica(null);
     setAggiunto(null);
     setCasoInModifica(null);
@@ -2857,9 +3003,8 @@ export function Applicazione({
       });
       return;
     }
-    // Un progetto con un costrutto che l'interfaccia non conosce ancora non si apre: i record anche con gli errori statici,
-    // che altrimenti si mostrerebbero.
-    if (usaIRecord(esito.progetto) || controlla(esito.progetto, limiti).fuoriTappa) {
+    // Un progetto con un costrutto che l'interfaccia non conosce ancora non si apre.
+    if (controlla(esito.progetto, limiti).fuoriTappa) {
       setErrori({ titolo: riempi(testi.apriErroreTitolo, { file: nomeDelFile(percorso) }), voci: [{ testo: testi.apriFuoriTappa }] });
       return;
     }
@@ -2896,6 +3041,7 @@ export function Applicazione({
     }
     const esito = apriTesto(testo);
     if (!esito.ok) return nonSiApre(testoDelProblema({ genere: "apertura", errori: esito.errori }, testi));
+    // L'importazione non porta ancora i record che le funzioni usano: un file che li usa non è una sorgente.
     if (usaIRecord(esito.progetto) || controlla(esito.progetto, limiti).fuoriTappa) return nonSiApre(testi.apriFuoriTappa);
     setUltimaCartella(cartellaDi(percorso));
     return { sorgente: { nome: esito.progetto.metadata.name, percorso, progetto: esito.progetto } };
@@ -2926,6 +3072,7 @@ export function Applicazione({
       ? {}
       : {
           funzione: () => apriLaFinestra({ genere: "funzione", modo: { modo: "nuova", soloFunzione: true } }),
+          aggiungiRecord: () => aggiungiUnRecord(),
           nuovaFunzione: () => apriLaFinestra({ genere: "funzione", modo: { modo: "nuova", soloFunzione: false } }),
           funzioni: () => apriLaFinestra({ genere: "funzioni" }),
           // La cartella delle librerie si rilegge a ogni apertura, come quella degli esempi.
@@ -3430,6 +3577,20 @@ export function Applicazione({
                 }
                 dati={mostrata.data}
                 costantiComuni={comuniMostrate}
+                records={progetto.records}
+                segniDeiRecord={segniDeiRecord}
+                modificaRecord={inEsecuzione ? undefined : {
+                  inModifica: recordInModifica,
+                  apri: apriRecord,
+                  cambia: (bozza) => setRecordInModifica((m) => (m ? { ...m, bozza } : m)),
+                  conferma: (torna) => void confermaRecord(torna),
+                  rinuncia: rinunciaRecord,
+                  elimina: chiediDiEliminareIlRecord,
+                  duplica: (i) => suUnRecord(duplicaRecord(i), i + 1),
+                  sposta: (i, verso) => suUnRecord(spostaRecord(i, verso), i + verso),
+                  candidato: candidatoDelRecord,
+                }}
+                aggiungiRecord={!inEsecuzione && ((progetto.records ?? []).length > 0 || scelte.pulsanteDeiRecord) ? aggiungiUnRecord : undefined}
                 testi={testi}
                 valori={valoriMostrati}
                 segni={segni}
@@ -3738,7 +3899,7 @@ export function Applicazione({
             setAperto(true);
             setScheda("dati");
             const [tabella, n] = v.dato.split("-");
-            setFuocoDato(rigaDelDato(Number(n), tabella === "comuni"));
+            setFuocoDato(tabella === "record" ? rigaDelRecord(Number(n)) : rigaDelDato(Number(n), tabella === "comuni"));
           }
         }}
       />
@@ -3770,6 +3931,20 @@ export function Applicazione({
         ritorno={() => (togliendoComune ? (pannello.current?.querySelector<HTMLElement>(rigaDelDato(togliendoComune.indice, true)) ?? null) : null)}
         testi={testi}
         comandi={{ si: testi.comuneTogliConferma, no: testi.comuneTogliRinuncia }}
+      />
+      <ConfermaEliminazione
+        testo={
+          eliminandoRecord
+            ? {
+                titolo: riempi(testi.eliminaRecordTitolo, { nome: eliminandoRecord.nome || testi.datoSenzaNome }),
+                spiegazione: eliminandoRecord.usi === 0 ? testi.eliminaRecordNonUsato : eliminandoRecord.usi === 1 ? testi.eliminaRecordUsatoUno : riempi(testi.eliminaRecordUsato, { n: String(eliminandoRecord.usi) }),
+              }
+            : null
+        }
+        elimina={() => eliminandoRecord && eliminaIlRecord(eliminandoRecord.indice)}
+        rinuncia={() => setEliminandoRecord(null)}
+        ritorno={() => (eliminandoRecord ? (pannello.current?.querySelector<HTMLElement>(rigaDelRecord(eliminandoRecord.indice)) ?? null) : null)}
+        testi={testi}
       />
       <ConfermaEliminazione
         testo={eliminandoCaso ? { titolo: riempi(testi.eliminaCasoTitolo, { nome: eliminandoCaso.nome || testi.casoSenzaNome }), spiegazione: testi.eliminaCasoSpiegazione } : null}
@@ -3921,6 +4096,7 @@ export function Applicazione({
           if (finestra?.genere === "funzione") confermaLaFunzione(finestra.modo, b);
         }}
         rinuncia={() => setFinestra(null)}
+        records={(progetto.records ?? []).map((r) => r.name)}
       />
       <FinestraFunzioni
         aperta={finestra?.genere === "funzioni"}

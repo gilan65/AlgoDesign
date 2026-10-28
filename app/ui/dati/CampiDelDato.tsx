@@ -11,7 +11,7 @@
 // del dato se non c'è fra loro (un file scritto a mano: la si vede, e il controllo dice l'errore). Una costante ha accanto
 // la casella «globale»; un parametro non ha i campi del valore iniziale né del ruolo.
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactElement, type ReactNode } from "react";
-import { ruoli, tipi, type Ruolo, type Tipo } from "../../core/progetto/modello";
+import { ruoli, tipi, type Ruolo, type Tipo, type TipoDelDato } from "../../core/progetto/modello";
 import type { Dizionario } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
 import type { SegnalazioneMostrata } from "../disegno/EditorDelBlocco";
@@ -54,11 +54,16 @@ export interface Campi {
   lunghezza: ReactElement | null;
 }
 
+/** La scelta del tipo: uno dei cinque col suo nome, o un record col prefisso (un record può chiamarsi come nessun tipo). */
+const sceltaDelTipo = (b: Pick<BozzaDelDato, "tipo" | "record">) => (b.tipo === "record" ? `record:${b.record}` : b.tipo);
+const daScelta = (v: string): { tipo: TipoDelDato; record: string } => (v.startsWith("record:") ? { tipo: "record", record: v.slice("record:".length) } : { tipo: v as Tipo, record: "" });
+
 /**
  * I campi della bozza. `nome(campo)` dà il nome accessibile di un campo: nella scheda è l'etichetta
- * stessa, nelle celle porta anche la riga. `nature` sono le scelte della natura.
+ * stessa, nelle celle porta anche la riga. `nature` sono le scelte della natura; `records` i nomi dei record del progetto,
+ * che il tipo offre dopo i cinque (più quello del dato, se il progetto non lo ha: lo si vede, e il controllo dice l'errore).
  */
-export function campiDelDato(b: BozzaDelDato, cambia: (b: BozzaDelDato) => void, testi: Dizionario, nome: (campo: string) => string, nature: readonly Natura[]): Campi {
+export function campiDelDato(b: BozzaDelDato, cambia: (b: BozzaDelDato) => void, testi: Dizionario, nome: (campo: string) => string, nature: readonly Natura[], records: readonly string[] = []): Campi {
   const testo = (campo: string, valore: string, scrivi: (v: string) => void, codice = false, numero = false, segno?: string, espressione?: "espressione" | "elenco") => (
     <input
       data-campo={segno}
@@ -83,13 +88,23 @@ export function campiDelDato(b: BozzaDelDato, cambia: (b: BozzaDelDato) => void,
     </select>
   );
   const parametro = b.parametro !== "";
+  const nomiDeiRecord = b.tipo === "record" && !records.includes(b.record) ? [...records, b.record] : records;
   return {
     nome: testo(testi.datiNome, b.nome, (v) => cambia({ ...b, nome: v }), true),
-    tipo: scelta(
-      testi.datiTipo,
-      b.tipo,
-      tipi.map((t) => [t, testi[nomiDeiTipi[t]]] as const),
-      (v) => cambia({ ...b, tipo: v }),
+    tipo: (
+      <select aria-label={nome(testi.datiTipo)} className={stili.campo} value={sceltaDelTipo(b)} onChange={(e) => cambia({ ...b, ...daScelta(e.currentTarget.value) })}>
+        {tipi.map((t) => (
+          <option key={t} value={t}>
+            {testi[nomiDeiTipi[t]]}
+          </option>
+        ))}
+        {nomiDeiRecord.length > 0 && <option disabled>──────</option>}
+        {nomiDeiRecord.map((r) => (
+          <option key={`record:${r}`} value={`record:${r}`}>
+            {r}
+          </option>
+        ))}
+      </select>
     ),
     forma: scelta(
       testi.campoForma,
@@ -114,7 +129,7 @@ export function campiDelDato(b: BozzaDelDato, cambia: (b: BozzaDelDato) => void,
       </label>
     ) : null,
     // Il segno lo cerca il comando che apre il valore iniziale di un dato dall'avviso della riga di stato.
-    iniziale: parametro ? null : testo(testi.datiIniziale, b.iniziale, (v) => cambia({ ...b, iniziale: v }), true, false, "iniziale", b.vettore && !b.ripetuto ? "elenco" : "espressione"),
+    iniziale: parametro ? null : testo(testi.datiIniziale, b.iniziale, (v) => cambia({ ...b, iniziale: v }), true, false, "iniziale", (b.vettore && !b.ripetuto) || b.tipo === "record" ? "elenco" : "espressione"),
     inizialeVettore: b.vettore && !parametro
       ? scelta(
           testi.campoInizialeVettore,
@@ -177,10 +192,13 @@ export function SchedaDelDato({
   testi,
   primo,
   nature,
+  records = [],
 }: {
   /** Il nome del dato com'è prima della modifica. */
   nome: string;
   nature: readonly Natura[];
+  /** I nomi dei record del progetto, per la scelta del tipo. */
+  records?: readonly string[];
   bozza: BozzaDelDato;
   /** Il campo che riceve il fuoco all'apertura, se non è il primo (il comando che apre il valore iniziale). */
   primo?: "iniziale";
@@ -211,7 +229,7 @@ export function SchedaDelDato({
     e.stopPropagation();
   }
 
-  const c = campiDelDato(bozza, cambia, testi, (campo) => campo, nature);
+  const c = campiDelDato(bozza, cambia, testi, (campo) => campo, nature, records);
   return (
     <form
       ref={modulo}
