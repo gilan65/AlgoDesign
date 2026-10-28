@@ -18,7 +18,7 @@
 import { analizza, type Espressione } from "../espressioni/analizzatore";
 import { opzioniPredefinite, type Campo, type Dato, type Funzione, type Progetto, type Tipo } from "../progetto/modello";
 import { figliDelBlocco, lunghezzaPredefinita, testiDelBlocco } from "./controllo";
-import { lunghezzaMassima } from "./lunghezza";
+import { elementoDi, lunghezzaMassima } from "./lunghezza";
 
 /** Le chiamate in corso delle funzioni del giro: la successiva ferma l'esecuzione (`recursion_too_deep`). È un'opzione
  * del progetto (`call_stack_limit`, da 5 a 500); un progetto senza l'opzione ha il predefinito, 500. */
@@ -41,10 +41,10 @@ const byteDelRecord = (campi: readonly Campo[]): number => campi.reduce((somma, 
 const campiDi = (d: Pick<Dato, "type" | "record">, p: Progetto): readonly Campo[] | undefined =>
   d.type === "record" ? (p.records ?? []).find((r) => r.name === d.record)?.fields : undefined;
 
-/** I byte di un dato intero: tutti i suoi elementi, o tutti i suoi campi. */
-const byteDelDato = (d: Pick<Dato, "type" | "record" | "size" | "max_length">, p: Progetto): number => {
+/** I byte di un dato intero: tutti i suoi elementi (righe per colonne in una matrice), o tutti i suoi campi. */
+const byteDelDato = (d: Pick<Dato, "type" | "record" | "size" | "columns" | "max_length">, p: Progetto): number => {
   const campi = campiDi(d, p);
-  return (d.size ?? 1) * (campi !== undefined ? byteDelRecord(campi) : byteDelTipo(d.type as Tipo, d.max_length));
+  return (d.size ?? 1) * (d.columns ?? 1) * (campi !== undefined ? byteDelRecord(campi) : byteDelTipo(d.type as Tipo, d.max_length));
 };
 
 /** Lo spazio di una chiamata di `f`, in byte. */
@@ -60,7 +60,7 @@ export function spazioDiUnaChiamata(f: Funzione, p: Progetto): number {
 /** Lo spazio del valore che una funzione restituisce, se è una stringa, un vettore o un record; zero altrimenti. */
 const byteDelRestituito = (g: Funzione, p: Progetto): number =>
   g.kind === "function" && (g.return_size !== undefined || g.return_type === "string" || g.return_type === "record")
-    ? byteDelDato({ type: g.return_type!, record: g.return_record, size: g.return_size, max_length: g.return_max_length }, p)
+    ? byteDelDato({ type: g.return_type!, record: g.return_record, size: g.return_size, columns: g.return_columns, max_length: g.return_max_length }, p)
     : 0;
 
 /** Le aree di `f` per i valori di passaggio, in ogni testo dei suoi blocchi e nel valore restituito: una per ogni `+` fra
@@ -90,12 +90,8 @@ function aree(f: Funzione, p: Progetto): number {
         const g = funzioneDi(e.nome);
         return g?.return_type === "string" && g.return_size === undefined;
       }
-      case "indice": {
-        const b = e.base;
-        if (b.genere === "nome") return datoDi(b.nome)?.type === "string" && datoDi(b.nome)?.size !== undefined;
-        if (b.genere === "chiamata") return funzioneDi(b.nome)?.return_type === "string" && funzioneDi(b.nome)?.return_size !== undefined;
-        return false;
-      }
+      case "indice":
+        return elementoDi(e, datoDi, funzioneDi)?.type === "string";
       case "campo":
         return campoDi(e)?.type === "string";
       case "unario":

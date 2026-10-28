@@ -16,7 +16,7 @@ import { accademico, mancanzeDiAccademico } from "../../core/genera/accademico";
 import { testoDelCodice, type Mancanza, type Riga } from "../../core/genera/forma";
 import type { LinguaDelCodice } from "../../core/genera/nomi";
 import { apri } from "../../core/progetto/formato";
-import type { Blocco, Dato, Progetto } from "../../core/progetto/modello";
+import { usaLeMatrici, type Blocco, type Dato, type Progetto } from "../../core/progetto/modello";
 import { conErroriStatici, conIlCodice, delCorpus, formeDiAccademico, formeDiAccademicoAttese, type Atteso } from "./attesi-di-accademico";
 
 const lingue: readonly LinguaDelCodice[] = ["it", "en"];
@@ -26,11 +26,23 @@ const leggi = (percorso: string): Progetto => {
   if (!r.ok) throw new Error(`${percorso} non si apre`);
   return r.progetto;
 };
-// Le tappe e i tipi (`tipi/`: i record, che «Accademico» non ha e dice fra ciò che manca).
-const corpus = readdirSync(cartella, { withFileTypes: true })
+// Le tappe e i tipi (`tipi/`: i record, che «Accademico» non ha e dice fra ciò che manca). I file con le matrici ne
+// restano fuori finché i generatori non le scrivono: `genera` li dice fuori tappa (la prova della guardia, qui sotto).
+const tutti = readdirSync(cartella, { withFileTypes: true })
   .filter((d) => d.isDirectory() && (d.name.startsWith("tappa-") || d.name === "tipi"))
   .flatMap((d) => readdirSync(join(cartella, d.name)).filter((f) => f.endsWith(".algo")).map((f) => `${d.name}/${f.slice(0, -".algo".length)}`))
   .sort();
+const conLeMatrici = tutti.filter((f) => usaLeMatrici(leggi(f)));
+const corpus = tutti.filter((f) => !conLeMatrici.includes(f));
+
+test("i file con le matrici: «Accademico», come gli altri linguaggi, li dice fuori tappa se sono giusti, con gli errori statici se sono sbagliati", () => {
+  const esiti = conLeMatrici.map((f) => {
+    const g = accademico(leggi(f), tetti, "it");
+    return g.generato ? "generato" : g.perche;
+  });
+  console.log(`«Accademico» sulle matrici: ${conLeMatrici.length} file, ${esiti.filter((e) => e === "fuori-tappa").length} fuori tappa`);
+  expect(esiti.sort()).toEqual(["errori-statici", "errori-statici", "errori-statici", "fuori-tappa", "fuori-tappa", "fuori-tappa", "fuori-tappa", "fuori-tappa"]);
+});
 
 function righe(p: Progetto, lingua: LinguaDelCodice): readonly Riga[] {
   const g = accademico(p, tetti, lingua);

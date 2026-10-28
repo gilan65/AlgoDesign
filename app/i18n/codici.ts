@@ -192,7 +192,7 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
     },
     invalid_data_item: {
       breve: "Un attributo del dato non va bene.",
-      accaduto: "Un attributo del dato non va bene: la dimensione, la lunghezza, il valore iniziale, la costante o il ruolo; oppure il dato è un parametro del programma principale, che non ne ha, o un vettore di record.",
+      accaduto: "Un attributo del dato non va bene: la dimensione, le colonne, la lunghezza, il valore iniziale, la costante o il ruolo; oppure il dato è un parametro del programma principale, che non ne ha, un vettore di record o una matrice di record.",
       suggerimento: "Controlla gli attributi del dato nella vista dei dati.",
     },
     assign_to_constant: {
@@ -268,7 +268,7 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
     },
     argument_mismatch: {
       breve: "Gli argomenti non corrispondono ai parametri.",
-      accaduto: "Gli argomenti della chiamata non corrispondono ai parametri: sono più o meno dei parametri, oppure uno non è del tipo giusto. Per valore un parametro reale accetta anche un intero; per riferimento o di uscita il dato deve essere dello stesso tipo. Con o senza riferimento un vettore vuole la stessa dimensione, e un dato stringa la stessa lunghezza massima.",
+      accaduto: "Gli argomenti della chiamata non corrispondono ai parametri: sono più o meno dei parametri, oppure uno non è del tipo giusto. Per valore un parametro reale accetta anche un intero; per riferimento o di uscita il dato deve essere dello stesso tipo. Con o senza riferimento un vettore vuole la stessa dimensione, una matrice le stesse righe e colonne, e un dato stringa la stessa lunghezza massima.",
       suggerimento: "Scrivi un argomento per ogni parametro, nell'ordine in cui la procedura o la funzione li elenca, ciascuno del tipo del suo parametro.",
     },
     reference_not_assignable: {
@@ -288,7 +288,7 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
     },
     limit_exceeded: {
       breve: "Il dato supera un limite delle impostazioni.",
-      accaduto: "Il dato supera uno dei tre limiti delle impostazioni: gli elementi di un vettore, la lunghezza massima di una stringa, oppure i caratteri di un vettore di stringhe (elementi per lunghezza massima).",
+      accaduto: "Il dato supera uno dei tre limiti delle impostazioni: gli elementi di un vettore (righe per colonne in una matrice), la lunghezza massima di una stringa, oppure i caratteri di un vettore di stringhe (elementi per lunghezza massima).",
       suggerimento: "Riduci la dimensione o la lunghezza massima, oppure alza il limite nelle impostazioni.",
     },
     syntax_error: {
@@ -503,7 +503,7 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
     },
     invalid_data_item: {
       breve: "An attribute of the data item is wrong.",
-      accaduto: "An attribute of the data item is wrong: the size, the length, the initial value, the constant or the role; or the data item is a parameter of the main program, which has none, or an array of records.",
+      accaduto: "An attribute of the data item is wrong: the size, the columns, the length, the initial value, the constant or the role; or the data item is a parameter of the main program, which has none, an array of records or a matrix of records.",
       suggerimento: "Check the attributes of the data item in the data view.",
     },
     assign_to_constant: {
@@ -579,7 +579,7 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
     },
     argument_mismatch: {
       breve: "The arguments do not match the parameters.",
-      accaduto: "The arguments of the call do not match the parameters: there are more or fewer than the parameters, or one is not of the right type. By value a real parameter also accepts an integer; by reference or output the data item must be of the same type. With or without reference an array needs the same size, and a string data item the same maximum length.",
+      accaduto: "The arguments of the call do not match the parameters: there are more or fewer than the parameters, or one is not of the right type. By value a real parameter also accepts an integer; by reference or output the data item must be of the same type. With or without reference an array needs the same size, a matrix the same rows and columns, and a string data item the same maximum length.",
       suggerimento: "Write one argument for each parameter, in the order in which the procedure or function lists them, each of the type of its parameter.",
     },
     reference_not_assignable: {
@@ -599,7 +599,7 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
     },
     limit_exceeded: {
       breve: "The data item exceeds a limit of the settings.",
-      accaduto: "The data item exceeds one of the three limits of the settings: the elements of an array, the maximum length of a string, or the characters of an array of strings (elements times maximum length).",
+      accaduto: "The data item exceeds one of the three limits of the settings: the elements of an array (rows times columns in a matrix), the maximum length of a string, or the characters of an array of strings (elements times maximum length).",
       suggerimento: "Reduce the size or the maximum length, or raise the limit in the settings.",
     },
     syntax_error: {
@@ -732,7 +732,7 @@ export const testiSulRisultato: Record<Lingua, Record<CodiceSulRisultato, TestoD
     },
     limit_exceeded: {
       breve: "Il risultato della funzione supera un limite delle impostazioni.",
-      accaduto: "Il risultato della funzione supera uno dei tre limiti delle impostazioni: gli elementi di un vettore, la lunghezza massima di una stringa, oppure i caratteri di un vettore di stringhe (elementi per lunghezza massima).",
+      accaduto: "Il risultato della funzione supera uno dei tre limiti delle impostazioni: gli elementi di un vettore (righe per colonne in una matrice), la lunghezza massima di una stringa, oppure i caratteri di un vettore di stringhe (elementi per lunghezza massima).",
       suggerimento: "Riduci gli elementi o la lunghezza massima nelle proprietà della funzione, oppure alza il limite nelle impostazioni.",
     },
     array_assignment: {
@@ -760,7 +760,7 @@ export const testiSulRisultato: Record<Lingua, Record<CodiceSulRisultato, TestoD
     },
     limit_exceeded: {
       breve: "The result of the function exceeds a limit of the settings.",
-      accaduto: "The result of the function exceeds one of the three limits of the settings: the elements of an array, the maximum length of a string, or the characters of an array of strings (elements times maximum length).",
+      accaduto: "The result of the function exceeds one of the three limits of the settings: the elements of an array (rows times columns in a matrix), the maximum length of a string, or the characters of an array of strings (elements times maximum length).",
       suggerimento: "Reduce the elements or the maximum length in the properties of the function, or raise the limit in the settings.",
     },
     array_assignment: {
@@ -1018,6 +1018,22 @@ export const testiDelleCause: Record<Lingua, Record<Causa, TestoDellaCausa>> = {
       breve: "In questa versione un dato non può essere un vettore di record.",
       suggerimento: "Usa un vettore per ogni campo, come nomi e voti, oppure un record solo.",
     },
+    matrice_di_record: {
+      breve: "Una matrice non può avere i record come elementi.",
+      suggerimento: "Usa una matrice per ogni campo, come voti, oppure togli le colonne.",
+    },
+    colonne_senza_righe: {
+      breve: "La matrice ha le colonne ma non le righe.",
+      suggerimento: "Scrivi quante righe ha la matrice, come 3, oppure togli le colonne. Arriva solo da un file scritto fuori dall'app.",
+    },
+    righe_diverse: {
+      breve: "Il valore iniziale ha {segno} righe, non una per ogni riga della matrice.",
+      suggerimento: "Scrivi una riga fra graffe per ogni riga, come {{1, 2}, {3, 4}} per una matrice di 2 righe, oppure cambia le righe.",
+    },
+    colonne_diverse: {
+      breve: "Una riga del valore iniziale ha {segno} valori, non uno per ogni colonna.",
+      suggerimento: "Scrivi in ogni riga un valore per colonna, come {1, 2, 3} per 3 colonne, oppure cambia le colonne.",
+    },
     campo_assente: {
       breve: "Il record non ha un campo «{segno}».",
       suggerimento: "Scrivi un campo come nella definizione del record, come a.voto, oppure aggiungi il campo al record.",
@@ -1273,6 +1289,22 @@ export const testiDelleCause: Record<Lingua, Record<Causa, TestoDellaCausa>> = {
     vettore_di_record: {
       breve: "In this version a data item cannot be an array of records.",
       suggerimento: "Use one array for each field, such as names and marks, or a single record.",
+    },
+    matrice_di_record: {
+      breve: "A matrix cannot have records as its elements.",
+      suggerimento: "Use one matrix for each field, such as marks, or remove the columns.",
+    },
+    colonne_senza_righe: {
+      breve: "The matrix has the columns but not the rows.",
+      suggerimento: "Write how many rows the matrix has, such as 3, or remove the columns. It only comes from a file written outside the app.",
+    },
+    righe_diverse: {
+      breve: "The initial value has {segno} rows, not one for each row of the matrix.",
+      suggerimento: "Write one row in braces for each row, such as {{1, 2}, {3, 4}} for a matrix of 2 rows, or change the rows.",
+    },
+    colonne_diverse: {
+      breve: "A row of the initial value has {segno} values, not one for each column.",
+      suggerimento: "Write one value for each column in every row, such as {1, 2, 3} for 3 columns, or change the columns.",
     },
     campo_assente: {
       breve: "The record has no field “{segno}”.",

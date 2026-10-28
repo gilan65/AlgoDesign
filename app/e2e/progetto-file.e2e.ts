@@ -64,6 +64,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { apri as apriProgetto, livelliMassimi, motivi, type Motivo } from "../core/progetto/formato";
+import { usaLeMatrici } from "../core/progetto/modello";
 import { en } from "../i18n/en";
 import { it, type Dizionario } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
@@ -169,7 +170,22 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
   // I record: ogni file si apre, anche con un errore statico (lo dice il controllo nella finestra), con una riga per record
   // nella tabella «Record» della vista dei dati; quelli giusti che non leggono niente si eseguono (F5 fino alla fine,
   // l'output del caso del programma nella console) e, eseguiti, salvati restano identici.
-  const deiRecord = corpus.filter((c) => c.tappa === "tipi");
+  // Le matrici l'interfaccia non le mostra ancora: un file che le usa non si apre, anche con un errore statico, e lo dice
+  // la finestra degli errori (la guardia dell'apertura).
+  const conLeMatrici = (testo: string) => {
+    const a = apriProgetto(testo);
+    return a.ok && usaLeMatrici(a.progetto);
+  };
+  const delleMatrici = corpus.filter((c) => c.tappa === "tipi" && conLeMatrici(c.testo));
+  for (const c of delleMatrici) {
+    await apriIl(page, c.percorso);
+    const errore = allerta(page, riempi(it.apriErroreTitolo, { file: c.percorso.split("\\").at(-1)! }));
+    await expect(errore, c.percorso).toBeVisible();
+    await expect(errore.getByRole("listitem")).toHaveText([it.apriFuoriTappa]);
+    await chiudiConEsc(page, errore);
+  }
+  expect(delleMatrici.length).toBe(8);
+  const deiRecord = corpus.filter((c) => c.tappa === "tipi" && !conLeMatrici(c.testo));
   const identiciDeiRecord: string[] = [];
   const eseguiti: string[] = [];
   let righe = 0;

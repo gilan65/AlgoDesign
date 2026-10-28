@@ -229,7 +229,10 @@ const causeDeiRami: Record<string, Record<string, readonly Causa[]>> = {
     '"campo_mancante"': [{ it: "un punto senza il nome di un campo", en: "a dot with no field name" }],
   },
   limit_exceeded: {
-    "d.size > limiti": [{ it: "elementi di un vettore", en: "elements of an array" }],
+    "elementi > limiti": [
+      { it: "elementi di un vettore", en: "elements of an array" },
+      { it: "righe per colonne", en: "rows times columns" },
+    ],
     "d.max_length > limiti": [{ it: "lunghezza massima di una stringa", en: "maximum length of a string" }],
     caratteriDiUnVettoreDiStringhe: [{ it: "caratteri di un vettore di stringhe", en: "characters of an array of strings" }],
   },
@@ -286,6 +289,14 @@ const causeDeiRami: Record<string, Record<string, readonly Causa[]>> = {
     '? difetto("invalid_data_item", "vettore_di_record")': [{ it: "vettore di record", en: "array of records" }],
     "if (!Array.isArray(d.initial))": [{ it: "valore iniziale", en: "initial value" }],
     "d.initial.length !== record.fields.length": [{ it: "valore iniziale", en: "initial value" }],
+    "d.columns < 1": [{ it: "colonne", en: "columns" }],
+    '"colonne_senza_righe"': [{ it: "colonne", en: "columns" }],
+    'd.type === "record" && d.columns !== undefined': [{ it: "matrice di record", en: "matrix of records" }],
+    '? difetto("invalid_data_item", "matrice_di_record")': [{ it: "matrice di record", en: "matrix of records" }],
+    "perRighe !== (d.columns": [{ it: "valore iniziale", en: "initial value" }],
+    "righe.length !== d.size": [{ it: "valore iniziale", en: "initial value" }],
+    "corta !== undefined": [{ it: "valore iniziale", en: "initial value" }],
+    'if (d.columns !== undefined) return difetto("invalid_data_item", "righe_diverse"': [{ it: "valore iniziale", en: "initial value" }],
   },
   constant_loop_condition: {
     'avvisa("constant_loop_condition"': [
@@ -312,7 +323,7 @@ const causeDeiRami: Record<string, Record<string, readonly Causa[]>> = {
   argument_mismatch: {
     '"argomenti_in_piu"': [{ it: "più o meno dei parametri", en: "more or fewer than the parameters" }],
     "if (!v.vettore)": [{ it: "stessa dimensione", en: "same size" }],
-    "v.dimensione !== parametro.size": [
+    "!stesseMisure(v, parametro)": [
       { it: "stesso tipo", en: "same type" },
       { it: "stessa dimensione", en: "same size" },
     ],

@@ -56,6 +56,10 @@ const p: Progetto = (() => {
       procedura("f12", "record", [alunno("a")]),
       funzione("f13", "restituisce_record", { return_type: "record", return_record: "alunno" }, [alunno("x", { parameter: "value" }), alunno("r")], "r"),
       procedura("f14", "chiama_record", [alunno("q"), stringa("d", 25)], [assegna("b5", "q", "restituisce_record(q)"), assegna("b6", "d", "q.nome + q.classe")]),
+      procedura("f15", "matrice", [intero("m", { size: 2, columns: 3 })]),
+      procedura("f16", "matrice_per_valore", [stringa("s", 2, { size: 2, columns: 2, parameter: "value" })]),
+      funzione("f17", "restituisce_matrice", { return_type: "integer", return_size: 2, return_columns: 2 }, [intero("u", { size: 2, columns: 2, initial: { each: "0" } })], "u"),
+      procedura("f18", "concatena_matrice", [stringa("ms", 3, { size: 2, columns: 2 }), stringa("d", 6)], [assegna("b7", "d", "ms[0][1] + ms[1][0]")]),
     ],
   });
   if (!r.ok) throw new Error(JSON.stringify(r.errori));
@@ -88,6 +92,14 @@ const attesi: Record<string, number> = {
   restituisce_record: 8 + 112 + 112 + 112,
   // q 112, d 101; la struttura della chiamata 112; la concatenazione di due campi, lunga al più 23 (93).
   chiama_record: 112 + 101 + 112 + 93,
+  // Una matrice: righe per colonne elementi. 2 · 3 interi.
+  matrice: 24,
+  // l'indirizzo ricevuto e la copia: 2 · 2 stringhe lunghe al più 2 (9 ciascuna).
+  matrice_per_valore: 8 + 36,
+  // il dato u e il risultato, 2 · 2 interi ciascuno.
+  restituisce_matrice: 16 + 16,
+  // ms 2 · 2 stringhe da 3 (13 ciascuna), d 25; la concatenazione di due elementi della matrice, lunga al più 6 (25).
+  concatena_matrice: 52 + 25 + 25,
 };
 
 const misurati = (s: typeof spazio) => Object.fromEntries(p.functions.flatMap((f) => (f.kind === "main" ? [] : [[f.name!, s.spazioDiUnaChiamata(f, p)]])));
@@ -137,6 +149,8 @@ describe("lo spazio di una chiamata, termine per termine", () => {
     ["il campo stringa non concatena", 'return campoDi(e)?.type === "string";', "return false;"],
     ["il campo senza la sua lunghezza", "byte += 4 * lunghezzaMassima(e, datoDi, funzioneDi, campoDi) + 1;", "byte += 4 * lunghezzaMassima(e, datoDi, funzioneDi) + 1;"],
     ["la struttura restituita non contata", 'if (e.genere === "chiamata") {', "if (false) {"],
+    ["la matrice senza le colonne", "(d.size ?? 1) * (d.columns ?? 1) *", "(d.size ?? 1) *"],
+    ["l'elemento di una matrice di stringhe non concatena", 'return elementoDi(e, datoDi, funzioneDi)?.type === "string";', "return false;"],
   ] as const)
     test(`mutazione dello spazio: ${nome}`, async () => {
       if (vecchio !== "") expect(sorgente.split(vecchio).length - 1).toBe(1);

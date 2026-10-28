@@ -84,14 +84,26 @@ export const nonSiAttendono: ReadonlySet<CodiceErrore> = new Set(["out_of_memory
 export type CodiceErroreStatico = (typeof codiciErroreStatico)[number];
 export type CodiceAvviso = (typeof codiciAvviso)[number];
 
-export type ValoreIniziale = string | readonly string[] | { readonly each: string };
+/** Se il progetto usa le matrici: un dato, una costante comune o un risultato con le colonne. Chi non conosce ancora le
+ * matrici lo rifiuta prima di guardarlo, anche con gli errori statici. */
+export function usaLeMatrici(p: Pick<Progetto, "shared_constants" | "functions">): boolean {
+  const matrice = (d: Dato) => d.columns !== undefined;
+  return (p.shared_constants ?? []).some(matrice) || p.functions.some((f) => f.data.some(matrice) || f.return_columns !== undefined);
+}
+
+/** Il valore iniziale: un letterale; un letterale per elemento di un vettore (o per campo di un record); un elenco per
+ * riga di una matrice; lo stesso letterale per ogni elemento. */
+export type ValoreIniziale = string | readonly string[] | readonly (readonly string[])[] | { readonly each: string };
 
 export interface Dato {
   readonly name: string;
   readonly type: TipoDelDato;
   /** Solo col tipo `record`, e lì obbligatorio: il nome del record. */
   readonly record?: string;
+  /** Un vettore di tanti elementi; con `columns`, le righe di una matrice. */
   readonly size?: number;
+  /** Solo con `size`: una matrice, e ogni sua riga è un vettore di tante colonne. */
+  readonly columns?: number;
   readonly constant?: boolean;
   readonly initial?: ValoreIniziale;
   readonly role?: Ruolo;
@@ -140,6 +152,8 @@ export interface Funzione {
   readonly return_record?: string;
   /** Solo per `function`: presente, la funzione restituisce un vettore di tanti elementi. */
   readonly return_size?: number;
+  /** Solo per `function` con `return_size`: la funzione restituisce una matrice, con tante colonne. */
+  readonly return_columns?: number;
   /** Solo per `function` che restituisce una stringa: la sua lunghezza massima; assente, quella predefinita. */
   readonly return_max_length?: number;
   /** Solo per `function`: il valore che prende il posto della funzione tolta da un'espressione, un letterale del tipo

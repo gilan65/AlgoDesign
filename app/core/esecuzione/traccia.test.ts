@@ -128,6 +128,15 @@ describe("un vettore di 12 elementi riempito da un ciclo, contro l'atteso scritt
     expect(traccia.tettoDelleColonne).toBe(10);
   });
 
+  test("la tabella non mostra ancora le matrici: un progetto che le usa si rifiuta subito; un vettore no", () => {
+    const a = apri(readFileSync(join(import.meta.dir, "..", "..", "casi", "tipi", "copia-di-una-matrice.algo"), "utf8"));
+    if (!a.ok) throw new Error("copia-di-una-matrice non si apre");
+    expect(() => new TabellaMostrata(a.progetto, testiIt, ",", "primi-e-altri", "elenco", opzioniDelDisegno)).toThrow("la tabella di traccia non mostra ancora le matrici");
+    // Controllo positivo: lo stesso progetto senza le colonne (le matrici fatte vettori) si mostra.
+    const senza = { ...a.progetto, functions: a.progetto.functions.map((f) => ({ ...f, data: f.data.map(({ columns: _, initial: __, ...d }) => d), body: [] })) };
+    expect(() => new TabellaMostrata(senza, testiIt, ",", "primi-e-altri", "elenco", opzioniDelDisegno)).not.toThrow();
+  });
+
   for (const l of lingue)
     for (const forma of forme) {
       test(`${forma}, in ${l.nome}: la tabella mostrata cella per cella, e il CSV uguale byte per byte`, () => {
