@@ -46,6 +46,7 @@ export type Rifiuto =
   | { readonly motivo: "posto_inesistente" }
   | { readonly motivo: "dentro_se_stesso" }
   | { readonly motivo: "dato_inesistente" }
+  | { readonly motivo: "record_inesistente" }
   | { readonly motivo: "caso_inesistente" }
   /** Una procedura o una funzione che non c'è (il programma principale non si rinomina né si elimina). */
   | { readonly motivo: "funzione_inesistente" }

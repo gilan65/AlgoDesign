@@ -20,12 +20,14 @@
 // i campi sono aperti (tornando variabile ricompaiono). La casella «globale» vale solo per una costante: dice se è una
 // costante comune, e non è un attributo del dato (chi conferma la bozza sposta il dato fra le due tabelle).
 import type { ValoreRipetuto } from "../../core/disegno/impaginazione";
-import { tipoSemplice, type Dato, type Modalita, type Ruolo, type Tipo } from "../../core/progetto/modello";
+import type { Dato, Modalita, Ruolo, TipoDelDato } from "../../core/progetto/modello";
 import { intervalli } from "../preferenze";
 
 export interface BozzaDelDato {
   readonly nome: string;
-  readonly tipo: Tipo;
+  readonly tipo: TipoDelDato;
+  /** Col tipo `record`, il nome del record; altrimenti vuoto. */
+  readonly record: string;
   readonly vettore: boolean;
   readonly dimensione: string;
   readonly costante: boolean;
@@ -59,7 +61,8 @@ export function bozzaDi(d: Dato, nuovo: ValoreRipetuto, globale = false): BozzaD
   const iniziale = d.initial === undefined ? "" : typeof d.initial === "string" ? d.initial : "each" in d.initial ? d.initial.each : fraGraffe(d.initial);
   return {
     nome: d.name,
-    tipo: tipoSemplice(d.type),
+    tipo: d.type,
+    record: d.record ?? "",
     vettore: d.size !== undefined,
     dimensione: d.size === undefined ? "" : String(d.size),
     costante: d.constant === true,
@@ -120,12 +123,13 @@ export function conRipetuto(b: BozzaDelDato, ripetuto: boolean): BozzaDelDato {
 }
 
 /** Il valore iniziale scritto nel campo, come il dato lo tiene: vuoto, nessuno; un vettore, l'elenco o il valore
- * ripetuto. Lo stesso per la vista dei dati e per i campi del blocco del valore iniziale nel flowchart. */
-export function inizialeDaBozza(b: Pick<BozzaDelDato, "iniziale" | "vettore" | "ripetuto">): Dato["initial"] {
+ * ripetuto; un record (`record`), l'elenco dei valori dei campi, fra graffe come quello di un vettore. Lo stesso per la
+ * vista dei dati e per i campi del blocco del valore iniziale nel flowchart. */
+export function inizialeDaBozza(b: Pick<BozzaDelDato, "iniziale" | "vettore" | "ripetuto">, record = false): Dato["initial"] {
   const testo = b.iniziale.trim();
   if (testo === "") return undefined;
-  if (!b.vettore) return testo;
-  if (b.ripetuto) return { each: testo };
+  if (!b.vettore && !record) return testo;
+  if (b.ripetuto && !record) return { each: testo };
   // Le graffe vuote sono l'elenco vuoto: nessun valore, come il campo vuoto.
   const dentro = senzaGraffe(testo);
   return dentro === "" ? undefined : elementi(dentro);
@@ -134,15 +138,16 @@ export function inizialeDaBozza(b: Pick<BozzaDelDato, "iniziale" | "vettore" | "
 /** Il dato col valore iniziale della bozza, tutto il resto com'è (i campi del blocco del valore iniziale). */
 export function conIlValoreDi(d: Dato, b: Pick<BozzaDelDato, "iniziale" | "vettore" | "ripetuto">): Dato {
   const { initial: _, ...senza } = d;
-  const iniziale = inizialeDaBozza(b);
+  const iniziale = inizialeDaBozza(b, d.type === "record");
   return iniziale === undefined ? senza : { ...senza, initial: iniziale };
 }
 
 export function datoDaBozza(b: BozzaDelDato): Dato {
-  const iniziale = b.parametro === "" ? inizialeDaBozza(b) : undefined;
+  const iniziale = b.parametro === "" ? inizialeDaBozza(b, b.tipo === "record") : undefined;
   return {
     name: b.nome,
     type: b.tipo,
+    ...(b.tipo === "record" ? { record: b.record } : {}),
     ...(b.vettore ? { size: intero(b.dimensione) } : {}),
     ...(b.costante && b.parametro === "" ? { constant: true } : {}),
     ...(iniziale === undefined ? {} : { initial: iniziale }),

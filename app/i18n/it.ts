@@ -538,6 +538,28 @@ export const it = {
   eliminaRinuncia: "Non eliminare (Esc)",
   // Il menu di una riga, lo stesso per un dato e per un caso d'uso. {nome} è il nome del dato o del caso.
   menuDelDato: "Comandi del dato «{nome}»",
+  // I record: la tabella in cima alla vista dei dati, la scheda di un record coi suoi campi, la conferma prima di eliminarlo.
+  recordTitolo: "Record",
+  recordCampi: "Campi",
+  aggiungiRecord: "Aggiungi un record",
+  pulsanteDeiRecord: "«Aggiungi un record» nella vista dei dati anche senza record",
+  modificaDelRecord: "Modifica del record «{nome}»",
+  menuDelRecord: "Comandi del record «{nome}»",
+  recordNome: "Nome del record",
+  recordCampo: "Campo",
+  recordNomeDelCampo: "Nome del campo {n}",
+  recordTipoDelCampo: "Tipo del campo {n}",
+  recordLunghezzaDelCampo: "Lunghezza del campo {n}",
+  recordSuIlCampo: "Sposta su il campo «{nome}»",
+  recordGiuIlCampo: "Sposta giù il campo «{nome}»",
+  recordEliminaIlCampo: "Elimina il campo «{nome}»",
+  recordAggiungiCampo: "Aggiungi un campo",
+  recordElimina: "Elimina il record",
+  guidaRecord: "Un record è un tipo fatto di campi, come una scheda con le sue voci: per esempio alunno con nome, classe e voto. Dopo averlo definito, un dato può avere il tipo alunno, e a.voto è il suo campo voto.",
+  eliminaRecordTitolo: "Eliminare il record «{nome}»?",
+  eliminaRecordUsato: "È il tipo di {n} dati: dopo la cancellazione mostreranno un errore. «Annulla» lo riporta indietro.",
+  eliminaRecordUsatoUno: "È il tipo di un dato: dopo la cancellazione mostrerà un errore. «Annulla» lo riporta indietro.",
+  eliminaRecordNonUsato: "Nessun dato ha questo tipo. «Annulla» lo riporta indietro.",
   menuDelCaso: "Comandi del caso «{nome}»",
   /** Il menu di un blocco del flowchart (il tasto destro sul blocco, o dalla tastiera il tasto Menu o Maiusc+F10 sul
    * blocco col fuoco): {blocco} è il nome del blocco; le voci coi loro tasti ({tasto}: «Ctrl+X», sul Mac «⌘X»). */

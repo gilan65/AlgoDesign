@@ -40,7 +40,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
-import { costruisci, differenze, riferimentoDellaTappa1, riferimentoDellaTappa2, riferimentoDellaTappa3, type DaCostruire, type Modi } from "./costruzione";
+import { costruisci, differenze, programmaDeiRecord, riferimentoDellaTappa1, riferimentoDellaTappa2, riferimentoDellaTappa3, type DaCostruire, type Modi } from "./costruzione";
 import { apriVuota, costruisciFinzione, voceDelMenu } from "./pagina";
 
 test.beforeAll(costruisciFinzione);
@@ -201,7 +201,7 @@ test("il riferimento della tappa 3 costruito solo con l'interfaccia (le procedur
   expect(testo, "il file salvato è diverso dall'atteso nei byte (ordine delle chiavi, spazi, fine riga)").toBe(atteso.testo);
   // Le premesse: ogni dato, blocco, salto, procedura e funzione e caso del riferimento è passato dall'interfaccia; i
   // campi dei due salti si sono aperti due volte (la procedura nasce dai loro campi, gli argomenti dopo).
-  expect({ ...osservato, pannelli: undefined }).toEqual({ riquadri: 25, pannelli: undefined, blocchi: 23, cicli: 1, salti: 2, dati: 11, valoriDelCaso: 9, funzioni: 3, casiDelleFunzioni: 3 });
+  expect({ ...osservato, pannelli: undefined }).toEqual({ riquadri: 25, pannelli: undefined, blocchi: 23, cicli: 1, salti: 2, dati: 11, valoriDelCaso: 9, funzioni: 3, casiDelleFunzioni: 3, records: 0, campi: 0 });
   // I casi del file salvato, quello del programma e quelli delle funzioni, dalla riga di comando.
   const verde = rigaDiComando(join(app, ".collaudo", "costruzione"), `${info.project.name}-funzioni.algo`, testo);
   console.log(`[${info.project.name}] costruzione della tappa 3: bun run casi → exit ${verde.codice}, ${verde.uscita.trim().split("\n").at(-1)}`);
@@ -213,4 +213,28 @@ test("il riferimento della tappa 3 costruito solo con l'interfaccia (le procedur
   const mutato = atteso.testo.replace('"voto >= 1 and voto <= 10"', '"voto >= 1 and voto <= 11"');
   expect(mutato).not.toBe(atteso.testo);
   expect(differenze(JSON.parse(testo), JSON.parse(mutato))).toEqual(["functions[2].end.return_value"]);
+});
+
+test("il programma coi record costruito solo con l'interfaccia (il record dal menu «Progetto», i dati record, il valore iniziale, la copia e i campi letti e scritti) e salvato è byte per byte il file atteso, col caso verde dalla riga di comando", async ({ page }, info) => {
+  const { progetto: daCostruire, atteso } = programmaDeiRecord;
+  await apriVuota(page, { lingua: "it" });
+  const inizio = Date.now();
+  const osservato = await costruisci(page, "it", { blocchi: "riquadro", dati: "scheda" }, true, async () => {}, programmaDeiRecord);
+  const testo = await salvaConNome(page, "C:\\prove\\costruito-record.algo");
+  const diverse = differenze(JSON.parse(testo), JSON.parse(atteso.testo));
+  console.log(
+    `[${info.project.name}] costruzione coi record: record ${osservato.records} (campi ${osservato.campi}), dati ${osservato.dati}, blocchi ${osservato.blocchi}; ${Buffer.byteLength(testo)} byte contro ${Buffer.byteLength(atteso.testo)} dell'atteso, campi diversi ${diverse.length}, ${((Date.now() - inizio) / 1000).toFixed(1)} s`,
+  );
+  expect(diverse, "il file salvato è diverso dall'atteso in questi campi").toEqual([]);
+  expect(testo, "il file salvato è diverso dall'atteso nei byte (ordine delle chiavi, spazi, fine riga)").toBe(atteso.testo);
+  // Le premesse: il record coi suoi tre campi, i due dati e i cinque blocchi sono passati dall'interfaccia.
+  expect({ records: osservato.records, campi: osservato.campi, dati: osservato.dati, blocchi: osservato.blocchi }).toEqual({ records: 1, campi: 3, dati: 2, blocchi: 5 });
+  // Il caso del file salvato dalla riga di comando: la finestra non esegue ancora i record.
+  const verde = rigaDiComando(join(app, ".collaudo", "costruzione"), `${info.project.name}-record.algo`, testo);
+  expect(verde.uscita).toContain(`VERDE ${verde.file}#${daCostruire.test_cases![0]!.name}`);
+  expect(verde.codice).toBe(0);
+  // Controllo positivo: la lunghezza di un campo cambiata nell'atteso, e il rilevatore dice quel campo.
+  const mutato = atteso.testo.replace('"max_length": 3', '"max_length": 4');
+  expect(mutato).not.toBe(atteso.testo);
+  expect(differenze(JSON.parse(testo), JSON.parse(mutato))).toEqual(["records[0].fields[1].max_length"]);
 });

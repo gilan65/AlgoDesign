@@ -24,7 +24,7 @@
 // mostra l'errore.
 import { useId, useState, type KeyboardEvent, type MouseEvent, type ReactElement } from "react";
 import type { TestiDelDisegno, ValoreRipetuto } from "../../core/disegno/impaginazione";
-import type { Dato, GenereDiFunzione } from "../../core/progetto/modello";
+import type { Dato, DefinizioneDelRecord, GenereDiFunzione } from "../../core/progetto/modello";
 import type { Dizionario } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
 import type { SegnalazioneMostrata } from "../disegno/EditorDelBlocco";
@@ -33,6 +33,7 @@ import { bozzaDi, type BozzaDelDato, type Natura } from "./bozza";
 import { campiDelDato, nomiDelleNature, SchedaDelDato, Segnalazioni } from "./CampiDelDato";
 import { azioniDellaRiga, MenuDellaRiga } from "./MenuDellaRiga";
 import { rigaDelDato } from "./righe";
+import { TabellaDeiRecord, type ModificaDeiRecord } from "./TabellaDeiRecord";
 import stili from "./VistaDati.module.css";
 
 export type ModoDeiDati = "scheda" | "celle";
@@ -113,6 +114,7 @@ function Tabella({
   testi,
   valori,
   modifica,
+  records,
 }: {
   titolo: string;
   righe: readonly Riga[];
@@ -125,6 +127,8 @@ function Tabella({
   testi: Dizionario;
   valori: ValoriMostrati;
   modifica?: ModificaDeiDati | undefined;
+  /** I nomi dei record del progetto, per la scelta del tipo. */
+  records: readonly string[];
 }): ReactElement {
   const prefisso = useId();
   const celle = modifica?.modo === "celle";
@@ -204,7 +208,7 @@ function Tabella({
             // Le celle: la riga è fatta di campi; lasciarla (il fuoco esce dalla riga) la conferma.
             if (celle && modifica && nature) {
               const bozza = inScrittura?.bozza ?? bozzaDi(dato, valori.ripetuto, comune);
-              const c = campiDelDato(bozza, (b) => modifica.cambia(indice, b), testi, (campo) => riempi(testi.campoDellaRiga, { campo, n: String(posizione + 1) }), nature);
+              const c = campiDelDato(bozza, (b) => modifica.cambia(indice, b), testi, (campo) => riempi(testi.campoDellaRiga, { campo, n: String(posizione + 1) }), nature, records);
               return (
                 <tr
                   key={indice}
@@ -297,6 +301,7 @@ function Tabella({
                     <SchedaDelDato
                       nome={dato.name}
                       nature={nature}
+                      records={records}
                       bozza={inScrittura.bozza}
                       {...(inScrittura.campo ? { primo: inScrittura.campo } : {})}
                       cambia={(b) => modifica.cambia(indice, b)}
@@ -362,6 +367,10 @@ export function VistaDati({
   segni,
   modifica,
   modificaComuni,
+  records = [],
+  segniDeiRecord,
+  modificaRecord,
+  aggiungiRecord,
 }: {
   /** Il nome della funzione mostrata (il nome del progetto, per il programma principale), nelle didascalie. */
   nome: string;
@@ -380,7 +389,15 @@ export function VistaDati({
   modifica?: ModificaDeiDati | undefined;
   /** Senza, le costanti comuni sono in sola lettura. */
   modificaComuni?: ModificaDeiDati | undefined;
+  /** I record del progetto: con almeno uno, la loro tabella in cima. */
+  records?: readonly DefinizioneDelRecord[] | undefined;
+  segniDeiRecord?: ReadonlyMap<number, readonly SegnalazioneMostrata[]> | undefined;
+  /** Senza, i record sono in sola lettura. */
+  modificaRecord?: ModificaDeiRecord | undefined;
+  /** «Aggiungi un record» sotto la loro tabella o, senza record, in cima (se chi monta la vista lo dà). */
+  aggiungiRecord?: (() => void) | undefined;
 }): ReactElement {
+  const nomiDeiRecord = records.map((r) => r.name);
   const nessuno = new Map<number, readonly SegnalazioneMostrata[]>();
   const righe = dati.map((dato, indice) => ({ indice, dato }));
   const pulsante = (testo: string, aggiungi: () => void, segno: string) => (
@@ -399,6 +416,8 @@ export function VistaDati({
   );
   return (
     <div className={stili.vista}>
+      {records.length > 0 && <TabellaDeiRecord records={records} segni={segniDeiRecord ?? nessuno} testi={testi} modifica={modificaRecord} />}
+      {aggiungiRecord && pulsante(testi.aggiungiRecord, aggiungiRecord, "data-aggiungi-record")}
       {costantiComuni.length > 0 && (
         <Tabella
           titolo={`${testi.costantiComuni}: ${progetto}`}
@@ -408,6 +427,7 @@ export function VistaDati({
           testi={testi}
           valori={valori}
           modifica={modificaComuni}
+          records={nomiDeiRecord}
         />
       )}
       {genere !== "main" && (
@@ -421,6 +441,7 @@ export function VistaDati({
           testi={testi}
           valori={valori}
           modifica={modifica}
+          records={nomiDeiRecord}
         />
       )}
       {modifica?.aggiungiParametro && genere !== "main" && pulsante(testi.aggiungiParametro, modifica.aggiungiParametro, "data-aggiungi-parametro")}
@@ -432,6 +453,7 @@ export function VistaDati({
         testi={testi}
         valori={valori}
         modifica={modifica}
+        records={nomiDeiRecord}
       />
       {modifica && pulsante(testi.aggiungiDato, modifica.aggiungi, "data-aggiungi")}
     </div>

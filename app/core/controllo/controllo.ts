@@ -149,7 +149,17 @@ export type EsitoDelControllo =
       /** I dati dell'errore `reference_without_value` prima di eseguire: il salto, la procedura chiamata e la posizione nei
        * suoi dati del parametro che riceve il dato senza valore, nell'ordine dei salti e degli argomenti. */
       readonly senzaValoreAlSalto: readonly { readonly block: string; readonly funzione: string; readonly indice: number }[];
+      /** Gli errori dei record (del progetto in `errori`, col blocco vuoto), record per record: la posizione fra i record,
+       * il codice e la causa. Assente in un esito costruito a mano, vale nessuno. */
+      readonly record?: readonly SegnalazioneDiUnRecord[];
     };
+
+/** Un errore di un record, sulla sua riga della vista dei dati. */
+export interface SegnalazioneDiUnRecord {
+  readonly indice: number;
+  readonly code: CodiceErroreStatico;
+  readonly fermata?: Fermata;
+}
 
 /** Un dato che un blocco può leggere prima che abbia un valore. */
 export interface LetturaSenzaValore {
@@ -558,13 +568,17 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
   /** I record del progetto per nome: con due record dello stesso nome (un errore), il primo. Gli errori di un record sono
    * del progetto (il blocco vuoto), con la causa che nomina il record o il campo. */
   const records = new Map<string, DefinizioneDelRecord>();
+  const deiRecord: SegnalazioneDiUnRecord[] = [];
+  let recordCorrente = 0;
   const delProgetto = ({ codice, fermata }: Difetto) => {
     errori.push({ code: codice, block: "" });
     if (fermata) fermate.push({ code: codice, block: "", fermata });
+    deiRecord.push({ indice: recordCorrente, code: codice, ...(fermata ? { fermata } : {}) });
   };
   const nomiDiDati = new Set([...(p.shared_constants ?? []), ...p.functions.flatMap((f) => f.data)].map((d) => d.name));
   const nomiDiFunzioni = new Set(p.functions.flatMap((f) => (f.name === undefined ? [] : [f.name])));
-  for (const r of p.records ?? []) {
+  for (const [indice, r] of (p.records ?? []).entries()) {
+    recordCorrente = indice;
     // Il nome: valido anche a livello di file, unico fra i record, mai quello di un tipo, di un dato o di una funzione.
     const causa = causaDelNome(r.name, true);
     if (causa !== undefined) delProgetto({ codice: "invalid_name", fermata: causa });
@@ -1128,7 +1142,7 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
 
   // ---------------------------------------------------------------------- i ruoli e il dato inutile
 
-  if (errori.length > 0) return { fuoriTappa: false, errori, fermate, avvisi, dati: perDato, primaDelValore: [], versoOut: [], senzaValoreAlSalto: [] };
+  if (errori.length > 0) return { fuoriTappa: false, errori, fermate, avvisi, dati: perDato, primaDelValore: [], versoOut: [], senzaValoreAlSalto: [], record: deiRecord };
 
   const riepilogoDi = new Map(riepiloghi.map((r) => [r.funzione, r]));
   /** Gli effetti di ogni procedura sui parametri per riferimento e per uscita, calcolati una volta (`effettiDi`). */
@@ -1139,7 +1153,7 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
   const versoOut = parametriVersoOut();
   const { trovati: senzaValoreCerto, argomenti: senzaValoreAlSalto } = riferimentiSenzaValore();
   // Qui gli errori di prima non ci sono: le cause sono quelle degli avvisi.
-  if (senzaValoreCerto.length > 0) return { fuoriTappa: false, errori: senzaValoreCerto, fermate, avvisi, dati: perDato, primaDelValore: [], versoOut, senzaValoreAlSalto };
+  if (senzaValoreCerto.length > 0) return { fuoriTappa: false, errori: senzaValoreCerto, fermate, avvisi, dati: perDato, primaDelValore: [], versoOut, senzaValoreAlSalto, record: deiRecord };
 
   // Attraverso i salti: un parametro per riferimento letto dalla console dalla procedura è un dato letto da chi la
   // chiama, e un parametro mostrato dalla procedura mostra ciò che chi chiama le passa. Senza ricorsione si arriva a
@@ -1195,7 +1209,7 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
       inutile(d, indice, f.id, r);
     }
   }
-  return { fuoriTappa: false, errori, fermate, avvisi, dati: perDato, primaDelValore, versoOut, senzaValoreAlSalto: [] };
+  return { fuoriTappa: false, errori, fermate, avvisi, dati: perDato, primaDelValore, versoOut, senzaValoreAlSalto: [], record: deiRecord };
 
   // -------------------------------------------------------- un riferimento che non ha mai un valore
 

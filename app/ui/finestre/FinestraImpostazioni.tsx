@@ -455,6 +455,13 @@ function Contenuto({
             testo={(v) => (v === "scheda" ? testi.modoScheda : testi.modoCelle)}
             cambia={(modoDeiDati) => cambia({ modoDeiDati })}
           />
+          <fieldset className={stili.scelta}>
+            <legend>{testi.recordTitolo}</legend>
+            <label className={stili.opzione}>
+              <input type="checkbox" checked={s.pulsanteDeiRecord} onChange={(e) => cambia({ pulsanteDeiRecord: e.target.checked })} />
+              {testi.pulsanteDeiRecord}
+            </label>
+          </fieldset>
           <Opzioni
             legenda={testi.confermaDelDato}
             nome="conferma"

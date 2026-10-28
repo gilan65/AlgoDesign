@@ -378,9 +378,9 @@ test("ogni gruppo di opzioni sta in un riquadro, con la sua domanda dentro", asy
   }
   // Controllo positivo della premessa: i gruppi sono quelli che le schede hanno (14 in Aspetto, coi tre dei cicli, quello
   // della copia di un vettore, quello dei blocchi selezionati, quello del blocco di Lettura, quello dei colori dei
-  // blocchi e quello della guida; 5 in Modifica, con quello delle parentesi e quello dei casi d'uso; 5 nella tabella di
-  // traccia, 2 nella console, con quello dei linguaggi del codice generato).
-  expect({ gruppi, senzaRiquadro: esiti }).toEqual({ gruppi: 26, senzaRiquadro: [] });
+  // blocchi e quello della guida; 6 in Modifica, con quello delle parentesi, quello dei casi d'uso e quello dei record; 5
+  // nella tabella di traccia, 2 nella console, con quello dei linguaggi del codice generato).
+  expect({ gruppi, senzaRiquadro: esiti }).toEqual({ gruppi: 27, senzaRiquadro: [] });
 });
 
 test("il menu dei linguaggi: ▲ ▼ spostano una riga col fuoco sul pulsante, l'ultimo acceso non si spegne, «Conferma» dà le linguette nell'ordine e le scrive, e al riavvio tornano", async ({ page }) => {
