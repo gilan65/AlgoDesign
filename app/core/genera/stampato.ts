@@ -6,17 +6,18 @@
 // funzione: le funzioni di supporto e l'avvio) se vengono dopo l'ultima.
 //
 // Gli a capo: dopo uno spazio o una virgola, il più lontano nella larghezza, mai nel rientro; uno dentro una stringa fra
-// virgolette doppie solo se fuori non ce n'è; senza punti, il taglio alla larghezza. Il rientro stampato si ferma a metà
-// larghezza meno `rientroDelSeguito`, e il seguito sta `rientroDelSeguito` colonne più in là.
+// virgolette doppie o dentro un carattere fra apici solo se fuori non ce n'è; senza punti, il taglio alla larghezza. Il
+// rientro stampato si ferma a metà larghezza meno `rientroDelSeguito`, e il seguito sta `rientroDelSeguito` colonne più in là.
 //
 // I fogli: una riga a capo non si divide fra due fogli, se non ha più pezzi delle righe di un foglio intero (allora
 // comincia su un foglio nuovo e continua). Chi stampa può volere un foglio nuovo all'inizio di una parte.
 //
 // Che cosa questo file NON fa:
-// - le tabulazioni, i caratteri larghi due colonne o i diacritici combinanti: una colonna per carattere (i generatori
-//   scrivono il rientro con gli spazi);
-// - le stringhe fra apici e i commenti: un apostrofo in un commento aprirebbe una stringa che non c'è; i caratteri fra
-//   apici del codice sono corti;
+// - i caratteri larghi due colonne o i diacritici combinanti: una colonna per carattere (i generatori scrivono il
+//   rientro con gli spazi); una tabulazione, che può venire dal testo di un commento, conta una colonna, e la pagina la
+//   stampa larga una colonna (`tab-size: 1`);
+// - le stringhe fra apici più lunghe di un carattere e i commenti: un apostrofo in un commento aprirebbe una stringa
+//   che non c'è (si riconosce solo il carattere fra apici, `'x'` o `'\x'`);
 // - come si stampa: il segno ↪, la barra del seguito e i numeri sono della pagina.
 import type { Riga } from "./forma";
 
@@ -65,15 +66,25 @@ export function aCapo(testo: string, colonne: number): RigaACapo {
   const c = tutta.slice(rientro);
   let larghezza = Math.max(1, colonne - colonna);
   if (c.length <= larghezza) return { rientro, colonna, pezzi: [c.join("")] };
-  // Dentro una stringa: fra virgolette doppie; la barra rovesciata salta il carattere dopo.
+  // Dentro una stringa: fra virgolette doppie (la barra rovesciata salta il carattere dopo), o un carattere fra apici
+  // fuori da una stringa (`' '`, `','`, `'"'`, `'\n'`), che non apre né chiude una stringa.
   const nellaStringa: boolean[] = [];
   let dentro = false;
-  let salta = false;
-  for (const x of c) {
+  for (let i = 0; i < c.length; i++) {
     nellaStringa.push(dentro);
-    if (salta) salta = false;
-    else if (dentro && x === "\\") salta = true;
-    else if (x === '"') dentro = !dentro;
+    const x = c[i];
+    if (dentro && x === "\\") {
+      if (++i < c.length) nellaStringa.push(true);
+    } else if (x === '"') dentro = !dentro;
+    else if (!dentro && x === "'" && c[i + 1] !== "'") {
+      const fine = c[i + 1] === "\\" ? i + 3 : i + 2;
+      if (c[fine] === "'") {
+        while (i < fine) {
+          nellaStringa.push(true);
+          i++;
+        }
+      }
+    }
   }
   const pezzi: string[] = [];
   let da = 0;

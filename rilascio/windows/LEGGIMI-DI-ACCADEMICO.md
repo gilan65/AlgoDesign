@@ -7,7 +7,7 @@ Versione del {{data}}, per Windows 10 e 11 a 64 bit.
 ## Come si usa
 
 1. Estrai lo zip dove preferisci: nasce la cartella `AlgoDesign-Accademico-{{versione}}`.
-2. In Esplora file, col tasto destro nella cartella, apri il **Terminale** lì.
+2. In Esplora file, nella cartella dello strumento, scrivi `powershell` nella barra dell'indirizzo e premi Invio: si apre PowerShell in quella cartella (su Windows 11 va bene anche il tasto destro nella cartella, «Apri nel Terminale»).
 3. Scrivi `.\algodesign-accademico -h` per l'aiuto, oppure, per un testo, per esempio:
 
 ```sh

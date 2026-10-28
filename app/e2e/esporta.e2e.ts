@@ -7,7 +7,8 @@
 //   (l'immagine `blob:`); lo sfondo trasparente ha l'angolo trasparente, quello pieno bianco;
 // - in pausa sul punto di interruzione l'SVG ha il blocco corrente, la punta e il punto, e la finestra lo dice;
 // - le scelte si ricordano per la sessione e «Annulla» non le cambia; il nome con la funzione fra parentesi; un nome
-//   riservato passa dall'avviso del nome («con (2).png»).
+//   riservato passa dall'avviso del nome («con (2).png»); un errore prima della finestra del sistema (una variabile tolta
+//   dal tema chiaro) esce nella finestra d'errore.
 //
 // Controlli positivi: la tavolozza della tela (scura) al posto di quella scritta a mano dà un altro SVG; un PNG fatto al
 // fattore 1 non ha la misura attesa; il PNG a toni di grigio confrontato con l'SVG a colori ha molti pixel diversi; con la
@@ -303,4 +304,13 @@ test("un progetto con un nome riservato di Windows: l'avviso del nome, poi «con
   await nome.getByRole("button", { name: it.nomeCambiaContinua, exact: true }).click();
   await expect(avviso(page)).toHaveText(riempi(it.flowchartEsportatoIn, { file: "uscita.png" }));
   expect((await finzione(page)).finestre.proposto).toBe("con (2).png");
+
+  // Un errore prima della finestra del sistema (qui la tavolozza della carta: una variabile tolta dal tema chiaro) si dice
+  // con la finestra d'errore, e non sparisce nella console.
+  await page.evaluate(() => {
+    for (const f of document.styleSheets) for (const r of f.cssRules) if (r instanceof CSSStyleRule) r.style.removeProperty("--disegno-linea");
+  });
+  await esporta(page);
+  const errore = page.getByRole("alertdialog", { name: it.esportaFlowchartTitolo, exact: true });
+  await expect(errore).toContainText("--disegno-linea");
 });

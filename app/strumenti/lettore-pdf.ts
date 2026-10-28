@@ -1,13 +1,15 @@
 // Il lettore minimo dei PDF che scrive la WebView2 (Skia, misurato con WebView2 155): oggetti numerati, flussi
-// `FlateDecode`, caratteri Type0 `Identity-H` con la loro mappa `ToUnicode`, il testo glifo per glifo (`<…> Tj`). Per
-// ogni pagina: `MediaBox`, il testo (una riga per blocco `BT … ET`) e i margini, letti dal primo ritaglio (`re W n`)
-// della pagina, che Skia mette attorno all'area stampabile, con la trasformazione in vigore in quel punto.
+// `FlateDecode`, caratteri Type0 `Identity-H` (codici di due byte) e caratteri coi codici di un byte, con la loro mappa
+// `ToUnicode` (i byte di un codice si leggono dalla mappa), il testo glifo per glifo (`<…> Tj`). Per ogni pagina:
+// `MediaBox`, il testo (una riga per blocco `BT … ET`) e i margini, letti dal primo ritaglio (`re W n`) della pagina,
+// che Skia mette attorno all'area stampabile, con la trasformazione in vigore in quel punto.
 //
-// NON guarda: i PDF di altri produttori (flussi a oggetti, tabelle dei riferimenti compresse, codifiche a un byte, testo
-// in `TJ` con le spaziature come spazi: uno spazio vero è un glifo, qui); le immagini; le pagine ereditate da un albero
-// con `Resources` sul nodo padre (Skia le scrive sulla pagina). Un oggetto o un flusso che non si legge, e un contenuto
-// guasto (una stringa esadecimale non chiusa, un delimitatore fuori posto), è un errore nell'elenco `errori`, mai
-// saltato in silenzio; le prove sono in `lettore-pdf.test.ts`.
+// NON guarda: i PDF di altri produttori (flussi a oggetti, tabelle dei riferimenti compresse, mappe con codici di
+// lunghezze diverse, testo in `TJ` con le spaziature come spazi: uno spazio vero è un glifo, qui); le immagini; le
+// pagine ereditate da un albero con `Resources` sul nodo padre (Skia le scrive sulla pagina). Un oggetto o un flusso che
+// non si legge, un contenuto guasto (una stringa esadecimale non chiusa, un delimitatore fuori posto), un glifo che la
+// mappa non ha e una stringa che non è fatta di codici interi sono errori nell'elenco `errori`, mai saltati in silenzio
+// (un testo non letto sembrerebbe assente); le prove sono in `lettore-pdf.test.ts`.
 import { inflateSync } from "node:zlib";
 
 export type Margini = { sinistro: number; destro: number; alto: number; basso: number };
@@ -194,12 +196,23 @@ export function leggiPdf(pdf: Buffer): PdfLetto {
     let stringhe: string[] = [];
     let rettangolo: number[] | null = null;
     let riga = "";
+    // Un glifo che la mappa non ha, o un byte che resta solo, è testo non letto: si conta fra gli errori (le scritte del
+    // motore si giudicano dalla loro assenza, e un testo non letto sembrerebbe assente).
+    let senzaMappa = 0;
+    let dispari = 0;
     const decodifica = (b: string) => {
       if (!font) return "";
+      // I byte di un codice, dalla mappa: due per `Identity-H`, uno per un carattere semplice (`<A6>`).
+      const byte = Math.max(1, (font.keys().next().value?.length ?? 4) / 2);
+      if (b.length % byte !== 0) dispari++;
       let s = "";
-      for (let k = 0; k + 1 < b.length; k += 2) {
-        const codice = ((b.charCodeAt(k) << 8) | b.charCodeAt(k + 1)).toString(16).toUpperCase().padStart(4, "0");
-        s += font.get(codice) ?? "�";
+      for (let k = 0; k + byte <= b.length; k += byte) {
+        let n = 0;
+        for (let j = 0; j < byte; j++) n = n * 256 + b.charCodeAt(k + j);
+        const codice = n.toString(16).toUpperCase().padStart(byte * 2, "0");
+        const testo = font.get(codice);
+        if (testo === undefined) senzaMappa++;
+        s += testo ?? "�";
       }
       return s;
     };
@@ -270,6 +283,7 @@ export function leggiPdf(pdf: Buffer): PdfLetto {
         }
       }
     }
+    if (senzaMappa > 0 || dispari > 0) errori.push(`pagina ${numero}: ${senzaMappa} glifi senza la mappa del carattere, ${dispari} stringhe di byte dispari`);
     pagine.push({ mediaBox, righe, margini });
   }
   if (pagine.length === 0) errori.push("nessuna pagina");

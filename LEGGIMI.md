@@ -4,7 +4,7 @@
 
 **Progettare algoritmi con i flowchart, eseguirli passo passo e tradurli in pseudocodice, Python e C.**
 
-Versione 0.6.0-beta.2 del 27 ottobre 2026, per Windows 10 e 11 a 64 bit.
+Versione 0.6.0-beta.2 del 28 ottobre 2026, per Windows 10 e 11 a 64 bit.
 
 AlgoDesign è un ambiente didattico per chi impara a programmare: prima si progetta e si prova l'algoritmo come flowchart, poi si guarda come lo stesso ragionamento diventa codice. È un'applicazione **locale e leggera**: funziona senza internet, senza installarla e senza diritti di amministratore.
 

@@ -17,9 +17,12 @@ export const A4 = { o: [841.89, 595.28], v: [595.28, 841.89] } as const;
  * nome, perché il controllo positivo le pretende tutte. La nostra data, nel piede, ha l'anno in quattro cifre. */
 export function scritteDiEdge(righe: readonly string[], titolo: string): string[] {
   const tutto = righe.join("");
+  // La data cercata nei testi incollati (il motore può spezzarla) e separati (dopo un testo che finisce con una cifra,
+  // incollata, sembrerebbe parte di un numero).
+  const data = /(^|\D)\d{1,2}\/\d{1,2}\/\d{2}(?!\d)/;
   return [
     ...(tutto.includes("tauri.localhost") ? ["indirizzo"] : []),
-    ...(/(^|\D)\d{1,2}\/\d{1,2}\/\d{2}(?!\d)/.test(tutto) ? ["data"] : []),
+    ...(data.test(tutto) || data.test(righe.join("\n")) ? ["data"] : []),
     ...(titolo !== "" && righe.some((r) => r.trim() === titolo) ? ["titolo"] : []),
     ...(righe.some((r, i) => /^\s*\d+\/\d+\s*$/.test(r) || (numero(r) && righe[i + 1]?.trim() === "/" && numero(righe[i + 2] ?? ""))) ? ["numero"] : []),
   ];

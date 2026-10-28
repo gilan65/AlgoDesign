@@ -16,9 +16,11 @@ const limite = 3000;
 /** La versione nell'intestazione del PDF (`%PDF-<versione>`), quella che scrive la WebView2. */
 const versione = "1.4";
 
-/** Un PDF con una pagina A4, un carattere con la sua mappa (glifo 1 → «A», 2 → «è») e il contenuto dato, compresso. */
-function pdf(contenuto: string): Buffer {
-  const cmap = "begincmap\n1 beginbfchar\n<0001> <0041>\nendbfchar\n1 beginbfchar\n<0002> <00E8>\nendbfchar\nendcmap\n";
+/** Un PDF con una pagina A4, un carattere con la sua mappa (glifo 1 → «A», 2 → «è»; con `unByte`, codici di un byte) e
+ * il contenuto dato, compresso. */
+function pdf(contenuto: string, unByte = false): Buffer {
+  const c = (n: number) => (unByte ? n.toString(16).padStart(2, "0") : n.toString(16).padStart(4, "0"));
+  const cmap = `begincmap\n1 beginbfchar\n<${c(1)}> <0041>\nendbfchar\n1 beginbfchar\n<${c(2)}> <00E8>\nendbfchar\nendcmap\n`;
   const flusso = deflateSync(Buffer.from(contenuto, "latin1"));
   const parti: (string | Buffer)[] = [
     `%PDF-${versione}\n`,
@@ -80,4 +82,17 @@ test("un delimitatore fuori posto è un errore del PDF, non un'eccezione", async
   console.log(`delimitatore fuori posto: ${perche}; errori ${JSON.stringify(letto?.errori)}`);
   expect(perche).toStartWith("letto in");
   expect(letto!.errori).toEqual(["pagina 3: «)» fuori posto nel contenuto"]);
+}, 10_000);
+
+test("un glifo che la mappa del carattere non ha, e una stringa di byte dispari, sono errori: un testo non letto non è un testo che non c'è", async () => {
+  const { letto, perche } = await leggiConLimite(pdf("BT /F1 12 Tf <00010003> Tj <000100> Tj ET"));
+  console.log(`glifo senza mappa e byte dispari: ${perche}; errori ${JSON.stringify(letto?.errori)}`);
+  expect(perche).toStartWith("letto in");
+  expect(letto!.errori).toEqual(["pagina 3: 1 glifi senza la mappa del carattere, 1 stringhe di byte dispari"]);
+}, 10_000);
+
+test("un carattere coi codici di un byte (la WebView2 ne scrive, per una parte del testo): il testo letto, nessun errore", async () => {
+  const { letto, perche } = await leggiConLimite(pdf("BT /F1 12 Tf <0102> Tj ET", true));
+  console.log(`codici di un byte: ${perche}; righe ${JSON.stringify(letto?.pagine[0]?.righe)}`);
+  expect({ righe: letto!.pagine[0]!.righe, errori: letto!.errori }).toEqual({ righe: ["Aè"], errori: [] });
 }, 10_000);
