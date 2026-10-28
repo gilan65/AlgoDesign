@@ -167,8 +167,8 @@ test("il corpus: i casi delle tappe dalla 1 alla 4 e dei record danno output, co
   expect(esito.senzaCasi).toEqual([]);
   expect(esito.file).toBe(tappeEseguite.reduce((n, t) => n + fileDellElenco(t).length, 0));
   expect(esito.nonPartiti + esito.file).toBe(suDisco.length);
-  // Dieci delle tappe e cinque dei record.
-  expect(esito.statici).toBe(15);
+  // Dieci delle tappe, cinque dei record e tre delle matrici.
+  expect(esito.statici).toBe(18);
 }, tempoDelCorpus);
 
 test("il corpus: un file della tappa 1 senza casi d'uso lo fa rosso (controllo positivo su una copia)", () => {
@@ -770,7 +770,26 @@ const giroConLaCopia = (p: number, q: number | null) => [
   `b2:condizione [${p},2]`,
   `b1:passo [${p},2]`,
 ];
+/** Le posizioni della copia di una matrice col suo nome: `*` sugli eventi del ciclo delle colonne (`interno`). */
+const posizioniDellaMatrice = (es: Esegui, p: Progetto) =>
+  [...es(p, tetti)].flatMap((x) => ("evento" in x ? [`${x.dato ?? x.evento}${x.fase ? `:${x.fase}` : ""}${x.interno ? "*" : ""} ${JSON.stringify(x.dati.posizioni ?? null)}`] : []));
+/** Una riga `r` della copia di una matrice di due colonne: il ciclo delle colonne dentro quello delle righe. */
+const rigaDellaCopia = (r: number, colonna: number | null) => [
+  `b1:condizione [${r},${colonna}]`,
+  `b1:inizio* [${r},${colonna}]`,
+  ...[0, 1].flatMap((j) => [`b1:condizione* [${r},${j}]`, `b1:elemento* [${r},${j}]`, `b1:passo* [${r},${j}]`]),
+  `b1:condizione* [${r},2]`,
+  `b1:passo [${r},2]`,
+];
 const fotografieAttese: { nome: string; ottieni: (es: Esegui) => string[]; atteso: string[] }[] = [
+  {
+    // Attesi a mano: la riga riceve 0 nella partenza, la colonna nella partenza del ciclo interno; dopo la copia restano
+    // quelle che hanno trovato le righe e le colonne finite.
+    nome: "le due posizioni nascoste della copia di una matrice col suo nome: la riga al livello della copia, la colonna al successivo",
+    ottieni: (es) =>
+      posizioniDellaMatrice(es, conMostra([dato("a", "integer", { size: 2, columns: 2, initial: { each: "1" } }), dato("b", "integer", { size: 2, columns: 2 })], [assegna("b1", "b", "a")])),
+    atteso: ["a [null,null]", "b1:inizio [null,null]", ...rigaDellaCopia(0, null), ...rigaDellaCopia(1, 2), "b1:condizione [2,2]", "fine [2,2]"],
+  },
   {
     nome: "la posizione nascosta della copia di un vettore col suo nome nella fotografia",
     ottieni: (es) => posizioniDi(es, conMostra([votiDue, altriDue], [assegna("b1", "altri", "voti"), scrivi("b2", "altri[1]")])),
@@ -907,8 +926,34 @@ const mutazioni: Record<string, [string, string]> = {
   // Il nome di un vettore assegnato a un vettore che diventa un alias, come `altri = voti` nel Python: cambiare la copia
   // cambia la sorgente.
   "copia di un vettore come alias": [
-    "        if (intero && e.genere === \"nome\") return yield* copia(b.id, cella(t.nome), cella(e.nome));",
-    "        if (intero && e.genere === \"nome\") {\n          yield evento(b.id);\n          qui.celle.set(t.nome, cella(e.nome));\n          return;\n        }",
+    '        if (intero && (e.genere === "nome" || eUnaRiga(e))) return yield* copia(b.id, t, e);',
+    '        if (intero && t.genere === "nome" && e.genere === "nome") {\n          yield evento(b.id);\n          qui.celle.set(t.nome, cella(e.nome));\n          return;\n        }\n        if (intero && (e.genere === "nome" || eUnaRiga(e))) return yield* copia(b.id, t, e);',
+  ],
+  // Il nome di una matrice assegnato a una matrice che diventa un alias (la cella condivisa): cambiare la copia cambia la
+  // sorgente.
+  "copia di una matrice come alias": [
+    '        if (intero && (e.genere === "nome" || eUnaRiga(e))) return yield* copia(b.id, t, e);',
+    '        if (intero && t.genere === "nome" && e.genere === "nome" && cella(t.nome).dato.columns !== undefined) {\n          yield evento(b.id);\n          qui.celle.set(t.nome, cella(e.nome));\n          return;\n        }\n        if (intero && (e.genere === "nome" || eUnaRiga(e))) return yield* copia(b.id, t, e);',
+  ],
+  // La copia di una matrice che scrive solo la prima riga, come una copia di un vettore delle sue colonne.
+  "copia di una matrice nella prima riga": ["          scriviIn(verso, i * colonne + j, leggiDa(da, i * colonne + j));", "          scriviIn(verso, j, leggiDa(da, j));"],
+  // La colonna della copia di una matrice allo stesso livello della riga: la fotografia ne mostra una sola.
+  "colonna della copia al livello della riga": ["        const colonna = posizioneDi(qui, livello + 1);", "        const colonna = posizioneDi(qui, livello);"],
+  // La riga passata per riferimento che arriva come copia: la procedura cambia la copia, non la matrice.
+  "riga per riferimento come copia": [
+    "          const ricevuta = c instanceof RigaDi ? c : new ElementoDi(c, i, semplice);",
+    "          const ricevuta = c instanceof RigaDi ? { dato: c.dato, valori: c.valori } : new ElementoDi(c, i, semplice);",
+  ],
+  // La riga passata per valore che arriva come la riga stessa: la procedura cambia la matrice di chi chiama.
+  "riga per valore come la riga stessa": [
+    '      } else if (d.size !== undefined || d.type === "record") dati.push({ copia: yield* elementiDi(a) });',
+    '      } else if (eUnaRiga(a)) dati.push({ cella: yield* rigaDi(a), scritto: "x" });\n      else if (d.size !== undefined || d.type === "record") dati.push({ copia: yield* elementiDi(a) });',
+  ],
+  // L'elemento di una matrice passato per riferimento con gli indici calcolati quando la procedura lo usa: `sposta(i, m[i][1])`
+  // cambia m[1][1].
+  "indice della matrice calcolato dopo": [
+    "          const ricevuta = c instanceof RigaDi ? c : new ElementoDi(c, i, semplice);",
+    '          const ricevuta = c instanceof RigaDi ? c : ((): Cella => { const quando = qui; const x = new ElementoDi(c, i, semplice); if (a.genere === "indice" && a.base.genere === "indice") { const r = a.base.indice; Object.defineProperty(x, "i", { get: () => { const ora = qui; qui = quando; try { return dentro((valuta(r) as Numero).v, c.dato.size!) * c.dato.columns! + dentro((valuta(a.indice) as Numero).v, c.dato.columns!); } finally { qui = ora; } } }); } return x; })();',
   ],
   // Il nome di un record assegnato a un record che diventa un alias: cambiare la copia cambia la sorgente.
   "copia di un record come alias": [
@@ -921,9 +966,9 @@ const mutazioni: Record<string, [string, string]> = {
     "",
   ],
   // La posizione della copia col nome che resta una variabile della copia: la fotografia non la vede.
-  "posizione della copia mai scritta": ['    yield evento(blocco, "inizio");\n    posizione(0);', '    yield evento(blocco, "inizio");'],
+  "posizione della copia mai scritta": ["    const da = yield* cellaIntera(e);\n    posizione(0);", "    const da = yield* cellaIntera(e);"],
   // La posizione della copia allo stesso livello del «per ogni» che la contiene: la copia scrive su quella del ciclo.
-  "copia al livello del per ogni che la contiene": ["    const posizione = posizioneDi(qui, qui.perOgniAttivi);", "    const posizione = posizioneDi(qui, Math.max(0, qui.perOgniAttivi - 1));"],
+  "copia al livello del per ogni che la contiene": ["    const livello = qui.perOgniAttivi;", "    const livello = Math.max(0, qui.perOgniAttivi - 1);"],
   // La fotografia con una chiamata per funzione, la più esterna, come prima della ricorsione: ogni livello mostra la prima.
   "una cornice per funzione": ["  const fotoDi = (c: Cornice): FotografiaDiUnaChiamata => {\n    const prima = c.foto;", "  const fotoDi = (c: Cornice): FotografiaDiUnaChiamata => {\n    c = pila.find((x) => x.funzione === c.funzione)!;\n    const prima = c.foto;"],
   // Il tetto delle chiamate a 501: la cinquecentunesima passa.
@@ -955,8 +1000,8 @@ const mutazioni: Record<string, [string, string]> = {
   // L'indice di un elemento passato per riferimento calcolato quando la procedura lo usa, come nel Python che
   // assegna i bersagli uno dopo l'altro: `metti(i, v[i])` cambia `v[2]`.
   "indice del bersaglio calcolato dopo": [
-    "          dati.push({ cella: new ElementoDi(c, i, semplice), scritto: `${nome}${pezzo}`, origine: { nome: `${suo.nome}${pezzo}`, livello: suo.livello } });",
-    '          dati.push({ cella: ((): Cella => { const quando = qui; const x = new ElementoDi(c, i, semplice); if (a.genere === "indice") Object.defineProperty(x, "i", { get: () => { const ora = qui; qui = quando; try { return dentro((valuta(a.indice) as Numero).v, c.dato.size!); } finally { qui = ora; } } }); return x; })(), scritto: `${nome}${pezzo}`, origine: { nome: `${suo.nome}${pezzo}`, livello: suo.livello } });',
+    "          const ricevuta = c instanceof RigaDi ? c : new ElementoDi(c, i, semplice);",
+    '          const ricevuta = c instanceof RigaDi ? c : ((): Cella => { const quando = qui; const x = new ElementoDi(c, i, semplice); if (a.genere === "indice" && a.base.genere === "nome") Object.defineProperty(x, "i", { get: () => { const ora = qui; qui = quando; try { return dentro((valuta(a.indice) as Numero).v, c.dato.size!); } finally { qui = ora; } } }); return x; })();',
   ],
   // L'operazione che controlla il suo operando sinistro prima di calcolare il destro: il carattere 0 a sinistra si
   // ferma prima del codice non valido a destra.

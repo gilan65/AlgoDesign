@@ -12,6 +12,31 @@ import type { Espressione } from "../espressioni/analizzatore";
 import type { Campo, Dato, Funzione } from "../progetto/modello";
 import { lunghezzaPredefinita } from "./controllo";
 
+/** Il tipo e la lunghezza massima dell'elemento che un indice prende da un vettore o da una matrice (un dato o il
+ * risultato di una funzione): `v[i]`, `m[i][j]`, `f(x)[i]`, `g(x)[i][j]`. Nessuno per il carattere di una stringa
+ * (`s[i]`, `v[i][j]` su un vettore di stringhe) e per la riga di una matrice (`m[i]`, che non è un elemento). */
+export function elementoDi(
+  e: Extract<Espressione, { genere: "indice" }>,
+  datoDi: (nome: string) => Dato | undefined,
+  funzioneDi: (nome: string) => Funzione | undefined,
+): Pick<Dato, "type" | "max_length"> | undefined {
+  /** Le misure del vettore (`righe` false) o della matrice (`righe` true) che `b` nomina. */
+  const di = (b: Espressione, righe: boolean): Pick<Dato, "type" | "max_length"> | undefined => {
+    if (b.genere === "nome") {
+      const d = datoDi(b.nome);
+      return d?.size !== undefined && (d.columns !== undefined) === righe ? d : undefined;
+    }
+    if (b.genere === "chiamata") {
+      const f = funzioneDi(b.nome);
+      return f?.return_size !== undefined && (f.return_columns !== undefined) === righe && f.return_type !== "record"
+        ? { type: f.return_type!, ...(f.return_max_length === undefined ? {} : { max_length: f.return_max_length }) }
+        : undefined;
+    }
+    return undefined;
+  };
+  return e.base.genere === "indice" ? di(e.base.base, true) : di(e.base, false);
+}
+
 /** `datoDi` e `funzioneDi` danno il dato e la funzione di un nome, se ci sono; `campoDi` il campo di un record. */
 export function lunghezzaMassima(
   e: Espressione,
@@ -31,18 +56,10 @@ export function lunghezzaMassima(
       return f?.return_type === "string" && f.return_size === undefined ? (f.return_max_length ?? lunghezzaPredefinita) : 1;
     }
     case "indice": {
-      // L'elemento di un vettore di stringhe è una stringa; ogni altro indice prende un carattere, o un elemento che non
-      // è una stringa.
-      const b = e.base;
-      if (b.genere === "nome") {
-        const d = datoDi(b.nome);
-        return d?.type === "string" && d.size !== undefined ? (d.max_length ?? lunghezzaPredefinita) : 1;
-      }
-      if (b.genere === "chiamata") {
-        const f = funzioneDi(b.nome);
-        return f?.return_type === "string" && f.return_size !== undefined ? (f.return_max_length ?? lunghezzaPredefinita) : 1;
-      }
-      return 1;
+      // L'elemento di un vettore o di una matrice di stringhe è una stringa; ogni altro indice prende un carattere, o un
+      // elemento che non è una stringa.
+      const d = elementoDi(e, datoDi, funzioneDi);
+      return d?.type === "string" ? (d.max_length ?? lunghezzaPredefinita) : 1;
     }
     case "campo": {
       const c = campoDi?.(e);

@@ -1,0 +1,56 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "indice-fuori-dalla-matrice",
+    "description": "La colonna 3 di una matrice di tre colonne è fuori dalla matrice."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "m",
+          "type": "integer",
+          "size": 2,
+          "columns": 3,
+          "initial": {
+            "each": "0"
+          }
+        },
+        {
+          "name": "j",
+          "type": "integer",
+          "initial": "3"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "m[1][j]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "indice-fuori-dalla-matrice",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "index_out_of_range",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

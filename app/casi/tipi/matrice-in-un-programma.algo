@@ -1,0 +1,125 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "matrice-in-un-programma",
+    "description": "Una matrice col valore iniziale per righe e una costante comune col valore ripetuto: un elemento letto e scritto, le righe scritte con due «per»."
+  },
+  "shared_constants": [
+    {
+      "name": "K",
+      "type": "integer",
+      "size": 2,
+      "columns": 2,
+      "constant": true,
+      "initial": {
+        "each": "7"
+      }
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "m",
+          "type": "integer",
+          "size": 2,
+          "columns": 3,
+          "initial": [
+            [
+              "1",
+              "2",
+              "3"
+            ],
+            [
+              "4",
+              "5",
+              "6"
+            ]
+          ]
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        },
+        {
+          "name": "j",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "m[1][2]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "m[0][1]",
+          "value": "m[1][0] * 10"
+        },
+        {
+          "id": "b3",
+          "kind": "for",
+          "counter": "i",
+          "from": "0",
+          "to": "1",
+          "body": [
+            {
+              "id": "b4",
+              "kind": "for",
+              "counter": "j",
+              "from": "0",
+              "to": "2",
+              "body": [
+                {
+                  "id": "b5",
+                  "kind": "write",
+                  "values": [
+                    "m[i][j]",
+                    "\" \""
+                  ],
+                  "newline": false
+                }
+              ]
+            },
+            {
+              "id": "b6",
+              "kind": "write",
+              "values": [
+                "\"|\""
+              ],
+              "newline": true
+            }
+          ]
+        },
+        {
+          "id": "b7",
+          "kind": "write",
+          "values": [
+            "K[1][1]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "matrice-in-un-programma",
+      "inputs": [],
+      "expected": {
+        "output": "6\n1 40 3 |\n4 5 6 |\n7\n"
+      }
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "matrice-di-stringhe",
+    "description": "In un vettore di stringhe v[1][0] è un carattere della stringa v[1]; in una matrice di stringhe m[1][0] è una stringa."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "v",
+          "type": "string",
+          "size": 2,
+          "initial": [
+            "\"ab\"",
+            "\"cd\""
+          ],
+          "max_length": 10
+        },
+        {
+          "name": "m",
+          "type": "string",
+          "size": 2,
+          "columns": 2,
+          "initial": [
+            [
+              "\"uno\"",
+              "\"due\""
+            ],
+            [
+              "\"tre\"",
+              "\"quattro\""
+            ]
+          ],
+          "max_length": 10
+        },
+        {
+          "name": "c",
+          "type": "character",
+          "size": 2,
+          "columns": 3
+        },
+        {
+          "name": "t",
+          "type": "string"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "v[1][0]",
+            "\" \"",
+            "m[1][0]",
+            "\" \"",
+            "m[1][1][2]",
+            "\" \"",
+            "length m[0][1]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "m[0][0]",
+          "value": "m[0][0] + v[0]"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "m[0][0]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "c[1]",
+          "value": "to_array v[0]"
+        },
+        {
+          "id": "b5",
+          "kind": "write",
+          "values": [
+            "c[1][1]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b6",
+          "kind": "assignment",
+          "target": "t",
+          "value": "to_string c[1]"
+        },
+        {
+          "id": "b7",
+          "kind": "write",
+          "values": [
+            "t",
+            "\"|\""
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "matrice-di-stringhe",
+      "inputs": [],
+      "expected": {
+        "output": "c tre a 3\nunoab\nb\nab |\n"
+      }
+    }
+  ]
+}

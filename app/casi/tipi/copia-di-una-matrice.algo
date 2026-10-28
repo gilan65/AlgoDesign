@@ -1,0 +1,170 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "copia-di-una-matrice",
+    "description": "La copia col nome di una matrice e di una sua riga, nelle due direzioni: cambiare la copia non cambia la sorgente, e viceversa; il «per ogni» su una riga."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "integer",
+          "size": 2,
+          "columns": 2,
+          "initial": [
+            [
+              "1",
+              "2"
+            ],
+            [
+              "3",
+              "4"
+            ]
+          ]
+        },
+        {
+          "name": "b",
+          "type": "integer",
+          "size": 2,
+          "columns": 2
+        },
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 2
+        },
+        {
+          "name": "x",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "b",
+          "value": "a"
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "b[0][0]",
+          "value": "9"
+        },
+        {
+          "id": "b3",
+          "kind": "assignment",
+          "target": "a[1][1]",
+          "value": "8"
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "a[0][0]",
+            "\" \"",
+            "b[0][0]",
+            "\" \"",
+            "a[1][1]",
+            "\" \"",
+            "b[1][1]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "v",
+          "value": "a[1]"
+        },
+        {
+          "id": "b6",
+          "kind": "assignment",
+          "target": "v[0]",
+          "value": "5"
+        },
+        {
+          "id": "b7",
+          "kind": "write",
+          "values": [
+            "a[1][0]",
+            "\" \"",
+            "v[0]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b8",
+          "kind": "assignment",
+          "target": "a[0]",
+          "value": "v"
+        },
+        {
+          "id": "b9",
+          "kind": "assignment",
+          "target": "v[1]",
+          "value": "0"
+        },
+        {
+          "id": "b10",
+          "kind": "write",
+          "values": [
+            "a[0][0]",
+            "\" \"",
+            "a[0][1]",
+            "\" \"",
+            "v[1]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b11",
+          "kind": "for_each",
+          "item": "x",
+          "source": "a[1]",
+          "body": [
+            {
+              "id": "b12",
+              "kind": "write",
+              "values": [
+                "x",
+                "\" \""
+              ],
+              "newline": false
+            },
+            {
+              "id": "b13",
+              "kind": "assignment",
+              "target": "a[1][1]",
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "id": "b14",
+          "kind": "write",
+          "values": [
+            "\"|\""
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "copia-di-una-matrice",
+      "inputs": [],
+      "expected": {
+        "output": "1 9 8 4\n3 5\n5 8 0\n3 0 |\n"
+      }
+    }
+  ]
+}

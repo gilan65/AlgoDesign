@@ -1,0 +1,658 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "matrice-come-parametro",
+    "description": "Una matrice e una sua riga come parametri per valore, per riferimento e per uscita, un elemento per riferimento, una matrice e una riga come risultato."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "m",
+          "type": "integer",
+          "size": 2,
+          "columns": 3,
+          "initial": [
+            [
+              "1",
+              "2",
+              "3"
+            ],
+            [
+              "4",
+              "5",
+              "6"
+            ]
+          ]
+        },
+        {
+          "name": "s",
+          "type": "integer"
+        },
+        {
+          "name": "t",
+          "type": "integer",
+          "size": 3,
+          "columns": 2
+        },
+        {
+          "name": "r",
+          "type": "integer",
+          "size": 3
+        },
+        {
+          "name": "n",
+          "type": "integer",
+          "size": 2,
+          "columns": 2,
+          "initial": {
+            "each": "3"
+          }
+        },
+        {
+          "name": "i",
+          "type": "integer",
+          "initial": "0"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "metti",
+          "arguments": [
+            "m[0][2]"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "call",
+          "callee": "totale",
+          "arguments": [
+            "m",
+            "s"
+          ]
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "m[0][0]",
+            "\" \"",
+            "s"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b4",
+          "kind": "call",
+          "callee": "azzera_riga",
+          "arguments": [
+            "m[1]"
+          ]
+        },
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "t",
+          "value": "trasposta(m)"
+        },
+        {
+          "id": "b6",
+          "kind": "assignment",
+          "target": "r",
+          "value": "prima_riga(m)"
+        },
+        {
+          "id": "b7",
+          "kind": "write",
+          "values": [
+            "t[2][0]",
+            "\" \"",
+            "t[1][1]",
+            "\" \"",
+            "r[2]",
+            "\" \"",
+            "m[1][2]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b8",
+          "kind": "call",
+          "callee": "raddoppia",
+          "arguments": [
+            "n"
+          ]
+        },
+        {
+          "id": "b9",
+          "kind": "write",
+          "values": [
+            "n[1][1]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b10",
+          "kind": "call",
+          "callee": "tocca",
+          "arguments": [
+            "m[0]"
+          ]
+        },
+        {
+          "id": "b11",
+          "kind": "write",
+          "values": [
+            "m[0][0]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b12",
+          "kind": "assignment",
+          "target": "r[0]",
+          "value": "50"
+        },
+        {
+          "id": "b13",
+          "kind": "write",
+          "values": [
+            "m[0][0]",
+            "\" \"",
+            "r[0]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b14",
+          "kind": "call",
+          "callee": "sposta",
+          "arguments": [
+            "i",
+            "m[i][1]"
+          ]
+        },
+        {
+          "id": "b15",
+          "kind": "write",
+          "values": [
+            "m[0][1]",
+            "\" \"",
+            "m[1][1]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "metti",
+      "data": [
+        {
+          "name": "e",
+          "type": "integer",
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "c1",
+          "kind": "assignment",
+          "target": "e",
+          "value": "77"
+        }
+      ],
+      "end": {
+        "id": "c2"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "procedure",
+      "name": "totale",
+      "data": [
+        {
+          "name": "x",
+          "type": "integer",
+          "size": 2,
+          "columns": 3,
+          "parameter": "value"
+        },
+        {
+          "name": "q",
+          "type": "integer",
+          "parameter": "out"
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        },
+        {
+          "name": "j",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "d1",
+          "kind": "assignment",
+          "target": "q",
+          "value": "0"
+        },
+        {
+          "id": "d2",
+          "kind": "for",
+          "counter": "i",
+          "from": "0",
+          "to": "1",
+          "body": [
+            {
+              "id": "d2j",
+              "kind": "for",
+              "counter": "j",
+              "from": "0",
+              "to": "2",
+              "body": [
+                {
+                  "id": "d3",
+                  "kind": "assignment",
+                  "target": "q",
+                  "value": "q + x[i][j]"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "d4",
+          "kind": "assignment",
+          "target": "x[0][0]",
+          "value": "100"
+        }
+      ],
+      "end": {
+        "id": "d5"
+      },
+      "test_cases": [
+        {
+          "name": "tutti-2",
+          "inputs": [
+            {
+              "data": "x",
+              "text": "2",
+              "each": true
+            }
+          ],
+          "expected": {
+            "output": "\nq = 12\n",
+            "warnings": [
+              {
+                "code": "maybe_uninitialized",
+                "block": "g3"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "f4",
+      "kind": "procedure",
+      "name": "azzera_riga",
+      "data": [
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3,
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "e1",
+          "kind": "assignment",
+          "target": "v[0]",
+          "value": "0"
+        },
+        {
+          "id": "e2",
+          "kind": "assignment",
+          "target": "v[1]",
+          "value": "0"
+        },
+        {
+          "id": "e3",
+          "kind": "assignment",
+          "target": "v[2]",
+          "value": "0"
+        }
+      ],
+      "end": {
+        "id": "e4"
+      },
+      "test_cases": [
+        {
+          "name": "tre-valori",
+          "inputs": [
+            {
+              "data": "v",
+              "text": "1"
+            },
+            {
+              "data": "v",
+              "text": "2"
+            },
+            {
+              "data": "v",
+              "text": "3"
+            }
+          ],
+          "expected": {
+            "output": "\nv[0] = 0\nv[1] = 0\nv[2] = 0\n",
+            "warnings": [
+              {
+                "code": "maybe_uninitialized",
+                "block": "g3"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "f5",
+      "kind": "function",
+      "name": "trasposta",
+      "return_type": "integer",
+      "return_size": 3,
+      "return_columns": 2,
+      "data": [
+        {
+          "name": "x",
+          "type": "integer",
+          "size": 2,
+          "columns": 3,
+          "parameter": "value"
+        },
+        {
+          "name": "u",
+          "type": "integer",
+          "size": 3,
+          "columns": 2
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        },
+        {
+          "name": "j",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "g1",
+          "kind": "for",
+          "counter": "i",
+          "from": "0",
+          "to": "1",
+          "body": [
+            {
+              "id": "g1j",
+              "kind": "for",
+              "counter": "j",
+              "from": "0",
+              "to": "2",
+              "body": [
+                {
+                  "id": "g2",
+                  "kind": "assignment",
+                  "target": "u[j][i]",
+                  "value": "x[i][j]"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "g3",
+        "return_value": "u"
+      },
+      "test_cases": [
+        {
+          "name": "due-righe",
+          "inputs": [
+            {
+              "data": "x",
+              "text": "1"
+            },
+            {
+              "data": "x",
+              "text": "2"
+            },
+            {
+              "data": "x",
+              "text": "3"
+            },
+            {
+              "data": "x",
+              "text": "4"
+            },
+            {
+              "data": "x",
+              "text": "5"
+            },
+            {
+              "data": "x",
+              "text": "6"
+            }
+          ],
+          "expected": {
+            "output": "→ [0][0] = 1\n→ [0][1] = 4\n→ [1][0] = 2\n→ [1][1] = 5\n→ [2][0] = 3\n→ [2][1] = 6\n",
+            "warnings": [
+              {
+                "code": "maybe_uninitialized",
+                "block": "g3"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "f6",
+      "kind": "function",
+      "name": "prima_riga",
+      "return_type": "integer",
+      "return_size": 3,
+      "data": [
+        {
+          "name": "x",
+          "type": "integer",
+          "size": 2,
+          "columns": 3,
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "h1",
+        "return_value": "x[0]"
+      }
+    },
+    {
+      "id": "f7",
+      "kind": "procedure",
+      "name": "raddoppia",
+      "data": [
+        {
+          "name": "w",
+          "type": "integer",
+          "size": 2,
+          "columns": 2,
+          "parameter": "reference"
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        },
+        {
+          "name": "j",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "k1",
+          "kind": "for",
+          "counter": "i",
+          "from": "0",
+          "to": "1",
+          "body": [
+            {
+              "id": "k1j",
+              "kind": "for",
+              "counter": "j",
+              "from": "0",
+              "to": "1",
+              "body": [
+                {
+                  "id": "k2",
+                  "kind": "assignment",
+                  "target": "w[i][j]",
+                  "value": "w[i][j] * 2"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "k3"
+      },
+      "test_cases": [
+        {
+          "name": "quattro-valori",
+          "inputs": [
+            {
+              "data": "w",
+              "text": "1"
+            },
+            {
+              "data": "w",
+              "text": "2"
+            },
+            {
+              "data": "w",
+              "text": "3"
+            },
+            {
+              "data": "w",
+              "text": "4"
+            }
+          ],
+          "expected": {
+            "output": "\nw[0][0] = 2\nw[0][1] = 4\nw[1][0] = 6\nw[1][1] = 8\n",
+            "warnings": [
+              {
+                "code": "maybe_uninitialized",
+                "block": "g3"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "f8",
+      "kind": "procedure",
+      "name": "tocca",
+      "data": [
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3,
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "l1",
+          "kind": "assignment",
+          "target": "v[0]",
+          "value": "9"
+        },
+        {
+          "id": "l2",
+          "kind": "write",
+          "values": [
+            "v[0]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "l3"
+      }
+    },
+    {
+      "id": "f9",
+      "kind": "procedure",
+      "name": "sposta",
+      "data": [
+        {
+          "name": "k",
+          "type": "integer",
+          "parameter": "reference"
+        },
+        {
+          "name": "e",
+          "type": "integer",
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "p1",
+          "kind": "assignment",
+          "target": "k",
+          "value": "k + 1"
+        },
+        {
+          "id": "p2",
+          "kind": "assignment",
+          "target": "e",
+          "value": "5"
+        }
+      ],
+      "end": {
+        "id": "p3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "matrice-come-parametro",
+      "inputs": [],
+      "expected": {
+        "output": "1 95\n77 0 77 0\n6\n9\n1\n1 50\n5 0\n",
+        "warnings": [
+          {
+            "code": "maybe_uninitialized",
+            "block": "g3"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -47,6 +47,13 @@
 // passato per riferimento è come l'elemento di un vettore. Il campo del risultato di una funzione (`f(x).voto`): prima la
 // chiamata, poi il campo.
 //
+// Una matrice si tiene come un vettore delle sue righe una dopo l'altra: la sua cella ha righe per colonne valori.
+// L'elemento `m[i][j]` calcola e controlla prima la riga, poi la colonna. La riga `m[i]` è un vettore dovunque ne va uno
+// (una destinazione o una sorgente intera, un argomento, la sorgente di un «per ogni»): per valore una copia, per
+// riferimento una cella che legge e scrive in quella della matrice (`RigaDi`). Il nome di una matrice assegnato a una
+// matrice è la copia elemento per elemento coi due «mentre» uno dentro l'altro (le righe, poi le colonne); l'uscita della
+// funzione eseguita da sola che restituisce una matrice scrive «→ [0][1] = 4», un parametro per riferimento «m[0][1] = 4».
+//
 // Una procedura o una funzione si può eseguire da sola (la `radice`): i parametri si chiedono come letture, uno per
 // parametro nell'ordine (un vettore elemento per elemento, o tutti con la stessa riga data al primo, `ognuno`; un record
 // campo per campo), tranne
@@ -72,7 +79,7 @@
 import { analizza, type Espressione } from "../espressioni/analizzatore";
 import { controlla, funzioniDelGiro, lunghezzaPredefinita, type EsitoDelControllo, type Tetti } from "../controllo/controllo";
 import { spazioDellaPila, spazioDiUnaChiamata, tettoDelleChiamate } from "../controllo/spazio";
-import { livelliDellePosizioni, nomiDeiVettori } from "../progetto/copia";
+import { nomiDeiVettori, nomiDelleMatrici, quantePosizioni } from "../progetto/copia";
 import { opzioniPredefinite, type Blocco, type Campo, type CodiceErrore, type Dato, type Funzione, type Progetto, type Segnalazione } from "../progetto/modello";
 import { potenza } from "./potenza";
 
@@ -152,9 +159,18 @@ export type FaseDelCiclo = "inizio" | "condizione" | "passo" | "elemento";
 
 export type Passo =
   /** Prima di un'azione: il blocco, o il valore iniziale del dato `dato` (col blocco vuoto); la fase, in un ciclo; nella
-   * copia di un record col suo nome, la posizione del campo copiato (da 0); la funzione dell'azione, se non è il programma
-   * principale. */
-  | { readonly evento: string; readonly dato?: string; readonly fase?: FaseDelCiclo; readonly campo?: number; readonly funzione?: string; readonly profondita: number; readonly dati: Fotografia }
+   * copia di un record col suo nome, la posizione del campo copiato (da 0); nella copia di una matrice col suo nome,
+   * `interno` per le fasi del ciclo delle colonne; la funzione dell'azione, se non è il programma principale. */
+  | {
+      readonly evento: string;
+      readonly dato?: string;
+      readonly fase?: FaseDelCiclo;
+      readonly interno?: true;
+      readonly campo?: number;
+      readonly funzione?: string;
+      readonly profondita: number;
+      readonly dati: Fotografia;
+    }
   | { readonly condizione: boolean }
   /** Il ritorno da una funzione chiamata dentro un'espressione: l'azione di chi chiama, al livello `ripresa`, riprende
    * (non è un'azione: nessun passo), con il valore che la funzione ha restituito. */
@@ -209,6 +225,31 @@ class ElementoDi implements Cella {
     const tutti = [...this.vettore.valori];
     tutti[this.i] = nuovi[0];
     this.vettore.valori = tutti;
+  }
+}
+
+/** La riga `r` di una matrice: una cella di un vettore delle sue colonne che legge e scrive in quella della matrice (il
+ * valore in cui la riga comincia è `r` per le colonne). Serve dove va un vettore: un riferimento, la copia col nome, la
+ * sorgente di un «per ogni», una destinazione intera. Il suo dato ha il nome della matrice e le colonne come dimensione. */
+class RigaDi implements Cella {
+  readonly dato: Dato;
+  constructor(
+    readonly matrice: Cella,
+    readonly r: number,
+  ) {
+    const { columns, size: _, initial: __, ...resto } = matrice.dato;
+    this.dato = { ...resto, size: columns! };
+  }
+  get primo(): number {
+    return this.r * this.dato.size!;
+  }
+  get valori(): readonly (Valore | undefined)[] {
+    return this.matrice.valori.slice(this.primo, this.primo + this.dato.size!);
+  }
+  set valori(nuovi: readonly (Valore | undefined)[]) {
+    const tutti = [...this.matrice.valori];
+    tutti.splice(this.primo, nuovi.length, ...nuovi);
+    this.matrice.valori = tutti;
   }
 }
 
@@ -401,8 +442,9 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
   const records = new Map((p.records ?? []).map((r) => [r.name, r.fields]));
   /** I campi di un dato record (o di un risultato record), nessuno per un altro dato. */
   const campiDi = (d: Pick<Dato, "type" | "record">): readonly Campo[] | undefined => (d.type === "record" ? records.get(d.record!)! : undefined);
-  /** Quanti valori tiene la cella di un dato: gli elementi di un vettore, i campi di un record, uno per un dato semplice. */
-  const pezzi = (d: Dato): number => d.size ?? campiDi(d)?.length ?? 1;
+  /** Quanti valori tiene la cella di un dato: gli elementi di un vettore (righe per colonne in una matrice, una riga dopo
+   * l'altra), i campi di un record, uno per un dato semplice. */
+  const pezzi = (d: Dato): number => (d.size !== undefined ? d.size * (d.columns ?? 1) : (campiDi(d)?.length ?? 1));
   /** Il dato che riceve il valore `i` di una cella: il campo per un record (col nome del record, che la voce di un caso
    * nomina), il dato stesso altrimenti. */
   const datoDelPezzo = (d: Dato, i: number): Dato => {
@@ -411,8 +453,16 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
   };
   /** La posizione di un campo nel suo record. */
   const campoIn = (d: Pick<Dato, "type" | "record">, nome: string): number => campiDi(d)!.findIndex((c) => c.name === nome);
-  /** Come un valore si nomina nell'output: `v[2]` un elemento, `r.nome` un campo, il nome un dato semplice. */
-  const nomeDelPezzo = (d: Dato, i: number): string => (d.size !== undefined ? `${d.name}[${i}]` : d.type === "record" ? `${d.name}.${campiDi(d)![i]!.name}` : d.name);
+  /** Come un valore si nomina nell'output: `v[2]` un elemento, `m[1][2]` un elemento di una matrice, `r.nome` un campo, il
+   * nome un dato semplice. */
+  const nomeDelPezzo = (d: Dato, i: number): string =>
+    d.columns !== undefined
+      ? `${d.name}[${Math.floor(i / d.columns)}][${i % d.columns}]`
+      : d.size !== undefined
+        ? `${d.name}[${i}]`
+        : d.type === "record"
+          ? `${d.name}.${campiDi(d)![i]!.name}`
+          : d.name;
 
   const comuni = (p.shared_constants ?? []).map((d): Cella => ({ dato: d, valori: Array<Valore | undefined>(pezzi(d)).fill(undefined) }));
   let chiamate = 0;
@@ -447,7 +497,12 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
   };
   /** Quante posizioni nascoste ha ogni funzione (i livelli dei suoi `per ogni` e delle sue copie col nome): una volta per
    * funzione, non a ogni chiamata (riconoscere una copia legge i testi delle assegnazioni). */
-  const livelliDi = new Map(p.functions.map((f) => [f, Math.max(0, ...livelliDellePosizioni(f.body, nomiDeiVettori([...(p.shared_constants ?? []), ...f.data])).values())]));
+  const livelliDi = new Map(
+    p.functions.map((f) => {
+      const visti = [...(p.shared_constants ?? []), ...f.data];
+      return [f, quantePosizioni(f.body, nomiDeiVettori(visti), nomiDelleMatrici(visti))];
+    }),
+  );
 
   const nomi = [...comuni.map((c) => c.dato.name), ...principale.data.map((d) => d.name)];
   const fotografia = (): Fotografia => {
@@ -530,16 +585,22 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
         return leggiDa(c, campoIn(c.dato, e.campo));
       }
       case "indice": {
-        // L'elemento di un vettore, o il carattere di una stringa (in sola lettura).
+        // L'elemento di un vettore o di una matrice (prima l'indice della riga, poi quello della colonna), o il carattere di
+        // una stringa (in sola lettura).
         const c = vettoreDi(e);
         if (c !== undefined) return leggiDa(c, dentro((valuta(e.indice) as Numero).v, c.dato.size!));
+        const m = matriceDellElemento(e);
+        if (m !== undefined) {
+          const r = dentro((valuta((e.base as Extract<Espressione, { genere: "indice" }>).indice) as Numero).v, m.dato.size!);
+          return leggiDa(m, inMatrice(m, r, (valuta(e.indice) as Numero).v));
+        }
         const s = valuta(e.base) as Testo;
         return carattereDi(s, (valuta(e.indice) as Numero).v);
       }
       case "chiamata":
         throw new Error("chiamata fuori da calcola");
       case "unario":
-        return e.operatore === "to_string" ? daVettore(cella((e.operando as { nome: string }).nome).valori) : unario(e.operatore, valuta(e.operando));
+        return e.operatore === "to_string" ? daVettore(vettoreSenzaChiamate(e.operando)) : unario(e.operatore, valuta(e.operando));
       case "binario": {
         const op = e.operatore;
         // `and` e `or`: il secondo operando solo se serve.
@@ -565,10 +626,22 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
       case "indice": {
         const c = vettoreDi(e);
         if (c !== undefined) return leggiDa(c, dentro(((yield* calcola(e.indice)) as Numero).v, c.dato.size!));
+        const m = matriceDellElemento(e);
+        if (m !== undefined) {
+          const r = dentro(((yield* calcola((e.base as Extract<Espressione, { genere: "indice" }>).indice)) as Numero).v, m.dato.size!);
+          return leggiDa(m, inMatrice(m, r, ((yield* calcola(e.indice)) as Numero).v));
+        }
         // L'elemento di un vettore restituito: prima la chiamata, poi l'indice.
         if (restituisceUnVettore(e.base)) {
           const { elementi } = (yield* chiamaDentro(e.base)) as VettoreRestituito;
           return elementi[dentro(((yield* calcola(e.indice)) as Numero).v, elementi.length)] ?? ferma("uninitialized");
+        }
+        // L'elemento di una matrice restituita: prima la chiamata, poi la riga, poi la colonna.
+        if (e.base.genere === "indice" && restituisceUnVettore(e.base.base)) {
+          const colonne = perNome.get((e.base.base as { nome: string }).nome)!.return_columns!;
+          const { elementi } = (yield* chiamaDentro(e.base.base)) as VettoreRestituito;
+          const r = dentro(((yield* calcola(e.base.indice)) as Numero).v, elementi.length / colonne);
+          return elementi[r * colonne + dentro(((yield* calcola(e.indice)) as Numero).v, colonne)] ?? ferma("uninitialized");
         }
         const s = (yield* calcola(e.base)) as Testo;
         return carattereDi(s, ((yield* calcola(e.indice)) as Numero).v);
@@ -608,18 +681,47 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
   /** Una chiamata la cui funzione dà come risultato un vettore. */
   const restituisceUnVettore = (e: Espressione): boolean => e.genere === "chiamata" && perNome.get(e.nome)!.return_size !== undefined;
 
-  /** Gli elementi di un vettore intero, una copia: il nome di un vettore (gli elementi di quell'istante) o una funzione che
-   * lo restituisce. */
+  /** Gli elementi di un vettore intero, una copia: il nome di un vettore o di una matrice (gli elementi di quell'istante,
+   * una riga dopo l'altra), la riga di una matrice, o una funzione che lo restituisce. */
   function* elementiDi(e: Espressione): Generator<Pausa, Elementi, Riga> {
     if (e.genere === "nome") return cella(e.nome).valori;
+    if (e.genere === "indice") return (yield* rigaDi(e)).valori;
     return ((yield* chiamaDentro(e)) as VettoreRestituito).elementi;
   }
 
-  /** La cella del vettore di cui `e` prende un elemento, o nessuna se prende il carattere di una stringa. */
+  /** Gli elementi del nome di un vettore o della riga di una matrice, senza chiamate. */
+  const vettoreSenzaChiamate = (e: Espressione): Elementi => {
+    if (e.genere === "nome") return cella(e.nome).valori;
+    const x = e as Extract<Espressione, { genere: "indice" }>;
+    const m = cella((x.base as { nome: string }).nome);
+    return new RigaDi(m, dentro((valuta(x.indice) as Numero).v, m.dato.size!)).valori;
+  };
+
+  /** La riga `m[i]` di una matrice col suo nome, con l'indice calcolato ora. */
+  function* rigaDi(e: Extract<Espressione, { genere: "indice" }>): Generator<Pausa, RigaDi, Riga> {
+    const m = cella((e.base as { nome: string }).nome);
+    const r = conChiamate.has(e.indice) ? yield* calcola(e.indice) : valuta(e.indice);
+    return new RigaDi(m, dentro((r as Numero).v, m.dato.size!));
+  }
+
+  /** La cella del vettore di cui `e` prende un elemento, o nessuna se prende il carattere di una stringa o l'elemento di
+   * una matrice. */
   const vettoreDi = (e: Extract<Espressione, { genere: "indice" }>): Cella | undefined => {
     const c = e.base.genere === "nome" ? cella(e.base.nome) : undefined;
-    return c !== undefined && c.dato.size !== undefined ? c : undefined;
+    return c !== undefined && c.dato.size !== undefined && c.dato.columns === undefined ? c : undefined;
   };
+
+  /** La cella della matrice di cui `e` prende un elemento (`m[i][j]`, col nome della matrice), o nessuna. Un indice su un
+   * indice di un vettore di stringhe (`v[i][j]`) prende un carattere della stringa `v[i]`: nessuna. */
+  const matriceDellElemento = (e: Extract<Espressione, { genere: "indice" }>): Cella | undefined => {
+    if (e.base.genere !== "indice" || e.base.base.genere !== "nome") return undefined;
+    const c = cella(e.base.base.nome);
+    return c.dato.columns !== undefined ? c : undefined;
+  };
+
+  /** La posizione nella cella di una matrice dell'elemento di riga `r` (già controllata: l'indice della riga si controlla
+   * prima di calcolare quello della colonna) e colonna `j`, dentro le colonne. */
+  const inMatrice = (m: Cella, r: number, j: number): number => r * m.dato.columns! + dentro(j, m.dato.columns!);
 
   const carattereDi = (s: Testo, i: number): Valore => ({ tipo: "character", v: s.v[dentro(i, s.v.length)]! });
 
@@ -719,17 +821,31 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
     c.valori = c.valori.map((_, i) => ({ tipo: "character", v: s[i] ?? riempimento }));
   };
 
-  /** Una destinazione: la cella e l'elemento, o il campo. L'indice si calcola prima del valore (da sinistra). */
-  function* destinazione(e: Espressione): Generator<Pausa, { cella: Cella; i: number }, Riga> {
+  /** Una destinazione: la cella e l'elemento, o il campo; per la riga di una matrice la sua cella (`RigaDi`, e l'elemento
+   * 0). `pezzo` è come la chiamata scrive l'elemento, il campo o la riga, con gli indici calcolati (`[2]`, `[1][2]`,
+   * `.nome`); nessuno per il dato intero. Gli indici si calcolano prima del valore (da sinistra), la riga prima della
+   * colonna. */
+  function* destinazione(e: Espressione): Generator<Pausa, { cella: Cella; i: number; pezzo?: string }, Riga> {
     if (e.genere === "nome") return { cella: cella(e.nome), i: 0 };
     if (e.genere === "campo") {
       const c = cella((e.base as { nome: string }).nome);
-      return { cella: c, i: campoIn(c.dato, e.campo) };
+      return { cella: c, i: campoIn(c.dato, e.campo), pezzo: `.${e.campo}` };
     }
     const x = e as Extract<Espressione, { genere: "indice" }>;
+    const indice = function* (y: Espressione): Generator<Pausa, number, Riga> {
+      return ((conChiamate.has(y) ? yield* calcola(y) : valuta(y)) as Numero).v;
+    };
+    if (x.base.genere === "indice") {
+      // L'elemento di una matrice: la riga, poi la colonna.
+      const m = cella((x.base.base as { nome: string }).nome);
+      const r = dentro(yield* indice(x.base.indice), m.dato.size!);
+      const i = inMatrice(m, r, yield* indice(x.indice));
+      return { cella: m, i, pezzo: `[${r}][${i % m.dato.columns!}]` };
+    }
     const c = cella((x.base as { nome: string }).nome);
-    const indice = conChiamate.has(x.indice) ? yield* calcola(x.indice) : valuta(x.indice);
-    return { cella: c, i: dentro((indice as Numero).v, c.dato.size!) };
+    const i = dentro(yield* indice(x.indice), c.dato.size!);
+    if (c.dato.columns !== undefined) return { cella: new RigaDi(c, i), i: 0, pezzo: `[${i}]` };
+    return { cella: c, i, pezzo: `[${i}]` };
   }
 
   /** L'esito di una condizione, che si dà subito dopo averla valutata. */
@@ -757,11 +873,19 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
   };
 
   /** L'evento prima di un'azione: un passo. Oltre il tetto, l'errore va sul ciclo più interno attivo. */
-  const evento = (blocco: string, fase?: FaseDelCiclo, campo?: number): Passo => {
+  const evento = (blocco: string, fase?: FaseDelCiclo, campo?: number, interno?: true): Passo => {
     if (++passi > tettoDeiPassi) throw oltreIPassi(blocco);
     corrente = blocco;
     const f = qui.funzione;
-    return { evento: blocco, ...(fase !== undefined ? { fase } : {}), ...(campo !== undefined ? { campo } : {}), ...(f.kind !== "main" ? { funzione: f.id } : {}), profondita, dati: fotografia() };
+    return {
+      evento: blocco,
+      ...(fase !== undefined ? { fase } : {}),
+      ...(interno ? { interno } : {}),
+      ...(campo !== undefined ? { campo } : {}),
+      ...(f.kind !== "main" ? { funzione: f.id } : {}),
+      profondita,
+      dati: fotografia(),
+    };
   };
 
   function* sequenza(blocchi: readonly Blocco[]): Generator<Pausa, void, Riga> {
@@ -808,11 +932,12 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
       case "assignment": {
         const t = albero(b.target);
         const e = albero(b.value);
-        // Un vettore intero: dal nome di un vettore la copia elemento per elemento, da una funzione un'azione sola. Un
-        // record intero: dal nome di un record la copia campo per campo, da una funzione un'azione sola.
-        const intero = t.genere === "nome" && cella(t.nome).dato.size !== undefined;
+        // Un vettore intero (una riga di una matrice compresa) o una matrice: dal nome di un vettore, o da una riga, la copia
+        // elemento per elemento, da una funzione un'azione sola. Un record intero: dal nome di un record la copia campo per
+        // campo, da una funzione un'azione sola.
+        const intero = (t.genere === "nome" && cella(t.nome).dato.size !== undefined) || eUnaRiga(t);
         const record = t.genere === "nome" && cella(t.nome).dato.type === "record";
-        if (intero && e.genere === "nome") return yield* copia(b.id, cella(t.nome), cella(e.nome));
+        if (intero && (e.genere === "nome" || eUnaRiga(e))) return yield* copia(b.id, t, e);
         if (record && e.genere === "nome") return yield* copiaDelRecord(b.id, cella(t.nome), cella(e.nome));
         yield evento(b.id);
         const { cella: c, i } = yield* destinazione(t);
@@ -885,8 +1010,15 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
         const posizione = posizioneDi(c, c.perOgniAttivi++);
         cicli.push({ blocco: b.id, livello: profondita });
         yield evento(b.id, "inizio");
-        // Una funzione si chiama una volta, qui: il ciclo percorre il suo risultato, tenuto in una cella nascosta.
-        const sorgente = s.genere === "nome" ? cella(s.nome) : risultatoInUnaCella(perNome.get((s as { nome: string }).nome)!, yield* chiamaDentro(s));
+        // Una funzione si chiama una volta, qui: il ciclo percorre il suo risultato, tenuto in una cella nascosta. La riga
+        // di una matrice si sceglie qui (l'indice si calcola una volta), e il ciclo legge la matrice com'è a ogni giro,
+        // come il nome di un vettore.
+        const sorgente =
+          s.genere === "nome"
+            ? cella(s.nome)
+            : eUnaRiga(s)
+              ? yield* rigaDi(s)
+              : risultatoInUnaCella(perNome.get((s as { nome: string }).nome)!, yield* chiamaDentro(s));
         posizione(0);
         for (let indice = 0; ; ) {
           yield evento(b.id, "condizione");
@@ -924,21 +1056,52 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
    * fotografia dell'evento seguente vede. */
   const posizioneDi = (c: Cornice, livello: number) => (q: number) => (c.posizioni = c.posizioni.map((x, l) => (l === livello ? q : x)));
 
-  /** La copia di un vettore col suo nome, elemento per elemento: le azioni del «mentre» equivalente con una posizione
-   * nascosta, come il «per ogni» (la partenza, il controllo, la copia di un elemento, l'aumento), al livello dopo quello
-   * dei «per ogni» attivi. Un elemento senza valore ferma la copia, come la sua lettura; uno più lungo del dato che lo
-   * riceve, come la sua assegnazione. */
-  function* copia(blocco: string, verso: Cella, da: Cella): Generator<Pausa, void, Riga> {
-    const posizione = posizioneDi(qui, qui.perOgniAttivi);
+  /** La riga di una matrice scritta col nome e un indice (`m[i]`): un vettore. */
+  const eUnaRiga = (e: Espressione): e is Extract<Espressione, { genere: "indice" }> =>
+    e.genere === "indice" && e.base.genere === "nome" && cella(e.base.nome).dato.columns !== undefined;
+
+  /** La cella di un vettore intero per la copia: il nome, o la riga di una matrice con l'indice calcolato ora. */
+  function* cellaIntera(e: Espressione): Generator<Pausa, Cella, Riga> {
+    return e.genere === "nome" ? cella(e.nome) : yield* rigaDi(e as Extract<Espressione, { genere: "indice" }>);
+  }
+
+  /** La copia di un vettore col suo nome (o di una riga di una matrice, da una parte o dall'altra), elemento per elemento:
+   * le azioni del «mentre» equivalente con una posizione nascosta, come il «per ogni» (la partenza, il controllo, la copia
+   * di un elemento, l'aumento), al livello dopo quello dei «per ogni» attivi. L'indice di una riga si calcola nella
+   * partenza, prima di ogni elemento. La copia di una matrice col suo nome ha due «mentre», uno dentro l'altro: la riga
+   * al livello della copia, la colonna al successivo, e gli eventi del ciclo delle colonne sono `interno`. Un elemento
+   * senza valore ferma la copia, come la sua lettura; uno più lungo del dato che lo riceve, come la sua assegnazione. */
+  function* copia(blocco: string, t: Espressione, e: Espressione): Generator<Pausa, void, Riga> {
+    const livello = qui.perOgniAttivi;
+    const posizione = posizioneDi(qui, livello);
     yield evento(blocco, "inizio");
+    const verso = yield* cellaIntera(t);
+    const da = yield* cellaIntera(e);
     posizione(0);
+    const colonne = verso.dato.columns;
     for (let i = 0; ; ) {
       yield evento(blocco, "condizione");
       const altro = i < verso.dato.size!;
       yield { condizione: altro };
       if (!altro) return;
-      yield evento(blocco, "elemento");
-      scriviIn(verso, i, leggiDa(da, i));
+      if (colonne === undefined) {
+        yield evento(blocco, "elemento");
+        scriviIn(verso, i, leggiDa(da, i));
+      } else {
+        const colonna = posizioneDi(qui, livello + 1);
+        yield evento(blocco, "inizio", undefined, true);
+        colonna(0);
+        for (let j = 0; ; ) {
+          yield evento(blocco, "condizione", undefined, true);
+          const ancora = j < colonne;
+          yield { condizione: ancora };
+          if (!ancora) break;
+          yield evento(blocco, "elemento", undefined, true);
+          scriviIn(verso, i * colonne + j, leggiDa(da, i * colonne + j));
+          yield evento(blocco, "passo", undefined, true);
+          colonna(++j);
+        }
+      }
       yield evento(blocco, "passo");
       posizione(++i);
     }
@@ -953,10 +1116,19 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
     }
   }
 
-  /** Dove arriva un argomento per riferimento: la cella del vettore (o del record) e l'elemento (o il campo), o tutto il
-   * vettore o il record (`-1`). */
-  const doveArriva = (c: Cella, i: number | undefined): { vettore: Cella; i: number } =>
-    c instanceof ElementoDi ? { vettore: c.vettore, i: c.i } : { vettore: c, i: i ?? (c.dato.size !== undefined || c.dato.type === "record" ? -1 : 0) };
+  /** Dove arriva un argomento per riferimento: la cella del dato vero (scendendo dalle righe e dagli elementi) e i valori
+   * che tocca, da `da` ad `a` escluso: un elemento o un campo uno, una riga le sue colonne, un dato intero tutti. */
+  const doveArriva = (c: Cella): { vettore: Cella; da: number; a: number } => {
+    if (c instanceof ElementoDi) {
+      const sotto = doveArriva(c.vettore);
+      return { vettore: sotto.vettore, da: sotto.da + c.i, a: sotto.da + c.i + 1 };
+    }
+    if (c instanceof RigaDi) {
+      const sotto = doveArriva(c.matrice);
+      return { vettore: sotto.vettore, da: sotto.da + c.primo, a: sotto.da + c.primo + c.dato.size! };
+    }
+    return { vettore: c, da: 0, a: c.valori.length };
+  };
 
   /**
    * Il salto da `blocco` a `f` con gli argomenti, il ritorno e il valore restituito (`undefined` per una procedura). Gli
@@ -972,16 +1144,18 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
     for (const [k, a] of argomenti.entries()) {
       const d = parametri[k]!;
       if (d.parameter !== "value") {
-        const { cella: c, i } = yield* destinazione(a);
-        // Un elemento di un vettore o un campo di un record: una cella di un elemento dentro quella di chi chiama.
-        const pezzo = c.dato.size !== undefined && a.genere === "indice" ? `[${i}]` : a.genere === "campo" ? `.${a.campo}` : undefined;
-        const nome = pezzo !== undefined ? (a as { base: { nome: string } }).base.nome : (a as { nome: string }).nome;
+        const { cella: c, i, pezzo } = yield* destinazione(a);
+        // Un elemento di un vettore o di una matrice, o un campo di un record: una cella di un elemento dentro quella di chi
+        // chiama; una riga di una matrice: la sua cella, un vettore dentro quella della matrice.
+        const radice = (x: Espressione): string => (x.genere === "nome" ? x.nome : radice((x as { base: Espressione }).base));
+        const nome = radice(a);
         // Il dato vero: quello di chi chiama, o quello che riceve il suo parametro per riferimento, risalendo.
         const suo = qui.origini[qui.funzione.data.findIndex((x) => x.name === nome)] ?? { nome, livello: profondita };
         if (pezzo === undefined) dati.push({ cella: c, scritto: nome, origine: suo });
         else {
-          const { size: _, ...semplice } = datoDelPezzo(c.dato, i);
-          dati.push({ cella: new ElementoDi(c, i, semplice), scritto: `${nome}${pezzo}`, origine: { nome: `${suo.nome}${pezzo}`, livello: suo.livello } });
+          const { size: _, columns: __, ...semplice } = datoDelPezzo(c.dato, i);
+          const ricevuta = c instanceof RigaDi ? c : new ElementoDi(c, i, semplice);
+          dati.push({ cella: ricevuta, scritto: `${nome}${pezzo}`, origine: { nome: `${suo.nome}${pezzo}`, livello: suo.livello } });
         }
       } else if (d.size !== undefined || d.type === "record") dati.push({ copia: yield* elementiDi(a) });
       else {
@@ -991,8 +1165,8 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
       }
     }
     corrente = blocco;
-    const alias = dati.flatMap((x) => (x.cella === undefined ? [] : [doveArriva(x.cella, undefined)]));
-    for (const [k, x] of alias.entries()) if (alias.slice(0, k).some((y) => y.vettore === x.vettore && (y.i === x.i || y.i === -1 || x.i === -1))) ferma("same_reference");
+    const alias = dati.flatMap((x) => (x.cella === undefined ? [] : [doveArriva(x.cella)]));
+    for (const [k, x] of alias.entries()) if (alias.slice(0, k).some((y) => y.vettore === x.vettore && y.da < x.a && x.da < y.a)) ferma("same_reference");
     // Un riferimento vuole il valore (un vettore intero almeno in un elemento); un parametro per uscita parte senza, anche
     // se il dato di chi chiama ne ha uno: la sua cella si svuota.
     parametri.forEach((d, k) => {
@@ -1074,7 +1248,8 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
     if (iniziale === undefined) return;
     if (++passi > tettoDeiPassi) throw oltreIPassi(f.id);
     yield { evento: "", dato: c.dato.name, ...(f.kind !== "main" ? { funzione: f.id } : {}), profondita, dati: fotografia() };
-    const letterali = typeof iniziale === "string" ? [iniziale] : Array.isArray(iniziale) ? (iniziale as readonly string[]) : c.valori.map(() => (iniziale as { each: string }).each);
+    // Le righe di una matrice una dopo l'altra, come nella cella.
+    const letterali = typeof iniziale === "string" ? [iniziale] : Array.isArray(iniziale) ? (iniziale as readonly (string | readonly string[])[]).flat() : c.valori.map(() => (iniziale as { each: string }).each);
     letterali.forEach((t, i) => scriviIn(c, i, valuta(albero(t))));
   }
 
@@ -1127,7 +1302,12 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
     const restituito = yield* corpo(principale);
     if (restituito !== undefined && "elementi" in restituito) {
       // Il nome di un elemento, o di un campo, senza quello del dato: `[0]`, `.nome`.
-      const risultato: Dato = { name: "", type: principale.return_type!, ...(principale.return_record !== undefined ? { record: principale.return_record } : { size: restituito.elementi.length }) };
+      const risultato: Dato = {
+        name: "",
+        type: principale.return_type!,
+        ...(principale.return_record !== undefined ? { record: principale.return_record } : { size: principale.return_size! }),
+        ...(principale.return_columns !== undefined ? { columns: principale.return_columns } : {}),
+      };
       for (const [i, v] of restituito.elementi.entries()) yield { scrive: `→ ${nomeDelPezzo(risultato, i)} = ${stampa(v ?? ferma("uninitialized"))}\n` };
     } else if (restituito !== undefined) yield { scrive: `→ ${stampa(restituito)}\n` };
     const riferimenti = principale.data.flatMap((d, k) => (d.parameter === "reference" || d.parameter === "out" ? [{ d, c: qui.inOrdine[k]! }] : []));

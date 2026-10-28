@@ -62,7 +62,7 @@ export const causeDeiCodici = {
   invalid_data_item: [
     "dimensione_non_valida", "lunghezza_non_valida", "lunghezza_non_stringa", "costante_senza_valore", "costante_con_ruolo",
     "elenco_di_altra_lunghezza", "valore_non_scritto", "parametro_fuori_posto", "parametro_con_attributi", "comune_non_costante",
-    "forma_del_valore", "vettore_di_record",
+    "forma_del_valore", "vettore_di_record", "matrice_di_record", "colonne_senza_righe", "righe_diverse", "colonne_diverse",
   ],
   constant_loop_condition: ["sempre_vera", "mentre_falsa", "ripeti_falsa"],
   assign_to_read_only: ["carattere_della_stringa", "contatore_del_ciclo", "elemento_del_ciclo"],

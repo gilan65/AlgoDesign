@@ -136,6 +136,9 @@
           "size": {
             "type": "integer"
           },
+          "columns": {
+            "type": "integer"
+          },
           "constant": {
             "type": "boolean"
           },
@@ -146,9 +149,21 @@
               },
               {
                 "type": "array",
-                "items": {
-                  "type": "string"
-                }
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
               },
               {
                 "type": "object",
@@ -287,6 +302,9 @@
                       "size": {
                         "type": "integer"
                       },
+                      "columns": {
+                        "type": "integer"
+                      },
                       "constant": {
                         "type": "boolean"
                       },
@@ -297,9 +315,21 @@
                           },
                           {
                             "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
+                            "anyOf": [
+                              {
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              {
+                                "items": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            ]
                           },
                           {
                             "type": "object",
@@ -456,6 +486,9 @@
                       "size": {
                         "type": "integer"
                       },
+                      "columns": {
+                        "type": "integer"
+                      },
                       "constant": {
                         "type": "boolean"
                       },
@@ -466,9 +499,21 @@
                           },
                           {
                             "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
+                            "anyOf": [
+                              {
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              {
+                                "items": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            ]
                           },
                           {
                             "type": "object",
@@ -819,6 +864,9 @@
                 "return_size": {
                   "type": "integer"
                 },
+                "return_columns": {
+                  "type": "integer"
+                },
                 "return_max_length": {
                   "type": "integer"
                 },
@@ -850,6 +898,9 @@
                       "size": {
                         "type": "integer"
                       },
+                      "columns": {
+                        "type": "integer"
+                      },
                       "constant": {
                         "type": "boolean"
                       },
@@ -860,9 +911,21 @@
                           },
                           {
                             "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
+                            "anyOf": [
+                              {
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              {
+                                "items": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            ]
                           },
                           {
                             "type": "object",

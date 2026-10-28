@@ -1,0 +1,63 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "per-ogni-su-una-matrice",
+    "description": "Il «per ogni» percorre una riga della matrice, non la matrice intera."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "m",
+          "type": "integer",
+          "size": 2,
+          "columns": 2,
+          "initial": {
+            "each": "1"
+          }
+        },
+        {
+          "name": "x",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for_each",
+          "item": "x",
+          "source": "m",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "write",
+              "values": [
+                "x"
+              ],
+              "newline": true
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-ogni-su-una-matrice",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "type_mismatch",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

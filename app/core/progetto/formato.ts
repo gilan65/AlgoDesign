@@ -11,8 +11,9 @@
 //
 // Che cosa la lettura NON guarda (regola: un file così si apre, e il progetto non parte):
 // - le regole di validità dei dati (nomi, valori iniziali, costanti, ruoli, lunghezze,
-//   parametri, dimensione fra 1 e il tetto), le stesse misure del risultato di una funzione e il passo zero di un
-//   `for`: errori del controllo statico;
+//   parametri, dimensione fra 1 e il tetto, le colonne di una matrice solo con la dimensione, un valore iniziale per
+//   righe solo per una matrice), le stesse misure del risultato di una funzione e il passo zero di un `for`: errori del
+//   controllo statico;
 // - la sintassi di espressioni, destinazioni e valori iniziali, che restano testo;
 // - che il blocco di un atteso esista: un caso col blocco sbagliato fallisce, non rende il file illeggibile;
 // - le chiavi ripetute in un valore già analizzato (`leggi`): le vede solo `apri`, che ha il testo.
@@ -243,10 +244,20 @@ const opzioni = lettore((v, p, c) => {
 
 const perOgniElemento: Campi = { each: campo(stringa) };
 
+/** Le righe di una matrice: un elenco di letterali per riga. Un elenco con dentro un elenco è tutto di righe. */
+const perRighe = elenco(elenco(stringa));
+
 const valoreIniziale = lettore(
   (v, p, c) =>
-    typeof v === "string" ? v : Array.isArray(v) ? elenco(stringa)(v, p, c) : eOggetto(v) ? oggetto(v, p, c, perOgniElemento) : segnala(c, p, "wrong_type"),
-  { anyOf: [stringa.schema, elenco(stringa).schema, schemaDiCampi(perOgniElemento)] },
+    typeof v === "string"
+      ? v
+      : Array.isArray(v)
+        ? (v.some(Array.isArray) ? perRighe : elenco(stringa))(v, p, c)
+        : eOggetto(v)
+          ? oggetto(v, p, c, perOgniElemento)
+          : segnala(c, p, "wrong_type"),
+  // Le due forme di elenco in un ramo solo: un elenco di letterali o un elenco di righe, mai le due insieme.
+  { anyOf: [stringa.schema, { type: "array", anyOf: [{ items: stringa.schema }, { items: elenco(stringa).schema }] }, schemaDiCampi(perOgniElemento)] },
 );
 
 /**
@@ -285,6 +296,7 @@ const campiDelDato: Campi = {
   type: campo(uno(tipiDelDato)),
   record: facoltativo(stringa),
   size: facoltativo(intero()),
+  columns: facoltativo(intero()),
   constant: facoltativo(booleano),
   initial: facoltativo(valoreIniziale),
   role: facoltativo(uno(ruoli)),
@@ -407,6 +419,7 @@ function campiDellaFunzione(g: (typeof generiDiFunzione)[number]): Campi {
     // Il vettore e la lunghezza massima della stringa restituiti, sullo stampo di un dato: i valori fuori dai limiti sono
     // errori del controllo statico.
     return_size: restituisce ? facoltativo(intero()) : vietato,
+    return_columns: restituisce ? facoltativo(intero()) : vietato,
     return_max_length: restituisce ? facoltativo(intero()) : vietato,
     default_result: restituisce ? facoltativo(stringa) : vietato,
     data: campo(elenco(dato)),

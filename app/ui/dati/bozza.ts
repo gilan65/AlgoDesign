@@ -58,7 +58,8 @@ export const conNatura = (b: BozzaDelDato, n: Natura): BozzaDelDato => ({
 /** La bozza di un dato; `nuovo` è il modo delle Impostazioni per un vettore che non ha ancora un valore; `globale`, se è
  * una costante comune. */
 export function bozzaDi(d: Dato, nuovo: ValoreRipetuto, globale = false): BozzaDelDato {
-  const iniziale = d.initial === undefined ? "" : typeof d.initial === "string" ? d.initial : "each" in d.initial ? d.initial.each : fraGraffe(d.initial);
+  // Le righe di una matrice non arrivano qui: l'apertura rifiuta un progetto con le matrici (`usaLeMatrici`).
+  const iniziale = d.initial === undefined ? "" : typeof d.initial === "string" ? d.initial : "each" in d.initial ? d.initial.each : fraGraffe(d.initial as readonly string[]);
   return {
     nome: d.name,
     tipo: d.type,

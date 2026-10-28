@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { eseguiCaso } from "../core/casi/esecutore";
 import { tetti } from "../core/controllo/controllo";
 import { apri } from "../core/progetto/formato";
+import { usaLeMatrici } from "../core/progetto/modello";
 import { en } from "../i18n/en";
 import { it } from "../i18n/it";
 import { cerca, daSpostare, eGruppoFornito, esempiDa, forniti, gruppoDi, mancanti, nomeLibero } from "./esempi";
@@ -287,18 +288,26 @@ test("nome e cartella di un percorso, nome proposto, errore del guscio riconosci
   expect(erroreDelFile(new Error("file non trovato"))).toEqual({ genere: "sistema", dettaglio: "file non trovato" });
 });
 
-test("un esempio coi record si apre: ogni file della cartella dei record, anche con un errore statico (lo dice il controllo nella finestra)", () => {
+test("un esempio coi record si apre: ogni file della cartella dei record, anche con un errore statico (lo dice il controllo nella finestra); uno con le matrici no, finché l'interfaccia non le mostra", () => {
   const radice = join(import.meta.dir, "..", "casi", "tipi");
   const file = Object.fromEntries(
     readdirSync(radice)
       .filter((f) => f.endsWith(".algo"))
       .map((nome) => [nome, readFileSync(join(radice, nome), "utf8")]),
   );
+  const conLeMatrici = (testo: string) => {
+    const a = apri(testo);
+    return a.ok && usaLeMatrici(a.progetto);
+  };
   const esempi = esempiDa(cartella(file), tetti).sciolti;
-  expect(esempi.map((e) => [e.nome, e.progetto !== null, e.problema?.genere ?? null])).toEqual(Object.keys(file).map((n) => [n, true, null]));
-  // Controllo positivo: il denominatore è la cartella intera (sette file giusti, cinque sbagliati), e un esempio senza
-  // record accanto si apre come loro.
-  expect(esempi.length).toBe(12);
+  expect(esempi.map((e) => [e.nome, e.progetto !== null, e.problema?.genere ?? null])).toEqual(
+    Object.entries(file).map(([n, testo]) => (conLeMatrici(testo) ? [n, false, "fuori_tappa"] : [n, true, null])),
+  );
+  // Controllo positivo: il denominatore è la cartella intera (dei record sette file giusti e cinque sbagliati, delle
+  // matrici otto, tre con un errore statico, che non si aprono lo stesso), e un esempio senza record accanto si apre come
+  // loro.
+  expect(esempi.length).toBe(20);
+  expect(Object.values(file).filter(conLeMatrici).length).toBe(8);
   const [buono] = forniti(it);
   expect(esempiDa(cartella({ "a.algo": buono!.testo }), tetti).sciolti.map((e) => e.problema)).toEqual([null]);
 });

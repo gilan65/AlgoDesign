@@ -591,6 +591,17 @@ describe("la causa precisa dei codici del controllo", () => {
     ["invalid_data_item", "forma_del_valore", undefined, nelProgramma([dato("n", "integer", { initial: ["1", "2"] })]), primo],
     ["invalid_data_item", "forma_del_valore", undefined, nelProgramma([dato("v", "integer", { size: 3, initial: "1" })]), primo],
     ["invalid_data_item", "elenco_di_altra_lunghezza", "2", nelProgramma([dato("v", "integer", { size: 3, initial: ["1", "2"] })]), primo],
+    ["invalid_data_item", "colonne_senza_righe", undefined, nelProgramma([dato("m", "integer", { columns: 3 })]), primo],
+    ["invalid_data_item", "dimensione_non_valida", undefined, nelProgramma([dato("m", "integer", { size: 2, columns: 0 })]), primo],
+    ["invalid_data_item", "forma_del_valore", undefined, nelProgramma([dato("m", "integer", { size: 2, columns: 2, initial: ["1", "2", "3", "4"] })]), primo],
+    ["invalid_data_item", "forma_del_valore", undefined, nelProgramma([dato("v", "integer", { size: 2, initial: [["1"], ["2"]] })]), primo],
+    ["invalid_data_item", "righe_diverse", "1", nelProgramma([dato("m", "integer", { size: 2, columns: 2, initial: [["1", "2"]] })]), primo],
+    ["invalid_data_item", "righe_diverse", "0", nelProgramma([dato("m", "integer", { size: 2, columns: 2, initial: [] })]), primo],
+    ["invalid_data_item", "colonne_diverse", "3", nelProgramma([dato("m", "integer", { size: 2, columns: 2, initial: [["1", "2"], ["3", "4", "5"]] })]), primo],
+    ["invalid_data_item", "valore_non_scritto", "x", nelProgramma([dato("m", "integer", { size: 2, columns: 2, initial: [["1", "2"], ["x", "4"]] })]), primo],
+    ["invalid_data_item", "matrice_di_record", undefined, conRecord([rec("r", "x")], [delRecord("t", "r", { size: 2, columns: 2 })]), primo],
+    ["invalid_data_item", "matrice_di_record", undefined, conRecord([rec("r", "x")], [], [], { id: "f2", kind: "function", name: "g", return_type: "record", return_record: "r", return_size: 2, return_columns: 2, data: [], body: [], end: { id: "f2e", return_value: "g" } }), { blocco: "f2" }],
+    ["limit_exceeded", "oltre_elementi", "1000", nelProgramma([dato("m", "integer", { size: 40, columns: 26 })]), primo],
     ["invalid_data_item", "valore_non_scritto", "x", nelProgramma([dato("n", "integer", { initial: "x" })]), primo],
     ["invalid_data_item", "valore_non_scritto", "1 + 2", nelProgramma([dato("n", "integer", { initial: "1 + 2" })]), primo],
     ["invalid_data_item", "valore_non_scritto", "-x", nelProgramma([dato("n", "integer", { initial: "-x" })]), primo],
@@ -670,7 +681,7 @@ describe("la causa precisa dei codici del controllo", () => {
     const delNucleo = nove.flatMap((c) => ((causeDeiCodici as Record<string, readonly string[]>)[c] ?? []).map((x) => `${c} ${x}`));
     const nelleRighe = [...new Set(righe.map(([c, x]) => `${c} ${x}`))];
     console.log(`cause dei dodici codici: nel nucleo ${delNucleo.length}, nelle righe ${nelleRighe.length}, righe ${righe.length}`);
-    expect({ senzaRiga: delNucleo.filter((x) => !nelleRighe.includes(x)), senzaCausa: nelleRighe.filter((x) => !delNucleo.includes(x)), quante: delNucleo.length }).toEqual({ senzaRiga: [], senzaCausa: [], quante: 63 });
+    expect({ senzaRiga: delNucleo.filter((x) => !nelleRighe.includes(x)), senzaCausa: nelleRighe.filter((x) => !delNucleo.includes(x)), quante: delNucleo.length }).toEqual({ senzaRiga: [], senzaCausa: [], quante: 67 });
   });
 
   test("il valore mai letto con più provenienze: nessuna causa, resta l'elenco", () => {
@@ -1314,7 +1325,7 @@ describe("avvisi delle tappe 1 e 2", () => {
   });
 });
 
-test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l'errore dell'interprete, i 2 elementi letti dopo un per ogni, i 4 dei parametri per riferimento e per uscita e il record per riferimento, nessun altro", () => {
+test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l'errore dell'interprete, i 2 elementi letti dopo un per ogni, i 4 dei parametri per riferimento e per uscita, il record per riferimento e la matrice riempita in un ciclo, nessun altro", () => {
   const cartella = fileURLToPath(new URL("../../casi", import.meta.url));
   const trovati: string[] = [];
   let [file, controllati] = [0, 0];
@@ -1343,10 +1354,13 @@ test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l
     "tappa-3/uscita-con-valore-prima.algo b4 x",
     "tappa-3/uscita-letta-prima.algo b4 x",
     "tappa-3/uscita-non-assegnata.algo b2 n",
+    // La matrice riempita solo dentro due «per», restituita: il controllo non guarda se un «per» fa giri.
+    "tipi/matrice-come-parametro.algo g3 u",
     "tipi/riferimento-a-un-record-senza-valore.algo b4 c",
   ]);
-  // Col corpus dei record: nessuno è fuori tappa; quello del riferimento senza valore ha l'avviso, i cinque sbagliati no.
-  expect([file, controllati]).toEqual([158, 158]);
+  // Col corpus dei record e delle matrici: nessuno è fuori tappa; quello del riferimento senza valore ha l'avviso, i cinque
+  // sbagliati no.
+  expect([file, controllati]).toEqual([166, 166]);
 });
 
 test("i limiti sono un parametro senza predefinito: chi chiama il controllo li passa sempre", () => {
@@ -1841,4 +1855,39 @@ test("censimento: i codici d'errore statico e d'avviso e le regole statiche del 
     censimento({ ...veri, provati: senzaUnTest }).postoNonProvato,
   ];
   expect(difetti).toEqual([["unused_value"], ["codice_inventato"], ["invalid_step"], ["codice_di_una_tappa_dopo"], ["F6.11"], ["F99.1"], ["F2.6", "F4.8", "F4.11", "F4.15", "F4.16", "F5.13"]]);
+});
+
+describe("le matrici nel controllo: la riga è un vettore, la matrice intera va solo per nome", () => {
+  const m = dato("m", "integer", { size: 2, columns: 3, initial: { each: "1" } });
+  const v = dato("v", "integer", { size: 3, initial: { each: "0" } });
+  const riga = (parameter: string) => procedura("f2", "p", [par("r", "integer", parameter, { size: 3 })], [assegna("c1", "r[0]", "5")]);
+  const due = procedura("f2", "q", [par("r", "integer", "reference", { size: 3 }), par("x", "integer", "reference")], [assegna("c1", "x", "r[0]")]);
+  test("la riga va dove va un vettore delle sue colonne: destinazione, sorgente, argomento per valore e per riferimento", () => {
+    expect(erroriDi([m, v], [assegna("b1", "m[1]", "v"), assegna("b2", "v", "m[0]"), salta("b3", "p", "m[1]"), scrivi("b4", "m[1][2]")], riga("value"))).toEqual([]);
+    expect(erroriDi([m, v], [salta("b1", "p", "m[0]"), scrivi("b2", "m[0][0]", "v[0]")], riga("reference"))).toEqual([]);
+  });
+  test("la matrice intera non va a un vettore, né una riga di altra misura; e non si calcola", () => {
+    expect(erroriDi([m, v], [salta("b1", "p", "m")], riga("value"))).toEqual([e("argument_mismatch", "b1")]);
+    expect(erroriDi([m, dato("w", "integer", { size: 2 })], [assegna("b1", "w", "m[0]")])).toEqual([e("array_assignment", "b1")]);
+    // Come per un vettore: la matrice intera riceve solo un nome o una funzione.
+    expect(erroriDi([m], [assegna("b1", "m", "m + 1")])).toEqual([e("array_assignment", "b1")]);
+    expect(erroriDi([m], [scrivi("b1", "m[0]")])).toEqual([e("type_mismatch", "b1")]);
+  });
+  test("to_array va in una riga di caratteri, non in una matrice intera", () => {
+    const c = dato("c", "character", { size: 2, columns: 2 });
+    const s = dato("s", "string", { initial: '"ab"' });
+    expect(erroriDi([c, s], [assegna("b1", "c[0]", "to_array s"), scrivi("b2", "c[0][1]")])).toEqual([]);
+    expect(erroriDi([c, s], [assegna("b1", "c", "to_array s")])).toEqual([e("type_mismatch", "b1")]);
+  });
+  test("lo stesso dato due volte per riferimento: la riga con un suo elemento scritti col numero; con indici diversi no", () => {
+    expect(erroriDi([m], [salta("b1", "q", "m[0]", "m[0][2]")], due)).toEqual([e("same_reference", "b1")]);
+    expect(erroriDi([m], [salta("b1", "q", "m[0]", "m[1][2]")], due)).toEqual([]);
+  });
+  test("v[i][j] su un vettore di stringhe è un carattere (in sola lettura); su una matrice di stringhe una stringa", () => {
+    const vs = dato("vs", "string", { size: 2, initial: { each: '"ab"' } });
+    const ms = dato("ms", "string", { size: 2, columns: 2, initial: { each: '"ab"' } });
+    expect(erroriDi([vs], [assegna("b1", "vs[0][1]", "'x'")])).toEqual([e("assign_to_read_only", "b1")]);
+    expect(erroriDi([ms], [assegna("b1", "ms[0][1]", '"xy"'), scrivi("b2", "ms[0][1]")])).toEqual([]);
+    expect(erroriDi([ms], [assegna("b1", "ms[0][1]", "'x'")])).toEqual([e("type_mismatch", "b1")]);
+  });
 });

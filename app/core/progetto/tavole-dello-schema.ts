@@ -51,6 +51,8 @@ export function tavoleDelloSchema(schema: Schema): Tavola[] {
       visita(definizioni[nome]!, nome === "block" ? "blocco" : nome);
       return;
     }
+    // Un elenco con più forme (il valore iniziale: letterali o righe) le ha nei rami, ognuno coi suoi `items`.
+    if (n.type === "array" && n.items === undefined) return ((n.anyOf ?? []) as Nodo[]).forEach((x) => visita(x.items as Nodo, `${percorso}[]`));
     if (n.type === "array") return visita(n.items as Nodo, `${percorso}[]`);
     if (Array.isArray(n.anyOf)) return (n.anyOf as Nodo[]).forEach((x) => (x.type === "object" ? visita(x, `${percorso}{each}`) : visita(x, percorso)));
     if (Array.isArray(n.allOf)) {
