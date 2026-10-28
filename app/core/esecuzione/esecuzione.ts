@@ -67,16 +67,17 @@ export type Stato =
   | { readonly genere: "pronta" }
   /** Ferma prima di un'azione: un blocco, o il valore iniziale di `dato` (col blocco vuoto, come nel disegno; della
    * funzione `funzione`, se non è il programma principale) alla profondità delle chiamate attive; in un ciclo
-   * `per` o `per ogni`, la sua parte (`fase`), quella che il disegno, la tabella e il codice evidenziano. Con `ripresa`
+   * `per` o `per ogni`, la sua parte (`fase`), quella che il disegno, la tabella e il codice evidenziano; nella copia di un
+   * record col suo nome, la posizione del campo (`campo`). Con `ripresa`
    * (il valore che la funzione chiamata ha restituito) è la ripresa dell'azione del blocco, al livello di chi chiama,
    * dopo il ritorno da una funzione chiamata nella sua espressione: non un'azione, e il numero delle azioni non cambia. */
-  | { readonly genere: "pausa"; readonly blocco: string; readonly dato?: string; readonly fase?: FaseDelCiclo; readonly funzione?: string; readonly profondita: number; readonly ripresa?: Restituito }
+  | { readonly genere: "pausa"; readonly blocco: string; readonly dato?: string; readonly fase?: FaseDelCiclo; readonly campo?: number; readonly funzione?: string; readonly profondita: number; readonly ripresa?: Restituito }
   /** Un comando in corso, fra due fette. */
   | { readonly genere: "in corso" }
   /** Aspetta la riga di una lettura; `nonValido` se la riga data prima non andava; `parametro`, per un parametro della
    * funzione eseguita da sola (`riferimento`: può non avere un valore, `inserisci(senzaValore)`), con `elemento` per un
-   * vettore (al primo, `inserisci({ ognuno })` dà la stessa riga a tutti). */
-  | { readonly genere: "chiede"; readonly dato: string; readonly nonValido: boolean; readonly parametro?: "valore" | "riferimento"; readonly elemento?: number }
+   * vettore (al primo, `inserisci({ ognuno })` dà la stessa riga a tutti) e `campo` (il nome) per un record. */
+  | { readonly genere: "chiede"; readonly dato: string; readonly nonValido: boolean; readonly parametro?: "valore" | "riferimento"; readonly elemento?: number; readonly campo?: string }
   | { readonly genere: "finita"; readonly errore?: Segnalazione<CodiceErrore> }
   /** Il controllo statico non la fa partire. */
   | { readonly genere: "non parte"; readonly controllo: EsitoDelControllo };
@@ -451,13 +452,14 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
       const funzione = x.funzione ?? this.#principale;
       this.#pila.length = x.profondita;
       this.#pila.push({ funzione, blocco: x.dato === undefined ? x.evento : funzione, ...(x.fase !== undefined ? { fase: x.fase } : {}) });
-      this.#traccia?.evento(x.evento, x.dati, x.dato, x.fase, x.profondita, x.funzione);
+      this.#traccia?.evento(x.evento, x.dati, x.dato, x.fase, x.profondita, x.funzione, x.campo);
       if (fermati(this.#comando, this.#partenza, this.puntiDiInterruzione, x))
         this.#stato = {
           genere: "pausa",
           blocco: x.evento,
           ...(x.dato !== undefined ? { dato: x.dato } : {}),
           ...(x.fase !== undefined ? { fase: x.fase } : {}),
+          ...(x.campo !== undefined ? { campo: x.campo } : {}),
           ...(x.funzione !== undefined ? { funzione: x.funzione } : {}),
           profondita: x.profondita,
         };
@@ -496,6 +498,7 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
           nonValido: this.#nonValido,
           ...(x.parametro !== undefined ? { parametro: x.parametro } : {}),
           ...(x.elemento !== undefined ? { elemento: x.elemento } : {}),
+          ...(x.campo !== undefined ? { campo: x.campo } : {}),
         };
         this.#nonValido = false;
         return;

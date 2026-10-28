@@ -119,3 +119,17 @@ describe("la ripresa dopo un ritorno: una fermata per «dentro», «sopra» e «
     expect([conLaRipresa("continua", -1, punti), conLaRipresa("continua", 0, punti), conLaRipresa("fuori", 1, punti)]).toEqual([0, -1, 3]);
   });
 });
+
+describe("un punto di interruzione sulla copia di un record col suo nome", () => {
+  // `b ← a` con tre campi (le azioni 1, 2, 3 col campo 0, 1, 2), poi `b2`: atteso scritto a mano, il punto su `b1` ferma
+  // «continua» solo sul primo campo, mai sugli altri; «dentro» su ognuno.
+  const copia = [
+    { evento: "b0", profondita: 0 },
+    ...[0, 1, 2].map((campo) => ({ evento: "b1", campo, profondita: 0 })),
+    { evento: "b2", profondita: 0 },
+  ];
+  const fermate = (comando: Comando) => copia.flatMap((e, k) => (fermati(comando, 0, new Set(["b1"]), e) ? [k] : []));
+  test("«continua» si ferma prima del primo campo; «dentro» su ogni campo", () => {
+    expect({ continua: fermate("continua"), dentro: fermate("dentro") }).toEqual({ continua: [1], dentro: [0, 1, 2, 3, 4] });
+  });
+});

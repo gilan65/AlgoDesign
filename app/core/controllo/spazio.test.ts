@@ -28,6 +28,7 @@ const funzione = (id: string, name: string, risultato: Json, data: Json[], retur
   end: { id: `${id}-fine`, return_value },
 });
 const assegna = (id: string, target: string, value: string) => ({ id, kind: "assignment", target, value });
+const alunno = (name: string, altro: Json = {}) => ({ name, type: "record", record: "alunno", ...altro });
 
 // Per ogni termine una funzione o una procedura; gli attesi a mano accanto.
 const p: Progetto = (() => {
@@ -35,6 +36,7 @@ const p: Progetto = (() => {
     format: "algodesign",
     schema_version: 2,
     metadata: { name: "spazio" },
+    records: [{ name: "alunno", fields: [stringa("nome", 20), stringa("classe", 3), intero("voto")] }],
     functions: [
       { id: "f0", kind: "main", data: [], body: [], end: { id: "f0-fine" } },
       procedura("f1", "dati_semplici", [intero("i"), { name: "x", type: "real" }, { name: "c", type: "character" }, { name: "b", type: "boolean" }]),
@@ -51,6 +53,9 @@ const p: Progetto = (() => {
         assegna("b2", "e", "corte()[0]"),
         { id: "b3", kind: "for_each", item: "e", source: "corte()", body: [assegna("b4", "q", "restituisce_intero()")] },
       ]),
+      procedura("f12", "record", [alunno("a")]),
+      funzione("f13", "restituisce_record", { return_type: "record", return_record: "alunno" }, [alunno("x", { parameter: "value" }), alunno("r")], "r"),
+      procedura("f14", "chiama_record", [alunno("q"), stringa("d", 25)], [assegna("b5", "q", "restituisce_record(q)"), assegna("b6", "d", "q.nome + q.classe")]),
     ],
   });
   if (!r.ok) throw new Error(JSON.stringify(r.errori));
@@ -61,7 +66,8 @@ const p: Progetto = (() => {
 // se non c'è); un vettore gli elementi per la misura; per valore una stringa o un vettore hanno l'indirizzo ricevuto (8)
 // più la copia, uno scalare solo sé stesso; per riferimento o di uscita l'indirizzo; il valore restituito stringa o
 // vettore; un'area per ogni `+` fra stringhe (4 · la lunghezza massima del suo risultato + 1); una struttura per ogni
-// chiamata a una funzione che restituisce una stringa o un vettore.
+// chiamata a una funzione che restituisce una stringa o un vettore. Un record la somma dei campi, ognuno arrotondato a 8
+// (alunno: nome 81 → 88, classe 13 → 16, voto 4 → 8: 112), come il vettore per valore, per risultato e per struttura.
 const attesi: Record<string, number> = {
   dati_semplici: 4 + 8 + 4 + 1,
   stringhe: 41 + 1021,
@@ -77,6 +83,11 @@ const attesi: Record<string, number> = {
   corte: 27 + 27,
   // e 9, q 4; due chiamate di «corte» (27 ciascuna); quella di «restituisce_intero» nulla.
   chiama_corte: 9 + 4 + 27 + 27,
+  record: 112,
+  // il parametro per valore (8 + 112), il dato r e il risultato.
+  restituisce_record: 8 + 112 + 112 + 112,
+  // q 112, d 101; la struttura della chiamata 112; la concatenazione di due campi, lunga al più 23 (93).
+  chiama_record: 112 + 101 + 112 + 93,
 };
 
 const misurati = (s: typeof spazio) => Object.fromEntries(p.functions.flatMap((f) => (f.kind === "main" ? [] : [[f.name!, s.spazioDiUnaChiamata(f, p)]])));
@@ -116,10 +127,15 @@ describe("lo spazio di una chiamata, termine per termine", () => {
     ["la stringa senza il terminatore", "4 * (lunghezza ?? lunghezzaPredefinita) + 1", "4 * (lunghezza ?? lunghezzaPredefinita)"],
     ["un indirizzo di 4 byte", "const indirizzo = 8;", "const indirizzo = 4;"],
     ["il riferimento senza l'indirizzo", "return somma + indirizzo;", "return somma;"],
-    ["la copia senza l'indirizzo ricevuto", "return somma + indirizzo + byteDelDato(d);", "return somma + byteDelDato(d);"],
-    ["il valore restituito non contato", "return dati + restituito + aree(f, p);", "return dati + aree(f, p);"],
-    ["le aree non contate", "return dati + restituito + aree(f, p);", "return dati + restituito;"],
-    ["la concatenazione senza il terminatore", "byte += 4 * lunghezzaMassima(e, datoDi, funzioneDi) + 1;", "byte += 4 * lunghezzaMassima(e, datoDi, funzioneDi);"],
+    ["la copia senza l'indirizzo ricevuto", "return somma + indirizzo + byteDelDato(d, p);", "return somma + byteDelDato(d, p);"],
+    ["il valore restituito non contato", "return dati + byteDelRestituito(f, p) + aree(f, p);", "return dati + aree(f, p);"],
+    ["le aree non contate", "return dati + byteDelRestituito(f, p) + aree(f, p);", "return dati + byteDelRestituito(f, p);"],
+    ["la concatenazione senza il terminatore", "byte += 4 * lunghezzaMassima(e, datoDi, funzioneDi, campoDi) + 1;", "byte += 4 * lunghezzaMassima(e, datoDi, funzioneDi, campoDi);"],
+    ["i campi senza l'allineamento", "somma + 8 * Math.ceil(byteDelTipo(c.type, c.max_length) / 8)", "somma + byteDelTipo(c.type, c.max_length)"],
+    ["il record per valore senza la copia", 'd.type === "string" || d.type === "record")) return', 'd.type === "string")) return'],
+    ["il record restituito non contato", 'g.return_type === "string" || g.return_type === "record")', 'g.return_type === "string")'],
+    ["il campo stringa non concatena", 'return campoDi(e)?.type === "string";', "return false;"],
+    ["il campo senza la sua lunghezza", "byte += 4 * lunghezzaMassima(e, datoDi, funzioneDi, campoDi) + 1;", "byte += 4 * lunghezzaMassima(e, datoDi, funzioneDi) + 1;"],
     ["la struttura restituita non contata", 'if (e.genere === "chiamata") {', "if (false) {"],
   ] as const)
     test(`mutazione dello spazio: ${nome}`, async () => {

@@ -3,7 +3,7 @@
   "schema_version": 2,
   "metadata": {
     "name": "record-in-un-programma",
-    "description": "Un record con una costante comune, un dato, il campo letto e scritto e una funzione che restituisce un record."
+    "description": "Un record con una costante comune, un dato, il campo letto e scritto e una funzione che restituisce un record; la copia per valore cambiata, la costante resta."
   },
   "records": [
     {
@@ -65,7 +65,9 @@
             "\" \"",
             "a.classe",
             "\" \"",
-            "a.voto"
+            "a.voto",
+            "\" \"",
+            "primo.voto"
           ],
           "newline": true
         }
@@ -107,7 +109,7 @@
       "name": "record-in-un-programma",
       "inputs": [],
       "expected": {
-        "output": "Anna 3A 8\n"
+        "output": "Anna 3A 8 7\n"
       }
     }
   ]

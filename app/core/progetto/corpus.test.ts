@@ -122,8 +122,8 @@ test("il controllo statico del corpus: tappe dalla 1 alla 4 con l'errore statico
     const aperto = apri(readFileSync(join(cartella, `${caso}.algo`), "utf8"));
     if (!aperto.ok) throw new Error(caso);
     const esito = controlla(aperto.progetto, tetti);
-    // I record: un file giusto è fuori tappa finché l'esecuzione non li conosce, uno sbagliato ha il suo errore statico.
-    const fuoriAtteso = !controllata(caso) || (caso.startsWith("tipi/") && aperto.progetto.test_cases?.[0]?.expected.static_error === undefined);
+    // I record: un file giusto è dentro la tappa come le altre, uno sbagliato ha il suo errore statico.
+    const fuoriAtteso = !controllata(caso);
     if (fuoriAtteso) {
       expect({ caso, fuoriTappa: esito.fuoriTappa }).toEqual({ caso, fuoriTappa: true });
       fuoriTappa++;

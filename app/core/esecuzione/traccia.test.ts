@@ -46,6 +46,7 @@ import {
   regolaDiRComeValoreSolo,
 } from "./atteso-del-vettore";
 import { cambiateDelPerOgni, perAtteso, perOgniVettoreAtteso } from "./atteso-dei-cicli";
+import { cambiateDellaCopia, copiaDelRecordItaliano } from "./atteso-del-record";
 import { Esecuzione } from "./esecuzione";
 import { testiEn, testiIt } from "./testi-di-prova";
 import * as traccia from "./traccia";
@@ -982,6 +983,95 @@ describe("la ricorsione: il gruppo e il watch leggono la chiamata giusta, livell
         const righe = righeDi(mutante.TabellaMostrata, p, eseguita(p));
         const diverse = righe.flatMap((r, k) => (JSON.stringify(r) === JSON.stringify(attese[k]) ? [] : [k]));
         console.log(`mutazione della tabella «${nome}»: righe diverse dall'atteso ${diverse.length} su ${attese.length}`);
+        if (vecchio === "") expect(diverse).toEqual([]);
+        else expect(diverse.length).toBeGreaterThan(0);
+      } finally {
+        rmSync(cartella, { recursive: true, force: true });
+      }
+    });
+});
+
+// Il record: una colonna per campo in ogni forma, la copia col nome una riga per campo, il riferimento a un campo, il
+// watch dei campi. L'atteso della copia è scritto a mano (`atteso-del-record.ts`); gli altri qui accanto, scritti prima.
+describe("il record nella tabella di traccia", () => {
+  const delCorpus = (nome: string): Progetto => {
+    const r = apri(readFileSync(join(import.meta.dir, "..", "..", "casi", "tipi", `${nome}.algo`), "utf8"));
+    if (!r.ok) throw new Error(nome);
+    return r.progetto;
+  };
+  /** Esegue fino alla fine dando le righe alle letture. */
+  const conLeRighe = (p: Progetto, righe: readonly string[]): Esecuzione => {
+    const e = new Esecuzione(p, tetti);
+    e.comanda("continua");
+    let k = 0;
+    for (let giri = 0; giri < 100 && e.stato.genere !== "finita"; giri++) {
+      if (e.stato.genere === "chiede") e.inserisci(righe[k++]!);
+      e.fetta(() => 0, Infinity);
+    }
+    if (e.stato.genere !== "finita") throw new Error(JSON.stringify(e.stato));
+    return e;
+  };
+  const copia = delCorpus("copia-di-un-record");
+
+  for (const forma of forme)
+    test(`la copia di un record: il CSV byte per byte e le celle cambiate, nella forma ${forma}`, () => {
+      const e = eseguita(copia);
+      const tabella = new TabellaMostrata(copia, testiIt, ",", forma, "elenco", opzioniDelDisegno);
+      expect(differenze(righeDelCsv(csv(e.traccia, tabella, "uguale", ";")), copiaDelRecordItaliano)).toEqual([]);
+      expect(tabella.righe(e.traccia).map((r) => r.valori.map((c) => (c.cambiata ? "x" : ".")).join(""))).toEqual(cambiateDellaCopia);
+      // I sei campi in due gruppi, uno per record: si spostano insieme.
+      expect(tabella.colonne.map((c) => c.gruppo).join(" ")).toBe("a a a b b b");
+    });
+
+  test("il watch di un record: un elemento per campo col nome del campo, il tipo è il nome del record", () => {
+    const e = eseguita(copia);
+    const t = new TabellaMostrata(copia, testiIt, ",", "primi-e-altri", "elenco", opzioniDelDisegno);
+    const w = t.watch(e.traccia, "b")!;
+    expect({ tipo: w.tipo, vettore: w.vettore, elementi: w.elementi.map((x) => `${x.nome}=${x.cella.testo}`) }).toEqual({ tipo: "alunno", vettore: false, elementi: ["b.nome=Anna", "b.classe=3A", "b.voto=9"] });
+  });
+
+  test("il riferimento a un record e a un suo campo: il dato di chi chiama col campo accanto al valore", () => {
+    const p = delCorpus("record-per-riferimento");
+    const t = new TabellaMostrata(p, testiIt, ",", "primi-e-altri", "elenco", opzioniDelDisegno);
+    const righe = t.righe(conLeRighe(p, ["Dario"]).traccia);
+    const cella = (regola: string, colonna: string) => righe.find((r) => r.regola === regola)!.valori[t.colonne.findIndex((c) => `${c.funzione ? `${c.funzione} › ` : ""}${c.nome}` === colonna)]!.testo;
+    // `promuovi(a)`: dopo `r.voto ← r.voto + 1` il campo di `r` è quello di `a`; `raddoppia(a.voto)`: il parametro è il campo.
+    expect([cella("r.voto ← r.voto + 1", "promuovi › r.voto"), cella("n ← n * 2", "raddoppia › n"), cella("r.voto ← 6", "crea › r.voto")]).toEqual(["8 (a.voto)", "16 (a.voto)", "6 (c.voto)"]);
+  });
+
+  test("il watch del nome di una funzione che restituisce un record: i campi del valore restituito", () => {
+    const p = delCorpus("funzione-con-un-record");
+    const e = eseguita(p);
+    const t = new TabellaMostrata(p, testiIt, ",", "primi-e-altri", "elenco", opzioniDelDisegno);
+    const w = t.chiamata(e.traccia, "migliore", "b2")!;
+    expect({ tipo: w.tipo, vettore: w.vettore, chiamate: w.chiamate.map((c) => c.map((x) => `${x.nome}=${x.cella.testo}`)) }).toEqual({ tipo: "alunno", vettore: false, chiamate: [[".nome=Bruno", ".classe=3B", ".voto=9"]] });
+  });
+
+  // Le mutazioni che discriminano: il record in una colonna come un dato semplice, la regola della copia uguale per ogni
+  // campo. Controllo positivo: la copia senza mutazioni dà l'atteso.
+  const sorgente = readFileSync(join(import.meta.dir, "traccia.ts"), "utf8");
+  const nucleo = join(import.meta.dir, "..").replaceAll("\\", "/");
+  for (const [nome, vecchio, nuovo] of [
+    ["nessuna (controllo positivo)", "", ""],
+    ["il record senza le colonne dei campi", "      if (d.campi !== undefined) return d.campi.map((c) => colonna(`${d.nome}.${c.nome}`, c.tipo));\n", ""],
+    ["la regola della copia senza il campo", "      if (r.campo !== undefined && b.kind === \"assignment\") {", "      if (false) {"],
+  ] as const)
+    test(`mutazione della tabella del record: ${nome}`, async () => {
+      if (vecchio !== "") expect(sorgente.split(vecchio).length - 1).toBe(1);
+      const cartella = mkdtempSync(join(tmpdir(), "traccia-"));
+      try {
+        const file = join(cartella, "mutante.ts");
+        writeFileSync(file, sorgente.replace(vecchio, nuovo).replaceAll('from "../', `from "${nucleo}/`));
+        const mutante: typeof traccia = await import(file);
+        const e = eseguita(copia);
+        let righe: string[];
+        try {
+          righe = righeDelCsv(mutante.csv(e.traccia, new mutante.TabellaMostrata(copia, testiIt, ",", "primi-e-altri", "elenco", opzioniDelDisegno), "uguale", ";"));
+        } catch (x) {
+          righe = [`eccezione: ${x}`];
+        }
+        const diverse = differenze(righe, copiaDelRecordItaliano);
+        console.log(`mutazione della tabella del record «${nome}»: righe diverse ${diverse.length}`);
         if (vecchio === "") expect(diverse).toEqual([]);
         else expect(diverse.length).toBeGreaterThan(0);
       } finally {

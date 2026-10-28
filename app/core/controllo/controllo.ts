@@ -258,6 +258,14 @@ const sotto = (e: Espressione): readonly Espressione[] =>
 
 const nomiIn = (e: Espressione): string[] => (e.genere === "nome" ? [e.nome] : sotto(e).flatMap(nomiIn));
 
+/** Il dato di una destinazione già controllata (un nome, un elemento, un campo, scendendo fino al nome): un elemento o un
+ * campo valgono per il loro dato. */
+const datoDellaDestinazione = (e: Espressione): string => (e.genere === "indice" || e.genere === "campo" ? datoDellaDestinazione(e.base) : (e as { nome: string }).nome);
+
+/** Gli indici che una destinazione già controllata calcola, dal più esterno: li legge prima di dare il valore. */
+const indiciDellaDestinazione = (e: Espressione): Espressione[] =>
+  e.genere === "indice" ? [...indiciDellaDestinazione(e.base), e.indice] : e.genere === "campo" ? indiciDellaDestinazione(e.base) : [];
+
 /** I nomi delle funzioni che un'espressione chiama. */
 export const chiamateIn = (e: Espressione): string[] => [...(e.genere === "chiamata" ? [e.nome] : []), ...sotto(e).flatMap(chiamateIn)];
 
@@ -1122,12 +1130,6 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
 
   if (errori.length > 0) return { fuoriTappa: false, errori, fermate, avvisi, dati: perDato, primaDelValore: [], versoOut: [], senzaValoreAlSalto: [] };
 
-  // Un progetto giusto coi record non si esegue e non si traduce ancora: il controllo lo dice fuori tappa, coi posti che
-  // li hanno (il progetto, che definisce i record; le funzioni coi dati o il risultato di un record). Senza record, un dato
-  // record è già un errore.
-  if ((p.records ?? []).length > 0)
-    return { fuoriTappa: true, blocchi: ["", ...p.functions.filter((f) => f.data.some((d) => d.type === "record") || f.return_type === "record").map((f) => f.id)] };
-
   const riepilogoDi = new Map(riepiloghi.map((r) => [r.funzione, r]));
   /** Gli effetti di ogni procedura sui parametri per riferimento e per uscita, calcolati una volta (`effettiDi`). */
   const effetti = new Map<Funzione, { lettiPrima: Set<string>; daranno: Set<string> }>();
@@ -1208,10 +1210,7 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     const trovati: Segnalazione<CodiceErroreStatico>[] = [];
     const argomenti: { block: string; funzione: string; indice: number }[] = [];
     const espressione = (testo: string) => (analizza(testo) as { espressione: Espressione }).espressione;
-    const baseDi = (testo: string) => {
-      const e = espressione(testo);
-      return e.genere === "indice" ? (e.base as { nome: string }).nome : (e as { nome: string }).nome;
-    };
+    const baseDi = (testo: string) => datoDellaDestinazione(espressione(testo));
     /** I dati che possono avere un valore dopo `blocchi`, partendo da `prima`; con `segnala` i salti si giudicano. */
     function sequenza(blocchi: readonly Blocco[], prima: ReadonlySet<string>, segnala: boolean): Set<string> {
       const possono = new Set(prima);
@@ -1284,14 +1283,14 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
 
   /** I parametri per riferimento di ogni procedura che la procedura non legge prima di dar loro un valore su nessuna
    * strada, e a cui lo dà su ogni strada: per loro il messaggio del riferimento senza valore può proporre il passaggio per
-   * uscita, che non cambia l'esito di chi chiama con un valore. Mai per un vettore: un elemento solo conta come valore,
-   * e per uscita gli altri elementi resterebbero senza. */
+   * uscita, che non cambia l'esito di chi chiama con un valore. Mai per un vettore né per un record: un elemento (un campo)
+   * solo conta come valore, e per uscita gli altri resterebbero senza. */
   function parametriVersoOut(): { readonly funzione: string; readonly indice: number }[] {
     return p.functions.flatMap((g) => {
       if (g.kind !== "procedure") return [];
       const { lettiPrima, daranno } = effettiDi(g);
       return g.data.flatMap((d, indice) =>
-        d.parameter === "reference" && d.size === undefined && !lettiPrima.has(d.name) && daranno.has(d.name) ? [{ funzione: g.id, indice }] : [],
+        d.parameter === "reference" && d.size === undefined && d.type !== "record" && !lettiPrima.has(d.name) && daranno.has(d.name) ? [{ funzione: g.id, indice }] : [],
       );
     });
   }
@@ -1354,11 +1353,11 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
       for (const nome of nomiIn(e)) if (!hanno.has(nome)) leggeSenza(nome, block);
     };
     const espressione = (testo: string) => (analizza(testo) as { espressione: Espressione }).espressione;
-    /** Una destinazione: si legge l'indice, poi il dato ha un valore. */
+    /** Una destinazione: si legge l'indice, poi il dato ha un valore (anche da un elemento o da un campo solo). */
     const assegna = (target: string, hanno: Set<string>, block: string) => {
       const e = espressione(target);
-      if (e.genere === "indice") legge(e.indice, hanno, block);
-      hanno.add(e.genere === "indice" ? (e.base as { nome: string }).nome : (e as { nome: string }).nome);
+      indiciDellaDestinazione(e).forEach((i) => legge(i, hanno, block));
+      hanno.add(datoDellaDestinazione(e));
     };
     function sequenza(blocchi: readonly Blocco[], prima: ReadonlySet<string>): Set<string> {
       const hanno = new Set(prima);
@@ -1387,13 +1386,14 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
               const parametro = parametri[i]!;
               const e = espressione(testo);
               if (parametro.parameter === "value") return legge(e, hanno, b.id);
-              const nome = e.genere === "indice" ? (e.base as { nome: string }).nome : (e as { nome: string }).nome;
-              if (e.genere === "indice") legge(e.indice, hanno, b.id);
+              const nome = datoDellaDestinazione(e);
+              indiciDellaDestinazione(e).forEach((i) => legge(i, hanno, b.id));
               if (parametro.parameter === "reference") {
                 if (!hanno.has(nome)) leggeSenza(nome, b.id);
                 avranno.push(nome);
               } else if (suoi.daranno.has(parametro.name)) avranno.push(nome);
-              else if (e.genere !== "indice") perdono.push(nome);
+              // Passato intero lo perde; un elemento o un campo solo no: gli altri restano.
+              else if (e.genere === "nome") perdono.push(nome);
             });
             perdono.forEach((nome) => hanno.delete(nome));
             avranno.forEach((nome) => hanno.add(nome));

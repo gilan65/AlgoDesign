@@ -1,0 +1,247 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "record-per-riferimento",
+    "description": "Un record per riferimento, un suo campo per riferimento, un record per uscita e la lettura di un campo; la copia passata per riferimento cambia, la sorgente no."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "classe",
+          "type": "string",
+          "max_length": 3
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "record",
+          "record": "alunno",
+          "initial": [
+            "\"Anna\"",
+            "\"3A\"",
+            "7"
+          ]
+        },
+        {
+          "name": "c",
+          "type": "record",
+          "record": "alunno"
+        },
+        {
+          "name": "s",
+          "type": "record",
+          "record": "alunno"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "a.nome"
+        },
+        {
+          "id": "b2",
+          "kind": "call",
+          "callee": "promuovi",
+          "arguments": [
+            "a"
+          ]
+        },
+        {
+          "id": "b3",
+          "kind": "call",
+          "callee": "raddoppia",
+          "arguments": [
+            "a.voto"
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "call",
+          "callee": "crea",
+          "arguments": [
+            "c"
+          ]
+        },
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "s",
+          "value": "c"
+        },
+        {
+          "id": "b6",
+          "kind": "call",
+          "callee": "promuovi",
+          "arguments": [
+            "s"
+          ]
+        },
+        {
+          "id": "b7",
+          "kind": "write",
+          "values": [
+            "a.voto",
+            "\" \"",
+            "c.voto",
+            "\" \"",
+            "s.voto",
+            "\" \"",
+            "a.nome"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "promuovi",
+      "data": [
+        {
+          "name": "r",
+          "type": "record",
+          "record": "alunno",
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "b8",
+          "kind": "assignment",
+          "target": "r.voto",
+          "value": "r.voto + 1"
+        }
+      ],
+      "end": {
+        "id": "b9"
+      },
+      "test_cases": [
+        {
+          "name": "da-solo",
+          "inputs": [
+            {
+              "data": "r",
+              "text": "Ugo"
+            },
+            {
+              "data": "r",
+              "text": "1A"
+            },
+            {
+              "data": "r",
+              "text": "5"
+            }
+          ],
+          "expected": {
+            "output": "\nr.nome = Ugo\nr.classe = 1A\nr.voto = 6\n"
+          }
+        }
+      ]
+    },
+    {
+      "id": "f3",
+      "kind": "procedure",
+      "name": "raddoppia",
+      "data": [
+        {
+          "name": "n",
+          "type": "integer",
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "b10",
+          "kind": "assignment",
+          "target": "n",
+          "value": "n * 2"
+        }
+      ],
+      "end": {
+        "id": "b11"
+      }
+    },
+    {
+      "id": "f4",
+      "kind": "procedure",
+      "name": "crea",
+      "data": [
+        {
+          "name": "r",
+          "type": "record",
+          "record": "alunno",
+          "parameter": "out"
+        }
+      ],
+      "body": [
+        {
+          "id": "b12",
+          "kind": "assignment",
+          "target": "r.nome",
+          "value": "\"Carla\""
+        },
+        {
+          "id": "b13",
+          "kind": "assignment",
+          "target": "r.classe",
+          "value": "\"2B\""
+        },
+        {
+          "id": "b14",
+          "kind": "assignment",
+          "target": "r.voto",
+          "value": "6"
+        }
+      ],
+      "end": {
+        "id": "b15"
+      },
+      "test_cases": [
+        {
+          "name": "da-sola",
+          "inputs": [],
+          "expected": {
+            "output": "\nr.nome = Carla\nr.classe = 2B\nr.voto = 6\n"
+          }
+        }
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "record-per-riferimento",
+      "inputs": [
+        {
+          "data": "a",
+          "text": "Dario"
+        }
+      ],
+      "expected": {
+        "output": "16 6 7 Dario\n"
+      }
+    }
+  ]
+}

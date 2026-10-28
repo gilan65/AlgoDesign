@@ -1,0 +1,201 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "funzione-con-un-record",
+    "description": "Una funzione che riceve due record e ne restituisce uno: il campo del risultato, la copia del risultato che cambia senza toccare i dati."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "classe",
+          "type": "string",
+          "max_length": 3
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "record",
+          "record": "alunno",
+          "initial": [
+            "\"Anna\"",
+            "\"3A\"",
+            "7"
+          ]
+        },
+        {
+          "name": "b",
+          "type": "record",
+          "record": "alunno",
+          "initial": [
+            "\"Bruno\"",
+            "\"3B\"",
+            "9"
+          ]
+        },
+        {
+          "name": "m",
+          "type": "record",
+          "record": "alunno"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "migliore(a, b).nome",
+            "\" \"",
+            "migliore(a, b).voto"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "m",
+          "value": "migliore(a, b)"
+        },
+        {
+          "id": "b3",
+          "kind": "assignment",
+          "target": "m.voto",
+          "value": "10"
+        },
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "b.voto",
+          "value": "1"
+        },
+        {
+          "id": "b5",
+          "kind": "write",
+          "values": [
+            "b.voto",
+            "\" \"",
+            "m.voto"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "migliore",
+      "return_type": "record",
+      "return_record": "alunno",
+      "data": [
+        {
+          "name": "p",
+          "type": "record",
+          "record": "alunno",
+          "parameter": "value"
+        },
+        {
+          "name": "q",
+          "type": "record",
+          "record": "alunno",
+          "parameter": "value"
+        },
+        {
+          "name": "r",
+          "type": "record",
+          "record": "alunno"
+        }
+      ],
+      "body": [
+        {
+          "id": "b6",
+          "kind": "if",
+          "condition": "p.voto >= q.voto",
+          "then": [
+            {
+              "id": "b7",
+              "kind": "assignment",
+              "target": "r",
+              "value": "p"
+            }
+          ],
+          "else": [
+            {
+              "id": "b8",
+              "kind": "assignment",
+              "target": "r",
+              "value": "q"
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "b9",
+        "return_value": "r"
+      },
+      "test_cases": [
+        {
+          "name": "da-sola",
+          "inputs": [
+            {
+              "data": "p",
+              "text": "Anna"
+            },
+            {
+              "data": "p",
+              "text": "3A"
+            },
+            {
+              "data": "p",
+              "text": "7"
+            },
+            {
+              "data": "q",
+              "text": "Bruno"
+            },
+            {
+              "data": "q",
+              "text": "3B"
+            },
+            {
+              "data": "q",
+              "text": "9"
+            }
+          ],
+          "expected": {
+            "output": "→ .nome = Bruno\n→ .classe = 3B\n→ .voto = 9\n"
+          }
+        }
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "funzione-con-un-record",
+      "inputs": [],
+      "expected": {
+        "output": "Bruno 9\n1 10\n"
+      }
+    }
+  ]
+}

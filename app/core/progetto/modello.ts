@@ -13,8 +13,8 @@ export type Tipo = (typeof tipi)[number];
 export const tipiDelDato = [...tipi, "record"] as const;
 export type TipoDelDato = (typeof tipiDelDato)[number];
 
-/** Il tipo semplice di un dato, per chi non conosce ancora i record: un progetto coi record non gli arriva, perché il
- * controllo statico lo dice fuori tappa. */
+/** Il tipo semplice di un dato, per chi non conosce ancora i record: un progetto coi record non gli arriva, perché lo
+ * rifiuta prima con `usaIRecord`. */
 export function tipoSemplice(t: TipoDelDato): Tipo {
   if (t === "record") throw new Error("un record dove si attende un tipo semplice");
   return t;

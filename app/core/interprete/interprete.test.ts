@@ -101,8 +101,8 @@ const suDisco = [...progetti.keys()];
  * predefiniti di una prova. */
 const tempoDelCorpus = 60_000;
 
-/** Le tappe i cui casi si eseguono: i file delle altre non devono partire. */
-const tappeEseguite = ["tappa-1", "tappa-2", "tappa-3", "tappa-4"];
+/** Le tappe i cui casi si eseguono, e la cartella dei record: i file delle altre non devono partire. */
+const tappeEseguite = ["tappa-1", "tappa-2", "tappa-3", "tappa-4", "tipi"];
 const eseguita = (nome: string) => tappeEseguite.some((t) => nome.startsWith(`${t}/`));
 
 /**
@@ -151,7 +151,7 @@ function corpus(es: Esegui, insieme: Map<string, Progetto> = progetti) {
   return { sbagliati, codici, senzaCasi, casi, file, nonPartiti, statici };
 }
 
-test("il corpus: i casi delle tappe dalla 1 alla 4 danno output, codice e blocco attesi; gli altri file non partono", () => {
+test("il corpus: i casi delle tappe dalla 1 alla 4 e dei record danno output, codice e blocco attesi; gli altri file non partono", () => {
   const nellElenco = Object.keys(elenco).flatMap((tappa) => fileDellElenco(tappa).map((n) => `${tappa}/${n}`));
   expect({ soloSuDisco: suDisco.filter((c) => !nellElenco.includes(c)), soloNellElenco: nellElenco.filter((c) => !suDisco.includes(c)) }).toEqual({
     soloSuDisco: [],
@@ -167,7 +167,8 @@ test("il corpus: i casi delle tappe dalla 1 alla 4 danno output, codice e blocco
   expect(esito.senzaCasi).toEqual([]);
   expect(esito.file).toBe(tappeEseguite.reduce((n, t) => n + fileDellElenco(t).length, 0));
   expect(esito.nonPartiti + esito.file).toBe(suDisco.length);
-  expect(esito.statici).toBe(10);
+  // Dieci delle tappe e cinque dei record.
+  expect(esito.statici).toBe(15);
 }, tempoDelCorpus);
 
 test("il corpus: un file della tappa 1 senza casi d'uso lo fa rosso (controllo positivo su una copia)", () => {
@@ -677,6 +678,58 @@ const sequenzeAttese: { nome: string; progetto: Progetto; radice?: string; righe
       "fine normale",
     ],
   },
+  {
+    nome: "la copia di un record col suo nome: un'azione per campo sullo stesso blocco, con la posizione del campo",
+    progetto: progetti.get("tipi/copia-di-un-record")!,
+    atteso: [
+      "valore iniziale di a·0",
+      "b1·0.0",
+      "b1·0.1",
+      "b1·0.2",
+      "b2·0",
+      "b3·0",
+      ...['scrive "7"', 'scrive " "', 'scrive "9"', 'scrive "\\n"'],
+      "b4·0",
+      "b5·0",
+      ...['scrive "Bruno"', 'scrive " "', 'scrive "Anna"', 'scrive "\\n"'],
+      "fine·0",
+      "fine normale",
+    ],
+  },
+  {
+    nome: "un record per riferimento, un suo campo per riferimento, un record per uscita e la lettura di un campo",
+    progetto: progetti.get("tipi/record-per-riferimento")!,
+    righe: ["Dario"],
+    atteso: [
+      "valore iniziale di a·0",
+      "b1·0",
+      "chiedi a",
+      ...["b2·0", "b8·1 f2", "b9·1 f2"],
+      ...["b3·0", "b10·1 f3", "b11·1 f3"],
+      ...["b4·0", "b12·1 f4", "b13·1 f4", "b14·1 f4", "b15·1 f4"],
+      ...["b5·0.0", "b5·0.1", "b5·0.2"],
+      ...["b6·0", "b8·1 f2", "b9·1 f2"],
+      "b7·0",
+      ...['scrive "16"', 'scrive " "', 'scrive "6"', 'scrive " "', 'scrive "7"', 'scrive " "', 'scrive "Dario"', 'scrive "\\n"'],
+      "fine·0",
+      "fine normale",
+    ],
+  },
+  {
+    nome: "una funzione che restituisce un record eseguita da sola: i parametri campo per campo, poi «→ .campo =» per campo",
+    progetto: progetti.get("tipi/funzione-con-un-record")!,
+    radice: "f2",
+    righe: ["Anna", "3A", "7", "Bruno", "3B", "9"],
+    atteso: [
+      ...["chiedi p.nome (valore)", "chiedi p.classe (valore)", "chiedi p.voto (valore)"],
+      ...["chiedi q.nome (valore)", "chiedi q.classe (valore)", "chiedi q.voto (valore)"],
+      "b6·0 f2",
+      ...["b8·0 f2.0", "b8·0 f2.1", "b8·0 f2.2"],
+      "b9·0 f2",
+      ...['scrive "→ .nome = Bruno\\n"', 'scrive "→ .classe = 3B\\n"', 'scrive "→ .voto = 9\\n"'],
+      "fine normale",
+    ],
+  },
 ];
 
 /** Le righe di un'esecuzione nella forma delle sequenze attese. */
@@ -688,9 +741,11 @@ function passiDi(es: Esegui, p: Progetto, radice?: string, righe: readonly strin
   while (!r.done) {
     const x = r.value;
     if ("evento" in x)
-      fatti.push(`${x.dato !== undefined ? `valore iniziale di ${x.dato}` : x.evento}·${x.profondita}${x.funzione !== undefined ? ` ${x.funzione}` : ""}${x.fase !== undefined ? `:${x.fase}` : ""}`);
+      fatti.push(
+        `${x.dato !== undefined ? `valore iniziale di ${x.dato}` : x.evento}·${x.profondita}${x.funzione !== undefined ? ` ${x.funzione}` : ""}${x.fase !== undefined ? `:${x.fase}` : ""}${x.campo !== undefined ? `.${x.campo}` : ""}`,
+      );
     else if ("scrive" in x) fatti.push(`scrive ${JSON.stringify(x.scrive)}`);
-    else if ("chiedi" in x) fatti.push(`chiedi ${x.chiedi}${x.parametro !== undefined ? ` (${x.parametro})` : ""}`);
+    else if ("chiedi" in x) fatti.push(`chiedi ${x.chiedi}${x.campo !== undefined ? `.${x.campo}` : ""}${x.parametro !== undefined ? ` (${x.parametro})` : ""}`);
     r = g.next("chiedi" in x ? righe[k++] : undefined);
   }
   fatti.push(r.value.parte ? (r.value.errore ? `errore ${r.value.errore.code} su ${r.value.errore.block}` : "fine normale") : "non parte");
@@ -746,6 +801,26 @@ const fotografieAttese: { nome: string; ottieni: (es: Esegui) => string[]; attes
     nome: "la ripresa porta il valore restituito: un vettore, gli elementi",
     ottieni: (es) => ripreseDi(es, progetti.get("tappa-3/risultato-vettore-per-ogni")!),
     atteso: ["f2 → 14 8 18"],
+  },
+  {
+    // Due chiamate nella scrittura, una nell'assegnazione.
+    nome: "la ripresa porta il valore restituito: un record, i campi",
+    ottieni: (es) => ripreseDi(es, progetti.get("tipi/funzione-con-un-record")!),
+    atteso: ["f2 → Bruno 3B 9", "f2 → Bruno 3B 9", "f2 → Bruno 3B 9"],
+  },
+  {
+    // `raddoppia(a.voto)` dopo `promuovi(a)`: il parametro vale 8 ed è il campo `voto` di `a`, livello 0.
+    nome: "la fotografia di un campo passato per riferimento: il dato di chi chiama col campo",
+    ottieni: (es) => {
+      // La lettura del campo riceve la riga del caso.
+      const g = es(progetti.get("tipi/record-per-riferimento")!, tetti);
+      const trovati: string[] = [];
+      for (let r = g.next(); !r.done; r = g.next("chiedi" in r.value ? "Dario" : undefined))
+        if ("evento" in r.value && r.value.evento === "b10")
+          trovati.push(...r.value.dati.chiamate!.map((c) => `${c.funzione} ${testoRestituito(c.valori[0]![0]!)} ${c.riferimenti[0]} ${c.origini[0]!.nome}·${c.origini[0]!.livello}`));
+      return trovati;
+    },
+    atteso: ["f3 8 a.voto a.voto·0"],
   },
 ];
 /** Le fotografie attese che un interprete non dà. */
@@ -824,16 +899,26 @@ const mutazioni: Record<string, [string, string]> = {
   ],
   // Il salto che non aumenta la profondità: le sequenze attese.
   "profondità sbagliata": ["    profondita++;\n", ""],
-  // Senza la copia: un argomento scritto per nome arriva come il dato di chi chiama (vettore e stringa compresi).
+  // Senza la copia: un argomento scritto per nome arriva come il dato di chi chiama (vettore, stringa e record compresi).
   "copia tolta": [
-    "      } else if (d.size !== undefined) dati.push({ copia: yield* elementiDi(a) });",
-    '      } else if (a.genere === "nome") dati.push({ cella: cella(a.nome), scritto: a.nome });\n      else if (d.size !== undefined) dati.push({ copia: yield* elementiDi(a) });',
+    '      } else if (d.size !== undefined || d.type === "record") dati.push({ copia: yield* elementiDi(a) });',
+    '      } else if (a.genere === "nome") dati.push({ cella: cella(a.nome), scritto: a.nome });\n      else if (d.size !== undefined || d.type === "record") dati.push({ copia: yield* elementiDi(a) });',
   ],
   // Il nome di un vettore assegnato a un vettore che diventa un alias, come `altri = voti` nel Python: cambiare la copia
   // cambia la sorgente.
   "copia di un vettore come alias": [
     "        if (intero && e.genere === \"nome\") return yield* copia(b.id, cella(t.nome), cella(e.nome));",
     "        if (intero && e.genere === \"nome\") {\n          yield evento(b.id);\n          qui.celle.set(t.nome, cella(e.nome));\n          return;\n        }",
+  ],
+  // Il nome di un record assegnato a un record che diventa un alias: cambiare la copia cambia la sorgente.
+  "copia di un record come alias": [
+    '        if (record && e.genere === "nome") return yield* copiaDelRecord(b.id, cella(t.nome), cella(e.nome));',
+    '        if (record && e.genere === "nome") {\n          yield evento(b.id, undefined, 0);\n          qui.celle.set(t.nome, cella(e.nome));\n          return;\n        }',
+  ],
+  // La copia di un record in un'azione sola, come da una funzione: le azioni dei campi non ci sono.
+  "copia di un record in un'azione sola": [
+    '        if (record && e.genere === "nome") return yield* copiaDelRecord(b.id, cella(t.nome), cella(e.nome));',
+    "",
   ],
   // La posizione della copia col nome che resta una variabile della copia: la fotografia non la vede.
   "posizione della copia mai scritta": ['    yield evento(blocco, "inizio");\n    posizione(0);', '    yield evento(blocco, "inizio");'],
@@ -866,12 +951,12 @@ const mutazioni: Record<string, [string, string]> = {
   // Una stringa restituita più lunga della lunghezza massima del risultato che non si ferma sulla fine.
   "stringa restituita oltre la lunghezza massima": ['    if (v.tipo === "string" && v.v.length > (f.return_max_length ?? lunghezzaPredefinita)) ferma("string_too_long");', ""],
   // Un elemento di un vettore di stringhe restituito più lungo della lunghezza massima del risultato che passa la fine.
-  "elemento restituito oltre la lunghezza massima": ['      for (const v of elementi) if (v?.tipo === "string" && v.v.length > (f.return_max_length ?? lunghezzaPredefinita)) ferma("string_too_long");', ""],
+  "elemento restituito oltre la lunghezza massima": ['        for (const v of elementi) if (v?.tipo === "string" && v.v.length > (f.return_max_length ?? lunghezzaPredefinita)) ferma("string_too_long");', ""],
   // L'indice di un elemento passato per riferimento calcolato quando la procedura lo usa, come nel Python che
   // assegna i bersagli uno dopo l'altro: `metti(i, v[i])` cambia `v[2]`.
   "indice del bersaglio calcolato dopo": [
-    "          cella: vettore ? new ElementoDi(c, i) : c,",
-    '          cella: vettore ? ((): Cella => { const quando = qui; const x = new ElementoDi(c, i); Object.defineProperty(x, "i", { get: () => { const ora = qui; qui = quando; try { return dentro((valuta((a as { indice: Espressione }).indice) as Numero).v, c.dato.size!); } finally { qui = ora; } } }); return x; })() : c,',
+    "          dati.push({ cella: new ElementoDi(c, i, semplice), scritto: `${nome}${pezzo}`, origine: { nome: `${suo.nome}${pezzo}`, livello: suo.livello } });",
+    '          dati.push({ cella: ((): Cella => { const quando = qui; const x = new ElementoDi(c, i, semplice); if (a.genere === "indice") Object.defineProperty(x, "i", { get: () => { const ora = qui; qui = quando; try { return dentro((valuta(a.indice) as Numero).v, c.dato.size!); } finally { qui = ora; } } }); return x; })(), scritto: `${nome}${pezzo}`, origine: { nome: `${suo.nome}${pezzo}`, livello: suo.livello } });',
   ],
   // L'operazione che controlla il suo operando sinistro prima di calcolare il destro: il carattere 0 a sinistra si
   // ferma prima del codice non valido a destra.

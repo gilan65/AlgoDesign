@@ -195,10 +195,19 @@
   ],
   "tipi": [
     "campo-sconosciuto#campo-sconosciuto",
+    "copia-con-un-campo-senza-valore#copia-con-un-campo-senza-valore",
+    "copia-di-un-record#copia-di-un-record",
+    "funzione-con-un-record#funzione-con-un-record",
+    "funzione-con-un-record#migliore/da-sola",
     "nome-del-record-gia-usato#nome-del-record-gia-usato",
     "record-in-un-programma#record-in-un-programma",
+    "record-per-riferimento#record-per-riferimento",
+    "record-per-riferimento#promuovi/da-solo",
+    "record-per-riferimento#crea/da-sola",
     "record-sconosciuto#record-sconosciuto",
     "record-senza-campi#record-senza-campi",
+    "riferimento-a-un-record-senza-valore#senza-valore",
+    "riferimento-a-un-record-senza-valore#con-un-campo",
     "vettore-di-record#vettore-di-record"
   ]
 }

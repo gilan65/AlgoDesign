@@ -80,7 +80,7 @@ import { linguaggi, type Linguaggio, type VoceDelLinguaggio } from "../core/gene
 import { codiceDelMotivo } from "../core/genera/motivi";
 import type { LinguaDelCodice } from "../core/genera/nomi";
 import { apri } from "../core/progetto/formato";
-import type { Atteso, CasoDiUnaFunzione, Funzione, Progetto } from "../core/progetto/modello";
+import { usaIRecord, type Atteso, type CasoDiUnaFunzione, type Funzione, type Progetto } from "../core/progetto/modello";
 import { paroleDelloPseudocodice } from "../ui/genera/parole";
 import { ambienteDi, appaia, esecutoreDel, esecutori as tuttiGliEsecutori, lingueDelCodice as lingue, trovaToolchain, type Esecutore, type Macchina } from "./esecutori";
 import { righeDellEsito } from "./righe-dei-casi";
@@ -269,6 +269,14 @@ file.forEach(({ nome, percorso }, k) => {
     fuoriTappa += casi.length;
     fileFuoriTappa++;
     righeDiPrima.push(`FUORI TAPPA ${nome} (casi: ${casi.length})`);
+    return;
+  }
+  // I record si eseguono ma i generatori non li scrivono ancora: un progetto giusto che li usa resta fuori dal confronto
+  // (quello con un errore statico vi entra, senza programma).
+  if (controllo.errori.length === 0 && usaIRecord(p)) {
+    fuoriTappa += casi.length;
+    fileFuoriTappa++;
+    righeDiPrima.push(`FUORI TAPPA ${nome} (casi: ${casi.length}): i record, che i generatori non scrivono ancora`);
     return;
   }
   const base = basename(nome).replace(/\.algo$/, "");

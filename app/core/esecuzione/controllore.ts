@@ -13,7 +13,8 @@
 // può dire): ferma «dentro» e «sopra», mai «fuori» e «continua».
 //
 // Un punto di interruzione su un ciclo `per` o `per ogni` ferma a ogni controllo, come sul `mentre`: mai sulla partenza,
-// sull'elemento preso né sull'aumento.
+// sull'elemento preso né sull'aumento. Sulla copia di un record col suo nome (un'azione per campo) ferma una volta, prima
+// del primo campo.
 //
 // La profondità è quella delle chiamate attive (0 nella radice, il programma principale o la funzione eseguita da sola):
 // senza chiamate «dentro» e «sopra» fanno la stessa cosa, «fuori» e «continua» anche.
@@ -33,16 +34,18 @@ export interface EventoDelPasso {
   readonly dato?: string;
   /** La parte del ciclo, in un ciclo `per` o `per ogni`. */
   readonly fase?: FaseDelCiclo;
+  /** La posizione del campo, nella copia di un record col suo nome. */
+  readonly campo?: number;
   readonly profondita: number;
 }
 
 /** Le parti di un ciclo che non sono un controllo: un punto di interruzione non le ferma. */
 const nonControlli: ReadonlySet<FaseDelCiclo> = new Set(["inizio", "elemento", "passo"]);
 
-/** Un punto di interruzione ferma questo evento: non sul valore iniziale di un dato, e in un ciclo solo sul controllo.
- * La usa anche l'animata dell'interfaccia, che si spegne dove un punto ferma. */
-export function fermatoDaUnPunto(punti: ReadonlySet<string>, e: Pick<EventoDelPasso, "evento" | "dato" | "fase">): boolean {
-  return e.dato === undefined && punti.has(e.evento) && (e.fase === undefined || !nonControlli.has(e.fase));
+/** Un punto di interruzione ferma questo evento: non sul valore iniziale di un dato, in un ciclo solo sul controllo, nella
+ * copia di un record solo sul primo campo. La usa anche l'animata dell'interfaccia, che si spegne dove un punto ferma. */
+export function fermatoDaUnPunto(punti: ReadonlySet<string>, e: Pick<EventoDelPasso, "evento" | "dato" | "fase" | "campo">): boolean {
+  return e.dato === undefined && punti.has(e.evento) && (e.fase === undefined || !nonControlli.has(e.fase)) && (e.campo === undefined || e.campo === 0);
 }
 
 export function fermati(comando: Comando, partenza: number | undefined, punti: ReadonlySet<string>, e: EventoDelPasso): boolean {

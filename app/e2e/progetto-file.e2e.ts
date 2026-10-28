@@ -175,7 +175,8 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
     await expect(errore.getByRole("listitem")).toHaveText([it.apriFuoriTappa]);
     await chiudiConEsc(page, errore);
   }
-  expect(deiRecord.length).toBe(6);
+  // Sei giusti (che il nucleo esegue) e cinque con un errore statico.
+  expect(deiRecord.length).toBe(11);
 });
 
 // ------------------------------------------------------------------------------- i motivi d'apertura
