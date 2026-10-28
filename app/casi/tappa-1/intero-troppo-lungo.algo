@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "intero-troppo-lungo",
     "description": "Una riga di 5000 cifre letta come intero: fuori dall'intervallo, l'input non è valido."

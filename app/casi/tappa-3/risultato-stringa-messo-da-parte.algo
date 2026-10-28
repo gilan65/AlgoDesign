@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "risultato-stringa-messo-da-parte",
     "description": "Due chiamate di una funzione stringa che si può fermare nella stessa espressione: la prima si calcola e resta valida mentre si calcola la seconda; poi un «per ogni» sulla stringa restituita, chiamata una volta."

@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "importazione-dalla-libreria",
     "description": "Nato da un'importazione: il programma di riferimento della tappa 3 con ciò che entra dalla libreria dei voti. La procedura che legge il numero è identica e non entra di nuovo; la funzione che dice se un voto è valido è diversa ed entra rinominata, con la costante comune che usa; la media entra rinominata perché il programma ha un dato con quel nome, con la funzione che chiama; il giudizio entra con la funzione che chiama e chiama la funzione del voto valido col nome nuovo, e il suo caso che si ferma dentro di lei attende l'errore sul blocco nuovo; i casi d'uso entrano con loro."

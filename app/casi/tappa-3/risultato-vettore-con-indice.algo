@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "risultato-vettore-con-indice",
     "description": "L'elemento di un vettore restituito, con l'indice dopo la chiamata: la funzione restituisce un vettore, quindi è un elemento e non il carattere di una stringa."

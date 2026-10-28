@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "riferimento-senza-valore-in-esecuzione",
     "description": "Un dato che riceve un valore solo su un ramo, passato per riferimento: con lo zero arriva senza valore, e la chiamata si ferma."

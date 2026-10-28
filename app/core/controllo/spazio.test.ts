@@ -33,7 +33,7 @@ const assegna = (id: string, target: string, value: string) => ({ id, kind: "ass
 const p: Progetto = (() => {
   const r = leggi({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "spazio" },
     functions: [
       { id: "f0", kind: "main", data: [], body: [], end: { id: "f0-fine" } },

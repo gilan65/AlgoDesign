@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "per-ogni-vettore",
     "description": "Somma degli elementi di un vettore."

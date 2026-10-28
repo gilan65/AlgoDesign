@@ -30,7 +30,7 @@ const misura = (t: string) => [...t].length * 10;
  * sulla fine della funzione (`e2`). */
 const PROGRAMMA = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "inverso" },
   functions: [
     {

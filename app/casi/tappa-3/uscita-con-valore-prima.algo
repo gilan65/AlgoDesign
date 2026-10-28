@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "uscita-con-valore-prima",
     "description": "Un parametro di uscita parte senza valore anche se il dato di chi chiama ne ha uno: la procedura che lo scrive prima di dargli un valore si ferma, e non scrive il 5."

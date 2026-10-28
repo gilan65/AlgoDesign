@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "converti-a-stringa",
     "description": "Un vettore di tre caratteri, uno accentato, in una stringa."

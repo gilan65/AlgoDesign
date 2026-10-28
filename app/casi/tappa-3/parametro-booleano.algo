@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "parametro-booleano",
     "description": "Booleano per riferimento: la procedura cambia il dato del chiamante."

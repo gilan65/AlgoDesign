@@ -800,7 +800,7 @@ export const provenienzeDeiCicli: readonly string[] = [
  * valore ripetuto. */
 export const formeDelC: Progetto = {
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "forme-del-c" },
   functions: [
     {
@@ -1547,7 +1547,7 @@ export const delCorpusDelleFunzioni: Readonly<Record<string, string>> = {
  * contatore di un `per`. */
 export const formeDelleFunzioni: Progetto = {
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "forme-delle-funzioni" },
   functions: [
     {
@@ -1661,7 +1661,7 @@ export const formeDelleFunzioniAttese: Atteso = dueLingue((l) => {
  * stringhe più lunghe del dato che le riceve, una funzione che restituisce la chiamata di un'altra. */
 export const formeDelRisultato: Progetto = {
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "forme-del-risultato" },
   functions: [
     {

@@ -6,7 +6,7 @@
 // Il tipo dice anche la forma («vettore di 5 interi») e la lunghezza massima di una stringa, se il file la
 // dichiara: la predefinita non è nel file e non si scrive.
 import { valoreIniziale, type TestiDelDisegno, type ValoreRipetuto } from "../../core/disegno/impaginazione";
-import type { Dato, Ruolo, Tipo } from "../../core/progetto/modello";
+import { tipoSemplice, type Dato, type Ruolo, type Tipo } from "../../core/progetto/modello";
 import type { Dizionario } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
 
@@ -36,7 +36,7 @@ export const nomiDeiRuoli: Record<Ruolo, keyof Dizionario> = {
 
 /** Il tipo di un dato come lo dice la colonna «Tipo»: anche lo pseudocodice lo scrive così. */
 export function tipoDelDato(dato: Dato, testi: Dizionario): string {
-  const [uno, molti] = nomiDeiTipi[dato.type];
+  const [uno, molti] = nomiDeiTipi[tipoSemplice(dato.type)];
   const tipo = dato.size === undefined ? testi[uno] : riempi(testi.datiVettore, { n: String(dato.size), tipo: testi[dato.size === 1 ? uno : molti] });
   return dato.max_length === undefined ? tipo : riempi(dato.max_length === 1 ? testi.datiLunghezzaUno : testi.datiLunghezza, { tipo, n: String(dato.max_length) });
 }

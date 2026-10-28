@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "valore-predefinito-sbagliato",
     "description": "Il valore predefinito di una funzione intera scritto come un carattere: il progetto non parte."

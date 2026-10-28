@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "riferimento-fra-parentesi",
     "description": "Un dato fra parentesi non si passa per riferimento: è un'espressione, non il dato."

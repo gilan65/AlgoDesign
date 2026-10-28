@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "converti-a-vettore",
     "description": "Una stringa di 4 caratteri in un vettore di 6: gli ultimi due ricevono lo spazio."

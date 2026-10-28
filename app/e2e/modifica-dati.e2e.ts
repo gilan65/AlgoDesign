@@ -34,7 +34,7 @@
 //   pannello a destra non tocca la vista dei dati), né col tocco su uno schermo.
 
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import type { Blocco, Dato, Funzione, Ruolo, Tipo } from "../core/progetto/modello";
+import { tipoSemplice, type Blocco, type Dato, type Funzione, type Ruolo, type Tipo } from "../core/progetto/modello";
 import { testiDelleCause } from "../i18n/codici";
 import { it, type Dizionario } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
@@ -97,7 +97,7 @@ function campiAttesi(d: Dato): string[] {
   const iniziale = d.initial === undefined ? "" : typeof d.initial === "string" ? d.initial : "each" in d.initial ? d.initial.each : `{${d.initial.join(", ")}}`;
   return [
     d.name,
-    it[nomiDeiTipi[d.type]],
+    it[nomiDeiTipi[tipoSemplice(d.type)]],
     d.size === undefined ? it.formaSemplice : it.formaVettore,
     d.size === undefined ? "" : String(d.size),
     d.constant ? it.naturaCostante : it.naturaVariabile,

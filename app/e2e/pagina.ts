@@ -41,7 +41,7 @@ const comeFile = (esempi: readonly { nome: string; funzione: Funzione }[]): Reco
   Object.fromEntries(
     esempi.map((e, i) => [
       `${String(i).padStart(3, "0")} ${e.nome}.algo`,
-      JSON.stringify({ format: "algodesign", schema_version: 1, metadata: { name: e.nome }, functions: [e.funzione] }, null, 2),
+      JSON.stringify({ format: "algodesign", schema_version: 2, metadata: { name: e.nome }, functions: [e.funzione] }, null, 2),
     ]),
   );
 

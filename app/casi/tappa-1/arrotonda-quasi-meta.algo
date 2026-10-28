@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "arrotonda-quasi-meta",
     "description": "Arrotondamento del reale appena sotto la metà, positivo e negativo: va verso lo zero, e lo zero negativo resta col segno."

@@ -1,0 +1,60 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "vettore-di-record",
+    "description": "Un vettore di record non si può ancora usare."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "classe",
+          "type": "string",
+          "max_length": 3
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "classe",
+          "type": "record",
+          "record": "alunno",
+          "size": 3
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "vettore-di-record",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "invalid_data_item",
+          "block": "f1"
+        }
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "divisione-intera-in-parametro",
     "description": "7 / 2 fra interi passato a un parametro reale."

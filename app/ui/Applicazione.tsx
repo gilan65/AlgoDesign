@@ -83,7 +83,7 @@ import { eUnaParolaSola } from "../core/modifica/rinomina";
 import { sottoblocchi } from "../core/modifica/identificatori";
 import { importa as importaDa } from "../core/modifica/importa";
 import { apri as apriTesto, salva as testoDi } from "../core/progetto/formato";
-import type { Blocco, CasoDiUnaFunzione, Dato, Funzione, Progetto } from "../core/progetto/modello";
+import { usaIRecord, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto } from "../core/progetto/modello";
 import { bozzaDelCaso, casoDaBozza, datiDelleVoci, nomeDelCasoNuovo, stessoCaso, vociDelCasoNuovo, type BozzaDelCaso } from "./casi/bozza";
 import { casiDella, chiaveDelCaso, chiaviDeiCasi, selezioneDopoIlPasso, TuttiICasi } from "./casi/tutti";
 import { casoDallEsecuzione, casoUguale, stessoProgramma, type DallEsecuzione } from "../core/casi/dall-esecuzione";
@@ -2857,8 +2857,9 @@ export function Applicazione({
       });
       return;
     }
-    // Il controllo di questa versione non conosce la ricorsione: un progetto che la usa non si apre.
-    if (controlla(esito.progetto, limiti).fuoriTappa) {
+    // Un progetto con un costrutto che l'interfaccia non conosce ancora non si apre: i record anche con gli errori statici,
+    // che altrimenti si mostrerebbero.
+    if (usaIRecord(esito.progetto) || controlla(esito.progetto, limiti).fuoriTappa) {
       setErrori({ titolo: riempi(testi.apriErroreTitolo, { file: nomeDelFile(percorso) }), voci: [{ testo: testi.apriFuoriTappa }] });
       return;
     }
@@ -2895,7 +2896,7 @@ export function Applicazione({
     }
     const esito = apriTesto(testo);
     if (!esito.ok) return nonSiApre(testoDelProblema({ genere: "apertura", errori: esito.errori }, testi));
-    if (controlla(esito.progetto, limiti).fuoriTappa) return nonSiApre(testi.apriFuoriTappa);
+    if (usaIRecord(esito.progetto) || controlla(esito.progetto, limiti).fuoriTappa) return nonSiApre(testi.apriFuoriTappa);
     setUltimaCartella(cartellaDi(percorso));
     return { sorgente: { nome: esito.progetto.metadata.name, percorso, progetto: esito.progetto } };
   }

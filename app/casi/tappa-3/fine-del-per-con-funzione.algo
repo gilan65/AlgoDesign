@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "fine-del-per-con-funzione",
     "description": "La fine di un ciclo per che chiama una funzione: si calcola dopo aver dato il valore al contatore, e di nuovo a ogni controllo."

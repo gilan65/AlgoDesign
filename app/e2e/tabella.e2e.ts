@@ -614,7 +614,7 @@ test("contrasto dei testi della colonna dell'esecuzione, codice generato compres
 /** Una catena di cinque procedure, ognuna con un parametro per riferimento che aumenta e passa alla seguente. */
 const catena = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "catena" },
   functions: [
     { id: "f0", kind: "main", data: [{ name: "n", type: "integer", initial: "0" }], body: [{ id: "c0", kind: "call", callee: "l1", arguments: ["n"] }], end: { id: "e0" } },

@@ -45,7 +45,7 @@ import {
 import { funzioniDelGiro } from "../controllo/controllo";
 import { funzioniChiamabili, testoDelValore, type FaseDelCiclo, type Fotografia, type FotografiaDiUnaChiamata, type Origine, type Restituito, type Valore } from "../interprete/interprete";
 import { livelliDellePosizioni, nomiDeiVettori } from "../progetto/copia";
-import { opzioniPredefinite, type Blocco, type Dato, type Funzione, type Progetto, type Tipo } from "../progetto/modello";
+import { opzioniPredefinite, tipoSemplice, type Blocco, type Dato, type Funzione, type Progetto, type Tipo } from "../progetto/modello";
 
 export interface Riga {
   /** L'azione: per una ripresa, quella che riprende. */
@@ -489,7 +489,7 @@ export class TabellaMostrata {
       const testo = testoDelValore(v, decimali);
       return v.tipo === "real" ? testo.replace(".", separatoreDeiDecimali) : testo;
     };
-    const mostrato = (d: Dato): DatoMostrato => ({ nome: d.name, tipo: testi.tipi[d.type], ...(d.size !== undefined ? { elementi: d.size } : {}) });
+    const mostrato = (d: Dato): DatoMostrato => ({ nome: d.name, tipo: testi.tipi[tipoSemplice(d.type)], ...(d.size !== undefined ? { elementi: d.size } : {}) });
     this.#dati = datiDi(principale).map(mostrato);
     this.#comuni = comuni.length;
     this.#radiceDelGiro = radice !== undefined && funzioniDelGiro(p).has(principale);
@@ -634,7 +634,7 @@ export class TabellaMostrata {
         const elementi = "elementi" in v ? v.elementi : [v];
         return elementi.map((x, i) => ({ nome: vettore ? `[${i}]` : nome, cella: this.#cella(x, false) }));
       });
-    return { nome, tipo: this.#testi.tipi[f.return_type!], vettore, chiamate };
+    return { nome, tipo: this.#testi.tipi[tipoSemplice(f.return_type!)], vettore, chiamate };
   }
 
   #nelWatch(d: DatoMostrato, valori: readonly (Valore | undefined)[], cambiati: readonly boolean[] | undefined): DatoNelWatch {

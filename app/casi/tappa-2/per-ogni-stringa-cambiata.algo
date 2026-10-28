@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "per-ogni-stringa-cambiata",
     "description": "La stringa di un ciclo per ogni cambiata e accorciata nel corpo: lunghezza e caratteri si rileggono a ogni giro; poi l'ultimo elemento preso."

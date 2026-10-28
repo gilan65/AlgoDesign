@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "per-overflow-contatore",
     "description": "Ciclo per che arriva al massimo intero: l'ultimo incremento va in overflow."

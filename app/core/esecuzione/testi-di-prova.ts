@@ -4,7 +4,7 @@
 import { nomiDegliOperatori } from "../../i18n/operatori";
 import type { ParoleDeiCicli, ParoleDelleFunzioni } from "../disegno/impaginazione";
 import { traduciEspressione } from "../disegno/lingua";
-import type { Dato, Tipo } from "../progetto/modello";
+import { tipoSemplice, type Dato, type Tipo } from "../progetto/modello";
 import type { TestiDellaTraccia } from "./traccia";
 
 /** Le parole dei cicli nel disegno, per le prove: anche quelle del disegno che non mostrano la tabella. */
@@ -33,7 +33,7 @@ export const cicliEn: ParoleDeiCicli = {
 /** Il tipo del risultato nell'intestazione di una funzione, per le prove: come lo dice la vista dei dati
  * (`vettore di 3 interi`), senza la lunghezza massima di una stringa; le parole date, uno e molti per ogni tipo. */
 function tipoDiProva(d: Dato, nomi: Readonly<Record<Tipo, readonly [string, string]>>, vettore: string): string {
-  const [uno, molti] = nomi[d.type];
+  const [uno, molti] = nomi[tipoSemplice(d.type)];
   return d.size === undefined ? uno : `${vettore} ${d.size} ${d.size === 1 ? uno : molti}`;
 }
 

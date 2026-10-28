@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "uscita-letta-prima",
     "description": "Un parametro di uscita che la procedura scrive prima di dargli un valore: parte senza valore, e la scrittura si ferma."

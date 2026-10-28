@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "risultato-vettore-in-un-testo",
     "description": "Un vettore restituito dentro un testo: tutto intero in converti_a_stringa, e un suo elemento stringa dentro una concatenazione."

@@ -308,7 +308,7 @@ test("dalla tastiera: Maiusc+F9 sul blocco ferma il riquadro col fuoco dentro, F
  * scorreva (misurato): 60 lo fanno scorrere con ogni carattere, e la premessa sotto lo controlla. */
 const lunghiEVettori = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "lunghi" },
   functions: [
     {

@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "assegnazione-intero",
     "description": "Quoziente e resto fra interi con un dividendo negativo: troncamento verso lo zero, resto col segno del dividendo."

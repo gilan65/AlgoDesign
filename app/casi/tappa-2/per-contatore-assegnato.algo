@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "per-contatore-assegnato",
     "description": "Il contatore di un ciclo per assegnato nel corpo: errore statico."

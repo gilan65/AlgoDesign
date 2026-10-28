@@ -207,7 +207,7 @@ const PERCORSO = "C:\\Documenti\\segni.algo";
 /** Il programma dei segni: n col valore iniziale; la domanda e la sua Lettura; un `per` che scrive fibonacci(i). */
 const PROGRAMMA = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "segni" },
   functions: [
     {

@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "lettura-attraverso-riferimento",
     "description": "Una lettura attraverso due parametri di uscita: la voce del caso nomina il dato del programma principale che riceve il valore."

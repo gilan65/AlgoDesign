@@ -235,7 +235,7 @@ test("i conflitti: la scelta cambia ciò che entra, «Sostituisci» dice i casi 
 /** Una sorgente con `valido` di un'altra intestazione (due parametri) e `usa`, che la chiama e ha un caso. */
 const ALTRA = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "altra" },
   functions: [
     { id: "f1", kind: "main", data: [], body: [], end: { id: "b1" } },
@@ -292,7 +292,7 @@ test("gli avvisi: l'intestazione diversa anche di una che non si importa, i risu
  * valore (che `triplo` usa, col suo caso) e una funzione coi dati che hanno il nome dell'altra costante e della procedura. */
 const COSTANTI = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "costanti" },
   shared_constants: [
     { name: "K", type: "integer", constant: true, initial: "2" },
@@ -305,7 +305,7 @@ const COSTANTI = JSON.stringify({
 });
 const CON_ALTRE_OPZIONI = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "altre-opzioni" },
   options: { real_decimals: 3, fill_character: "*", call_stack_limit: 10 },
   shared_constants: [{ name: "K", type: "integer", constant: true, initial: "3" }],

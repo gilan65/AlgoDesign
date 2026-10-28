@@ -136,7 +136,7 @@ test("«Dove sei»: fino a 7 livelli tutti; oltre, il principio, «… N chiamat
 const conta = (n: number) =>
   JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "conta" },
     functions: [
       { id: "f1", kind: "main", data: [{ name: "r", type: "integer" }], body: [{ id: "b1", kind: "assignment", target: "r", value: `conta(${n})` }, { id: "b2", kind: "write", values: ["r"], newline: true }], end: { id: "b3" } },
@@ -207,7 +207,7 @@ test("il watch di un parametro che riceve il dato di una funzione con più chiam
   await apriLaFinestra(
     JSON.stringify({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "riferimento" },
       functions: [
         { id: "f1", kind: "main", data: [], body: [{ id: "b1", kind: "call", callee: "scendi", arguments: ["2"] }], end: { id: "b2" } },
@@ -233,7 +233,7 @@ test("la lettura in un parametro per riferimento nomina il dato vero, anche se u
   await apriLaFinestra(
     JSON.stringify({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "lettura" },
       functions: [
         { id: "f1", kind: "main", data: [{ name: "n", type: "integer", initial: "0" }], body: [{ id: "b1", kind: "call", callee: "a", arguments: ["n"] }, { id: "b2", kind: "write", values: ["n"], newline: true }], end: { id: "b3" } },
@@ -273,7 +273,7 @@ test("i giri della ricorsione nell'elenco delle procedure e delle funzioni e nel
 const ricorsive = (nomi: readonly string[]) =>
   JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "ricorsive" },
     functions: [
       { id: "f0", kind: "main", data: [{ name: "t", type: "integer", initial: "0" }], body: nomi.map((nome, k) => ({ id: `m${k}`, kind: "assignment", target: "t", value: `t + ${nome}(3)` })), end: { id: "mf" } },
@@ -367,7 +367,7 @@ test("un per che chiama dai suoi limiti: nel Python solo la riga della sua parte
   await apriLaFinestra(
     JSON.stringify({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "limiti" },
       functions: [
         { id: "f1", kind: "main", data: [{ name: "i", type: "integer" }], body: [{ id: "b1", kind: "for", counter: "i", from: "1", to: "quanti(2)", body: [{ id: "b2", kind: "write", values: ["i"], newline: true }] }], end: { id: "b3" } },

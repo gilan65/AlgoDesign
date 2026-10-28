@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "pari-e-dispari",
     "description": "La ricorsione indiretta: pari chiama dispari, che chiama pari, finché n arriva a 0."

@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "stringa-piu-lunga-del-vettore",
     "description": "Una stringa di 6 caratteri in un vettore di 3."

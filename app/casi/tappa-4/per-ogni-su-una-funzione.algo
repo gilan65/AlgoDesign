@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "per-ogni-su-una-funzione",
     "description": "La procedura «scendi» scorre il vettore di dieci stringhe lunghe al più 1000 restituito da «elenco» e chiama sé stessa: il vettore restituito sta nello spazio di ogni chiamata."

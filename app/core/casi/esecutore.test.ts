@@ -40,7 +40,7 @@ type Json = any;
 function progetto(data: Json[], body: Json[], casi: Json[]): { p: Progetto; casi: readonly CasoDUso[] } {
   const esito = leggi({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "prova" },
     functions: [{ id: "f1", kind: "main", data, body, end: { id: "fine" } }],
     test_cases: casi,
@@ -237,7 +237,7 @@ test("i limiti sono quelli dati, non i predefiniti", () => {
 function conFunzione(f: Json): Progetto {
   const esito = leggi({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "prova" },
     functions: [{ id: "f1", kind: "main", data: [], body: [], end: { id: "fine" } }, { id: "f2", ...f }],
   });

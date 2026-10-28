@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "riferimento-media-voti",
     "description": "Legge i voti di una classe, scarta quelli fuori da 1 a 10 e scrive la media dei voti validi."

@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "stringa-fuori-piano-base",
     "description": "Un carattere oltre U+FFFF conta uno: lunghezza, posizione e ordine per codice, non per unità UTF-16."

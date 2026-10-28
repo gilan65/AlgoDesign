@@ -49,7 +49,7 @@ test("testi dei codici: ogni codice in ogni lingua, nessun testo in più, nessun
   console.log(`testi dei codici: ${codici.length} codici distinti, lingue ${lingue.join(" e ")}, testi per lingua ${Object.keys(testiDeiCodici.it).length}, campi confrontati fra le lingue ${codici.length * 2}; non tradotti ${uguali.length}`);
   expect(uguali).toEqual([]);
   expect(Object.keys(testiDeiCodici).sort()).toEqual([...lingue].sort());
-  expect(codici.length).toBe(57);
+  expect(codici.length).toBe(61);
 
   // Controlli positivi, uno per rilevatore, su copie dei testi veri.
   const { uninitialized: _, ...copia } = testiDeiCodici.it;
@@ -95,7 +95,7 @@ test("testi dei codici: ogni codice ha il suo numero, e un breve di una frase in
   for (const lingua of lingue) expect({ lingua, brevi: brevi(testiDeiCodici[lingua]) }).toEqual({ lingua, brevi: [] });
   expect(codici.filter((c) => testiDeiCodici.it[c as keyof typeof numeroDelCodice].breve === testiDeiCodici.en[c as keyof typeof numeroDelCodice].breve)).toEqual([]);
   // Controlli positivi: un numero col genere sbagliato, che lascia un buco negli avvisi; un breve di due frasi e uno vuoto.
-  expect(numeri({ ...numeroDelCodice, missing_role: "E047" })).toEqual(["missing_role: E047", "A: A001 A002 A003 A004 A005 A006 A008 A009 A010 A011 invece di A001 A002 A003 A004 A005 A006 A007 A008 A009 A010"]);
+  expect(numeri({ ...numeroDelCodice, missing_role: "E051" })).toEqual(["missing_role: E051", "A: A001 A002 A003 A004 A005 A006 A008 A009 A010 A011 invece di A001 A002 A003 A004 A005 A006 A007 A008 A009 A010"]);
   const it = testiDeiCodici.it;
   expect(brevi({ ...it, syntax_error: { ...it.syntax_error, breve: "Il testo non si legge. Rileggilo." }, real_equality: { ...it.real_equality, breve: "" } })).toEqual(["syntax_error: «Il testo non si legge. Rileggilo.»", "real_equality: «»"]);
 });
@@ -226,6 +226,7 @@ const causeDeiRami: Record<string, Record<string, readonly Causa[]>> = {
     'guarda().genere !== "fine"': [{ it: "in più dopo la fine", en: "extra after the end" }],
     'base.genere !== "nome"': [{ it: "destinazione", en: "target" }],
     "livelli > tettoDiAnnidamento": [{ it: "annidata oltre", en: "nested beyond" }],
+    '"campo_mancante"': [{ it: "un punto senza il nome di un campo", en: "a dot with no field name" }],
   },
   limit_exceeded: {
     "d.size > limiti": [{ it: "elementi di un vettore", en: "elements of an array" }],
@@ -244,6 +245,16 @@ const causeDeiRami: Record<string, Record<string, readonly Causa[]>> = {
       { it: "libreria del C", en: "C library" },
     ],
     "else if (doppio)": [{ it: "nome di un altro dato", en: "name of another data item" }],
+    // Il nome di un record (anche a livello di file) e quello di un campo.
+    'delProgetto({ codice: "invalid_name"': [
+      { it: "cifra", en: "digit" },
+      { it: "parola riservata", en: "reserved word" },
+      { it: "libreria del C", en: "C library" },
+    ],
+    '{ codice: "invalid_name", fermata: delCampo }': [
+      { it: "cifra", en: "digit" },
+      { it: "parola riservata", en: "reserved word" },
+    ],
     'dellaFunzione(f, { codice: "invalid_name"': [
       { it: "cifra", en: "digit" },
       { it: "parola riservata", en: "reserved word" },
@@ -271,6 +282,10 @@ const causeDeiRami: Record<string, Record<string, readonly Causa[]>> = {
     "d.initial.length !== d.size": [{ it: "valore iniziale", en: "initial value" }],
     "includes(o.genere)": [{ it: "valore iniziale", en: "initial value" }],
     "if (t === undefined)": [{ it: "valore iniziale", en: "initial value" }],
+    'd.type === "record" && d.size !== undefined': [{ it: "vettore di record", en: "array of records" }],
+    '? difetto("invalid_data_item", "vettore_di_record")': [{ it: "vettore di record", en: "array of records" }],
+    "if (!Array.isArray(d.initial))": [{ it: "valore iniziale", en: "initial value" }],
+    "d.initial.length !== record.fields.length": [{ it: "valore iniziale", en: "initial value" }],
   },
   constant_loop_condition: {
     'avvisa("constant_loop_condition"': [
@@ -303,6 +318,7 @@ const causeDeiRami: Record<string, Record<string, readonly Causa[]>> = {
     ],
     "if (v.vettore)": [{ it: "del tipo giusto", en: "of the right type" }],
     "parametro.type !== v.tipo": [{ it: "del tipo giusto", en: "of the right type" }],
+    "v.record !== parametro.record": [{ it: "del tipo giusto", en: "of the right type" }],
     "d !== undefined && !stessaMisura": [{ it: "stessa lunghezza massima", en: "same maximum length" }],
     "if (vettore && !alParametro)": [{ it: "del tipo giusto", en: "of the right type" }],
     "if (!vettore && alParametro)": [{ it: "stessa dimensione", en: "same size" }],
@@ -312,7 +328,7 @@ const causeDeiRami: Record<string, Record<string, readonly Causa[]>> = {
       { it: "stessa dimensione", en: "same size" },
     ],
     "else if (vettore && !stessaMisura": [{ it: "stessa lunghezza massima", en: "same maximum length" }],
-    "if (dato.type !== parametro.type)": [{ it: "stesso tipo", en: "same type" }],
+    "dato.record !== parametro.record": [{ it: "stesso tipo", en: "same type" }],
     "if (!stessaMisura(dato, parametro))": [{ it: "stessa lunghezza massima", en: "same maximum length" }],
   },
   reference_not_assignable: {
@@ -336,6 +352,20 @@ const causeDeiRami: Record<string, Record<string, readonly Causa[]>> = {
       { it: "dalla chiamata", en: "from the call" },
     ],
   },
+  unknown_record_field: {
+    '"campo_assente"': [{ it: "non ha quel campo", en: "does not have that field" }],
+    '"non_un_record"': [{ it: "prima del punto non c'è un record", en: "there is no record before the dot" }],
+  },
+  record_name_in_use: {
+    '"record_doppio"': [{ it: "di un altro record", en: "to another record" }],
+    '"nome_di_un_tipo"': [{ it: "il nome di un tipo", en: "the name of a type" }],
+    '"nome_di_un_dato"': [{ it: "di un dato", en: "to a data item" }],
+    '"nome_di_una_funzione"': [{ it: "di una procedura o di una funzione", en: "to a procedure or to a function" }],
+  },
+  invalid_record: {
+    '"senza_campi"': [{ it: "almeno un campo", en: "at least one field" }],
+    '"campo_doppio"': [{ it: "tutti diversi", en: "all different" }],
+  },
   multi_code_character: {
     "codici.length > 1": [
       { it: "più caratteri", en: "several characters" },
@@ -354,7 +384,7 @@ const unaCausa = [
   "division_by_literal_zero", "integer_division_to_real", "real_equality", "useless_conversion", "input_never_read",
   "output_never_written", "missing_role", "maybe_uninitialized", "invalid_step", "unused_data", "same_reference",
   "unknown_callee", "function_as_statement", "procedure_in_expression", "invalid_default_value", "function_name_in_use",
-  "implicit_conversion", "reference_without_value", "recursion_too_deep", "recursion_data_too_large",
+  "implicit_conversion", "reference_without_value", "recursion_too_deep", "recursion_data_too_large", "unknown_record",
 ];
 
 function appaiaRami(trovati: Map<string, string[]>, tabella: typeof causeDeiRami, elenco: readonly string[], testi: Record<string, Testi>) {

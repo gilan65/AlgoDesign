@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "per-zero-giri",
     "description": "Cicli che non fanno giri: il contatore vale l'inizio, l'elemento resta com'era."

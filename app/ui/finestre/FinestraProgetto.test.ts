@@ -9,7 +9,7 @@ import { erroriDellaBozza } from "./FinestraProgetto";
 function legge(campo: "nome" | "decimali" | "riempimento" | "pila", valore: string | number): boolean {
   const progetto = {
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: campo === "nome" ? valore : "x" },
     ...(campo === "nome" ? {} : { options: campo === "decimali" ? { real_decimals: valore } : campo === "pila" ? { call_stack_limit: valore } : { fill_character: valore } }),
     functions: [{ id: "f1", kind: "main", data: [], body: [], end: { id: "e" } }],

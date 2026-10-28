@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "ricorsione-senza-uscita",
     "description": "La procedura «scendi» scrive il livello e richiama sé stessa senza mai fermarsi: con la pila delle chiamate del progetto a 10, l'esecuzione si ferma sull'undicesima chiamata."

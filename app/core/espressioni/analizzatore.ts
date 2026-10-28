@@ -32,6 +32,7 @@ export type Espressione =
   | { readonly genere: "pi" }
   | { readonly genere: "nome"; readonly nome: string }
   | { readonly genere: "indice"; readonly base: Espressione; readonly indice: Espressione }
+  | { readonly genere: "campo"; readonly base: Espressione; readonly campo: string }
   | { readonly genere: "chiamata"; readonly nome: string; readonly argomenti: readonly Espressione[] }
   | { readonly genere: "unario"; readonly operatore: OperatoreUnario; readonly operando: Espressione }
   | {
@@ -50,7 +51,7 @@ export const causeDeiCodici = {
   syntax_error: [
     "vuoto", "virgolette_aperte", "apice_aperto", "barra_rovesciata", "codice_vietato", "numero_scritto_male", "apici_vuoti",
     "uguale_solo", "lettera_accentata", "simbolo_sconosciuto", "tonda_aperta", "quadra_aperta", "operando_mancante",
-    "operando_alla_fine", "simbolo_slegato", "troppo_annidata", "destinazione",
+    "operando_alla_fine", "simbolo_slegato", "troppo_annidata", "destinazione", "campo_mancante",
   ],
   multi_code_character: ["piu_caratteri", "accento_a_parte"],
   limit_exceeded: ["oltre_elementi", "oltre_lunghezza", "oltre_caratteri"],
@@ -61,7 +62,7 @@ export const causeDeiCodici = {
   invalid_data_item: [
     "dimensione_non_valida", "lunghezza_non_valida", "lunghezza_non_stringa", "costante_senza_valore", "costante_con_ruolo",
     "elenco_di_altra_lunghezza", "valore_non_scritto", "parametro_fuori_posto", "parametro_con_attributi", "comune_non_costante",
-    "forma_del_valore",
+    "forma_del_valore", "vettore_di_record",
   ],
   constant_loop_condition: ["sempre_vera", "mentre_falsa", "ripeti_falsa"],
   assign_to_read_only: ["carattere_della_stringa", "contatore_del_ciclo", "elemento_del_ciclo"],
@@ -72,6 +73,9 @@ export const causeDeiCodici = {
   ],
   reference_not_assignable: ["non_un_dato", "fra_parentesi", "costante_passata", "contatore_passato", "elemento_passato", "carattere_passato"],
   unused_value: ["solo_iniziale", "solo_assegnazione", "solo_lettura", "solo_per_ogni", "solo_parametro"],
+  unknown_record_field: ["campo_assente", "non_un_record"],
+  record_name_in_use: ["record_doppio", "nome_di_un_dato", "nome_di_una_funzione", "nome_di_un_tipo"],
+  invalid_record: ["senza_campi", "campo_doppio"],
 } as const;
 export type CodiceConCause = keyof typeof causeDeiCodici;
 export type Causa = (typeof causeDeiCodici)[CodiceConCause][number];
@@ -203,7 +207,8 @@ function simboliConPosizioni(testo: string, tollerante = false): { simboli: Simb
       fuori.push({ genere: "stringa", codici: codiciFino('"') });
     } else {
       const due = x + (c[i + 1] ?? "");
-      const segno = ["<=", ">=", "==", "!="].includes(due) ? due : "+-*/()[],<>".includes(x) ? x : undefined;
+      // Il punto fuori da un numero è quello del campo di un record (`r.voto`).
+      const segno = ["<=", ">=", "==", "!="].includes(due) ? due : "+-*/()[],<>.".includes(x) ? x : undefined;
       // Un = solo è lo sbaglio più comune; una lettera fuori dall'ASCII è quasi sempre accentata. Un accento scritto a
       // parte (un segno che si unisce al carattere prima) si cita con la lettera che lo porta, come nel nome di un dato.
       const unito = /\p{M}/u.test(x);
@@ -265,7 +270,9 @@ const oltre = (livelli: number) => {
 const figli = (e: Espressione): readonly Espressione[] =>
   e.genere === "indice"
     ? [e.base, e.indice]
-    : e.genere === "unario"
+    : e.genere === "campo"
+      ? [e.base]
+      : e.genere === "unario"
       ? [e.operando]
       : e.genere === "binario"
         ? [e.sinistro, e.destro]
@@ -332,7 +339,7 @@ function parser(s: Simbolo[], testi: readonly string[]) {
     return { genere: "binario", operatore: op, sinistro: e, destro };
   };
 
-  /** Livello 1: un operando semplice con gli indici e la chiamata. */
+  /** Livello 1: un operando semplice con la chiamata, gli indici e i campi, in qualunque ordine dopo l'operando. */
   const operando = (): Espressione => {
     const t = guarda();
     i++;
@@ -357,12 +364,18 @@ function parser(s: Simbolo[], testi: readonly string[]) {
       } else e = { genere: "nome", nome: t.nome };
     } else if (t.genere === "fine") return ferma("syntax_error", s.length === 1 ? "vuoto" : "operando_alla_fine");
     else return ferma("syntax_error", "operando_mancante", testi[i - 1]);
-    while (prendi("[")) {
-      const indice = dentro(espressione);
-      aspetta("]");
-      e = { genere: "indice", base: e, indice };
+    for (;;) {
+      if (prendi("[")) {
+        const indice = dentro(espressione);
+        aspetta("]");
+        e = { genere: "indice", base: e, indice };
+      } else if (prendi(".")) {
+        const t = guarda();
+        if (t.genere !== "nome") ferma("syntax_error", "campo_mancante");
+        i++;
+        e = { genere: "campo", base: e, campo: (t as { nome: string }).nome };
+      } else return e;
     }
-    return e;
   };
 
   /** Livello 2: `elevato_a` senza associatività, fra due operandi semplici. */

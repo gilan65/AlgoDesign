@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "ricorsione-con-rif-out-e-stringhe",
     "description": "Procedure e funzioni che chiamano sé stesse con un parametro per riferimento e uno di uscita, col risultato stringa e con un «per ogni» sul vettore restituito da una funzione."

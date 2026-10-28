@@ -33,7 +33,7 @@ import { figliDelBlocco, type Tetti } from "../controllo/controllo";
 import { analizza, type Espressione, type OperatoreUnario } from "../espressioni/analizzatore";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import { eUnaCopia, nomiDeiVettori } from "../progetto/copia";
-import type { Blocco, Dato, Funzione, Progetto, ValoreIniziale } from "../progetto/modello";
+import { tipoSemplice, type Blocco, type Dato, type Funzione, type Progetto, type ValoreIniziale } from "../progetto/modello";
 import { genera, segnate, type Generato, type Mancanza, type Riga, type SpecieDellaMancanza } from "./forma";
 import { ancoraDelLivello, indiceDelLivello, nomeDellaSorgente, type LinguaDelCodice } from "./nomi";
 
@@ -99,7 +99,8 @@ export function mancanzeDiAccademico(p: Progetto): Mancanza[] {
 
   const dato = (d: Dato, funzione: string | undefined) => {
     const posto = { dato: d.name, ...(funzione !== undefined ? { funzione } : {}) };
-    if (d.type !== "integer" && d.type !== "boolean") segna({ specie: specieDelTipo[d.type], ...posto });
+    const t = tipoSemplice(d.type);
+    if (t !== "integer" && t !== "boolean") segna({ specie: specieDelTipo[t], ...posto });
     if (d.parameter === "reference") segna({ specie: "rif", ...posto });
     if (d.parameter === "out") segna({ specie: "out", ...posto });
     if (parola.has(d.name)) segna({ specie: "parola-del-linguaggio", ...posto });
@@ -109,7 +110,8 @@ export function mancanzeDiAccademico(p: Progetto): Mancanza[] {
   for (const f of p.functions) {
     const funzione = f.kind === "main" ? undefined : f.id;
     if (f.name !== undefined && parola.has(f.name)) segna({ specie: "parola-del-linguaggio", funzione: f.id });
-    if (f.kind === "function" && f.return_type !== "integer" && f.return_type !== "boolean") segna({ specie: specieDelTipo[f.return_type!], funzione: f.id });
+    const r = f.kind === "function" ? tipoSemplice(f.return_type!) : undefined;
+    if (r !== undefined && r !== "integer" && r !== "boolean") segna({ specie: specieDelTipo[r], funzione: f.id });
     f.data.forEach((d) => dato(d, funzione));
     const tipi = new Map([...comuni, ...f.data].map((d) => [d.name, d.type]));
 

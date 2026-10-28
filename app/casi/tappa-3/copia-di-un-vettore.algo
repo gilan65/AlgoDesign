@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "copia-di-un-vettore",
     "description": "La copia di un vettore col suo nome, elemento per elemento, e il vettore restituito da una funzione che restituisce una costante comune: chi riceve ha una copia, e cambiarla non cambia la sorgente."

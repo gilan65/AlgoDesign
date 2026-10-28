@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "fibonacci",
     "description": "Due chiamate ricorsive nella stessa espressione: fibonacci(n - 1) + fibonacci(n - 2)."

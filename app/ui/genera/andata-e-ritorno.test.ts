@@ -110,7 +110,7 @@ describe("l'andata e ritorno sui file del corpus che si scrivono", () => {
 /** Il programma con le forme che il corpus che si scrive non ha. */
 const forme: Progetto = {
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "forme del lettore" },
   shared_constants: [{ name: "LIMITE", type: "integer", constant: true, initial: "3" }],
   functions: [

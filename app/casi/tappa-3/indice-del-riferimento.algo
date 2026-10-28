@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "indice-del-riferimento",
     "description": "L'indice di un elemento passato per riferimento si calcola prima della chiamata, anche se un altro parametro per riferimento lo cambia."

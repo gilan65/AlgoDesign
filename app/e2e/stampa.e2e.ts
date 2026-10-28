@@ -321,7 +321,7 @@ test("[Ctrl+P] col fuoco in un campo apre la finestra; con un'altra finestra ape
  * tappa 3, con la misura del motore, nessun flowchart esce ristretto). */
 const LARGO = {
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "largo" },
   functions: [
     {

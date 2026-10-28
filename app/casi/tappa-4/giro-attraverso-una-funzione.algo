@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "giro-attraverso-una-funzione",
     "description": "La funzione «esterna» restituisce il valore di «aiuto», che chiama «scendi» k + 1 volte: «esterna» resta in corso finché il valore non è pronto, quindi con k = 499 le chiamate in corso sono 501."

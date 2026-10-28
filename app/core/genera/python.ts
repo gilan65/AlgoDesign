@@ -64,7 +64,7 @@ import { chiamateDellaFunzione, chiamateIn, funzioniDelGiro, funzioniVersoIlGiro
 import { lunghezzaMassima as lunghezzaMassimaNelNucleo } from "../controllo/lunghezza";
 import { spazioDellaPila, spazioDiUnaChiamata, tettoDelleChiamate } from "../controllo/spazio";
 import { analizza, type Espressione } from "../espressioni/analizzatore";
-import { opzioniPredefinite, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto, type Ruolo, type Tipo } from "../progetto/modello";
+import { opzioniPredefinite, tipoSemplice, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto, type Ruolo, type Tipo } from "../progetto/modello";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import { genera, parametriDelCaso, segnate, type Generato, type Riga } from "./forma";
 import { motiviCol } from "./motivi";
@@ -313,11 +313,13 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
       case "booleano":
         return "boolean";
       case "nome":
-        return dati.get(e.nome)!.type;
+        return tipoSemplice(dati.get(e.nome)!.type);
+      case "campo":
+        throw new Error("il campo di un record: il controllo statico dice fuori tappa un progetto coi record");
       case "indice":
         return vettore(e.base) ? tipo(e.base) : "character";
       case "chiamata":
-        return perNome.get(e.nome)!.return_type!;
+        return tipoSemplice(perNome.get(e.nome)!.return_type!);
       case "unario":
         switch (e.operatore) {
           case "-":
@@ -392,6 +394,8 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
         return operando("math.pi");
       case "nome":
         return operando(e.nome);
+      case "campo":
+        throw new Error("il campo di un record: il controllo statico dice fuori tappa un progetto coi record");
       case "indice":
         // L'elemento di un vettore, anche di quello restituito da una funzione: prima la chiamata, poi l'indice.
         if (vettore(e.base)) return operando(`${espressione(e.base).t}[${espressione(e.indice).t}]`);
@@ -510,8 +514,8 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
   // ---------------------------------------------------------------------------------------- le dichiarazioni
 
   const annotazioneDelTipo = (t: Tipo) => ({ integer: "int", real: "float", character: "str", string: "str", boolean: "bool" })[t];
-  const annotazione = (d: Dato) => (d.size === undefined ? annotazioneDelTipo(d.type) : `list[${annotazioneDelTipo(d.type)}]`);
-  const annotazioneDelRisultato = (f: Funzione) => (f.return_size === undefined ? annotazioneDelTipo(f.return_type!) : `list[${annotazioneDelTipo(f.return_type!)}]`);
+  const annotazione = (d: Dato) => (d.size === undefined ? annotazioneDelTipo(tipoSemplice(d.type)) : `list[${annotazioneDelTipo(tipoSemplice(d.type))}]`);
+  const annotazioneDelRisultato = (f: Funzione) => (f.return_size === undefined ? annotazioneDelTipo(tipoSemplice(f.return_type!)) : `list[${annotazioneDelTipo(tipoSemplice(f.return_type!))}]`);
   const valoreIniziale = (d: Dato): string | undefined => {
     const v = d.initial;
     if (v === undefined) return d.size === undefined ? undefined : `[None] * ${d.size}`;
@@ -615,7 +619,7 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
   }
 
   const leggi = (d: Dato): string => {
-    switch (d.type) {
+    switch (tipoSemplice(d.type)) {
       case "integer":
         return `${usa("leggiIntero")}()`;
       case "real":
@@ -861,14 +865,14 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
       // La funzione si chiama una volta, poi una riga per elemento: se si ferma, nulla è scritto.
       const nome = nomeDelRisultato[lingua];
       righe.push({ testo: `${rientro}${nome} = ${chiamataDiF}`, ...delCaso });
-      for (let i = 0; i < f.return_size; i++) righe.push({ testo: `${rientro}print("→ [${i}] = ", ${comeScritto(`${nome}[${i}]`, f.return_type!)}, sep="")` });
-    } else if (f.kind === "function") righe.push({ testo: `${rientro}print("→ ", ${comeScritto(chiamataDiF, f.return_type!)}, sep="")`, ...delCaso });
+      for (let i = 0; i < f.return_size; i++) righe.push({ testo: `${rientro}print("→ [${i}] = ", ${comeScritto(`${nome}[${i}]`, tipoSemplice(f.return_type!))}, sep="")` });
+    } else if (f.kind === "function") righe.push({ testo: `${rientro}print("→ ", ${comeScritto(chiamataDiF, tipoSemplice(f.return_type!))}, sep="")`, ...delCaso });
     else if (riferimenti.length === 0) righe.push({ testo: `${rientro}${chiamataDiF}`, ...delCaso });
     else {
       righe.push({ testo: `${rientro}${riferimenti.map((d) => d.name).join(", ")} = ${chiamataDiF}`, ...delCaso }, { testo: `${rientro}print()` });
       for (const d of riferimenti)
         for (const nome of d.size === undefined ? [d.name] : [...Array(d.size).keys()].map((i) => `${d.name}[${i}]`))
-          righe.push({ testo: `${rientro}print("${nome} = ", ${comeScritto(nome, d.type)}, sep="")` });
+          righe.push({ testo: `${rientro}print("${nome} = ", ${comeScritto(nome, tipoSemplice(d.type))}, sep="")` });
     }
     return righe;
   }

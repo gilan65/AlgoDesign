@@ -15,7 +15,7 @@
 // controllo; si mostrano sotto il campo dopo il primo tentativo di conferma, o su un campo cambiato, e la conferma con un
 // errore mette il fuoco sul campo sbagliato. Invio conferma.
 import { useId, useRef, useState, type FormEvent, type ReactElement } from "react";
-import { tipi, valorePredefinito, type Funzione, type TipoRestituito } from "../../core/progetto/modello";
+import { tipi, tipoSemplice, valorePredefinito, type Funzione, type TipoRestituito } from "../../core/progetto/modello";
 import type { GenereDiSottoprogramma } from "../../core/modifica/funzioni";
 import type { Dizionario } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
@@ -50,7 +50,7 @@ function bozzaIniziale(m: ModoDellaFinestra): BozzaDellaFunzione {
   if (m.modo === "nuova")
     return { genere: m.salto !== undefined ? "procedure" : m.soloFunzione ? "function" : (m.genere ?? "procedure"), nome: "", tipo: "integer", ...misure, predefinito: valorePredefinito.integer };
   const f = m.funzione;
-  const tipo = f.return_type ?? "integer";
+  const tipo = tipoSemplice(f.return_type ?? "integer");
   return {
     genere: f.kind === "function" ? "function" : "procedure",
     nome: f.name ?? "",

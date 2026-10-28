@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "sequenza-di-fibonacci",
     "description": "I primi n numeri di Fibonacci, uno per riga, con la funzione che chiama sé stessa due volte; con 26 si ferma al milione di azioni, sul ciclo."

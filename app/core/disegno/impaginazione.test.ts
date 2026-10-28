@@ -1573,7 +1573,7 @@ describe("i punti di inserimento", () => {
     const forme = [opzioniPredefinite, { ...opzioniPredefinite, ...leFormeDeiCicli[1] }];
     for (const [i, a] of tuttiGliAlberi.entries()) {
       const opzioni = forme[i % 3 === 0 ? 0 : 1]!;
-      const progetto: Progetto = { format: "algodesign", schema_version: 1, metadata: { name: a.nome }, functions: a.funzioni ?? [a.funzione] };
+      const progetto: Progetto = { format: "algodesign", schema_version: 2, metadata: { name: a.nome }, functions: a.funzioni ?? [a.funzione] };
       const prima = disegnaAlbero(impagina, a, tema, misura, opzioni);
       alberi++;
       for (const p of prima.punti) {

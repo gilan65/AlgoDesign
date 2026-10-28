@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "stesso-riferimento",
     "description": "Lo stesso elemento di un vettore passato due volte per riferimento."

@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "scrittura-intero",
     "description": "Scrittura di un negativo e del massimo intero."

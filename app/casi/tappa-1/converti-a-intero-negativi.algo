@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "converti-a-intero-negativi",
     "description": "Conversione in intero di due reali negativi: si tronca verso lo zero."

@@ -87,7 +87,7 @@ const NUMERO_GENERATI = 40;
 /** Metà senza cicli (gli alberi di prima, seme per seme), metà coi cicli `per` e `per ogni`. */
 const generati = Array.from({ length: NUMERO_GENERATI }, (_, i) => {
   const conICicli = i >= NUMERO_GENERATI / 2;
-  const esito = leggi({ format: "algodesign", schema_version: 1, metadata: { name: `generato-${i + 1}` }, functions: [alberoGenerato(1000 + i, conICicli)] });
+  const esito = leggi({ format: "algodesign", schema_version: 2, metadata: { name: `generato-${i + 1}` }, functions: [alberoGenerato(1000 + i, conICicli)] });
   if (!esito.ok) throw new Error(`generato ${i + 1}`);
   return { nome: `generato-${i + 1}`, progetto: esito.progetto };
 });
@@ -349,7 +349,7 @@ test("modello leggibile, controllo positivo: il rilevatore vede un campo a undef
 describe("progetto nuovo, metadati, opzioni", () => {
   test("un progetto nuovo ha il programma principale vuoto (f1, fine b1) e il nome obbligatorio", () => {
     const p = progettoDi(progettoNuovo({ name: "primo", author: "" }));
-    expect(p).toEqual({ format: "algodesign", schema_version: 1, metadata: { name: "primo" }, functions: [{ id: "f1", kind: "main", data: [], body: [], end: { id: "b1" } }] });
+    expect(p).toEqual({ format: "algodesign", schema_version: 2, metadata: { name: "primo" }, functions: [{ id: "f1", kind: "main", data: [], body: [], end: { id: "b1" } }] });
     expect(salva(p)).toBe(`${JSON.stringify(p, null, 2)}\n`);
     const senzaNome = progettoNuovo({ name: "" });
     expect(senzaNome.ok || senzaNome.rifiuto).toEqual({ motivo: "illeggibile", errori: [{ percorso: "metadata.name", motivo: "invalid_value" }] });
@@ -747,7 +747,7 @@ describe("dati", () => {
     });
     const letto = leggi({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "due-righe" },
       functions: [
         {
@@ -878,7 +878,7 @@ describe("casi d'uso", () => {
     const conP = (casiDelProgramma: readonly string[], casiDiP: readonly string[]) => {
       const a = leggi({
         format: "algodesign",
-        schema_version: 1,
+        schema_version: 2,
         metadata: { name: "prova" },
         functions: [
           { id: "f1", kind: "main", data: [], body: [], end: { id: "b1" } },

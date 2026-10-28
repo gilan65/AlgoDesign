@@ -26,7 +26,7 @@ const conN: Json = { name: "n", type: "integer", parameter: "value" };
 
 const libreria = progetto({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "libreria", library: true },
   shared_constants: [{ name: "K", type: "integer", constant: true, initial: "2" }],
   functions: [
@@ -73,7 +73,7 @@ const libreria = progetto({
 const programma = (o: { valore?: string; dati?: Json[]; funzioni?: Json[]; costanti?: Json[] } = {}): Progetto =>
   progetto({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "programma" },
     ...(o.costanti && { shared_constants: o.costanti }),
     functions: [
@@ -424,7 +424,7 @@ describe("le omonime e le opzioni della sorgente", () => {
   /** Una sorgente scritta a mano con due funzioni `doppio`: si segue la prima, come il controllo. */
   const conOmonime = progetto({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "omonime" },
     functions: [
       { id: "f1", kind: "main", data: [], body: [], end: { id: "b1" } },
@@ -495,7 +495,7 @@ describe("il costo del riepilogo", () => {
     }));
     const sorgente = leggi({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "libreria" },
       shared_constants: [0, 1, 2].map((i) => ({ name: `K${i}`, type: "integer", constant: true, initial: String(i) })),
       functions: [{ id: "f1", kind: "main", data: [], body: [], end: { id: "b0" } }, ...funzioni],

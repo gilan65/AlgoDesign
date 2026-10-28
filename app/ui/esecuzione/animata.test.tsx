@@ -151,7 +151,7 @@ test("«Animata» fa un passo alla volta da sola, come F11: aspetta il valore di
 // fine b5, `triplo` (f3) b6 e la fine b7. Il punto su b1 ferma l'animata sull'azione, non sulle sue riprese.
 const dueChiamate = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "due chiamate" },
   functions: [
     { id: "f1", kind: "main", data: [{ name: "r", type: "integer" }], body: [{ id: "b1", kind: "assignment", target: "r", value: "doppio(1) + triplo(2)", breakpoint: true }, { id: "b2", kind: "write", values: ["r"], newline: true }], end: { id: "b3" } },

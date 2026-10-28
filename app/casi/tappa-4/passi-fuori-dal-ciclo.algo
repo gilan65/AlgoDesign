@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "passi-fuori-dal-ciclo",
     "description": "Una ricorsione ad albero senza cicli: si ferma al milione di azioni sull'azione in corso."

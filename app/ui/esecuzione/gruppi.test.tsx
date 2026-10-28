@@ -33,7 +33,7 @@ const TRE_LIVELLI = readFileSync(new URL("../../casi/tappa-3/tre-livelli.algo", 
 /** Un `per` che si ferma all'aumento: il contatore oltre il più grande degli interi. */
 const PER_CHE_SI_FERMA = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "per" },
   functions: [
     {

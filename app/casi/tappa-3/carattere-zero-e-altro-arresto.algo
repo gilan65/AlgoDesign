@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "carattere-zero-e-altro-arresto",
     "description": "Il carattere 0 a sinistra di una concatenazione e un codice non valido a destra: gli operandi si calcolano prima dell'operazione, quindi si ferma il codice."

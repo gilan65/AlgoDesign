@@ -60,7 +60,7 @@ function progetto(p: Json): Progetto {
 function conDati(data: Json[], body: Json[], options?: Json): Progetto {
   return progetto({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "prova" },
     functions: [{ id: "f1", kind: "main", data, body, end: { id: "fine" } }],
     ...(options ? { options } : {}),
@@ -601,7 +601,7 @@ describe("il valore restituito: nella riga della ripresa e nel watch del nome de
   test("una funzione chiamata due volte nella stessa azione: i due valori nell'ordine; controllo positivo, il secondo da solo è rosso", () => {
     const p = progetto({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "prova" },
       functions: [
         { id: "f1", kind: "main", data: [{ name: "m", type: "integer" }], body: [{ id: "b1", kind: "assignment", target: "m", value: "massimo(3, 8) + massimo(5, 2)" }], end: { id: "fine" } },
@@ -715,7 +715,7 @@ describe("procedure e funzioni: una tabella sola, il livello per riga, i gruppi 
   test("le colonne della posizione di un «per ogni» dentro una funzione chiamata, nel suo gruppo", () => {
     const p = progetto({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "prova" },
       functions: [
         { id: "f1", kind: "main", data: [{ name: "v", type: "integer", size: 2, initial: ["4", "5"] }], body: [{ id: "b1", kind: "call", callee: "conta", arguments: ["v"] }], end: { id: "fine" } },
@@ -792,7 +792,7 @@ describe("la ricorsione: il gruppo e il watch leggono la chiamata giusta, livell
   const conta = (n: number): Progetto =>
     progetto({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "conta" },
       functions: [
         { id: "f1", kind: "main", data: [{ name: "r", type: "integer" }], body: [{ id: "b1", kind: "assignment", target: "r", value: `conta(${n})` }, { id: "b2", kind: "write", values: ["r"], newline: true }], end: { id: "b3" } },
@@ -934,7 +934,7 @@ describe("la ricorsione: il gruppo e il watch leggono la chiamata giusta, livell
     // `scendi(n, rif t)` passa `t` a sé stessa: a ogni livello è `c` del programma principale.
     const p = progetto({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "scendi" },
       functions: [
         { id: "f1", kind: "main", data: [{ name: "c", type: "integer", initial: "0" }], body: [{ id: "b1", kind: "call", callee: "scendi", arguments: ["2", "c"] }], end: { id: "b2" } },

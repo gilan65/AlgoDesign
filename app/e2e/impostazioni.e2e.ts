@@ -50,7 +50,7 @@ const percorso = "C:\\Progetti\\vettore grande.algo";
 const vettoreGrande = JSON.stringify(
   {
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "Vettore grande" },
     // Il vettore si legge e si scrive: senza blocchi, il dato mai usato darebbe un avviso.
     functions: [

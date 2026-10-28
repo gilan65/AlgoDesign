@@ -64,6 +64,10 @@ export const numeroDelCodice: Record<Codice, string> = {
   function_name_in_use: "E044",
   reference_without_value: "E045",
   recursion_data_too_large: "E046",
+  unknown_record: "E047",
+  unknown_record_field: "E048",
+  record_name_in_use: "E049",
+  invalid_record: "E050",
   integer_division_to_real: "A001",
   real_equality: "A002",
   useless_conversion: "A003",
@@ -188,7 +192,7 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
     },
     invalid_data_item: {
       breve: "Un attributo del dato non va bene.",
-      accaduto: "Un attributo del dato non va bene: la dimensione, la lunghezza, il valore iniziale, la costante o il ruolo; oppure il dato è un parametro del programma principale, che non ne ha.",
+      accaduto: "Un attributo del dato non va bene: la dimensione, la lunghezza, il valore iniziale, la costante o il ruolo; oppure il dato è un parametro del programma principale, che non ne ha, o un vettore di record.",
       suggerimento: "Controlla gli attributi del dato nella vista dei dati.",
     },
     assign_to_constant: {
@@ -289,7 +293,7 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
     },
     syntax_error: {
       breve: "Il testo non si lascia leggere.",
-      accaduto: "Il testo non si lascia leggere. Le cause possibili: un simbolo che il linguaggio non conosce (= al posto di ==, oppure una lettera accentata come in età); un operando che manca; una parentesi, tonda o quadra, aperta e mai chiusa; qualcosa in più dopo la fine; un numero scritto male, come 3. o 2x; un apice o una virgoletta senza chiusura; due apici vuoti; una barra rovesciata seguita da un segno che non ha significato; il carattere di codice 0 o un surrogato fra apici o virgolette; una destinazione che non è un dato né un elemento di vettore; un'espressione annidata oltre 63 livelli (parentesi, indici od operatori uno dentro l'altro).",
+      accaduto: "Il testo non si lascia leggere. Le cause possibili: un simbolo che il linguaggio non conosce (= al posto di ==, oppure una lettera accentata come in età); un operando che manca; una parentesi, tonda o quadra, aperta e mai chiusa; qualcosa in più dopo la fine; un numero scritto male, come 3. o 2x; un apice o una virgoletta senza chiusura; due apici vuoti; una barra rovesciata seguita da un segno che non ha significato; il carattere di codice 0 o un surrogato fra apici o virgolette; una destinazione che non è un dato, un elemento di vettore o un campo di record; un punto senza il nome di un campo dopo; un'espressione annidata oltre 63 livelli (parentesi, indici od operatori uno dentro l'altro).",
       suggerimento: "Rileggi il testo un simbolo alla volta. Lo sbaglio più comune è un = solo dentro una condizione: per confrontare si scrive ==.",
     },
     function_with_effect: {
@@ -311,6 +315,26 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
       breve: "Il dato passato per riferimento non ha ancora un valore.",
       accaduto: "Un parametro per riferimento (rif) fa entrare il dato nella procedura e poi lo fa uscire: entrando porta il suo valore, che la procedura può leggere, quindi il valore deve esserci già al momento della chiamata. Qui il dato arriva senza valore. Le versioni precedenti dell'app non controllavano questa regola: un progetto scritto con quelle può dare questo errore.",
       suggerimento: "Se la procedura non ha bisogno del valore che il dato ha prima della chiamata, perché gliene dà uno nuovo (per esempio leggendolo dalla console), cambia il parametro da rif a out, che fa solo uscire il dato. Se invece la procedura usa quel valore, assegnalo al dato prima della chiamata.",
+    },
+    unknown_record: {
+      breve: "Il record del dato non esiste nel progetto.",
+      accaduto: "Il tipo del dato, o del risultato della funzione, è un record che il progetto non definisce: forse il nome è scritto male, o il record è stato eliminato.",
+      suggerimento: "Scegli un record fra quelli del progetto, come alunno, oppure definisci il record con quel nome e i suoi campi.",
+    },
+    unknown_record_field: {
+      breve: "Il campo non c'è.",
+      accaduto: "Dopo il punto va il nome di un campo del record: qui il record non ha quel campo, o prima del punto non c'è un record.",
+      suggerimento: "Scrivi il nome di un campo come nella definizione del record, come a.voto.",
+    },
+    record_name_in_use: {
+      breve: "Il nome del record è già usato.",
+      accaduto: "Il nome del record è già di un altro record, di un dato, di una procedura o di una funzione, oppure è il nome di un tipo.",
+      suggerimento: "Dai al record un nome suo, che dica che cosa descrive: alunno, prodotto, punto.",
+    },
+    invalid_record: {
+      breve: "Il record non è definito bene.",
+      accaduto: "Un record ha almeno un campo e i nomi dei suoi campi sono tutti diversi.",
+      suggerimento: "Aggiungi i campi che mancano o rinomina quello ripetuto: nome, classe, voto.",
     },
     // Avvisi
     integer_division_to_real: {
@@ -479,7 +503,7 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
     },
     invalid_data_item: {
       breve: "An attribute of the data item is wrong.",
-      accaduto: "An attribute of the data item is wrong: the size, the length, the initial value, the constant or the role; or the data item is a parameter of the main program, which has none.",
+      accaduto: "An attribute of the data item is wrong: the size, the length, the initial value, the constant or the role; or the data item is a parameter of the main program, which has none, or an array of records.",
       suggerimento: "Check the attributes of the data item in the data view.",
     },
     assign_to_constant: {
@@ -580,7 +604,7 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
     },
     syntax_error: {
       breve: "The text cannot be read.",
-      accaduto: "The text cannot be read. The possible causes: a symbol the language does not know (= instead of ==, or an accented letter as in café); a missing operand; a bracket, round or square, opened and never closed; something extra after the end; a badly written number, such as 3. or 2x; a single or double quote with no closing one; two empty single quotes; a backslash followed by a sign that has no meaning; the character with code 0 or a surrogate between quotes; a target that is neither a data item nor an array element; an expression nested beyond 63 levels (parentheses, indexes or operators one inside the other).",
+      accaduto: "The text cannot be read. The possible causes: a symbol the language does not know (= instead of ==, or an accented letter as in café); a missing operand; a bracket, round or square, opened and never closed; something extra after the end; a badly written number, such as 3. or 2x; a single or double quote with no closing one; two empty single quotes; a backslash followed by a sign that has no meaning; the character with code 0 or a surrogate between quotes; a target that is not a data item, an array element or a record field; a dot with no field name after it; an expression nested beyond 63 levels (parentheses, indexes or operators one inside the other).",
       suggerimento: "Read the text again one symbol at a time. The most common slip is a single = inside a condition: to compare, write ==.",
     },
     function_with_effect: {
@@ -602,6 +626,26 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
       breve: "The data item passed by reference has no value yet.",
       accaduto: "A parameter by reference (ref) takes the data item into the procedure and then back out: going in, it carries its value, which the procedure may read, so the value must already be there when the call happens. Here the data item arrives with no value. Earlier versions of the app did not check this rule: a project written with them can give this error.",
       suggerimento: "If the procedure does not need the value the data item has before the call, because it gives it a new one (for example by reading it from the console), change the parameter from ref to out, which only takes the data item out. If instead the procedure uses that value, assign it to the data item before the call.",
+    },
+    unknown_record: {
+      breve: "The record of the data item does not exist in the project.",
+      accaduto: "The type of the data item, or of the function result, is a record that the project does not define: perhaps the name is misspelt, or the record was deleted.",
+      suggerimento: "Choose a record among those of the project, such as student, or define the record with that name and its fields.",
+    },
+    unknown_record_field: {
+      breve: "The field does not exist.",
+      accaduto: "After the dot goes the name of a field of the record: here the record does not have that field, or there is no record before the dot.",
+      suggerimento: "Write the name of a field as in the definition of the record, as in s.mark.",
+    },
+    record_name_in_use: {
+      breve: "The name of the record is already used.",
+      accaduto: "The name of the record already belongs to another record, to a data item, to a procedure or to a function, or it is the name of a type.",
+      suggerimento: "Give the record a name of its own, that says what it describes: student, product, point.",
+    },
+    invalid_record: {
+      breve: "The record is not well defined.",
+      accaduto: "A record has at least one field and the names of its fields are all different.",
+      suggerimento: "Add the missing fields or rename the repeated one: name, class, mark.",
     },
     // Warnings
     integer_division_to_real: {
@@ -787,8 +831,8 @@ export const testiDelleCause: Record<Lingua, Record<Causa, TestoDellaCausa>> = {
     },
     troppo_annidata: { breve: "L'espressione è annidata oltre 63 livelli.", suggerimento: "Spezza il calcolo in più blocchi, con dati di appoggio." },
     destinazione: {
-      breve: "La destinazione non è un dato né un elemento di vettore.",
-      suggerimento: "Scrivi il nome di un dato, come totale, o un elemento di un vettore, come voti[i].",
+      breve: "La destinazione non è un dato, un elemento di vettore o un campo di record.",
+      suggerimento: "Scrivi il nome di un dato, come totale, un elemento di un vettore, come voti[i], o il campo di un record, come a.voto.",
     },
     piu_caratteri: { breve: "Fra gli apici c'è più di un carattere: «{segno}».", suggerimento: "Fra gli apici va un carattere solo, come 'a'; per un testo usa le virgolette: \"ab\"." },
     accento_a_parte: {
@@ -966,6 +1010,46 @@ export const testiDelleCause: Record<Lingua, Record<Causa, TestoDellaCausa>> = {
       breve: "Il parametro riceve un valore dalla chiamata, e nessun blocco lo usa.",
       suggerimento: "Usa il parametro nella procedura o nella funzione, oppure eliminalo insieme al suo argomento in ogni chiamata.",
     },
+    campo_mancante: {
+      breve: "Dopo il punto manca il nome di un campo.",
+      suggerimento: "Scrivi il campo dopo il punto, come a.voto; un numero reale ha le cifre prima del punto: 0.5, non .5.",
+    },
+    vettore_di_record: {
+      breve: "In questa versione un dato non può essere un vettore di record.",
+      suggerimento: "Usa un vettore per ogni campo, come nomi e voti, oppure un record solo.",
+    },
+    campo_assente: {
+      breve: "Il record non ha un campo «{segno}».",
+      suggerimento: "Scrivi un campo come nella definizione del record, come a.voto, oppure aggiungi il campo al record.",
+    },
+    non_un_record: {
+      breve: "Il campo «{segno}» segue un valore che non è un record.",
+      suggerimento: "Prima del punto va un dato di un record, come a in a.voto: un vettore o un dato semplice non hanno campi.",
+    },
+    record_doppio: {
+      breve: "C'è già un altro record che si chiama «{segno}».",
+      suggerimento: "Dai a ogni record un nome suo, oppure unisci i campi dei due in un record solo.",
+    },
+    nome_di_un_dato: {
+      breve: "«{segno}» è già il nome di un dato o di una costante.",
+      suggerimento: "Cambia il nome del record o quello del dato: il record alunno e il dato alunno_scelto.",
+    },
+    nome_di_una_funzione: {
+      breve: "«{segno}» è già il nome di una procedura o di una funzione.",
+      suggerimento: "Cambia il nome del record o quello della procedura: il record alunno e la funzione alunno_migliore.",
+    },
+    nome_di_un_tipo: {
+      breve: "«{segno}» è il nome di un tipo.",
+      suggerimento: "Scegli un nome che dica che cosa descrive il record, come alunno o punto.",
+    },
+    senza_campi: {
+      breve: "Il record «{segno}» non ha campi.",
+      suggerimento: "Aggiungi almeno un campo, col nome e il tipo: nome, stringa.",
+    },
+    campo_doppio: {
+      breve: "Il record ha due campi che si chiamano «{segno}».",
+      suggerimento: "Dai a ogni campo un nome suo: voto_scritto e voto_orale, non due voto.",
+    },
   },
   en: {
     vuoto: { breve: "The field is empty.", suggerimento: "Write an expression: a data item, a number or a calculation, such as total + 1." },
@@ -1003,8 +1087,8 @@ export const testiDelleCause: Record<Lingua, Record<Causa, TestoDellaCausa>> = {
     },
     troppo_annidata: { breve: "The expression is nested beyond 63 levels.", suggerimento: "Split the calculation into several blocks, with helper data items." },
     destinazione: {
-      breve: "The target is neither a data item nor an array element.",
-      suggerimento: "Write the name of a data item, such as total, or an array element, such as marks[i].",
+      breve: "The target is not a data item, an array element or a record field.",
+      suggerimento: "Write the name of a data item, such as total, an array element, such as marks[i], or the field of a record, such as s.mark.",
     },
     piu_caratteri: { breve: "There is more than one character between the single quotes: “{segno}”.", suggerimento: "Between single quotes goes one character, such as 'a'; for a text use double quotes: \"ab\"." },
     accento_a_parte: {
@@ -1181,6 +1265,46 @@ export const testiDelleCause: Record<Lingua, Record<Causa, TestoDellaCausa>> = {
     solo_parametro: {
       breve: "The parameter gets a value from the call, and no block uses it.",
       suggerimento: "Use the parameter in the procedure or the function, or delete it together with its argument in every call.",
+    },
+    campo_mancante: {
+      breve: "The name of a field is missing after the dot.",
+      suggerimento: "Write the field after the dot, as in s.mark; a real number has digits before the dot: 0.5, not .5.",
+    },
+    vettore_di_record: {
+      breve: "In this version a data item cannot be an array of records.",
+      suggerimento: "Use one array for each field, such as names and marks, or a single record.",
+    },
+    campo_assente: {
+      breve: "The record has no field “{segno}”.",
+      suggerimento: "Write a field as in the definition of the record, as in s.mark, or add the field to the record.",
+    },
+    non_un_record: {
+      breve: "The field “{segno}” follows a value that is not a record.",
+      suggerimento: "Before the dot goes a data item of a record, such as s in s.mark: an array or a simple data item has no fields.",
+    },
+    record_doppio: {
+      breve: "There is already another record called “{segno}”.",
+      suggerimento: "Give each record a name of its own, or join the fields of the two into a single record.",
+    },
+    nome_di_un_dato: {
+      breve: "“{segno}” is already the name of a data item or of a constant.",
+      suggerimento: "Change the name of the record or that of the data item: the record student and the data item chosen_student.",
+    },
+    nome_di_una_funzione: {
+      breve: "“{segno}” is already the name of a procedure or of a function.",
+      suggerimento: "Change the name of the record or that of the procedure: the record student and the function best_student.",
+    },
+    nome_di_un_tipo: {
+      breve: "“{segno}” is the name of a type.",
+      suggerimento: "Choose a name that says what the record describes, such as student or point.",
+    },
+    senza_campi: {
+      breve: "The record “{segno}” has no fields.",
+      suggerimento: "Add at least one field, with its name and type: name, string.",
+    },
+    campo_doppio: {
+      breve: "The record has two fields called “{segno}”.",
+      suggerimento: "Give each field a name of its own: written_mark and oral_mark, not two mark.",
     },
   },
 };

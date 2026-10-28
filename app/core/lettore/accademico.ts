@@ -1134,7 +1134,7 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
 
   const progetto: Progetto = {
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: opzioni.nome ?? opzioni.procedura ?? "letto" },
     ...(comuni.length > 0 ? { shared_constants: comuni } : {}),
     functions: [principale, ...funzioniDelProgetto],

@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "ricorsione-allo-spazio",
     "description": "Una procedura che riceve senza rif un vettore di 1000 reali e scende senza fermarsi: si ferma allo spazio dei dati."

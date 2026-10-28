@@ -26,8 +26,9 @@ const leggi = (percorso: string): Progetto => {
   if (!r.ok) throw new Error(`${percorso} non si apre`);
   return r.progetto;
 };
+// Le tappe: i record (`tipi/`) non arrivano ancora ad «Accademico», che li conoscerà con le specie di ciò che manca.
 const corpus = readdirSync(cartella, { withFileTypes: true })
-  .filter((d) => d.isDirectory())
+  .filter((d) => d.isDirectory() && d.name.startsWith("tappa-"))
   .flatMap((d) => readdirSync(join(cartella, d.name)).filter((f) => f.endsWith(".algo")).map((f) => `${d.name}/${f.slice(0, -".algo".length)}`))
   .sort();
 
@@ -58,7 +59,7 @@ describe("«Accademico» uguale all'atteso scritto a mano", () => {
   const per = (id: string, counter: string, to: string): Blocco => ({ id, kind: "for", counter, from: "1", to, body: [{ id: `${id}s`, kind: "write", values: [counter], newline: true }] });
   const fini: Progetto = {
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "fini del per" },
     functions: [
       {
@@ -223,7 +224,7 @@ describe("le mancanze", () => {
   /** Un progetto con più mancanze: la verifica le dice tutte, nell'ordine del progetto. */
   const tutte: Progetto = {
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "tutte" },
     shared_constants: [{ name: "G", type: "real", constant: true, initial: "9.81" }],
     functions: [

@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "scrittura-reale",
     "description": "Due decimali: 2/3, il valore a metà 0.125 e lo zero negativo."

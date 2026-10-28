@@ -65,7 +65,7 @@ const casoDel = (nome: string) => (JSON.parse(delCorpus(nome)) as { test_cases: 
  * subito; n = 1 resta in corso per minuti prima del tetto dei passi). */
 const LENTO = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "lento" },
   functions: [
     {
@@ -367,7 +367,7 @@ test("l'avviso sopra il flowchart sta dentro la sua area e la segue quando la co
   // Un errore dal testo lungo: l'avviso è largo quanto può.
   const senzaInizio = JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "senza inizio" },
     functions: [{ id: "f1", kind: "main", data: [{ name: "s", type: "integer" }], body: [{ id: "b1", kind: "assignment", target: "s", value: "s + 1" }], end: { id: "b2" } }],
   });
@@ -436,7 +436,7 @@ test("la console scorre al contenuto: dopo ogni passo di un ciclo che scrive sen
   test.setTimeout(120_000);
   const senzaACapo = JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "senza a capo" },
     functions: [
       {

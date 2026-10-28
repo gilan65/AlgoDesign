@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "vettore-di-stringhe-per-valore",
     "description": "Un vettore di stringhe senza rif: la procedura cambia la sua copia, e il vettore di chi chiama resta com'era."

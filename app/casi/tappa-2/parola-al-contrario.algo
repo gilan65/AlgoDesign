@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "parola-al-contrario",
     "description": "Una parola scritta al contrario con un ciclo per all'indietro, e le sue vocali contate con un ciclo per ogni."

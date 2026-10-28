@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "overflow-fattoriale",
     "description": "Il fattoriale di 13 non sta in un intero."

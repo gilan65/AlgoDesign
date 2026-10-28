@@ -1,0 +1,114 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "record-in-un-programma",
+    "description": "Un record con una costante comune, un dato, il campo letto e scritto e una funzione che restituisce un record."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "classe",
+          "type": "string",
+          "max_length": 3
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "shared_constants": [
+    {
+      "name": "primo",
+      "type": "record",
+      "record": "alunno",
+      "constant": true,
+      "initial": [
+        "\"Anna\"",
+        "\"3A\"",
+        "7"
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "record",
+          "record": "alunno"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "a",
+          "value": "promosso(primo)"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "a.nome",
+            "\" \"",
+            "a.classe",
+            "\" \"",
+            "a.voto"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "promosso",
+      "return_type": "record",
+      "return_record": "alunno",
+      "data": [
+        {
+          "name": "x",
+          "type": "record",
+          "record": "alunno",
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "b3",
+          "kind": "assignment",
+          "target": "x.voto",
+          "value": "x.voto + 1"
+        }
+      ],
+      "end": {
+        "id": "b4",
+        "return_value": "x"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "record-in-un-programma",
+      "inputs": [],
+      "expected": {
+        "output": "Anna 3A 8\n"
+      }
+    }
+  ]
+}

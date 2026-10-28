@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "risultato-vettore-assegnato",
     "description": "Una funzione che restituisce un vettore, assegnato a un vettore dello stesso tipo e della stessa dimensione; la funzione eseguita da sola scrive una riga per elemento."

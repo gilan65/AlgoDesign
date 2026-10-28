@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "senza-valore-booleano",
     "description": "Un booleano letto prima di avere un valore."

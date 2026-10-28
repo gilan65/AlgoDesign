@@ -64,7 +64,7 @@ function apposta(largoAVero: boolean): Funzione {
   const stretto: Blocco[] = [{ id: "a5", kind: "read", target: "n" }];
   return { id: "f1", kind: "main", data: [], body: [{ id: "a1", kind: "if", condition: "n > 0", then: largoAVero ? largo : stretto, else: largoAVero ? stretto : largo }], end: { id: "a6" } };
 }
-const progettoDi = (...functions: Funzione[]): Progetto => ({ format: "algodesign", schema_version: 1, metadata: { name: "prova" }, functions });
+const progettoDi = (...functions: Funzione[]): Progetto => ({ format: "algodesign", schema_version: 2, metadata: { name: "prova" }, functions });
 /** Un albero per ogni funzione di un progetto con procedure e funzioni: la sua per prima (le prove disegnano la prima),
  * con le altre accanto, come nell'app (i salti dicono *rif*, i nomi delle funzioni nelle espressioni in grassetto). */
 const unoPerFunzione = (nome: string, p: Progetto) =>

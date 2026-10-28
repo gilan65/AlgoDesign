@@ -13,7 +13,7 @@ import { controlla, funzioniDelGiro, giriDellaRicorsione, tetti } from "./contro
 // tappa che li introduce. Quelli delle tappe che il controllo conosce (1, 2 e 3) hanno un test qui, registrato col
 // codice; un codice di una tappa dopo sarebbe dichiarato con la sua tappa. L'ultima prova appaia il censimento con
 // l'elenco del modello e coi test, nei due versi, e stampa i conteggi.
-const tappaDi: Record<string, 1 | 2 | 3> = {
+const tappaDi: Record<string, 1 | 2 | 3 | 5> = {
   unknown_name: 1,
   invalid_name: 1,
   invalid_data_item: 1,
@@ -43,6 +43,11 @@ const tappaDi: Record<string, 1 | 2 | 3> = {
   invalid_default_value: 3,
   function_name_in_use: 3,
   reference_without_value: 3,
+  // I record (la cartella `casi/tipi` del corpus).
+  unknown_record: 5,
+  unknown_record_field: 5,
+  record_name_in_use: 5,
+  invalid_record: 5,
   integer_division_to_real: 1,
   real_equality: 1,
   useless_conversion: 1,
@@ -56,7 +61,7 @@ const tappaDi: Record<string, 1 | 2 | 3> = {
   implicit_conversion: 3,
 };
 /** Le tappe i cui codici si provano qui. */
-const tappeProvate = [1, 2, 3];
+const tappeProvate = [1, 2, 3, 5];
 
 // Le regole che il censimento del formato (`progetto/formato.test.ts`) assegna al controllo statico: dove
 // sono provate qui (un codice o un'etichetta registrata) o in quale tappa.
@@ -74,6 +79,8 @@ const regoleDelFormato: Record<string, string> = {
   "F5.10": "invalid_default_value",
   "F5.13": "invalid_data_item",
   "F6.11": "invalid_step",
+  "F4.18": "unknown_record",
+  "F9.2": "record_name_in_use",
   "F6.15": "syntax_error",
 };
 
@@ -91,7 +98,7 @@ type Json = any;
 function progetto(data: Json[], body: Json[], comuni?: Json[]) {
   const esito = leggi({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "prova" },
     ...(comuni ? { shared_constants: comuni } : {}),
     functions: [{ id: "f1", kind: "main", data, body, end: { id: "fine" } }],
@@ -130,7 +137,7 @@ const e = (code: string, block: string) => ({ code, block });
 function conFunzioni(data: Json[], body: Json[], ...altre: Json[]) {
   const esito = leggi({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "prova" },
     functions: [{ id: "f1", kind: "main", data, body, end: { id: "fine" } }, ...altre],
   });
@@ -514,7 +521,7 @@ describe("la causa precisa dei codici del controllo", () => {
   type Riga = readonly [codice: string, causa: string, segno: string | undefined, progetto: () => ReturnType<typeof conFunzioni>, dove: Dove];
   const nelProgramma = (data: Json[], body: Json[] = [], ...altre: Json[]) => () => conFunzioni(data, body, ...altre);
   const conComuni = (comuni: Json[], body: Json[] = [], ...altre: Json[]) => () => {
-    const r = leggi({ format: "algodesign", schema_version: 1, metadata: { name: "prova" }, shared_constants: comuni, functions: [{ id: "f1", kind: "main", data: [], body, end: { id: "fine" } }, ...altre] });
+    const r = leggi({ format: "algodesign", schema_version: 2, metadata: { name: "prova" }, shared_constants: comuni, functions: [{ id: "f1", kind: "main", data: [], body, end: { id: "fine" } }, ...altre] });
     if (!r.ok) throw new Error(JSON.stringify(r.errori));
     return r.progetto;
   };
@@ -526,7 +533,27 @@ describe("la causa precisa dei codici del controllo", () => {
   const vettore = (nome: string, tipo = "integer", size = 3) => dato(nome, tipo, { size, initial: { each: tipo === "real" ? "0.0" : "0" } });
   const g = (data: Json[], body: Json[], valore = "1", altro: Json = {}) => funzione("f2", "g", "integer", data, body, valore, altro);
   const accentoAParte = String.fromCharCode(0x301);
+  /** Un progetto coi record dati e il programma principale. */
+  const conRecord = (records: Json[], data: Json[] = [], body: Json[] = [], ...altre: Json[]) => () => {
+    const r = leggi({ format: "algodesign", schema_version: 2, metadata: { name: "prova" }, records, functions: [{ id: "f1", kind: "main", data, body, end: { id: "fine" } }, ...altre] });
+    if (!r.ok) throw new Error(JSON.stringify(r.errori));
+    return r.progetto;
+  };
+  const rec = (name: string, ...campi: string[]) => ({ name, fields: campi.map((c) => ({ name: c, type: "integer" })) });
+  const delRecord = (name: string, record = "r", altro: Json = {}) => dato(name, "record", { record, ...altro });
+  const progetto = { blocco: "" } as const;
   const righe: readonly Riga[] = [
+    ["unknown_record_field", "campo_assente", "vto", conRecord([rec("r", "voto")], [delRecord("a")], [assegna("b1", "a.vto", "1")]), b1],
+    ["unknown_record_field", "non_un_record", "voto", nelProgramma([n], [assegna("b1", "n.voto", "1")]), b1],
+    ["record_name_in_use", "record_doppio", "r", conRecord([rec("r", "x"), rec("r", "y")]), progetto],
+    ["record_name_in_use", "nome_di_un_dato", "r", conRecord([rec("r", "x")], [dato("r", "integer")]), progetto],
+    ["record_name_in_use", "nome_di_una_funzione", "r", conRecord([rec("r", "x")], [], [], procedura("f2", "r", [], [])), progetto],
+    // «reale», «real», «booleano» e «boolean» sono già riservati (`invalid_name`); gli altri nomi dei tipi no.
+    ["record_name_in_use", "nome_di_un_tipo", "intero", conRecord([rec("intero", "x")]), progetto],
+    ["record_name_in_use", "nome_di_un_tipo", "record", conRecord([rec("record", "x")]), progetto],
+    ["invalid_record", "senza_campi", "r", conRecord([rec("r")]), progetto],
+    ["invalid_record", "campo_doppio", "x", conRecord([rec("r", "x", "x")]), progetto],
+    ["invalid_data_item", "vettore_di_record", undefined, conRecord([rec("r", "x")], [delRecord("t", "r", { size: 2 })]), primo],
     ["limit_exceeded", "oltre_elementi", "1000", nelProgramma([dato("v", "integer", { size: 1001 })]), primo],
     ["limit_exceeded", "oltre_lunghezza", "1000", nelProgramma([dato("s", "string", { max_length: 1001 })]), primo],
     ["limit_exceeded", "oltre_caratteri", "10000", nelProgramma([dato("v", "string", { size: 100, max_length: 101 })]), primo],
@@ -546,7 +573,7 @@ describe("la causa precisa dei codici del controllo", () => {
     ["invalid_name", "nome_della_libreria", "log", conComuni([dato("log", "integer", { constant: true, initial: "1" })]), comune],
     ["invalid_name", "nome_doppio", "a", nelProgramma([dato("a", "integer"), dato("a", "integer")]), { funzione: "f1", indice: 1 }],
     ["invalid_name", "nome_doppio", "k", () => {
-      const r = leggi({ format: "algodesign", schema_version: 1, metadata: { name: "prova" }, shared_constants: [dato("k", "integer", { constant: true, initial: "1" })], functions: [{ id: "f1", kind: "main", data: [dato("k", "integer")], body: [], end: { id: "fine" } }] });
+      const r = leggi({ format: "algodesign", schema_version: 2, metadata: { name: "prova" }, shared_constants: [dato("k", "integer", { constant: true, initial: "1" })], functions: [{ id: "f1", kind: "main", data: [dato("k", "integer")], body: [], end: { id: "fine" } }] });
       if (!r.ok) throw new Error(JSON.stringify(r.errori));
       return r.progetto;
     }, primo],
@@ -638,12 +665,12 @@ describe("la causa precisa dei codici del controllo", () => {
     });
   }
 
-  test("ogni causa dei nove codici ha una riga, e ogni riga una causa del nucleo", () => {
-    const nove = ["limit_exceeded", "invalid_name", "invalid_data_item", "constant_loop_condition", "assign_to_read_only", "function_with_effect", "argument_mismatch", "reference_not_assignable", "unused_value"];
+  test("ogni causa dei dodici codici ha una riga, e ogni riga una causa del nucleo", () => {
+    const nove = ["limit_exceeded", "invalid_name", "invalid_data_item", "constant_loop_condition", "assign_to_read_only", "function_with_effect", "argument_mismatch", "reference_not_assignable", "unused_value", "unknown_record_field", "record_name_in_use", "invalid_record"];
     const delNucleo = nove.flatMap((c) => ((causeDeiCodici as Record<string, readonly string[]>)[c] ?? []).map((x) => `${c} ${x}`));
     const nelleRighe = [...new Set(righe.map(([c, x]) => `${c} ${x}`))];
-    console.log(`cause dei nove codici: nel nucleo ${delNucleo.length}, nelle righe ${nelleRighe.length}, righe ${righe.length}`);
-    expect({ senzaRiga: delNucleo.filter((x) => !nelleRighe.includes(x)), senzaCausa: nelleRighe.filter((x) => !delNucleo.includes(x)), quante: delNucleo.length }).toEqual({ senzaRiga: [], senzaCausa: [], quante: 54 });
+    console.log(`cause dei dodici codici: nel nucleo ${delNucleo.length}, nelle righe ${nelleRighe.length}, righe ${righe.length}`);
+    expect({ senzaRiga: delNucleo.filter((x) => !nelleRighe.includes(x)), senzaCausa: nelleRighe.filter((x) => !delNucleo.includes(x)), quante: delNucleo.length }).toEqual({ senzaRiga: [], senzaCausa: [], quante: 63 });
   });
 
   test("il valore mai letto con più provenienze: nessuna causa, resta l'elenco", () => {
@@ -805,7 +832,7 @@ describe("errori statici della tappa 3: procedure, funzioni, chiamate", () => {
     // Una costante comune, nemmeno lei.
     const p = leggi({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "prova" },
       shared_constants: [dato("Z", "integer", { constant: true, initial: "2" })],
       functions: [{ id: "f1", kind: "main", data: [], body: [salta("b1", "incr", "Z")], end: { id: "fine" } }, incr],
@@ -978,7 +1005,7 @@ describe("errori statici della tappa 3: procedure, funzioni, chiamate", () => {
     expect(erroriDi([], [], procedura("f2", "p", [dato("q", "integer", { initial: "1" })], [scrivi("b10", "q")]), procedura("f3", "q", [], []))).toEqual([e("function_name_in_use", "f3")]);
     const conComune = leggi({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "prova" },
       shared_constants: [dato("Z", "integer", { constant: true, initial: "2" })],
       functions: [{ id: "f1", kind: "main", data: [], body: [scrivi("b1", "Z")], end: { id: "fine" } }, procedura("f2", "Z", [], [])],
@@ -1317,7 +1344,8 @@ test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l
     "tappa-3/uscita-letta-prima.algo b4 x",
     "tappa-3/uscita-non-assegnata.algo b2 n",
   ]);
-  expect([file, controllati]).toEqual([146, 146]);
+  // Col corpus dei record: un file giusto è fuori tappa, i cinque sbagliati non hanno il dato senza valore.
+  expect([file, controllati]).toEqual([152, 151]);
 });
 
 test("i limiti sono un parametro senza predefinito: chi chiama il controllo li passa sempre", () => {
@@ -1592,6 +1620,151 @@ function censimento({ codici, tappaDi, provati, statiche, regoleDelFormato }: Ce
 
 // Ultima prova del file: il censimento nei due versi. Un codice è «provato» solo se la sua prova è arrivata in fondo
 // (`prova` lo registra dopo il corpo), non quando la prova è dichiarata.
+// I record: il progetto di partenza e gli errori attesi sono quelli scritti a mano prima del codice. Un progetto giusto coi
+// record è fuori tappa (l'interprete e i generatori non li conoscono ancora); uno sbagliato ha i suoi errori statici.
+describe("i record", () => {
+  const pagella = (): Json => ({
+    format: "algodesign",
+    schema_version: 2,
+    metadata: { name: "pagella" },
+    records: [
+      {
+        name: "alunno",
+        fields: [
+          { name: "nome", type: "string", max_length: 20 },
+          { name: "classe", type: "string", max_length: 3 },
+          { name: "voto", type: "integer" },
+        ],
+      },
+    ],
+    shared_constants: [{ name: "primo", type: "record", record: "alunno", constant: true, initial: ['"Anna"', '"3A"', "7"] }],
+    functions: [
+      {
+        id: "f1",
+        kind: "main",
+        data: [{ name: "a", type: "record", record: "alunno" }],
+        body: [assegna("b1", "a", "primo"), assegna("b2", "a.voto", "a.voto + 1"), scrivi("b3", "a.nome", '" "', "a.voto")],
+        end: { id: "b4" },
+      },
+      {
+        id: "f2",
+        kind: "function",
+        name: "promosso",
+        return_type: "record",
+        return_record: "alunno",
+        data: [{ name: "x", type: "record", record: "alunno", parameter: "value" }],
+        body: [assegna("b5", "x.voto", "x.voto + 1")],
+        end: { id: "b6", return_value: "x" },
+      },
+    ],
+  });
+  const controllato = (modifica: (p: Json) => void = () => {}) => {
+    const p = pagella();
+    modifica(p);
+    const letto = leggi(p);
+    if (!letto.ok) throw new Error(JSON.stringify(letto.errori));
+    return controlla(letto.progetto, tetti);
+  };
+  /** Gli errori (`codice@blocco`) e le cause, in ordine. */
+  const errori = (modifica: (p: Json) => void) => {
+    const r = controllato(modifica);
+    if (r.fuoriTappa) return "fuori tappa";
+    return { errori: r.errori.map((x) => `${x.code}@${x.block}`), cause: r.fermate.filter((f) => f.code !== "unused_value").map((f) => `${f.code}@${f.block} ${f.fermata.causa}${f.fermata.segno === undefined ? "" : ` «${f.fermata.segno}»`}`) };
+  };
+  const main = (p: Json) => p.functions[0];
+  const blocco = (p: Json, id: string) => main(p).body.find((b: Json) => b.id === id);
+  /** Il record col nome dato, e ogni dato e risultato che lo nomina. */
+  const rinominato = (nome: string) => (p: Json) => {
+    p.records[0].name = nome;
+    for (const d of [...p.shared_constants, ...p.functions.flatMap((f: Json) => f.data)]) d.record = nome;
+    p.functions[1].return_record = nome;
+  };
+
+  test("il progetto giusto coi record è fuori tappa, coi posti che li hanno", () => {
+    expect(controllato()).toEqual({ fuoriTappa: true, blocchi: ["", "f1", "f2"] });
+    // Senza la costante comune (e col blocco che la usava che scrive un campo).
+    expect(controllato((p) => (delete p.shared_constants, Object.assign(blocco(p, "b1"), { target: "a.voto", value: "7" })))).toEqual({ fuoriTappa: true, blocchi: ["", "f1", "f2"] });
+    // Controllo positivo: senza record (e senza i dati che li usano) il progetto torna dentro la tappa.
+    expect(controllato((p) => ((p.records = []), delete p.shared_constants, (p.functions = [{ ...main(p), data: [], body: [] }]))).fuoriTappa).toBe(false);
+  });
+
+  prova("unknown_record", () => {
+    expect(errori((p) => (main(p).data[0].record = "studente"))).toEqual({ errori: ["unknown_record@f1", "unknown_record@b1", "unknown_record@b2", "unknown_record@b3"], cause: [] });
+    expect(errori((p) => (p.functions[1].return_record = "studente"))).toEqual({ errori: ["unknown_record@f2", "unknown_record@b6"], cause: [] });
+  });
+
+  prova("unknown_record_field", () => {
+    expect(errori((p) => (blocco(p, "b2").target = "a.vto"))).toEqual({ errori: ["unknown_record_field@b2"], cause: ["unknown_record_field@b2 campo_assente «vto»"] });
+    expect(errori((p) => (blocco(p, "b3").values = ["a.nome.x"]))).toEqual({ errori: ["unknown_record_field@b3"], cause: ["unknown_record_field@b3 non_un_record «x»"] });
+    expect(errori((p) => (main(p).data.push(dato("n", "integer")), (blocco(p, "b2").target = "n.voto")))).toEqual({ errori: ["unknown_record_field@b2"], cause: ["unknown_record_field@b2 non_un_record «voto»"] });
+    expect(errori((p) => (main(p).data.push(dato("v", "integer", { size: 3 })), (blocco(p, "b2").target = "v[1].voto")))).toEqual({ errori: ["unknown_record_field@b2"], cause: ["unknown_record_field@b2 non_un_record «voto»"] });
+  });
+
+  prova("record_name_in_use", () => {
+    expect(errori((p) => p.records.push({ name: "alunno", fields: [{ name: "x", type: "integer" }] }))).toEqual({ errori: ["record_name_in_use@"], cause: ["record_name_in_use@ record_doppio «alunno»"] });
+    expect(errori((p) => main(p).data.push(dato("alunno", "integer")))).toEqual({ errori: ["record_name_in_use@"], cause: ["record_name_in_use@ nome_di_un_dato «alunno»"] });
+    expect(errori((p) => (p.functions[1].name = "alunno"))).toEqual({ errori: ["record_name_in_use@"], cause: ["record_name_in_use@ nome_di_una_funzione «alunno»"] });
+    expect(errori(rinominato("intero"))).toEqual({ errori: ["record_name_in_use@"], cause: ["record_name_in_use@ nome_di_un_tipo «intero»"] });
+  });
+
+  prova("invalid_record", () => {
+    expect(errori((p) => p.records.push({ name: "vuoto", fields: [] }))).toEqual({ errori: ["invalid_record@"], cause: ["invalid_record@ senza_campi «vuoto»"] });
+    expect(errori((p) => p.records[0].fields.push({ name: "voto", type: "real" }))).toEqual({ errori: ["invalid_record@", "invalid_data_item@"], cause: ["invalid_record@ campo_doppio «voto»"] });
+  });
+
+  test("i codici di prima sulle forme nuove", () => {
+    const r = (p: Json) => p.records[0];
+    const k = (p: Json) => p.shared_constants[0];
+    // Un vettore di record è un errore del dato, e i blocchi lo usano come un record.
+    expect(errori((p) => (main(p).data[0].size = 3))).toEqual({ errori: ["invalid_data_item@f1"], cause: [] });
+    expect(errori((p) => (r(p).fields[2].name = "1voto"))).toEqual({ errori: ["invalid_name@", "unknown_record_field@b2", "unknown_record_field@b3", "unknown_record_field@b5"], cause: ["invalid_name@ nome_cifra", "unknown_record_field@b2 campo_assente «voto»", "unknown_record_field@b3 campo_assente «voto»", "unknown_record_field@b5 campo_assente «voto»"] });
+    expect(errori(rinominato("and"))).toEqual({ errori: ["invalid_name@"], cause: ["invalid_name@ nome_riservato «and»"] });
+    expect(errori((p) => (r(p).fields[2].max_length = 5))).toEqual({ errori: ["invalid_data_item@"], cause: ["invalid_data_item@ lunghezza_non_stringa"] });
+    expect(errori((p) => (k(p).initial = ['"Anna"', '"3A"']))).toEqual({ errori: ["invalid_data_item@"], cause: [] });
+    expect(errori((p) => (k(p).initial = ['"Anna"', "7", "7"]))).toEqual({ errori: ["type_mismatch@"], cause: [] });
+    expect(errori((p) => (k(p).initial = { each: "7" }))).toEqual({ errori: ["invalid_data_item@"], cause: [] });
+    expect(errori((p) => (blocco(p, "b3").values = ["a"]))).toEqual({ errori: ["type_mismatch@b3"], cause: [] });
+    expect(errori((p) => main(p).body.push(leggiIn("b9", "a")))).toEqual({ errori: ["array_assignment@b9"], cause: [] });
+    expect(errori((p) => (blocco(p, "b1").value = "3"))).toEqual({ errori: ["array_assignment@b1"], cause: [] });
+    expect(errori((p) => (blocco(p, "b1").target = "a.voto"))).toEqual({ errori: ["type_mismatch@b1"], cause: [] });
+    expect(errori((p) => main(p).body.push({ id: "b9", kind: "if", condition: "a == primo", then: [], else: [] }))).toEqual({ errori: ["type_mismatch@b9"], cause: [] });
+  });
+
+  test("le cause dei codici di prima sulle forme nuove: dove sta la causa", () => {
+    const dati = (modifica: (p: Json) => void) => {
+      const r = controllato(modifica);
+      return r.fuoriTappa ? "fuori tappa" : r.dati.map((d) => `${d.code}@${d.funzione}:${d.indice} ${d.fermata?.causa ?? ""}${d.fermata?.segno === undefined ? "" : ` «${d.fermata.segno}»`}`);
+    };
+    expect(dati((p) => (main(p).data[0].size = 3))).toEqual(["invalid_data_item@f1:0 vettore_di_record"]);
+    expect(dati((p) => (p.shared_constants[0].initial = ['"Anna"', '"3A"']))).toEqual(["invalid_data_item@:0 elenco_di_altra_lunghezza «2»"]);
+    expect(dati((p) => (p.shared_constants[0].initial = { each: "7" }))).toEqual(["invalid_data_item@:0 forma_del_valore"]);
+  });
+
+  test("le forme giuste: il campo letto e scritto, per valore e per riferimento, la copia e il risultato", () => {
+    const procedura = { id: "f3", kind: "procedure", name: "alza", data: [par("v", "integer", "reference"), par("y", "record", "value", { record: "alunno" })], body: [], end: { id: "b8" } };
+    const giusto = (modifica: (p: Json) => void) => controllato((p) => (p.functions.push(procedura), modifica(p))).fuoriTappa;
+    expect(giusto((p) => main(p).body.push(salta("b9", "alza", "a.voto", "a")))).toBe(true);
+    expect(giusto((p) => main(p).body.push(leggiIn("b9", "a.nome")))).toBe(true);
+    expect(giusto((p) => main(p).body.push(assegna("b9", "a", "promosso(primo)")))).toBe(true);
+    expect(giusto((p) => main(p).body.push(scrivi("b9", "a.nome[0]", "length a.classe")))).toBe(true);
+    // Controllo positivo: due campi diversi per riferimento vanno, lo stesso campo due volte no.
+    expect(giusto((p) => ((procedura.data[1] = par("w", "integer", "reference")), main(p).body.push(salta("b9", "alza", "a.voto", "a.voto"))))).toBe(false);
+    // Due campi diversi dello stesso record per riferimento sono due dati.
+    expect(giusto((p) => ((procedura.data[1] = par("w", "string", "reference", { max_length: 20 })), main(p).body.push(salta("b9", "alza", "a.voto", "a.nome"))))).toBe(true);
+    procedura.data[1] = par("y", "record", "value", { record: "alunno" });
+    expect(errori((p) => (p.functions.push(procedura), main(p).body.push(salta("b9", "alza", "a.voto", "3"))))).toEqual({ errori: ["argument_mismatch@b9"], cause: ["argument_mismatch@b9 tipo_diverso «y»"] });
+    // Un record di un altro tipo non passa per valore.
+    const conPunto = (p: Json) => {
+      p.records.push({ name: "punto", fields: [{ name: "x", type: "integer" }] });
+      main(p).data.push(dato("q", "record", { record: "punto" }));
+      p.functions.push(procedura);
+      main(p).body.push(assegna("b7", "q.x", "1"), salta("b9", "alza", "a.voto", "q"));
+    };
+    expect(errori(conPunto)).toEqual({ errori: ["argument_mismatch@b9"], cause: ["argument_mismatch@b9 tipo_diverso «y»"] });
+    expect(errori((p) => (p.functions.push(procedura), main(p).body.push(assegna("b9", "a.nome[0]", "'x'"))))).toEqual({ errori: ["assign_to_read_only@b9"], cause: ["assign_to_read_only@b9 carattere_della_stringa «a»"] });
+  });
+});
+
 test("censimento: i codici d'errore statico e d'avviso e le regole statiche del formato, appaiati coi test", () => {
   const codici = [...codiciErroreStatico, ...codiciAvviso];
   // Le regole «statico» del censimento del formato, lette dal suo file (una voce per riga).
@@ -1609,8 +1782,8 @@ test("censimento: i codici d'errore statico e d'avviso e le regole statiche del 
   );
   expect(esito).toEqual({ senzaVoce: [], vociSenzaCodice: [], senzaTest: [], provatiFuori: [], senzaPosto: [], postoSenzaRegola: [], postoNonProvato: [] });
   // Controllo positivo della lettura del file del formato: il denominatore è il censimento intero.
-  expect(voci.length).toBe(79);
-  expect([codici.length, daProvare.length]).toEqual([39, 39]);
+  expect(voci.length).toBe(85);
+  expect([codici.length, daProvare.length]).toEqual([43, 43]);
 
   // Controlli positivi, uno per rilevatore, ognuno su una copia degli elenchi veri con un difetto solo.
   const senza = <T,>(r: Record<string, T>, k: string) => Object.fromEntries(Object.entries(r).filter(([x]) => x !== k));

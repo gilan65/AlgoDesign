@@ -290,7 +290,7 @@ export const delCorpus: Readonly<Record<string, Atteso>> = {
 /** Il programma con le forme che i file del corpus che ci stanno non hanno. */
 export const formeDiAccademico: Progetto = {
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "forme di Accademico" },
   shared_constants: [{ name: "LIMITE", type: "integer", constant: true, initial: "10" }],
   functions: [

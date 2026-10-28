@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "condizione-stringa",
     "description": "Ordine delle stringhe per codice: una parola che comincia con è viene dopo una che comincia con z."

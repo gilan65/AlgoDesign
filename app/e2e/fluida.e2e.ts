@@ -38,7 +38,7 @@ const ASSEGNAZIONI = 30;
 const procedura = (id: string, name: string, data: unknown[], body: unknown[]) => ({ id, kind: "procedure", name, data, body, end: { id: `${id}-fine` } });
 const programma = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "molte chiamate" },
   functions: [
     {

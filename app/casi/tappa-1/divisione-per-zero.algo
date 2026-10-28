@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "divisione-per-zero",
     "description": "Divisione intera per un divisore che vale zero."

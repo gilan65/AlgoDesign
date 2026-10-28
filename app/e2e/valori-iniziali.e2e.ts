@@ -239,7 +239,7 @@ test("dalla vista dei dati al blocco: la dimensione, la forma, il file aperto", 
       altro,
       JSON.stringify({
         format: "algodesign",
-        schema_version: 1,
+        schema_version: 2,
         metadata: { name: NOME },
         functions: [
           {

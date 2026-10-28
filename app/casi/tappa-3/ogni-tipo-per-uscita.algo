@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "ogni-tipo-per-uscita",
     "description": "Un parametro di uscita di ogni tipo: un intero (che aveva un valore), un reale, un carattere, una stringa, un booleano, un vettore e un elemento di un altro vettore; la procedura dà a tutti un valore, e la procedura eseguita da sola li scrive."

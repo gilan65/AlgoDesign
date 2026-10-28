@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "carattere-zero-in-una-stringa",
     "description": "Il carattere di codice 0 che entra in una stringa da un elemento di un vettore (k = 1) o da una conversione (k = 2): la scrittura si ferma dopo il primo valore."

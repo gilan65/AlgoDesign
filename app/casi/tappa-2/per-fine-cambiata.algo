@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "per-fine-cambiata",
     "description": "La fine di un ciclo per cambiata nel corpo: il controllo la ricalcola a ogni giro; poi il contatore e la fine."
