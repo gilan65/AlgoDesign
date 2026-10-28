@@ -515,3 +515,89 @@ describe("il costo del riepilogo", () => {
     }
   });
 });
+
+// I record che ciò che entra usa: entrano con lui, senza scelte, come la dimensione di un vettore (attesi scritti a mano).
+describe("i record di ciò che entra", () => {
+  const alunno: Json = { name: "alunno", fields: [{ name: "nome", type: "string", max_length: 20 }, { name: "voto", type: "integer" }] };
+  const conA = (record = "alunno"): Json => ({ name: "a", type: "record", record, parameter: "value" });
+  const votoDi = (record = "alunno"): Json => ({ id: "f2", kind: "function", name: "voto_di", return_type: "integer", data: [conA(record)], body: [], end: { id: "b2", return_value: "a.voto" } });
+  const conRecord = progetto({
+    format: "algodesign",
+    schema_version: 2,
+    metadata: { name: "con-record", library: true },
+    records: [alunno, { name: "classe", fields: [{ name: "sezione", type: "character" }] }],
+    shared_constants: [{ name: "PRIMO", type: "record", record: "alunno", constant: true, initial: ['"Anna"', "7"] }],
+    functions: [
+      { id: "f1", kind: "main", data: [], body: [], end: { id: "b1" } },
+      votoDi(),
+      { id: "f3", kind: "function", name: "voto_del_primo", return_type: "integer", data: [], body: [], end: { id: "b3", return_value: "PRIMO.voto" } },
+      { id: "f4", kind: "procedure", name: "saluta", data: [], body: [], end: { id: "b4" } },
+    ],
+  });
+  const conIRecord = (records: Json[], o: { dati?: Json[]; funzioni?: Json[] } = {}): Progetto => {
+    const p = programma(o);
+    return progetto({ ...JSON.parse(salva(p)), records });
+  };
+  const importato = (p: Progetto, spuntate: readonly string[]) => {
+    const r = importa(conRecord, spuntate, { conCasi: false })(p, primoLibero(p));
+    if (!r.ok) throw new Error(JSON.stringify(r.rifiuto));
+    const riletto = apri(salva(r.progetto));
+    expect(riletto.ok && riletto.progetto).toEqual(r.progetto);
+    return r.progetto;
+  };
+  const voceDelRecord = (p: Progetto, spuntate: readonly string[]) => riepilogoDellImportazione(p, conRecord, spuntate).voci.filter((v) => v.genere === "record");
+
+  test("nuovo: entra in fondo ai record, col suo nome; solo quello usato", () => {
+    const p = programma();
+    expect(voceDelRecord(p, ["f2"])).toEqual([{ chiave: "r:alunno", genere: "record", nome: "alunno", perche: { come: "usata", da: "voto_di" }, stato: "nuova" }]);
+    const fuori = importato(p, ["f2"]);
+    expect(fuori.records).toEqual([alunno]);
+    expect(fuori.functions.find((f) => f.name === "voto_di")!.data).toEqual([conA()]);
+    // Una procedura che non usa record non ne porta.
+    expect(importato(p, ["f4"]).records).toBeUndefined();
+  });
+
+  test("identico: non entra, e la funzione usa quello del programma", () => {
+    const p = conIRecord([alunno]);
+    expect(voceDelRecord(p, ["f2"]).map((v) => v.stato)).toEqual(["identica"]);
+    const fuori = importato(p, ["f2"]);
+    expect(fuori.records).toEqual([alunno]);
+    expect(fuori.functions.find((f) => f.name === "voto_di")!.data).toEqual([conA()]);
+  });
+
+  test("diverso con lo stesso nome: entra da solo col primo nome libero, il dato lo segue, il programma non cambia", () => {
+    const suo: Json = { name: "alunno", fields: [{ name: "nome", type: "string", max_length: 20 }, { name: "classe", type: "string", max_length: 3 }] };
+    const p = conIRecord([suo]);
+    expect(voceDelRecord(p, ["f2"])).toEqual([{ chiave: "r:alunno", genere: "record", nome: "alunno", perche: { come: "usata", da: "voto_di" }, stato: "rinominato", proposto: "alunno_2" }]);
+    const fuori = importato(p, ["f2"]);
+    expect(fuori.records).toEqual([suo, { ...alunno, name: "alunno_2" }]);
+    expect(fuori.functions.find((f) => f.name === "voto_di")!.data).toEqual([conA("alunno_2")]);
+  });
+
+  test("il nome usato da un'altra cosa del programma (un dato): entra rinominato", () => {
+    const p = programma({ dati: [{ name: "alunno", type: "integer" }] });
+    expect(voceDelRecord(p, ["f2"]).map((v) => [v.stato, v.proposto])).toEqual([["rinominato", "alunno_2"]]);
+    expect(importato(p, ["f2"]).records).toEqual([{ ...alunno, name: "alunno_2" }]);
+  });
+
+  test("una costante comune di tipo record: entra col suo record, e segue il nome nuovo", () => {
+    const suo: Json = { name: "alunno", fields: [{ name: "voto", type: "real" }] };
+    const fuori = importato(conIRecord([suo]), ["f3"]);
+    expect(fuori.records!.map((r) => r.name)).toEqual(["alunno", "alunno_2"]);
+    expect(fuori.shared_constants).toEqual([{ name: "PRIMO", type: "record", record: "alunno_2", constant: true, initial: ['"Anna"', "7"] }]);
+    // Il riepilogo: il record lo usa la costante.
+    expect(voceDelRecord(conIRecord([suo]), ["f3"]).map((v) => v.perche)).toEqual([{ come: "usata", da: "PRIMO" }]);
+  });
+
+  test("una funzione identica per contenuto ma col record diverso non è identica: è un conflitto", () => {
+    const suo: Json = { name: "alunno", fields: [{ name: "voto", type: "integer" }] };
+    const p = conIRecord([suo], { funzioni: [{ ...votoDi(), id: "f9", end: { id: "b9", return_value: "a.voto" } }] });
+    const voci = riepilogoDellImportazione(p, conRecord, ["f2"]).voci;
+    expect(voci.find((v) => v.chiave === "f:f2")?.stato).toBe("conflitto");
+    // Controllo positivo: col record identico è identica, e non entra niente.
+    const q = conIRecord([alunno], { funzioni: [{ ...votoDi(), id: "f9", end: { id: "b9", return_value: "a.voto" } }] });
+    expect(riepilogoDellImportazione(q, conRecord, ["f2"]).voci.map((v) => [v.chiave, v.stato])).toEqual([
+      ["f:f2", "identica"],
+    ]);
+  });
+});

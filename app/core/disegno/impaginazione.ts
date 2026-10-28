@@ -41,7 +41,10 @@
 // la scritta «copia elemento per elemento»: compatta, l'assegnazione dentro e la scritta sul bordo (non è un blocco: il
 // blocco è l'assegnazione); espansa, il `mentre` equivalente con la posizione, coi blocchi aggiunti con l'`id`
 // dell'assegnazione e la loro fase, e sul bordo l'intestazione con l'assegnazione e la scritta (il blocco). Dentro, nessun
-// punto di inserimento.
+// punto di inserimento. La copia di un record col suo nome (`b ← a`) sta nello stesso riquadro con la scritta «copia
+// campo per campo»: compatta come quella del vettore; espansa, senza il `mentre` (i campi hanno un nome), un'assegnazione
+// per campo una sotto l'altra (`b.nome ← a.nome`), con l'`id` dell'assegnazione, la fase «elemento» e la posizione del
+// campo.
 //
 // Procedure e funzioni: l'inizio di una procedura o di una funzione è la sua
 // intestazione («Procedura leggi_numero(rif numero)», «Funzione booleano ← valido(voto)»), col nome in grassetto e
@@ -55,11 +58,11 @@
 // virgola, col segno dell'a capo) e sotto «leggi voto», con l'`id` della Lettura e quello della Scrittura. Fra le due non
 // c'è un punto di inserimento, e i punti portano gli indici della sequenza vera.
 
-import { parole } from "../espressioni/analizzatore";
+import { analizza, parole } from "../espressioni/analizzatore";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import type { Posto, Ramo } from "../modifica/operazioni";
-import { eUnaCopia, nomiDeiVettori } from "../progetto/copia";
-import type { Blocco, Dato, Funzione } from "../progetto/modello";
+import { eUnaCopia, eUnaCopiaDiUnRecord, nomiDeiRecord, nomiDeiVettori } from "../progetto/copia";
+import type { Blocco, Campo, Dato, DefinizioneDelRecord, Funzione } from "../progetto/modello";
 import { coppie, type Coppia, type Domanda } from "./domanda";
 import type { GeometriaDelTema } from "./tema";
 
@@ -103,6 +106,9 @@ export interface Elemento {
    * condizione, l'elemento preso, l'aumento), coi nomi delle fasi dell'evento; l'`id` è quello del ciclo. Senza fase,
    * l'elemento di un ciclo è la sua intestazione. */
   readonly fase?: FaseDelCiclo;
+  /** Solo nella copia espansa di un record col suo nome: la posizione del campo che l'assegnazione copia (la fase è
+   * «elemento», l'`id` quello dell'assegnazione). */
+  readonly campo?: number;
   /** Solo per il rombo di un ciclo (`mentre`, `ripeti`, il `per` e il `per ogni` aperti, la copia espansa): ha il colore
    * dei cicli, non quello del «se». */
   readonly ciclo?: true;
@@ -286,6 +292,8 @@ export interface ParoleDeiCicli {
   readonly copia: string;
   /** L'intestazione della copia espansa: `{assegnazione}` e `{copia}`, la scritta. */
   readonly copiaEspansa: string;
+  /** La scritta del riquadro della copia di un record col suo nome. */
+  readonly copiaCampi: string;
 }
 
 interface Pezzo {
@@ -602,8 +610,22 @@ export function partiDellaFase(
 }
 
 /** L'intestazione della copia espansa di un vettore col suo nome: l'assegnazione e la scritta del riquadro. */
-export const partiDellIntestazioneDellaCopia = (b: Extract<Blocco, { kind: "assignment" }>, testi: TestiDelDisegno): ParteDelTesto[] =>
-  partiDelModello(testi.cicli.copiaEspansa, { assegnazione: partiDelBlocco(b, testi), copia: { testo: testi.cicli.copia, espressione: false } });
+export const partiDellIntestazioneDellaCopia = (b: Extract<Blocco, { kind: "assignment" }>, testi: TestiDelDisegno, scritta = testi.cicli.copia): ParteDelTesto[] =>
+  partiDelModello(testi.cicli.copiaEspansa, { assegnazione: partiDelBlocco(b, testi), copia: { testo: scritta, espressione: false } });
+
+/** L'assegnazione di un campo nella copia di un record col suo nome (`b.nome ← a.nome`): il blocco della copia espansa, la
+ * regola della sua riga nella tabella di traccia e il messaggio della pausa, nelle due forme. */
+export const partiDelCampoDellaCopia = (b: Extract<Blocco, { kind: "assignment" }>, campo: string, testi: TestiDelDisegno): ParteDelTesto[] =>
+  partiDelBlocco({ ...b, target: `${b.target.trim()}.${campo}`, value: `${b.value.trim()}.${campo}` }, testi);
+
+/** I campi del record di cui `b` è la copia col suo nome (`b ← a` fra due record), o nessuno se non lo è. */
+export function campiDellaCopia(b: Blocco, dati: readonly Dato[], records: readonly DefinizioneDelRecord[]): readonly Campo[] | undefined {
+  if (!eUnaCopiaDiUnRecord(b, nomiDeiRecord(dati)) || b.kind !== "assignment") return undefined;
+  const verso = analizza(b.target);
+  const nome = verso.ok && verso.espressione.genere === "nome" ? verso.espressione.nome : undefined;
+  const d = dati.find((x) => x.name === nome);
+  return records.find((r) => r.name === d?.record)?.fields;
+}
 
 /** Un modello dei testi col suo segnaposto: le parti prima e dopo. */
 function attorno(modello: string, segnaposto: string): [string, string] {
@@ -669,6 +691,8 @@ export function impagina(
   /** Le funzioni del progetto: un salto dice *rif* davanti agli argomenti che la funzione chiamata riceve per
    * riferimento. */
   funzioni: readonly Funzione[] = [],
+  /** I record del progetto: la copia di un record col suo nome ne mostra i campi. */
+  records: readonly DefinizioneDelRecord[] = [],
 ): Disegno {
   const hTesto = tema.altezzaRiga;
   /** Le Letture che mostrano la domanda, con l'opzione: le coppie della funzione, per `id` della Lettura. */
@@ -992,6 +1016,26 @@ export function impagina(
     return riquadro(b.id, partiDellIntestazioneDellaCopia(b, testi), interno);
   }
 
+  /** La copia di un record col suo nome nel riquadro con la scritta «copia campo per campo»: compatta come quella del
+   * vettore; espansa, un'assegnazione per campo una sotto l'altra (blocchi aggiunti con l'`id` dell'assegnazione, la fase
+   * «elemento» e il campo), sotto l'intestazione che è il blocco. Nessun punto di inserimento dentro. */
+  function copiaDelRecordNelRiquadro(b: Extract<Blocco, { kind: "assignment" }>, campi: readonly Campo[]): Pezzo {
+    const scritta = testi.cicli.copiaCampi;
+    if (opzioni.copia === "compatta") {
+      const a = semplice(b.id, "assegnazione", partiDelBlocco(b, testi));
+      const conLUscita = { ...a, altezza: a.altezza + tema.discesa, connettori: [flusso(punto(0, a.altezza), punto(0, a.altezza + tema.discesa))] };
+      return riquadro(b.id, [{ testo: scritta, espressione: false }], conLUscita, true);
+    }
+    const perCampo = campi.map((c, k) => {
+      const p = aggiunto(b.id, "elemento", partiDelCampoDellaCopia(b, c.name, testi));
+      return { ...p, elementi: p.elementi.map((e) => ({ ...e, campo: k })) };
+    });
+    const corpo = colonna(perCampo);
+    // Sotto l'ultimo campo la linea che esce, come nella compatta.
+    const interno = { ...corpo, altezza: corpo.altezza + tema.discesa, connettori: [...corpo.connettori, flusso(punto(0, corpo.altezza), punto(0, corpo.altezza + tema.discesa))] };
+    return riquadro(b.id, partiDellIntestazioneDellaCopia(b, testi, scritta), interno);
+  }
+
   /** Il riquadro tratteggiato attorno al contenuto di un ciclo, con l'intestazione sul bordo in alto: a sinistra della
    * linea che entra (se il contenuto è stretto, il riquadro si allarga a sinistra), su un fondo che interrompe la
    * linea. La linea che entra scende dall'alto fino al contenuto. Con `didascalia` l'intestazione non è il blocco (la
@@ -1015,8 +1059,11 @@ export function impagina(
 
   function blocco(b: Blocco): Pezzo {
     switch (b.kind) {
-      case "assignment":
-        return eUnaCopia(b, vettori) ? copiaNelRiquadro(b) : semplice(b.id, "assegnazione", partiDelBlocco(b, testi));
+      case "assignment": {
+        if (eUnaCopia(b, vettori)) return copiaNelRiquadro(b);
+        const campi = campiDellaCopia(b, [...funzione.data, ...costantiComuni], records);
+        return campi !== undefined ? copiaDelRecordNelRiquadro(b, campi) : semplice(b.id, "assegnazione", partiDelBlocco(b, testi));
+      }
       case "read":
         return semplice(b.id, "lettura", partiDelBlocco(b, testi));
       case "write":

@@ -24,6 +24,18 @@ export function eUnaCopia(b: Blocco, vettori: ReadonlySet<string>): boolean {
   return verso !== undefined && vettori.has(verso) && soloUnNome(b.value) !== undefined;
 }
 
+/** I nomi dei record (non dei vettori di record) che le regole di una funzione vedono. */
+export const nomiDeiRecord = (dati: readonly Dato[]): ReadonlySet<string> => new Set(dati.filter((d) => d.type === "record" && d.size === undefined).map((d) => d.name));
+
+/** L'assegnazione di un record intero dal nome di un record (`b ← a`): la copia campo per campo, un'azione per campo, senza
+ * una posizione nascosta (i campi hanno un nome). Un riconoscimento suo, mai `eUnaCopia`: il record non ha la posizione
+ * del vettore. */
+export function eUnaCopiaDiUnRecord(b: Blocco, record: ReadonlySet<string>): boolean {
+  if (b.kind !== "assignment") return false;
+  const verso = soloUnNome(b.target);
+  return verso !== undefined && record.has(verso) && soloUnNome(b.value) !== undefined;
+}
+
 /** Il livello di ogni `per ogni` e di ogni copia col nome di un albero, per `id`: 1 se nessun `per ogni` li contiene,
  * poi 2, 3… È il numero della loro posizione nascosta nella fotografia dell'esecuzione, nella tabella di traccia e nel
  * codice. */

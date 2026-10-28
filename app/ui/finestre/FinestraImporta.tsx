@@ -254,7 +254,7 @@ function Intestazione({ f, lingua }: { f: Funzione; lingua: Lingua }): ReactElem
 const nomeFinale = (v: VoceDellImportazione): string => (v.scelta?.come === "rinomina" ? v.scelta.nome : v.nome);
 
 /** Entra: è nuova, o un conflitto che non si salta. */
-const entra = (v: VoceDellImportazione): boolean => v.stato === "nuova" || (v.stato === "conflitto" && v.scelta?.come !== "salta");
+const entra = (v: VoceDellImportazione): boolean => v.stato === "nuova" || v.stato === "rinominato" || (v.stato === "conflitto" && v.scelta?.come !== "salta");
 
 /** Se il programma ha errori statici, o è fuori tappa: i suoi casi d'uso non si eseguono. */
 const conErrori = (p: Progetto, limiti: Tetti): boolean => {
@@ -299,6 +299,9 @@ function CheCosa({ sorgente, cambiaSorgente, progetto, prossimo, limiti, testi, 
     ];
   };
   const stato = (v: VoceDellImportazione): string => {
+    // Un record entra con chi lo usa, senza scelte: col suo nome, o con un altro se il suo è già usato.
+    if (v.genere === "record")
+      return v.stato === "identica" ? testi.importaRecordIdentico : v.stato === "rinominato" ? riempi(testi.importaRecordRinominato, { nome: v.nome, nuovo: v.proposto! }) : riempi(testi.importaRecordEntra, { da: v.perche.come === "scelta" ? "" : v.perche.da });
     if (v.stato === "identica") return testi.importaIdentica;
     if (v.stato === "conflitto")
       return v.specie === "altra" ? riempi(testi.importaConflittoAltra, { nome: v.nome }) : riempi(v.genere === "constant" ? testi.importaConflittoCostante : testi.importaConflitto, { nome: v.nome });
@@ -306,6 +309,7 @@ function CheCosa({ sorgente, cambiaSorgente, progetto, prossimo, limiti, testi, 
   };
   const perNome = new Map<string, Funzione>(sotto.map((f) => [`f:${f.id}`, f]));
   const costante = (nome: string) => sorgente.progetto.shared_constants?.find((c) => c.name === nome);
+  const record = (nome: string) => sorgente.progetto.records?.find((r) => r.name === nome);
 
   const voce = (v: VoceDellImportazione) => {
     const f = perNome.get(v.chiave);
@@ -318,6 +322,10 @@ function CheCosa({ sorgente, cambiaSorgente, progetto, prossimo, limiti, testi, 
           <span>
             {f !== undefined ? (
               <Intestazione f={f} lingua={lingua} />
+            ) : v.genere === "record" ? (
+              <>
+                {testi.importaRecord} <strong>{v.nome}</strong> ({record(v.nome)?.fields.map((c) => c.name).join(", ")})
+              </>
             ) : (
               <>
                 {testi.importaCostanteComune} <strong>{v.nome}</strong>

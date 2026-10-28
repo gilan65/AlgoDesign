@@ -38,6 +38,7 @@ import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { readFileSync } from "node:fs";
 import { opzioniPredefinite as opzioniDelDisegno } from "../../core/disegno/impaginazione";
 import { csvIngleseAtteso, csvItalianoAtteso } from "../../core/esecuzione/atteso-del-riferimento";
+import { cambiateDellaCopia, copiaDelRecordItaliano } from "../../core/esecuzione/atteso-del-record";
 import {
   cambiateAttese,
   inFilaInglese,
@@ -485,6 +486,29 @@ test("la riga che spiega un vettore oltre il tetto: le frasi dei dizionari, nell
 // ------------------------------------------------------------- le forme scelte nelle Impostazioni
 
 /** La tabella vista come righe del CSV: l'intestazione «nome (tipo)» e le celle, unite col separatore italiano. */
+// Il record nella finestra: la copia `b ← a` del corpus (`casi/tipi/copia-di-un-record.algo`), una riga per campo; la
+// tabella coincide cella per cella con l'atteso scritto a mano del nucleo (`atteso-del-record.ts`), le colonne dei campi
+// stanno nel gruppo del loro dato, e il file esportato è quell'atteso byte per byte.
+test("un record: le colonne dei campi nel gruppo del dato, la copia una riga per campo; la tabella e il file sono l'atteso scritto a mano", async () => {
+  scritti = [];
+  proposti = [];
+  await apriLaFinestra("copia-di-un-record.algo", readFileSync(new URL("../../casi/tipi/copia-di-un-record.algo", import.meta.url), "utf8"));
+  await premi("F5");
+  await aspetta("la fine", () => statoMostrato() === it.statoFinita);
+  const attese = copiaDelRecordItaliano.map((r) => celleDelCsv(r, ";"));
+  expect(differenze(intestazione(), attese[0]!)).toEqual([]);
+  const viste = righe().map(celle);
+  expect(differenze(viste.map((r) => r.join("|")), attese.slice(1).map((r) => r.join("|")))).toEqual([]);
+  expect(viste.length).toBe(10);
+  // Le celle cambiate delle sei colonne dei campi, riga per riga.
+  expect(righe().map((tr) => [...tr.cells].slice(2, 8).map((td) => (td.hasAttribute("data-cambiata") ? "x" : ".")).join(""))).toEqual([...cambiateDellaCopia]);
+  // Le colonne dei campi nel gruppo del loro dato: si spostano insieme.
+  const gruppi = [...(tabella()?.tHead?.querySelectorAll("th[data-gruppo]") ?? [])].map((th) => th.getAttribute("data-gruppo"));
+  expect(gruppi.slice(0, 6)).toEqual(["a", "a", "a", "b", "b", "b"]);
+  const scritto = await esporta(it);
+  expect(scritto.testo).toBe(`\u{feff}${copiaDelRecordItaliano.join("\r\n")}\r\n`);
+}, 60_000);
+
 const comeCsv = () => [intestazione().join(";"), ...righe().map((tr) => celle(tr).join(";"))];
 /** Le celle segnate come cambiate di ogni riga delle azioni, col nome della colonna e, in fila, il pezzo segnato. */
 function segnateDaRiga(): Record<number, string[]> {

@@ -4,7 +4,7 @@
 import { nomiDegliOperatori } from "../../i18n/operatori";
 import type { ParoleDeiCicli, ParoleDelleFunzioni } from "../disegno/impaginazione";
 import { traduciEspressione } from "../disegno/lingua";
-import { tipoSemplice, type Dato, type Tipo } from "../progetto/modello";
+import type { Dato, Tipo } from "../progetto/modello";
 import type { TestiDellaTraccia } from "./traccia";
 
 /** Le parole dei cicli nel disegno, per le prove: anche quelle del disegno che non mostrano la tabella. */
@@ -17,6 +17,7 @@ export const cicliIt: ParoleDeiCicli = {
   elementoSuccessivo: "elemento successivo di {sorgente}",
   copia: "copia elemento per elemento",
   copiaEspansa: "{assegnazione}: {copia}",
+  copiaCampi: "copia campo per campo",
 };
 
 export const cicliEn: ParoleDeiCicli = {
@@ -28,12 +29,14 @@ export const cicliEn: ParoleDeiCicli = {
   elementoSuccessivo: "next element of {sorgente}",
   copia: "copy element by element",
   copiaEspansa: "{assegnazione}: {copia}",
+  copiaCampi: "copy field by field",
 };
 
 /** Il tipo del risultato nell'intestazione di una funzione, per le prove: come lo dice la vista dei dati
- * (`vettore di 3 interi`), senza la lunghezza massima di una stringa; le parole date, uno e molti per ogni tipo. */
+ * (`vettore di 3 interi`), senza la lunghezza massima di una stringa; le parole date, uno e molti per ogni tipo; un record
+ * col suo nome, uguale al singolare e al plurale. */
 function tipoDiProva(d: Dato, nomi: Readonly<Record<Tipo, readonly [string, string]>>, vettore: string): string {
-  const [uno, molti] = nomi[tipoSemplice(d.type)];
+  const [uno, molti] = d.type === "record" ? [d.record ?? "", d.record ?? ""] : nomi[d.type];
   return d.size === undefined ? uno : `${vettore} ${d.size} ${d.size === 1 ? uno : molti}`;
 }
 

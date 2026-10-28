@@ -34,6 +34,7 @@ import { apri } from "../../core/progetto/formato";
 import { it } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
 import { Applicazione } from "../Applicazione";
+import { scelteIniziali, type Scelte } from "../preferenze";
 import { postoDelRiquadro } from "./Watch";
 
 const misura = (t: string) => [...t].length * 10;
@@ -80,10 +81,10 @@ async function aspetta(cosa: string, fatto: () => boolean): Promise<void> {
   throw new Error(`non arriva: ${cosa} (stato «${statoMostrato()}», avviso «${avviso()}»)`);
 }
 
-async function apriLaFinestra(nome: string, testo: string): Promise<void> {
+async function apriLaFinestra(nome: string, testo: string, scelte: Scelte = scelteIniziali): Promise<void> {
   datoAllAvvio = { percorso: `C:\\corpus\\${nome}`, testo };
   await act(async () => {
-    render(<Applicazione linguaIniziale="it" misura={misura} />);
+    render(<Applicazione linguaIniziale="it" misura={misura} scelteIniziali={scelte} />);
   });
   await aspetta(`«${nome}» aperto`, () => avviso() === riempi(it.apertoIl, { file: nome }));
 }
@@ -281,6 +282,42 @@ test("un vettore: il tipo, quanti elementi, un elemento per riga col suo valore"
   const r = nomi().find((n) => n.getAttribute("data-watch-dato") === "r")!;
   await punta(r);
   expect(watch()).toEqual({ nome: "r", tipo: "reale", valori: ["-0,50"], nonInizializzate: 0 });
+}, 60_000);
+
+test("un record: la copia campo per campo si ferma su ogni campo col messaggio del campo, e il watch mostra i campi uno per riga", async () => {
+  const testo = readFileSync(new URL("../../casi/tipi/copia-di-un-record.algo", import.meta.url), "utf8");
+  await apriLaFinestra("copia-di-un-record.algo", testo);
+  // Il messaggio della pausa sul secondo campo della copia (scritto a mano dal flowchart): l'assegnazione di quel campo.
+  const sulCampo = riempi(it.nomeDelBlocco, { genere: it.bloccoAssegnazione, testo: "b.classe ← a.classe" });
+  const visti: string[] = [];
+  for (let k = 0; k < 8 && !avviso().includes(sulCampo); k++) {
+    await premi("F10");
+    visti.push(avviso());
+  }
+  expect(avviso(), visti.join(" | ")).toContain(sulCampo);
+  // Prima, la pausa sul primo campo.
+  expect(visti.some((v) => v.includes(riempi(it.nomeDelBlocco, { genere: it.bloccoAssegnazione, testo: "b.nome ← a.nome" })))).toBe(true);
+  expect(nomiNeiBlocchi().b1).toEqual(["b", "a"]);
+  const di = (dato: string) => nomi().find((n) => n.getAttribute("data-watch-dato") === dato && n.closest("[data-blocco]")?.getAttribute("data-blocco") === "b1")!;
+  await punta(di("a"));
+  expect(watch()).toEqual({ nome: "a", tipo: "alunno", valori: ["a.nome=Anna", "a.classe=3A", "a.voto=7"], nonInizializzate: 0 });
+  await lascia(di("a"));
+  // Copiato il primo campo, gli altri due ancora senza valore.
+  await punta(di("b"));
+  expect(watch()).toEqual({ nome: "b", tipo: "alunno", valori: ["b.nome=Anna", "b.classe=non inizializzata", "b.voto=non inizializzata"], nonInizializzate: 2 });
+}, 60_000);
+
+test("un record nella copia espansa: il blocco corrente è l'assegnazione del campo della pausa, una sola", async () => {
+  const testo = readFileSync(new URL("../../casi/tipi/copia-di-un-record.algo", import.meta.url), "utf8");
+  await apriLaFinestra("copia-di-un-record.algo", testo, { ...scelteIniziali, copiaDeiVettori: "espansa" });
+  const sulCampo = riempi(it.nomeDelBlocco, { genere: it.bloccoAssegnazione, testo: "b.classe ← a.classe" });
+  for (let k = 0; k < 8 && !avviso().includes(sulCampo); k++) await premi("F10");
+  expect(avviso()).toContain(sulCampo);
+  // Le parti della copia disegnate: un'assegnazione per campo e l'intestazione (in fondo, come il riquadro la unisce);
+  // segnata (con una classe) solo quella del campo 1.
+  const parti = [...document.querySelectorAll<SVGGElement>('g[data-id="b1"]')];
+  expect(parti.map((g) => g.getAttribute("data-campo-della-copia"))).toEqual(["0", "1", "2", null]);
+  expect(parti.map((g) => (g.getAttribute("class") ?? "") !== "")).toEqual([false, true, false, false]);
 }, 60_000);
 
 test("il nome di una funzione chiamata nel blocco: prima che restituisca un valore lo dice; dopo, ogni valore dell'azione col numero della chiamata", async () => {

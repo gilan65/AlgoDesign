@@ -31,6 +31,7 @@ export function testiDelDisegno(lingua: Lingua): TestiDelDisegno {
       elementoSuccessivo: d.disegnoElementoSuccessivo,
       copia: d.disegnoCopia,
       copiaEspansa: d.disegnoCopiaEspansa,
+      copiaCampi: d.disegnoCopiaCampi,
     },
     funzioni: {
       procedura: d.disegnoProcedura,

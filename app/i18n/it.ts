@@ -26,6 +26,8 @@ export const it = {
   // La scritta del riquadro della copia di un vettore col suo nome, e l'intestazione della copia espansa.
   disegnoCopia: "copia elemento per elemento",
   disegnoCopiaEspansa: "{assegnazione}: {copia}",
+  // La scritta del riquadro della copia di un record col suo nome.
+  disegnoCopiaCampi: "copia campo per campo",
   /** Procedure e funzioni: l'intestazione nel blocco d'inizio ({nome} in grassetto, {tipo} in corsivo, {parametri} coi
    * «rif» e gli «out»), la fine di una funzione ({valore} è un'espressione), il blocco della chiamata ({argomenti} coi
    * «rif» e gli «out»). */
@@ -97,10 +99,11 @@ export const it = {
   perOgniPosizione: "Aperti, con la posizione dell'elemento: _indice ← 0",
   perOgniParole: "Aperti, a parole: c'è un altro elemento",
   perOgniChiuso: "Chiusi: l'intestazione e il corpo",
-  // La copia di un vettore col suo nome nel flowchart, nel riquadro «copia elemento per elemento».
-  copiaDeiVettori: "Copia di un vettore col suo nome",
+  // La copia di un vettore o di un record col suo nome nel flowchart, nel riquadro «copia elemento per elemento» o
+  // «copia campo per campo».
+  copiaDeiVettori: "Copia di un vettore o di un record col suo nome",
   copiaCompatta: "Compatta: nel riquadro, l'assegnazione altri ← voti",
-  copiaEspansa: "Espansa: nel riquadro, il «mentre» che copia un elemento alla volta",
+  copiaEspansa: "Espansa: nel riquadro, il «mentre» che copia un elemento alla volta, o un'assegnazione per campo",
   riquadroDeiCicli: "Riquadro dei cicli",
   fondoDeiCicli: "Col fondo colorato",
   // I blocchi scelti insieme (Maiusc+clic): oltre al bordo di ognuno, un riquadro intorno a tutti.
@@ -262,6 +265,11 @@ export const it = {
   importaConflitto: "Nel programma c'è già «{nome}», diversa.",
   importaConflittoCostante: "Nel programma c'è già la costante comune «{nome}», diversa.",
   importaCostanteComune: "Costante comune",
+  // Un record che le procedure e funzioni importate usano: entra con loro, senza scelte.
+  importaRecord: "Record",
+  importaRecordEntra: "Entra: lo usa {da}.",
+  importaRecordIdentico: "C'è già nel programma, identico: non entra di nuovo.",
+  importaRecordRinominato: "Il nome «{nome}» è già usato nel programma: entra come «{nuovo}».",
   importaConflittoAltra: "Nel programma «{nome}» è già il nome di un dato, di una procedura o di una funzione: quella che viene importata si rinomina.",
   importaRinomina: "Rinomina quella che viene importata",
   importaSostituisci: "Sostituisci quella del programma",

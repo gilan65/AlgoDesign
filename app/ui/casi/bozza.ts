@@ -4,7 +4,7 @@
 // Un caso di una procedura o di una funzione (eseguita da sola) ha voci in più: un parametro per riferimento può arrivare
 // senza valore (la voce senza testo), e per un parametro vettore una voce sola può valere per ogni elemento.
 
-import type { CasoDiUnaFunzione, Dato } from "../../core/progetto/modello";
+import type { CasoDiUnaFunzione, Dato, DefinizioneDelRecord } from "../../core/progetto/modello";
 
 export interface VoceDellaBozza {
   readonly dato: string;
@@ -67,8 +67,15 @@ export function nomeDelCasoNuovo(casi: readonly CasoDiUnaFunzione[], modello: (n
 }
 
 /** Le voci di un caso nuovo di una procedura o di una funzione: una per parametro, nell'ordine della firma, senza testo
- * da scrivere; per un parametro vettore una voce per ogni elemento. Un parametro per uscita nessuna (non si chiede: parte
- * senza valore), e così il programma principale. */
-export function vociDelCasoNuovo(dati: readonly Dato[]): VoceDellaBozza[] {
-  return dati.filter((d) => d.parameter !== undefined && d.parameter !== "out").map((d) => ({ dato: d.name, testo: "", ...(d.size !== undefined ? { ognuno: true as const } : {}) }));
+ * da scrivere; per un parametro vettore una voce per ogni elemento; per un parametro record una voce per campo,
+ * nell'ordine dei campi, col nome del parametro (mai per ogni elemento: i campi hanno tipi diversi). Un parametro per
+ * uscita nessuna (non si chiede: parte senza valore), e così il programma principale. */
+export function vociDelCasoNuovo(dati: readonly Dato[], records: readonly DefinizioneDelRecord[] = []): VoceDellaBozza[] {
+  return dati
+    .filter((d) => d.parameter !== undefined && d.parameter !== "out")
+    .flatMap((d) => {
+      const campi = d.type === "record" && d.size === undefined ? records.find((r) => r.name === d.record)?.fields : undefined;
+      if (campi !== undefined) return campi.map(() => ({ dato: d.name, testo: "" }));
+      return [{ dato: d.name, testo: "", ...(d.size !== undefined ? { ognuno: true as const } : {}) }];
+    });
 }

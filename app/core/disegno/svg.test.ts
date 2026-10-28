@@ -11,7 +11,11 @@
 // - come l'SVG si vede in altri programmi.
 
 import { describe, expect, test } from "bun:test";
-import type { Disegno, Elemento } from "./impaginazione";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { cicliIt, funzioniIt } from "../esecuzione/testi-di-prova";
+import { apri } from "../progetto/formato";
+import { impagina, opzioniPredefinite, type Disegno, type Elemento, type TestiDelDisegno } from "./impaginazione";
 import { segniDelDisegno } from "./segni";
 import { svgDelDisegno } from "./svg";
 import { tavolozzaNelModo, type Tavolozza } from "./tavolozza";
@@ -348,6 +352,21 @@ describe("le regole dei segni dell'esecuzione", () => {
 
   test("una fase che il disegno non ha (il ciclo chiuso): il blocco corrente è l'intestazione", () => {
     expect(con({ corrente: "p1", faseCorrente: "passo" }, "corrente")).toEqual(["intestazione p1"]);
+  });
+
+  test("la copia di un record: corrente l'assegnazione del campo nella copia espansa, l'assegnazione nella compatta; nessun punto sui campi", () => {
+    const e = apri(readFileSync(join(import.meta.dir, "..", "..", "casi", "tipi", "copia-di-un-record.algo"), "utf8"));
+    if (!e.ok) throw new Error("copia-di-un-record non si apre");
+    const testi: TestiDelDisegno = { inizio: "Inizio", fine: "Fine", leggi: "leggi", scrivi: "scrivi", vero: "Vero", falso: "Falso", aCapo: " ↵", ogniElemento: "{valore} in ogni elemento", altri: "… altri {n}", cicli: cicliIt, funzioni: funzioniIt };
+    const misura = (s: string) => [...s].length * 7;
+    const correnti = (copia: "compatta" | "espansa", campoCorrente: number) => {
+      const d = impagina(e.progetto.functions[0]!, geometriaPredefinita, misura, testi, { ...opzioniPredefinite, copia }, [], e.progetto.functions, e.progetto.records ?? []);
+      const di = segniDelDisegno(d.elementi, { corrente: "b1", campoCorrente, interruzioni: new Set(["b1"]) });
+      return { corrente: d.elementi.filter((x) => di(x).corrente).map((x) => x.testo), punto: d.elementi.filter((x) => di(x).punto).map((x) => x.testo) };
+    };
+    expect(correnti("espansa", 1)).toEqual({ corrente: ["b.classe ← a.classe"], punto: ["b ← a: copia campo per campo"] });
+    expect(correnti("espansa", 0)).toEqual({ corrente: ["b.nome ← a.nome"], punto: ["b ← a: copia campo per campo"] });
+    expect(correnti("compatta", 2)).toEqual({ corrente: ["b ← a"], punto: ["b ← a"] });
   });
 
   test("il valore iniziale corrente si riconosce dal nome del dato, non dall'id vuoto", () => {

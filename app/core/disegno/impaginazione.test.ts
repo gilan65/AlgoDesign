@@ -2169,3 +2169,72 @@ test("il rombo di ogni ciclo, aperto o nel riquadro, ha il segno del ciclo; quel
   expect(conti.cicli).toBeGreaterThan(0);
   expect([...visti].sort()).toEqual(["for", "for_each", "if", "repeat", "while"]);
 });
+
+// La copia di un record col suo nome (`b ← a`), sul programma del corpus `casi/tipi/copia-di-un-record.algo`: gli attesi
+// scritti qui a mano dal flowchart. Compatta, l'assegnazione nel riquadro con la scritta «copia campo per campo»;
+// espansa, l'intestazione e un'assegnazione per campo, una sotto l'altra sull'asse, nel riquadro, senza il `mentre` (nessun
+// rombo, nessuna posizione). Le prove generiche dei riquadri qui sopra riconoscono solo la copia di un vettore: questa
+// guarda la geometria del riquadro nuovo da sé.
+describe("la copia di un record nel riquadro", () => {
+  const e = apri(readFileSync(join(import.meta.dir, "..", "..", "casi", "tipi", "copia-di-un-record.algo"), "utf8"));
+  if (!e.ok) throw new Error("copia-di-un-record non si apre");
+  const p = e.progetto;
+  const disegno = (copia: "compatta" | "espansa") => impagina(p.functions[0]!, tema, misura, testi, { ...opzioniPredefinite, copia }, [], p.functions, p.records ?? []);
+  /** Della copia (`b1`): gli elementi in ordine dall'alto, col testo, la forma, la fase e il campo. */
+  const dellaCopia = (d: Disegno) =>
+    d.elementi
+      .filter((x) => x.id === "b1")
+      .sort((a, b) => a.riquadro.y - b.riquadro.y)
+      .map((x) => ({ testo: x.testo, forma: x.forma, ...(x.fase !== undefined ? { fase: x.fase } : {}), ...(x.campo !== undefined ? { campo: x.campo } : {}) }));
+
+  test("compatta: l'assegnazione dentro, la scritta sul bordo", () => {
+    const d = disegno("compatta");
+    expect(dellaCopia(d)).toEqual([{ testo: "b ← a", forma: "assegnazione" }]);
+    const r = d.riquadri.filter((x) => x.blocco === "b1");
+    expect(r.length).toBe(1);
+    expect(r[0]!.didascalia?.testo).toBe("copia campo per campo");
+  });
+
+  test("espansa: l'intestazione e un'assegnazione per campo, nel riquadro, sull'asse, senza sovrapporsi", () => {
+    const d = disegno("espansa");
+    expect(dellaCopia(d)).toEqual([
+      { testo: "b ← a: copia campo per campo", forma: "intestazione" },
+      { testo: "b.nome ← a.nome", forma: "assegnazione", fase: "elemento", campo: 0 },
+      { testo: "b.classe ← a.classe", forma: "assegnazione", fase: "elemento", campo: 1 },
+      { testo: "b.voto ← a.voto", forma: "assegnazione", fase: "elemento", campo: 2 },
+    ]);
+    const r = d.riquadri.filter((x) => x.blocco === "b1");
+    expect(r.length).toBe(1);
+    expect(r[0]!.didascalia).toBeUndefined();
+    const bordo = r[0]!.bordo;
+    const campi = d.elementi.filter((x) => x.id === "b1" && x.campo !== undefined);
+    const difetti: string[] = [];
+    // L'asse: il centro del blocco che segue la copia.
+    const asse = ((q) => q.x + q.larghezza / 2)(d.elementi.find((x) => x.id === "b2")!.riquadro);
+    for (const c of campi) {
+      const q = c.riquadro;
+      if (!(q.x > bordo.x && q.x + q.larghezza < bordo.x + bordo.larghezza && q.y > bordo.y && q.y + q.altezza < bordo.y + bordo.altezza)) difetti.push(`campo ${c.campo} fuori dal riquadro`);
+      if (Math.abs(q.x + q.larghezza / 2 - asse) > EPS) difetti.push(`campo ${c.campo} fuori dall'asse`);
+    }
+    // Nessuna forma della funzione tocca un'altra, e nessuna fuori dal riquadro gli sta dentro.
+    const forme = d.elementi.filter((x) => x.dato === undefined);
+    forme.forEach((a, i) => forme.slice(i + 1).forEach((b) => sovrapposti(a.riquadro, b.riquadro, DISTANZA_MINIMA) && difetti.push(`${a.testo} tocca ${b.testo}`)));
+    for (const x of forme.filter((f) => f.id !== "b1")) {
+      const q = x.riquadro;
+      if (sovrapposti(q, bordo, 0)) difetti.push(`${x.testo} dentro il riquadro della copia`);
+    }
+    // Il `mentre` del vettore non c'è: nessun rombo della copia.
+    if (d.elementi.some((x) => x.id === "b1" && x.forma === "condizione")) difetti.push("un rombo nella copia di un record");
+    expect(difetti).toEqual([]);
+    expect(campi.length).toBe(3);
+  });
+
+  test("un dato che non è un record, o un campo, non fa il riquadro", () => {
+    const f = p.functions[0]!;
+    const conCampo: Funzione = { ...f, body: [{ id: "b1", kind: "assignment", target: "b.nome", value: "a.nome" }] };
+    const d = impagina(conCampo, tema, misura, testi, { ...opzioniPredefinite, copia: "espansa" }, [], [conCampo], p.records ?? []);
+    expect(d.riquadri.length).toBe(0);
+    // Senza i record del progetto (il record non c'è) l'assegnazione resta semplice.
+    expect(impagina(f, tema, misura, testi, { ...opzioniPredefinite, copia: "espansa" }, [], p.functions).riquadri.length).toBe(0);
+  });
+});

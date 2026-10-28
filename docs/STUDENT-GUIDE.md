@@ -162,7 +162,7 @@ In the Settings, “Appearance” tab, loops can be drawn in other ways; the pro
 
 - **“For” loops**: open, as above (it is the initial choice), or **closed**, with only the heading above the body and the line going back to the top;
 - **“For each” loops**: open with the element's position, as above; open **in words** (“another element in word”, “c ← next element of word”); or closed;
-- **Copy of an array by its name**: compact, with only the assignment in the frame (it is the initial choice), or expanded, with the “While” that copies one element at a time;
+- **Copy of an array or a record by its name**: compact, with only the assignment in the frame (it is the initial choice), or expanded, with the “While” that copies one element at a time or, for a record, one assignment per field;
 - **Frame of the loops**: with a colored background, besides the dashed border.
 
 ### Step by step and trace table
