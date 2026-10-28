@@ -5,8 +5,8 @@
 // segno, la potenza esatta, le regole del linguaggio su caratteri e stringhe). I comportamenti che il C non
 // definisce non si controllano, e il commento in testa lo dice.
 //
-// La forma: il nome del progetto e la testa, gli import che servono, le costanti comuni sopra il programma
-// principale, `main` coi dati annotati dalla vista dei dati (il valore iniziale nella dichiarazione, il ruolo o
+// La forma: il nome del progetto e la testa, gli import che servono, i record come classi di dati (`@dataclass`, un
+// campo per riga col suo tipo, `None` finché non ha un valore), le costanti comuni sopra il programma principale, `main` coi dati annotati dalla vista dei dati (il valore iniziale nella dichiarazione, il ruolo o
 // «costante» in una colonna allineata), le regole, poi le procedure e le funzioni del progetto nel suo ordine, poi le
 // sole funzioni di supporto che il programma usa, in un ordine fisso, e la chiamata di `main`. Il `ripeti` è
 // `while True:` con `if not (condizione): break` in fondo, che rivaluta la condizione a ogni giro. Il `per` e il `per
@@ -27,6 +27,14 @@
 // Un argomento che si può fermare si calcola prima della chiamata, nel suo ordine, solo se dopo di lui una riga prima
 // della chiamata si può fermare anche lei (il controllo, o un indice che si ferma). `fermati` risale fino a una
 // funzione del programma.
+//
+// I record: un record è un oggetto della sua classe, e il campo si scrive `a.voto` come nel flowchart. Nessun record è
+// mai condiviso da due dati: la copia col nome (`b ← a`) si scrive campo per campo, una riga per campo (la riga corrente
+// del campo che si copia, come l'evento del nucleo); un record per valore la funzione chiamata lo copia per prima cosa
+// (`x = alunno(x.nome, x.classe, x.voto)`), come un vettore; un record restituito dal suo nome torna come un oggetto
+// nuovo; da una funzione è già nuovo. Un record senza valore nasce coi campi `None` (`alunno()`), anche quello passato
+// per riferimento; per riferimento la procedura cambia l'oggetto di chi chiama e lo restituisce, come gli altri dati.
+// Un campo per riferimento è come un dato (`a.voto = raddoppia(a.voto)`).
 //
 // La ricorsione: la prima riga delle sole funzioni del giro (`funzioniDelGiro`) conta la chiamata
 // col suo spazio (`entra_nella_ricorsione`, lo spazio di `spazioDiUnaChiamata`) e si ferma oltre un tetto; l'ultima la
@@ -64,7 +72,20 @@ import { chiamateDellaFunzione, chiamateIn, funzioniDelGiro, funzioniVersoIlGiro
 import { lunghezzaMassima as lunghezzaMassimaNelNucleo } from "../controllo/lunghezza";
 import { spazioDellaPila, spazioDiUnaChiamata, tettoDelleChiamate } from "../controllo/spazio";
 import { analizza, type Espressione } from "../espressioni/analizzatore";
-import { opzioniPredefinite, tipoSemplice, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto, type Ruolo, type Tipo } from "../progetto/modello";
+import {
+  opzioniPredefinite,
+  tipoSemplice,
+  type Blocco,
+  type Campo,
+  type CasoDiUnaFunzione,
+  type Dato,
+  type Funzione,
+  type Progetto,
+  type Ruolo,
+  type Tipo,
+  type TipoDelDato,
+} from "../progetto/modello";
+import { eUnaCopiaDiUnRecord, nomiDeiRecord } from "../progetto/copia";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import { genera, parametriDelCaso, segnate, type Generato, type Riga } from "./forma";
 import { motiviCol } from "./motivi";
@@ -263,6 +284,9 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
   const decimali = p.options?.real_decimals ?? opzioniPredefinite.real_decimals;
   const riempimento = (p.options?.fill_character ?? opzioniPredefinite.fill_character).codePointAt(0)!;
   const tetto = tettoDelleChiamate(p);
+  /** I record del progetto, per nome, e i campi di un record. */
+  const records = new Map((p.records ?? []).map((r) => [r.name, r]));
+  const campiDi = (record: string | undefined): readonly Campo[] => records.get(record ?? "")!.fields;
 
   const usate = new Set<FunzioneDiSupporto>();
   const altriModuli = new Set<"math" | "re">();
@@ -299,7 +323,12 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
     const f = perNome.get((e as { nome: string }).nome)!;
     return { size: f.return_size!, ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}) };
   };
-  function tipo(e: Espressione): Tipo {
+  /** Il record di un'espressione che ne dà uno intero: il nome di un dato record, o una funzione che lo restituisce. */
+  const recordDi = (e: Espressione): string | undefined =>
+    e.genere === "nome" ? (dati.get(e.nome)!.size === undefined ? dati.get(e.nome)!.record : undefined) : e.genere === "chiamata" ? perNome.get(e.nome)?.return_record : undefined;
+  /** Il campo di un'espressione `base.campo`: la base è un dato record o una funzione che restituisce un record. */
+  const campoDi = (e: Extract<Espressione, { genere: "campo" }>): Campo => campiDi(recordDi(e.base)).find((c) => c.name === e.campo)!;
+  function tipo(e: Espressione): TipoDelDato {
     switch (e.genere) {
       case "intero":
         return "integer";
@@ -313,13 +342,13 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
       case "booleano":
         return "boolean";
       case "nome":
-        return tipoSemplice(dati.get(e.nome)!.type);
+        return dati.get(e.nome)!.type;
       case "campo":
-        throw new Error("il campo di un record: il controllo statico dice fuori tappa un progetto coi record");
+        return campoDi(e).type;
       case "indice":
         return vettore(e.base) ? tipo(e.base) : "character";
       case "chiamata":
-        return tipoSemplice(perNome.get(e.nome)!.return_type!);
+        return perNome.get(e.nome)!.return_type!;
       case "unario":
         switch (e.operatore) {
           case "-":
@@ -348,13 +377,13 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
   }
 
   /** La lunghezza massima che una stringa può avere. */
-  const lunghezzaMassima = (e: Espressione): number => lunghezzaMassimaNelNucleo(e, (n) => dati.get(n), (n) => perNome.get(n));
+  const lunghezzaMassima = (e: Espressione): number => lunghezzaMassimaNelNucleo(e, (n) => dati.get(n), (n) => perNome.get(n), campoDi);
 
   /** Un carattere che può essere quello di codice 0: un dato, un elemento di un vettore, una conversione da intero, ciò
    * che una funzione restituisce. Un letterale non lo è (sarebbe un errore statico), e nemmeno un carattere preso da una
    * stringa. */
   function puoEssereZero(e: Espressione): boolean {
-    if (e.genere === "nome" || e.genere === "chiamata") return true;
+    if (e.genere === "nome" || e.genere === "chiamata" || e.genere === "campo") return true;
     if (e.genere === "indice") return vettore(e.base);
     if (e.genere === "unario" && e.operatore === "to_character") return tipo(e.operando) === "integer" || puoEssereZero(e.operando);
     return false;
@@ -395,7 +424,8 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
       case "nome":
         return operando(e.nome);
       case "campo":
-        throw new Error("il campo di un record: il controllo statico dice fuori tappa un progetto coi record");
+        // Il campo di un dato, o del record restituito da una funzione: prima la chiamata, poi il campo.
+        return operando(`${espressione(e.base).t}.${e.campo}`);
       case "indice":
         // L'elemento di un vettore, anche di quello restituito da una funzione: prima la chiamata, poi l'indice.
         if (vettore(e.base)) return operando(`${espressione(e.base).t}[${espressione(e.indice).t}]`);
@@ -511,13 +541,28 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
     return e.genere === "nome" ? `list(${x})` : x;
   }
 
+  /** Un record intero che va in un risultato: dal nome di un record un oggetto nuovo, campo per campo; da una funzione
+   * è già nuovo. */
+  function recordNuovo(e: Espressione): string {
+    const x = espressione(e).t;
+    if (e.genere !== "nome") return x;
+    return `${recordDi(e)!}(${campiDi(recordDi(e)).map((c) => `${x}.${c.name}`).join(", ")})`;
+  }
+
   // ---------------------------------------------------------------------------------------- le dichiarazioni
 
   const annotazioneDelTipo = (t: Tipo) => ({ integer: "int", real: "float", character: "str", string: "str", boolean: "bool" })[t];
-  const annotazione = (d: Dato) => (d.size === undefined ? annotazioneDelTipo(tipoSemplice(d.type)) : `list[${annotazioneDelTipo(tipoSemplice(d.type))}]`);
-  const annotazioneDelRisultato = (f: Funzione) => (f.return_size === undefined ? annotazioneDelTipo(tipoSemplice(f.return_type!)) : `list[${annotazioneDelTipo(tipoSemplice(f.return_type!))}]`);
+  /** Il tipo di un dato, o degli elementi di un vettore: un record col suo nome. */
+  const delTipo = (t: TipoDelDato, record: string | undefined) => (t === "record" ? record! : annotazioneDelTipo(t));
+  const annotazione = (d: Dato) => (d.size === undefined ? delTipo(d.type, d.record) : `list[${delTipo(d.type, d.record)}]`);
+  const annotazioneDelRisultato = (f: Funzione) => (f.return_size === undefined ? delTipo(f.return_type!, f.return_record) : `list[${delTipo(f.return_type!, f.return_record)}]`);
   const valoreIniziale = (d: Dato): string | undefined => {
     const v = d.initial;
+    // Un record nasce sempre come oggetto: senza valore coi campi `None`, con un valore un letterale per campo.
+    if (d.type === "record" && d.size === undefined) {
+      const valori = v === undefined ? [] : (v as readonly string[]).map((x, k) => nelDato(albero(x), campiDi(d.record)[k]!));
+      return `${d.record!}(${valori.join(", ")})`;
+    }
     if (v === undefined) return d.size === undefined ? undefined : `[None] * ${d.size}`;
     if (typeof v === "string") return nelDato(albero(v), d);
     if (Array.isArray(v)) return `[${(v as readonly string[]).map((x) => nelDato(albero(x), d)).join(", ")}]`;
@@ -545,6 +590,8 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
 
   let corpo: Riga[] = [];
   const struttura = (testo: string) => corpo.push({ testo });
+  /** I record della funzione che si scrive (con le costanti comuni): riconoscono la copia col nome. */
+  let record: ReadonlySet<string> = new Set();
 
   /** Quanti cicli `per ogni` contengono la regola che si scrive: l'indice di un ciclo, o quello calcolato prima del
    * valore, è quello del livello dopo. */
@@ -558,6 +605,12 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
     const e = albero(bersaglio);
     if (e.genere === "nome") {
       corpo.push({ testo: `${r}${e.nome} = ${valore(dati.get(e.nome)!)}`, blocco: id });
+      return;
+    }
+    if (e.genere === "campo") {
+      // Il campo di un dato record riceve il valore come un dato del tipo del campo.
+      const destinazione = `${espressione(e.base).t}.${e.campo}`;
+      corpo.push({ testo: `${r}${destinazione} = ${valore({ ...campoDi(e), name: destinazione })}`, blocco: id });
       return;
     }
     const nome = (e as { base: { nome: string } }).base.nome;
@@ -587,6 +640,8 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
       ferma = false;
       if (d.parameter === "value") return { genere: "valore", testo: nelDato(a, d), ferma };
       if (a.genere === "nome") return { genere: "nome", testo: a.nome };
+      // Un campo per riferimento si passa e si riassegna come un dato.
+      if (a.genere === "campo") return { genere: "nome", testo: espressione(a).t };
       const i = (a as { indice: Espressione }).indice;
       return { genere: "elemento", vettore: (a as { base: { nome: string } }).base.nome, indice: espressione(i).t, scritto: i.genere === "intero", ferma };
     });
@@ -634,7 +689,7 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
   };
 
   /** Un valore di quel tipo come lo scrive una scrittura. */
-  const comeScritto = (x: string, t: Tipo): string => (t === "real" ? chiamata(usa("reale"), x).t : t === "boolean" ? chiamata(usa("booleano"), x).t : x);
+  const comeScritto = (x: string, t: TipoDelDato): string => (t === "real" ? chiamata(usa("reale"), x).t : t === "boolean" ? chiamata(usa("booleano"), x).t : x);
   const scritto = (testo: string): string => {
     const e = albero(testo);
     return comeScritto(espressione(e).t, tipo(e));
@@ -671,6 +726,14 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
           });
         }
         const t = albero(b.target);
+        if (eUnaCopiaDiUnRecord(b, record)) {
+          // La copia di un record col suo nome, campo per campo: una riga per campo, col campo che copia.
+          const da = espressione(v).t;
+          campiDi(dati.get((t as { nome: string }).nome)!.record).forEach((c, k) =>
+            corpo.push({ testo: `${r}${espressione(t).t}.${c.name} = ${da}.${c.name}`, blocco: b.id, campo: k }),
+          );
+          return;
+        }
         if (t.genere === "nome" && dati.get(t.nome)!.size !== undefined) {
           const d = dati.get(t.nome)!;
           if (v.genere !== "nome") return riga(`${t.nome} = ${listaNuova(v, d)}`);
@@ -781,6 +844,7 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
    * *rif*, le dichiarazioni, le regole e il ritorno. */
   function scriviFunzione(f: Funzione): Riga[] {
     dati = new Map<string, Dato>([...comuni, ...f.data].map((d) => [d.name, d]));
+    record = nomiDeiRecord([...comuni, ...f.data]);
     corpo = [];
     cicliPerOgni = 0;
     sorgenti = 0;
@@ -797,7 +861,9 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
     // Un parametro per uscita non si riceve: è un dato senza valore della procedura, dichiarato coi suoi dati.
     const ricevuti = parametri.filter((d) => d.parameter !== "out");
     const intestazione = `def ${f.kind === "main" ? "main" : f.name}(${ricevuti.map((d) => `${d.name}: ${annotazione(d)}`).join(", ")}) -> ${ritorno}:`;
-    const copie = parametri.filter((d) => d.parameter === "value" && d.size !== undefined).map((d) => ({ testo: `${rientro}${d.name} = list(${d.name})` }));
+    const copie = parametri
+      .filter((d) => d.parameter === "value" && (d.size !== undefined || d.type === "record"))
+      .map((d) => ({ testo: `${rientro}${d.name} = ${d.size !== undefined ? `list(${d.name})` : recordNuovo({ genere: "nome", nome: d.name })}` }));
     // I dati senza valore iniziale che la funzione passa per riferimento, per nome.
     const passati = new Set(
       tuttiIBlocchi(f.body).flatMap((b) => {
@@ -833,7 +899,7 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
       // Un vettore torna come lista nuova; una stringa col controllo della lunghezza massima del risultato.
       const e = albero(f.end.return_value!);
       const verso = { type: f.return_type!, ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}) };
-      restituisce(e, f.return_size !== undefined ? listaNuova(e, verso) : nelDato(e, verso));
+      restituisce(e, f.return_size !== undefined ? listaNuova(e, verso) : f.return_type === "record" ? recordNuovo(e) : nelDato(e, verso));
     } else if (riferimenti.length > 0) restituisce(undefined, riferimenti.map((d) => d.name).join(", "));
     else uscita();
     // Senza dichiarazioni, senza copie e senza azioni, il corpo vuole `pass`.
@@ -844,7 +910,7 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
 
   /** Il programma principale del programma di prova: legge i parametri, chiama, scrive il risultato. */
   function scriviLaProva(f: Funzione, caso: CasoDiUnaFunzione): Riga[] {
-    const letti = parametriDelCaso(f, caso);
+    const letti = parametriDelCaso(f, caso, p.records);
     if ("problema" in letti) throw new Error(`il caso ${caso.name} non ha un programma di prova: ${letti.problema}`);
     dati = new Map<string, Dato>([...comuni, ...f.data].map((d) => [d.name, d]));
     const righe: Riga[] = [{ testo: "def main() -> None:" }];
@@ -852,7 +918,13 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
       // Un parametro per uscita non si passa: lo dà la chiamata.
       if (d.parameter === "out") continue;
       const uno = (x: "riga" | "nessuno") => (x === "riga" ? leggi(d) : "None");
-      const valore = d.size === undefined ? uno(elementi[0]!) : ognuno ? `[${uno(elementi[0]!)}] * ${d.size}` : `[${elementi.map(uno).join(", ")}]`;
+      // Un record: un campo per voce, nell'ordine dei campi.
+      const delCampo = (x: "riga" | "nessuno", c: Campo) => (x === "riga" ? leggi(c) : "None");
+      const valore =
+        d.type === "record" ? `${d.record!}(${campiDi(d.record).map((c, k) => delCampo(elementi[k]!, c)).join(", ")})`
+        : d.size === undefined ? uno(elementi[0]!)
+        : ognuno ? `[${uno(elementi[0]!)}] * ${d.size}`
+        : `[${elementi.map(uno).join(", ")}]`;
       righe.push({ testo: `${rientro}${d.name}: ${annotazione(d)} = ${valore}`, blocco: f.id });
     }
     const parametri = f.data.filter((d) => d.parameter !== undefined);
@@ -866,13 +938,23 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
       const nome = nomeDelRisultato[lingua];
       righe.push({ testo: `${rientro}${nome} = ${chiamataDiF}`, ...delCaso });
       for (let i = 0; i < f.return_size; i++) righe.push({ testo: `${rientro}print("→ [${i}] = ", ${comeScritto(`${nome}[${i}]`, tipoSemplice(f.return_type!))}, sep="")` });
+    } else if (f.kind === "function" && f.return_type === "record") {
+      // La funzione si chiama una volta, poi una riga per campo, come per un vettore.
+      const nome = nomeDelRisultato[lingua];
+      righe.push({ testo: `${rientro}${nome} = ${chiamataDiF}`, ...delCaso });
+      for (const c of campiDi(f.return_record)) righe.push({ testo: `${rientro}print("→ .${c.name} = ", ${comeScritto(`${nome}.${c.name}`, c.type)}, sep="")` });
     } else if (f.kind === "function") righe.push({ testo: `${rientro}print("→ ", ${comeScritto(chiamataDiF, tipoSemplice(f.return_type!))}, sep="")`, ...delCaso });
     else if (riferimenti.length === 0) righe.push({ testo: `${rientro}${chiamataDiF}`, ...delCaso });
     else {
       righe.push({ testo: `${rientro}${riferimenti.map((d) => d.name).join(", ")} = ${chiamataDiF}`, ...delCaso }, { testo: `${rientro}print()` });
-      for (const d of riferimenti)
-        for (const nome of d.size === undefined ? [d.name] : [...Array(d.size).keys()].map((i) => `${d.name}[${i}]`))
-          righe.push({ testo: `${rientro}print("${nome} = ", ${comeScritto(nome, tipoSemplice(d.type))}, sep="")` });
+      for (const d of riferimenti) {
+        // Un record una riga per campo, `r.nome = …`.
+        const pezzi: [string, TipoDelDato][] =
+          d.type === "record" ? campiDi(d.record).map((c) => [`${d.name}.${c.name}`, c.type])
+          : d.size === undefined ? [[d.name, d.type]]
+          : [...Array(d.size).keys()].map((i) => [`${d.name}[${i}]`, d.type]);
+        for (const [nome, t] of pezzi) righe.push({ testo: `${rientro}print("${nome} = ", ${comeScritto(nome, t)}, sep="")` });
+      }
     }
     return righe;
   }
@@ -922,7 +1004,18 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
     ...w.nonControllati.map((t) => ({ testo: `# ${t}` })),
     ...[...altriModuli, "sys" as const].sort().map((m) => ({ testo: `import ${m}` })),
   ];
-  if (costanti.length > 0) righe.push({ testo: "" }, { testo: `# ${w.costantiComuni}` }, ...costanti);
+  // I record: una classe di dati per record, dopo gli import; ogni campo `None` finché non ha un valore.
+  const classi = p.records ?? [];
+  if (classi.length > 0) righe.push({ testo: "from dataclasses import dataclass" });
+  for (const r of classi)
+    righe.push(
+      { testo: "" },
+      { testo: "" },
+      { testo: "@dataclass" },
+      { testo: `class ${r.name}:` },
+      ...r.fields.map((c) => ({ testo: `${rientro}${c.name}: ${annotazioneDelTipo(c.type)} | None = None` })),
+    );
+  if (costanti.length > 0) righe.push(...(classi.length > 0 ? [{ testo: "" }] : []), { testo: "" }, { testo: `# ${w.costantiComuni}` }, ...costanti);
   righe.push({ testo: "" }, { testo: "" }, ...principale);
   for (const f of delProgramma) righe.push({ testo: "" }, { testo: "" }, ...segnate(scritte.get(f)!, f.id));
   const funzioni = funzioniDiSupporto.filter((f) => usate.has(f));

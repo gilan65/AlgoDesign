@@ -296,9 +296,9 @@ test("un esempio coi record si apre: ogni file della cartella dei record, anche 
   );
   const esempi = esempiDa(cartella(file), tetti).sciolti;
   expect(esempi.map((e) => [e.nome, e.progetto !== null, e.problema?.genere ?? null])).toEqual(Object.keys(file).map((n) => [n, true, null]));
-  // Controllo positivo: il denominatore è la cartella intera (sei file giusti, cinque sbagliati), e un esempio senza
+  // Controllo positivo: il denominatore è la cartella intera (sette file giusti, cinque sbagliati), e un esempio senza
   // record accanto si apre come loro.
-  expect(esempi.length).toBe(11);
+  expect(esempi.length).toBe(12);
   const [buono] = forniti(it);
   expect(esempiDa(cartella({ "a.algo": buono!.testo }), tetti).sciolti.map((e) => e.problema)).toEqual([null]);
 });

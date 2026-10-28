@@ -21,6 +21,10 @@ export const testiDelleMancanze: Record<Lingua, Record<SpecieDellaMancanza, Test
       breve: "Il tipo stringa non è supportato in Accademico.",
       suggerimento: "Un testo si può solo scrivere: metti la frase fra virgolette direttamente nella Scrittura.",
     },
+    record: {
+      breve: "Il tipo record non è supportato in Accademico.",
+      suggerimento: "Usa un dato intero per ogni campo: per esempio voto_anna al posto di anna.voto.",
+    },
     lettura: {
       breve: "La Lettura non è supportata in Accademico.",
       suggerimento: "Togli la Lettura e dai il valore con un'Assegnazione, o passalo come parametro a una procedura.",
@@ -94,6 +98,10 @@ export const testiDelleMancanze: Record<Lingua, Record<SpecieDellaMancanza, Test
     stringa: {
       breve: "The string type is not supported in Academic.",
       suggerimento: "A text can only be written: put the sentence in quotes directly in the Write block.",
+    },
+    record: {
+      breve: "The record type is not supported in Academic.",
+      suggerimento: "Use an integer data item for each field: for example anna_mark instead of anna.mark.",
     },
     lettura: {
       breve: "The Read block is not supported in Academic.",

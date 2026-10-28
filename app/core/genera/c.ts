@@ -14,6 +14,12 @@
 // regole, `return 0;`, poi le procedure e le funzioni del progetto nel suo ordine, poi le definizioni delle funzioni di
 // supporto usate, in un ordine fisso.
 //
+// I record: una `struct` col suo `typedef` per record, prima delle costanti comuni, un campo per riga (una stringa col suo
+// vettore di `char`). Il campo si scrive `a.voto`, e `r->voto` da un parametro per riferimento. La copia col nome
+// (`b ← a`) si scrive campo per campo, una riga per campo (la riga corrente del campo che si copia, come l'evento del
+// nucleo); un record per valore e quello restituito sono la copia della `struct` del C; per riferimento e per uscita
+// passa l'indirizzo (`&a`), un campo per riferimento come un dato (`&a.voto`, una stringa `a.nome`).
+//
 // Procedure e funzioni: un parametro per riferimento è un puntatore (`int *a`, nella procedura `*a`,
 // nella chiamata `&n`), un vettore o una stringa per riferimento passano come sono. Un vettore o una stringa senza *rif*
 // arrivano come copia: la funzione chiamata la fa per prima cosa, dal parametro `_da_w` (`_from_w`) al dato `w`. Il dato
@@ -74,7 +80,19 @@ import { lunghezzaMassima as lunghezzaMassimaNelNucleo } from "../controllo/lung
 import { spazioDellaPila, spazioDiUnaChiamata, tettoDelleChiamate } from "../controllo/spazio";
 import { analizza, type Espressione } from "../espressioni/analizzatore";
 import type { FaseDelCiclo } from "../interprete/interprete";
-import { opzioniPredefinite, tipoSemplice, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione as FunzioneDelProgetto, type Progetto, type Tipo } from "../progetto/modello";
+import { eUnaCopiaDiUnRecord, nomiDeiRecord } from "../progetto/copia";
+import {
+  opzioniPredefinite,
+  tipoSemplice,
+  type Blocco,
+  type Campo,
+  type CasoDiUnaFunzione,
+  type Dato,
+  type Funzione as FunzioneDelProgetto,
+  type Progetto,
+  type Tipo,
+  type TipoDelDato,
+} from "../progetto/modello";
 import { genera, parametriDelCaso, segnate, type Generato, type Riga } from "./forma";
 import { motiviCol } from "./motivi";
 import {
@@ -228,6 +246,9 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
   const decimali = p.options?.real_decimals ?? opzioniPredefinite.real_decimals;
   const riempimento = (p.options?.fill_character ?? opzioniPredefinite.fill_character).codePointAt(0)!;
   const tetto = tettoDelleChiamate(p);
+  /** I record del progetto, per nome, e i campi di un record. */
+  const records = new Map((p.records ?? []).map((r) => [r.name, r]));
+  const campiDi = (record: string | undefined): readonly Campo[] => records.get(record ?? "")!.fields;
 
   const usate = new Set<Funzione>(["preparaConsole"]);
   const intestazioni = new Set<string>(["stdio.h"]);
@@ -273,7 +294,12 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     ...(f.return_size !== undefined ? { size: f.return_size } : {}),
     ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}),
   });
-  function tipo(e: Espressione): Tipo {
+  /** Il record di un'espressione che ne dà uno intero: il nome di un dato record, o una funzione che lo restituisce. */
+  const recordDi = (e: Espressione): string | undefined =>
+    e.genere === "nome" ? (dati.get(e.nome)!.size === undefined ? dati.get(e.nome)!.record : undefined) : e.genere === "chiamata" ? perNome.get(e.nome)?.return_record : undefined;
+  /** Il campo di un'espressione `base.campo`: la base è un dato record o una funzione che restituisce un record. */
+  const campoDi = (e: Extract<Espressione, { genere: "campo" }>): Campo => campiDi(recordDi(e.base)).find((c) => c.name === e.campo)!;
+  function tipo(e: Espressione): TipoDelDato {
     switch (e.genere) {
       case "intero":
         return "integer";
@@ -287,13 +313,13 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       case "booleano":
         return "boolean";
       case "nome":
-        return tipoSemplice(dati.get(e.nome)!.type);
+        return dati.get(e.nome)!.type;
       case "campo":
-        throw new Error("il campo di un record: il controllo statico dice fuori tappa un progetto coi record");
+        return campoDi(e).type;
       case "indice":
         return vettore(e.base) ? tipo(e.base) : "character";
       case "chiamata":
-        return tipoSemplice(perNome.get(e.nome)!.return_type!);
+        return perNome.get(e.nome)!.return_type!;
       case "unario":
         switch (e.operatore) {
           case "-":
@@ -322,13 +348,13 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
   }
 
   /** La lunghezza massima che una stringa può avere. */
-  const lunghezzaMassima = (e: Espressione): number => lunghezzaMassimaNelNucleo(e, (n) => dati.get(n), (n) => perNome.get(n));
+  const lunghezzaMassima = (e: Espressione): number => lunghezzaMassimaNelNucleo(e, (n) => dati.get(n), (n) => perNome.get(n), campoDi);
 
   /** Un carattere che può essere quello di codice 0: un dato, un elemento di un vettore, una conversione da intero, ciò
    * che una funzione restituisce. Un letterale non lo è (sarebbe un errore statico), e nemmeno un carattere preso da una
    * stringa. */
   function puoEssereZero(e: Espressione): boolean {
-    if (e.genere === "nome" || e.genere === "chiamata") return true;
+    if (e.genere === "nome" || e.genere === "chiamata" || e.genere === "campo") return true;
     if (e.genere === "indice") return vettore(e.base);
     if (e.genere === "unario" && e.operatore === "to_character") return tipo(e.operando) === "integer" || puoEssereZero(e.operando);
     return false;
@@ -347,8 +373,9 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     if (t === "real") reali = true;
     return { integer: "int", real: "double", character: "int", string: "const char *", boolean: "bool" }[t];
   };
-  /** Un dato del generatore libero in questa istruzione, di quel tipo (del C: anche la struttura di un risultato). */
-  const temporanea = (t: Tipo): string => temporaneaDelC(tipoDelC(t));
+  /** Un dato del generatore libero in questa istruzione, di quel tipo (del C: anche la struttura di un risultato; un record
+   * col suo nome). */
+  const temporanea = (t: TipoDelDato, record?: string): string => temporaneaDelC(t === "record" ? record! : tipoDelC(t));
   const temporaneaDelC = (tc: string): string => {
     let x = temporanee.find((v) => v.tipo === tc && !prese.has(v.nome));
     if (x === undefined) {
@@ -416,15 +443,15 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
   /** Le parti di un'operazione, nell'ordine in cui il linguaggio le calcola: quelle che vanno messe da parte (`daParte`)
    * diventano un dato del generatore, in una riga prima o con la virgola. Restituisce i testi da usare e il modo di
    * avvolgere l'operazione (la virgola, se serve). */
-  const inOrdine = (parti: readonly { parte: Parte; tipo: Tipo; daParte: boolean }[]): { testi: Testo[]; avvolgi: (x: Testo) => Testo } => {
+  const inOrdine = (parti: readonly { parte: Parte; tipo: TipoDelDato; record?: string; daParte: boolean }[]): { testi: Testo[]; avvolgi: (x: Testo) => Testo } => {
     const virgola: string[] = [];
     const metti = (nome: string, valore: string) => (prima !== null ? prima.push(`${nome} = ${valore};`) : virgola.push(`${nome} = ${valore}`));
-    const testi = parti.map(({ parte, tipo: t, daParte }) => {
+    const testi = parti.map(({ parte, tipo: t, record, daParte }) => {
       prima?.push(...parte.righe);
       if (!daParte) return parte.x;
       const s = parte.x.struttura;
       if (s === undefined) {
-        const nome = temporanea(t);
+        const nome = temporanea(t, record);
         metti(nome, parte.x.t);
         return operando(nome);
       }
@@ -472,8 +499,15 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         return operando("3.141592653589793");
       case "nome":
         return puntatori.has(e.nome) ? { t: `*${e.nome}`, forza: 14 } : operando(e.nome);
-      case "campo":
-        throw new Error("il campo di un record: il controllo statico dice fuori tappa un progetto coi record");
+      case "campo": {
+        // Il campo di un dato (`->` da un parametro per riferimento), o del record restituito da una funzione: la stringa
+        // di un record restituito esiste fino alla fine dell'istruzione, e messa da parte va col record intero.
+        if (e.base.genere === "nome") return operando(`${e.base.nome}${puntatori.has(e.base.nome) ? "->" : "."}${e.campo}`);
+        const x = espressione(e.base);
+        const t = `${x.t}.${e.campo}`;
+        if (campoDi(e).type !== "string") return { ...x, t, forza: 16 };
+        return { t, forza: 16, struttura: { tipo: recordDi(e.base)!, chiamata: x.t, campo: `.${e.campo}`, dentro: (y) => y } };
+      }
       case "indice": {
         if (e.base.genere === "nome" && vettore(e.base)) return operando(`${e.base.nome}[${espressione(e.indice).t}]`);
         // Il carattere di una stringa, o l'elemento del vettore restituito da una funzione: prima la chiamata, poi
@@ -490,7 +524,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         const parametri = parametriDi(g);
         const parti = e.argomenti.map((a, k) => aSe(() => nelDato(a, parametri[k]!)));
         const daParte = tranneLUltima(parti);
-        const { testi, avvolgi } = inOrdine(parti.map((parte, k) => ({ parte, tipo: tipoSemplice(parametri[k]!.type), daParte: daParte[k]! })));
+        const { testi, avvolgi } = inOrdine(parti.map((parte, k) => ({ parte, tipo: parametri[k]!.type, record: parametri[k]!.record, daParte: daParte[k]! })));
         if (fermano.get(e.nome) === true) fermaQui();
         // Una funzione del giro riceve per prima la riga della chiamata.
         const x = avvolgi(chiamata(e.nome, ...(nelGiro(e.nome) ? ["__LINE__"] : []), ...testi.map((y) => y.t)));
@@ -601,13 +635,14 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
 
   // ---------------------------------------------------------------------------------------- le dichiarazioni
 
-  const tipoDelDato = (d: Dato) => {
+  const tipoDelDato = (d: Pick<Dato, "type" | "record">) => {
     if (d.type === "boolean") intestazioni.add("stdbool.h");
     if (d.type === "real") reali = true;
-    return { integer: "int", real: "double", character: "int", string: "char", boolean: "bool" }[tipoSemplice(d.type)];
+    if (d.type === "record") return d.record!;
+    return { integer: "int", real: "double", character: "int", string: "char", boolean: "bool" }[d.type];
   };
   /** Le dimensioni di un dato dopo il nome: quella del vettore e quella della stringa. */
-  const forma = (d: Dato) => `${d.size === undefined ? "" : `[${d.size}]`}${d.type === "string" ? `[4 * ${d.max_length ?? lunghezzaPredefinita} + 1]` : ""}`;
+  const forma = (d: Pick<Dato, "type" | "size" | "max_length">) => `${d.size === undefined ? "" : `[${d.size}]`}${d.type === "string" ? `[4 * ${d.max_length ?? lunghezzaPredefinita} + 1]` : ""}`;
   /** Un valore che in tutti gli elementi è quello che il C mette da sé dopo il primo: `{0}` li dice tutti. */
   const zero = (e: Espressione) =>
     (e.genere === "intero" && e.valore === 0) || (e.genere === "reale" && Object.is(e.valore, 0)) || (e.genere === "booleano" && !e.valore) || (e.genere === "stringa" && e.codici.length === 0);
@@ -642,6 +677,8 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
 
   let corpo: Riga[] = [];
   const struttura = (testo: string) => corpo.push({ testo });
+  /** I record della funzione che si scrive (con le costanti comuni): riconoscono la copia col nome. */
+  let record: ReadonlySet<string> = new Set();
   /** Quanti cicli `per ogni` contengono la regola che si scrive: l'indice di un ciclo, o quello calcolato prima del
    * valore, è quello del livello dopo. Gli indici dichiarati sono quelli fino al livello più alto usato. */
   let cicliPerOgni = 0;
@@ -671,6 +708,13 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       corpo.push({ testo: `${r}${testo}`, blocco: id });
       return;
     }
+    if (e.genere === "campo") {
+      // Il campo di un dato record riceve il valore come un dato del tipo del campo.
+      const destinazione = espressione(e).t;
+      const testo = calcola(r, id, () => istruzione(destinazione, { ...campoDi(e), name: destinazione }));
+      corpo.push({ testo: `${r}${testo}`, blocco: id });
+      return;
+    }
     const nome = (e as { base: { nome: string } }).base.nome;
     let fermaLIndice = false;
     let i = calcola(r, id, () => {
@@ -695,7 +739,8 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     if (d.type !== "string") return `${destinazione} = ${espressione(v).t};`;
     intestazioni.add("string.h");
     const x = espressione(v).t;
-    if (baseDi(v) === d.name) return `memmove(${destinazione}, ${x}, strlen(${x}) + 1);`;
+    // Dallo stesso dato, o dallo stesso campo (il nome di un campo è la sua destinazione).
+    if (baseDi(v) === d.name || x === destinazione) return `memmove(${destinazione}, ${x}, strlen(${x}) + 1);`;
     const massima = d.max_length ?? lunghezzaPredefinita;
     return lunghezzaMassima(v) > massima ? `strcpy(${destinazione}, ${conArresto("alPiu", x, String(massima)).t});` : `strcpy(${destinazione}, ${x});`;
   };
@@ -771,7 +816,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
   const pezzi = (e: Espressione): Espressione[] =>
     e.genere === "binario" && e.operatore === "+" && tipo(e) === "string" ? [...pezzi(e.sinistro), ...pezzi(e.destro)] : [e];
   /** Un valore come lo scrive una scrittura, con la sua specifica. */
-  const specifica = (t: Tipo) => (t === "integer" ? "%d" : t === "real" ? `%.${decimali}f` : "%s");
+  const specifica = (t: TipoDelDato) => (t === "integer" ? "%d" : t === "real" ? `%.${decimali}f` : "%s");
   function voci(e: Espressione): Voce[] {
     const t = tipo(e);
     if (e.genere === "stringa") return [{ codici: e.codici }];
@@ -857,18 +902,20 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     prima = [];
     prese.clear();
     type Argomento =
-      | { readonly genere: "valore"; readonly parte: Parte; readonly tipo: Tipo }
+      | { readonly genere: "valore"; readonly parte: Parte; readonly tipo: TipoDelDato; readonly record?: string }
       | { readonly genere: "nome"; readonly testo: string }
       | { readonly genere: "elemento"; readonly vettore: string; readonly indice: Parte; readonly scritto: boolean; readonly indirizzo: boolean };
     const argomenti: Argomento[] = b.arguments.map((testo, k) => {
       const d = parametri[k]!;
       const a = albero(testo);
-      if (d.parameter === "value") return { genere: "valore", parte: aSe(() => nelDato(a, d)), tipo: tipoSemplice(d.type) };
+      if (d.parameter === "value") return { genere: "valore", parte: aSe(() => nelDato(a, d)), tipo: d.type, ...(d.record !== undefined ? { record: d.record } : {}) };
       if (a.genere === "nome") {
         const suo = dati.get(a.nome)!;
         const comeE = suo.size !== undefined || suo.type === "string" || puntatori.has(a.nome);
         return { genere: "nome", testo: comeE ? a.nome : `&${a.nome}` };
       }
+      // Un campo per riferimento come un dato: il suo indirizzo, una stringa così com'è.
+      if (a.genere === "campo") return { genere: "nome", testo: campoDi(a).type === "string" ? espressione(a).t : `&${espressione(a).t}` };
       const nome = (a as { base: { nome: string } }).base.nome;
       const i = (a as { indice: Espressione }).indice;
       return { genere: "elemento", vettore: nome, indice: aSe(() => espressione(i)), scritto: i.genere === "intero", indirizzo: dati.get(nome)!.type !== "string" };
@@ -887,7 +934,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     argomenti.forEach((a, k) => {
       if (a.genere === "nome") return passati.push(a.testo);
       if (a.genere === "valore") {
-        const { testi } = inOrdine([{ parte: a.parte, tipo: a.tipo, daParte: a.parte.ferma && k < ultima }]);
+        const { testi } = inOrdine([{ parte: a.parte, tipo: a.tipo, ...(a.record !== undefined ? { record: a.record } : {}), daParte: a.parte.ferma && k < ultima }]);
         return passati.push(testi[0]!.t);
       }
       prima!.push(...a.indice.righe);
@@ -936,6 +983,18 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
           });
         }
         const t = albero(b.target);
+        if (eUnaCopiaDiUnRecord(b, record)) {
+          // La copia di un record col suo nome, campo per campo: una riga per campo, col campo che copia (lo stesso record:
+          // le stringhe hanno la stessa lunghezza; dallo stesso dato con `memmove`).
+          const verso = (t as { nome: string }).nome;
+          const da = (v as { nome: string }).nome;
+          const campo = (nome: string, c: Campo) => `${nome}${puntatori.has(nome) ? "->" : "."}${c.name}`;
+          if (campiDi(dati.get(verso)!.record).some((c) => c.type === "string")) intestazioni.add("string.h");
+          campiDi(dati.get(verso)!.record).forEach((c, k) =>
+            corpo.push({ testo: `${r}${elementoInElemento(campo(verso, c), campo(da, c), c, c.max_length ?? lunghezzaPredefinita, verso === da)}`, blocco: b.id, campo: k }),
+          );
+          return;
+        }
         if (t.genere === "nome" && dati.get(t.nome)!.size !== undefined) {
           // Un vettore intero: un parametro per riferimento o per uscita è un puntatore, che non sa la sua grandezza.
           const d = dati.get(t.nome)!;
@@ -1045,7 +1104,8 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     const nome = `${prefissoDellaCopia[lingua]}${d.name}`;
     return d.size === undefined ? `const char *${nome}` : `const ${t} ${nome}${forma(d)}`;
   };
-  const restituito = (f: FunzioneDelProgetto) => (f.kind !== "function" ? "void" : conStruttura(f) ? strutturaDelRisultato(lingua, f.name!) : tipoDelC(tipoSemplice(f.return_type!)));
+  const restituito = (f: FunzioneDelProgetto) =>
+    f.kind !== "function" ? "void" : conStruttura(f) ? strutturaDelRisultato(lingua, f.name!) : f.return_type === "record" ? f.return_record! : tipoDelC(tipoSemplice(f.return_type!));
   const intestazioneDi = (f: FunzioneDelProgetto) =>
     `${restituito(f)} ${f.name}(${[...(delGiro.has(f) ? [`int ${parametroDellaRiga}`] : []), ...parametriDi(f).map(parametroDelC)].join(", ") || "void"})`;
   /** Le due righe di una funzione del giro: all'inizio conta la chiamata col suo spazio (e si ferma oltre un tetto,
@@ -1071,7 +1131,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     if (!conStruttura(f)) {
       const x = calcola(rientro, id, () => nelDato(e, { type: f.return_type! }).t);
       if (!(delGiro.has(f) && chiamaIlGiro(e))) return [...uscita(f), { testo: `${rientro}return ${x};`, blocco: id }];
-      const v = temporanea(tipoSemplice(f.return_type!));
+      const v = temporanea(f.return_type!, f.return_record);
       return [{ testo: `${rientro}${v} = ${x};`, blocco: id }, ...uscita(f), { testo: `${rientro}return ${v};`, blocco: id }];
     }
     const risultato = nomeDelRisultato[lingua];
@@ -1120,6 +1180,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
   /** Le righe di una procedura o di una funzione del progetto, o del programma principale. */
   function scriviFunzione(f: FunzioneDelProgetto): Riga[] {
     dati = new Map<string, Dato>([...comuni, ...f.data].map((d) => [d.name, d]));
+    record = nomiDeiRecord([...comuni, ...f.data]);
     puntatori = new Set(parametriDi(f).filter((d) => d.parameter !== "value" && d.size === undefined && d.type !== "string").map((d) => d.name));
     fermaLaFunzione = delGiro.has(f);
     const righe =
@@ -1142,7 +1203,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
 
   /** Il programma principale del programma di prova: legge i parametri, chiama, scrive il risultato. */
   function scriviLaProva(f: FunzioneDelProgetto, caso: CasoDiUnaFunzione): Riga[] {
-    const letti = parametriDelCaso(f, caso);
+    const letti = parametriDelCaso(f, caso, p.records);
     if ("problema" in letti) throw new Error(`il caso ${caso.name} non ha un programma di prova: ${letti.problema}`);
     dati = new Map<string, Dato>([...comuni, ...f.data].map((d) => [d.name, d]));
     puntatori = new Set();
@@ -1159,6 +1220,11 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     ].join(", ")})`;
     const scrittura = (testo: string) => righe.push({ testo: `${rientro}${testo}`, ...(delGiro.has(f) && testo.includes(chiamataDiF) ? { blocco: f.id } : {}) });
     for (const { dato: d, elementi, ognuno } of letti.parametri) {
+      if (d.type === "record") {
+        // Un campo per voce, nell'ordine dei campi.
+        campiDi(d.record).forEach((c, k) => elementi[k] === "riga" && righe.push({ testo: `${rientro}${leggi(`${d.name}.${c.name}`, c)}`, blocco: f.id }));
+        continue;
+      }
       if (d.size === undefined) {
         if (elementi[0] === "riga") righe.push({ testo: `${rientro}${leggi(d.name, d)}`, blocco: f.id });
         continue;
@@ -1168,7 +1234,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         for (let i = 1; i < d.size; i++) scrittura(d.type === "string" ? `strcpy(${d.name}[${i}], ${d.name}[0]);` : `${d.name}[${i}] = ${d.name}[0];`);
     }
     /** Un valore scritto come lo scrive l'esecuzione, dopo un testo fisso. */
-    const scriviValore = (davanti: string, x: string, t: Tipo) => {
+    const scriviValore = (davanti: string, x: string, t: TipoDelDato) => {
       const fisso = dentroLeVirgolette(codiciDi(davanti), true);
       if (t === "character") {
         scrittura(`printf("${fisso}");`);
@@ -1177,7 +1243,17 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       } else scrittura(`printf("${fisso}${specifica(t)}\\n", ${t === "boolean" ? chiamata(usa("booleano"), x).t : x});`);
     };
     const risultato: Riga[] = [];
-    if (f.kind === "function") {
+    if (f.kind === "function" && f.return_type === "record") {
+      // La funzione si chiama una volta, poi una riga per campo, come per un vettore.
+      const nome = nomeDelRisultato[lingua];
+      risultato.push({ testo: dichiarazioneDi({ nome, tipo: f.return_record! }) });
+      scrittura(`${nome} = ${chiamataDiF};`);
+      for (const c of campiDi(f.return_record)) {
+        if (c.type === "boolean") intestazioni.add("stdbool.h");
+        if (c.type === "real") reali = true;
+        scriviValore(`→ .${c.name} = `, `${nome}.${c.name}`, c.type);
+      }
+    } else if (f.kind === "function") {
       const t = tipoSemplice(f.return_type!);
       if (t === "boolean") intestazioni.add("stdbool.h");
       if (t === "real") reali = true;
@@ -1198,8 +1274,14 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       scrittura(`${chiamataDiF};`);
       const riferimenti = parametri.filter((d) => d.parameter !== "value");
       if (riferimenti.length > 0) scrittura('printf("\\n");');
-      for (const d of riferimenti)
-        for (const nome of d.size === undefined ? [d.name] : [...Array(d.size).keys()].map((i) => `${d.name}[${i}]`)) scriviValore(`${nome} = `, nome, tipoSemplice(d.type));
+      for (const d of riferimenti) {
+        // Un record una riga per campo, `r.nome = …`.
+        const pezzi: [string, TipoDelDato][] =
+          d.type === "record" ? campiDi(d.record).map((c) => [`${d.name}.${c.name}`, c.type])
+          : d.size === undefined ? [[d.name, d.type]]
+          : [...Array(d.size).keys()].map((i) => [`${d.name}[${i}]`, d.type]);
+        for (const [nome, t] of pezzi) scriviValore(`${nome} = `, nome, t);
+      }
     }
     const tutte = [...dichiarazioni, ...temporanee.map((x) => ({ testo: dichiarazioneDi(x) })), ...risultato];
     return [{ testo: "int main(void) {" }, ...tutte, ...(tutte.length > 0 ? [{ testo: "" }] : []), ...righe, { testo: `${rientro}return 0;` }, { testo: "}" }];
@@ -1243,8 +1325,14 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
   for (const f of usate) for (const h of intestazioniDi[f] ?? []) intestazioni.add(h);
   const funzioni = ordine.filter((f) => usate.has(f));
 
-  // Le strutture dei risultati prima della testa: un booleano vuole la sua intestazione.
+  // Le strutture dei risultati e i record prima della testa: un booleano vuole la sua intestazione.
   const strutture = new Map(delProgetto.filter(conStruttura).map((f) => [f, definizioneDellaStruttura(f)]));
+  const definizioniDeiRecord = (p.records ?? []).flatMap((r) => [
+    { testo: "typedef struct {" },
+    ...r.fields.map((c) => ({ testo: `${rientro}${tipoDelDato(c)} ${c.name}${forma(c)};` })),
+    { testo: `} ${r.name};` },
+    { testo: "" },
+  ]);
   const nome = inCommento(p.metadata.name.split(/\r\n|\r|\n/).join(" "));
   const righe: Riga[] = [
     { testo: `/* ${nome}` },
@@ -1259,7 +1347,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     { testo: "#endif" },
   ];
   if (reali) righe.push({ testo: "#ifdef __clang__" }, { testo: "#pragma STDC FP_CONTRACT OFF" }, { testo: "#endif" });
-  righe.push({ testo: "" });
+  righe.push({ testo: "" }, ...definizioniDeiRecord);
   if (costanti.length > 0) righe.push({ testo: `/* ${w.costantiComuni} */` }, ...costanti, { testo: "" });
   if (delProgetto.length > 0)
     righe.push(

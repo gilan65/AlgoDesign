@@ -49,7 +49,7 @@ const titoli: Record<Lingua, { prototipi: string; supporto: string }> = {
   },
 };
 
-type Supporto =
+export type Supporto =
   | "prepara" | "fermati" | "leggiRiga" | "decodifica" | "codifica" | "leggiIntero" | "leggiReale" | "quanteCifre"
   | "leggiCarattere" | "leggiStringa" | "leggiBooleano" | "lunghezza" | "carattereDi" | "convertiACarattere"
   | "convertiAVettore" | "convertiAStringa" | "nellaStringa" | "concatena" | "alPiu" | "elementiDiversi" | "scriviCarattere"
@@ -493,11 +493,13 @@ const ordine: readonly Supporto[] = [
   "nellaStringa", "concatena", "alPiu", "elementiDiversi", "scriviCarattere", "booleano",
 ];
 
-interface Programma {
+export interface Programma {
   readonly nome: string;
   readonly intestazioni: readonly string[];
   readonly reali: boolean;
   readonly usate: readonly Supporto[];
+  /** I `typedef` dei record, ognuno seguito dalla riga vuota, prima delle costanti comuni. */
+  readonly record?: readonly string[];
   /** Le costanti comuni, a livello di file. */
   readonly comuni?: readonly string[];
   /** I prototipi delle procedure e delle funzioni del progetto, e le loro definizioni dopo `main`. */
@@ -515,7 +517,7 @@ const titoliDelProgetto: Record<Lingua, { comuni: string; prototipi: string }> =
 /** Un programma intero: la testa col nome, le intestazioni, la console di Windows, la contrazione spenta se ci sono
  * reali, le costanti comuni, i prototipi delle procedure e delle funzioni del progetto, quelli delle funzioni di
  * supporto usate (in quell'ordine), `main`, le procedure e le funzioni del progetto, le definizioni del supporto. */
-function programma(l: Lingua, p: Programma): string {
+export function programma(l: Lingua, p: Programma): string {
   const f = supporto(l);
   const usate = ordine.filter((s) => p.usate.includes(s));
   const definizioni = usate.flatMap((s, i) => [...(i === 0 ? [] : [""]), ...f[s].definizione]);
@@ -526,6 +528,7 @@ function programma(l: Lingua, p: Programma): string {
     ...windows.map((r) => (l === "it" ? r.replace("codepage", "codice") : r)),
     ...(p.reali ? contrazione : []),
     "",
+    ...(p.record ?? []),
     ...(p.comuni === undefined ? [] : [titoliDelProgetto[l].comuni, ...p.comuni, ""]),
     ...(p.prototipi === undefined ? [] : [titoliDelProgetto[l].prototipi, ...p.prototipi, ""]),
     titoli[l].prototipi,

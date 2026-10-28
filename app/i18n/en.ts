@@ -26,6 +26,8 @@ export const en: Dizionario = {
   disegnoChiamata: "↪ {nome}({argomenti})",
   disegnoRif: "ref",
   disegnoOut: "out",
+  pseudoRecord: "RECORD",
+  pseudoFineRecord: "END RECORD",
   pseudoCostantiComuni: "SHARED CONSTANTS",
   pseudoProgramma: "PROGRAM",
   pseudoDati: "DATA",

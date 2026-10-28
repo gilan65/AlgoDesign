@@ -1,0 +1,171 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "copie-di-un-record",
+    "description": "Il parametro per valore resta la copia anche se la sorgente cambia mentre la procedura lavora; il record restituito da una costante comune è una copia, e cambiarlo non cambia la costante."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "classe",
+          "type": "string",
+          "max_length": 3
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "shared_constants": [
+    {
+      "name": "primo",
+      "type": "record",
+      "record": "alunno",
+      "constant": true,
+      "initial": [
+        "\"Anna\"",
+        "\"3A\"",
+        "7"
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "record",
+          "record": "alunno",
+          "initial": [
+            "\"Bruno\"",
+            "\"3B\"",
+            "5"
+          ]
+        },
+        {
+          "name": "m",
+          "type": "record",
+          "record": "alunno"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "call",
+          "callee": "cambia",
+          "arguments": [
+            "a",
+            "a"
+          ]
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "m",
+          "value": "primo_di()"
+        },
+        {
+          "id": "b3",
+          "kind": "assignment",
+          "target": "m.voto",
+          "value": "10"
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "primo.voto",
+            "\" \"",
+            "m.voto",
+            "\" \"",
+            "a.voto"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "cambia",
+      "data": [
+        {
+          "name": "x",
+          "type": "record",
+          "record": "alunno",
+          "parameter": "value"
+        },
+        {
+          "name": "y",
+          "type": "record",
+          "record": "alunno",
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "x.voto",
+          "value": "8"
+        },
+        {
+          "id": "b6",
+          "kind": "assignment",
+          "target": "y.voto",
+          "value": "1"
+        },
+        {
+          "id": "b7",
+          "kind": "write",
+          "values": [
+            "x.voto",
+            "\" \"",
+            "y.voto"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b8"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "function",
+      "name": "primo_di",
+      "return_type": "record",
+      "return_record": "alunno",
+      "data": [],
+      "body": [],
+      "end": {
+        "id": "b9",
+        "return_value": "primo"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "copie-di-un-record",
+      "inputs": [],
+      "expected": {
+        "output": "8 1\n7 10 1\n"
+      }
+    }
+  ]
+}

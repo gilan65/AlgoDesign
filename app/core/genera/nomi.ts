@@ -92,10 +92,10 @@ export const contatoriDellaRicorsione: Readonly<Record<LinguaDelCodice, { readon
 };
 
 /** I nomi di Python che il programma generato legge: le funzioni predefinite, i tipi delle annotazioni, le eccezioni, i
- * moduli e `main`. */
+ * moduli, `main` e la classe di dati dei record (il modulo e il decoratore). */
 export const nomiDiPython = [
   "main", "print", "int", "float", "str", "bool", "list", "tuple", "set", "abs", "len", "ord", "chr", "sys", "math", "re",
-  "UnicodeDecodeError",
+  "UnicodeDecodeError", "dataclass", "dataclasses",
 ] as const;
 
 /** Il nome che il generatore dà all'indice calcolato prima del valore, e all'indice nascosto di un `per ogni`. */

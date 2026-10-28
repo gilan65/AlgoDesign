@@ -1346,7 +1346,7 @@ test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l
     "tipi/riferimento-a-un-record-senza-valore.algo b4 c",
   ]);
   // Col corpus dei record: nessuno è fuori tappa; quello del riferimento senza valore ha l'avviso, i cinque sbagliati no.
-  expect([file, controllati]).toEqual([157, 157]);
+  expect([file, controllati]).toEqual([158, 158]);
 });
 
 test("i limiti sono un parametro senza predefinito: chi chiama il controllo li passa sempre", () => {

@@ -183,6 +183,9 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
     if (caso !== undefined && caso.inputs.length === 0 && caso.expected.static_error === undefined) {
       // L'apertura finita: l'avviso la dice.
       await expect(page.locator('output[role="status"]')).toHaveText(riempi(it.apertoIl, { file: c.percorso.split("\\").at(-1)! }));
+      // Il fuoco nel flowchart prima di F5: il menu «Progetto» che si chiude dopo «Apri» può riprenderlo per un istante,
+      // e un F5 in quell'istante si perde (misurato sul build di produzione con la macchina carica, due corse su tre).
+      await page.getByRole("region", { name: it.vistaFlowchart, exact: true }).click({ position: { x: 5, y: 5 } });
       await page.keyboard.press("F5");
       await expect(page.locator("[data-stato-esecuzione]"), c.percorso).toHaveText(caso.expected.error === undefined ? it.statoFinita : it.statoFermataDaUnErrore);
       expect((await page.locator('[role="log"] [data-scrive]').allTextContents()).join(""), c.percorso).toBe(caso.expected.output);
@@ -192,8 +195,8 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
     if (eseguiti.at(-1) === c.percorso) await page.keyboard.press("Shift+F5");
   }
   console.log(`apri e salva: i record, ${deiRecord.length} file, ${righe} righe nella tabella «Record», eseguiti ${eseguiti.length}, identici ${identiciDeiRecord.length}`);
-  // Quattro giusti senza letture (uno si ferma col suo errore), cinque con un errore statico, due che leggono.
-  expect({ identici: identiciDeiRecord.length, eseguiti: eseguiti.length, corpus: deiRecord.length }).toEqual({ identici: 11, eseguiti: 4, corpus: 11 });
+  // Cinque giusti senza letture (uno si ferma col suo errore), cinque con un errore statico, due che leggono.
+  expect({ identici: identiciDeiRecord.length, eseguiti: eseguiti.length, corpus: deiRecord.length }).toEqual({ identici: 12, eseguiti: 5, corpus: 12 });
   expect(righe).toBeGreaterThanOrEqual(11);
 });
 

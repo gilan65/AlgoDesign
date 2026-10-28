@@ -11,6 +11,8 @@ export function paroleDelloPseudocodice(lingua: Lingua): ParoleDelloPseudocodice
   const d = dizionari[lingua];
   const nomi = nomiDegliOperatori[lingua];
   return {
+    record: d.pseudoRecord,
+    fineRecord: d.pseudoFineRecord,
     costantiComuni: d.pseudoCostantiComuni,
     programma: d.pseudoProgramma,
     dati: d.pseudoDati,

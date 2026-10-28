@@ -5,12 +5,12 @@
 //
 // Un progetto si genera solo se il controllo statico lo lascia eseguire: con un errore statico, o con un
 // costrutto delle tappe successive, il risultato dice perché e non c'è un testo a metà. Gli avvisi non
-// fermano la generazione, come non fermano l'esecuzione. I record si eseguono ma non si traducono ancora: un progetto
-// che li usa, senza errori statici, è fuori tappa qui.
+// fermano la generazione, come non fermano l'esecuzione.
 //
 // Una riga di un ciclo `per` o `per ogni` porta anche le fasi del ciclo che mostra (quelle degli eventi del nucleo):
 // la riga d'apertura di un `for` del C le mostra tutte, il Python ha una riga per fase, e le righe dell'indice
-// nascosto, dove il passo non si ferma, nessuna.
+// nascosto, dove il passo non si ferma, nessuna. Una riga della copia di un record col suo nome, scritta campo per campo,
+// porta il campo che copia (la sua posizione, da 0), come l'evento del nucleo: la pausa su quel campo accende lei.
 //
 // Il programma di prova di un caso di una procedura o di una funzione eseguita da sola legge i
 // parametri come letture, nell'ordine: `parametriDelCaso` dice come, dalle voci del caso, uguale per ogni generatore.
@@ -18,31 +18,33 @@
 import { controlla, type Tetti } from "../controllo/controllo";
 import type { OperatoreUnario } from "../espressioni/analizzatore";
 import type { FaseDelCiclo } from "../interprete/interprete";
-import { usaIRecord, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto } from "../progetto/modello";
+import type { CasoDiUnaFunzione, Dato, DefinizioneDelRecord, Funzione, Progetto } from "../progetto/modello";
 
 /** Una riga del codice generato. Al più una provenienza: il blocco, o il dato di una dichiarazione (con la
  * funzione che lo possiede, se non è il programma principale: due funzioni possono avere un dato con lo stesso nome);
  * nessuna per le righe di struttura (l'intestazione, la chiusura di un ramo o di un ciclo, le righe vuote). Le righe di
  * un ciclo `per` o `per ogni`, e solo quelle, hanno le fasi. `nellaFunzione` è la funzione del cui pezzo il generatore
  * fa la riga, con ogni riga di struttura: manca sulla testa del file, sulle righe fra due funzioni e su ciò che viene
- * dopo l'ultima (le dà `partiDelCodice`, in `stampato.ts`). */
+ * dopo l'ultima (le dà `partiDelCodice`, in `stampato.ts`). `campo` è il campo che copia una riga della copia di un
+ * record scritta campo per campo. */
 export interface Riga {
   readonly testo: string;
   readonly blocco?: string;
   readonly dato?: string;
   readonly funzione?: string;
   readonly fasi?: readonly FaseDelCiclo[];
+  readonly campo?: number;
   readonly nellaFunzione?: string;
 }
 
 /** Le righe di una funzione, segnate come sue. */
 export const segnate = (righe: readonly Riga[], funzione: string): Riga[] => righe.map((r) => ({ ...r, nellaFunzione: funzione }));
 
-/** Le specie di ciò che un linguaggio con meno costrutti del flowchart non sa scrivere (oggi «Accademico»): i tipi, la
- * lettura, i modi dei parametri, i letterali, gli operatori, un nome che è una parola del linguaggio, una condizione
+/** Le specie di ciò che un linguaggio con meno costrutti del flowchart non sa scrivere (oggi «Accademico»): i tipi (il
+ * record compreso), la lettura, i modi dei parametri, i letterali, gli operatori, un nome che è una parola del linguaggio, una condizione
  * usata come valore. I testi per chi legge sono dell'interfaccia. */
 export const specieDelleMancanze = [
-  "reale", "carattere", "stringa", "lettura", "rif", "out", "letterale-reale", "letterale-carattere", "letterale-stringa",
+  "reale", "carattere", "stringa", "record", "lettura", "rif", "out", "letterale-reale", "letterale-carattere", "letterale-stringa",
   "potenza", "radice", "valore-assoluto", "arrotondamento", "conversione", "lunghezza", "pi", "parola-del-linguaggio",
   "condizione-come-valore",
 ] as const;
@@ -71,7 +73,6 @@ export function genera(p: Progetto, limiti: Tetti, scrivi: (p: Progetto) => read
   const c = controlla(p, limiti);
   if (c.fuoriTappa) return { generato: false, perche: "fuori-tappa" };
   if (c.errori.length > 0) return { generato: false, perche: "errori-statici" };
-  if (usaIRecord(p)) return { generato: false, perche: "fuori-tappa" };
   const mancanze = manca?.(p) ?? [];
   if (mancanze.length > 0) return { generato: false, perche: "non-ci-sta", mancanze };
   return { generato: true, righe: scrivi(p) };
@@ -80,14 +81,20 @@ export function genera(p: Progetto, limiti: Tetti, scrivi: (p: Progetto) => read
 /** I numeri (da 0) delle righe che vengono da quel blocco, o dalla dichiarazione di quel dato (della funzione data, o
  * del programma principale): la stessa provenienza che legge chi va dalla riga al blocco, letta nell'altro verso. Un
  * blocco può averne più d'una (l'indice calcolato prima del valore, una scrittura del C, un ciclo), o nessuna (la fine,
- * nel Python). Con la fase di un evento di un ciclo, solo le righe che la mostrano. */
+ * nel Python). Con la fase di un evento di un ciclo, solo le righe che la mostrano; col campo di un evento della copia
+ * di un record, la riga di quel campo (una riga che li copia tutti, senza campo, vale per ognuno). */
 export function righeDi(
   righe: readonly Riga[],
-  da: { readonly blocco: string; readonly fase?: FaseDelCiclo } | { readonly dato: string; readonly funzione?: string },
+  da: { readonly blocco: string; readonly fase?: FaseDelCiclo; readonly campo?: number } | { readonly dato: string; readonly funzione?: string },
 ): number[] {
   const fase = "blocco" in da ? da.fase : undefined;
+  const campo = "blocco" in da ? da.campo : undefined;
   return righe.flatMap((r, i) =>
-    ("blocco" in da ? r.blocco === da.blocco && (fase === undefined || r.fasi?.includes(fase) === true) : r.dato === da.dato && r.funzione === da.funzione) ? [i] : [],
+    ("blocco" in da
+      ? r.blocco === da.blocco && (fase === undefined || r.fasi?.includes(fase) === true) && (campo === undefined || r.campo === undefined || r.campo === campo)
+      : r.dato === da.dato && r.funzione === da.funzione)
+      ? [i]
+      : [],
   );
 }
 
@@ -96,8 +103,8 @@ export function testoDelCodice(righe: readonly Riga[]): string {
   return righe.map((r) => `${r.testo}\n`).join("");
 }
 
-/** Un parametro come lo legge il programma di prova: una lettura per elemento (`riga`) o nessun valore (`nessuno`),
- * oppure, con `ognuno`, una sola per tutti gli elementi di un vettore. */
+/** Un parametro come lo legge il programma di prova: una lettura per elemento, o per campo di un record (`riga`), o
+ * nessun valore (`nessuno`), oppure, con `ognuno`, una sola per tutti gli elementi di un vettore. */
 export interface ParametroDiProva {
   readonly dato: Dato;
   readonly elementi: readonly ("riga" | "nessuno")[];
@@ -109,18 +116,24 @@ export interface ParametroDiProva {
  * parametro per riferimento vuole il valore; con `each` fuori dal primo elemento di un vettore, col nome di un altro
  * dato) si ferma lì con un errore, che un programma che legge righe non sa dare. Un parametro per uscita non si legge e
  * non ha voci: parte senza valore (`nessuno` per ogni elemento). Le voci che mancano si leggono lo stesso: l'input
- * finito ferma il programma come l'esecuzione. */
-export function parametriDelCaso(f: Funzione, caso: CasoDiUnaFunzione): { parametri: ParametroDiProva[]; righe: string[] } | { problema: string } {
+ * finito ferma il programma come l'esecuzione. Un record ha una voce per campo, nell'ordine dei campi (`records`, quelli
+ * del progetto), mai `each`. */
+export function parametriDelCaso(
+  f: Funzione,
+  caso: CasoDiUnaFunzione,
+  records: readonly DefinizioneDelRecord[] = [],
+): { parametri: ParametroDiProva[]; righe: string[] } | { problema: string } {
   const parametri: ParametroDiProva[] = [];
   let k = 0;
+  const pezzi = (d: Dato) => (d.type === "record" ? (records.find((r) => r.name === d.record)?.fields.length ?? 0) : (d.size ?? 1));
   for (const d of f.data.filter((x) => x.parameter !== undefined)) {
     if (d.parameter === "out") {
-      parametri.push({ dato: d, elementi: Array.from({ length: d.size ?? 1 }, () => "nessuno" as const), ognuno: false });
+      parametri.push({ dato: d, elementi: Array.from({ length: pezzi(d) }, () => "nessuno" as const), ognuno: false });
       continue;
     }
     const elementi: ("riga" | "nessuno")[] = [];
     let ognuno = false;
-    for (let i = 0; i < (d.size ?? 1); i++) {
+    for (let i = 0; i < pezzi(d); i++) {
       const voce = caso.inputs[k];
       if (voce === undefined) {
         elementi.push("riga");
