@@ -26,9 +26,9 @@ const leggi = (percorso: string): Progetto => {
   if (!r.ok) throw new Error(`${percorso} non si apre`);
   return r.progetto;
 };
-// Le tappe: i record (`tipi/`) non arrivano ancora ad «Accademico», che li conoscerà con le specie di ciò che manca.
+// Le tappe e i tipi (`tipi/`: i record, che «Accademico» non ha e dice fra ciò che manca).
 const corpus = readdirSync(cartella, { withFileTypes: true })
-  .filter((d) => d.isDirectory() && d.name.startsWith("tappa-"))
+  .filter((d) => d.isDirectory() && (d.name.startsWith("tappa-") || d.name === "tipi"))
   .flatMap((d) => readdirSync(join(cartella, d.name)).filter((f) => f.endsWith(".algo")).map((f) => `${d.name}/${f.slice(0, -".algo".length)}`))
   .sort();
 
@@ -102,7 +102,7 @@ const operatori: Readonly<Record<string, string>> = {
   round_up: "arrotondamento", integer_part: "arrotondamento", to_integer: "conversione", to_real: "conversione", to_character: "conversione",
   to_array: "conversione", to_string: "conversione", length: "lunghezza",
 };
-const daTipo: Readonly<Record<string, string>> = { real: "reale", character: "carattere", string: "stringa" };
+const daTipo: Readonly<Record<string, string>> = { real: "reale", character: "carattere", string: "stringa", record: "record" };
 
 /** Le mancanze come chiavi `specie|operatore|blocco|dato|funzione`, contate a modo suo: un insieme, senza ordine. */
 function secondoRilevatore(p: Progetto): Set<string> {
@@ -136,7 +136,7 @@ function secondoRilevatore(p: Progetto): Set<string> {
       if ((logico || confronto) && !permessa) chiave("condizione-come-valore", { blocco });
       if (e.genere === "unario" && operatori[e.operatore]) chiave(operatori[e.operatore]!, { operatore: e.operatore, blocco });
       if (e.genere === "binario" && e.operatore === "raised_to") chiave("potenza", { operatore: "raised_to", blocco });
-      const figli = e.genere === "indice" ? [e.base, e.indice] : e.genere === "unario" ? [e.operando] : e.genere === "binario" ? [e.sinistro, e.destro] : e.genere === "chiamata" ? e.argomenti : [];
+      const figli = e.genere === "indice" ? [e.base, e.indice] : e.genere === "campo" ? [e.base] : e.genere === "unario" ? [e.operando] : e.genere === "binario" ? [e.sinistro, e.destro] : e.genere === "chiamata" ? e.argomenti : [];
       for (const x of figli) scorri(x, blocco, logico, false);
     };
     const leggiTesto = (t: string) => {
@@ -175,7 +175,7 @@ function secondoRilevatore(p: Progetto): Set<string> {
 const comeChiave = (m: Mancanza) => `${m.specie}|${m.operatore ?? ""}|${m.blocco ?? ""}|${m.dato ?? ""}|${m.funzione ?? ""}`;
 
 describe("l'esito di ogni file del corpus", () => {
-  test("146 file: 36 col codice, 10 con gli errori statici, 100 con le mancanze, appaiati file per file", () => {
+  test("158 file: 36 col codice, 15 con gli errori statici, 107 con le mancanze, appaiati file per file", () => {
     const esiti = new Map(corpus.map((f) => [f, accademico(leggi(f), tetti, "it")]));
     const di = (perche: string) => corpus.filter((f) => {
       const g = esiti.get(f)!;
@@ -186,7 +186,7 @@ describe("l'esito di ogni file del corpus", () => {
     const nonCiSta = di("non-ci-sta");
     // nessun file ha due esiti, nessuno resta fuori
     expect(codice.length + statici.length + nonCiSta.length).toBe(corpus.length);
-    expect([corpus.length, codice.length, statici.length, nonCiSta.length]).toEqual([146, 36, 10, 100]);
+    expect([corpus.length, codice.length, statici.length, nonCiSta.length]).toEqual([158, 36, 15, 107]);
     // appaiati per elemento nei due versi: i file in più e quelli che mancano
     expect(codice.filter((f) => !conIlCodice.includes(f))).toEqual([]);
     expect(conIlCodice.filter((f) => !codice.includes(f))).toEqual([]);
@@ -208,8 +208,9 @@ describe("l'esito di ogni file del corpus", () => {
       voci += prima.length;
       if (prima.length > 0) conMancanze++;
     }
-    // il denominatore: i file con mancanze sono i 100 che non ci stanno più i 4 che hanno anche errori statici
-    expect(conMancanze).toBe(104);
+    // il denominatore: i file con mancanze sono i 107 che non ci stanno più i 7 che hanno anche errori statici (4 delle
+    // tappe, 3 dei record: un dato record anche se il record non c'è o è sbagliato)
+    expect(conMancanze).toBe(114);
     expect(voci).toBeGreaterThan(conMancanze);
     console.log(`mancanze: ${voci} voci in ${conMancanze} file su ${corpus.length}`);
   });
@@ -217,6 +218,21 @@ describe("l'esito di ogni file del corpus", () => {
   test("controllo positivo del secondo rilevatore: le occorrenze vere del corpus", () => {
     expect(secondoRilevatore(leggi("tappa-4/fattoriale"))).toContain("lettura||b1||");
     expect([...secondoRilevatore(leggi("tappa-2/parola-al-contrario"))].some((k) => k.startsWith("stringa|"))).toBe(true);
+    expect(secondoRilevatore(leggi("tipi/copia-di-un-record"))).toContain("record|||a|");
+  });
+
+  test("ogni progetto giusto coi record non ci sta, e dice il record dove sta: il dato, la costante comune, il parametro, il risultato", () => {
+    const coiRecord = corpus.filter((f) => f.startsWith("tipi/"));
+    const esiti = coiRecord.map((f) => ({ f, g: accademico(leggi(f), tetti, "it") }));
+    const giusti = esiti.filter(({ g }) => g.generato || g.perche !== "errori-statici");
+    const senzaIlRecord = giusti.filter(({ g }) => g.generato || g.perche !== "non-ci-sta" || !g.mancanze.some((m) => m.specie === "record"));
+    expect(senzaIlRecord.map((x) => x.f)).toEqual([]);
+    const voci = giusti.flatMap(({ g }) => (!g.generato && g.perche === "non-ci-sta" ? g.mancanze.filter((m) => m.specie === "record") : []));
+    const posti = { dati: voci.filter((m) => m.dato !== undefined && m.funzione === undefined).length, diFunzioni: voci.filter((m) => m.dato !== undefined && m.funzione !== undefined).length, risultati: voci.filter((m) => m.dato === undefined).length };
+    console.log(`record in «Accademico»: ${giusti.length} progetti giusti su ${coiRecord.length}, ${voci.length} voci (${JSON.stringify(posti)})`);
+    expect([giusti.length, coiRecord.length]).toEqual([7, 12]);
+    // Ogni posto ha la sua voce: un risultato record (la funzione), un parametro e un dato del programma principale.
+    expect(Object.values(posti).every((n) => n > 0)).toBe(true);
   });
 });
 

@@ -479,6 +479,11 @@ export const conErroriStatici: readonly string[] = [
   "tappa-3/stesso-dato-due-volte",
   "tappa-3/valore-predefinito-sbagliato",
   "tappa-3/vettore-di-dimensione-diversa",
+  "tipi/campo-sconosciuto",
+  "tipi/nome-del-record-gia-usato",
+  "tipi/record-sconosciuto",
+  "tipi/record-senza-campi",
+  "tipi/vettore-di-record",
 ];
 
 /** I file del corpus che danno il codice: ci stanno e il controllo statico li lascia eseguire. */

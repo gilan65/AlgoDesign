@@ -38,6 +38,8 @@ export const it = {
   disegnoRif: "rif",
   disegnoOut: "out",
   // Le parole dello pseudocodice (tipi, ruoli e «costante» sono quelli della vista dei dati).
+  pseudoRecord: "RECORD",
+  pseudoFineRecord: "FINE RECORD",
   pseudoCostantiComuni: "COSTANTI COMUNI",
   pseudoProgramma: "PROGRAMMA",
   pseudoDati: "DATI",

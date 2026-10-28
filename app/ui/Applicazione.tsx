@@ -705,7 +705,8 @@ export function Applicazione({
   const pila = esecuzione && pilaMostrata.current?.es === esecuzione ? pilaMostrata.current.pila : [];
   // Le righe del codice delle chiamate in corso ai livelli di sopra (i blocchi della pila tranne l'ultimo), con lo sfondo
   // del livello che ciascuna apre. Sull'errore, la parte del ciclo dell'ultima azione, se è del blocco dell'errore (un
-  // errore nel controllo di un `per` evidenzia la riga del controllo, non tutte quelle del ciclo).
+  // errore nel controllo di un `per` evidenzia la riga del controllo, non tutte quelle del ciclo). La pausa su un campo
+  // della copia di un record evidenzia la riga di quel campo.
   const evidenziate = useMemo((): RigheEvidenziate | null => {
     // Durante «tutto insieme» non c'è né pausa né errore: le chiamate non si calcolano (la pila cambia a ogni fetta).
     if (!codice?.generato || (!pausa && !erroreFinale)) return null;
@@ -722,7 +723,17 @@ export function Applicazione({
     }
     chiamate.reverse();
     if (pausa)
-      return { righe: righeDi(codice.righe, pausa.dato !== undefined ? { dato: pausa.dato } : { blocco: pausa.blocco, ...(pausa.fase !== undefined ? { fase: pausa.fase } : {}) }), genere: "corrente", passo: passi, chiamate };
+      return {
+        righe: righeDi(
+          codice.righe,
+          pausa.dato !== undefined
+            ? { dato: pausa.dato }
+            : { blocco: pausa.blocco, ...(pausa.fase !== undefined ? { fase: pausa.fase } : {}), ...(pausa.campo !== undefined ? { campo: pausa.campo } : {}) },
+        ),
+        genere: "corrente",
+        passo: passi,
+        chiamate,
+      };
     if (erroreFinale) {
       const ultima = esecuzione?.traccia.righe.at(-1);
       const fase = ultima?.blocco === erroreFinale.block ? ultima.fase : undefined;

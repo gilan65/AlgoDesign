@@ -20,6 +20,10 @@
 // - Un progetto che non sta in «Accademico» (`libreria-dei-voti`): l'elenco di tutto ciò che manca, appaiato per elemento
 //   con le voci scritte a mano (controllo positivo: una voce tolta è colta); «Copia» e «Salva…» spenti; il clic porta alla
 //   scheda giusta e sceglie il blocco, dà il fuoco alla riga del dato o a ciò che restituisce.
+// - Un progetto coi record in «Accademico» (`tipi/copia-di-un-record` con una costante comune record aggiunta qui): le
+//   voci del record (la costante comune e i due dati) e del testo fra virgolette, scritte a mano; il clic sulla costante
+//   comune dà il fuoco alla sua riga; eliminato il blocco del testo, l'elenco si aggiorna senza la sua voce.
+// - La copia di un record col nome nel Python, a ogni pausa di F10: la riga del campo che si copia, una alla volta.
 //
 // CHE COSA NON GUARDA:
 // - il contrasto dei testi del codice (`tabella.e2e.ts`, con quelli della colonna dell'esecuzione);
@@ -34,6 +38,7 @@ import { apri as apriProgetto } from "../core/progetto/formato";
 import type { Funzione } from "../core/progetto/modello";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
+import { testiDelleMancanze } from "../i18n/mancanze";
 import type { Finzione } from "./finzione-tauri";
 import { apri, apriVuota, costruisciFinzione, voceDelMenu } from "./pagina";
 
@@ -324,4 +329,61 @@ test("un progetto che non sta in «Accademico»: l'elenco di tutto ciò che manc
   await voci.nth(3).click();
   await expect(scheda(id("media"))).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(":focus")).toHaveAttribute("data-restituisce", "b12");
+});
+
+/** Un file della cartella dei record, col suo testo. */
+const deiRecord = (nome: string) => readFileSync(fileURLToPath(new URL(`../casi/tipi/${nome}.algo`, import.meta.url)), "utf8");
+
+test("un progetto coi record in «Accademico»: le voci del record e del testo; il clic sulla costante comune; l'elenco si aggiorna dopo una modifica", async ({ page }) => {
+  // La copia di un record del corpus con una costante comune record in più.
+  const progetto = JSON.parse(deiRecord("copia-di-un-record"));
+  progetto.shared_constants = [{ name: "primo", type: "record", record: "alunno", constant: true, initial: ['"Ugo"', '"1A"', "6"] }];
+  const testo = JSON.stringify(progetto, null, 2);
+  await apriVuota(page, { lingua: "it", linguaggiDelCodice: ["pseudocodice", "accademico"] }, { argomento: "C:\\scuola\\copia.algo", file: { "C:\\scuola\\copia.algo": testo } });
+  await genera(page).click();
+  await riquadro(page).getByRole("tab", { name: it.linguaggioAccademico, exact: true }).click();
+  const voci = riquadro(page).locator("[data-mancanza]");
+  const record = testiDelleMancanze.it.record.breve;
+  const attese = [
+    [record, riempi(it.postoCostanteComune, { dato: "primo" })],
+    [record, riempi(it.postoDato, { dato: "a", dove: it.doveProgramma })],
+    [record, riempi(it.postoDato, { dato: "b", dove: it.doveProgramma })],
+    [virgolette, riempi(it.postoBlocco, { blocco: 'Assegnazione: a.nome ← "Bruno"', dove: it.doveProgramma })],
+  ] as const;
+  await expect(voci).toHaveCount(attese.length);
+  const viste = await voci.evaluateAll((v) => v.map((b) => [b.firstChild?.textContent ?? "", b.lastElementChild?.textContent ?? ""] as const));
+  const esito = appaia(attese, viste);
+  console.log(`ciò che manca coi record: ${esito.viste} voci viste, ${esito.attese} attese, ${esito.mancanti.length} mancanti, ${esito.inPiu.length} in più`);
+  expect(esito).toEqual({ mancanti: [], inPiu: [], attese: 4, viste: 4 });
+  await expect(riquadro(page).getByText(riempi(it.codiceNonCiSta, { linguaggio: it.linguaggioAccademico, quante: riempi(it.mancanzeTante, { n: "4" }) }), { exact: true })).toBeVisible();
+  // La costante comune: il fuoco sulla sua riga nella tabella delle costanti comuni.
+  await voci.nth(0).click();
+  await expect(page.locator(":focus")).toHaveAttribute("data-dato", "comuni-0");
+  await expect(page.locator(":focus")).toContainText("primo");
+  // Eliminato il blocco del testo fra virgolette, l'elenco si aggiorna: la sua voce non c'è più, le altre restano.
+  await page.locator('[data-blocco="b4"]').first().click();
+  await page.keyboard.press("Delete");
+  await expect(voci).toHaveCount(3);
+  const dopo = await voci.evaluateAll((v) => v.map((b) => [b.firstChild?.textContent ?? "", b.lastElementChild?.textContent ?? ""] as const));
+  expect(appaia(attese.slice(0, 3), dopo)).toEqual({ mancanti: [], inPiu: [], attese: 3, viste: 3 });
+  await expect(riquadro(page).getByText(riempi(it.codiceNonCiSta, { linguaggio: it.linguaggioAccademico, quante: riempi(it.mancanzeTante, { n: "3" }) }), { exact: true })).toBeVisible();
+});
+
+test("la copia di un record col nome nel Python: a ogni pausa la riga del campo che si copia", async ({ page }) => {
+  const testo = deiRecord("copia-di-un-record");
+  await apriVuota(page, { lingua: "it", linguaggiDelCodice: ["pseudocodice", "python"] }, { argomento: "C:\\scuola\\copia.algo", file: { "C:\\scuola\\copia.algo": testo } });
+  await genera(page).click();
+  await riquadro(page).getByRole("tab", { name: it.linguaggioPython, exact: true }).click();
+  await page.getByRole("region", { name: it.vistaFlowchart, exact: true }).click({ position: { x: 5, y: 5 } });
+  // Il valore iniziale di «a», poi i tre campi della copia «b ← a», uno per pausa.
+  for (const [n, riga] of [
+    [1, '    a: alunno = alunno("Anna", "3A", 7)'],
+    [2, "    b.nome = a.nome"],
+    [3, "    b.classe = a.classe"],
+    [4, "    b.voto = a.voto"],
+  ] as const) {
+    await page.keyboard.press("F10");
+    await expect(statoDi(page)).toHaveText(riempi(it.statoInPausa, { n: String(n) }));
+    await expect(evidenziate(page).locator("> span:last-child")).toHaveText([riga]);
+  }
 });

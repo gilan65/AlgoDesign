@@ -1,5 +1,5 @@
 // «Accademico»: la sintassi dello pseudocodice delle Selezioni scolastiche, da leggere. Ha meno costrutti del flowchart
-// (un solo tipo semplice, l'intero, e il vettore di interi; niente lettura, niente *rif* né *out*, gli operatori
+// (un solo tipo semplice, l'intero, e il vettore di interi: niente record; niente lettura, niente *rif* né *out*, gli operatori
 // aritmetici, di confronto e logici): un progetto si scrive solo se ci sta tutto, altrimenti la verifica dà l'elenco di
 // ciò che manca, tutto insieme e nell'ordine del progetto, ognuno col suo posto. Il testo è sempre puro: nessuna parola
 // che la sintassi non abbia.
@@ -33,7 +33,7 @@ import { figliDelBlocco, type Tetti } from "../controllo/controllo";
 import { analizza, type Espressione, type OperatoreUnario } from "../espressioni/analizzatore";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import { eUnaCopia, nomiDeiVettori } from "../progetto/copia";
-import { tipoSemplice, type Blocco, type Dato, type Funzione, type Progetto, type ValoreIniziale } from "../progetto/modello";
+import type { Blocco, Dato, Funzione, Progetto, TipoDelDato, ValoreIniziale } from "../progetto/modello";
 import { genera, segnate, type Generato, type Mancanza, type Riga, type SpecieDellaMancanza } from "./forma";
 import { ancoraDelLivello, indiceDelLivello, nomeDellaSorgente, type LinguaDelCodice } from "./nomi";
 
@@ -53,7 +53,7 @@ const albero = (testo: string): Espressione => {
 };
 
 const sotto = (e: Espressione): readonly Espressione[] =>
-  e.genere === "indice" ? [e.base, e.indice] : e.genere === "unario" ? [e.operando] : e.genere === "binario" ? [e.sinistro, e.destro] : e.genere === "chiamata" ? e.argomenti : [];
+  e.genere === "indice" ? [e.base, e.indice] : e.genere === "campo" ? [e.base] : e.genere === "unario" ? [e.operando] : e.genere === "binario" ? [e.sinistro, e.destro] : e.genere === "chiamata" ? e.argomenti : [];
 
 const nomiIn = (e: Espressione): string[] => (e.genere === "nome" ? [e.nome] : sotto(e).flatMap(nomiIn));
 
@@ -77,7 +77,9 @@ const specieDellOperatore: Partial<Record<OperatoreUnario | "raised_to", SpecieD
   length: "lunghezza",
 };
 
-const specieDelTipo = { real: "reale", character: "carattere", string: "stringa" } as const;
+const specieDelTipo = { real: "reale", character: "carattere", string: "stringa", record: "record" } as const;
+/** La specie di ciò che manca per un tipo, se la sintassi non lo ha: l'intero e il booleano (un intero 0/1) ci sono. */
+const specieDi = (t: TipoDelDato) => (t === "integer" || t === "boolean" ? undefined : specieDelTipo[t]);
 
 /** Dove sta un'espressione: in una condizione; tutto il valore di una scrittura, o di ciò che riceve un booleano (dove
  * una condizione diventa un `if`); altrove, un valore. */
@@ -99,8 +101,8 @@ export function mancanzeDiAccademico(p: Progetto): Mancanza[] {
 
   const dato = (d: Dato, funzione: string | undefined) => {
     const posto = { dato: d.name, ...(funzione !== undefined ? { funzione } : {}) };
-    const t = tipoSemplice(d.type);
-    if (t !== "integer" && t !== "boolean") segna({ specie: specieDelTipo[t], ...posto });
+    const specie = specieDi(d.type);
+    if (specie !== undefined) segna({ specie, ...posto });
     if (d.parameter === "reference") segna({ specie: "rif", ...posto });
     if (d.parameter === "out") segna({ specie: "out", ...posto });
     if (parola.has(d.name)) segna({ specie: "parola-del-linguaggio", ...posto });
@@ -110,8 +112,8 @@ export function mancanzeDiAccademico(p: Progetto): Mancanza[] {
   for (const f of p.functions) {
     const funzione = f.kind === "main" ? undefined : f.id;
     if (f.name !== undefined && parola.has(f.name)) segna({ specie: "parola-del-linguaggio", funzione: f.id });
-    const r = f.kind === "function" ? tipoSemplice(f.return_type!) : undefined;
-    if (r !== undefined && r !== "integer" && r !== "boolean") segna({ specie: specieDelTipo[r], funzione: f.id });
+    const r = f.kind === "function" ? specieDi(f.return_type!) : undefined;
+    if (r !== undefined) segna({ specie: r, funzione: f.id });
     f.data.forEach((d) => dato(d, funzione));
     const tipi = new Map([...comuni, ...f.data].map((d) => [d.name, d.type]));
 
@@ -134,6 +136,9 @@ export function mancanzeDiAccademico(p: Progetto): Mancanza[] {
         case "indice":
           esamina(e.base, "valore", blocco);
           return esamina(e.indice, "valore", blocco);
+        case "campo":
+          // Il record lo dice il suo dato (o la funzione che lo restituisce): qui si guarda solo la base.
+          return esamina(e.base, "valore", blocco);
         case "chiamata":
           for (const a of e.argomenti) esamina(a, "valore", blocco);
           return;

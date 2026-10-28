@@ -1,7 +1,8 @@
 // Lo pseudocodice di un progetto, nella lingua dell'interfaccia: le parole le dà chi chiama (il nucleo non
 // conosce i dizionari), le espressioni si mostrano come nel disegno (gli operatori a parola tradotti per parola).
 //
-// La forma: le costanti comuni, se ci sono, in una sezione sopra il programma; poi il nome del programma, i dati
+// La forma: i record, se ci sono, uno per sezione in testa («RECORD alunno», un campo per riga col tipo come lo dice la
+// vista dei dati, «FINE RECORD»); le costanti comuni, se ci sono, in una sezione sopra il programma; poi il nome del programma, i dati
 // (sempre la sezione, anche vuota) con il tipo come lo dice la vista dei dati, il valore iniziale nella
 // dichiarazione e, in una colonna allineata, il ruolo o la parola «costante»; poi le regole, rientrate di
 // quattro spazi per livello, e la fine. Il valore iniziale si scrive intero (un elenco con tutti gli elementi,
@@ -18,7 +19,8 @@
 // o di un `mentre` sta sulla riga d'apertura, quella di un `ripeti` sulla riga in fondo); le righe di struttura
 // (`ALTRIMENTI`, le chiusure, `RIPETI`) non ne hanno; la dichiarazione di un dato ha il dato; la fine ha il
 // blocco di fine (anche la riga «RESTITUISCE»). La riga d'apertura di un `per` o di un `per ogni` mostra tutte le fasi
-// del ciclo, e così la riga della copia di un vettore col suo nome (`altri ← voti`). Le intestazioni delle procedure e delle funzioni non hanno provenienza, come il nome del programma; la
+// del ciclo, e così la riga della copia di un vettore col suo nome (`altri ← voti`); la copia di un record col suo nome
+// (`b ← a`) è anche lei una riga, che vale per ogni campo copiato. Le intestazioni delle procedure e delle funzioni non hanno provenienza, come il nome del programma; la
 // dichiarazione di un dato di una procedura o di una funzione ha anche la funzione.
 //
 // Lo pseudocodice non si esegue: non porta il commento sui comportamenti che il C non definisce, che è del
@@ -31,6 +33,9 @@ import { genera, segnate, type Generato, type Riga } from "./forma";
 
 /** Le parole dello pseudocodice in una lingua: le dà l'interfaccia. */
 export interface ParoleDelloPseudocodice {
+  /** La parola davanti al nome di un record, e quella che chiude la sua sezione. */
+  readonly record: string;
+  readonly fineRecord: string;
   readonly costantiComuni: string;
   readonly programma: string;
   readonly dati: string;
@@ -176,6 +181,12 @@ function righeDelloPseudocodice(p: Progetto, w: ParoleDelloPseudocodice): Riga[]
     }
   };
 
+  for (const r of p.records ?? []) {
+    struttura(`${w.record} ${r.name}`);
+    for (const c of r.fields) struttura(`${rientro}${c.name}: ${w.tipo(c)}`);
+    struttura(w.fineRecord);
+    struttura("");
+  }
   const comuni = p.shared_constants ?? [];
   if (comuni.length > 0) {
     struttura(w.costantiComuni);
@@ -195,10 +206,11 @@ function righeDelloPseudocodice(p: Progetto, w: ParoleDelloPseudocodice): Riga[]
     const da = righe.length;
     const parametri = f.data.filter((d) => d.parameter !== undefined).map((d) => `${parolaDelModo(d)}${d.name}: ${w.tipo(d)}`);
     const firma = `${f.name}(${parametri.join(", ")})`;
-    // Il risultato come un dato: con la dimensione di un vettore e la lunghezza massima di una stringa.
+    // Il risultato come un dato: con la dimensione di un vettore, la lunghezza massima di una stringa, il nome di un record.
     const risultato = (): Dato => ({
       name: f.name!,
       type: f.return_type!,
+      ...(f.return_record !== undefined ? { record: f.return_record } : {}),
       ...(f.return_size !== undefined ? { size: f.return_size } : {}),
       ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}),
     });

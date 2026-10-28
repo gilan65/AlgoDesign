@@ -37,7 +37,7 @@ const titoloDelSupporto: Record<Lingua, string> = {
 
 const coda = ['sys.stdout.reconfigure(encoding="utf-8", newline="\\n")', 'sys.stderr.reconfigure(encoding="utf-8", newline="\\n")', "main()"];
 
-type Supporto =
+export type Supporto =
   | "fermati" | "leggiRiga" | "leggiIntero" | "leggiReale" | "leggiCarattere" | "leggiStringa" | "leggiBooleano" | "dividi"
   | "mod" | "elevatoA" | "arrotonda" | "perDifetto" | "perEccesso" | "parteIntera" | "convertiACarattere"
   | "convertiAVettore" | "convertiAStringa" | "carattereDi" | "nellaStringa" | "concatena" | "alPiu" | "elementiDiversi" | "reale"
@@ -394,8 +394,9 @@ const supporto: Record<Lingua, Record<Supporto, readonly string[]>> = {
 
 /** Un programma intero: la testa col nome, gli import, le costanti comuni, il programma principale (con le procedure e
  * le funzioni del progetto, se ci sono), le funzioni di supporto usate (in quest'ordine) e la coda. Con `delProgramma`,
- * le funzioni fino a cui `fermati` risale, al posto del solo `main`. */
-function programma(
+ * le funzioni fino a cui `fermati` risale, al posto del solo `main`. Con `record`, le classi dei record dopo gli import
+ * (che allora hanno anche quello della classe di dati), dalla riga `@dataclass` della prima. */
+export function programma(
   l: Lingua,
   nome: string,
   imp: readonly string[],
@@ -403,6 +404,7 @@ function programma(
   usate: readonly Supporto[],
   costanti: readonly string[] = [],
   delProgramma?: readonly string[],
+  record?: readonly string[],
 ): string {
   const risale = l === "it" ? '    while chiamante.f_code.co_name != "main":' : '    while caller.f_code.co_name != "main":';
   const elenco = `not in (${(delProgramma ?? []).map((f) => `"${f}"`).join(", ")}):`;
@@ -412,7 +414,8 @@ function programma(
     `# ${nome}`,
     ...testa[l],
     ...imp.map((m) => `import ${m}`),
-    ...(costanti.length === 0 ? [] : ["", ...costanti]),
+    ...(record === undefined ? [] : ["from dataclasses import dataclass", "", "", ...record]),
+    ...(costanti.length === 0 ? [] : [...(record === undefined ? [] : [""]), "", ...costanti]),
     "",
     "",
     ...principale,
