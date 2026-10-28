@@ -245,8 +245,8 @@ test("G: un linguaggio che non dà il codice («Accademico» su un programma con
   const errori = codiceIn(R, "python");
   expect(delCodice(sezioniDellaStampa(R, R.functions, soloCodice, fogliDi, it, errori))).toEqual([["codice", "v", "riferimento-senza-valore · Codice in Python", "", "-", "senza"]]);
   expect([fraseSenzaCodice(errori.generato, "Python", 1, it), fraseSenzaCodice(errori.generato, "Python", 3, it), notaSenzaCodice(errori.generato, "Python", it)]).toEqual([
-    "Il codice si genera da un progetto senza errori, e questo ne ha 1 errore:",
-    "Il codice si genera da un progetto senza errori, e questo ne ha 3 errori:",
+    "Il codice si genera da un progetto senza errori e questo ha 1 errore:",
+    "Il codice si genera da un progetto senza errori e questo ha 3 errori:",
     "Il progetto ha errori: al posto del codice si stampa il loro elenco.",
   ]);
   const fuori: Generato = { generato: false, perche: "fuori-tappa" };
@@ -270,7 +270,7 @@ test("le regole dei fogli: una per sezione col verso e l'intestazione; i sei riq
     expect(r).toContain('"pagina " counter(page) " di " counter(pages) ""');
   }
   // In stampa si vede solo la pagina, su carta bianca.
-  expect(regole.at(-1)).toBe("@media print { html, body { background: #ffffff; } #radice { display: none; } }");
+  expect(regole.at(-1)).toBe("@media print { html, body { background: #ffffff; } body > :not([data-stampa]) { display: none; } }");
   // Senza numero né data: i margini sotto restano occupati dallo spazio, senza contatore né anno.
   const senza = regoleDeiFogli(s, it, { numeri: false, data: false }, "QUANDO-STAMPATO");
   expect({ contatore: senza.includes("counter(page)"), anno: senza.includes("QUANDO-STAMPATO"), sinistra: senza.includes(`@bottom-left { content: ${SPAZIO};`), destra: senza.includes(`@bottom-right { content: ${SPAZIO};`) }).toEqual({

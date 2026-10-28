@@ -9,13 +9,15 @@
 // - «Ogni procedura e funzione in un foglio nuovo», «solo quella mostrata» (la parte vuota spenta), le predefinite che
 //   stampano i soli affiancati, «Annulla» che non stampa, le scelte ricordate per la sessione; la nota dei flowchart
 //   ristretti coi punti del nucleo;
-// - Ctrl+P col fuoco in un campo; Ctrl+P fermato anche con un'altra finestra aperta; in pausa la casella dei segni, che
+// - Ctrl+P col fuoco in un campo; Ctrl+P fermato anche con un'altra finestra aperta; con la guida aperta la stampa senza
+//   la guida (nemmeno nel PDF); in pausa la casella dei segni, che
 //   mette o toglie il blocco corrente e il punto di interruzione dai fogli (degli affiancati);
 // - il codice: i linguaggi accesi nel menu accanto a «Codice in»; gli affiancati in Python per funzione (il flowchart sul
 //   mezzo foglio uguale all'SVG del nucleo, il codice coi numeri veri, ↪ sul seguito, la coda «Funzioni di supporto»),
 //   tutti orizzontali nel PDF; il codice da solo verticale e orizzontale dalla `/MediaBox`, e una funzione per foglio;
-//   ogni riga nel suo lato, misurato alla larghezza della carta; «Accademico» che non dà il codice: la nota, il foglio
-//   con la frase e l'elenco, poi i flowchart.
+//   ogni riga nel suo lato, misurato alla larghezza della carta (anche con le tabulazioni); «Accademico» che non dà il
+//   codice: la nota, il foglio con la frase e l'elenco, poi i flowchart, e la nota dei ristretti calcolata sul foglio
+//   intero (dove vanno i flowchart), non sul mezzo foglio.
 // Gli attesi sono quelli scritti a mano prima del codice (`atteso.md` della misura); i fogli di ogni flowchart (quanti e
 // il verso) li dà il nucleo con la misura del testo del motore.
 //
@@ -34,9 +36,10 @@ import type { Funzione } from "../core/progetto/modello";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
 import { testiDelleMancanze } from "../i18n/mancanze";
+import { leggiPdf } from "../strumenti/lettore-pdf";
 import { areeAccanto, areeDellaStampa, notaDeiRistretti } from "../ui/stampa/parti";
 import { disegnoNelMotore } from "./disegno-nel-motore";
-import { apriVuota, costruisciFinzione, voceDelMenu } from "./pagina";
+import { apriVuota, costruisciFinzione, voceDelMenu, voceDellAiuto } from "./pagina";
 import { CARTA, righeNelLato } from "./stampa-pagina";
 
 test.beforeAll(costruisciFinzione);
@@ -272,6 +275,27 @@ test("[Ctrl+P] col fuoco in un campo apre la finestra; con un'altra finestra ape
   expect({ fermato, libero, stampa: await finestra(page).count(), stampe: await stampe(page) }).toEqual({ fermato: true, libero: false, stampa: 0, stampe: 0 });
   await page.keyboard.press("Escape");
 
+  // Con la guida aperta (resta aperta mentre si lavora, fuori da `#radice`): Ctrl+P apre la finestra, e in stampa la guida
+  // non c'è; nel PDF nessun foglio ha il suo titolo. Il rilevatore si accende: prima della stampa la guida si vede.
+  await (await voceDellAiuto(page, it.guida, it)).click();
+  const guida = page.locator("[data-finestra-guida]");
+  await expect(guida).toContainText(it.guidaTitolo);
+  await page.keyboard.press("Control+p");
+  await stampa(page, 1);
+  await page.emulateMedia({ media: "print" });
+  const inStampa = await guida.evaluate((g) => getComputedStyle(g).display);
+  const conLaGuida = leggiPdf(await page.pdf({ preferCSSPageSize: true })).pagine.filter((p) => p.righe.some((r) => r.includes(it.guidaTitolo))).length;
+  await page.emulateMedia({ media: null });
+  expect({ inStampa, conLaGuida }).toEqual({ inStampa: "none", conLaGuida: 0 });
+  await dopoLaStampa(page);
+  await guida.locator("article").focus();
+  await page.keyboard.press("Escape");
+  await expect(guida).toHaveCount(0);
+  // Il contatore delle stampe da capo: le stampe in pausa qui sotto si contano da 1.
+  await page.evaluate(() => {
+    (window as unknown as { __stampe__: number }).__stampe__ = 0;
+  });
+
   // In pausa sul punto di interruzione del primo blocco: la casella dei segni, accesa; i fogli del programma con la freccia
   // del blocco corrente e il punto; spenta, senza.
   await page.locator('[data-blocco="b1"]').click();
@@ -452,6 +476,11 @@ test("[Stampa] il codice da solo: verticale, poi orizzontale dalla /MediaBox; og
   expect(v.sezioni).toEqual([["codice", t, ""], ["codice", t, ""]]);
   expect([v.codice[0]![0], v.codice[1]![0] === v.codice[0]![1]! + 1, v.codice[1]![1]]).toEqual([1, true, 111]);
   await page.emulateMedia({ media: "print" });
+  // Una tabulazione (può venire dal testo di un commento) si stampa larga una colonna, come la conta l'a capo: una riga di
+  // 60 caratteri con 30 tabulazioni resta nel lato (larga 8 colonne ciascuna, ne uscirebbe).
+  await page.locator("[data-stampa] pre").first().evaluate((p) => {
+    p.firstElementChild!.lastElementChild!.textContent = "a\t".repeat(30);
+  });
   expect({ lato: ((l) => l.fuori + l.latiStorti)(await righeNelLato(page)), pdf: await fogliDelPdf(page) }).toEqual({ lato: 0, pdf: ["v", "v"] });
   await page.emulateMedia({ media: "screen" });
   await dopoLaStampa(page);
@@ -533,4 +562,22 @@ test("[Stampa] un linguaggio che non dà il codice: «Accademico» acceso nel me
   expect(await page.locator("[data-stampa] [data-senza-codice] li").count()).toBe(1);
   await page.emulateMedia({ media: "print" });
   expect(await fogliDelPdf(page)).toEqual(["v"]);
+  await page.emulateMedia({ media: "screen" });
+  await dopoLaStampa(page);
+
+  // La nota dei flowchart ristretti col foglio che si stampa davvero: senza il codice i flowchart vanno sul foglio intero,
+  // non sul mezzo foglio degli affiancati. Il riferimento della tappa 3, che «Accademico» non scrive: a 8 punti il
+  // programma principale esce ristretto sul mezzo foglio e non sul foglio intero (premessa misurata qui).
+  await apriVuota(page, { lingua: "it", linguaggiDelCodice: ["python", "accademico"] }, { argomento: PERCORSO, file: { [PERCORSO]: TESTO } });
+  await expect(page.getByRole("status")).toHaveText(riempi(it.apertoIl, { file: "media voti.algo" }));
+  await page.keyboard.press("Control+p");
+  await menuDeiLinguaggi(page).selectOption("accademico");
+  await casella(page, it.stampaFlowchart).check();
+  await expect(casella(page, it.stampaAffiancati)).toBeChecked();
+  const notaDi = async (aree: typeof areeDellaStampa) =>
+    notaDeiRistretti((await fogliDelNucleo(page, 8, false, progetto, aree)).filter(({ g }) => g.ristretto).map(({ f, g }) => ({ funzione: f as Funzione, punti: g.scala * tema.carattere * 0.75 })), 8, it, "it");
+  const ristretti = finestra(page).locator("[data-ristretti]");
+  const vista = (await ristretti.count()) === 0 ? "" : ((await ristretti.textContent()) ?? "");
+  const [intero, mezzo] = [await notaDi(areeDellaStampa), await notaDi(areeAccanto)];
+  expect({ vista, premessa: mezzo !== "" && intero === "" }).toEqual({ vista: intero, premessa: true });
 });

@@ -2,7 +2,7 @@
 
 Le novità e le correzioni di ogni versione, dalla più recente. Il dettaglio di una versione è nelle sue note di rilascio (`NOTE-DI-RILASCIO.md`); come si usa AlgoDesign è nella guida per lo studente (`GUIDA-PER-LO-STUDENTE.md`).
 
-## 0.6.0-beta.2, 27 ottobre 2026
+## 0.6.0-beta.2, 28 ottobre 2026
 
 Seconda versione beta, per Windows.
 

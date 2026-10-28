@@ -304,7 +304,8 @@ const CARATTERE = "font: 8.5pt system-ui, -apple-system, \"Segoe UI\", sans-seri
 
 /** Le regole dei fogli: per ogni sezione la misura, i margini, l'intestazione nel margine sopra e il piè di pagina scelto
  * nel margine sotto (il numero col contatore dei fogli); i sei riquadri sempre occupati. Una regola per riga. In stampa
- * si vede solo la pagina preparata, su carta bianca. */
+ * si vede solo la pagina preparata, su carta bianca: anche ciò che sta nel `body` fuori da `#radice` si nasconde (la guida,
+ * che resta aperta mentre si lavora, si stamperebbe sopra ogni foglio). */
 export function regoleDeiFogli(sezioni: readonly Sezione[], testi: Dizionario, scelte: Pick<ScelteDiStampa, "numeri" | "data">, data: string): string {
   const [prima, mezzo, dopo] = testi.stampaPagina.split(/\{n\}|\{m\}/) as [string, string, string];
   const sopra = "vertical-align: bottom; padding-bottom: 1.5mm; margin-bottom: 6mm; border-bottom: 0.5pt solid #999999;";
@@ -321,7 +322,7 @@ export function regoleDeiFogli(sezioni: readonly Sezione[], testi: Dizionario, s
         `@top-left { content: ${stringaCss(s.testa)}; ${CARATTERE} ${sopra} } @top-center { content: ${SPAZIO}; ${sopra} } ` +
         `@top-right { content: ${s.destra === "" ? SPAZIO : stringaCss(s.destra)}; ${CARATTERE} ${sopra} } ${piede} }`,
     ),
-    "@media print { html, body { background: #ffffff; } #radice { display: none; } }",
+    "@media print { html, body { background: #ffffff; } body > :not([data-stampa]) { display: none; } }",
   ].join("\n");
 }
 

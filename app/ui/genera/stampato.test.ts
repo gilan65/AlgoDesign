@@ -112,6 +112,15 @@ describe("gli a capo di cinque righe vere (attesi a mano)", () => {
     expect(aCapo("", 77)).toEqual({ rientro: 0, colonna: 0, pezzi: [""] });
     expect(aCapo("        ", 77)).toEqual({ rientro: 8, colonna: 8, pezzi: [""] });
   });
+
+  test("un carattere fra apici: mai tagliato dentro ' ', e '\"' non apre una stringa", () => {
+    // 31 colonne dopo il rientro, 20 di larghezza: lo spazio dentro ' ' (il 18°) non è un punto; l'ultimo fuori è quello
+    // dopo `==` (il 16°).
+    expect(aCapo("    se_vero = (c == ' ') && pronto;", 24)).toEqual({ rientro: 4, colonna: 4, pezzi: ["se_vero = (c == ", "' ') && pronto;"] });
+    // `'"'` è un carattere: la stringa vera va dall'8° al 20°, i suoi spazi (12°, 16°) cedono allo spazio dopo `'"',` (7°);
+    // il seguito (16 colonne) taglia allo spazio dopo la virgola che chiude la stringa.
+    expect(aCapo(`    s('"', "uno due tre", fine);`, 24)).toEqual({ rientro: 4, colonna: 4, pezzi: [`s('"', `, `"uno due tre", `, "fine);"] });
+  });
 });
 
 describe("i fogli del codice (attesi a mano)", () => {
@@ -200,17 +209,36 @@ function difettiDelleParti(p: Progetto, righe: readonly Riga[], parti: readonly 
   return d;
 }
 
-/** Dove una riga è dentro una stringa fra virgolette doppie (la barra rovesciata salta il carattere dopo): scritto qui. */
+/** Dove una riga è dentro una stringa fra virgolette doppie (la barra rovesciata salta il carattere dopo) o dentro un
+ * carattere fra apici fuori dalle stringhe (`'x'`, `'\x'`): scritto qui, coi caratteri fra apici cercati prima. */
 function nelleStringhe(c: readonly string[]): boolean[] {
+  const testo = c.join("");
+  // Gli inizi dei caratteri fra apici (in punti di codice), per lunghezza: `'x'` 3, `'\x'` 4.
+  const apici = new Map<number, number>();
+  for (let i = 0; i < c.length; i++)
+    if (c[i] === "'" && c[i + 1] !== "'") {
+      // Prima la forma con la barra rovesciata: `'\''` è lungo 4, non 3.
+      if (c[i + 1] === "\\" && c[i + 3] === "'") apici.set(i, 4);
+      else if (c[i + 2] === "'") apici.set(i, 3);
+    }
   const fuori: boolean[] = [];
   let dentro = false;
   let salta = false;
-  for (const x of c) {
+  let inApici = 0;
+  for (let i = 0; i < c.length; i++) {
+    const x = c[i]!;
+    if (inApici > 0) {
+      fuori.push(true);
+      inApici--;
+      continue;
+    }
     fuori.push(dentro);
     if (salta) salta = false;
     else if (dentro && x === "\\") salta = true;
     else if (x === '"') dentro = !dentro;
+    else if (!dentro && apici.has(i)) inApici = apici.get(i)! - 1;
   }
+  if (fuori.length !== Array.from(testo).length) throw new Error("nelleStringhe: misura");
   return fuori;
 }
 

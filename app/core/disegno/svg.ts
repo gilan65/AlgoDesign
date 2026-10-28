@@ -46,7 +46,21 @@ export interface OpzioniDelSvg {
 
 const n = (x: number) => String(x);
 const punti = (ps: readonly Punto[]) => ps.map((p) => `${n(p.x)},${n(p.y)}`).join(" ");
-const testo = (t: string) => t.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+/** Un carattere che XML 1.0 ammette: i controlli no (tranne tabulazione, a capo e ritorno), né U+FFFE, U+FFFF e un
+ * surrogato spaiato. Il testo di un blocco ne può avere uno (incollato, o scritto a mano nel file): l'SVG non si
+ * aprirebbe, e il PNG che ne nasce non si disegnerebbe. */
+const inXml = (k: number) => k === 0x9 || k === 0xa || k === 0xd || (k >= 0x20 && k <= 0xd7ff) || (k >= 0xe000 && k <= 0xfffd) || k >= 0x10000;
+const SOSTITUTIVO = String.fromCodePoint(0xfffd);
+const testo = (t: string) =>
+  Array.from(t, (c) => (inXml(c.codePointAt(0)!) ? c : SOSTITUTIVO))
+    .join("")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+/** L'identificatore della punta: un `id` scritto a mano nel file può avere spazi o virgolette, che in `url(#…)` non
+ * sono un riferimento (i fogli senza le punte); restano lettere, cifre, «-» e «_». */
+const idDellaPuntaDi = (o: OpzioniDelSvg) => `${(o.id ?? "disegno").replace(/[^A-Za-z0-9_-]/g, "_")}-punta`;
 const CENTRATO = 'text-anchor="middle" dominant-baseline="central"';
 
 /** Il colore del genere della forma; il rombo di un ciclo ha quello dei cicli. L'intestazione di un riquadro non ha un
@@ -176,7 +190,7 @@ function testa(finestra: Rettangolo, scala: number, o: OpzioniDelSvg, t: Tavoloz
 /** Il testo del file SVG del flowchart intero, alla scala 1 (la misura in pixel è quella del disegno al 100%). */
 export function svgDelDisegno(d: Disegno, o: OpzioniDelSvg): string {
   const t = tavolozzaNelModo(o.tavolozza, o.modo ?? "colori");
-  const idDellaPunta = `${o.id ?? "disegno"}-punta`;
+  const idDellaPunta = idDellaPuntaDi(o);
   return [...testa({ x: 0, y: 0, larghezza: d.larghezza, altezza: d.altezza }, 1, o, t, idDellaPunta), ...corpo(d, o, t, idDellaPunta), "</svg>", ""].join("\n");
 }
 
@@ -217,6 +231,6 @@ function trattiDeiTagli(d: Disegno, f: Foglio, t: Tavolozza, g: GeometriaDelTema
  * in pixel CSS), con le linee tratteggiate vicino ai tagli. */
 export function svgDelFoglio(d: Disegno, foglio: Foglio, scala: number, o: OpzioniDelSvg): string {
   const t = tavolozzaNelModo(o.tavolozza, o.modo ?? "colori");
-  const idDellaPunta = `${o.id ?? "disegno"}-punta`;
+  const idDellaPunta = idDellaPuntaDi(o);
   return [...testa(foglio, scala, o, t, idDellaPunta), ...corpo(d, o, t, idDellaPunta, trattiDeiTagli(d, foglio, t, o.geometria)), "</svg>", ""].join("\n");
 }

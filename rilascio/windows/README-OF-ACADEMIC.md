@@ -7,7 +7,7 @@ Version of {{data}}, for 64-bit Windows 10 and 11.
 ## How to use it
 
 1. Extract the zip wherever you like: the folder `AlgoDesign-Accademico-{{versione}}` is created.
-2. In File Explorer, right-click inside the folder and open the **Terminal** there.
+2. In File Explorer, inside the tool's folder, type `powershell` in the address bar and press Enter: PowerShell opens in that folder (on Windows 11 you can also right-click inside the folder and choose “Open in Terminal”).
 3. Type `.\algodesign-accademico -h` for the help or, for a text, for example:
 
 ```sh

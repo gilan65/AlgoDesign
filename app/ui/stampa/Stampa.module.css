@@ -175,11 +175,13 @@
 }
 
 /* Il codice: 8 punti, interlinea 1,3, a spaziatura fissa (le misure in `parti.ts`); il numero a destra nella sua colonna,
-   larga le cifre più uno spazio. */
+   larga le cifre più uno spazio. La tabulazione (dal testo di un commento) larga una colonna, come la conta l'a capo
+   (`core/genera/stampato.ts`): più larga, la riga uscirebbe dal foglio. */
 .codice {
   margin: 0px;
   font: 8pt / 1.3 var(--carattere-codice);
   white-space: pre;
+  tab-size: 1;
 }
 
 .riga {

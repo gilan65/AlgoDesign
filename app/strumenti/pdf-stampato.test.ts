@@ -20,6 +20,8 @@ test("la nostra pagina non ha scritte del motore: nemmeno la nostra data (anno i
 test("ogni scritta del motore si accende da sola: indirizzo, data con l'anno in due cifre, titolo, numero «n/m»", () => {
   expect(scritteDiEdge([...nostre, "http://tauri.localhost/"], "AlgoDesign")).toEqual(["indirizzo"]);
   expect(scritteDiEdge([...nostre, "27/10/26, 22:40"], "AlgoDesign")).toEqual(["data"]);
+  // Subito dopo un testo che finisce con una cifra (la nostra data nel piede): i due testi non si incollano in un numero.
+  expect(scritteDiEdge([...nostre.slice(0, 9), "27/10/26, 22:40", ...nostre.slice(9)], "AlgoDesign")).toEqual(["data"]);
   expect(scritteDiEdge([...nostre, "AlgoDesign"], "AlgoDesign")).toEqual(["titolo"]);
   expect(scritteDiEdge([...nostre, "1/5"], "AlgoDesign")).toEqual(["numero"]);
   // Come lo scrive il motore: tre testi (misurato in Chromium).

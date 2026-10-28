@@ -1053,7 +1053,7 @@ export const it = {
   stampaSupporto: "Funzioni di supporto",
   stampaFoglioDi: "foglio {n} di {m}",
   stampaNonCiSta: "Il programma non si scrive in {linguaggio}: {quante} da cambiare.",
-  stampaConErrori: "Il codice si genera da un progetto senza errori, e questo ne ha {quanti}:",
+  stampaConErrori: "Il codice si genera da un progetto senza errori e questo ha {quanti}:",
   // Il codice generato, nella colonna a destra del flowchart. {file} è il nome di un file, {linguaggio} il nome di una
   // linguetta, {dettaglio} la risposta del sistema.
   /** L'interruttore del codice nel gruppo Viste. */

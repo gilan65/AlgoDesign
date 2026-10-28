@@ -202,6 +202,13 @@ test("il registro delle modifiche comincia dalla versione dei file e dalla sua d
     { nome: "LEGGIMI.md", riga: `Versione ${versione} del ${dataMostrata(dataDellaVersione, "it")},` },
   ];
   expect(readme.map((r) => [r.nome, readFileSync(join(radice, r.nome), "utf8").includes(r.riga)])).toEqual(readme.map((r) => [r.nome, true]));
+  // Il nome dello zip dello strumento di «Accademico» nei due README è quello della versione (un nome dimenticato alla
+  // release dopo rimanderebbe a uno zip che non c'è): ogni nome scritto, e almeno uno.
+  const zipDelloStrumento = (t: string) => [...t.matchAll(/AlgoDesign-Accademico-[^\s`]*-windows\.zip/g)].map((m) => m[0]);
+  const zip = nomiDelloStrumento(file()["package.json"]!).zip;
+  expect(readme.map((r) => [r.nome, zipDelloStrumento(readFileSync(join(radice, r.nome), "utf8"))])).toEqual(readme.map((r) => [r.nome, [zip]]));
+  // Controllo positivo del rilevatore: un nome con un'altra versione si vede.
+  expect(zipDelloStrumento("vedi `AlgoDesign-Accademico-0.5.0-beta.1-windows.zip`.")).toEqual(["AlgoDesign-Accademico-0.5.0-beta.1-windows.zip"]);
 });
 
 test("la data della versione è una data vera, e si legge nelle due lingue", () => {

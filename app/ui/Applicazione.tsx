@@ -1881,7 +1881,9 @@ export function Applicazione({
       piene: (t) => partiPiene(progetto, funzioniDellaStampa(progetto, mostrata.id, t)),
       ristretti: (s) => {
         const conSegni = inEsecuzione && s.segni;
-        const aree = partiStampate(s, partiPiene(progetto, funzioniDellaStampa(progetto, mostrata.id, s.tutte))).affiancati ? areeAccanto : areeDellaStampa;
+        // Sul mezzo foglio solo se gli affiancati escono davvero: senza il codice i flowchart vanno sul foglio intero.
+        const accanto = partiStampate(s, partiPiene(progetto, funzioniDellaStampa(progetto, mostrata.id, s.tutte))).affiancati && generatoIn(linguaggioDellaStampa(s)).generato;
+        const aree = accanto ? areeAccanto : areeDellaStampa;
         const ristretti = flowchartRistretti(funzioniDellaStampa(progetto, mostrata.id, s.tutte), s, (f) => fogliPerLaStampa(disegnoDi(f), s, conSegni ? segniPerLaStampa(f, disegnoDi(f)) : undefined, aree), geometriaPredefinita);
         return notaDeiRistretti(ristretti, s.punti, testi, lingua);
       },
@@ -3873,7 +3875,8 @@ export function Applicazione({
         testi={testi}
         conferma={(s) => {
           setFinestra(null);
-          void esportaIlFlowchart(s).catch((e: unknown) => console.error("flowchart non esportato:", e));
+          // Un errore prima della finestra del sistema (la tavolozza, l'SVG, il nome) si dice come quelli della scrittura.
+          void esportaIlFlowchart(s).catch((e: unknown) => setErrori({ titolo: testi.esportaFlowchartTitolo, voci: [{ testo: testoDellErrore(erroreDelFile(e), testi) }] }));
         }}
         rinuncia={() => setFinestra(null)}
       />

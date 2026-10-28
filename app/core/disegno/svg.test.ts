@@ -228,6 +228,26 @@ describe("il disegno in SVG, contro l'atteso scritto a mano", () => {
     expect(svg).toContain(`<marker id="foglio-3-punta"`);
     expect(svg).toContain(`marker-end="url(#foglio-3-punta)"`);
   });
+
+  test("l'identificatore della punta da un id scritto a mano nel file (spazi, virgolette): solo lettere, cifre, «-» e «_»", () => {
+    const svg = svgDelDisegno(aMano, { ...opzioni, id: 'stampa-mia "f" 1' });
+    expect(svg).toContain(`<marker id="stampa-mia__f__1-punta"`);
+    expect(svg).toContain(`marker-end="url(#stampa-mia__f__1-punta)"`);
+  });
+
+  test("un carattere che XML 1.0 non ammette nel testo di un blocco (un controllo, un surrogato spaiato) diventa il carattere sostitutivo: il file resta ben formato", () => {
+    // I caratteri costruiti qui dal loro codice: il form feed e U+0001 da un testo incollato, il surrogato spaiato; la
+    // tabulazione resta (XML la ammette).
+    const [ff, uno, surrogato, tab, sostituto] = [12, 1, 0xd800, 9, 0xfffd].map((k) => String.fromCharCode(k));
+    const strano = `a${ff}b${uno}c${surrogato}d${tab}e`;
+    const disegno: Disegno = { ...aMano, elementi: aMano.elementi.map((e) => (e.id === "k1" ? { ...e, testo: strano, righe: [strano] } : e)) };
+    const svg = svgDelDisegno(disegno, opzioni);
+    const nonAmmessi = Array.from(svg).filter((c) => {
+      const k = c.codePointAt(0)!;
+      return !(k === 9 || k === 10 || k === 13 || (k >= 0x20 && k <= 0xd7ff) || (k >= 0xe000 && k <= 0xfffd) || k >= 0x10000);
+    });
+    expect({ nonAmmessi: nonAmmessi.length, riga: svg.includes(`a${sostituto}b${sostituto}c${sostituto}d${tab}e`) }).toEqual({ nonAmmessi: 0, riga: true });
+  });
 });
 
 describe("la tavolozza nei tre modi", () => {
