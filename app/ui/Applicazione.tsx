@@ -83,12 +83,12 @@ import { eUnaParolaSola } from "../core/modifica/rinomina";
 import { sottoblocchi } from "../core/modifica/identificatori";
 import { importa as importaDa } from "../core/modifica/importa";
 import { apri as apriTesto, salva as testoDi } from "../core/progetto/formato";
-import { usaIRecord, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto } from "../core/progetto/modello";
+import { type Blocco, type CasoDiUnaFunzione, type Dato, type DefinizioneDelRecord, type Funzione, type Progetto } from "../core/progetto/modello";
 import { bozzaDelCaso, casoDaBozza, datiDelleVoci, nomeDelCasoNuovo, stessoCaso, vociDelCasoNuovo, type BozzaDelCaso } from "./casi/bozza";
 import { casiDella, chiaveDelCaso, chiaviDeiCasi, selezioneDopoIlPasso, TuttiICasi } from "./casi/tutti";
 import { casoDallEsecuzione, casoUguale, stessoProgramma, type DallEsecuzione } from "../core/casi/dall-esecuzione";
 import { riassunto, rigaDelCaso, segnoDi, VistaCasi, type SegnoDelCaso } from "./casi/VistaCasi";
-import { chiaveDelPosto, nomeDelBlocco, nomeDellaFase, nomeDelValoreIniziale, strutturaAccessibile, trovaPosto, vociDeiValori } from "./disegno/accessibile";
+import { chiaveDelPosto, nomeDelBlocco, nomeDelCampoDellaCopia, nomeDellaFase, nomeDelValoreIniziale, strutturaAccessibile, trovaPosto, vociDeiValori } from "./disegno/accessibile";
 import { ConfermaValoreIniziale } from "./disegno/ConfermaValoreIniziale";
 import { EditorDelValore } from "./disegno/EditorDelValore";
 import { copiaDelBlocco, escluso, riquadroDellaCopia, soloIlBlocco, sottoalberoDelTratto } from "./disegno/bersaglio";
@@ -386,7 +386,7 @@ export function Applicazione({
   // sotto «Inizio», se le Impostazioni li mostrano: li disegna il nucleo, dai dati. I cicli nella forma scelta.
   const disegna = useMemo(
     () =>
-      (funzione: Funzione, comuni: readonly Dato[] = [], funzioni: readonly Funzione[] = []) =>
+      (funzione: Funzione, comuni: readonly Dato[] = [], funzioni: readonly Funzione[] = [], records: readonly DefinizioneDelRecord[] = []) =>
         impagina(
           funzione,
           geometriaPredefinita,
@@ -395,6 +395,7 @@ export function Applicazione({
           { condizioniLunghe: condizioni, valoriIniziali, valoreRipetuto, ...formeDeiCicli, domanda },
           comuni,
           funzioni,
+          records,
         ),
     [misuraDelTesto, lingua, condizioni, valoriIniziali, valoreRipetuto, formeDeiCicli, domanda],
   );
@@ -452,7 +453,7 @@ export function Applicazione({
   const comuniMostrate = costantiComuni;
   const comuniModificabili = true;
   const comuniNelDisegno = nelProgramma ? costantiComuni : undefined;
-  const disegno = useMemo(() => disegna(mostrata, comuniNelDisegno, progetto.functions), [disegna, mostrata, comuniNelDisegno, progetto.functions]);
+  const disegno = useMemo(() => disegna(mostrata, comuniNelDisegno, progetto.functions, progetto.records), [disegna, mostrata, comuniNelDisegno, progetto.functions, progetto.records]);
   // Le Letture che mostrano la domanda in tutto il progetto, per `id` della Lettura e della Scrittura: ciò che il disegno
   // unisce, le modifiche e i punti di interruzione lo trattano insieme.
   const coppieDi = (p: Progetto): ReadonlyMap<string, Coppia> =>
@@ -667,6 +668,7 @@ export function Applicazione({
   const corrente = pausa === undefined ? null : pausa.dato === undefined ? pausa.blocco : correnteValore === null ? funzioneDellaPausa! : null;
   // In un ciclo, la parte del riquadro: il disegno evidenzia il suo blocco, se la forma del ciclo ce l'ha.
   const faseCorrente = pausa?.fase ?? null;
+  const campoCorrente = pausa?.campo ?? null;
   const erroreFinale = statoEs?.genere === "finita" ? statoEs.errore : undefined;
   // Il testo dell'errore che ha fermato l'esecuzione: quello del risultato, sulla fine di una funzione (la stringa
   // restituita troppo lunga).
@@ -745,10 +747,12 @@ export function Applicazione({
   };
   const chiesta = ((): { readonly nome: string; readonly di?: string } | null => {
     if (statoEs?.genere !== "chiede" || !esecuzione) return null;
-    const nome = statoEs.elemento === undefined ? statoEs.dato : `${statoEs.dato}[${statoEs.elemento}]`;
+    // Un parametro chiesto elemento per elemento (un vettore) o campo per campo (un record).
+    const nome = statoEs.elemento !== undefined ? `${statoEs.dato}[${statoEs.elemento}]` : statoEs.campo !== undefined ? `${statoEs.dato}.${statoEs.campo}` : statoEs.dato;
     const l = pila.at(-1);
     const b = l === undefined ? undefined : trova(esecuzione.progetto, l.blocco);
-    const scritto = b?.kind === "read" ? b.target.split("[")[0]!.trim() : undefined;
+    // Il dato della Lettura: il nome prima dell'indice di un elemento o del campo di un record.
+    const scritto = b?.kind === "read" ? b.target.split(/[[.]/)[0]!.trim() : undefined;
     if (scritto === undefined || scritto === statoEs.dato) return { nome };
     const f = esecuzione.progetto.functions.find((x) => x.id === l!.funzione);
     const k = f?.data.findIndex((d) => d.name === scritto) ?? -1;
@@ -906,7 +910,7 @@ export function Applicazione({
       const t = trattoDellaVista(progetto, ancora ?? id, id, coppieDelProgetto);
       if (t === undefined) return null;
       // La copia che segue il puntatore: i blocchi impaginati da soli, col loro contenuto.
-      const copia = copiaDelBlocco(disegna(soloIlBlocco(mostrata, blocchiDelTratto(progetto, t)), [], progetto.functions), id, disegno);
+      const copia = copiaDelBlocco(disegna(soloIlBlocco(mostrata, blocchiDelTratto(progetto, t)), [], progetto.functions, progetto.records), id, disegno);
       return { id, ...(ancora !== null && ancora !== id ? { ancora } : {}), escluso: escluso(progetto, t), dentro: sottoalberoDelTratto(progetto, t), copia };
     },
     [progetto, mostrata, disegna, disegno, coppieDelProgetto],
@@ -1673,11 +1677,6 @@ export function Applicazione({
   function avvia(comando: Comando, indiceDelCaso?: number): boolean {
     const c = confermaIApertiCampi();
     if (!c) return false;
-    // La finestra in esecuzione non mostra ancora i record (la tabella di traccia, il watch, le voci dei campi).
-    if (usaIRecord(c.presente)) {
-      setAvviso(testi.apriFuoriTappa);
-      return false;
-    }
     const dellaScheda = nelProgramma ? undefined : mostrata.id;
     const radice = indiceDelCaso === undefined && esecuzione !== null ? esecuzione.funzione : dellaScheda;
     const funzione = radice !== undefined && c.presente.functions.some((f) => f.id === radice) ? radice : undefined;
@@ -1732,9 +1731,15 @@ export function Applicazione({
       // Sul valore iniziale di un dato, il nome del suo blocco, col testo dalla stessa funzione del disegno: un dato della
       // funzione della pausa, o una costante comune (che prende il valore nella radice).
       const dato = s.dato === undefined ? undefined : [...(es.progetto.shared_constants ?? []), ...datiDi(es.progetto, s.funzione)].find((d) => d.name === s.dato);
-      // In un ciclo aperto, la parte del riquadro della pausa.
-      const b = s.fase === undefined ? undefined : trova(es.progetto, s.blocco);
-      const fase = b && s.fase !== undefined ? nomeDellaFase(b, s.fase, formeDeiCicli, testi, testiDelDisegno(lingua), funzioneCon(es.progetto, b.id) ?? principaleDi(es.progetto), es.progetto.shared_constants ?? []) : undefined;
+      // In un ciclo aperto, la parte del riquadro della pausa; nella copia di un record, l'assegnazione del campo.
+      const b = s.fase === undefined && s.campo === undefined ? undefined : trova(es.progetto, s.blocco);
+      const della = b && (funzioneCon(es.progetto, b.id) ?? principaleDi(es.progetto));
+      const fase =
+        b && della && s.fase !== undefined
+          ? nomeDellaFase(b, s.fase, formeDeiCicli, testi, testiDelDisegno(lingua), della, es.progetto.shared_constants ?? [])
+          : b && della && s.campo !== undefined
+            ? nomeDelCampoDellaCopia(b, s.campo, testi, testiDelDisegno(lingua), della, es.progetto.shared_constants ?? [], es.progetto.records ?? [])
+            : undefined;
       const nome = dato ? nomeDelValoreIniziale(dato, testi, testiDelDisegno(lingua), valoreRipetuto) : (fase ?? nomeDi(s.blocco));
       // Sulla ripresa dopo un ritorno, la funzione tornata e il valore restituito, come li scrive la tabella.
       const r = s.ripresa;
@@ -1753,7 +1758,10 @@ export function Applicazione({
       const id = s.dato === undefined ? (coppieDelleScritture.get(s.blocco)?.lettura ?? s.blocco) : (s.funzione ?? principaleDi(es.progetto).id);
       const selettore = s.dato !== undefined && valoriIniziali === "mostrati" ? `[data-valore-iniziale="${s.dato}"]` : `[data-blocco="${id}"], [data-fine="${id}"]`;
       // In un ciclo aperto la parte della fase, che può stare lontana dall'intestazione (l'aumento in fondo al corpo).
-      const parte = s.dato === undefined && s.fase !== undefined ? `g[data-id="${id}"][data-fase="${s.fase}"]` : undefined;
+      const parte =
+        s.dato === undefined && s.fase !== undefined ? `g[data-id="${id}"][data-fase="${s.fase}"]`
+        : s.dato === undefined && s.campo !== undefined ? `g[data-id="${id}"][data-campo-della-copia="${s.campo}"]`
+        : undefined;
       const inVista = () => ((parte ? tela.current?.querySelector(parte) : null) ?? tela.current?.querySelector(selettore))?.scrollIntoView({ block: "nearest", inline: "nearest" });
       requestAnimationFrame(cambiata ? () => requestAnimationFrame(inVista) : inVista);
     } else if (s.genere === "chiede") setAvviso(null);
@@ -1908,13 +1916,13 @@ export function Applicazione({
     setFinestra({ genere: "stampa" });
   }
   /** Il disegno di una funzione per la stampa, come quello della sua scheda (le costanti comuni nel programma principale). */
-  const disegnoPerLaStampa = (f: Funzione) => disegna(f, f.kind === "main" ? costantiComuni : undefined, progetto.functions);
+  const disegnoPerLaStampa = (f: Funzione) => disegna(f, f.kind === "main" ? costantiComuni : undefined, progetto.functions, progetto.records);
   /** I segni dell'esecuzione sul flowchart di una funzione (il suo disegno `d`), con le regole della scheda mostrata: il
    * blocco della pausa, o il valore iniziale nella funzione della pausa se il disegno lo mostra, o il suo «Inizio». */
   const segniPerLaStampa = (f: Funzione, d: Disegno): SegniDellEsecuzione => {
     const valore = pausa?.dato !== undefined && valoriIniziali === "mostrati" && funzioneDellaPausa === f.id && d.elementi.some((e) => e.dato === pausa.dato) ? pausa.dato : null;
     const blocco = pausa === undefined ? null : pausa.dato === undefined ? pausa.blocco : valore === null ? funzioneDellaPausa! : null;
-    return { corrente: blocco, faseCorrente, ripresa: pausa?.ripresa !== undefined, correnteValore: valore, interruzioni };
+    return { corrente: blocco, faseCorrente, campoCorrente, ripresa: pausa?.ripresa !== undefined, correnteValore: valore, interruzioni };
   };
   /** I fogli del flowchart di una funzione con le scelte della stampa (i segni, se ci sono, sono ostacoli dei tagli), sul
    * foglio intero o sul mezzo foglio degli affiancati. */
@@ -2016,7 +2024,7 @@ export function Applicazione({
   async function esportaIlFlowchart(s: ScelteDellEsportazione): Promise<void> {
     setScelteDellEsportazione(s);
     // Il disegno di adesso, prima delle finestre: ciò che si esporta è ciò che si vedeva quando si è scelto «Esporta…».
-    const segni = inEsecuzione ? { corrente, faseCorrente, ripresa: pausa?.ripresa !== undefined, correnteValore, interruzioni } : undefined;
+    const segni = inEsecuzione ? { corrente, faseCorrente, campoCorrente, ripresa: pausa?.ripresa !== undefined, correnteValore, interruzioni } : undefined;
     const svg = svgDelDisegno(disegno, {
       geometria: geometriaPredefinita,
       tavolozza: tavolozzaDellaPagina(),
@@ -2664,7 +2672,7 @@ export function Applicazione({
     if (!prima) return;
     const esistenti = casiDella(prima.presente, funzioneDeiCasi);
     const vuoto: CasoDiUnaFunzione = { name: nomeDelCasoNuovo(esistenti, (n) => riempi(testi.nomeDelCasoNuovo, { n: String(n) })), inputs: [], expected: { output: "" } };
-    const nuovo = casoDaBozza(vuoto, { ...bozzaDelCaso(vuoto), voci: vociDelCasoNuovo(nelProgramma ? [] : mostrata.data) });
+    const nuovo = casoDaBozza(vuoto, { ...bozzaDelCaso(vuoto), voci: vociDelCasoNuovo(nelProgramma ? [] : mostrata.data, prima.presente.records) });
     if (!modifica(aggiungiCaso(nuovo, funzioneDeiCasi), undefined, prima)) return;
     setCasoScelto(esistenti.length);
     setCasoInModifica({ indice: esistenti.length, bozza: bozzaDelCaso(nuovo) });
@@ -2736,10 +2744,6 @@ export function Applicazione({
     const tuttiICasi = c ? casiDella(c.presente, funzioneDeiCasi) : [];
     const indici = tuttiICasi.flatMap((x, i) => (!soloSelezionati || selezionati.has(chiaveDiUnCaso(x.name)) ? [i] : []));
     if (!c || indici.length === 0) return;
-    if (usaIRecord(c.presente)) {
-      setAvviso(testi.apriFuoriTappa);
-      return;
-    }
     setEsecuzione(null);
     setTutti(new TuttiICasi(c.presente, limiti, indici, funzioneDeiCasi));
     setAvviso(null);
@@ -3041,8 +3045,7 @@ export function Applicazione({
     }
     const esito = apriTesto(testo);
     if (!esito.ok) return nonSiApre(testoDelProblema({ genere: "apertura", errori: esito.errori }, testi));
-    // L'importazione non porta ancora i record che le funzioni usano: un file che li usa non è una sorgente.
-    if (usaIRecord(esito.progetto) || controlla(esito.progetto, limiti).fuoriTappa) return nonSiApre(testi.apriFuoriTappa);
+    if (controlla(esito.progetto, limiti).fuoriTappa) return nonSiApre(testi.apriFuoriTappa);
     setUltimaCartella(cartellaDi(percorso));
     return { sorgente: { nome: esito.progetto.metadata.name, percorso, progetto: esito.progetto } };
   }
@@ -3745,6 +3748,7 @@ export function Applicazione({
             solaLettura: inEsecuzione,
             corrente,
             faseCorrente,
+            campoCorrente,
             ripresa: pausa?.ripresa !== undefined,
             correnteValore,
             interruzioni,

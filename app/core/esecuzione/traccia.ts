@@ -37,6 +37,7 @@ import {
   nomeDellaPosizione,
   partiDellaChiamata,
   partiDellElenco,
+  partiDelCampoDellaCopia,
   partiDellaFase,
   testoDelBlocco,
   testoDelValoreIniziale,
@@ -350,6 +351,8 @@ export interface DatoNelWatch {
   readonly nome: string;
   readonly tipo: string;
   readonly vettore: boolean;
+  /** Un record: i valori sono i suoi campi, uno per riga. */
+  readonly record?: true;
   readonly elementi: readonly { readonly nome: string; readonly cella: CellaDiUnValore }[];
   readonly origine?: Origine;
   readonly livello?: { readonly di: number; readonly su: number };
@@ -362,6 +365,8 @@ export interface ChiamataNelWatch {
   readonly nome: string;
   readonly tipo: string;
   readonly vettore: boolean;
+  /** Un record restituito: i valori sono i suoi campi. */
+  readonly record?: true;
   readonly chiamate: readonly (readonly { readonly nome: string; readonly cella: CellaDiUnValore }[])[];
 }
 
@@ -481,8 +486,10 @@ export class TabellaMostrata {
       const { blocco: b, funzione: f } = blocchi.get(r.blocco)!;
       // Un campo della copia di un record: l'assegnazione di quel campo.
       if (r.campo !== undefined && b.kind === "assignment") {
-        const campo = campiDelRecord(datiDi(f).find((d) => d.name === b.target)!, p)![r.campo]!.name;
-        return testoDelBlocco({ ...b, target: `${b.target}.${campo}`, value: `${b.value}.${campo}` }, testi);
+        const campo = campiDelRecord(datiDi(f).find((d) => d.name === b.target.trim())!, p)![r.campo]!.name;
+        return partiDelCampoDellaCopia(b, campo, testi)
+          .map((q) => q.testo)
+          .join("");
       }
       if (b.kind === "call") return partiDellaChiamata(b, funzioneChiamata(p.functions, b.callee), testi).map((q) => q.testo).join("");
       // Una fase di un'assegnazione è della copia di un vettore col suo nome.
@@ -660,7 +667,7 @@ export class TabellaMostrata {
         const elementi = "elementi" in v ? v.elementi : [v];
         return elementi.map((x, i) => ({ nome: vettore ? `[${i}]` : campi !== undefined ? `.${campi[i]!.name}` : nome, cella: this.#cella(x, false) }));
       });
-    return { nome, tipo: campi !== undefined ? f.return_record! : this.#testi.tipi[f.return_type as Tipo], vettore, chiamate };
+    return { nome, tipo: campi !== undefined ? f.return_record! : this.#testi.tipi[f.return_type as Tipo], vettore, ...(campi !== undefined ? { record: true as const } : {}), chiamate };
   }
 
   #nelWatch(d: DatoMostrato, valori: readonly (Valore | undefined)[], cambiati: readonly boolean[] | undefined): DatoNelWatch {
@@ -668,6 +675,7 @@ export class TabellaMostrata {
       nome: d.nome,
       tipo: d.tipo,
       vettore: d.elementi !== undefined,
+      ...(d.campi !== undefined ? { record: true as const } : {}),
       elementi: valori.map((v, i) => ({ nome: nomeDelValore(d, i), cella: this.#cella(v, cambiati?.[i] === true) })),
     };
   }

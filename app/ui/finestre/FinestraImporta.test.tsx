@@ -398,6 +398,30 @@ test("due funzioni con lo stesso nome nella sorgente: la seconda è spenta col m
   expect([voci()[0], spento(testi.importaConferma)]).toEqual(["f:f2", false]);
 });
 
+test("un file coi record è una sorgente: il record che la funzione usa entra con lei, col nome nuovo se il programma ha già il suo", async () => {
+  const sorgente = readFileSync(join(import.meta.dir, "..", "..", "casi", "tipi", "funzione-con-un-record.algo"), "utf8");
+  // Il programma ha un altro «alunno», con un campo solo.
+  const programma = JSON.stringify({
+    format: "algodesign",
+    schema_version: 2,
+    metadata: { name: "programma" },
+    records: [{ name: "alunno", fields: [{ name: "voto", type: "integer" }] }],
+    functions: [{ id: "f1", kind: "main", data: [{ name: "a", type: "record", record: "alunno" }], body: [], end: { id: "b1" } }],
+  });
+  await daUnFile(programma, sorgente, "funzione-con-un-record");
+  await clic(casella(/migliore/));
+  expect(voci()).toEqual(["f:f2", "r:alunno"]);
+  expect(testoDellaVoce("r:alunno")).toContain(riempi(testi.importaRecordRinominato, { nome: "alunno", nuovo: "alunno_2" }));
+  expect(testoDellaVoce("r:alunno")).toContain(`${testi.importaRecord} alunno (nome, classe, voto)`);
+  await clic(pulsante(testi.importaConferma)!);
+  await aspetta("la finestra chiusa", () => finestra() === null);
+  const p = progetto(programma);
+  const atteso = importa(progetto(sorgente), ["f2"], { conCasi: true })(p, primoLibero(p));
+  if (!atteso.ok) throw new Error("l'importazione del nucleo è rifiutata");
+  expect(await salvaOra()).toBe(salva(atteso.progetto));
+  expect(atteso.progetto.records?.map((r) => r.name)).toEqual(["alunno", "alunno_2"]);
+});
+
 test("«Importa» è un passo solo: il file è quello del nucleo, Annulla riporta il file di partenza byte per byte", async () => {
   await avvia();
   await apriLaLibreria();

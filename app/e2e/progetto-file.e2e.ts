@@ -167,9 +167,11 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
   expect(diversi).toEqual([]);
   expect({ ricorsione, identici: identici.length, corpus: delleTappe.length }).toEqual({ ricorsione: 22, identici: 146, corpus: 146 });
   // I record: ogni file si apre, anche con un errore statico (lo dice il controllo nella finestra), con una riga per record
-  // nella tabella «Record» della vista dei dati, e salvato resta identico.
+  // nella tabella «Record» della vista dei dati; quelli giusti che non leggono niente si eseguono (F5 fino alla fine,
+  // l'output del caso del programma nella console) e, eseguiti, salvati restano identici.
   const deiRecord = corpus.filter((c) => c.tappa === "tipi");
   const identiciDeiRecord: string[] = [];
+  const eseguiti: string[] = [];
   let righe = 0;
   for (const [i, c] of deiRecord.entries()) {
     await apriIl(page, c.percorso);
@@ -177,16 +179,21 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
     const attese = (JSON.parse(c.testo).records ?? []).length;
     await expect(page.locator("[data-record]"), c.percorso).toHaveCount(attese);
     righe += attese;
+    const caso = JSON.parse(c.testo).test_cases?.[0];
+    if (caso !== undefined && caso.inputs.length === 0 && caso.expected.static_error === undefined) {
+      // L'apertura finita: l'avviso la dice.
+      await expect(page.locator('output[role="status"]')).toHaveText(riempi(it.apertoIl, { file: c.percorso.split("\\").at(-1)! }));
+      await page.keyboard.press("F5");
+      await expect(page.locator("[data-stato-esecuzione]"), c.percorso).toHaveText(caso.expected.error === undefined ? it.statoFinita : it.statoFermataDaUnErrore);
+      expect((await page.locator('[role="log"] [data-scrive]').allTextContents()).join(""), c.percorso).toBe(caso.expected.output);
+      eseguiti.push(c.percorso);
+    }
     if ((await salvaConNome(page, `C:\\uscita\\record-${i}.algo`)) === c.testo) identiciDeiRecord.push(c.percorso);
+    if (eseguiti.at(-1) === c.percorso) await page.keyboard.press("Shift+F5");
   }
-  console.log(`apri e salva: i record, ${deiRecord.length} file, ${righe} righe nella tabella «Record», identici ${identiciDeiRecord.length}`);
-  // La finestra non esegue ancora i record: F5 sull'ultimo file aperto lo dice, e l'esecuzione non parte (nessun
-  // comando «Ferma» disponibile).
-  await page.keyboard.press("F5");
-  await expect(page.getByText(it.apriFuoriTappa, { exact: true }).first()).toBeVisible();
-  await expect(page.locator('header [data-comando="ferma"]')).toHaveAttribute("aria-disabled", "true");
-  // Sei giusti (che il nucleo esegue) e cinque con un errore statico.
-  expect({ identici: identiciDeiRecord.length, corpus: deiRecord.length }).toEqual({ identici: 11, corpus: 11 });
+  console.log(`apri e salva: i record, ${deiRecord.length} file, ${righe} righe nella tabella «Record», eseguiti ${eseguiti.length}, identici ${identiciDeiRecord.length}`);
+  // Quattro giusti senza letture (uno si ferma col suo errore), cinque con un errore statico, due che leggono.
+  expect({ identici: identiciDeiRecord.length, eseguiti: eseguiti.length, corpus: deiRecord.length }).toEqual({ identici: 11, eseguiti: 4, corpus: 11 });
   expect(righe).toBeGreaterThanOrEqual(11);
 });
 

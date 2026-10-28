@@ -4,7 +4,7 @@
 // stampa (22, 18 e 12 mm): il verso, il numero dei fogli e i tagli, ricavati a mano dagli intervalli liberi stampati
 // da uno script scritto a parte, PRIMA di questo codice.
 //
-// Il corpus intero (ogni funzione delle tappe 1–4 e degli attesi), con le tre misure del testo delle prove, ai punti 6, 8
+// Il corpus intero (ogni funzione delle tappe 1–4, dei record, nelle due forme della copia, e degli attesi), con le tre misure del testo delle prove, ai punti 6, 8
 // e 12 e con «Adatta al foglio», sull'A4 e sulla metà sinistra di un foglio orizzontale (il flowchart affiancato al
 // codice): con un rilevatore SCRITTO QUI, dagli oggetti del disegno e non dagli ostacoli di `fogli.ts`, nessun taglio
 // passa dentro un oggetto (forma, intestazione, etichetta, unione, punta di una freccia; i lati di un riquadro e i tratti
@@ -33,7 +33,7 @@ import { cicliIt, funzioniIt } from "../esecuzione/testi-di-prova";
 import { apri } from "../progetto/formato";
 import type { Funzione } from "../progetto/modello";
 import { fogliDelDisegno, puntiDelTesto, puntiMassimi, puntiMinimi, type AreeDelFoglio, type FogliDelDisegno } from "./fogli";
-import { impagina, opzioniPredefinite, type Disegno, type MisuraDelTesto, type TestiDelDisegno } from "./impaginazione";
+import { impagina, opzioniPredefinite, type Disegno, type MisuraDelTesto, type OpzioniDelDisegno, type TestiDelDisegno } from "./impaginazione";
 import { pallino, punta, RAGGIO_DEL_PALLINO, ripresa } from "./segni";
 import { geometriaPredefinita as tema } from "./tema";
 
@@ -62,19 +62,32 @@ interface Albero {
   readonly funzione: Funzione;
   readonly costanti: Parameters<typeof impagina>[5];
   readonly funzioni: readonly Funzione[];
+  readonly records: Parameters<typeof impagina>[7];
+  readonly copia: OpzioniDelDisegno["copia"];
 }
 const radice = join(import.meta.dir, "..", "..");
-const corpus: Albero[] = ["casi/tappa-1", "casi/tappa-2", "casi/tappa-3", "casi/tappa-4", "e2e/attesi"].flatMap((c) =>
+const corpus: Albero[] = ["casi/tappa-1", "casi/tappa-2", "casi/tappa-3", "casi/tappa-4", "casi/tipi", "e2e/attesi"].flatMap((c) =>
   readdirSync(join(radice, c))
     .filter((f) => f.endsWith(".algo"))
     .flatMap((f) => {
       const esito = apri(readFileSync(join(radice, c, f), "utf8"));
       if (!esito.ok) throw new Error(`${f} non si apre`);
       const p = esito.progetto;
-      return p.functions.map((fn) => ({ nome: `${c}/${f} :: ${fn.name ?? "principale"}`, funzione: fn, costanti: fn.kind === "main" ? (p.shared_constants ?? []) : [], funzioni: p.functions }));
+      // I record: anche nella copia espansa (il riquadro «copia campo per campo» con un'assegnazione per campo).
+      const forme = c === "casi/tipi" ? (["compatta", "espansa"] as const) : (["compatta"] as const);
+      return forme.flatMap((copia) =>
+        p.functions.map((fn) => ({
+          nome: `${c}/${f} :: ${fn.name ?? "principale"}${copia === "espansa" ? " (copia espansa)" : ""}`,
+          funzione: fn,
+          costanti: fn.kind === "main" ? (p.shared_constants ?? []) : [],
+          funzioni: p.functions,
+          records: p.records ?? [],
+          copia,
+        })),
+      );
     }),
 );
-const disegna = (a: Albero, misura: MisuraDelTesto = perCodice) => impagina(a.funzione, tema, misura, testi, opzioniPredefinite, a.costanti, a.funzioni);
+const disegna = (a: Albero, misura: MisuraDelTesto = perCodice) => impagina(a.funzione, tema, misura, testi, { ...opzioniPredefinite, copia: a.copia }, a.costanti, a.funzioni, a.records);
 const delCorpus = (nome: string) => corpus.find((a) => a.nome === nome)!;
 
 // ------------------------------------------------------------------------------------- il rilevatore, scritto qui
@@ -244,6 +257,14 @@ describe("il corpus intero: nessun taglio dentro un oggetto, ogni oggetto in un 
       const { conti, difettosi } = sulCorpus(fogliDelDisegno);
       console.log(`fogli sul corpus: ${JSON.stringify(conti)}; difettosi ${difettosi.length}`);
       expect(difettosi).toEqual([]);
+      // Le premesse dei record: il riquadro della copia di un record c'è, nelle due forme (una scritta sul bordo nella
+      // compatta, un'assegnazione per campo nell'espansa).
+      const deiRecord = corpus.filter((a) => a.nome.startsWith("casi/tipi/")).map((a) => disegna(a));
+      const campi = deiRecord.flatMap((d) => d.elementi.filter((e) => e.campo !== undefined)).length;
+      const scritte = deiRecord.flatMap((d) => d.riquadri.filter((r) => r.didascalia?.testo === cicliIt.copiaCampi)).length;
+      console.log(`fogli sul corpus: copie di un record, assegnazioni dei campi ${campi}, scritte della compatta ${scritte}`);
+      expect(campi).toBeGreaterThan(0);
+      expect(scritte).toBeGreaterThan(0);
       // Le premesse: il corpus discrimina (molte funzioni su più fogli, qualcuna ristretta, i due versi).
       expect(conti.divisioni).toBe(corpus.length * 24);
       expect(conti.suPiuFogli).toBeGreaterThan(100);

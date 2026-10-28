@@ -10,6 +10,9 @@
 //   Annulla fino al programma di allora li riporta. Prima di ogni esecuzione: spento, col suo motivo.
 // - Esc nei campi del caso appena salvato: il caso sparisce senza lasciare un passo.
 // - La casella delle Impostazioni spenta: il comando non c'è nei due posti.
+// - I record: la Lettura di un campo con la domanda, il caso salvato con la voce del record; la procedura eseguita da
+//   sola col parametro record chiesto campo per campo nella console («r.nome»), il caso salvato con una voce per campo, e
+//   il caso nuovo con una voce per campo.
 //
 // Che cosa NON guarda:
 // - le voci e l'atteso composti, caso per caso sul corpus: `core/casi/dall-esecuzione.test.ts`;
@@ -83,12 +86,12 @@ async function aspetta(cosa: string, fatto: () => boolean): Promise<void> {
   }
   throw new Error(`non arriva: ${cosa} (stato «${statoMostrato()}», avviso «${avviso()}»)`);
 }
-async function apriLaFinestra(scelte: Scelte = scelteIniziali): Promise<void> {
-  datoAllAvvio = { percorso: "C:\\corpus\\inverso.algo", testo: PROGRAMMA };
+async function apriLaFinestra(scelte: Scelte = scelteIniziali, testo = PROGRAMMA, file = "inverso.algo"): Promise<void> {
+  datoAllAvvio = { percorso: `C:\\corpus\\${file}`, testo };
   await act(async () => {
     render(<Applicazione linguaIniziale="it" misura={misura} scelteIniziali={scelte} />);
   });
-  await aspetta("il file aperto", () => avviso() === riempi(testi.apertoIl, { file: "inverso.algo" }));
+  await aspetta("il file aperto", () => avviso() === riempi(testi.apertoIl, { file }));
 }
 const clic = (e: Element) => act(async () => void fireEvent.click(e));
 const tasto = (e: Element, key: string, altro: Partial<KeyboardEventInit> = {}) => act(async () => void fireEvent.keyDown(e, { key, ...altro }));
@@ -198,4 +201,91 @@ test("con la casella delle Impostazioni spenta il comando non c'è nei due posti
   await vaiAiCasi();
   // Controllo positivo: l'esecuzione è finita e la scheda dei casi è quella giusta («Aggiungi un caso» c'è).
   expect({ fine: statoMostrato(), aggiungi: document.querySelector("[data-aggiungi-caso]") !== null, console: nellaConsole(), scheda: nellaScheda() }).toEqual({ fine: testi.statoFinita, aggiungi: true, console: null, scheda: null });
+});
+
+// --------------------------------------------------------------------------------------------- i record
+
+/** Il record `alunno` (nome, voto): il programma chiede il nome di `a` con la domanda e lo scrive; la procedura `promuovi`
+ * riceve un alunno per riferimento e ne aumenta il voto. */
+const DEI_RECORD = JSON.stringify({
+  format: "algodesign",
+  schema_version: 2,
+  metadata: { name: "alunni" },
+  records: [{ name: "alunno", fields: [{ name: "nome", type: "string", max_length: 10 }, { name: "voto", type: "integer" }] }],
+  functions: [
+    {
+      id: "f1",
+      kind: "main",
+      data: [{ name: "a", type: "record", record: "alunno" }],
+      body: [
+        { id: "b1", kind: "write", values: ['"Il nome? "'], newline: false },
+        { id: "b2", kind: "read", target: "a.nome" },
+        { id: "b3", kind: "write", values: ["a.nome"], newline: true },
+      ],
+      end: { id: "b4" },
+    },
+    {
+      id: "f2",
+      kind: "procedure",
+      name: "promuovi",
+      data: [{ name: "r", type: "record", record: "alunno", parameter: "reference" }],
+      body: [{ id: "b5", kind: "assignment", target: "r.voto", value: "r.voto + 1" }],
+      end: { id: "b6" },
+    },
+  ],
+});
+const vociDelCaso = () => [...document.querySelectorAll("tr[data-caso]")].map((r) => r.textContent ?? "");
+async function scriviNellaConsole(valore: string): Promise<void> {
+  const campo = document.querySelector<HTMLInputElement>('[role="log"] ~ div input')!;
+  await act(async () => void fireEvent.change(campo, { target: { value: valore } }));
+  await act(async () => void fireEvent.keyDown(campo, { key: "Enter" }));
+  await giro();
+}
+
+test("un record: la Lettura di un campo con la domanda chiede il record, e il caso salvato ha la sua voce", async () => {
+  await apriLaFinestra({ ...scelteIniziali, domandaNellaLettura: true }, DEI_RECORD, "alunni.algo");
+  // La domanda nella Lettura del campo: un blocco solo, su due righe.
+  expect(document.querySelector('g[data-id="b2"]')?.textContent).toBe('"Il nome?"leggi a.nome');
+  await tasto(document.body, "F5");
+  await aspetta("la lettura del nome", () => statoMostrato() === riempi(testi.statoChiede, { dato: "a" }));
+  await scriviNellaConsole("Ugo");
+  await aspetta("la fine", () => statoMostrato() === testi.statoFinita);
+  await clic(nellaConsole()!);
+  await giro();
+  await tasto(document.activeElement!, "Enter");
+  await giro();
+  expect(nomiDeiCasi()).toEqual(["caso 1"]);
+  expect(vociDelCaso()[0]).toContain(riempi(testi.casoVoce, { dato: "a", testo: "Ugo" }));
+  await clic(document.querySelector('tr[data-caso="0"] [data-esegui-caso="tutto"]')!);
+  await aspetta("l'esito del caso", () => avviso() === riempi(testi.esitoDelCasoRaggiunto, { nome: "caso 1" }));
+});
+
+test("un parametro record della procedura eseguita da sola: chiesto campo per campo, il caso salvato e il caso nuovo con una voce per campo", async () => {
+  await apriLaFinestra(scelteIniziali, DEI_RECORD, "alunni.algo");
+  await clic(document.querySelector("[data-elenco-funzioni]")!);
+  await giro();
+  await clic(document.querySelector('[data-elenco] [data-voce-funzione="f2"]')!);
+  await giro();
+  await tasto(document.body, "F5");
+  await aspetta("il nome di r", () => statoMostrato() === riempi(testi.statoChiede, { dato: "r.nome" }));
+  await scriviNellaConsole("Ugo");
+  await aspetta("il voto di r", () => statoMostrato() === riempi(testi.statoChiede, { dato: "r.voto" }));
+  await scriviNellaConsole("5");
+  await aspetta("la fine", () => statoMostrato() === testi.statoFinita);
+  await clic(nellaConsole()!);
+  await giro();
+  await tasto(document.activeElement!, "Enter");
+  await giro();
+  expect(schedaMostrata()).toBe("f2");
+  expect(nomiDeiCasi()).toEqual(["caso 1"]);
+  expect(vociDelCaso()[0]).toContain([riempi(testi.casoVoce, { dato: "r", testo: "Ugo" }), riempi(testi.casoVoce, { dato: "r", testo: "5" })].join(" · "));
+  await clic(document.querySelector('tr[data-caso="0"] [data-esegui-caso="tutto"]')!);
+  await aspetta("l'esito del caso", () => avviso() === riempi(testi.esitoDelCasoRaggiunto, { nome: "caso 1" }));
+  // Il caso nuovo: una voce per campo, col nome del parametro.
+  await clic(document.querySelector("[data-aggiungi-caso]")!);
+  await giro();
+  await tasto(document.activeElement!, "Enter");
+  await giro();
+  expect(nomiDeiCasi()).toEqual(["caso 1", "caso 2"]);
+  expect(vociDelCaso()[1]).toContain([riempi(testi.casoVoce, { dato: "r", testo: "" }), riempi(testi.casoVoce, { dato: "r", testo: "" })].join(" · "));
 });

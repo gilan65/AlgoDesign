@@ -162,7 +162,7 @@ Nelle Impostazioni, scheda «Aspetto», i cicli si possono disegnare in altri mo
 
 - **Cicli «per»**: aperti, come sopra (è la scelta iniziale), oppure **chiusi**, con la sola intestazione sopra il corpo e la linea che torna in cima;
 - **Cicli «per ogni»**: aperti con la posizione dell'elemento, come sopra; aperti **a parole** («c'è un altro elemento in parola», «c ← elemento successivo di parola»); oppure chiusi;
-- **Copia di un vettore col suo nome**: compatta, con la sola assegnazione nel riquadro (è la scelta iniziale), oppure espansa, col «mentre» che copia un elemento alla volta;
+- **Copia di un vettore o di un record col suo nome**: compatta, con la sola assegnazione nel riquadro (è la scelta iniziale), oppure espansa, col «mentre» che copia un elemento alla volta o, per un record, un'assegnazione per campo;
 - **Riquadro dei cicli**: col fondo colorato, oltre al bordo tratteggiato.
 
 ### Passo passo e tabella di traccia

@@ -11,6 +11,11 @@
 //   ci sono tre scelte: rinominare quella che viene importata (la predefinita, col primo nome libero `_2`), sostituire
 //   quella del programma (al suo posto; i suoi casi d'uso sono eliminati; le sue chiamate vanno alla nuova), non
 //   importarla (si usa quella del programma). Di un'altra specie (la funzione `somma` e il dato `somma`) solo la rinomina.
+// - I RECORD che ciò che entra usa (il tipo dei suoi dati e dei risultati, le costanti di tipo record) entrano con lui,
+//   senza scelte, come la dimensione di un vettore: un record identico a uno del programma (stesso nome e stessi campi)
+//   non entra; con il nome già usato nel programma (un altro record, o un'altra cosa) entra col primo nome libero (`_2`),
+//   e i dati, i risultati e le costanti che entrano lo seguono; il programma non cambia. Una procedura, una funzione o una
+//   costante è identica solo coi suoi record identici. Un tipo che non corrisponde lo dice il controllo.
 // - Si scende solo da ciò che entra: ciò che chiama soltanto un'identica o una che non si importa non entra.
 // - Le rinomine seguono nei testi di ciò che entra (le chiamate, i salti, i nomi delle costanti); il programma non cambia.
 // - Ciò che entra va in fondo, nell'ordine della sorgente (una sostituita al posto di quella del programma), con `id` nuovi
@@ -26,7 +31,7 @@
 // da quelle della sorgente lo dice `opzioniDiverse`, perché un caso importato può dare un altro risultato.
 
 import { nomeValidoNelFile } from "../controllo/controllo";
-import { opzioniPredefinite, type Blocco, type Dato, type Funzione, type Progetto } from "../progetto/modello";
+import { opzioniPredefinite, type Blocco, type Dato, type DefinizioneDelRecord, type Funzione, type Progetto } from "../progetto/modello";
 import { conLaFine, ogniBlocco, rinominaLaChiamata } from "./funzioni";
 import { conIdNuovi, idDelBlocco, idUsati, primoLibero, sottoblocchi } from "./identificatori";
 import { nomeDellaCopia, valida, type Operazione, type Risultato } from "./operazioni";
@@ -39,19 +44,23 @@ export type Scelta = { readonly come: "rinomina"; readonly nome: string } | { re
  * nella sorgente. */
 export type Perche = { readonly come: "scelta" } | { readonly come: "chiamata" | "usata"; readonly da: string };
 
-/** Una voce del riepilogo: una procedura, una funzione o una costante comune della sorgente, raggiunta dalle scelte. */
+/** Una voce del riepilogo: una procedura, una funzione, una costante comune o un record della sorgente, raggiunto dalle
+ * scelte. */
 export interface VoceDellImportazione {
-  /** `f:<id nella sorgente>` per una procedura o funzione, `c:<nome>` per una costante: la chiave delle scelte. */
+  /** `f:<id nella sorgente>` per una procedura o funzione, `c:<nome>` per una costante, `r:<nome>` per un record: la
+   * chiave delle scelte (un record non ne ha). */
   readonly chiave: string;
-  readonly genere: "procedure" | "function" | "constant";
+  readonly genere: "procedure" | "function" | "constant" | "record";
   readonly nome: string;
   readonly perche: Perche;
-  readonly stato: "nuova" | "identica" | "conflitto";
+  /** `rinominato` solo per un record: entra col nome `proposto`, senza scelte. */
+  readonly stato: "nuova" | "identica" | "conflitto" | "rinominato";
   /** I casi d'uso che ha nella sorgente (non per una costante). */
   readonly casi?: number;
   /** Solo per un conflitto: con un nome della stessa specie, o di un'altra (allora si può solo rinominare). */
   readonly specie?: "stessa" | "altra";
-  /** Solo per un conflitto: il nome proposto per la rinomina, libero nel programma e in ciò che entra. */
+  /** Solo per un conflitto: il nome proposto per la rinomina, libero nel programma e in ciò che entra; per un record
+   * rinominato, il suo nome nel programma. */
   readonly proposto?: string;
   /** Solo per un conflitto: la scelta che vale (la predefinita è la rinomina col nome proposto). */
   readonly scelta?: Scelta;
@@ -69,7 +78,7 @@ export interface DatoCheUrta {
 }
 
 export interface Riepilogo {
-  /** Le procedure e funzioni nell'ordine della sorgente, poi le costanti comuni nell'ordine della sorgente. */
+  /** Le procedure e funzioni nell'ordine della sorgente, poi le costanti comuni e i record nell'ordine della sorgente. */
   readonly voci: readonly VoceDellImportazione[];
   readonly datiCheUrtano: readonly DatoCheUrta[];
 }
@@ -99,9 +108,11 @@ interface Analisi {
   /** Le procedure e funzioni che entrano, nell'ordine della sorgente, con la loro voce. */
   readonly funzioni: readonly { readonly f: Funzione; readonly voce: VoceDellImportazione }[];
   readonly costanti: readonly { readonly c: Dato; readonly voce: VoceDellImportazione }[];
+  /** I record che entrano, nell'ordine della sorgente, col loro nome nel programma. */
+  readonly records: readonly { readonly r: DefinizioneDelRecord; readonly nome: string }[];
   /** Le identiche della sorgente con quella del programma che le vale. */
   readonly identiche: ReadonlyMap<Funzione, Funzione>;
-  /** I nomi del programma: procedure e funzioni, dati di ogni funzione, costanti comuni. */
+  /** I nomi del programma: procedure e funzioni, dati di ogni funzione, costanti comuni, record. */
   readonly nomiDelProgramma: ReadonlySet<string>;
 }
 
@@ -148,11 +159,21 @@ function analizza(p: Progetto, s: Progetto, spuntate: readonly string[], scelte:
   const comuniDelProgramma = new Map<string, Dato>();
   for (const c of p.shared_constants ?? []) if (!comuniDelProgramma.has(c.name)) comuniDelProgramma.set(c.name, c);
   const datiDelProgramma = new Set(p.functions.flatMap((f) => f.data.map((d) => d.name)));
-  const nomiDelProgramma = new Set([...delProgramma.keys(), ...datiDelProgramma, ...comuniDelProgramma.keys()]);
+  const recordDelProgramma = new Map<string, DefinizioneDelRecord>();
+  for (const r of p.records ?? []) if (!recordDelProgramma.has(r.name)) recordDelProgramma.set(r.name, r);
+  const nomiDelProgramma = new Set([...delProgramma.keys(), ...datiDelProgramma, ...comuniDelProgramma.keys(), ...recordDelProgramma.keys()]);
+
+  // I record della sorgente (di due con lo stesso nome, il primo, come il controllo) e quelli che un dato, un risultato o
+  // una costante nomina.
+  const recordDellaSorgente = new Map<string, DefinizioneDelRecord>();
+  for (const r of s.records ?? []) if (!recordDellaSorgente.has(r.name)) recordDellaSorgente.set(r.name, r);
+  const delDato = (d: Dato): string[] => (d.type === "record" && d.record !== undefined && recordDellaSorgente.has(d.record) ? [d.record] : []);
+  const recordDi = (f: Funzione): string[] => [...f.data.flatMap(delDato), ...(f.return_type === "record" && f.return_record !== undefined && recordDellaSorgente.has(f.return_record) ? [f.return_record] : [])];
+  const recordIdentico = (nome: string) => recordDelProgramma.has(nome) && contenuto(recordDelProgramma.get(nome)) === contenuto(recordDellaSorgente.get(nome));
 
   // Identiche come punto fisso: si parte da quelle uguali per contenuto e si toglie chi chiama o usa una non identica.
-  const costantiIdentiche = new Set(comuni.filter((c) => comuniDelProgramma.has(c.name) && contenuto(comuniDelProgramma.get(c.name)) === contenuto(c)));
-  const identiche = new Set([...perNome.values()].filter((f) => delProgramma.has(f.name!) && contenuto(delProgramma.get(f.name!)) === contenuto(f)));
+  const costantiIdentiche = new Set(comuni.filter((c) => comuniDelProgramma.has(c.name) && contenuto(comuniDelProgramma.get(c.name)) === contenuto(c) && delDato(c).every(recordIdentico)));
+  const identiche = new Set([...perNome.values()].filter((f) => delProgramma.has(f.name!) && contenuto(delProgramma.get(f.name!)) === contenuto(f) && recordDi(f).every(recordIdentico)));
   for (let cambiato = true; cambiato; ) {
     cambiato = false;
     for (const f of identiche)
@@ -194,7 +215,12 @@ function analizza(p: Progetto, s: Progetto, spuntate: readonly string[], scelte:
   // I nomi proposti: liberi fra i nomi del programma e quelli di ciò che è raggiunto (anche i dati interni).
   const funzioniRaggiunte = sotto.filter((f) => raggiunte.has(f));
   const comuniRaggiunte = comuni.filter((c) => costantiRaggiunte.has(c));
-  const usati = new Set([...nomiDelProgramma, ...funzioniRaggiunte.flatMap((f) => [f.name!, ...f.data.map((d) => d.name)]), ...comuniRaggiunte.map((c) => c.name)]);
+  const usati = new Set([
+    ...nomiDelProgramma,
+    ...funzioniRaggiunte.flatMap((f) => [f.name!, ...f.data.map((d) => d.name)]),
+    ...comuniRaggiunte.map((c) => c.name),
+    ...recordDellaSorgente.keys(),
+  ]);
   const proponi = (nome: string): string => {
     const proposto = nomeDellaCopia(usati, nome);
     usati.add(proposto);
@@ -227,14 +253,28 @@ function analizza(p: Progetto, s: Progetto, spuntate: readonly string[], scelte:
   });
 
   const entrano = funzioni.filter((x) => entra(x.voce, x.voce.chiave));
+  const costantiCheEntrano = costanti.filter((x) => entra(x.voce, x.voce.chiave));
+  // I record di ciò che entra, nell'ordine della sorgente, con chi li usa per primo.
+  const usatoDa = new Map<string, string>();
+  for (const { f } of entrano) for (const r of recordDi(f)) if (!usatoDa.has(r)) usatoDa.set(r, f.name!);
+  for (const { c } of costantiCheEntrano) for (const r of delDato(c)) if (!usatoDa.has(r)) usatoDa.set(r, c.name);
+  const records = [...recordDellaSorgente.values()].flatMap((r) => {
+    const da = usatoDa.get(r.name);
+    if (da === undefined) return [];
+    const base = { chiave: `r:${r.name}`, genere: "record" as const, nome: r.name, perche: { come: "usata" as const, da } };
+    if (recordIdentico(r.name)) return [{ r, voce: { ...base, stato: "identica" } as VoceDellImportazione }];
+    if (!nomiDelProgramma.has(r.name)) return [{ r, voce: { ...base, stato: "nuova" } as VoceDellImportazione }];
+    return [{ r, voce: { ...base, stato: "rinominato", proposto: proponi(r.name) } as VoceDellImportazione }];
+  });
   const datiCheUrtano: DatoCheUrta[] = entrano.flatMap(({ f }) =>
     f.data.flatMap((d): DatoCheUrta[] => (comuniDelProgramma.has(d.name) ? [{ funzione: f.name!, dato: d.name, con: "costante" }] : delProgramma.has(d.name) ? [{ funzione: f.name!, dato: d.name, con: "funzione" }] : [])),
   );
   const identicheDelProgramma = new Map([...identiche].map((f) => [f, delProgramma.get(f.name!)!] as const));
   return {
-    riepilogo: { voci: [...funzioni.map((x) => x.voce), ...costanti.map((x) => x.voce)], datiCheUrtano },
+    riepilogo: { voci: [...funzioni.map((x) => x.voce), ...costanti.map((x) => x.voce), ...records.map((x) => x.voce)], datiCheUrtano },
     funzioni: entrano,
-    costanti: costanti.filter((x) => entra(x.voce, x.voce.chiave)),
+    costanti: costantiCheEntrano,
+    records: records.filter((x) => x.voce.stato !== "identica").map((x) => ({ r: x.r, nome: x.voce.proposto ?? x.r.name })),
     identiche: identicheDelProgramma,
     nomiDelProgramma,
   };
@@ -276,13 +316,18 @@ export const importa =
     const a = analizza(p, sorgente, spuntate, scelte);
     if (a === undefined) return { ok: false, rifiuto: { motivo: "funzione_inesistente" } };
     // Non entra niente (tutto identico o non importato): il progetto com'è, che la cronologia non conta come passo.
-    if (a.funzioni.length === 0 && a.costanti.length === 0) return { ok: true, progetto: p, prossimo };
+    if (a.funzioni.length === 0 && a.costanti.length === 0 && a.records.length === 0) return { ok: true, progetto: p, prossimo };
     const voci = [...a.funzioni.map((x) => x.voce), ...a.costanti.map((x) => x.voce)];
     for (const v of voci) if (v.specie === "altra" && scelte.has(v.chiave) && scelte.get(v.chiave)!.come !== "rinomina") return { ok: false, rifiuto: { motivo: "scelta_non_ammessa", chiave: v.chiave } };
 
     // I nomi finali: quelli scelti per la rinomina, liberi e diversi da ogni altro nome del progetto che ne esce.
     const finale = (v: VoceDellImportazione): string => (v.scelta?.come === "rinomina" ? v.scelta.nome : v.nome);
-    const usati = new Set([...a.nomiDelProgramma, ...a.funzioni.flatMap((x) => x.f.data.map((d) => d.name)), ...voci.filter((v) => v.scelta?.come !== "rinomina").map((v) => v.nome)]);
+    const usati = new Set([
+      ...a.nomiDelProgramma,
+      ...a.funzioni.flatMap((x) => x.f.data.map((d) => d.name)),
+      ...voci.filter((v) => v.scelta?.come !== "rinomina").map((v) => v.nome),
+      ...a.records.map((x) => x.nome),
+    ]);
     for (const v of voci) {
       if (v.scelta?.come !== "rinomina") continue;
       const nome = v.scelta.nome;
@@ -304,6 +349,9 @@ export const importa =
       return fuori;
     };
     const callee = new Map(funzioniRinominate);
+    // Il tipo di un dato, di un risultato o di una costante che entra segue il record rinominato.
+    const nomeDelRecord = new Map(a.records.filter((x) => x.nome !== x.r.name).map((x) => [x.r.name, x.nome] as const));
+    const conIlRecord = <D extends Dato>(d: D): D => (d.type === "record" && d.record !== undefined && nomeDelRecord.has(d.record) ? { ...d, record: nomeDelRecord.get(d.record)! } : d);
 
     // Gli `id` nuovi, sullo stampo della copia di una funzione; la mappa dalla sorgente vale per gli attesi dei casi.
     let n = Math.max(prossimo, primoLibero(p));
@@ -336,10 +384,21 @@ export const importa =
       const { test_cases: _casi, ...senzaCasi } = x;
       const { breakpoint: _punto, ...end } = x.end;
       const copia = conLaFine(
-        ogniBlocco({ ...senzaCasi, id, name: finale(voce), body, end: { ...end, id: fine } }, (b) => {
-          const { breakpoint: _, ...c } = conTestiPropri(b, nelTesto);
-          return c.kind === "call" && callee.has(c.callee) ? { ...c, callee: callee.get(c.callee)! } : (c as Blocco);
-        }),
+        ogniBlocco(
+          {
+            ...senzaCasi,
+            id,
+            name: finale(voce),
+            data: senzaCasi.data.map(conIlRecord),
+            ...(senzaCasi.return_type === "record" && senzaCasi.return_record !== undefined && nomeDelRecord.has(senzaCasi.return_record) ? { return_record: nomeDelRecord.get(senzaCasi.return_record)! } : {}),
+            body,
+            end: { ...end, id: fine },
+          },
+          (b) => {
+            const { breakpoint: _, ...c } = conTestiPropri(b, nelTesto);
+            return c.kind === "call" && callee.has(c.callee) ? { ...c, callee: callee.get(c.callee)! } : (c as Blocco);
+          },
+        ),
         nelTesto,
       );
       return { x, voce, copia };
@@ -388,6 +447,15 @@ export const importa =
       costantiAlPosto.delete(c.name);
       return nuova ?? c;
     });
-    costanti.push(...a.costanti.filter((x) => x.voce.scelta?.come !== "sostituisci").map((x) => ({ ...x.c, name: finale(x.voce) })));
-    return valida({ ...p, functions, ...(costanti.length > 0 || p.shared_constants !== undefined ? { shared_constants: costanti } : {}) }, n);
+    costanti.push(...a.costanti.filter((x) => x.voce.scelta?.come !== "sostituisci").map((x) => conIlRecord({ ...x.c, name: finale(x.voce) })));
+    const records = [...(p.records ?? []), ...a.records.map((x) => ({ ...x.r, name: x.nome }))];
+    return valida(
+      {
+        ...p,
+        functions,
+        ...(costanti.length > 0 || p.shared_constants !== undefined ? { shared_constants: costanti } : {}),
+        ...(records.length > 0 ? { records } : {}),
+      },
+      n,
+    );
   };

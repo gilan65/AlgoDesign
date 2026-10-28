@@ -21,10 +21,10 @@
 // dare a un blocco qualunque `id`); il nome per gli ausili è quello del blocco, col testo dal nucleo.
 
 import type { Coppia } from "../../core/disegno/domanda";
-import { funzioneChiamata, partiDellaFase, testoDelValoreIniziale, type FormeDeiCicli, type TestiDelDisegno, type ValoreRipetuto } from "../../core/disegno/impaginazione";
+import { campiDellaCopia, funzioneChiamata, partiDelCampoDellaCopia, partiDellaFase, testoDelValoreIniziale, type FormeDeiCicli, type TestiDelDisegno, type ValoreRipetuto } from "../../core/disegno/impaginazione";
 import type { FaseDelCiclo } from "../../core/interprete/interprete";
 import type { GenereDellaTappa, Posto, Ramo } from "../../core/modifica/operazioni";
-import { livelliDeiPerOgni, type Blocco, type Dato, type Funzione } from "../../core/progetto/modello";
+import { livelliDeiPerOgni, type Blocco, type Dato, type DefinizioneDelRecord, type Funzione } from "../../core/progetto/modello";
 import type { Dizionario } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
 import { chiaveDellaRiga } from "../dati/VistaDati";
@@ -135,6 +135,15 @@ export function nomeDellaFase(
   if (b.kind !== "for" && b.kind !== "for_each") return undefined;
   const parti = partiDellaFase(b, fase, forme, disegno, livelliDeiPerOgni(funzione.body).get(b.id) ?? 1, [...funzione.data, ...comuni]);
   return parti && riempi(testi.nomeDelBlocco, { genere: genereDelBlocco(b, testi), testo: parti.map((q) => q.testo).join("") });
+}
+
+/** Il nome dell'azione di un campo nella copia di un record col suo nome, nella pausa (nelle due forme): il genere
+ * dell'assegnazione e l'assegnazione del campo (`b.nome ← a.nome`), dal nucleo; nessuno se il blocco non è quella copia. */
+export function nomeDelCampoDellaCopia(b: Blocco, campo: number, testi: Dizionario, disegno: TestiDelDisegno, funzione: Funzione, comuni: readonly Dato[], records: readonly DefinizioneDelRecord[]): string | undefined {
+  const campi = campiDellaCopia(b, [...funzione.data, ...comuni], records);
+  const c = campi?.[campo];
+  if (c === undefined || b.kind !== "assignment") return undefined;
+  return riempi(testi.nomeDelBlocco, { genere: genereDelBlocco(b, testi), testo: partiDelCampoDellaCopia(b, c.name, disegno).map((q) => q.testo).join("") });
 }
 
 /** Il nome del blocco del valore iniziale di un dato, un'assegnazione: il testo è quello del blocco, dal nucleo. */

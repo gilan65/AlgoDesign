@@ -1,6 +1,6 @@
 // Il watch: col puntatore sopra il nome di un dato in un blocco, durante l'esecuzione, un riquadro accanto al nome con
 // il nome, il tipo della vista dei dati e il valore della riga corrente della tabella di traccia (per un vettore,
-// quanti elementi e un elemento per riga). I valori li dà il nucleo (`TabellaMostrata.watch`), mai ricalcolati qui.
+// quanti elementi e un elemento per riga; per un record, un campo per riga). I valori li dà il nucleo (`TabellaMostrata.watch`), mai ricalcolati qui.
 // Si chiude quando il puntatore lascia il nome, o con Esc. Il riquadro non
 // prende il puntatore: lasciarlo non serve.
 //
@@ -113,7 +113,7 @@ export const Watch = memo(function Watch({
       {c.testo}
     </span>
   );
-  /** Gli elementi di un vettore, uno per riga. */
+  /** Gli elementi di un vettore, o i campi di un record, uno per riga. */
   const elementi = (es: DatoNelWatch["elementi"]) => (
     <table className={stili.elementi}>
       <tbody>
@@ -188,11 +188,11 @@ export const Watch = memo(function Watch({
           (TUTTE_LE_CHIAMATE ? dato.chiamate : dato.chiamate.slice(-1)).map((es, k, tutte) => (
             <div key={k} data-watch-chiamata="">
               {tutte.length > 1 && <div className={stili.riferimento}>{riempi(testi.watchChiamataNumero, { n: String(k + 1) })}</div>}
-              {dato.vettore ? elementi(es) : <div>{valore(es[0]!.cella)}</div>}
+              {dato.vettore || dato.record ? elementi(es) : <div>{valore(es[0]!.cella)}</div>}
             </div>
           ))
         )
-      ) : dato.vettore ? (
+      ) : dato.vettore || dato.record ? (
         elementi(dato.elementi)
       ) : (
         <div>{valore(dato.elementi[0]!.cella)}</div>
