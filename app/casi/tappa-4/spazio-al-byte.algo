@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "spazio-al-byte",
     "description": "Una procedura che riceve senza rif un vettore di 509 interi: 128 chiamate occupano esattamente lo spazio dei dati, la 129ª no."

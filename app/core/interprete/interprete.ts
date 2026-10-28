@@ -495,6 +495,8 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
         return { tipo: "boolean", v: e.valore };
       case "nome":
         return leggiDa(cella(e.nome), 0);
+      case "campo":
+        throw new Error("il campo di un record: il controllo statico dice fuori tappa un progetto coi record");
       case "indice": {
         // L'elemento di un vettore, o il carattere di una stringa (in sola lettura).
         const c = vettoreDi(e);
@@ -522,6 +524,8 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
     switch (e.genere) {
       case "chiamata":
         return (yield* chiamaDentro(e)) as Valore;
+      case "campo":
+        throw new Error("il campo di un record: il controllo statico dice fuori tappa un progetto coi record");
       case "indice": {
         const c = vettoreDi(e);
         if (c !== undefined) return leggiDa(c, dentro(((yield* calcola(e.indice)) as Numero).v, c.dato.size!));

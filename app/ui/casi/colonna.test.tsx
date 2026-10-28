@@ -336,7 +336,7 @@ test("«Esegui» su un caso coi punti di interruzione: si ferma dove si fermereb
 const conUnVettore = (n: number) =>
   JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: `vettore-${n}` },
     functions: [{ id: "f1", kind: "main", data: [{ name: "v", type: "integer", size: n, initial: { each: "7" } }], body: [{ id: "b1", kind: "write", values: ["v[0]"], newline: true }], end: { id: "b2" } }],
     test_cases: [{ name: "il primo", inputs: [], expected: { output: "7\n" } }],

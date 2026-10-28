@@ -1,0 +1,59 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "record-sconosciuto",
+    "description": "Il tipo del dato nomina un record che il progetto non ha."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "classe",
+          "type": "string",
+          "max_length": 3
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "record",
+          "record": "studente"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "record-sconosciuto",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "unknown_record",
+          "block": "f1"
+        }
+      }
+    }
+  ]
+}

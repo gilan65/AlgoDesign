@@ -471,7 +471,7 @@ test("un commento non si esegue: F9 non gli mette un punto di interruzione, l'av
 test("un progetto con un errore statico non parte: l'avviso lo dice e la finestra resta ferma", async () => {
   const testo = JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "senza-dato" },
     functions: [{ id: "f1", kind: "main", data: [], body: [{ id: "b1", kind: "write", values: ["x"], newline: true }], end: { id: "b2" } }],
   });
@@ -489,7 +489,7 @@ test("un progetto con un errore statico non parte: l'avviso lo dice e la finestr
 const conUnVettore = (n: number) =>
   JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: `vettore-${n}` },
     functions: [{ id: "f1", kind: "main", data: [{ name: "v", type: "integer", size: n, initial: { each: "7" } }], body: [{ id: "b1", kind: "write", values: ["v[0]"], newline: true }], end: { id: "b2" } }],
   });
@@ -520,7 +520,7 @@ test("gli errori e gli avvisi del controllo stanno nella descrizione del loro bl
   // Un nome che non è un dato (errore) e un ciclo con la condizione sempre vera (avviso).
   const testo = JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "segni" },
     functions: [
       {
@@ -563,7 +563,7 @@ test("gli errori e gli avvisi del controllo stanno nella descrizione del loro bl
 const cheScrive = (giri: number, testo: string, aCapo: boolean) =>
   JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "scrive" },
     functions: [
       {
@@ -643,7 +643,7 @@ test("a esecuzione finita, modificando il progetto la riga dell'errore nella con
   // Una somma senza valore iniziale: l'errore è sul blocco «s ← s + 1».
   const testo = JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "senza-valore" },
     functions: [{ id: "f1", kind: "main", data: [{ name: "s", type: "integer" }], body: [{ id: "b1", kind: "assignment", target: "s", value: "s + 1" }], end: { id: "b2" } }],
   });

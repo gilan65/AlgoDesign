@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "funzione-che-scrive",
     "description": "Una funzione che scrive: una funzione calcola il risultato e non fa altro, quindi il progetto non parte."

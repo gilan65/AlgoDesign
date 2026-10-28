@@ -180,7 +180,7 @@ const metadatiPuliti = (m: Metadati): Metadati =>
 export function progettoNuovo(metadati: Metadati): Risultato {
   const p: Progetto = {
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: metadatiPuliti(metadati),
     functions: [{ id: idDellaPrincipale, kind: "main", data: [], body: [], end: { id: idDelBlocco(1) } }],
   };

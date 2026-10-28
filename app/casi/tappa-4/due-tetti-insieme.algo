@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "due-tetti-insieme",
     "description": "La funzione «giu» tiene 524 byte di dati: 500 chiamate stanno nello spazio, la 501ª supererebbe insieme il numero delle chiamate e lo spazio, e l'arresto è quello delle chiamate."

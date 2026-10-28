@@ -27,7 +27,7 @@ test.use({ viewport: { width: 1600, height: 1000 } });
 
 const programma = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "cinquecento chiamate" },
   functions: [
     { id: "f1", kind: "main", data: [{ name: "r", type: "integer" }], body: [{ id: "b1", kind: "assignment", target: "r", value: "conta(499)" }, { id: "b2", kind: "write", values: ["r"], newline: true }], end: { id: "b3" } },
@@ -122,7 +122,7 @@ test("500 chiamate in corso: la finestra risponde, «Dove sei» col principio e 
 /** Sette funzioni che chiamano sé stesse: sette frasi nella riga di stato. */
 const setteRicorsioni = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "sette ricorsioni" },
   functions: [
     { id: "f0", kind: "main", data: [{ name: "t", type: "integer", initial: "0" }], body: ["conta", "somma_fino", "potenza", "cifre", "fattoriale", "fibonacci", "massimo"].map((nome, k) => ({ id: `m${k}`, kind: "assignment", target: "t", value: `t + ${nome}(3)` })), end: { id: "mf" } },

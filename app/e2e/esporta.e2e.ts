@@ -38,7 +38,7 @@ const USCITA = "C:\\Documenti\\uscita";
 /** Il programma: n riceve leggi_numero(), poi si scrive; la funzione restituisce 7. */
 const PROGRAMMA = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "media voti" },
   functions: [
     {

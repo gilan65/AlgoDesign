@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "intero-minimo-diviso-meno-uno",
     "description": "Il più piccolo intero diviso per -1: il quoziente non sta in un intero."

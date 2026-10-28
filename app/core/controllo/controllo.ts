@@ -90,7 +90,7 @@
 
 import { analizza, parole, type Causa, type Espressione, type Fermata } from "../espressioni/analizzatore";
 import { nomiRiservati, nomiRiservatiNelFile } from "../genera/linguaggi";
-import type { Blocco, CodiceAvviso, CodiceErroreStatico, Dato, Funzione, GenereDiFunzione, Progetto, Segnalazione, Tipo } from "../progetto/modello";
+import type { Blocco, Campo, CodiceAvviso, CodiceErroreStatico, Dato, DefinizioneDelRecord, Funzione, GenereDiFunzione, Progetto, Segnalazione, Tipo, TipoDelDato } from "../progetto/modello";
 
 /** I tetti delle impostazioni dell'app. */
 export interface Tetti {
@@ -204,8 +204,19 @@ export function causaDelNome(nome: string, nelFile: boolean): Fermata | undefine
 /** Esportata per chi chiede un nome prima di crearlo (`motivoDelNome` delle operazioni sulle funzioni). */
 export const nomeValidoNelFile = (nome: string) => causaDelNome(nome, true) === undefined;
 
-/** Il tipo di un'espressione; per un vettore intero anche la dimensione e la lunghezza massima degli elementi. */
-type Valore = { readonly tipo: Tipo; readonly vettore: boolean; readonly divisioneIntera: boolean; readonly dimensione?: number; readonly lunghezza?: number };
+/** Il tipo di un'espressione; per un vettore intero anche la dimensione e la lunghezza massima degli elementi, per un record
+ * il suo nome. */
+type Valore = {
+  readonly tipo: TipoDelDato;
+  readonly vettore: boolean;
+  readonly divisioneIntera: boolean;
+  readonly dimensione?: number;
+  readonly lunghezza?: number;
+  readonly record?: string;
+};
+
+/** I nomi dei tipi, nelle due lingue: un record non ne prende uno. */
+const nomiDeiTipi = new Set(["integer", "real", "character", "string", "boolean", "record", "intero", "reale", "carattere", "stringa", "booleano"]);
 
 class Errore {
   constructor(
@@ -229,13 +240,15 @@ type Provenienza = "solo_assegnazione" | "solo_lettura" | "solo_per_ogni" | "sol
 const intMin = -2147483648;
 const intMax = 2147483647;
 
-const numero = (t: Tipo) => t === "integer" || t === "real";
+const numero = (t: TipoDelDato) => t === "integer" || t === "real";
 const lunghezza = (d: Pick<Dato, "max_length">) => d.max_length ?? lunghezzaPredefinita;
 
 const sotto = (e: Espressione): readonly Espressione[] =>
   e.genere === "indice"
     ? [e.base, e.indice]
-    : e.genere === "unario"
+    : e.genere === "campo"
+      ? [e.base]
+      : e.genere === "unario"
       ? [e.operando]
       : e.genere === "binario"
         ? [e.sinistro, e.destro]
@@ -252,7 +265,7 @@ export const chiamateIn = (e: Espressione): string[] => [...(e.genere === "chiam
  * dicono quale elemento mostrare (in `parola[i]` si mostra un carattere di `parola`, non `i`), e gli argomenti di una
  * funzione, da cui si calcola il risultato mostrato. */
 const mostrati = (e: Espressione): string[] =>
-  e.genere === "indice"
+  e.genere === "indice" || e.genere === "campo"
     ? mostrati(e.base)
     : e.genere === "unario"
       ? mostrati(e.operando)
@@ -451,6 +464,10 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     const comune = genere === undefined;
     const delNome = causaDelNome(d.name, comune);
     if (delNome !== undefined) return { codice: "invalid_name", fermata: delNome };
+    const record = d.type === "record" ? records.get(d.record!) : undefined;
+    if (d.type === "record" && record === undefined) return difetto("unknown_record");
+    // Un vettore di record (una tabella) non c'è ancora.
+    if (d.type === "record" && d.size !== undefined) return difetto("invalid_data_item", "vettore_di_record");
     const misura = erroreDellaMisura(d);
     if (misura !== undefined) return misura;
     if (d.parameter !== undefined) {
@@ -465,6 +482,12 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     if (d.constant === true && d.initial === undefined) return difetto("invalid_data_item", "costante_senza_valore");
     if (d.constant === true && d.role !== undefined) return difetto("invalid_data_item", "costante_con_ruolo");
     if (d.initial === undefined) return undefined;
+    if (record !== undefined) {
+      // Un letterale per campo, nell'ordine dei campi.
+      if (!Array.isArray(d.initial)) return difetto("invalid_data_item", "forma_del_valore");
+      if (d.initial.length !== record.fields.length) return difetto("invalid_data_item", "elenco_di_altra_lunghezza", String(d.initial.length));
+      return d.initial.map((x, i) => erroreDelLetterale(x, record.fields[i]!)).find((c) => c !== undefined);
+    }
     if (d.size === undefined) return typeof d.initial === "string" ? erroreDelLetterale(d.initial, d) : difetto("invalid_data_item", "forma_del_valore");
     if (typeof d.initial === "string") return difetto("invalid_data_item", "forma_del_valore");
     if (Array.isArray(d.initial)) {
@@ -489,8 +512,9 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
   }
 
   /** Il risultato di una funzione con le misure di un dato: il tipo, la dimensione del vettore, la lunghezza massima. */
-  const comeDato = (f: Funzione): Pick<Dato, "type" | "size" | "max_length"> => ({
+  const comeDato = (f: Funzione): Pick<Dato, "type" | "record" | "size" | "max_length"> => ({
     type: f.return_type!,
+    ...(f.return_record !== undefined ? { record: f.return_record } : {}),
     ...(f.return_size !== undefined ? { size: f.return_size } : {}),
     ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}),
   });
@@ -520,6 +544,56 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     if (e.genere === "stringa" && e.codici.length > (d.max_length ?? lunghezzaPredefinita)) return difetto("string_literal_too_long");
     return undefined;
   }
+
+  // ------------------------------------------------------------------------------------- i record
+
+  /** I record del progetto per nome: con due record dello stesso nome (un errore), il primo. Gli errori di un record sono
+   * del progetto (il blocco vuoto), con la causa che nomina il record o il campo. */
+  const records = new Map<string, DefinizioneDelRecord>();
+  const delProgetto = ({ codice, fermata }: Difetto) => {
+    errori.push({ code: codice, block: "" });
+    if (fermata) fermate.push({ code: codice, block: "", fermata });
+  };
+  const nomiDiDati = new Set([...(p.shared_constants ?? []), ...p.functions.flatMap((f) => f.data)].map((d) => d.name));
+  const nomiDiFunzioni = new Set(p.functions.flatMap((f) => (f.name === undefined ? [] : [f.name])));
+  for (const r of p.records ?? []) {
+    // Il nome: valido anche a livello di file, unico fra i record, mai quello di un tipo, di un dato o di una funzione.
+    const causa = causaDelNome(r.name, true);
+    if (causa !== undefined) delProgetto({ codice: "invalid_name", fermata: causa });
+    else if (records.has(r.name)) delProgetto(difetto("record_name_in_use", "record_doppio", r.name));
+    else if (nomiDeiTipi.has(r.name)) delProgetto(difetto("record_name_in_use", "nome_di_un_tipo", r.name));
+    else if (nomiDiDati.has(r.name)) delProgetto(difetto("record_name_in_use", "nome_di_un_dato", r.name));
+    else if (nomiDiFunzioni.has(r.name)) delProgetto(difetto("record_name_in_use", "nome_di_una_funzione", r.name));
+    if (!records.has(r.name)) records.set(r.name, r);
+    // I campi: almeno uno, coi nomi dei dati, unici nel record, con la lunghezza di una stringa nei suoi limiti.
+    if (r.fields.length === 0) delProgetto(difetto("invalid_record", "senza_campi", r.name));
+    const visti = new Set<string>();
+    for (const c of r.fields) {
+      const delCampo = causaDelNome(c.name, false);
+      const sbagliato: Difetto | undefined =
+        delCampo !== undefined ? { codice: "invalid_name", fermata: delCampo } : visti.has(c.name) ? difetto("invalid_record", "campo_doppio", c.name) : erroreDellaMisura(c);
+      if (sbagliato !== undefined) delProgetto(sbagliato);
+      visti.add(c.name);
+    }
+  }
+
+  /** Il record di un dato, di un valore o del risultato di una funzione che ha il tipo `record`: un record che il progetto
+   * non ha è `unknown_record`. */
+  const recordDi = (nome: string | undefined): DefinizioneDelRecord => records.get(nome ?? "") ?? errore("unknown_record");
+
+  /** Il campo `nome` di un valore: il valore è un record, e il record ha il campo. */
+  function campoDi(v: Valore, nome: string): Campo {
+    if (v.tipo !== "record" || v.vettore) return errore("unknown_record_field", { causa: "non_un_record", segno: nome });
+    return recordDi(v.record).fields.find((c) => c.name === nome) ?? errore("unknown_record_field", { causa: "campo_assente", segno: nome });
+  }
+
+  /** Il valore di un dato, o di un risultato con le misure di un dato. */
+  const valoreDi = (d: Pick<Dato, "type" | "record" | "size" | "max_length">): Valore =>
+    d.type === "record"
+      ? (recordDi(d.record), { tipo: "record", record: d.record!, vettore: false, divisioneIntera: false })
+      : d.size === undefined
+        ? semplice(d.type)
+        : { tipo: d.type, vettore: true, divisioneIntera: false, dimensione: d.size, lunghezza: lunghezza(d) };
 
   const comuni = new Map<string, Dato>();
   datiDi(p.shared_constants ?? [], comuni, "", undefined);
@@ -623,7 +697,7 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
         soloFuoriDaUnaFunzione("funzione_legge");
         const d = destinazione(b.target, b.id, "solo_lettura");
         letti.add(d.nome);
-        if (d.vettore) errore("array_assignment");
+        if (d.vettore || d.tipo === "record") errore("array_assignment");
         return;
       }
       case "write":
@@ -631,7 +705,8 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
         for (const testo of b.values) {
           const e = analizzato(testo);
           mostrati(e).forEach((n) => scritti.add(n));
-          if (valore(e, b.id).vettore) errore("type_mismatch");
+          const v = valore(e, b.id);
+          if (v.vettore || v.tipo === "record") errore("type_mismatch");
         }
         return;
       case "assignment":
@@ -670,7 +745,7 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     const parametri = g.data.filter((d) => d.parameter !== undefined);
     if (argomenti.length !== parametri.length)
       errore("argument_mismatch", { causa: argomenti.length > parametri.length ? "argomenti_in_piu" : "argomenti_in_meno", segno: g.name ?? "" });
-    const perRiferimento: { nome: string; indice?: Espressione }[] = [];
+    const perRiferimento: { nome: string; indice?: Espressione; campo?: string }[] = [];
     return parametri.map((parametro, i) => {
       const a = argomenti[i]!;
       if (parametro.parameter === "value") {
@@ -682,7 +757,9 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
       // numero; con indici calcolati lo vede l'interprete.
       const stessoIndice = (x?: Espressione, y?: Espressione) =>
         x === undefined || y === undefined || (x.genere === "intero" && y.genere === "intero" && x.valore === y.valore);
-      if (perRiferimento.some((altro) => altro.nome === r.nome && stessoIndice(altro.indice, r.indice))) errore("same_reference");
+      // Due campi diversi dello stesso record sono due dati; il record intero contiene ogni suo campo.
+      const stessoCampo = (x?: string, y?: string) => x === undefined || y === undefined || x === y;
+      if (perRiferimento.some((altro) => altro.nome === r.nome && stessoIndice(altro.indice, r.indice) && stessoCampo(altro.campo, r.campo))) errore("same_reference");
       perRiferimento.push(r);
       return { riferimento: r.nome, mostrati: [r.nome] };
     });
@@ -701,6 +778,11 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
       return;
     }
     if (v.vettore) errore("argument_mismatch", per("vettore_per_semplice"));
+    // Un record per un record dello stesso tipo: la copia campo per campo.
+    if (parametro.type === "record" || v.tipo === "record") {
+      if (v.tipo !== parametro.type || v.record !== parametro.record) errore("argument_mismatch", per("tipo_diverso"));
+      return;
+    }
     if (parametro.type === "real" && v.tipo === "integer") inUnReale(v, block);
     else if (parametro.type !== v.tipo) errore("argument_mismatch", per("tipo_diverso"));
     if (parametro.type !== "string") return;
@@ -711,7 +793,7 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
   }
 
   /** Il tipo e, per una stringa, la lunghezza massima. */
-  const stessaMisura = (d: Dato, parametro: Dato) => d.type === parametro.type && (d.type !== "string" || lunghezza(d) === lunghezza(parametro));
+  const stessaMisura = (d: Pick<Dato, "type" | "max_length">, parametro: Dato) => d.type === parametro.type && (d.type !== "string" || lunghezza(d) === lunghezza(parametro));
 
   /** Il dato di un'espressione stringa che è un dato: il nome di una stringa, o l'elemento di un vettore di stringhe. */
   function datoDellaStringa(e: Espressione): Dato | undefined {
@@ -724,18 +806,21 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
   }
 
   /** Un argomento per riferimento: un dato scritto per nome, che si può cambiare, dello stesso tipo e della stessa misura. */
-  function riferimento(parametro: Dato, testo: string | undefined, e: Espressione, block: string): { nome: string; indice?: Espressione } {
+  function riferimento(parametro: Dato, testo: string | undefined, e: Espressione, block: string): { nome: string; indice?: Espressione; campo?: string } {
     // Un calcolo, un valore scritto o un dato fra parentesi non si passano: le parentesi non lasciano traccia
     // nell'albero, e si vedono dalla prima parola del testo.
-    const perNome = e.genere === "nome" || (e.genere === "indice" && e.base.genere === "nome");
+    const perNome = e.genere === "nome" || ((e.genere === "indice" || e.genere === "campo") && e.base.genere === "nome");
     // Un argomento che non è un dato si dice col nome del parametro: un argomento di una chiamata dentro un'espressione
     // non ha il suo testo.
     if (!perNome) errore("reference_not_assignable", { causa: "non_un_dato", segno: parametro.name });
     if (testo !== undefined && parole(testo)?.[0]?.genere !== "nome") errore("reference_not_assignable", { causa: "fra_parentesi", segno: parametro.name });
     const nome = e.genere === "nome" ? e.nome : ((e as { base: { nome: string } }).base.nome);
-    const dato = dati.get(nome) ?? errore("unknown_name");
-    if (dato.constant === true) errore("reference_not_assignable", { causa: "costante_passata", segno: nome });
+    const delDato = dati.get(nome) ?? errore("unknown_name");
+    if (delDato.constant === true) errore("reference_not_assignable", { causa: "costante_passata", segno: nome });
     if (soloLettura.has(nome)) errore("reference_not_assignable", delCicloInCorso(nome, "contatore_passato", "elemento_passato"));
+    // Un campo si passa come un dato semplice del suo tipo.
+    const campo = e.genere === "campo" ? e.campo : undefined;
+    const dato: Pick<Dato, "type" | "record" | "size" | "max_length"> = campo === undefined ? delDato : campoDi(valoreDi(delDato), campo);
     const indice = e.genere === "indice" ? e.indice : undefined;
     if (indice !== undefined) {
       if (dato.size === undefined && dato.type === "string") errore("reference_not_assignable", { causa: "carattere_passato", segno: nome });
@@ -752,33 +837,54 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     if (!vettore && alParametro) errore("argument_mismatch", per("semplice_per_vettore"));
     if (vettore && (dato.type !== parametro.type || dato.size !== parametro.size)) errore("argument_mismatch", per("vettore_diverso"));
     else if (vettore && !stessaMisura(dato, parametro)) errore("argument_mismatch", per("lunghezza_diversa_nel_vettore"));
-    if (dato.type !== parametro.type) errore("argument_mismatch", per("tipo_per_riferimento"));
+    if (dato.type !== parametro.type || dato.record !== parametro.record) errore("argument_mismatch", per("tipo_per_riferimento"));
     if (!stessaMisura(dato, parametro)) errore("argument_mismatch", per("lunghezza_diversa"));
     // La procedura può leggerlo e dargli un valore.
     usati.add(nome);
     conValore.add(nome);
-    return indice === undefined ? { nome } : { nome, indice };
+    return { nome, ...(indice === undefined ? {} : { indice }), ...(campo === undefined ? {} : { campo }) };
   }
 
-  /** Una destinazione: un nome, o l'elemento di un vettore. */
-  function destinazione(testo: string, block: string, da: Provenienza): { nome: string; dato: Dato; vettore: boolean; tipo: Tipo } {
+  /** Una destinazione: un nome, l'elemento di un vettore o il campo di un record; `dato` dice le misure di ciò che riceve
+   * il valore (il campo per un campo). */
+  function destinazione(
+    testo: string,
+    block: string,
+    da: Provenienza,
+  ): { nome: string; dato: Pick<Dato, "type" | "record" | "size" | "max_length">; vettore: boolean; tipo: TipoDelDato } {
     const e = analizzato(testo);
-    const base = e.genere === "indice" ? e.base : e;
+    const radice = (x: Espressione): Espressione => (x.genere === "indice" || x.genere === "campo" ? radice(x.base) : x);
+    const base = radice(e);
     if (base.genere !== "nome") return errore("syntax_error", { causa: "destinazione" });
     const dato = dati.get(base.nome) ?? errore("unknown_name");
     if (dato.constant === true) errore("assign_to_constant");
     if (soloLettura.has(base.nome)) errore("assign_to_read_only", delCicloInCorso(base.nome, "contatore_del_ciclo", "elemento_del_ciclo"));
     riceve(base.nome, da);
-    if (e.genere === "nome") return { nome: base.nome, dato, vettore: dato.size !== undefined, tipo: dato.type };
-    if (dato.size === undefined && dato.type === "string") return errore("assign_to_read_only", { causa: "carattere_della_stringa", segno: base.nome });
-    if (dato.size === undefined) return errore("type_mismatch");
-    const i = valore((e as { indice: Espressione }).indice, block);
-    if (i.tipo !== "integer" || i.vettore) errore("type_mismatch");
-    return { nome: base.nome, dato, vettore: false, tipo: dato.type };
+    if (e.genere === "nome") {
+      const v = valoreDi(dato);
+      return { nome: base.nome, dato, vettore: v.vettore, tipo: v.tipo };
+    }
+    // Il pezzo che riceve il valore, dal dato in giù, senza contare il dato come letto; `fuori` è il pezzo intero.
+    const pezzo = (x: Espressione, fuori: boolean): { v: Valore; misura: Pick<Dato, "type" | "record" | "max_length"> } => {
+      if (x.genere === "nome") return { v: valoreDi(dato), misura: dato };
+      if (x.genere === "campo") {
+        const c = campoDi(pezzo(x.base, false).v, x.campo);
+        return { v: semplice(c.type), misura: c };
+      }
+      const { base: sotto, indice } = x as Extract<Espressione, { genere: "indice" }>;
+      const di = pezzo(sotto, false);
+      if (!di.v.vettore && di.v.tipo === "string" && fuori) return errore("assign_to_read_only", { causa: "carattere_della_stringa", segno: base.nome });
+      if (!di.v.vettore && di.v.tipo !== "string") return errore("type_mismatch");
+      const i = valore(indice, block);
+      if (i.tipo !== "integer" || i.vettore) errore("type_mismatch");
+      return di.v.vettore ? { v: semplice(di.v.tipo as Tipo), misura: di.misura } : { v: semplice("character"), misura: { type: "character" } };
+    };
+    const { v, misura } = pezzo(e, true);
+    return { nome: base.nome, dato: misura, vettore: false, tipo: v.tipo };
   }
 
   /** Il contatore o l'elemento di un ciclo: una destinazione che è un dato semplice, non un vettore né un suo elemento. */
-  function delCiclo(testo: string, block: string, da: Provenienza): { nome: string; tipo: Tipo } {
+  function delCiclo(testo: string, block: string, da: Provenienza): { nome: string; tipo: TipoDelDato } {
     const d = destinazione(testo, block, da);
     if (d.vettore || analizzato(testo).genere !== "nome") errore("type_mismatch");
     return d;
@@ -798,6 +904,7 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
       return;
     }
     if (d.vettore) return vettoreIntero(e, d.dato, block);
+    if (d.tipo === "record") return recordIntero(e, d.dato.record, block);
     const v = valore(e, block);
     if (v.vettore) errore("type_mismatch");
     if (d.tipo === "real" && v.tipo === "integer") comeReale(v, block);
@@ -813,12 +920,22 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     if (!v.vettore || v.tipo !== verso.type || v.dimensione !== verso.size) errore("array_assignment");
   }
 
+  /** Un record che riceve un valore tutto insieme: da un record dello stesso tipo, il suo nome (la copia campo per campo)
+   * o una funzione che lo restituisce. */
+  function recordIntero(e: Espressione, verso: string | undefined, block: string): void {
+    recordDi(verso);
+    if (e.genere !== "nome" && e.genere !== "chiamata") errore("array_assignment");
+    const v = valore(e, block);
+    if (v.vettore || v.tipo !== "record" || v.record !== verso) errore("array_assignment");
+  }
+
   /** La fine di una funzione: il valore restituito, come un'assegnazione a un dato del tipo restituito. */
   function fine(f: Funzione): void {
     if (f.kind !== "function") return;
     sulBlocco(f.end.id, () => {
       const e = analizzato(f.end.return_value!);
       if (f.return_size !== undefined) return vettoreIntero(e, comeDato(f), f.end.id);
+      if (f.return_type === "record") return recordIntero(e, f.return_record, f.end.id);
       const v = valore(e, f.end.id);
       if (v.vettore) errore("type_mismatch");
       if (f.return_type === "real" && v.tipo === "integer") inUnReale(v, f.end.id);
@@ -858,13 +975,15 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
       case "nome": {
         const d = dati.get(e.nome) ?? errore("unknown_name");
         usati.add(e.nome);
-        return d.size === undefined ? semplice(d.type) : { tipo: d.type, vettore: true, divisioneIntera: false, dimensione: d.size, lunghezza: lunghezza(d) };
+        return valoreDi(d);
       }
+      case "campo":
+        return semplice(campoDi(valore(e.base, block), e.campo).type);
       case "indice": {
         const base = valore(e.base, block);
         const i = valore(e.indice, block);
         if (i.tipo !== "integer" || i.vettore) errore("type_mismatch");
-        if (base.vettore) return semplice(base.tipo);
+        if (base.vettore) return semplice(base.tipo as Tipo);
         return base.tipo === "string" ? semplice("character") : errore("type_mismatch");
       }
       case "chiamata": {
@@ -875,8 +994,7 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
           e.argomenti.map((espressione) => ({ espressione })),
           block,
         );
-        const r = comeDato(g);
-        return r.size === undefined ? semplice(r.type) : { tipo: r.type, vettore: true, divisioneIntera: false, dimensione: r.size, lunghezza: lunghezza(r) };
+        return valoreDi(comeDato(g));
       }
       case "unario":
         return unario(e.operatore, valore(e.operando, block), block);
@@ -982,9 +1100,15 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     datiDi(f.data, dati, f.id, f.kind);
     if (f.kind === "function") {
       // Le misure del risultato come quelle di un dato; il valore predefinito un letterale del tipo, e un vettore non ne ha.
-      const misura = erroreDellaMisura(comeDato(f));
+      const misura =
+        f.return_type === "record" && !records.has(f.return_record!)
+          ? difetto("unknown_record")
+          : f.return_type === "record" && f.return_size !== undefined
+            ? difetto("invalid_data_item", "vettore_di_record")
+            : erroreDellaMisura(comeDato(f));
       if (misura !== undefined) dellaFunzione(f, misura);
-      if (f.default_result !== undefined && (f.return_size !== undefined || erroreDelLetterale(f.default_result, comeDato(f)) !== undefined))
+      // Un vettore e un record non hanno un valore predefinito.
+      if (f.default_result !== undefined && (f.return_size !== undefined || f.return_type === "record" || erroreDelLetterale(f.default_result, comeDato(f)) !== undefined))
         errori.push({ code: "invalid_default_value", block: f.id });
     }
     // Un parametro per valore riceve il valore dalla chiamata.
@@ -997,6 +1121,12 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
   // ---------------------------------------------------------------------- i ruoli e il dato inutile
 
   if (errori.length > 0) return { fuoriTappa: false, errori, fermate, avvisi, dati: perDato, primaDelValore: [], versoOut: [], senzaValoreAlSalto: [] };
+
+  // Un progetto giusto coi record non si esegue e non si traduce ancora: il controllo lo dice fuori tappa, coi posti che
+  // li hanno (il progetto, che definisce i record; le funzioni coi dati o il risultato di un record). Senza record, un dato
+  // record è già un errore.
+  if ((p.records ?? []).length > 0)
+    return { fuoriTappa: true, blocchi: ["", ...p.functions.filter((f) => f.data.some((d) => d.type === "record") || f.return_type === "record").map((f) => f.id)] };
 
   const riepilogoDi = new Map(riepiloghi.map((r) => [r.funzione, r]));
   /** Gli effetti di ogni procedura sui parametri per riferimento e per uscita, calcolati una volta (`effettiDi`). */

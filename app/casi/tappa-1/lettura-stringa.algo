@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "lettura-stringa",
     "description": "Lettura di una riga intera, spazi compresi."

@@ -42,7 +42,7 @@ const troppiPassi = readFileSync(fileURLToPath(new URL("../casi/tappa-1/troppi-p
 /** Il ciclo che scrive seimila caratteri a giro, con un caso che non attende nulla. */
 const seimila = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "seimila" },
   functions: [
     {
@@ -147,7 +147,7 @@ test("il menu del caso: il tasto destro, Maiusc+F10 sulla riga scelta, Esc che t
 /** Quattro casi di una lettura: le righe sotto i campi aperti del primo. */
 const quattro = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "quattro casi" },
   functions: [
     {
@@ -186,7 +186,7 @@ test("coi campi di un caso aperti, il tasto destro su una riga sotto apre il men
 /** Duecento righe scritte, col caso che le attende tutte. */
 const duecento = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "duecento righe" },
   functions: [
     {
@@ -250,7 +250,7 @@ test("un caso nella colonna: «Esegui» apre la tabella e la console, l'esito in
  * nella funzione, e la scheda la segue. */
 const inverso = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "inverso" },
   functions: [
     {

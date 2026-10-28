@@ -14,7 +14,7 @@
 
 import { nomeValidoNelFile } from "../controllo/controllo";
 import { paroleTolleranti, type Parola } from "../espressioni/analizzatore";
-import { valorePredefinito, type Blocco, type Funzione, type Progetto, type TipoRestituito, type VoceDiUnaFunzione } from "../progetto/modello";
+import { tipoSemplice, valorePredefinito, type Blocco, type Funzione, type Progetto, type TipoRestituito, type VoceDiUnaFunzione } from "../progetto/modello";
 import { conIdNuovi, idDelBlocco, idUsati, primoLibero, sottoblocchi } from "./identificatori";
 import { nomeDellaCopia, valida, type Operazione, type Risultato } from "./operazioni";
 import { conTestiPropri, eUnaParolaSola, seguitaDaParentesi, testiPropri } from "./rinomina";
@@ -212,7 +212,7 @@ function conProprieta(f: Funzione, pr: Proprieta): Funzione {
     const casi = f.kind === "function" && resto.test_cases ? { test_cases: resto.test_cases.map((c) => ({ ...c, expected: { ...c.expected, output: senzaRisultato(c.expected.output) } })) } : {};
     return { ...resto, kind: "procedure", end: fine, ...casi };
   }
-  const tipo = pr.tipo ?? f.return_type ?? "integer";
+  const tipo = pr.tipo ?? tipoSemplice(f.return_type ?? "integer");
   const return_size = pr.dimensione === undefined ? dimensioneDi : (pr.dimensione ?? undefined);
   const return_max_length = pr.lunghezza === undefined ? lunghezzaDi : (pr.lunghezza ?? undefined);
   const predefinito = return_size !== undefined ? valorePredefinito[tipo] : (pr.predefinito ?? f.default_result ?? valorePredefinito[tipo]);
@@ -355,7 +355,7 @@ export type ChiamateDaTogliere =
   | { readonly come: "predefinito" | "assegnazioni"; readonly rombiTenuti?: readonly string[] };
 
 /** Il valore predefinito di una funzione: quello scritto, o quello del tipo. */
-export const predefinitoDi = (f: Funzione): string => f.default_result ?? valorePredefinito[f.return_type ?? "integer"];
+export const predefinitoDi = (f: Funzione): string => f.default_result ?? valorePredefinito[tipoSemplice(f.return_type ?? "integer")];
 
 /** Toglie la procedura o la funzione, e delle sue chiamate ciò che `chiamate` dice (vedi `ChiamateDaTogliere`). */
 export const eliminaFunzione =

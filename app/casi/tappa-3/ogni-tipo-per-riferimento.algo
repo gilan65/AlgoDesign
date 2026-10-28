@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "ogni-tipo-per-riferimento",
     "description": "Una stringa, un vettore, un reale, un carattere e un elemento di un vettore di stringhe per riferimento: ognuno entra ed esce."

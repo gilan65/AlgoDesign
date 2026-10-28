@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "lettura-intero",
     "description": "Lettura di un intero con uno spazio prima."

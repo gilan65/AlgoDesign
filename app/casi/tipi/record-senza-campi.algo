@@ -1,0 +1,38 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "record-senza-campi",
+    "description": "Un record senza campi."
+  },
+  "records": [
+    {
+      "name": "vuoto",
+      "fields": []
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "record-senza-campi",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "invalid_record",
+          "block": ""
+        }
+      }
+    }
+  ]
+}

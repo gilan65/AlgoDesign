@@ -77,7 +77,7 @@ const blocco = (p: Progetto, id: string): Blocco => trova(p, id)!;
 function conDoppio(corpo: readonly Blocco[], restituisce = "n * 2", altre: readonly Funzione[] = []): Progetto {
   const esito = leggi({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "prova" },
     functions: [
       { id: "f1", kind: "main", data: [{ name: "x", type: "integer" }], body: corpo, end: { id: "b90" } },
@@ -477,7 +477,7 @@ describe("i dati di una funzione", () => {
 function conDueParametri(): Progetto {
   const esito = leggi({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "prova" },
     functions: [
       {
@@ -593,7 +593,7 @@ describe("i parametri", () => {
   test("spostare o eliminare un parametro porta con sé le sue voci nei casi della funzione; un caso che non comincia coi parametri resta", () => {
     const esito = leggi({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "prova" },
       functions: [
         { id: "f1", kind: "main", data: [{ name: "w", type: "integer", size: 2 }], body: [{ id: "b1", kind: "call", callee: "q", arguments: ["w", "1"] }], end: { id: "b2" } },
@@ -625,7 +625,7 @@ describe("i parametri", () => {
   test("il riferimento che passa per uscita esce dalle voci dei casi della procedura, in un passo; un altro dato no", () => {
     const esito = leggi({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "prova" },
       functions: [
         { id: "f1", kind: "main", data: [{ name: "r", type: "integer" }], body: [{ id: "b1", kind: "call", callee: "q", arguments: ["1", "r"] }], end: { id: "b2" } },
@@ -669,7 +669,7 @@ describe("i parametri", () => {
   test("un parametro di uscita non ha voci nei casi: spostare o eliminare gli altri porta lo stesso le loro", () => {
     const esito = leggi({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "prova" },
       functions: [
         { id: "f1", kind: "main", data: [{ name: "r", type: "integer" }], body: [{ id: "b1", kind: "call", callee: "q", arguments: ["1", "2", "r"] }], end: { id: "b2" } },
@@ -710,7 +710,7 @@ describe("i parametri", () => {
 function conComuni(): Progetto {
   const esito = leggi({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "prova" },
     shared_constants: [{ name: "MAX", type: "integer", constant: true, initial: "10" }],
     functions: [

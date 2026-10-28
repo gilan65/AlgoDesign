@@ -48,7 +48,7 @@ const CARATTERI_DI_UNA_CELLA = 400;
 const DURATA_DEL_CICLO_MS = 30_000;
 
 const progetto = (data: unknown[], body: unknown[]) =>
-  JSON.stringify({ format: "algodesign", schema_version: 1, metadata: { name: "pesante" }, functions: [{ id: "f1", kind: "main", data, body, end: { id: "bz" } }] });
+  JSON.stringify({ format: "algodesign", schema_version: 2, metadata: { name: "pesante" }, functions: [{ id: "f1", kind: "main", data, body, end: { id: "bz" } }] });
 
 /** Lo stesso programma della prova sul prodotto. */
 const riempito = vettoreRiempito;

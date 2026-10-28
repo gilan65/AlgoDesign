@@ -52,7 +52,7 @@ const ogniForma = daFile(
   "dati-di-ogni-forma",
   JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "dati-di-ogni-forma" },
     shared_constants: [
       { name: "MASSIMO", type: "integer", constant: true, initial: "30" },

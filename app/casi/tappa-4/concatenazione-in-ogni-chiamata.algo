@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "concatenazione-in-ogni-chiamata",
     "description": "Una concatenazione piccola in ognuna delle 500 chiamate in corso, e una di 1000 caratteri nel programma principale."

@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "stesso-dato-due-volte",
     "description": "Lo stesso dato passato due volte per riferimento nella stessa chiamata: il progetto non parte."

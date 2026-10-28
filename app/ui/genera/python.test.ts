@@ -183,7 +183,7 @@ describe("la provenienza delle righe", () => {
 describe("il nome del progetto e i commenti", () => {
   const conNome = (nome: string, commento: string): Progetto => ({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: nome },
     functions: [{ id: "f1", kind: "main", data: [], body: [{ id: "b1", kind: "comment", text: commento }, { id: "b2", kind: "write", values: ['"ciao"'], newline: true }], end: { id: "b3" } }],
   });
@@ -277,7 +277,7 @@ describe("la ricorsione", () => {
 describe("i nomi che il Python usa per sé", () => {
   const conUnDato = (nome: string): Progetto => ({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "nome" },
     functions: [{ id: "f1", kind: "main", data: [{ name: nome, type: "integer", initial: "1" }], body: [], end: { id: "b1" } }],
   });

@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "risultato-vettore-di-stringhe-oltre-la-lunghezza",
     "description": "La funzione restituisce un vettore di stringhe con un elemento più lungo della lunghezza massima del risultato: si ferma sulla fine della funzione, prima che chi chiama riceva il risultato."

@@ -80,7 +80,7 @@ test("un errore che la libreria aveva già si dice con il nome della libreria, n
     "rotta.algo",
     JSON.stringify({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "rotta", library: true },
       functions: [
         { id: "f1", kind: "main", data: [], body: [], end: { id: "b1" } },

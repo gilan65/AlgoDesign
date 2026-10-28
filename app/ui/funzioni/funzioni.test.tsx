@@ -590,7 +590,7 @@ test("il rif senza valore che la procedura legge prima di dargli un valore: l'er
 // di un blocco; e quella dell'avviso di un dato, che c'è solo senza errori. Le frasi sono quelle delle cause, col pezzo
 // citato; la causa non entra nel file.
 const progettoDiProva = (data: unknown[], body: unknown[], ...altre: unknown[]) =>
-  JSON.stringify({ format: "algodesign", schema_version: 1, metadata: { name: "cause" }, functions: [{ id: "f1", kind: "main", data, body, end: { id: "fine" } }, ...altre] }, null, 2);
+  JSON.stringify({ format: "algodesign", schema_version: 2, metadata: { name: "cause" }, functions: [{ id: "f1", kind: "main", data, body, end: { id: "fine" } }, ...altre] }, null, 2);
 const CON_LE_CAUSE = progettoDiProva(
   [{ name: "eta media", type: "integer" }],
   [

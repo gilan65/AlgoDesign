@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "condizione-carattere",
     "description": "Confronto fra caratteri per codice: è viene dopo e."

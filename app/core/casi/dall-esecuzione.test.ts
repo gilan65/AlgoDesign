@@ -88,7 +88,7 @@ test("ogni caso del corpus rifatto come esecuzione libera compone il caso del fi
 
 type Json = any;
 function programma(data: Json[], body: Json[], altre: Json[] = []): Progetto {
-  const esito = leggi({ format: "algodesign", schema_version: 1, metadata: { name: "prova" }, functions: [{ id: "f1", kind: "main", data, body, end: { id: "fine" } }, ...altre] });
+  const esito = leggi({ format: "algodesign", schema_version: 2, metadata: { name: "prova" }, functions: [{ id: "f1", kind: "main", data, body, end: { id: "fine" } }, ...altre] });
   if (!esito.ok) throw new Error(JSON.stringify(esito.errori));
   return esito.progetto;
 }

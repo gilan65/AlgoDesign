@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "stringa-lunga-nell-argomento",
     "description": "Una stringa troppo lunga per il parametro, e un argomento alla sua destra che si ferma anche lui: si ferma prima la stringa."

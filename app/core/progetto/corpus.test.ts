@@ -45,7 +45,7 @@ test("il corpus su disco è quello dell'elenco tracciato, nei due versi, senza v
 });
 
 /** Le tappe i cui file il controllo statico conosce: gli altri sono fuori tappa. */
-const controllata = (nome: string) => ["tappa-1/", "tappa-2/", "tappa-3/", "tappa-4/"].some((t) => nome.startsWith(t));
+const controllata = (nome: string) => ["tappa-1/", "tappa-2/", "tappa-3/", "tappa-4/", "tipi/"].some((t) => nome.startsWith(t));
 
 /** I file delle tappe controllate senza casi d'uso: si aprono, e non provano nulla. */
 const senzaCasi = (progetti: readonly [string, { test_cases?: readonly unknown[] }][]) =>
@@ -90,9 +90,26 @@ test("ogni file del corpus si apre, si salva e si riapre uguale (struttura e byt
   expect(suDisco.filter((c) => !identici.includes(c))).toEqual([]);
   // Controllo positivo: lo stesso file con due chiavi scambiate si apre uguale e si salva diverso.
   const primo = readFileSync(join(cartella, `${suDisco[0]}.algo`), "utf8");
-  const scambiato = primo.replace('"format": "algodesign",\n  "schema_version": 1,', '"schema_version": 1,\n  "format": "algodesign",');
+  const scambiato = primo.replace('"format": "algodesign",\n  "schema_version": 2,', '"schema_version": 2,\n  "format": "algodesign",');
   const aperto = apri(scambiato);
   expect([scambiato !== primo, aperto.ok && salva(aperto.progetto) === scambiato]).toEqual([true, false]);
+});
+
+test("ogni file del corpus scritto alla versione 1 si apre come alla 2, e salvato è il file della versione 2", () => {
+  // Il corpus è passato dalla 1 alla 2 cambiando la sola riga della versione: riscritta 1, è il file di prima.
+  const riga = (v: number) => `\n  "schema_version": ${v},\n`;
+  let migrati = 0;
+  for (const caso of suDisco) {
+    const nuovo = readFileSync(join(cartella, `${caso}.algo`), "utf8");
+    const vecchio = nuovo.replace(riga(2), riga(1));
+    const prima = apri(vecchio);
+    const dopo = apri(nuovo);
+    expect({ caso, riscritto: vecchio !== nuovo, uguale: prima.ok && dopo.ok && Bun.deepEquals(prima.progetto, dopo.progetto, true) }).toEqual({ caso, riscritto: true, uguale: true });
+    expect({ caso, salvato: prima.ok && salva(prima.progetto) === nuovo }).toEqual({ caso, salvato: true });
+    migrati++;
+  }
+  console.log(`migrazione: ${migrati} file del corpus riscritti alla versione 1, aperti uguali e salvati alla 2 su ${suDisco.length}`);
+  expect(migrati).toBe(suDisco.length);
 });
 
 test("il controllo statico del corpus: tappe dalla 1 alla 4 con l'errore statico e gli avvisi attesi, le altre fuori tappa", () => {
@@ -105,7 +122,9 @@ test("il controllo statico del corpus: tappe dalla 1 alla 4 con l'errore statico
     const aperto = apri(readFileSync(join(cartella, `${caso}.algo`), "utf8"));
     if (!aperto.ok) throw new Error(caso);
     const esito = controlla(aperto.progetto, tetti);
-    if (!controllata(caso)) {
+    // I record: un file giusto è fuori tappa finché l'esecuzione non li conosce, uno sbagliato ha il suo errore statico.
+    const fuoriAtteso = !controllata(caso) || (caso.startsWith("tipi/") && aperto.progetto.test_cases?.[0]?.expected.static_error === undefined);
+    if (fuoriAtteso) {
       expect({ caso, fuoriTappa: esito.fuoriTappa }).toEqual({ caso, fuoriTappa: true });
       fuoriTappa++;
       continue;
@@ -127,12 +146,13 @@ test("il controllo statico del corpus: tappe dalla 1 alla 4 con l'errore statico
     controllati++;
   }
   console.log(
-    `controllo statico del corpus: tappe dalla 1 alla 4 ${controllati} controllati (avvisi attesi ${avvisiAttesi}, errori statici attesi ${erroriAttesi}), fuori tappa ${fuoriTappa}, in tutto ${controllati + fuoriTappa} su ${suDisco.length}`,
+    `controllo statico del corpus: tappe dalla 1 alla 4 e i record ${controllati} controllati (avvisi attesi ${avvisiAttesi}, errori statici attesi ${erroriAttesi}), fuori tappa ${fuoriTappa}, in tutto ${controllati + fuoriTappa} su ${suDisco.length}`,
   );
   expect(controllati + fuoriTappa).toBe(suDisco.length);
   // Controllo positivo del confronto degli avvisi e degli errori: il corpus ne attende.
   expect(avvisiAttesi).toBeGreaterThan(0);
-  expect(erroriAttesi).toBe(10);
+  // Dieci delle tappe e cinque dei record.
+  expect(erroriAttesi).toBe(15);
 });
 
 test("controllo positivo: un file fuori forma canonica si salva diverso dal sorgente, e poi resta fermo", () => {
@@ -152,7 +172,7 @@ test("controllo positivo: un file fuori forma canonica si salva diverso dal sorg
   if (!aperto.ok) throw new Error(JSON.stringify(aperto.errori));
   const salvato = salva(aperto.progetto);
   expect(salvato).not.toBe(sorgente);
-  expect(salvato.startsWith('{\n  "format": "algodesign",\n  "schema_version": 1,\n  "metadata"')).toBe(true);
+  expect(salvato.startsWith('{\n  "format": "algodesign",\n  "schema_version": 2,\n  "metadata"')).toBe(true);
   expect(salvato.endsWith("}\n")).toBe(true);
   const riaperto = apri(salvato);
   expect(riaperto.ok && salva(riaperto.progetto)).toBe(salvato);

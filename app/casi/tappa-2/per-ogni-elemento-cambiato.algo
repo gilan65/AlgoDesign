@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "per-ogni-elemento-cambiato",
     "description": "Un elemento del vettore cambiato nel corpo di un ciclo per ogni prima di essere preso: il giro dopo vede il valore nuovo."

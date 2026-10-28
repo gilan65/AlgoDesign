@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "fattoriale",
     "description": "La ricorsione diretta: il fattoriale di n, n * fatt(n - 1) fino a 1."

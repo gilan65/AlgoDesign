@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "domanda-prima-della-lettura",
     "description": "Scritture subito prima di una Lettura: senza spazio in fondo, con lo spazio in fondo al testo, con uno spazio a sé, con l'a capo in un ramo."

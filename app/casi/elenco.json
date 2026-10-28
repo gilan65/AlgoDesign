@@ -192,5 +192,13 @@
     "spazio-al-byte#spazio-al-byte",
     "valore-messo-da-parte#al-tetto",
     "vettore-copiato#vettore-copiato"
+  ],
+  "tipi": [
+    "campo-sconosciuto#campo-sconosciuto",
+    "nome-del-record-gia-usato#nome-del-record-gia-usato",
+    "record-in-un-programma#record-in-un-programma",
+    "record-sconosciuto#record-sconosciuto",
+    "record-senza-campi#record-senza-campi",
+    "vettore-di-record#vettore-di-record"
   ]
 }

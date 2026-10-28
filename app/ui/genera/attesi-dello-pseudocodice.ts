@@ -245,7 +245,7 @@ export const delCorpus: Readonly<Record<string, Atteso>> = {
 /** Un programma con le forme che il corpus non ha. */
 export const tutteLeForme: Progetto = {
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "tutte-le-forme" },
   shared_constants: [
     { name: "LIMITE", type: "integer", constant: true, initial: "10" },
@@ -365,7 +365,7 @@ export const tutteLeFormeAttese: Atteso = {
  * stringa (il secondo indice), l'indice calcolato prima del valore dentro un `per ogni`, un corpo coi soli commenti. */
 export const formeDeiCicli: Progetto = {
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "forme-dei-cicli" },
   functions: [
     {

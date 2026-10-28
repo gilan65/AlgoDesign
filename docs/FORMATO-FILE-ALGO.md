@@ -32,7 +32,7 @@ Tutto il resto **non** impedisce di aprire il file: le regole dei nomi, i valori
 - **I dati non stanno nei blocchi.** I dati di una funzione sono nell'elenco `data`, nell'ordine della vista dei dati; nessun blocco crea un dato.
 - **Ciò che cambia il risultato sta nel file.** Le opzioni che cambiano il risultato (il carattere di riempimento, i decimali dei reali, i posti nella pila delle chiamate) sono nel progetto; i limiti delle Impostazioni no, perché proteggono il computer e non cambiano l'output.
 - **Il salvataggio** scrive i campi nell'ordine delle tabelle qui sotto, con un rientro di 2 spazi e un a capo finale, e omette un'opzione uguale al suo valore predefinito.
-- **La versione dello schema** è `1`. Un campo facoltativo nuovo non la cambia: un file scritto prima resta valido.
+- **La versione dello schema** dice la forma che il file usa, ed è `2`: AlgoDesign la scrive in ogni file che salva. Un file della versione `1` (scritto da AlgoDesign 0.6 o da una versione precedente) si apre, e salvato diventa `2` senza altre differenze; una versione che AlgoDesign non conosce non si apre: è un file scritto da una versione più recente dell'applicazione.
 
 ## 4. Il progetto
 
@@ -43,9 +43,10 @@ L'oggetto più esterno del file.
 | Campo | Tipo | Obbligatorio | Valori e regole |
 |---|---|---|---|
 | `format` | `string` | sì | sempre `algodesign`: riconosce il file |
-| `schema_version` | `integer` | sì | `1` |
+| `schema_version` | `integer` | sì | `1` o `2`: salvando, AlgoDesign scrive la più recente |
 | `metadata` | `object` | sì | il nome e la descrizione del progetto |
 | `options` | `object` | no | assente: tutte le opzioni al valore predefinito |
+| `records` | `array` | no | i record del progetto: i tipi coi campi, visibili da ogni procedura e funzione |
 | `shared_constants` | `array` | no | le costanti comuni a tutto il progetto, con la forma di un dato |
 | `functions` | `array` | sì | il programma principale, le procedure e le funzioni; esattamente una ha `kind` uguale a `main` |
 | `test_cases` | `array` | no | i casi d'uso del programma principale |
@@ -72,6 +73,25 @@ Testo libero, mai tradotto.
 
 ## 5. I dati
 
+### Un record — `records[]`
+
+Un record è un tipo coi campi, definito una volta nel progetto e visibile da ogni procedura e funzione: un dato di tipo
+`record` ne nomina uno. Le regole dei nomi, i nomi unici e almeno un campo le controlla il controllo statico: un record
+senza campi si apre, e il progetto non parte.
+
+| Campo | Tipo | Obbligatorio | Valori e regole |
+|---|---|---|---|
+| `name` | `string` | sì | il nome del record, con le regole dei nomi dell'app; mai quello di un altro record, di un dato, di una procedura o di una funzione, né il nome di un tipo |
+| `fields` | `array` | sì | i campi, nell'ordine in cui il valore iniziale li elenca; almeno uno, coi nomi tutti diversi |
+
+### Un campo di un record — `records[].fields[]`
+
+| Campo | Tipo | Obbligatorio | Valori e regole |
+|---|---|---|---|
+| `name` | `string` | sì | il nome del campo, con le regole dei nomi dell'app |
+| `type` | `string` | sì | `integer` (intero), `real` (reale), `character` (carattere), `string` (stringa), `boolean` (booleano) |
+| `max_length` | `integer` | no | solo per una stringa: la lunghezza massima, da 1 al limite delle Impostazioni; assente vale 255 |
+
 ### Un dato — `shared_constants[]`
 
 La stessa forma vale per una costante comune (`shared_constants`) e per un dato di una funzione (`data`). Ogni dato è una riga della vista dei dati, e l'ordine dell'elenco è quello della vista.
@@ -79,10 +99,11 @@ La stessa forma vale per una costante comune (`shared_constants`) e per un dato 
 | Campo | Tipo | Obbligatorio | Valori e regole |
 |---|---|---|---|
 | `name` | `string` | sì | il nome, con le regole dei nomi dell'app |
-| `type` | `string` | sì | `integer` (intero), `real` (reale), `character` (carattere), `string` (stringa), `boolean` (booleano) |
+| `type` | `string` | sì | `integer` (intero), `real` (reale), `character` (carattere), `string` (stringa), `boolean` (booleano), `record` (un record del progetto, col suo nome nel campo che segue) |
+| `record` | `string` | no | col tipo `record`, e solo con lui, obbligatorio: il nome di un record del progetto |
 | `size` | `integer` | no | presente: il dato è un vettore di tanti elementi, da 1 al limite delle Impostazioni; assente: un dato semplice |
 | `constant` | `boolean` | no | `true`: una costante, che vuole un valore iniziale; assente: una variabile. Una costante comune ha sempre `true` |
-| `initial` | `string`, `array` o `object` | no | il valore iniziale: un letterale, e per un intero o un reale anche col meno davanti (`"-7"`); per un vettore l'elenco completo dei letterali, uno per elemento, oppure `{ "each": … }` con un letterale per tutti |
+| `initial` | `string`, `array` o `object` | no | il valore iniziale: un letterale, e per un intero o un reale anche col meno davanti (`"-7"`); per un vettore l'elenco completo dei letterali, uno per elemento, oppure `{ "each": … }` con un letterale per tutti; per un record l'elenco dei letterali, uno per campo nell'ordine dei campi |
 | `role` | `string` | no | `input` (di input), `output` (di output), `input_output` (di input e output); assente: un dato di lavoro. Mai su una costante né su un parametro |
 | `max_length` | `integer` | no | solo per una stringa: la lunghezza massima, da 1 al limite delle Impostazioni; assente vale 255 |
 | `parameter` | `string` | no | presente: il dato è un parametro della procedura o della funzione, e la sua posizione è quella nell'elenco; `value` (per valore: arriva una copia), `reference` (*rif*: il dato entra ed esce), `out` (*out*: il dato solo esce). Un parametro non ha valore iniziale, ruolo né il segno di costante; una funzione ha solo parametri per valore |
@@ -291,7 +312,7 @@ La stessa forma vale per i casi del programma (`test_cases[].expected`). L'outpu
 
 | Campo | Tipo | Obbligatorio | Valori e regole |
 |---|---|---|---|
-| `code` | `string` | sì | uno di `unknown_name`, `invalid_name`, `invalid_data_item`, `assign_to_constant`, `assign_to_read_only`, `array_assignment`, `literal_out_of_range`, `literal_leading_zero`, `string_literal_too_long`, `multi_code_character`, `type_mismatch`, `condition_not_boolean`, `chained_comparison`, `chained_power`, `division_by_literal_zero`, `invalid_step`, `unknown_callee`, `argument_mismatch`, `reference_not_assignable`, `same_reference`, `function_as_statement`, `procedure_in_expression`, `limit_exceeded`, `syntax_error`, `function_with_effect`, `invalid_default_value`, `function_name_in_use`, `reference_without_value` |
+| `code` | `string` | sì | uno di `unknown_name`, `invalid_name`, `invalid_data_item`, `assign_to_constant`, `assign_to_read_only`, `array_assignment`, `literal_out_of_range`, `literal_leading_zero`, `string_literal_too_long`, `multi_code_character`, `type_mismatch`, `condition_not_boolean`, `chained_comparison`, `chained_power`, `division_by_literal_zero`, `invalid_step`, `unknown_callee`, `argument_mismatch`, `reference_not_assignable`, `same_reference`, `function_as_statement`, `procedure_in_expression`, `limit_exceeded`, `syntax_error`, `function_with_effect`, `invalid_default_value`, `function_name_in_use`, `reference_without_value`, `unknown_record`, `unknown_record_field`, `record_name_in_use`, `invalid_record` |
 | `block` | `string` | sì | l'`id` del blocco; per un dato, l'`id` della funzione che lo possiede; per una costante comune, vuoto (il progetto) |
 
 ### Un avviso atteso — `functions[]{procedure}.test_cases[].expected.warnings[]`
@@ -310,7 +331,8 @@ Calcola un risultato dai dati che riceve, senza leggere né scrivere, e si usa i
 | `id` | `string` | sì | non vuoto, unico nel progetto |
 | `kind` | `string` | sì | `function` |
 | `name` | `string` | sì | il nome della funzione |
-| `return_type` | `string` | sì | il tipo del risultato: `integer`, `real`, `character`, `string`, `boolean`; per un vettore restituito, il tipo degli elementi |
+| `return_type` | `string` | sì | il tipo del risultato: `integer`, `real`, `character`, `string`, `boolean`, `record`; per un vettore restituito, il tipo degli elementi |
+| `return_record` | `string` | no | col tipo `record`, e solo con lui, obbligatorio: il nome del record restituito |
 | `return_size` | `integer` | no | presente: la funzione restituisce un vettore di tanti elementi |
 | `return_max_length` | `integer` | no | solo per una stringa: la lunghezza massima del risultato (di ogni elemento, per un vettore); assente vale 255 |
 | `default_result` | `string` | no | il valore predefinito, un letterale del tipo del risultato, che prende il posto della funzione tolta da un'espressione; assente vale `0`, `0.0`, `' '`, `""` o `false`. Un vettore non ne ha |
@@ -354,7 +376,7 @@ Un programma che legge `n` e scrive la somma dei numeri da 1 a `n`, con un caso 
 ```json
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "Somma dei primi numeri",
     "description": "Legge n e scrive la somma dei numeri da 1 a n."

@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "condizione-reale",
     "description": "0.1 + 0.2 confrontato con 0.3: la somma in double è appena più grande."

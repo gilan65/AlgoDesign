@@ -23,7 +23,7 @@
 /** Il progetto, nella forma del file. */
 export const progettoDelVettore = {
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "quadrati" },
   functions: [
     {
@@ -192,7 +192,7 @@ export const cambiateAttese = {
 /** Il progetto coi due vettori inizializzati, nella forma del file. */
 export const progettoDeiValoriIniziali = {
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "inizializzati" },
   functions: [
     {

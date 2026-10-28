@@ -98,7 +98,7 @@ test("il dato del programma principale, la costante comune e il nome che è una 
   expect(principale[0]!.clic).toMatchObject({ dato: "media", comune: false });
   const comune: Progetto = {
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "comune" },
     shared_constants: [{ name: "PI", type: "real", initial: "3.14", role: "constant" }],
     functions: [

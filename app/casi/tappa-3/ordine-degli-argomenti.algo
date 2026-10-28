@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "ordine-degli-argomenti",
     "description": "Due argomenti di una chiamata che si fermano: si calcolano da sinistra a destra, quindi si ferma il primo."

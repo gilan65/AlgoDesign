@@ -155,16 +155,27 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
   await siApreESiSalva(page);
   const identici: string[] = [];
   const diversi: string[] = [];
-  for (const [i, c] of corpus.entries()) {
+  const delleTappe = corpus.filter((c) => c.tappa.startsWith("tappa-"));
+  for (const [i, c] of delleTappe.entries()) {
     await apriIl(page, c.percorso);
     await expect(flowchart(page, nomeDi(c.testo))).toBeVisible();
     const salvato = await salvaConNome(page, `C:\\uscita\\${i}.algo`);
     (salvato === c.testo ? identici : diversi).push(c.percorso);
   }
-  const ricorsione = corpus.filter((c) => c.tappa === "tappa-4").length;
-  console.log(`apri e salva: corpus ${corpus.length} file, della ricorsione ${ricorsione}: identici ${identici.length}, diversi ${diversi.length}`);
+  const ricorsione = delleTappe.filter((c) => c.tappa === "tappa-4").length;
+  console.log(`apri e salva: corpus ${delleTappe.length} file, della ricorsione ${ricorsione}: identici ${identici.length}, diversi ${diversi.length}`);
   expect(diversi).toEqual([]);
-  expect({ ricorsione, identici: identici.length, corpus: corpus.length }).toEqual({ ricorsione: 22, identici: 146, corpus: 146 });
+  expect({ ricorsione, identici: identici.length, corpus: delleTappe.length }).toEqual({ ricorsione: 22, identici: 146, corpus: 146 });
+  // I record: l'interfaccia non li conosce ancora, e un file che li usa non si apre, anche con un errore statico.
+  const deiRecord = corpus.filter((c) => c.tappa === "tipi");
+  for (const c of deiRecord) {
+    await apriIl(page, c.percorso);
+    const errore = page.getByRole("alertdialog", { name: riempi(it.apriErroreTitolo, { file: c.percorso.split("\\").at(-1)! }), exact: true });
+    await expect(errore).toBeVisible();
+    await expect(errore.getByRole("listitem")).toHaveText([it.apriFuoriTappa]);
+    await chiudiConEsc(page, errore);
+  }
+  expect(deiRecord.length).toBe(6);
 });
 
 // ------------------------------------------------------------------------------- i motivi d'apertura
@@ -188,7 +199,7 @@ const rotti: Record<Motivo, string> = {
   field_not_allowed: testo((p) => (p.functions[0].name = "principale")),
   wrong_type: testo((p) => (p.metadata.name = 5)),
   invalid_value: testo((p) => (p.format = "flowchart")),
-  unknown_schema_version: testo((p) => (p.schema_version = 2)),
+  unknown_schema_version: testo((p) => (p.schema_version = 3)),
   main_count: testo((p) => (p.functions = [])),
   duplicate_id: testo((p) => (p.functions[0].body[1].id = p.functions[0].body[0].id)),
   duplicate_test_case_name: testo((p) => p.test_cases.push({ ...p.test_cases[0] })),

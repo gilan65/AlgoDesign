@@ -19,6 +19,8 @@ function forma(e: Espressione): string {
       return e.nome;
     case "indice":
       return `${forma(e.base)}[${forma(e.indice)}]`;
+    case "campo":
+      return `${forma(e.base)}.${e.campo}`;
     case "chiamata":
       return `${e.nome}(${e.argomenti.map(forma).join(", ")})`;
     case "unario":
@@ -208,6 +210,10 @@ describe("la causa precisa di un testo che non si lascia leggere", () => {
     ["somma)", "syntax_error", "simbolo_slegato", ")"],
     ["f(a b)", "syntax_error", "simbolo_slegato", "b"],
     ["voti[i j]", "syntax_error", "simbolo_slegato", "j"],
+    ["a.", "syntax_error", "campo_mancante"],
+    ["x.5", "syntax_error", "campo_mancante"],
+    ["a.and", "syntax_error", "campo_mancante"],
+    [".5", "syntax_error", "operando_mancante", "."],
     [`${"(".repeat(tettoDiAnnidamento + 1)}1${")".repeat(tettoDiAnnidamento + 1)}`, "syntax_error", "troppo_annidata"],
     ["'ab'", "multi_code_character", "piu_caratteri", "'ab'"],
     [`'e${accento}'`, "multi_code_character", "accento_a_parte", `'e${accento}'`],
@@ -226,6 +232,15 @@ describe("la causa precisa di un testo che non si lascia leggere", () => {
     expect([...date].filter((c) => !(elencate as readonly string[]).includes(c))).toEqual([]);
     expect(elencate.filter((c) => !date.has(c))).toEqual([]);
     console.log(`cause dell'analizzatore: ${elencate.length}, date da ${casi.length} testi`);
+  });
+  test("il punto: il campo di un record dopo un nome, un indice o un altro campo; nei numeri resta il punto dei reali", () => {
+    const forme = ["r.x", "v[1].x", "r.x[2]", "r . x", "r.x.y", "f(a).x", "3.5", "a.voto + 1", "-r.x"].map((t) => {
+      const a = analizza(t);
+      return a.ok ? forma(a.espressione) : a.codice;
+    });
+    expect(forme).toEqual(["r.x", "v[1].x", "r.x[2]", "r.x", "r.x.y", "f(a).x", "3.5", "(a.voto + 1)", "(- r.x)"]);
+    // Controllo positivo: il punto attaccato al numero resta un numero scritto male, non un campo.
+    expect(analizza("3.")).toEqual({ ok: false, codice: "syntax_error", fermata: { causa: "numero_scritto_male", segno: "3." } });
   });
   test("i codici con una causa sola non ne portano una", () => {
     for (const testo of ["2147483648", "007", "a < b < c", "2 raised_to 2 raised_to 2"]) {

@@ -662,7 +662,7 @@ export const tutteLeFormeAttese: Atteso = { it: tutteLeFormeIn("it"), en: tutteL
  * parentesi. */
 export const altreForme: Progetto = {
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "altre-forme" },
   functions: [
     {
@@ -1302,7 +1302,7 @@ export const formeDelRisultatoAttese: Atteso = { it: formeDelRisultatoIn("it"), 
 /** Una procedura con un vettore per riferimento, per un caso di una funzione che il corpus non ha. */
 export const vettorePerRiferimento: Progetto = {
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "vettore-per-riferimento" },
   functions: [
     { id: "f1", kind: "main", data: [], body: [], end: { id: "b1" } },

@@ -190,7 +190,7 @@ type Json = any;
 function progetto(data: Json[], body: Json[], options?: Json): Progetto {
   const esito = leggi({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "prova" },
     ...(options ? { options } : {}),
     functions: [{ id: "f1", kind: "main", data, body, end: { id: "fine" } }],
@@ -342,7 +342,7 @@ describe("comportamenti della tappa 1", () => {
   test("i valori iniziali: un'azione per dato, le costanti comuni per prime, un vettore in una; l'evento col nome del dato e l'id vuoto", () => {
     const esito = leggi({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "prova" },
       shared_constants: [{ name: "K", type: "integer", constant: true, initial: "3" }],
       functions: [
@@ -585,7 +585,7 @@ const json = (p: Json): Progetto => {
 const conMostra = (data: Json[], body: Json[]): Progetto =>
   json({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "prova" },
     functions: [
       { id: "f1", kind: "main", data, body, end: { id: "fine" } },
@@ -614,7 +614,7 @@ const sequenzeAttese: { nome: string; progetto: Progetto; radice?: string; righe
     nome: "una funzione che chiama sé stessa eseguita da sola: la costante comune riceve il valore una volta, nella prima chiamata",
     progetto: json({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "conta" },
       shared_constants: [dato("K", "integer", { constant: true, initial: "3" })],
       functions: [

@@ -30,7 +30,7 @@ import { fileURLToPath } from "node:url";
 import { traduciEspressione } from "../core/disegno/lingua";
 import { paroleTolleranti } from "../core/espressioni/analizzatore";
 import { apri as apriProgetto } from "../core/progetto/formato";
-import type { Blocco, CasoDiUnaFunzione, Dato, Funzione, Progetto } from "../core/progetto/modello";
+import { tipoSemplice, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto, type Tipo } from "../core/progetto/modello";
 import type { Dizionario } from "../i18n/it";
 import { dizionari, riempi, type Lingua } from "../i18n/lingue";
 import { nomiDegliOperatori } from "../i18n/operatori";
@@ -101,7 +101,7 @@ const generi: Record<Blocco["kind"], keyof Dizionario> = {
   comment: "bloccoCommento",
 };
 
-const nomiDeiTipi: Record<Dato["type"], keyof Dizionario> = { integer: "tipoIntero", real: "tipoReale", character: "tipoCarattere", string: "tipoStringa", boolean: "tipoBooleano" };
+const nomiDeiTipi: Record<Tipo, keyof Dizionario> = { integer: "tipoIntero", real: "tipoReale", character: "tipoCarattere", string: "tipoStringa", boolean: "tipoBooleano" };
 const nomiDeiRuoli: Record<NonNullable<Dato["role"]>, keyof Dizionario> = { input: "ruoloInput", output: "ruoloOutput", input_output: "ruoloInputOutput" };
 
 /** Aspetta un elemento; se non arriva, l'errore dice quale passo non ha trovato che cosa. */
@@ -194,7 +194,7 @@ export async function costruisci(
       const campoNome = dove.getByRole("textbox", { name: nome(t.datiNome), exact: true });
       await aspetta(campoNome, `il campo «${nome(t.datiNome)}» del dato «${d.name}» (${modi.dati})`);
       await campoNome.fill(d.name);
-      await dove.getByRole("combobox", { name: nome(t.datiTipo), exact: true }).selectOption({ label: t[nomiDeiTipi[d.type]] });
+      await dove.getByRole("combobox", { name: nome(t.datiTipo), exact: true }).selectOption({ label: t[nomiDeiTipi[tipoSemplice(d.type)]] });
       await dove.getByRole("combobox", { name: nome(t.campoForma), exact: true }).selectOption({ label: t.formaSemplice });
       const natura =
         d.parameter === "reference" ? t.naturaParametroRiferimento
@@ -286,7 +286,7 @@ export async function costruisci(
       const finestra = page.getByRole("dialog", { name: t.funzioneNuovaSoloTitolo, exact: true });
       await aspetta(finestra, `la finestra «${t.funzioneNuovaSoloTitolo}»`);
       await finestra.getByRole("textbox", { name: t.funzioneNome, exact: true }).fill(nome);
-      await finestra.getByRole("combobox", { name: t.funzioneRestituisce, exact: true }).selectOption({ label: t[nomiDeiTipi[f.return_type!]] });
+      await finestra.getByRole("combobox", { name: t.funzioneRestituisce, exact: true }).selectOption({ label: t[nomiDeiTipi[tipoSemplice(f.return_type!)]] });
       if (f.default_result !== undefined) throw new Error(`costruzione: il valore predefinito di «${nome}» non si scrive qui`);
       await finestra.getByRole("button", { name: t.funzioneCrea, exact: true }).click();
       await aspetta(finestra, `la finestra «${t.funzioneNuovaSoloTitolo}»`, "hidden");

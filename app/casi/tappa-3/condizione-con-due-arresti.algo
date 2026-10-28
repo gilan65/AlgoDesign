@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "condizione-con-due-arresti",
     "description": "Due chiamate che si fermano nella condizione di un ciclo, dopo un and: si ferma la prima."

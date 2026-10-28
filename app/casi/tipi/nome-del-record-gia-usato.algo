@@ -1,0 +1,68 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "nome-del-record-gia-usato",
+    "description": "Il nome del record è già quello di un dato."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "classe",
+          "type": "string",
+          "max_length": 3
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "alunno",
+          "type": "integer",
+          "initial": "1"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "alunno"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "nome-del-record-gia-usato",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "record_name_in_use",
+          "block": ""
+        }
+      }
+    }
+  ]
+}

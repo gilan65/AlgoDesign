@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "radice-allo-spazio",
     "description": "La funzione «pesante» riceve per valore sette vettori di dieci stringhe lunghe al più 1000: i suoi dati non stanno nello spazio già alla prima chiamata, dal programma o eseguita da sola."

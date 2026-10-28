@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "reale-non-finito",
     "description": "Divisione fra reali per zero: in C infinito, qui l'esecuzione si ferma."

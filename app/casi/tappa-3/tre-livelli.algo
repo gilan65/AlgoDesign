@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "tre-livelli",
     "description": "Chiamate su tre livelli: una procedura chiama una funzione, che ne chiama un'altra."

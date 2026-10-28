@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "per-contatore-annidato",
     "description": "Lo stesso contatore in un ciclo per dentro l'altro: errore statico sul ciclo interno."

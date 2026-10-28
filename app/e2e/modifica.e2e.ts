@@ -342,7 +342,7 @@ const progettiConSegnalazioni = [
 
 /** Errori e avvisi attesi, da `controlla`, coi nomi dei blocchi camminati qui. */
 function attesi(f: Funzione): string[] {
-  const p: Progetto = { format: "algodesign", schema_version: 1, metadata: { name: "x" }, functions: [f] };
+  const p: Progetto = { format: "algodesign", schema_version: 2, metadata: { name: "x" }, functions: [f] };
   const c = controlla(p, tetti);
   if (c.fuoriTappa) throw new Error("fuori tappa");
   const blocchi = new Map<string, Blocco>();

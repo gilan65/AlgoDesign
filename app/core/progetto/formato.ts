@@ -31,6 +31,7 @@ import {
   opzioniPredefinite,
   ruoli,
   tipi,
+  tipiDelDato,
   type Progetto,
 } from "./modello";
 
@@ -62,8 +63,11 @@ export interface ErroreDiApertura {
 
 export type Esito = { readonly ok: true; readonly progetto: Progetto } | { readonly ok: false; readonly errori: readonly ErroreDiApertura[] };
 
-/** La sola versione che questo schema conosce, e quella con cui si salva. */
-const versioneSchema = 1;
+/** La versione con cui si salva: ogni file salvato la porta, anche senza le forme nuove. */
+const versioneSchema = 2;
+
+/** Le versioni che si aprono: le precedenti passano da `migra`. */
+const versioniLette: readonly unknown[] = [1, versioneSchema];
 
 /**
  * Quanti livelli di blocchi annidati si leggono: i blocchi del programma sono il primo livello, quelli dentro un
@@ -179,12 +183,12 @@ const conOggetto = (campi: Campi): Lettore => lettore((v, p, c) => oggetto(v, p,
  * solo il ramo del genere scritto; con un `oneOf` li proverebbe tutti, e i generi che contengono altri blocchi
  * moltiplicherebbero il lavoro a ogni livello annidato, fino a non finire su un file annidato in profondità.
  */
-function perGenere<G extends string>(generi: readonly G[], campi: (g: G) => Campi): Schema {
+function perGenere<G extends string>(generi: readonly G[], schemaDi: (g: G) => Schema): Schema {
   return {
     type: "object",
     properties: { kind: { type: "string", enum: [...generi] } },
     required: ["kind"],
-    allOf: generi.map((g) => ({ if: { type: "object", properties: { kind: { const: g } }, required: ["kind"] }, then: schemaDiCampi(campi(g)) })),
+    allOf: generi.map((g) => ({ if: { type: "object", properties: { kind: { const: g } }, required: ["kind"] }, then: schemaDi(g) })),
   };
 }
 
@@ -245,16 +249,56 @@ const valoreIniziale = lettore(
   { anyOf: [stringa.schema, elenco(stringa).schema, schemaDiCampi(perOgniElemento)] },
 );
 
-const dato = conOggetto({
+/**
+ * Il nome del record va col tipo `record` e solo con lui: `chiaveDelTipo` col valore `record` vuole `chiaveDelRecord`, e
+ * un altro tipo non la ammette. Lo dice anche lo schema, con un `if`/`then` sul tipo.
+ */
+function controllaIlRecord(v: unknown, p: string, c: Contesto, chiaveDelTipo: string, chiaveDelRecord: string): void {
+  if (!eOggetto(v) || !Object.hasOwn(v, chiaveDelTipo)) return;
+  const eRecord = v[chiaveDelTipo] === "record";
+  if (eRecord && !Object.hasOwn(v, chiaveDelRecord)) segnala(c, sotto(p, chiaveDelRecord), "missing_field");
+  if (!eRecord && Object.hasOwn(v, chiaveDelRecord)) segnala(c, sotto(p, chiaveDelRecord), "field_not_allowed");
+}
+
+const schemaColRecord = (schema: Schema, chiaveDelTipo: string, chiaveDelRecord: string): Schema => ({
+  ...schema,
+  if: { type: "object", properties: { [chiaveDelTipo]: { const: "record" } }, required: [chiaveDelTipo] },
+  // Il campo nominato si dichiara anche qui (vuoto: accetta tutto), perché un validatore rigoroso lo chiede.
+  then: { type: "object", properties: { [chiaveDelRecord]: {} }, required: [chiaveDelRecord] },
+  else: { not: { type: "object", properties: { [chiaveDelRecord]: {} }, required: [chiaveDelRecord] } },
+});
+
+function colRecord(campi: Campi, chiaveDelTipo: string, chiaveDelRecord: string): Lettore {
+  const base = conOggetto(campi);
+  return lettore(
+    (v, p, c) => {
+      const letto = base(v, p, c);
+      if (letto !== undefined) controllaIlRecord(v, p, c, chiaveDelTipo, chiaveDelRecord);
+      return letto;
+    },
+    schemaColRecord(base.schema, chiaveDelTipo, chiaveDelRecord),
+  );
+}
+
+const campiDelDato: Campi = {
   name: campo(stringa),
-  type: campo(uno(tipi)),
+  type: campo(uno(tipiDelDato)),
+  record: facoltativo(stringa),
   size: facoltativo(intero()),
   constant: facoltativo(booleano),
   initial: facoltativo(valoreIniziale),
   role: facoltativo(uno(ruoli)),
   max_length: facoltativo(intero()),
   parameter: facoltativo(uno(modalita)),
-});
+};
+
+const dato = colRecord(campiDelDato, "type", "record");
+
+/** Un campo di un record: un tipo semplice. Le regole dei nomi e delle lunghezze sono del controllo statico. */
+const campoDelRecord = conOggetto({ name: campo(stringa), type: campo(uno(tipi)), max_length: facoltativo(intero()) });
+
+/** Un record del progetto: il nome e i campi (almeno uno lo chiede il controllo statico, non l'apertura). */
+const definizioneDelRecord = conOggetto({ name: campo(stringa), fields: campo(elenco(campoDelRecord)) });
 
 const segnalazione = (codici: readonly string[]) => conOggetto({ code: campo(uno(codici)), block: campo(stringa) });
 
@@ -358,7 +402,8 @@ function campiDellaFunzione(g: (typeof generiDiFunzione)[number]): Campi {
     id: campo(id),
     kind: campo(fisso(g)),
     name: conNome ? campo(stringa) : vietato,
-    return_type: restituisce ? campo(uno(tipi)) : vietato,
+    return_type: restituisce ? campo(uno(tipiDelDato)) : vietato,
+    return_record: restituisce ? facoltativo(stringa) : vietato,
     // Il vettore e la lunghezza massima della stringa restituiti, sullo stampo di un dato: i valori fuori dai limiti sono
     // errori del controllo statico.
     return_size: restituisce ? facoltativo(intero()) : vietato,
@@ -394,9 +439,14 @@ const funzione = lettore(
     const g = genere(v, p, c, generiDiFunzione);
     if (g === undefined) return undefined;
     if (g === "main") c.principali++;
-    return oggetto(v, p, c, campiDellaFunzione(g as (typeof generiDiFunzione)[number]));
+    const letta = oggetto(v, p, c, campiDellaFunzione(g as (typeof generiDiFunzione)[number]));
+    if (letta !== undefined && g === "function") controllaIlRecord(v, p, c, "return_type", "return_record");
+    return letta;
   },
-  perGenere(generiDiFunzione, campiDellaFunzione),
+  perGenere(generiDiFunzione, (g) => {
+    const schema = schemaDiCampi(campiDellaFunzione(g));
+    return g === "function" ? schemaColRecord(schema, "return_type", "return_record") : schema;
+  }),
 );
 
 /** Le funzioni del progetto: una sola è il programma principale (lo schema lo dice con `contains`). */
@@ -419,20 +469,23 @@ export function nomeCheSiConfonde(p: Progetto, nome: string, funzione?: string):
 }
 
 /**
- * Punto di migrazione: qui una versione precedente dello schema si porterebbe all'ultima, prima di
- * leggerla. Oggi lo schema ha la sola versione 1, e una versione diversa è sconosciuta.
+ * Punto di migrazione: una versione precedente dello schema si porta all'ultima prima di leggerla. La versione 1 ha la
+ * stessa forma della 2 senza i record, e cambia solo il numero; una versione che non si conosce (scritta da
+ * un'applicazione più recente) non si apre.
  */
 function migra(v: Record<string, unknown>, c: Contesto): Record<string, unknown> | undefined {
   if (!Object.hasOwn(v, "schema_version")) return segnala(c, "schema_version", "missing_field");
-  if (v.schema_version !== versioneSchema) return segnala(c, "schema_version", Number.isInteger(v.schema_version) ? "unknown_schema_version" : "wrong_type");
-  return v;
+  if (!versioniLette.includes(v.schema_version)) return segnala(c, "schema_version", Number.isInteger(v.schema_version) ? "unknown_schema_version" : "wrong_type");
+  return v.schema_version === versioneSchema ? v : { ...v, schema_version: versioneSchema };
 }
 
 const campiDelProgetto: Campi = {
   format: campo(uno(["algodesign"])),
-  schema_version: campo(fisso(versioneSchema)),
+  // Già portata all'ultima da `migra`; lo schema dice le versioni che si aprono.
+  schema_version: campo(lettore((x) => x, { type: "integer", enum: [...versioniLette] })),
   metadata: campo(metadati),
   options: facoltativo(opzioni),
+  records: facoltativo(elenco(definizioneDelRecord)),
   shared_constants: facoltativo(elenco(dato)),
   functions: campo(funzioni),
   test_cases: facoltativo(casiDUso()),
@@ -449,7 +502,7 @@ export function schemaDelFormato(): Schema {
     $schema: "https://json-schema.org/draft/2020-12/schema",
     title: "AlgoDesign project (.algo)",
     ...schemaDiCampi(campiDelProgetto),
-    $defs: { block: perGenere(generiDiBlocco, campiDelBlocco) },
+    $defs: { block: perGenere(generiDiBlocco, (g) => schemaDiCampi(campiDelBlocco(g))) },
   };
 }
 

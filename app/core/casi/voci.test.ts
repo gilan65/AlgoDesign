@@ -42,7 +42,7 @@ test("una lettura nel parametro per valore di una procedura chiamata: il paramet
   const { rinominaDato } = await import("../modifica/operazioni");
   const a = leggi({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "prova" },
     functions: [
       { id: "f1", kind: "main", data: [], body: [{ id: "b1", kind: "call", callee: "chiedi", arguments: ["1"] }], end: { id: "b2" } },

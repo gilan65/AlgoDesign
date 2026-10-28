@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "procedura-al-tetto",
     "description": "Una procedura che chiama sé stessa con un blocco di chiamata, 1000 volte: si ferma alla 501ª chiamata in corso."

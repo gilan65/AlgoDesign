@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "assegnazione-reale",
     "description": "Calcolo misto fra reale e intero, e la somma 0.1 + 0.2 scritta con due decimali."

@@ -14,7 +14,7 @@
 // fra lo spazio fisso e la pila più piccola misurata, 1 MB del clang.
 
 import { analizza, type Espressione } from "../espressioni/analizzatore";
-import { opzioniPredefinite, type Dato, type Funzione, type Progetto, type Tipo } from "../progetto/modello";
+import { opzioniPredefinite, tipoSemplice, type Dato, type Funzione, type Progetto, type Tipo } from "../progetto/modello";
 import { figliDelBlocco, lunghezzaPredefinita, testiDelBlocco } from "./controllo";
 import { lunghezzaMassima } from "./lunghezza";
 
@@ -33,7 +33,7 @@ const byteDelTipo = (tipo: Tipo, lunghezza: number | undefined): number =>
   tipo === "string" ? 4 * (lunghezza ?? lunghezzaPredefinita) + 1 : { integer: 4, real: 8, character: 4, boolean: 1 }[tipo];
 
 /** I byte di un dato intero: tutti i suoi elementi. */
-const byteDelDato = (d: Pick<Dato, "type" | "size" | "max_length">): number => (d.size ?? 1) * byteDelTipo(d.type, d.max_length);
+const byteDelDato = (d: Pick<Dato, "type" | "size" | "max_length">): number => (d.size ?? 1) * byteDelTipo(tipoSemplice(d.type), d.max_length);
 
 /** Lo spazio di una chiamata di `f`, in byte. */
 export function spazioDiUnaChiamata(f: Funzione, p: Progetto): number {

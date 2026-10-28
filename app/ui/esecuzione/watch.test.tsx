@@ -248,7 +248,7 @@ test("a ogni pausa del riferimento il watch di ogni dato ha il tipo della vista 
 test("un vettore: il tipo, quanti elementi, un elemento per riga col suo valore", async () => {
   const testo = JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "vettore" },
     functions: [
       {
@@ -286,7 +286,7 @@ test("un vettore: il tipo, quanti elementi, un elemento per riga col suo valore"
 test("il nome di una funzione chiamata nel blocco: prima che restituisca un valore lo dice; dopo, ogni valore dell'azione col numero della chiamata", async () => {
   const testo = JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "due chiamate" },
     functions: [
       {
@@ -363,7 +363,7 @@ test("il nome di una funzione chiamata nel blocco: prima che restituisca un valo
 test("un vettore di un elemento: «1 elemento», al singolare", async () => {
   const testo = JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "uno" },
     functions: [{ id: "f1", kind: "main", data: [{ name: "v", type: "integer", size: 1 }], body: [{ id: "b1", kind: "assignment", target: "v[0]", value: "7" }], end: { id: "fine" } }],
   });

@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "nome-di-funzione-gia-usato",
     "description": "Una funzione con lo stesso nome di un dato del programma principale: il progetto non parte."

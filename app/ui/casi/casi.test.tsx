@@ -435,7 +435,7 @@ test("controllo positivo: l'atteso alterato di un caso di una funzione dà lo st
 const conDueCasi = (regole: unknown[] = []) =>
   JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "due casi" },
     functions: [
       {
@@ -735,7 +735,7 @@ test("una voce può andare al dato di lavoro di una procedura chiamata, che una 
 /** Il programma chiama `uno` e `due`, che leggono ognuna un suo dato `riga`; il caso dà un valore a ciascuna. */
 const DUE_RIGHE = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "due-righe" },
   functions: [
     {
@@ -813,7 +813,7 @@ test("la stessa rinomina confermata senza Invio, salvando o cambiando scheda coi
 const conIParametri = (voci: unknown[]) =>
   JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "parametri" },
     functions: [
       { id: "f1", kind: "main", data: [], body: [], end: { id: "b1" } },

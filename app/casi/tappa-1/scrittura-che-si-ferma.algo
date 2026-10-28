@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "scrittura-che-si-ferma",
     "description": "Una scrittura di due valori: il secondo, una stringa con il carattere di codice 0, ferma il programma, e il primo resta scritto."

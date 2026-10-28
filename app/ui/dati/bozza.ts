@@ -20,7 +20,7 @@
 // i campi sono aperti (tornando variabile ricompaiono). La casella «globale» vale solo per una costante: dice se è una
 // costante comune, e non è un attributo del dato (chi conferma la bozza sposta il dato fra le due tabelle).
 import type { ValoreRipetuto } from "../../core/disegno/impaginazione";
-import type { Dato, Modalita, Ruolo, Tipo } from "../../core/progetto/modello";
+import { tipoSemplice, type Dato, type Modalita, type Ruolo, type Tipo } from "../../core/progetto/modello";
 import { intervalli } from "../preferenze";
 
 export interface BozzaDelDato {
@@ -59,7 +59,7 @@ export function bozzaDi(d: Dato, nuovo: ValoreRipetuto, globale = false): BozzaD
   const iniziale = d.initial === undefined ? "" : typeof d.initial === "string" ? d.initial : "each" in d.initial ? d.initial.each : fraGraffe(d.initial);
   return {
     nome: d.name,
-    tipo: d.type,
+    tipo: tipoSemplice(d.type),
     vettore: d.size !== undefined,
     dimensione: d.size === undefined ? "" : String(d.size),
     costante: d.constant === true,

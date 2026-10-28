@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "copia-di-stringhe-piu-lunghe",
     "description": "La copia di un vettore di stringhe col suo nome, e un vettore di stringhe restituito, in un vettore con gli elementi più corti: ogni elemento si controlla contro la lunghezza massima di chi lo riceve, e il primo più lungo ferma l'assegnazione."

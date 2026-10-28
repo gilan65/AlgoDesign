@@ -22,8 +22,8 @@
 // casi; zero casi eseguiti è un problema (nessun caso, o tutti fuori tappa).
 //
 // Sul corpus:
-// - i file stanno in `tappa-<n>/` e sono `.algo` (un altro file è un problema, come uno fuori dalle
-//   cartelle di tappa che non sia l'elenco);
+// - i file stanno in `tappa-<n>/` (o in `tipi/`, i tipi non semplici) e sono `.algo` (un altro file è un problema,
+//   come uno fuori dalle cartelle che non sia l'elenco);
 // - le voci dell'elenco sono i casi, `file#caso` e `file#funzione/caso`: una voce ripetuta è un problema; i file
 //   dell'elenco e quelli su disco si appaiano per nome nei due versi, e per ogni file presente nei due i casi
 //   dell'elenco e quelli del file, nei due versi (un caso tolto da un file, o aggiunto e non elencato, è un problema);
@@ -84,6 +84,9 @@ let diFunzioni = 0;
 const tappeEseguite = [1, 2, 3, 4];
 const tappeDaEseguire: number[] = [];
 const tappaDi = (nome: string) => Number(/^tappa-(\d+)\//.exec(nome)?.[1]);
+/** I tipi non semplici (la cartella `tipi/`): il controllo statico li conosce, l'esecuzione ancora no. Un file che attende
+ * il solo errore statico si esegue (non parte, ed è l'esito atteso); un file giusto è fuori tappa. */
+const deiTipi = (nome: string) => nome.startsWith("tipi/");
 
 /** I casi dichiarati nei file delle tappe che si eseguono, quelli eseguiti, e i casi di ogni file che si apre (per
  * l'elenco). */
@@ -108,7 +111,7 @@ for (const { nome, percorso } of file) {
     riga(`ROSSO ${nome} file non valido: ${aperto.errori.map((e) => `${e.percorso} ${e.motivo}`).join("; ")}`);
     continue;
   }
-  const deveEseguirsi = tappeEseguite.includes(tappaDi(nome));
+  const dellaTappa = tappeEseguite.includes(tappaDi(nome));
   const p = aperto.progetto;
   const delProgramma = p.test_cases ?? [];
   // I casi del programma, poi quelli di ogni procedura o funzione eseguita da sola, col loro nome.
@@ -117,7 +120,8 @@ for (const { nome, percorso } of file) {
     ...p.functions.flatMap((f) => (f.test_cases ?? []).map((caso) => ({ id: `${nome}#${f.name}/${caso.name}`, caso, funzione: f.id }))),
   ];
   nelFile.set(nome, suoi.map((c) => c.id));
-  if (corpus && deveEseguirsi) {
+  const deveEseguirsi = dellaTappa || (deiTipi(nome) && suoi.length > 0 && suoi.every((c) => c.caso.expected.static_error !== undefined));
+  if (corpus && dellaTappa) {
     if (delProgramma.length === 0) problemi.push(`${nome} è della tappa ${tappaDi(nome)} ma non ha casi d'uso`);
     dichiarati.push(...suoi.map((c) => c.id));
   }

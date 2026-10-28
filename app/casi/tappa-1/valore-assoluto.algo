@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "valore-assoluto",
     "description": "Valore assoluto di un intero negativo (resta intero) e di un reale negativo (resta reale)."

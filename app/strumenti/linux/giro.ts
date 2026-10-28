@@ -66,7 +66,7 @@ const vettore = join(cartellaProva, "vettore di prova.algo");
 const pesante = join(cartellaProva, "memoria di prova.algo");
 const programmaPesante = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "memoria" },
   functions: [
     {

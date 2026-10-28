@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "risultato-stringa-oltre-la-lunghezza",
     "description": "La funzione restituisce una stringa più lunga della sua lunghezza massima: si ferma sulla fine della funzione, prima che chi chiama riceva il risultato."

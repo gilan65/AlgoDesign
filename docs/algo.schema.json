@@ -10,7 +10,11 @@
       ]
     },
     "schema_version": {
-      "const": 1
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
     },
     "metadata": {
       "type": "object",
@@ -62,6 +66,51 @@
       "required": [],
       "additionalProperties": false
     },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "integer",
+                    "real",
+                    "character",
+                    "string",
+                    "boolean"
+                  ]
+                },
+                "max_length": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "name",
+                "type"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "name",
+          "fields"
+        ],
+        "additionalProperties": false
+      }
+    },
     "shared_constants": {
       "type": "array",
       "items": {
@@ -77,8 +126,12 @@
               "real",
               "character",
               "string",
-              "boolean"
+              "boolean",
+              "record"
             ]
+          },
+          "record": {
+            "type": "string"
           },
           "size": {
             "type": "integer"
@@ -135,7 +188,38 @@
           "name",
           "type"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "if": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "record"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        "then": {
+          "type": "object",
+          "properties": {
+            "record": {}
+          },
+          "required": [
+            "record"
+          ]
+        },
+        "else": {
+          "not": {
+            "type": "object",
+            "properties": {
+              "record": {}
+            },
+            "required": [
+              "record"
+            ]
+          }
+        }
       }
     },
     "functions": {
@@ -193,8 +277,12 @@
                           "real",
                           "character",
                           "string",
-                          "boolean"
+                          "boolean",
+                          "record"
                         ]
+                      },
+                      "record": {
+                        "type": "string"
                       },
                       "size": {
                         "type": "integer"
@@ -251,7 +339,38 @@
                       "name",
                       "type"
                     ],
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "if": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "const": "record"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ]
+                    },
+                    "then": {
+                      "type": "object",
+                      "properties": {
+                        "record": {}
+                      },
+                      "required": [
+                        "record"
+                      ]
+                    },
+                    "else": {
+                      "not": {
+                        "type": "object",
+                        "properties": {
+                          "record": {}
+                        },
+                        "required": [
+                          "record"
+                        ]
+                      }
+                    }
                   }
                 },
                 "body": {
@@ -327,8 +446,12 @@
                           "real",
                           "character",
                           "string",
-                          "boolean"
+                          "boolean",
+                          "record"
                         ]
+                      },
+                      "record": {
+                        "type": "string"
                       },
                       "size": {
                         "type": "integer"
@@ -385,7 +508,38 @@
                       "name",
                       "type"
                     ],
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "if": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "const": "record"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ]
+                    },
+                    "then": {
+                      "type": "object",
+                      "properties": {
+                        "record": {}
+                      },
+                      "required": [
+                        "record"
+                      ]
+                    },
+                    "else": {
+                      "not": {
+                        "type": "object",
+                        "properties": {
+                          "record": {}
+                        },
+                        "required": [
+                          "record"
+                        ]
+                      }
+                    }
                   }
                 },
                 "body": {
@@ -519,7 +673,11 @@
                                   "function_with_effect",
                                   "invalid_default_value",
                                   "function_name_in_use",
-                                  "reference_without_value"
+                                  "reference_without_value",
+                                  "unknown_record",
+                                  "unknown_record_field",
+                                  "record_name_in_use",
+                                  "invalid_record"
                                 ]
                               },
                               "block": {
@@ -651,8 +809,12 @@
                     "real",
                     "character",
                     "string",
-                    "boolean"
+                    "boolean",
+                    "record"
                   ]
+                },
+                "return_record": {
+                  "type": "string"
                 },
                 "return_size": {
                   "type": "integer"
@@ -678,8 +840,12 @@
                           "real",
                           "character",
                           "string",
-                          "boolean"
+                          "boolean",
+                          "record"
                         ]
+                      },
+                      "record": {
+                        "type": "string"
                       },
                       "size": {
                         "type": "integer"
@@ -736,7 +902,38 @@
                       "name",
                       "type"
                     ],
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "if": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "const": "record"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ]
+                    },
+                    "then": {
+                      "type": "object",
+                      "properties": {
+                        "record": {}
+                      },
+                      "required": [
+                        "record"
+                      ]
+                    },
+                    "else": {
+                      "not": {
+                        "type": "object",
+                        "properties": {
+                          "record": {}
+                        },
+                        "required": [
+                          "record"
+                        ]
+                      }
+                    }
                   }
                 },
                 "body": {
@@ -874,7 +1071,11 @@
                                   "function_with_effect",
                                   "invalid_default_value",
                                   "function_name_in_use",
-                                  "reference_without_value"
+                                  "reference_without_value",
+                                  "unknown_record",
+                                  "unknown_record_field",
+                                  "record_name_in_use",
+                                  "invalid_record"
                                 ]
                               },
                               "block": {
@@ -972,7 +1173,38 @@
                 "body",
                 "end"
               ],
-              "additionalProperties": false
+              "additionalProperties": false,
+              "if": {
+                "type": "object",
+                "properties": {
+                  "return_type": {
+                    "const": "record"
+                  }
+                },
+                "required": [
+                  "return_type"
+                ]
+              },
+              "then": {
+                "type": "object",
+                "properties": {
+                  "return_record": {}
+                },
+                "required": [
+                  "return_record"
+                ]
+              },
+              "else": {
+                "not": {
+                  "type": "object",
+                  "properties": {
+                    "return_record": {}
+                  },
+                  "required": [
+                    "return_record"
+                  ]
+                }
+              }
             }
           }
         ]
@@ -1098,7 +1330,11 @@
                       "function_with_effect",
                       "invalid_default_value",
                       "function_name_in_use",
-                      "reference_without_value"
+                      "reference_without_value",
+                      "unknown_record",
+                      "unknown_record_field",
+                      "record_name_in_use",
+                      "invalid_record"
                     ]
                   },
                   "block": {

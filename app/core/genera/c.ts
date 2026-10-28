@@ -74,7 +74,7 @@ import { lunghezzaMassima as lunghezzaMassimaNelNucleo } from "../controllo/lung
 import { spazioDellaPila, spazioDiUnaChiamata, tettoDelleChiamate } from "../controllo/spazio";
 import { analizza, type Espressione } from "../espressioni/analizzatore";
 import type { FaseDelCiclo } from "../interprete/interprete";
-import { opzioniPredefinite, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione as FunzioneDelProgetto, type Progetto, type Tipo } from "../progetto/modello";
+import { opzioniPredefinite, tipoSemplice, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione as FunzioneDelProgetto, type Progetto, type Tipo } from "../progetto/modello";
 import { genera, parametriDelCaso, segnate, type Generato, type Riga } from "./forma";
 import { motiviCol } from "./motivi";
 import {
@@ -287,11 +287,13 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       case "booleano":
         return "boolean";
       case "nome":
-        return dati.get(e.nome)!.type;
+        return tipoSemplice(dati.get(e.nome)!.type);
+      case "campo":
+        throw new Error("il campo di un record: il controllo statico dice fuori tappa un progetto coi record");
       case "indice":
         return vettore(e.base) ? tipo(e.base) : "character";
       case "chiamata":
-        return perNome.get(e.nome)!.return_type!;
+        return tipoSemplice(perNome.get(e.nome)!.return_type!);
       case "unario":
         switch (e.operatore) {
           case "-":
@@ -470,6 +472,8 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         return operando("3.141592653589793");
       case "nome":
         return puntatori.has(e.nome) ? { t: `*${e.nome}`, forza: 14 } : operando(e.nome);
+      case "campo":
+        throw new Error("il campo di un record: il controllo statico dice fuori tappa un progetto coi record");
       case "indice": {
         if (e.base.genere === "nome" && vettore(e.base)) return operando(`${e.base.nome}[${espressione(e.indice).t}]`);
         // Il carattere di una stringa, o l'elemento del vettore restituito da una funzione: prima la chiamata, poi
@@ -486,7 +490,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         const parametri = parametriDi(g);
         const parti = e.argomenti.map((a, k) => aSe(() => nelDato(a, parametri[k]!)));
         const daParte = tranneLUltima(parti);
-        const { testi, avvolgi } = inOrdine(parti.map((parte, k) => ({ parte, tipo: parametri[k]!.type, daParte: daParte[k]! })));
+        const { testi, avvolgi } = inOrdine(parti.map((parte, k) => ({ parte, tipo: tipoSemplice(parametri[k]!.type), daParte: daParte[k]! })));
         if (fermano.get(e.nome) === true) fermaQui();
         // Una funzione del giro riceve per prima la riga della chiamata.
         const x = avvolgi(chiamata(e.nome, ...(nelGiro(e.nome) ? ["__LINE__"] : []), ...testi.map((y) => y.t)));
@@ -600,7 +604,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
   const tipoDelDato = (d: Dato) => {
     if (d.type === "boolean") intestazioni.add("stdbool.h");
     if (d.type === "real") reali = true;
-    return { integer: "int", real: "double", character: "int", string: "char", boolean: "bool" }[d.type];
+    return { integer: "int", real: "double", character: "int", string: "char", boolean: "bool" }[tipoSemplice(d.type)];
   };
   /** Le dimensioni di un dato dopo il nome: quella del vettore e quella della stringa. */
   const forma = (d: Dato) => `${d.size === undefined ? "" : `[${d.size}]`}${d.type === "string" ? `[4 * ${d.max_length ?? lunghezzaPredefinita} + 1]` : ""}`;
@@ -746,7 +750,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
   }
 
   const leggi = (destinazione: string, d: Dato): string => {
-    switch (d.type) {
+    switch (tipoSemplice(d.type)) {
       case "integer":
         return `${destinazione} = ${usa("leggiIntero")}();`;
       case "real":
@@ -859,7 +863,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     const argomenti: Argomento[] = b.arguments.map((testo, k) => {
       const d = parametri[k]!;
       const a = albero(testo);
-      if (d.parameter === "value") return { genere: "valore", parte: aSe(() => nelDato(a, d)), tipo: d.type };
+      if (d.parameter === "value") return { genere: "valore", parte: aSe(() => nelDato(a, d)), tipo: tipoSemplice(d.type) };
       if (a.genere === "nome") {
         const suo = dati.get(a.nome)!;
         const comeE = suo.size !== undefined || suo.type === "string" || puntatori.has(a.nome);
@@ -1041,7 +1045,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     const nome = `${prefissoDellaCopia[lingua]}${d.name}`;
     return d.size === undefined ? `const char *${nome}` : `const ${t} ${nome}${forma(d)}`;
   };
-  const restituito = (f: FunzioneDelProgetto) => (f.kind !== "function" ? "void" : conStruttura(f) ? strutturaDelRisultato(lingua, f.name!) : tipoDelC(f.return_type!));
+  const restituito = (f: FunzioneDelProgetto) => (f.kind !== "function" ? "void" : conStruttura(f) ? strutturaDelRisultato(lingua, f.name!) : tipoDelC(tipoSemplice(f.return_type!)));
   const intestazioneDi = (f: FunzioneDelProgetto) =>
     `${restituito(f)} ${f.name}(${[...(delGiro.has(f) ? [`int ${parametroDellaRiga}`] : []), ...parametriDi(f).map(parametroDelC)].join(", ") || "void"})`;
   /** Le due righe di una funzione del giro: all'inizio conta la chiamata col suo spazio (e si ferma oltre un tetto,
@@ -1067,7 +1071,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     if (!conStruttura(f)) {
       const x = calcola(rientro, id, () => nelDato(e, { type: f.return_type! }).t);
       if (!(delGiro.has(f) && chiamaIlGiro(e))) return [...uscita(f), { testo: `${rientro}return ${x};`, blocco: id }];
-      const v = temporanea(f.return_type!);
+      const v = temporanea(tipoSemplice(f.return_type!));
       return [{ testo: `${rientro}${v} = ${x};`, blocco: id }, ...uscita(f), { testo: `${rientro}return ${v};`, blocco: id }];
     }
     const risultato = nomeDelRisultato[lingua];
@@ -1174,7 +1178,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     };
     const risultato: Riga[] = [];
     if (f.kind === "function") {
-      const t = f.return_type!;
+      const t = tipoSemplice(f.return_type!);
       if (t === "boolean") intestazioni.add("stdbool.h");
       if (t === "real") reali = true;
       if (f.return_size !== undefined) {
@@ -1195,7 +1199,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       const riferimenti = parametri.filter((d) => d.parameter !== "value");
       if (riferimenti.length > 0) scrittura('printf("\\n");');
       for (const d of riferimenti)
-        for (const nome of d.size === undefined ? [d.name] : [...Array(d.size).keys()].map((i) => `${d.name}[${i}]`)) scriviValore(`${nome} = `, nome, d.type);
+        for (const nome of d.size === undefined ? [d.name] : [...Array(d.size).keys()].map((i) => `${d.name}[${i}]`)) scriviValore(`${nome} = `, nome, tipoSemplice(d.type));
     }
     const tutte = [...dichiarazioni, ...temporanee.map((x) => ({ testo: dichiarazioneDi(x) })), ...risultato];
     return [{ testo: "int main(void) {" }, ...tutte, ...(tutte.length > 0 ? [{ testo: "" }] : []), ...righe, { testo: `${rientro}return 0;` }, { testo: "}" }];

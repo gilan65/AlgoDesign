@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "uscita-non-assegnata",
     "description": "Un parametro di uscita che la procedura non assegna: il dato di chi chiama aveva un valore, lo perde, e la scrittura dopo la chiamata si ferma."

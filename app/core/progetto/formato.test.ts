@@ -10,7 +10,8 @@ import { codiciAvviso, codiciErrore, codiciErroreStatico } from "./modello";
 type Dove = "lettura" | "salvataggio" | "statico" | "esecuzione";
 const regole: readonly { id: string; regola: string; dove: Dove }[] = [
   { id: "F2.1", regola: "format obbligatorio, sempre \"algodesign\"", dove: "lettura" },
-  { id: "F2.2", regola: "schema_version obbligatorio, intero, solo 1", dove: "lettura" },
+  { id: "F2.2", regola: "schema_version obbligatorio, intero, 1 o 2; la 1 si apre come la 2, e salvando si scrive 2", dove: "lettura" },
+  { id: "F2.13", regola: "records facoltativo, elenco di record", dove: "lettura" },
   { id: "F2.3", regola: "metadata obbligatorio, oggetto", dove: "lettura" },
   { id: "F2.4", regola: "options facoltativo, oggetto", dove: "lettura" },
   { id: "F2.5", regola: "shared_constants facoltativo, elenco di dati", dove: "lettura" },
@@ -44,6 +45,8 @@ const regole: readonly { id: string; regola: string; dove: Dove }[] = [
   { id: "F4.14", regola: "dato: parameter facoltativo, value, reference o out", dove: "lettura" },
   { id: "F4.15", regola: "parametro: solo in procedure e function, senza initial, role né constant; mai per riferimento né per uscita in una function", dove: "statico" },
   { id: "F4.16", regola: "costante comune: constant true, senza role né parameter", dove: "statico" },
+  { id: "F4.17", regola: "dato: type anche record, e allora record obbligatorio (stringa); con un altro tipo record non c'è", dove: "lettura" },
+  { id: "F4.18", regola: "dato: record di un record del progetto, mai un vettore di record; il valore iniziale un letterale per campo", dove: "statico" },
   { id: "F5.1", regola: "funzione: id obbligatorio, stringa non vuota, unico nel progetto", dove: "lettura" },
   { id: "F5.2", regola: "funzione: kind obbligatorio, uno dei tre", dove: "lettura" },
   { id: "F5.3", regola: "funzione: name per procedure e function, assente nel main", dove: "lettura" },
@@ -56,6 +59,7 @@ const regole: readonly { id: string; regola: string; dove: Dove }[] = [
   { id: "F5.10", regola: "funzione: default_result letterale del tipo restituito", dove: "statico" },
   { id: "F5.11", regola: "funzione: test_cases solo per procedure e function, elenco di casi d'uso coi nomi unici fra quelli della funzione", dove: "lettura" },
   { id: "F5.12", regola: "funzione: return_size e return_max_length solo per function, facoltativi, interi", dove: "lettura" },
+  { id: "F5.14", regola: "funzione: return_type anche record, e allora return_record obbligatorio (stringa), solo per function", dove: "lettura" },
   { id: "F5.13", regola: "funzione: return_size da 1 al tetto, return_max_length da 1 al tetto e solo per una stringa; un vettore senza default_result", dove: "statico" },
   { id: "F6.1", regola: "blocco: id obbligatorio, stringa non vuota, unico nel progetto", dove: "lettura" },
   { id: "F6.2", regola: "blocco: kind obbligatorio, uno dei dieci", dove: "lettura" },
@@ -73,6 +77,8 @@ const regole: readonly { id: string; regola: string; dove: Dove }[] = [
   { id: "F6.14", regola: "comment: text", dove: "lettura" },
   { id: "F6.15", regola: "destinazioni (un nome o v[i]) ed espressioni nella sintassi del linguaggio", dove: "statico" },
   { id: "F6.16", regola: "al più livelliMassimi (50) livelli di blocchi annidati, oltre: too_deep", dove: "lettura" },
+  { id: "F9.1", regola: "record: name obbligatorio, stringa; fields obbligatorio, elenco di campi { name, type uno dei cinque, max_length intero facoltativo }", dove: "lettura" },
+  { id: "F9.2", regola: "record: nome secondo le regole dei nomi, unico fra i record, mai di un tipo, di un dato o di una funzione; almeno un campo, coi nomi validi e unici", dove: "statico" },
   { id: "F7.1", regola: "caso d'uso: name obbligatorio, stringa, unico fra i casi", dove: "lettura" },
   { id: "F7.2", regola: "caso d'uso: description facoltativo, stringa", dove: "lettura" },
   { id: "F7.3", regola: "caso d'uso: inputs obbligatorio, elenco di { data, text }", dove: "lettura" },
@@ -102,7 +108,7 @@ function regola(id: string, corpo: () => void): void {
 type Json = any;
 const base = (): Json => ({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "Prova", author: "a", description: "d", notes: "n" },
   options: { fill_character: "*", real_decimals: 3 },
   shared_constants: [{ name: "K", type: "integer", constant: true, initial: "3" }],
@@ -208,7 +214,12 @@ describe("radice", () => {
     rifiuta((p) => (p.format = "flowchart"), e("format", "invalid_value"));
   });
   regola("F2.2", () => {
-    rifiuta((p) => (p.schema_version = 2), e("schema_version", "unknown_schema_version"));
+    // La versione 1 si apre e diventa 2: salvando, il file la dice.
+    const uno = base();
+    uno.schema_version = 1;
+    const letto = leggi(uno);
+    expect(letto.ok && [letto.progetto.schema_version, salva(letto.progetto).startsWith('{\n  "format": "algodesign",\n  "schema_version": 2,\n')]).toEqual([2, true]);
+    rifiuta((p) => (p.schema_version = 3), e("schema_version", "unknown_schema_version"));
     rifiuta((p) => (p.schema_version = 0), e("schema_version", "unknown_schema_version"));
     rifiuta((p) => (p.schema_version = "1"), e("schema_version", "wrong_type"));
     rifiuta((p) => delete p.schema_version, e("schema_version", "missing_field"));
@@ -300,6 +311,46 @@ describe("radice", () => {
     expect(apri(`${testo.slice(0, 1)}${String.fromCharCode(0xfeff)}${testo.slice(1)}`)).toEqual({ ok: false, errori: [e("", "invalid_json")] });
     // Controllo positivo: senza saltarlo, `JSON.parse` lo rifiuta.
     expect(() => JSON.parse(conBom)).toThrow();
+  });
+});
+
+describe("record", () => {
+  const conRecord = (p: Json) => {
+    p.records = [{ name: "alunno", fields: [{ name: "nome", type: "string", max_length: 20 }, { name: "voto", type: "integer" }] }];
+    main(p).data.push({ name: "a", type: "record", record: "alunno" });
+  };
+  const a = (p: Json) => main(p).data.at(-1);
+  // La posizione del dato aggiunto e quella della funzione della base.
+  const ia = main(base()).data.length;
+  const iF = base().functions.findIndex((x: Json) => x.kind === "function");
+  const iP = base().functions.findIndex((x: Json) => x.kind === "procedure");
+  regola("F2.13", () => {
+    accetta(conRecord);
+    accetta((p) => (p.records = []));
+    rifiuta((p) => (p.records = {}), e("records", "wrong_type"));
+  });
+  regola("F9.1", () => {
+    rifiuta((p) => (conRecord(p), delete p.records[0].fields), e("records[0].fields", "missing_field"));
+    rifiuta((p) => (conRecord(p), delete p.records[0].name), e("records[0].name", "missing_field"));
+    rifiuta((p) => (conRecord(p), (p.records[0].fields[1].type = "record")), e("records[0].fields[1].type", "invalid_value"));
+    rifiuta((p) => (conRecord(p), (p.records[0].fields[0].max_length = "20")), e("records[0].fields[0].max_length", "wrong_type"));
+    rifiuta((p) => (conRecord(p), (p.records[0].fields[0].size = 3)), e("records[0].fields[0].size", "unknown_field"));
+    // Un record senza campi si apre: lo dice il controllo statico.
+    accetta((p) => (conRecord(p), (p.records[0].fields = [])));
+  });
+  regola("F4.17", () => {
+    rifiuta((p) => (conRecord(p), delete a(p).record), e(`functions[0].data[${ia}].record`, "missing_field"));
+    rifiuta((p) => (conRecord(p), (a(p).type = "integer")), e(`functions[0].data[${ia}].record`, "field_not_allowed"));
+    rifiuta((p) => (conRecord(p), (a(p).record = 1)), e(`functions[0].data[${ia}].record`, "wrong_type"));
+    // Il record che non c'è si apre: lo dice il controllo statico.
+    accetta((p) => (conRecord(p), (a(p).record = "studente")));
+  });
+  regola("F5.14", () => {
+    const f = (p: Json) => p.functions.find((x: Json) => x.kind === "function");
+    accetta((p) => (conRecord(p), (f(p).return_type = "record"), (f(p).return_record = "alunno")));
+    rifiuta((p) => (conRecord(p), (f(p).return_type = "record")), e(`functions[${iF}].return_record`, "missing_field"));
+    rifiuta((p) => (conRecord(p), (f(p).return_record = "alunno")), e(`functions[${iF}].return_record`, "field_not_allowed"));
+    rifiuta((p) => (p.functions[iP].return_record = "alunno"), e(`functions[${iP}].return_record`, "field_not_allowed"));
   });
 });
 
@@ -660,6 +711,7 @@ const codiciDelDocumento = {
     "condition_not_boolean", "chained_comparison", "chained_power", "division_by_literal_zero", "invalid_step", "unknown_callee",
     "argument_mismatch", "reference_not_assignable", "same_reference", "function_as_statement", "procedure_in_expression",
     "limit_exceeded", "syntax_error", "function_with_effect", "invalid_default_value", "function_name_in_use", "reference_without_value",
+    "unknown_record", "unknown_record_field", "record_name_in_use", "invalid_record",
   ],
   avvisi: [
     "integer_division_to_real", "real_equality", "useless_conversion", "constant_loop_condition", "input_never_read", "output_never_written",
@@ -675,11 +727,11 @@ const appaia = (documento: readonly string[], modello: readonly string[]) => ({
 });
 const appaiato = (n: number) => ({ conteggi: [n, n], soloNelDocumento: [], soloNelModello: [] });
 
-test("i codici dell'atteso sono quelli del formato, nome per nome: 20 + 28 + 11, 57 distinti", () => {
+test("i codici dell'atteso sono quelli del formato, nome per nome: 20 + 32 + 11, 61 distinti", () => {
   expect(appaia(codiciDelDocumento.interprete, codiciErrore)).toEqual(appaiato(20));
-  expect(appaia(codiciDelDocumento.statici, codiciErroreStatico)).toEqual(appaiato(28));
+  expect(appaia(codiciDelDocumento.statici, codiciErroreStatico)).toEqual(appaiato(32));
   expect(appaia(codiciDelDocumento.avvisi, codiciAvviso)).toEqual(appaiato(11));
-  expect(new Set([...codiciErrore, ...codiciErroreStatico, ...codiciAvviso]).size).toBe(57);
+  expect(new Set([...codiciErrore, ...codiciErroreStatico, ...codiciAvviso]).size).toBe(61);
   // Controllo positivo: un nome battuto male con lo stesso conteggio si vede nei due versi.
   const battutoMale = codiciErrore.map((c) => (c === "too_many_steps" ? "too_many_step" : c));
   expect(appaia(codiciDelDocumento.interprete, battutoMale)).toEqual({ conteggi: [20, 20], soloNelDocumento: ["too_many_steps"], soloNelModello: ["too_many_step"] });

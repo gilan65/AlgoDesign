@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "elemento-di-stringhe-troppo-lungo",
     "description": "Un elemento di un vettore di stringhe riceve una stringa più lunga della sua lunghezza massima, nel programma principale o attraverso un riferimento: si ferma sull'assegnazione."

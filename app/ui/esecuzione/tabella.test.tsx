@@ -415,7 +415,7 @@ test("in fila la cella disegna i primi 200 caratteri: l'ultimo pezzo tagliato se
 test("un vettore: una colonna per elemento, e la tabella è l'atteso scritto a mano", async () => {
   const testo = JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "vettore" },
     functions: [
       {
@@ -452,7 +452,7 @@ test("la riga che spiega un vettore oltre il tetto: le frasi dei dizionari, nell
   const r = apri(
     JSON.stringify({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "quadrati" },
       functions: [{ id: "f1", kind: "main", data: [{ name: "v", type: "integer", size: 1000 }], body: [], end: { id: "b1" } }],
     }),
@@ -471,7 +471,7 @@ test("la riga che spiega un vettore oltre il tetto: le frasi dei dizionari, nell
   const uno = apri(
     JSON.stringify({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "uno" },
       functions: [{ id: "f1", kind: "main", data: [{ name: "u", type: "integer", size: 1 }], body: [], end: { id: "b1" } }],
     }),
@@ -584,7 +584,7 @@ test("una riga sola tolta: sopra la tabella e nel messaggio dopo l'esportazione 
   // 1001 azioni: il valore iniziale di i, poi 499 giri di condizione e assegnazione, l'ultima condizione e la fine.
   const testo = JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "mille-e-una" },
     functions: [
       {

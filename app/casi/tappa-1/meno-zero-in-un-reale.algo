@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "meno-zero-in-un-reale",
     "description": "L'intero -0 dato a un reale, come valore iniziale e con un'assegnazione: è lo zero, senza segno."

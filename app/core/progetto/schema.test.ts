@@ -47,7 +47,7 @@ test("ogni file del corpus è valido per il lettore e per lo schema", () => {
 /** Un progetto valido con un blocco annidato, un dato, una funzione coi suoi casi e un caso del programma. */
 const partenza = () => ({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "Prova", library: true },
   options: { real_decimals: 3, call_stack_limit: 10 },
   shared_constants: [{ name: "MASSIMO", type: "integer", constant: true, initial: "10" }],
@@ -90,7 +90,7 @@ const sondeDellaForma: readonly Sonda[] = [
   ["la radice senza metadata", (p) => delete (p as Record<string, unknown>).metadata],
   ["il nome del progetto vuoto", (p) => (p.metadata.name = "")],
   ["un formato diverso", (p) => (p.format = "altro")],
-  ["la versione dello schema 2", (p) => (p.schema_version = 2)],
+  ["la versione dello schema 3", (p) => (p.schema_version = 3)],
   ["nessuna funzione principale", (p) => p.functions.splice(0, 1)],
   ["due funzioni principali", (p) => p.functions.push({ ...main(p), id: "f9", body: [], end: { id: "b9" } } as never)],
   ["il programma principale col nome", (p) => (main(p).name = "principale")],

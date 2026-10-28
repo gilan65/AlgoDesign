@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "per-ogni-annidati",
     "description": "Un ciclo per ogni dentro un altro, un ciclo per col passo -2, un ciclo per dentro un per ogni, e un elemento del vettore scritto con un indice calcolato dentro il ciclo che lo percorre."

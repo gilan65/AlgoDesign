@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "risultato-stringa",
     "description": "Una funzione che restituisce una stringa con la sua lunghezza massima: in un dato, e con l'indice il suo carattere; la funzione eseguita da sola scrive la stringa dopo la freccia."

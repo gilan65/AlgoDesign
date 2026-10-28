@@ -242,7 +242,7 @@ describe("il programma di riferimento contro l'atteso scritto a mano", () => {
     const p = apri(
       JSON.stringify({
         format: "algodesign",
-        schema_version: 1,
+        schema_version: 2,
         metadata: { name: "meno-zero" },
         functions: [
           {
@@ -421,7 +421,7 @@ describe("dentro, sopra e fuori sull'interprete vero: le chiamate su tre livelli
     // azioni per giro sarebbe il ciclo stesso, e la prova non lo distinguerebbe.
     const r = leggi({
       format: "algodesign",
-      schema_version: 1,
+      schema_version: 2,
       metadata: { name: "senza fine" },
       functions: [
         { id: "f1", kind: "main", data: [], body: [{ id: "b1", kind: "while", condition: "true", body: [{ id: "b2", kind: "call", callee: "p", arguments: [] }] }], end: { id: "b3" } },
@@ -474,7 +474,7 @@ describe("dentro, sopra e fuori sull'interprete vero: le chiamate su tre livelli
     const progetto = (prima: number) => {
       const r = leggi({
         format: "algodesign",
-        schema_version: 1,
+        schema_version: 2,
         metadata: { name: "albero" },
         functions: [
           {
@@ -554,7 +554,7 @@ describe("il passo su una funzione ricorsiva: la ripresa ferma Entra, Passo ed E
   const pariEDispari = apriFile("tappa-4/pari-e-dispari");
   const due = leggi({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "due chiamate" },
     functions: [
       {
@@ -578,7 +578,7 @@ describe("il passo su una funzione ricorsiva: la ripresa ferma Entra, Passo ed E
   // solo la fine (b7, b8, b9), `mostra` scrive (b10) e finisce (b11).
   const neiCicli = leggi({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "nei cicli" },
     functions: [
       {
@@ -606,7 +606,7 @@ describe("il passo su una funzione ricorsiva: la ripresa ferma Entra, Passo ed E
   // Il valore restituito che chiude il programma: `scrivi uno()` è l'ultimo blocco (b1); `uno` ha solo la fine (b3).
   const chiude = leggi({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "chiude" },
     functions: [
       { id: "f1", kind: "main", data: [], body: [{ id: "b1", kind: "write", values: ["uno()"], newline: true }], end: { id: "b2" } },
@@ -1556,7 +1556,7 @@ type Json = any;
 function progetto(data: Json[], body: Json[], test_cases?: Json[]): Progetto {
   const esito = leggi({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: "prova" },
     functions: [{ id: "f1", kind: "main", data, body, end: { id: "fine" } }],
     ...(test_cases ? { test_cases } : {}),

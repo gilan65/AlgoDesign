@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "risultato-vettore-per-ogni",
     "description": "Un «per ogni» su una funzione che restituisce un vettore: la funzione si chiama una volta, all'inizio, e il ciclo percorre quel risultato anche se il corpo cambia l'argomento."

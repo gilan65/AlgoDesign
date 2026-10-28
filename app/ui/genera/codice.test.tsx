@@ -56,7 +56,7 @@ const misura = (t: string) => [...t].length * 10;
  * fuori dal vettore con n = 5. */
 const DOPPIO = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "doppio" },
   functions: [
     {
@@ -319,7 +319,7 @@ test("la riga corrente in un ciclo per è quella della fase: nel Python una per 
 /** Un dato col valore iniziale, una scrittura, la fine. */
 const BREVE = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "doppio" },
   functions: [{ id: "f1", kind: "main", data: [{ name: "i", type: "integer", initial: "1", role: "output" }], body: [{ id: "b1", kind: "write", values: ["i"], newline: true }], end: { id: "b2" } }],
 });
@@ -467,7 +467,7 @@ test("le linguette sono i linguaggi accesi nelle preferenze, nel loro ordine: al
 /** Un progetto che sta in «Accademico»: un intero e una scrittura. */
 const INTERI = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "doppio" },
   functions: [{ id: "f1", kind: "main", data: [{ name: "n", type: "integer", initial: "3" }], body: [{ id: "b1", kind: "write", values: ["n * 2"], newline: true }], end: { id: "b2" } }],
 });
@@ -523,7 +523,7 @@ test("un progetto che non sta in «Accademico»: al posto del codice ciò che ma
  * Scrittura con un reale subito prima della Lettura. */
 const CON_UNA_PROCEDURA = JSON.stringify({
   format: "algodesign",
-  schema_version: 1,
+  schema_version: 2,
   metadata: { name: "doppio" },
   functions: [
     {

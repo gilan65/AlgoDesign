@@ -329,6 +329,25 @@ const tappeDelDifferenziale = [1, 2, 3, 4];
 const tappeFuoriDalDifferenziale: number[] = [];
 const casiDelleTappe = (cartella: string, tappe: readonly number[], funzioni: "con" | "senza" | "sole" = "senza") => tappe.reduce((n, t) => n + casiDellaTappa(cartella, t, funzioni), 0);
 
+/** I casi dei tipi non semplici (la cartella `tipi/`): il controllo li conosce, l'esecuzione e i generatori ancora no.
+ * Quelli dei file che attendono il solo errore statico si eseguono (`bun run casi`, il differenziale senza programma);
+ * gli altri file sono fuori tappa. */
+function casiDeiTipi(cartella: string): { siEseguono: number; fuori: number; fileFuori: number } {
+  const dove = join(cartella, "tipi");
+  const conti = { siEseguono: 0, fuori: 0, fileFuori: 0 };
+  if (!existsSync(dove)) return conti;
+  for (const f of readdirSync(dove).filter((x) => x.endsWith(".algo"))) {
+    const p = JSON.parse(readFileSync(join(dove, f), "utf8"));
+    const casi = [...(p.test_cases ?? []), ...(p.functions as { test_cases?: unknown[] }[]).flatMap((g) => g.test_cases ?? [])] as { expected: { static_error?: unknown } }[];
+    if (casi.length > 0 && casi.every((c) => c.expected.static_error !== undefined)) conti.siEseguono += casi.length;
+    else {
+      conti.fuori += casi.length;
+      conti.fileFuori++;
+    }
+  }
+  return conti;
+}
+
 /** La copia del corpus con un difetto per rilevatore, e le righe che lo strumento deve stampare. */
 function corpusDifettoso(copia: string): string[] {
   const casi = join(radice, "casi");
@@ -457,8 +476,9 @@ async function portaCasi(): Promise<void> {
     rosso("casi", `exit ${vera.codice}; ${[...vera.uscita.matchAll(/^(ROSSO|AVVISI DIVERSI|PROBLEMA) .*$/gm)].map((m) => m[0]).join(" · ") || riepilogo?.[0] || "nessun riepilogo"}`);
   // Il numero dei casi: contato qui, confrontato con i dichiarati e con gli eseguiti dello strumento.
   const contati = casiDelleTappe(join(radice, "casi"), tappeDeiCasi, "con");
-  if (contati !== dichiarati || contati !== eseguiti || String(contati) !== riepilogo[2])
-    rosso("casi", `casi delle tappe ${tappeDeiCasi.join(", ")} contati ${contati}, dichiarati ${dichiarati}, eseguiti ${eseguiti}, nel riepilogo ${riepilogo[2]}`);
+  const deiTipi = casiDeiTipi(join(radice, "casi")).siEseguono;
+  if (contati !== dichiarati || contati !== eseguiti || String(contati + deiTipi) !== riepilogo[2])
+    rosso("casi", `casi delle tappe ${tappeDeiCasi.join(", ")} contati ${contati}, dichiarati ${dichiarati}, eseguiti ${eseguiti}; dei tipi che si eseguono ${deiTipi}; nel riepilogo ${riepilogo[2]}`);
   // I casi delle funzioni eseguite da sole: contati qui, e non zero (il riferimento della tappa 3 ne ha).
   const diFunzioni = casiDelleTappe(join(radice, "casi"), tappeDeiCasi, "sole");
   if (diFunzioni === 0 || String(diFunzioni) !== riepilogo[9])
@@ -714,9 +734,11 @@ async function portaDifferenziale(): Promise<void> {
   if (n === 0 || nonTutti.length > 0 || mancanti.length > 0 || eseguitiInPiu.length > 0)
     rosso("differenziale", `casi nel confronto ${n}; esecutori non verdi su tutti: ${JSON.stringify(nonTutti.map((m) => m?.[0]))}; richiesti ${esecutoriRichiesti.length} dal contratto, mancanti: ${JSON.stringify(mancanti)}, eseguiti in più: ${JSON.stringify(eseguitiInPiu)} | ${toolchain}`);
   const cartellaDeiCasi = join(radice, "casi");
-  const contati = casiDelleTappe(cartellaDeiCasi, tappeDelDifferenziale, "con");
+  // I casi dei tipi non semplici: quelli con l'errore statico entrano nel confronto (senza programma), gli altri fuori tappa.
+  const deiTipi = casiDeiTipi(cartellaDeiCasi);
+  const contati = casiDelleTappe(cartellaDeiCasi, tappeDelDifferenziale, "con") + deiTipi.siEseguono;
   if (n + Number(riepilogo[5]) !== contati || Number(riepilogo[5]) !== esclusiDalDifferenziale.length)
-    rosso("differenziale", `casi delle tappe ${tappeDelDifferenziale.join(", ")} contati ${contati}, nel confronto ${n}, esclusi ${riepilogo[5]} (attesi ${esclusiDalDifferenziale.length})`);
+    rosso("differenziale", `casi delle tappe ${tappeDelDifferenziale.join(", ")} e dei tipi che si eseguono contati ${contati}, nel confronto ${n}, esclusi ${riepilogo[5]} (attesi ${esclusiDalDifferenziale.length})`);
   const diFunzioni = casiDelleTappe(cartellaDeiCasi, tappeDelDifferenziale, "sole");
   if (Number(riepilogo[3]) !== diFunzioni) rosso("differenziale", `casi di funzioni nel confronto ${riepilogo[3]}, contati nei file ${diFunzioni}`);
   // Gli esclusi per nome, nei due versi: le righe ESCLUSO e l'elenco delle decisioni.
@@ -736,14 +758,14 @@ async function portaDifferenziale(): Promise<void> {
           return [...(p.test_cases ?? []), ...(p.functions as { test_cases?: unknown[] }[]).flatMap((g) => g.test_cases ?? [])];
         })
         .filter((c: { expected: { static_error?: unknown } }) => c.expected.static_error !== undefined).length,
-    0,
+    deiTipi.siEseguono,
   );
   const statiche = [...vera.uscita.matchAll(/^ERRORE STATICO /gm)].length;
   if (Number(riepilogo[4]) !== conStatico || statiche !== conStatico)
     rosso("differenziale", `casi con l'errore statico: nel riepilogo ${riepilogo[4]}, righe ${statiche}, attesi nei file ${conStatico}`);
   const fileDelle = (tappe: readonly number[]) => tappe.reduce((k, t) => k + readdirSync(join(cartellaDeiCasi, `tappa-${t}`)).filter((f) => f.endsWith(".algo")).length, 0);
-  const fuoriContati = casiDelleTappe(cartellaDeiCasi, tappeFuoriDalDifferenziale, "con");
-  const fileFuori = fileDelle(tappeFuoriDalDifferenziale);
+  const fuoriContati = casiDelleTappe(cartellaDeiCasi, tappeFuoriDalDifferenziale, "con") + deiTipi.fuori;
+  const fileFuori = fileDelle(tappeFuoriDalDifferenziale) + deiTipi.fileFuori;
   if (Number(riepilogo[6]) !== fuoriContati || Number(riepilogo[7]) !== fileFuori)
     rosso("differenziale", `fuori tappa ${riepilogo[6]} in ${riepilogo[7]} file; contati nelle tappe ${tappeFuoriDalDifferenziale.join(", ")}: ${fuoriContati} in ${fileFuori} file`);
 

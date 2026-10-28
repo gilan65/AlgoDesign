@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "assegnazione-stringa",
     "description": "Concatenazione con una lettera accentata e lunghezza in caratteri."

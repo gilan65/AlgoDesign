@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "scrittura-con-funzione-che-si-ferma",
     "description": "Una scrittura con due valori, il secondo da una funzione che si ferma: la scrittura scrive un valore alla volta, quindi il primo resta scritto."

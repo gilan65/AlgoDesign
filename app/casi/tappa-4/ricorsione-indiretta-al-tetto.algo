@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "ricorsione-indiretta-al-tetto",
     "description": "«pari» e «dispari» si chiamano l'una con l'altra: pari(n) tiene in corso n + 1 chiamate del giro, insieme."

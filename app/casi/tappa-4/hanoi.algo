@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "hanoi",
     "description": "Una procedura ricorsiva che scrive: la torre di Hanoi di n dischi dal piolo A al piolo C."

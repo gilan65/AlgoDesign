@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "ordine-di-valutazione",
     "description": "Due funzioni che si fermano nella stessa espressione: si valutano da sinistra a destra, quindi si ferma la prima."

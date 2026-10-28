@@ -9,7 +9,38 @@
 export const tipi = ["integer", "real", "character", "string", "boolean"] as const;
 export type Tipo = (typeof tipi)[number];
 
-/** Ciò che una funzione restituisce: uno dei cinque tipi, e con `return_size` un vettore di quel tipo. */
+/** Il tipo di un dato: uno dei cinque, o un record del progetto (nominato dal campo `record`). */
+export const tipiDelDato = [...tipi, "record"] as const;
+export type TipoDelDato = (typeof tipiDelDato)[number];
+
+/** Il tipo semplice di un dato, per chi non conosce ancora i record: un progetto coi record non gli arriva, perché il
+ * controllo statico lo dice fuori tappa. */
+export function tipoSemplice(t: TipoDelDato): Tipo {
+  if (t === "record") throw new Error("un record dove si attende un tipo semplice");
+  return t;
+}
+
+/** Se il progetto usa i record: ne definisce, o un dato, una costante comune o un risultato ne nomina uno (anche uno che
+ * non c'è). Chi non conosce ancora i record lo rifiuta prima di guardarlo, anche con gli errori statici. */
+export function usaIRecord(p: Pick<Progetto, "records" | "shared_constants" | "functions">): boolean {
+  const record = (d: { readonly type: TipoDelDato }) => d.type === "record";
+  return (p.records ?? []).length > 0 || (p.shared_constants ?? []).some(record) || p.functions.some((f) => f.data.some(record) || f.return_type === "record");
+}
+
+/** Un campo di un record: un tipo semplice, e per una stringa la lunghezza massima. */
+export interface Campo {
+  readonly name: string;
+  readonly type: Tipo;
+  readonly max_length?: number;
+}
+
+/** Un record del progetto: il nome e i campi, visibile da ogni funzione. */
+export interface DefinizioneDelRecord {
+  readonly name: string;
+  readonly fields: readonly Campo[];
+}
+
+/** Ciò che una funzione restituisce, quando è semplice: uno dei cinque tipi, e con `return_size` un vettore di quel tipo. */
 export type TipoRestituito = Tipo;
 
 export const ruoli = ["input", "output", "input_output"] as const;
@@ -40,7 +71,8 @@ export const codiciErroreStatico = [
   "condition_not_boolean", "chained_comparison", "chained_power", "division_by_literal_zero", "invalid_step",
   "unknown_callee", "argument_mismatch", "reference_not_assignable", "same_reference", "function_as_statement",
   "procedure_in_expression", "limit_exceeded", "syntax_error", "function_with_effect", "invalid_default_value",
-  "function_name_in_use", "reference_without_value",
+  "function_name_in_use", "reference_without_value", "unknown_record", "unknown_record_field", "record_name_in_use",
+  "invalid_record",
 ] as const;
 export const codiciAvviso = [
   "integer_division_to_real", "real_equality", "useless_conversion", "constant_loop_condition", "input_never_read",
@@ -56,7 +88,9 @@ export type ValoreIniziale = string | readonly string[] | { readonly each: strin
 
 export interface Dato {
   readonly name: string;
-  readonly type: Tipo;
+  readonly type: TipoDelDato;
+  /** Solo col tipo `record`, e lì obbligatorio: il nome del record. */
+  readonly record?: string;
   readonly size?: number;
   readonly constant?: boolean;
   readonly initial?: ValoreIniziale;
@@ -101,7 +135,9 @@ export interface Funzione {
   /** Assente nel programma principale, obbligatorio altrimenti. */
   readonly name?: string;
   /** Solo per `function`, e lì obbligatorio: con `return_size`, il tipo degli elementi del vettore restituito. */
-  readonly return_type?: TipoRestituito;
+  readonly return_type?: TipoDelDato;
+  /** Solo per `function` col tipo restituito `record`, e lì obbligatorio: il nome del record. */
+  readonly return_record?: string;
   /** Solo per `function`: presente, la funzione restituisce un vettore di tanti elementi. */
   readonly return_size?: number;
   /** Solo per `function` che restituisce una stringa: la sua lunghezza massima; assente, quella predefinita. */
@@ -180,9 +216,10 @@ export const opzioniPredefinite = { fill_character: " ", real_decimals: 2, call_
 
 export interface Progetto {
   readonly format: "algodesign";
-  readonly schema_version: 1;
+  readonly schema_version: 2;
   readonly metadata: Metadati;
   readonly options?: Opzioni;
+  readonly records?: readonly DefinizioneDelRecord[];
   readonly shared_constants?: readonly Dato[];
   readonly functions: readonly Funzione[];
   readonly test_cases?: readonly CasoDUso[];

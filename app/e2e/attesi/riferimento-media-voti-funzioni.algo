@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "riferimento-media-voti-funzioni",
     "description": "La stessa media dei voti, divisa in una procedura che legge il numero dei voti, una funzione che dice se un voto è valido e una procedura che scrive le stelle."

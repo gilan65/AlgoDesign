@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "libreria-dei-voti",
     "description": "Una libreria da cui si importa nel programma di riferimento della tappa 3: la stessa procedura che legge il numero dei voti, una funzione che dice se un voto è valido diversa da quella del programma, una funzione che fa la media e ha il nome di un suo dato, la funzione che la media chiama, e un giudizio a stelle che chiama la funzione del voto valido.",

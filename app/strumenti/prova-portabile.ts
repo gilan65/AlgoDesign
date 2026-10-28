@@ -1562,7 +1562,7 @@ async function giroDelVettore(lingua: Lingua): Promise<void> {
 const contaFino = (fino: number): string =>
   JSON.stringify({
     format: "algodesign",
-    schema_version: 1,
+    schema_version: 2,
     metadata: { name: `conta fino a ${fino}` },
     functions: [
       { id: "f1", kind: "main", data: [{ name: "r", type: "integer" }], body: [{ id: "b1", kind: "assignment", target: "r", value: `conta(${fino})` }, { id: "b2", kind: "write", values: ["r"], newline: true }], end: { id: "b3" } },
@@ -2137,7 +2137,7 @@ async function giroDellEsportazione(lingua: Lingua): Promise<DallaPagina> {
     const attesa = misuraDelPng(larghezza!, altezza!);
     const alFattore1 = misuraDelPng(larghezza!, altezza!, 1);
     const colore = [1, 3, 5].map((i) => parseInt(CARTA.forme.inizioEFine.slice(i, i + 2), 16));
-    const firma = [...png.subarray(0, 8)].join(",") === "137,80,78,71,13,10,26,10";
+    const firma = Buffer.from(png.subarray(0, 8)).toString("hex") === "89504e470d0a1a0a";
     const letto = await a.pagina.evaluate(
       async ({ base64, colore }) => {
         const byte = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));

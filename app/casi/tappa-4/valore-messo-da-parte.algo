@@ -1,6 +1,6 @@
 {
   "format": "algodesign",
-  "schema_version": 1,
+  "schema_version": 2,
   "metadata": {
     "name": "valore-messo-da-parte",
     "description": "La funzione «f» somma il primo elemento del vettore restituito da «g», che può fermarsi, e chiama sé stessa: il vettore restituito sta nello spazio di ogni chiamata."
