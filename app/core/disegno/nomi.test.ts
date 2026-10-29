@@ -482,3 +482,46 @@ test("sul corpus: ogni blocco del valore iniziale ha il nome del suo dato, sulle
   // La premessa: i 53 valori iniziali dei 32 file della tappa 1, nelle due forme.
   expect(blocchiValore).toBe(106);
 });
+
+// La copia espansa di un record (`b ← a`) e di una tabella (`u ← t`, coi campi nel ciclo dei record; `r ← t[1]`,
+// `u[1] ← r`, `u[0] ← u[1]`): i nomi dei dati sopra le loro lettere nell'assegnazione di ogni campo, due per blocco, coi
+// record del progetto. Controllo positivo: senza i record, il testo misurato è quello della fase senza il campo e
+// qualche nome cade su altre lettere.
+test("la copia espansa di un record e di una tabella: i nomi sulle loro lettere nell'assegnazione di ogni campo", () => {
+  const cartella = join(import.meta.dir, "..", "..", "casi", "tipi");
+  const conti = { blocchi: 0, nomi: 0, sbagliatiSenzaRecord: 0 };
+  const difetti: string[] = [];
+  for (const file of ["copia-di-un-record", "copia-di-una-tabella"]) {
+    const a = apri(readFileSync(join(cartella, `${file}.algo`), "utf8"));
+    if (!a.ok) throw new Error(`${file} non si apre`);
+    const p = a.progetto;
+    const f = p.functions.find((x) => x.kind === "main")!;
+    const forme = { ...opzioniPredefinite, copia: "espansa" as const };
+    const d = impagina(f, tema, misura, testiIt, forme, [], p.functions, p.records ?? []);
+    const dati = new Set(f.data.map((x) => x.name));
+    const posti = (records: Parameters<typeof nomiDelDisegno>[9]) => nomiDelDisegno(d, f, tema, misura, testiIt, forme, dati, [], undefined, records);
+    const sbagliati = (tutti: ReturnType<typeof posti>, e: Disegno["elementi"][number]) =>
+      (tutti.get(e.id) ?? [])
+        .filter((n) => dentro(n.riquadro, e.riquadroTesto))
+        .filter((n) => {
+          const t = e.riquadroTesto;
+          const inizio = (n.riquadro.x - (t.x + t.larghezza / 2 - misura(e.righe[0]!) / 2)) / 10;
+          return [...e.righe[0]!].slice(inizio, inizio + n.riquadro.larghezza / 10).join("") !== n.dato;
+        });
+    const coi = posti(p.records ?? []);
+    const senza = posti([]);
+    for (const e of d.elementi.filter((x) => x.campo !== undefined)) {
+      conti.blocchi++;
+      const mie = (coi.get(e.id) ?? []).filter((n) => dentro(n.riquadro, e.riquadroTesto));
+      conti.nomi += mie.length;
+      if (mie.length !== 2) difetti.push(`${file} «${e.testo}»: ${mie.length} nomi`);
+      for (const n of sbagliati(coi, e)) difetti.push(`${file} «${e.testo}»: «${n.dato}» non sulle sue lettere`);
+      conti.sbagliatiSenzaRecord += sbagliati(senza, e).length;
+    }
+  }
+  console.log(`la copia espansa coi campi: ${conti.blocchi} blocchi, ${conti.nomi} nomi; senza i record ${conti.sbagliatiSenzaRecord} fuori posto`);
+  expect(difetti).toEqual([]);
+  // Le premesse: i 3 campi di `b ← a`, poi i 3 di `u ← t` e i 3 di ognuna delle tre copie di un record della tabella.
+  expect(conti.blocchi).toBe(15);
+  expect(conti.sbagliatiSenzaRecord).toBeGreaterThan(0);
+});

@@ -19,11 +19,13 @@
 
 import { parole } from "../espressioni/analizzatore";
 import { livelliDellePosizioni, nomiDelleMatrici, nomiDeiVettori } from "../progetto/copia";
-import type { Blocco, Dato, Funzione } from "../progetto/modello";
+import type { Blocco, Dato, DefinizioneDelRecord, Funzione } from "../progetto/modello";
 import { domandaDellaScrittura } from "./domanda";
 import {
+  campiDellaCopia,
   misuraDelleParti,
   partiDelBlocco,
+  partiDelCampoDellaCopia,
   partiDellaDomanda,
   partiDellaFine,
   partiDellaFase,
@@ -171,6 +173,8 @@ export function nomiDelDisegno(
   comuni: readonly Dato[],
   /** I nomi delle funzioni che restituiscono un valore: le loro chiamate nel testo. */
   funzioni: ReadonlySet<string> = new Set(),
+  /** I record del progetto: nella copia espansa di un record o di una tabella, il testo dell'assegnazione di un campo. */
+  records: readonly DefinizioneDelRecord[] = [],
 ): ReadonlyMap<string, readonly NomeNelDisegno[]> {
   const blocchi = blocchiPerId(funzione.body);
   const livelli = livelliDellePosizioni(funzione.body, nomiDeiVettori([...funzione.data, ...comuni]), nomiDelleMatrici([...funzione.data, ...comuni]));
@@ -189,12 +193,18 @@ export function nomiDelDisegno(
     // La Lettura con la domanda: le due righe, la domanda (dalla Scrittura che mostra) e la Lettura.
     const scrittura = e.scrittura === undefined ? undefined : blocchi.get(e.scrittura);
     const domanda = scrittura?.kind === "write" ? domandaDellaScrittura(scrittura) : undefined;
+    // L'assegnazione di un campo nella copia espansa: di un record (`b.nome ← a.nome`), o nel ciclo dei record di una
+    // tabella (`u[_indice].nome ← t[_indice].nome`), col testo che il disegno ha scritto.
+    const delCampo = e.campo !== undefined && b.kind === "assignment" ? campiDellaCopia(b, [...funzione.data, ...comuni], records)?.[e.campo]?.name : undefined;
+    const verso = b.kind === "assignment" ? [...funzione.data, ...comuni].find((x) => x.name === b.target.trim()) : undefined;
+    const campoDellaTabella = e.campo !== undefined && verso?.size !== undefined ? records.find((r) => r.name === verso.record)?.fields[e.campo]?.name : undefined;
     const parti =
       domanda !== undefined ? [...partiDellaDomanda(domanda, testi), ...partiDelBlocco(b, testi)]
       : b.kind === "call" && e.pezzi !== undefined ? riunite(e.pezzi.flat())
       : b.kind === "assignment" && e.forma === "intestazione" ? partiDellIntestazioneDellaCopia(b, testi)
+      : b.kind === "assignment" && delCampo !== undefined ? partiDelCampoDellaCopia(b, delCampo, testi)
       : e.fase === undefined ? partiDelBlocco(b, testi)
-      : b.kind === "for" || b.kind === "for_each" || b.kind === "assignment" ? partiDellaFase(b, e.fase, forme, testi, livelli.get(b.id) ?? 1, [...funzione.data, ...comuni], e.interno === true)
+      : b.kind === "for" || b.kind === "for_each" || b.kind === "assignment" ? partiDellaFase(b, e.fase, forme, testi, livelli.get(b.id) ?? 1, [...funzione.data, ...comuni], e.interno === true, campoDellaTabella)
       : undefined;
     const nomi = parti === undefined ? [] : nomiNelleParti(parti, dati, funzioni);
     if (nomi.length > 0) fuori.set(e.id, [...(fuori.get(e.id) ?? []), ...nelleRighe(e, nomi, tema, misura)]);

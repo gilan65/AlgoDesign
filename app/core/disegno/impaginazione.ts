@@ -61,7 +61,7 @@
 import { analizza, parole } from "../espressioni/analizzatore";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import type { Posto, Ramo } from "../modifica/operazioni";
-import { eUnaCopia, eUnaCopiaDiUnRecord, nomiDeiRecord, nomiDelleMatrici, nomiDeiVettori, posizioniDellaCopia } from "../progetto/copia";
+import { eUnaCopia, eUnaCopiaDiUnRecord, nomiDeiRecord, nomiDelleMatrici, nomiDelleTabelle, nomiDeiVettori, posizioniDellaCopia } from "../progetto/copia";
 import type { Blocco, Campo, Dato, DefinizioneDelRecord, Funzione } from "../progetto/modello";
 import { coppie, type Coppia, type Domanda } from "./domanda";
 import type { GeometriaDelTema } from "./tema";
@@ -577,6 +577,8 @@ export function partiDellaFase(
   dati: readonly Dato[],
   /** Nella copia di una matrice col suo nome, la fase è del ciclo delle colonne (la posizione del livello dopo). */
   interno = false,
+  /** Nella copia di una tabella col suo nome, il campo dell'elemento copiato (`u[_indice].nome ← t[_indice].nome`). */
+  campo?: string,
 ): ParteDelTesto[] | undefined {
   const mostrata = testi.espressione ?? ((t: string) => t);
   const e = (t: string): ParteDelTesto => ({ testo: mostrata(t), espressione: true });
@@ -596,7 +598,7 @@ export function partiDellaFase(
     if (fase === "inizio") return [resto(`${j} ← 0`)];
     if (fase === "condizione") return [resto(`${j} < ${quanti ?? "?"}`)];
     if (fase === "elemento") {
-      const dove = interno ? `[${i}][${j}]` : `[${i}]`;
+      const dove = interno ? `[${i}][${j}]` : campo !== undefined ? `[${i}].${campo}` : `[${i}]`;
       return [e(verso), resto(`${dove} ← `), e(b.value.trim()), resto(dove)];
     }
     return [resto(`${j} ← ${j} + 1`)];
@@ -634,11 +636,19 @@ export const partiDellIntestazioneDellaCopia = (b: Extract<Blocco, { kind: "assi
 export const partiDelCampoDellaCopia = (b: Extract<Blocco, { kind: "assignment" }>, campo: string, testi: TestiDelDisegno): ParteDelTesto[] =>
   partiDelBlocco({ ...b, target: `${b.target.trim()}.${campo}`, value: `${b.value.trim()}.${campo}` }, testi);
 
-/** I campi del record di cui `b` è la copia col suo nome (`b ← a` fra due record), o nessuno se non lo è. */
+/** I campi del record di cui `b` è la copia col suo nome (`b ← a` fra due record, anche un record di una tabella da una
+ * parte o dall'altra: `r ← t[i]`, `t[i] ← r`), o nessuno se non lo è. */
 export function campiDellaCopia(b: Blocco, dati: readonly Dato[], records: readonly DefinizioneDelRecord[]): readonly Campo[] | undefined {
-  if (!eUnaCopiaDiUnRecord(b, nomiDeiRecord(dati)) || b.kind !== "assignment") return undefined;
+  if (!eUnaCopiaDiUnRecord(b, nomiDeiRecord(dati), nomiDelleTabelle(dati)) || b.kind !== "assignment") return undefined;
   const verso = analizza(b.target);
-  const nome = verso.ok && verso.espressione.genere === "nome" ? verso.espressione.nome : undefined;
+  // Il dato che riceve: il record col suo nome, o la tabella del record `t[i]`.
+  const nome = !verso.ok
+    ? undefined
+    : verso.espressione.genere === "nome"
+      ? verso.espressione.nome
+      : verso.espressione.genere === "indice" && verso.espressione.base.genere === "nome"
+        ? verso.espressione.base.nome
+        : undefined;
   const d = dati.find((x) => x.name === nome);
   return records.find((r) => r.name === d?.record)?.fields;
 }
@@ -687,10 +697,16 @@ export function partiDelValoreIniziale(d: Dato, testi: TestiDelDisegno, ripetuto
     if (v.length > 0 && Array.isArray(v[0])) return righe(v as readonly (readonly string[])[], v.length, (v[0] as readonly string[]).length);
     return elenco((v as readonly string[]).slice(0, ELEMENTI_SCRITTI), v.length);
   }
-  const ogni = (v as { readonly each: string }).each;
+  const ogni = (v as { readonly each: string | readonly string[] }).each;
   const n = d.size;
   const c = d.columns;
   const misura = (x: number | undefined): x is number => x !== undefined && Number.isInteger(x) && x >= 1;
+  // Il record ripetuto in ogni record di una tabella: l'elenco dei record, ognuno il suo elenco di campi, o il record da solo.
+  if (typeof ogni !== "string") {
+    if (ripetuto === "elenco" && misura(n)) return righe(Array.from({ length: Math.min(n, ELEMENTI_SCRITTI) }, () => ogni), n, ogni.length);
+    const [prima, dopo] = attorno(testi.ogniElemento, "{valore}");
+    return [...(prima === "" ? [] : [resto(prima)]), ...elenco(ogni.slice(0, ELEMENTI_SCRITTI), ogni.length), ...(dopo === "" ? [] : [resto(dopo)])];
+  }
   if (ripetuto === "elenco" && misura(n) && misura(c)) {
     const riga = Array<string>(Math.min(c, ELEMENTI_SCRITTI)).fill(ogni);
     return righe(Array.from({ length: Math.min(n, ELEMENTI_SCRITTI) }, () => riga), n, c);
@@ -1038,7 +1054,8 @@ export function impagina(
    * non è un blocco); espansa, il `mentre` equivalente con la posizione (la partenza, il rombo, l'elemento copiato,
    * l'aumento), blocchi aggiunti con l'`id` dell'assegnazione e la loro fase, sotto un'intestazione che è il blocco.
    * La copia espansa di una matrice col suo nome ha il ciclo delle colonne (le sue parti con `interno`) al posto
-   * dell'elemento copiato, dentro quello delle righe. Nessun punto di inserimento dentro: l'assegnazione non ha un corpo. */
+   * dell'elemento copiato, dentro quello delle righe; quella di una tabella un'assegnazione per campo (la fase «elemento»
+   * col campo), una sotto l'altra. Nessun punto di inserimento dentro: l'assegnazione non ha un corpo. */
   function copiaNelRiquadro(b: Extract<Blocco, { kind: "assignment" }>): Pezzo {
     if (opzioni.copia === "compatta") {
       // Sotto l'assegnazione la linea che esce, come l'uscita di un ciclo: il fondo del riquadro la attraversa.
@@ -1047,11 +1064,21 @@ export function impagina(
       return riquadro(b.id, [{ testo: testi.cicli.copia, espressione: false }], conLUscita, true);
     }
     const dati = [...funzione.data, ...costantiComuni];
-    const testo = (fase: FaseDelCiclo, interno = false) => partiDellaFase(b, fase, opzioni, testi, perOgniAperti + 1, dati, interno)!;
+    const testo = (fase: FaseDelCiclo, interno = false, campo?: string) => partiDellaFase(b, fase, opzioni, testi, perOgniAperti + 1, dati, interno, campo)!;
     const ciclo = (interno: boolean, elemento: Pezzo) =>
       colonna([aggiunto(b.id, "inizio", testo("inizio", interno)), cicloInTesta(b.id, testo("condizione", interno), colonna([elemento, aggiunto(b.id, "passo", testo("passo", interno))]), "condizione")]);
     const unaMatrice = posizioniDellaCopia(b, vettori, matrici) === 2;
-    const elemento = aggiunto(b.id, "elemento", testo("elemento", unaMatrice));
+    // La copia di una tabella: nel ciclo dei record un'assegnazione per campo, ognuna col suo campo.
+    const verso = dati.find((d) => d.name === b.target.trim());
+    const campi = verso?.size !== undefined ? records.find((r) => r.name === verso.record)?.fields : undefined;
+    const perCampo = (cs: readonly Campo[]) =>
+      colonna(
+        cs.map((c, k) => {
+          const p = aggiunto(b.id, "elemento", testo("elemento", false, c.name));
+          return { ...p, elementi: p.elementi.map((e) => ({ ...e, campo: k })) };
+        }),
+      );
+    const elemento = campi !== undefined ? perCampo(campi) : aggiunto(b.id, "elemento", testo("elemento", unaMatrice));
     const dentro = unaMatrice ? ciclo(true, elemento) : elemento;
     const colonne = unaMatrice ? { ...dentro, elementi: dentro.elementi.map((e) => ({ ...e, interno: true as const })) } : dentro;
     return riquadro(b.id, partiDellIntestazioneDellaCopia(b, testi), ciclo(false, colonne));

@@ -98,6 +98,11 @@ export function testiDellaTraccia(lingua: Lingua): TestiDellaTraccia {
       primeEAltre: (nome, righe, colonne, prime, colonna) =>
         riempi(d.tracciaMatricePrimeEAltre, { nome, righe: righe.toLocaleString(lingua), colonne: colonne.toLocaleString(lingua), prime: String(prime), colonna }),
       matriceInFila: (nome, righe, colonne) => riempi(d.tracciaMatriceInFila, { nome, righe: righe.toLocaleString(lingua), colonne: colonne.toLocaleString(lingua) }),
+      perRecord: (nome, record) => riempi(d.tracciaTabellaPerRecord, { nome, record: record.toLocaleString(lingua) }),
+      primiRecordEAltri: (nome, record, primi, colonna) => riempi(d.tracciaTabellaPrimiRecordEAltri, { nome, record: record.toLocaleString(lingua), primi: String(primi), colonna }),
+      perCampo: (nome, record) => riempi(d.tracciaTabellaPerCampo, { nome, record: record.toLocaleString(lingua) }),
+      tabellaPrimiEAltri: (nome, record, valori, primi, colonna) =>
+        riempi(d.tracciaTabellaPrimiEAltri, { nome, record: record.toLocaleString(lingua), valori: valori.toLocaleString(lingua), primi: String(primi), colonna }),
       csvUguale: d.tracciaCsvUguale,
       csvPerElemento: d.tracciaCsvPerElemento,
     },
