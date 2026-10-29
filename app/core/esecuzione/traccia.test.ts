@@ -60,10 +60,11 @@ import {
   undiciPerElemento,
   undiciPerRiga,
 } from "./atteso-della-matrice";
+import * as dellaTabella from "./atteso-della-tabella";
 import { Esecuzione } from "./esecuzione";
 import { testiEn, testiIt } from "./testi-di-prova";
 import * as traccia from "./traccia";
-import { csv, separatoriPredefiniti, TabellaMostrata, type FormaDeiVettori, type FormaDelleMatrici, type RigaMostrata, type TestiDellaTraccia } from "./traccia";
+import { csv, separatoriPredefiniti, TabellaMostrata, type FormaDeiVettori, type FormaDelleMatrici, type FormaDelleTabelle, type RigaMostrata, type TestiDellaTraccia } from "./traccia";
 
 type Json = any;
 function progetto(p: Json): Progetto {
@@ -141,13 +142,27 @@ describe("un vettore di 12 elementi riempito da un ciclo, contro l'atteso scritt
     expect(traccia.tettoDelleColonne).toBe(10);
   });
 
-  test("la tabella non mostra ancora le tabelle (i vettori di record): un progetto che le usa si rifiuta subito; un record no", () => {
-    const a = apri(readFileSync(join(import.meta.dir, "..", "..", "casi", "tipi", "copia-di-una-tabella.algo"), "utf8"));
-    if (!a.ok) throw new Error("copia-di-una-tabella non si apre");
-    expect(() => new TabellaMostrata(a.progetto, testiIt, ",", "primi-e-altri", "elenco", opzioniDelDisegno)).toThrow("la tabella di traccia non mostra ancora le tabelle");
-    // Controllo positivo: lo stesso progetto senza la dimensione (le tabelle fatte record) si mostra.
-    const senza = { ...a.progetto, functions: a.progetto.functions.map((f) => ({ ...f, data: f.data.map(({ size: _, initial: __, ...d }) => d), body: [] })) };
-    expect(() => new TabellaMostrata(senza, testiIt, ",", "primi-e-altri", "elenco", opzioniDelDisegno)).not.toThrow();
+  test("la tabella mostra le tabelle (i vettori di record): ogni file delle tabelle del corpus si esegue, e ogni riga ha una cella per colonna in ogni forma", () => {
+    const cartella = join(import.meta.dir, "..", "..", "casi", "tipi");
+    const file = ["copia-di-una-tabella", "stesso-record-della-tabella", "tabella-come-parametro", "scambio-e-ordinamento", "vettore-di-record"];
+    const conti = { righe: 0, celle: 0 };
+    for (const nome of file) {
+      const a = apri(readFileSync(join(cartella, `${nome}.algo`), "utf8"));
+      if (!a.ok) throw new Error(`${nome} non si apre`);
+      const e = new Esecuzione(a.progetto, tetti);
+      e.comanda("continua");
+      for (let k = 0; k < 100 && e.stato.genere !== "finita"; k++) e.fetta(() => 0, Infinity);
+      for (const tabelle of ["per-record", "per-elemento", "per-campo"] as const) {
+        const t = new TabellaMostrata(a.progetto, testiIt, ",", "primi-e-altri", "elenco", { ...opzioniDelDisegno, copia: "espansa" }, undefined, true, "per-riga", tabelle);
+        const righe = t.righe(e.traccia);
+        expect(righe.filter((r) => r.valori.length !== t.colonne.length).map((r) => `${nome} ${tabelle} ${r.numero}`)).toEqual([]);
+        conti.righe += righe.length;
+        conti.celle += righe.reduce((s, r) => s + r.valori.length, 0);
+      }
+    }
+    console.log(`le tabelle del corpus: ${file.length} file × 3 forme, righe ${conti.righe}, celle ${conti.celle}`);
+    // Le premesse: il corpus delle tabelle ha righe e celle.
+    expect(conti.righe).toBeGreaterThan(100);
   });
 
   test("la tabella mostra le matrici: un progetto che le usa si costruisce, e ogni riga ha una cella per colonna", () => {
@@ -1088,7 +1103,7 @@ describe("il record nella tabella di traccia", () => {
   for (const [nome, vecchio, nuovo] of [
     ["nessuna (controllo positivo)", "", ""],
     ["il record senza le colonne dei campi", "      if (d.campi !== undefined) return d.campi.map((c) => colonna(`${d.nome}.${c.nome}`, c.tipo));\n", ""],
-    ["la regola della copia senza il campo", "      if (r.campo !== undefined && b.kind === \"assignment\") {", "      if (false) {"],
+    ["la regola della copia senza il campo", "      if (r.campo !== undefined && r.fase === undefined && b.kind === \"assignment\") {", "      if (false) {"],
   ] as const)
     test(`mutazione della tabella del record: ${nome}`, async () => {
       if (vecchio !== "") expect(sorgente.split(vecchio).length - 1).toBe(1);
@@ -1282,7 +1297,7 @@ describe("la matrice nella tabella di traccia", () => {
       espansa,
       copiaPerRiga,
     ],
-    ["la regola del ciclo delle colonne persa", "datiDi(f), r.interno === true)", "datiDi(f), false)", "per-riga", espansa, copiaPerRiga],
+    ["la regola del ciclo delle colonne persa", "datiDi(f), r.interno === true, campoDellaTabella)", "datiDi(f), false, campoDellaTabella)", "per-riga", espansa, copiaPerRiga],
   ] as const)
     test(`mutazione della tabella della matrice: ${nome}`, async () => {
       if (vecchio !== "") expect(sorgente.split(vecchio).length - 1).toBe(1);
@@ -1300,6 +1315,199 @@ describe("la matrice nella tabella di traccia", () => {
         }
         const diverse = differenze(righe, atteso);
         console.log(`mutazione della tabella della matrice «${nome}»: righe diverse ${diverse.length}`);
+        if (vecchio === "") expect(diverse).toEqual([]);
+        else expect(diverse.length).toBeGreaterThan(0);
+      } finally {
+        rmSync(cartella, { recursive: true, force: true });
+      }
+    });
+});
+
+// La tabella (un vettore di record): le tre forme (una colonna per record, la predefinita; una colonna per campo di ogni
+// record; una colonna per campo coi record in fila), il CSV nei due modi, la copia col nome coi campi nel ciclo dei record
+// e la copia di un suo record, il tetto dei record e dei valori, il nome della colonna degli altri, il riferimento, il valore
+// restituito, il watch. Gli attesi delle forme sono scritti a mano (`atteso-della-tabella.ts`); quelli del riferimento e del
+// valore restituito qui accanto, seguendo `tipi/tabella-come-parametro`.
+describe("la tabella nella tabella di traccia", () => {
+  const copia = progetto(dellaTabella.progettoDellaCopia);
+  const undici = progetto(dellaTabella.progettoDegliUndiciRecord);
+  const espansa: FormeDeiCicli = { ...opzioniDelDisegno, copia: "espansa" };
+  const tabellaDi = (p: Progetto, forma: FormaDeiVettori, tabelle: FormaDelleTabelle, cicli: FormeDeiCicli = opzioniDelDisegno) =>
+    new TabellaMostrata(p, testiIt, ",", forma, "elenco", cicli, undefined, false, "per-riga", tabelle);
+  const { copiaPerRecord, copiaPerElemento, copiaPerCampo, undiciPerRecord, undiciPerElemento, undiciPerCampo, undiciCsvPerElemento } = dellaTabella;
+  const attesi = { copiaPerRecord, copiaPerElemento, copiaPerCampo, undiciPerRecord, undiciPerElemento, undiciPerCampo, undiciCsvPerElemento };
+  /** Le celle di una riga mostrata come quelle del CSV, per confrontarle con quelle dell'atteso. */
+  const celle = (r: RigaMostrata) => [String(r.numero), r.regola, ...r.valori.map((c) => c.testo), r.condizione, r.scrive];
+
+  test("gli attesi scritti a mano: ogni riga ha tante celle quante l'intestazione, e i numeri delle righe in fila", () => {
+    for (const [nome, righe] of Object.entries(attesi)) {
+      const n = righe.map((r) => celleDelCsv(r, ";").length);
+      expect({ nome, diverse: n.flatMap((x, k) => (x === n[0] ? [] : [k])) }).toEqual({ nome, diverse: [] });
+      expect({ nome, numeri: righe.slice(1).map((r) => r.split(";")[0]) }).toEqual({ nome, numeri: righe.slice(1).map((_, k) => String(k)) });
+    }
+  });
+
+  for (const [tabelle, cicli, atteso] of [
+    ["per-record", espansa, copiaPerRecord],
+    ["per-elemento", espansa, copiaPerElemento],
+    ["per-campo", opzioniDelDisegno, copiaPerCampo],
+  ] as const)
+    test(`la copia di una tabella e di un suo record, ${tabelle}: il CSV «uguale» byte per byte, e la tabella mostrata cella per cella`, () => {
+      const e = eseguita(copia);
+      const tabella = tabellaDi(copia, "primi-e-altri", tabelle, cicli);
+      expect(differenze(righeDelCsv(csv(e.traccia, tabella, "uguale", ";")), atteso)).toEqual([]);
+      expect(csv(e.traccia, tabella, "uguale", ";")).toBe(`\u{feff}${atteso.join("\r\n")}\r\n`);
+      expect(differenze(tabella.righe(e.traccia).map((r) => JSON.stringify(celle(r))), atteso.slice(1).map((r) => JSON.stringify(celleDelCsv(r, ";"))))).toEqual([]);
+    });
+
+  test("una colonna per record: la cella di un record cambia se cambia uno qualunque dei suoi campi", () => {
+    const e = eseguita(copia);
+    const tabella = tabellaDi(copia, "primi-e-altri", "per-record", espansa);
+    expect(tabella.righe(e.traccia).map((r) => r.valori.map((c) => (c.cambiata ? "x" : ".")).join(""))).toEqual(dellaTabella.cambiateDellaCopiaPerRecord);
+  });
+
+  test("una colonna per campo: i pezzi della cella segnano il record cambiato", () => {
+    const e = eseguita(copia);
+    const riga = tabellaDi(copia, "primi-e-altri", "per-campo").righe(e.traccia)[15]!;
+    expect(riga.valori[3]!.pezzi!.map((p) => (p.cambiato ? `[${p.testo}]` : p.testo))).toEqual(dellaTabella.pezziDellaRiga15);
+  });
+
+  test("il CSV «per elemento» ha una colonna per campo di ogni record da ogni forma della tabella e dei vettori", () => {
+    const e = eseguita(copia);
+    const u = eseguita(undici);
+    for (const forma of forme)
+      for (const tabelle of ["per-record", "per-elemento", "per-campo"] as const) {
+        expect(differenze(righeDelCsv(csv(e.traccia, tabellaDi(copia, forma, tabelle, espansa), "per-elemento", ";")), copiaPerElemento), `${forma} ${tabelle}`).toEqual([]);
+        expect(differenze(righeDelCsv(csv(u.traccia, tabellaDi(undici, forma, tabelle), "per-elemento", ";")), undiciCsvPerElemento), `${forma} ${tabelle}`).toEqual([]);
+      }
+  });
+
+  test("oltre il tetto: i primi dieci record e la colonna degli altri; i primi dieci valori e la colonna degli altri; per campo, tutti", () => {
+    const e = eseguita(undici);
+    for (const [tabelle, atteso] of [
+      ["per-record", undiciPerRecord],
+      ["per-elemento", undiciPerElemento],
+      ["per-campo", undiciPerCampo],
+    ] as const)
+      expect(differenze(righeDelCsv(csv(e.traccia, tabellaDi(undici, "primi-e-altri", tabelle), "uguale", ";")), atteso), tabelle).toEqual([]);
+  });
+
+  test("una colonna per campo di ogni record segue i vettori solo per il tetto: tutte con «una colonna per elemento», altrimenti i primi dieci", () => {
+    const e = eseguita(undici);
+    expect(differenze(righeDelCsv(csv(e.traccia, tabellaDi(undici, "in-fila", "per-elemento"), "uguale", ";")), undiciPerElemento)).toEqual([]);
+    expect(differenze(righeDelCsv(csv(e.traccia, tabellaDi(undici, "per-elemento", "per-elemento"), "uguale", ";")), undiciCsvPerElemento)).toEqual([]);
+  });
+
+  test("la riga sopra la tabella: che cosa si vede della tabella nella sua forma", () => {
+    const spiega = (p: Progetto, forma: FormaDeiVettori, tabelle: FormaDelleTabelle) => tabellaDi(p, forma, tabelle).spiegazione("uguale");
+    expect([
+      spiega(copia, "primi-e-altri", "per-record"),
+      spiega(undici, "primi-e-altri", "per-record"),
+      spiega(copia, "primi-e-altri", "per-campo"),
+      spiega(copia, "primi-e-altri", "per-elemento"),
+      spiega(undici, "primi-e-altri", "per-elemento"),
+      spiega(undici, "per-elemento", "per-elemento"),
+    ]).toEqual([
+      "t: 2 record per record. u: 2 record per record. CSV uguale.",
+      "t: 11 record, i primi 10, gli altri in t[10]. CSV uguale.",
+      "t: 2 record per campo. u: 2 record per campo. CSV uguale.",
+      undefined,
+      "t: 11 record, 22 valori, i primi 10, gli altri in t[5].nome…t[10].voto. CSV uguale.",
+      undefined,
+    ]);
+  });
+
+  test("il nome della colonna degli altri nella forma per campo di ogni record: il primo e l'ultimo valore, o quello solo", () => {
+    const di = (record: number, campi: number) =>
+      tabellaDi(
+        progetto({
+          format: "algodesign",
+          schema_version: 2,
+          metadata: { name: "prova" },
+          records: [{ name: "r", fields: Array.from({ length: campi }, (_, k) => ({ name: `c${k}`, type: "integer" })) }],
+          functions: [{ id: "f1", kind: "main", data: [{ name: "t", type: "record", record: "r", size: record }], body: [], end: { id: "fine" } }],
+        }),
+        "primi-e-altri",
+        "per-elemento",
+      ).colonne.at(-1)!.nome;
+    expect([di(5, 3), di(6, 2), di(11, 1), di(1, 11), di(4, 3)]).toEqual(["t[3].c1…t[4].c2", "t[5].c0…t[5].c1", "t[10].c0", "t[0].c10", "t[3].c1…t[3].c2"]);
+  });
+
+  test("il watch di una tabella: un valore per campo di ogni record col nome del record e del campo, in ogni forma", () => {
+    const e = eseguita(copia);
+    for (const tabelle of ["per-record", "per-elemento", "per-campo"] as const) {
+      const w = tabellaDi(copia, "primi-e-altri", tabelle).watch(e.traccia, "u")!;
+      expect({ tipo: w.tipo, vettore: w.vettore, record: w.record, elementi: w.elementi.map((x) => `${x.nome}=${x.cella.testo}`) }).toEqual({
+        tipo: "alunno",
+        vettore: true,
+        record: true,
+        elementi: ["u[0].nome=Bruno", "u[0].voto=9", "u[1].nome=Bruno", "u[1].voto=9"],
+      });
+    }
+  });
+
+  // Il riferimento e il valore restituito, su `tipi/tabella-come-parametro`: `alza(t, t)` riceve `t` per valore in `x` e
+  // per riferimento in `y`, e `y[0].voto ← 8` scrive il voto di Anna in `t`; `alzata(t)` restituisce la tabella di `t` con
+  // il voto di Bruno a 100 ({{"Anna", "3A", 8}, {"Bruno", "3B", 100}, {"Carla", "3A", 9}}); `crea(u, t[2])` copia il record
+  // `s` in ogni record di `z`, campo per campo.
+  test("il riferimento a una tabella; la copia di un record in un record della tabella; il valore restituito coi record separati", () => {
+    const r = apri(readFileSync(join(import.meta.dir, "..", "..", "casi", "tipi", "tabella-come-parametro.algo"), "utf8"));
+    if (!r.ok) throw new Error("tabella-come-parametro");
+    const p = r.progetto;
+    const e = eseguita(p);
+    const cella = (t: TabellaMostrata, regola: string, colonna: string) => {
+      const riga = t.righe(e.traccia).find((x) => x.regola === regola)!;
+      return riga.valori[t.colonne.findIndex((c) => `${c.funzione ? `${c.funzione} › ` : ""}${c.nome}` === colonna)]!.testo;
+    };
+    const di = (tabelle: FormaDelleTabelle) => new TabellaMostrata(p, testiIt, ",", "primi-e-altri", "elenco", opzioniDelDisegno, undefined, true, "per-riga", tabelle);
+    const [perRecord, perElemento, perCampo] = [di("per-record"), di("per-elemento"), di("per-campo")];
+    expect([
+      cella(perRecord, "y[0].voto ← 8", "alza › y[0]"),
+      cella(perElemento, "y[0].voto ← 8", "alza › y[0].voto"),
+      cella(perCampo, "y[0].voto ← 8", "alza › y[…].voto"),
+      cella(perRecord, "y[0].voto ← 8", "alza › x[0]"),
+    ]).toEqual(["Anna · 3A · 8 (t[0])", "8 (t[0].voto)", "8 · 5 · 9 (t[…].voto)", "Anna · 3A · 7"]);
+    // La copia `z[0] ← s` campo per campo: la regola del campo, il record della tabella.
+    expect(perRecord.righe(e.traccia).filter((x) => x.regola.startsWith("z[0].")).map((x) => x.regola)).toEqual(["z[0].nome ← s.nome", "z[0].classe ← s.classe", "z[0].voto ← s.voto"]);
+    const ripresa = perRecord.righe(e.traccia).find((x) => x.ripresa && x.regola.includes("u ← alzata(t)"))!;
+    expect(ripresa.regola.endsWith("(alzata → Anna · 3A · 8 ‖ Bruno · 3B · 100 ‖ Carla · 3A · 9)")).toBe(true);
+    const w = perRecord.chiamata(e.traccia, "alzata", "c6")!;
+    expect({ vettore: w.vettore, record: w.record, nomi: w.chiamate[0]!.map((x) => `${x.nome}=${x.cella.testo}`) }).toEqual({
+      vettore: true,
+      record: true,
+      nomi: ["[0].nome=Anna", "[0].classe=3A", "[0].voto=8", "[1].nome=Bruno", "[1].classe=3B", "[1].voto=100", "[2].nome=Carla", "[2].classe=3A", "[2].voto=9"],
+    });
+  });
+
+  // Le mutazioni che discriminano: una forma cambiata apposta (per record mostrata per campo), la regola della copia della
+  // tabella senza il campo, la colonna degli altri che comincia un valore prima. Controllo positivo: senza mutazioni, gli
+  // attesi, in ognuna delle tre forme.
+  const sorgente = readFileSync(join(import.meta.dir, "traccia.ts"), "utf8");
+  const nucleo = join(import.meta.dir, "..").replaceAll("\\", "/");
+  for (const [nome, vecchio, nuovo, quale, tabelle, cicli, atteso] of [
+    ["nessuna (controllo positivo), per record", "", "", copia, "per-record", espansa, copiaPerRecord],
+    ["nessuna (controllo positivo), per campo di ogni record", "", "", undici, "per-elemento", opzioniDelDisegno, undiciPerElemento],
+    ["nessuna (controllo positivo), per campo", "", "", copia, "per-campo", opzioniDelDisegno, copiaPerCampo],
+    ["la forma per record mostrata per campo", 'if (this.formaDelleTabelle === "per-campo")\n      return dato.campi!', 'if (this.formaDelleTabelle !== "per-elemento")\n      return dato.campi!', copia, "per-record", espansa, copiaPerRecord],
+    ["la regola della copia della tabella senza il campo", "datiDi(f), r.interno === true, campoDellaTabella)", "datiDi(f), r.interno === true, undefined)", copia, "per-record", espansa, copiaPerRecord],
+    ["la colonna degli altri un valore prima", "const ultimo = d.elementi! * d.campi!.length - 1;", "const ultimo = d.elementi! * d.campi!.length - 2;", undici, "per-elemento", opzioniDelDisegno, undiciPerElemento],
+  ] as const)
+    test(`mutazione della tabella di una tabella: ${nome}`, async () => {
+      if (vecchio !== "") expect(sorgente.split(vecchio).length - 1).toBe(1);
+      const cartella = mkdtempSync(join(tmpdir(), "traccia-"));
+      try {
+        const file = join(cartella, "mutante.ts");
+        writeFileSync(file, sorgente.replace(vecchio, nuovo).replaceAll('from "../', `from "${nucleo}/`));
+        const mutante: typeof traccia = await import(file);
+        const e = eseguita(quale);
+        let righe: string[];
+        try {
+          righe = righeDelCsv(mutante.csv(e.traccia, new mutante.TabellaMostrata(quale, testiIt, ",", "primi-e-altri", "elenco", cicli, undefined, false, "per-riga", tabelle), "uguale", ";"));
+        } catch (x) {
+          righe = [`eccezione: ${x}`];
+        }
+        const diverse = differenze(righe, atteso);
+        console.log(`mutazione della tabella di una tabella «${nome}»: righe diverse ${diverse.length}`);
         if (vecchio === "") expect(diverse).toEqual([]);
         else expect(diverse.length).toBeGreaterThan(0);
       } finally {

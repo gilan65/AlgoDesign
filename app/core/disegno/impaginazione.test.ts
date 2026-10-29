@@ -2318,3 +2318,95 @@ describe("la copia di una matrice nel riquadro", () => {
     expect(compatta.elementi.filter((x) => segni(x).corrente).map((x) => x.testo)).toEqual(["b ← a"]);
   });
 });
+
+// La copia di una tabella col suo nome (`u ← t`) e di un suo record (`r ← t[1]`, `u[1] ← r`, `u[0] ← u[1]`), sul programma
+// del corpus `casi/tipi/copia-di-una-tabella.algo` (il record `alunno`: nome, classe, voto): gli attesi scritti qui a mano
+// dal flowchart. Espansa, la copia della tabella ha nel ciclo dei record un'assegnazione per campo (la fase «elemento» col
+// campo), la copia di un record le assegnazioni dei campi della copia fra due record; compatta, i riquadri con la scritta.
+// I segni dell'esecuzione accendono il blocco del campo della pausa.
+describe("la copia di una tabella nel riquadro", () => {
+  const e = apri(readFileSync(join(import.meta.dir, "..", "..", "casi", "tipi", "copia-di-una-tabella.algo"), "utf8"));
+  if (!e.ok) throw new Error("copia-di-una-tabella non si apre");
+  const p = e.progetto;
+  const disegno = (copia: "compatta" | "espansa") => impagina(p.functions[0]!, tema, misura, testi, { ...opzioniPredefinite, copia }, [], p.functions, p.records ?? []);
+  /** Di un blocco: gli elementi in ordine dall'alto, col testo, la forma, la fase e il campo. */
+  const di = (d: Disegno, id: string) =>
+    d.elementi
+      .filter((x) => x.id === id && x.dato === undefined)
+      .sort((a, b) => a.riquadro.y - b.riquadro.y)
+      .map((x) => ({ testo: x.testo, forma: x.forma, ...(x.fase !== undefined ? { fase: x.fase } : {}), ...(x.campo !== undefined ? { campo: x.campo } : {}) }));
+
+  test("espansa: nel ciclo dei record un'assegnazione per campo, tutto nel riquadro, senza sovrapporsi", () => {
+    const d = disegno("espansa");
+    expect(di(d, "b1")).toEqual([
+      { testo: "u ← t: copia elemento per elemento", forma: "intestazione" },
+      { testo: "_indice ← 0", forma: "assegnazione", fase: "inizio" },
+      { testo: "_indice < 2", forma: "condizione", fase: "condizione" },
+      { testo: "u[_indice].nome ← t[_indice].nome", forma: "assegnazione", fase: "elemento", campo: 0 },
+      { testo: "u[_indice].classe ← t[_indice].classe", forma: "assegnazione", fase: "elemento", campo: 1 },
+      { testo: "u[_indice].voto ← t[_indice].voto", forma: "assegnazione", fase: "elemento", campo: 2 },
+      { testo: "_indice ← _indice + 1", forma: "assegnazione", fase: "passo" },
+    ]);
+    const r = d.riquadri.filter((x) => x.blocco === "b1");
+    expect(r.length).toBe(1);
+    const bordo = r[0]!.bordo;
+    const difetti: string[] = [];
+    for (const x of d.elementi.filter((y) => y.id === "b1" && y.fase !== undefined)) {
+      const q = x.riquadro;
+      if (!(q.x > bordo.x && q.x + q.larghezza < bordo.x + bordo.larghezza && q.y > bordo.y && q.y + q.altezza < bordo.y + bordo.altezza)) difetti.push(`${x.testo} fuori dal riquadro`);
+    }
+    const forme = d.elementi.filter((x) => x.dato === undefined);
+    forme.forEach((a, i) => forme.slice(i + 1).forEach((b) => sovrapposti(a.riquadro, b.riquadro, DISTANZA_MINIMA) && difetti.push(`${a.testo} tocca ${b.testo}`)));
+    for (const x of forme.filter((f) => f.id !== "b1")) if (sovrapposti(x.riquadro, bordo, 0)) difetti.push(`${x.testo} dentro il riquadro della copia`);
+    expect(difetti).toEqual([]);
+  });
+
+  test("espansa: la copia di un record della tabella, nei due versi e fra due record della tabella, è quella di un record", () => {
+    const d = disegno("espansa");
+    expect(di(d, "b4").map((x) => x.testo)).toEqual(["r ← t[1]: copia campo per campo", "r.nome ← t[1].nome", "r.classe ← t[1].classe", "r.voto ← t[1].voto"]);
+    expect(di(d, "b7").map((x) => x.testo)).toEqual(["u[1] ← r: copia campo per campo", "u[1].nome ← r.nome", "u[1].classe ← r.classe", "u[1].voto ← r.voto"]);
+    expect(di(d, "b10").map((x) => x.testo)).toEqual(["u[0] ← u[1]: copia campo per campo", "u[0].nome ← u[1].nome", "u[0].classe ← u[1].classe", "u[0].voto ← u[1].voto"]);
+    // Un campo di un record della tabella resta un'assegnazione semplice.
+    expect(di(d, "b11")).toEqual([{ testo: 'u[1].nome ← "Zeno"', forma: "assegnazione" }]);
+  });
+
+  test("compatta: le quattro copie nel riquadro con la scritta, della tabella e dei record", () => {
+    const d = disegno("compatta");
+    for (const [id, scritta] of [
+      ["b1", "copia elemento per elemento"],
+      ["b4", "copia campo per campo"],
+      ["b7", "copia campo per campo"],
+      ["b10", "copia campo per campo"],
+    ] as const) {
+      const r = d.riquadri.filter((x) => x.blocco === id);
+      expect(r.length, id).toBe(1);
+      expect(r[0]!.didascalia?.testo, id).toBe(scritta);
+    }
+    expect(di(d, "b1")).toEqual([{ testo: "u ← t", forma: "assegnazione" }]);
+  });
+
+  test("i segni: la pausa su un campo accende il suo blocco nella espansa, l'assegnazione nella compatta", () => {
+    const d = disegno("espansa");
+    const correnti = (dd: Disegno, corrente: string, faseCorrente: "elemento" | undefined, campoCorrente: number) => {
+      const segni = segniDelDisegno(dd.elementi, { corrente, ...(faseCorrente ? { faseCorrente } : {}), campoCorrente });
+      return dd.elementi.filter((x) => segni(x).corrente).map((x) => x.testo);
+    };
+    expect([0, 1, 2].map((k) => correnti(d, "b1", "elemento", k))).toEqual([["u[_indice].nome ← t[_indice].nome"], ["u[_indice].classe ← t[_indice].classe"], ["u[_indice].voto ← t[_indice].voto"]]);
+    // La copia di un record della tabella: la pausa ha il campo senza la fase, come quella fra due record.
+    expect(correnti(d, "b4", undefined, 1)).toEqual(["r.classe ← t[1].classe"]);
+    const compatta = disegno("compatta");
+    expect(correnti(compatta, "b1", "elemento", 1)).toEqual(["u ← t"]);
+    expect(correnti(compatta, "b4", undefined, 1)).toEqual(["r ← t[1]"]);
+  });
+});
+
+// Il valore iniziale di una tabella sotto «Inizio»: l'elenco dei record, ognuno l'elenco dei suoi campi; il record
+// ripetuto come l'elenco che riempie o da solo, fra graffe. Gli attesi scritti qui a mano.
+test("il valore iniziale di una tabella: l'elenco dei record, e il record ripetuto nelle due forme", () => {
+  const tabella = (initial: Dato["initial"]): Dato => ({ name: "t", type: "record", record: "alunno", size: 3, ...(initial !== undefined ? { initial } : {}) });
+  expect([
+    testoDelValoreIniziale(tabella([['"Anna"', "7"], ['"Bruno"', "9"], ['"Carla"', "6"]]), testi, "elenco"),
+    testoDelValoreIniziale(tabella({ each: ['"x"', "0"] }), testi, "elenco"),
+    testoDelValoreIniziale(tabella({ each: ['"x"', "0"] }), testi, "un-valore"),
+  ]).toEqual(['t ← {{"Anna", 7}, {"Bruno", 9}, {"Carla", 6}}', 't ← {{"x", 0}, {"x", 0}, {"x", 0}}', `t ← ${testi.ogniElemento.replace("{valore}", '{"x", 0}')}`]);
+});

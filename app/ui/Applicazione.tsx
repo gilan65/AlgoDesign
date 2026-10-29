@@ -810,9 +810,9 @@ export function Applicazione({
   const nomiNelDisegno = useMemo(
     () =>
       datiEseguiti && progettoEseguito
-        ? nomiDelDisegno(disegno, mostrata, geometriaPredefinita, misuraDelTesto, testiDelDisegno(lingua), formeDeiCicli, datiEseguiti, comuniNelDisegno ?? [], funzioniEseguite ?? undefined)
+        ? nomiDelDisegno(disegno, mostrata, geometriaPredefinita, misuraDelTesto, testiDelDisegno(lingua), formeDeiCicli, datiEseguiti, comuniNelDisegno ?? [], funzioniEseguite ?? undefined, progetto.records ?? [])
         : undefined,
-    [disegno, mostrata, misuraDelTesto, lingua, formeDeiCicli, datiEseguiti, progettoEseguito, comuniNelDisegno, funzioniEseguite],
+    [disegno, mostrata, misuraDelTesto, lingua, formeDeiCicli, datiEseguiti, progettoEseguito, comuniNelDisegno, funzioniEseguite, progetto.records],
   );
   const nomiDeiValori = useMemo(
     () =>

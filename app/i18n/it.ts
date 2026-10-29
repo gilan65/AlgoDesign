@@ -1015,6 +1015,15 @@ export const it = {
     "«{nome}» è una matrice di {righe} × {colonne} elementi: qui le colonne delle prime {prime} righe, gli elementi delle altre nella colonna «{colonna}» quando cambiano; tutti con un clic sul nome nel flowchart.",
   tracciaMatriceInFila:
     "«{nome}» è una matrice di {righe} × {colonne} elementi in una colonna sola, con le righe separate da «‖»: col puntatore del mouse sopra una cella se ne leggono le prime, tutte con un clic sul nome nel flowchart.",
+  /** La riga sopra la tabella per una tabella (un vettore di record): {record} i record, {primi} quelli con una colonna,
+   * {valori} i campi di tutti i record, {colonna} il nome della colonna degli altri. */
+  tracciaTabellaPerRecord: "«{nome}» è una tabella di {record} record: una colonna per record, coi campi in fila.",
+  tracciaTabellaPrimiRecordEAltri:
+    "«{nome}» è una tabella di {record} record: qui le colonne dei primi {primi}, i campi degli altri nella colonna «{colonna}» quando cambiano; tutti con un clic sul nome nel flowchart.",
+  tracciaTabellaPerCampo:
+    "«{nome}» è una tabella di {record} record: una colonna per campo, coi record in fila: col puntatore del mouse sopra una cella se ne leggono i primi, tutti con un clic sul nome nel flowchart.",
+  tracciaTabellaPrimiEAltri:
+    "«{nome}» è una tabella di {record} record con {valori} valori in tutto: qui le colonne dei primi {primi}, gli altri nella colonna «{colonna}» quando cambiano; tutti con un clic sul nome nel flowchart.",
   tracciaCsvUguale: "Il CSV esportato è uguale alla tabella.",
   tracciaCsvPerElemento: "Il CSV esportato ha una colonna per ogni elemento.",
   /** Il menu di una colonna della tabella (il tasto destro sull'intestazione, o dalla tastiera Invio, il tasto Menu,
