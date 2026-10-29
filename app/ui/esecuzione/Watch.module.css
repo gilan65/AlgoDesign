@@ -101,6 +101,20 @@
   opacity: 0.75;
 }
 
+/* La griglia di una matrice: una cella per elemento, coi bordi, i numeri allineati a destra; i numeri delle colonne e
+   delle righe attenuati come gli indici. Più larga del riquadro, si legge scorrendo di lato il riquadro fermo. */
+.griglia td,
+.griglia th {
+  padding: 1px 0.45rem;
+  border: 1px solid var(--disegno-bordo);
+  text-align: end;
+  white-space: nowrap;
+}
+
+.griglia th {
+  font-weight: normal;
+}
+
 /* Il dato di chi chiama, per un parametro per riferimento: sotto il valore, piccolo e attenuato come il tipo. */
 .riferimento {
   margin-top: 0.2rem;

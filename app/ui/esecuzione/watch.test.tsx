@@ -591,3 +591,51 @@ test("il watch si chiude lasciando il nome e con Esc, e torna puntando di nuovo"
   await punta(n);
   expect(watch()?.nome).toBe("n");
 }, 60_000);
+
+// ------------------------------------------------------------------------------------- una matrice
+
+test("una matrice: il tipo, righe per colonne e la griglia; il nome di una funzione che restituisce una matrice, la griglia di ciò che ha restituito", async () => {
+  const testo = readFileSync(new URL("../../casi/tipi/matrice-come-parametro.algo", import.meta.url), "utf8");
+  await apriLaFinestra("matrice-come-parametro.algo", testo);
+  /** La griglia del watch aperto: per riga, il numero della riga e i valori; in cima i numeri delle colonne. */
+  const griglia = () => {
+    const g = document.querySelector('[role="tooltip"][data-watch] [data-watch-griglia]');
+    if (!g) return null;
+    return [...g.querySelectorAll("tr")].map((tr) => [...tr.cells].map((c) => c.textContent));
+  };
+  const nome = (blocco: string, attributo: string, valore: string) => document.querySelector(`[data-blocco="${blocco}"] [${attributo}="${valore}"]`);
+  // Passo dopo passo fino a quando la funzione `trasposta` di b5 ha restituito qualcosa.
+  let visto: (string | null)[][] | null = null;
+  for (let k = 0; k < 120 && visto === null; k++) {
+    await premi("F10");
+    const t = nome("b5", "data-watch-funzione", "trasposta");
+    if (!t) continue;
+    await punta(t);
+    if (document.querySelector('[role="tooltip"][data-watch] [data-watch-chiamata]')) visto = griglia();
+    await lascia(t);
+  }
+  // `m` prima della chiamata: {{1, 2, 77}, {0, 0, 0}} (b1 ha scritto 77, b4 ha azzerato la riga 1); la trasposta 3 × 2.
+  expect(visto).toEqual([
+    ["", "[0]", "[1]"],
+    ["[0]", "1", "0"],
+    ["[1]", "2", "0"],
+    ["[2]", "77", "0"],
+  ]);
+  const m = nome("b3", "data-watch-dato", "m")!;
+  await punta(m);
+  expect(document.querySelector("[data-watch-tipo]")?.textContent).toBe("intero");
+  expect(document.querySelector("[data-watch-elementi]")?.textContent).toBe(riempi(it.watchMatrice, { righe: "2", colonne: "3" }));
+  expect(griglia()).toEqual([
+    ["", "[0]", "[1]", "[2]"],
+    ["[0]", "1", "2", "77"],
+    ["[1]", "0", "0", "0"],
+  ]);
+  // Ogni cella ha il nome dell'elemento nel suo `title`, come lo scrive il nucleo.
+  expect([...document.querySelectorAll('[data-watch-griglia] td[title]')].map((c) => c.getAttribute("title"))).toEqual(["m[0][0]", "m[0][1]", "m[0][2]", "m[1][0]", "m[1][1]", "m[1][2]"]);
+  await lascia(m);
+  // Controllo positivo: un vettore (`r`, tre elementi) resta un elemento per riga, senza griglia.
+  const r = nome("b6", "data-watch-dato", "r")!;
+  await punta(r);
+  expect(griglia()).toBeNull();
+  expect(document.querySelectorAll('[role="tooltip"][data-watch] [data-watch-indice]').length).toBe(3);
+}, 120_000);

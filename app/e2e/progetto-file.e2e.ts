@@ -167,25 +167,14 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
   console.log(`apri e salva: corpus ${delleTappe.length} file, della ricorsione ${ricorsione}: identici ${identici.length}, diversi ${diversi.length}`);
   expect(diversi).toEqual([]);
   expect({ ricorsione, identici: identici.length, corpus: delleTappe.length }).toEqual({ ricorsione: 22, identici: 146, corpus: 146 });
-  // I record: ogni file si apre, anche con un errore statico (lo dice il controllo nella finestra), con una riga per record
-  // nella tabella «Record» della vista dei dati; quelli giusti che non leggono niente si eseguono (F5 fino alla fine,
-  // l'output del caso del programma nella console) e, eseguiti, salvati restano identici.
-  // Le matrici l'interfaccia non le mostra ancora: un file che le usa non si apre, anche con un errore statico, e lo dice
-  // la finestra degli errori (la guardia dell'apertura).
+  // I tipi, i record e le matrici: ogni file si apre, anche con un errore statico (lo dice il controllo nella finestra),
+  // con una riga per record nella tabella «Record» della vista dei dati; quelli giusti che non leggono niente si eseguono
+  // (F5 fino alla fine, l'output del caso del programma nella console) e, eseguiti, salvati restano identici.
   const conLeMatrici = (testo: string) => {
     const a = apriProgetto(testo);
     return a.ok && usaLeMatrici(a.progetto);
   };
-  const delleMatrici = corpus.filter((c) => c.tappa === "tipi" && conLeMatrici(c.testo));
-  for (const c of delleMatrici) {
-    await apriIl(page, c.percorso);
-    const errore = allerta(page, riempi(it.apriErroreTitolo, { file: c.percorso.split("\\").at(-1)! }));
-    await expect(errore, c.percorso).toBeVisible();
-    await expect(errore.getByRole("listitem")).toHaveText([it.apriFuoriTappa]);
-    await chiudiConEsc(page, errore);
-  }
-  expect(delleMatrici.length).toBe(8);
-  const deiRecord = corpus.filter((c) => c.tappa === "tipi" && !conLeMatrici(c.testo));
+  const deiRecord = corpus.filter((c) => c.tappa === "tipi");
   const identiciDeiRecord: string[] = [];
   const eseguiti: string[] = [];
   let righe = 0;
@@ -210,9 +199,11 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
     if ((await salvaConNome(page, `C:\\uscita\\record-${i}.algo`)) === c.testo) identiciDeiRecord.push(c.percorso);
     if (eseguiti.at(-1) === c.percorso) await page.keyboard.press("Shift+F5");
   }
-  console.log(`apri e salva: i record, ${deiRecord.length} file, ${righe} righe nella tabella «Record», eseguiti ${eseguiti.length}, identici ${identiciDeiRecord.length}`);
-  // Cinque giusti senza letture (uno si ferma col suo errore), cinque con un errore statico, due che leggono.
-  expect({ identici: identiciDeiRecord.length, eseguiti: eseguiti.length, corpus: deiRecord.length }).toEqual({ identici: 12, eseguiti: 5, corpus: 12 });
+  const matrici = deiRecord.filter((c) => conLeMatrici(c.testo)).length;
+  console.log(`apri e salva: i tipi, ${deiRecord.length} file (delle matrici ${matrici}), ${righe} righe nella tabella «Record», eseguiti ${eseguiti.length}, identici ${identiciDeiRecord.length}`);
+  // Dei record cinque giusti senza letture (uno si ferma col suo errore), cinque con un errore statico, due che leggono;
+  // delle matrici cinque giuste senza letture (una si ferma col suo errore) e tre con un errore statico.
+  expect({ identici: identiciDeiRecord.length, eseguiti: eseguiti.length, corpus: deiRecord.length, matrici }).toEqual({ identici: 20, eseguiti: 10, corpus: 20, matrici: 8 });
   expect(righe).toBeGreaterThanOrEqual(11);
 });
 

@@ -4,7 +4,8 @@
 // capo; il valore iniziale di un vettore di 1000 elementi (un'azione che li cambia tutti), lo stesso in ogni elemento e
 // in un elenco, nelle due forme della tabella; una stringa di 1000 caratteri cambiata a ogni giro; un
 // vettore di stringhe al limite dei caratteri (10 stringhe da 1000, 100 da 100), nelle due forme della tabella; un ciclo
-// `per` fino al tetto dei passi col watch fermo sul contatore e il codice aperto (che non si ridisegnano a ogni fetta).
+// `per` fino al tetto dei passi col watch fermo sul contatore e il codice aperto (che non si ridisegnano a ogni fetta);
+// una matrice di 1000 valori (10 righe per 100 colonne) riempita da due cicli, nelle tre forme della tabella.
 // Per ciascuno, due secondi dopo F5, durante la corsa per il ciclo che non finisce (un campione ogni 2 s, il
 // peggiore) e alla fine (a corsa finita; per il ciclo che non finisce al tetto dei passi o dopo 30 s, il primo dei
 // due): la risposta della pagina (un giro di andata e ritorno) e il fotogramma più lungo; il fotogramma più lungo di
@@ -79,6 +80,28 @@ const conStringhe = (n: number, l: number) =>
       },
     ],
   );
+
+/** Una matrice di 10 righe e 100 colonne (1000 valori, il tetto) riempita da due cicli `per`, uno dentro l'altro. */
+const matriceRiempita = progetto(
+  [
+    { name: "m", type: "integer", size: 10, columns: 100 },
+    { name: "i", type: "integer" },
+    { name: "j", type: "integer" },
+  ],
+  [
+    {
+      id: "b1",
+      kind: "for",
+      counter: "i",
+      from: "0",
+      to: "9",
+      body: [{ id: "b2", kind: "for", counter: "j", from: "0", to: "99", body: [{ id: "b3", kind: "assignment", target: "m[i][j]", value: "i * 100 + j" }] }],
+    },
+  ],
+);
+
+/** La frase della riga sopra la tabella per la matrice in ciascuna forma. */
+const fraseDellaMatrice = { "per-riga": "una colonna per riga", "per-elemento": "le colonne dei primi 10", "in-fila": "in una colonna sola" } as const;
 
 const programmi = [
   { nome: "un vettore di 1000 elementi riempito da un ciclo, con le colonne dei primi dieci", testo: riempito, forma: "primi-e-altri", finisce: true, oltre: true },
@@ -179,6 +202,14 @@ const programmi = [
   { nome: "10 stringhe da 1000 caratteri, in fila", testo: conStringhe(10, 1000), forma: "in-fila", finisce: true, oltre: false },
   { nome: "100 stringhe da 100 caratteri, con le colonne dei primi dieci", testo: conStringhe(100, 100), forma: "primi-e-altri", finisce: true, oltre: true },
   { nome: "100 stringhe da 100 caratteri, in fila", testo: conStringhe(100, 100), forma: "in-fila", finisce: true, oltre: true },
+  ...(["per-riga", "per-elemento", "in-fila"] as const).map((matrici) => ({
+    nome: `una matrice di 10 × 100 elementi riempita da due cicli, ${matrici === "per-riga" ? "una colonna per riga" : matrici === "per-elemento" ? "una colonna per elemento" : "in fila"}`,
+    testo: matriceRiempita,
+    forma: "primi-e-altri" as const,
+    matrici,
+    finisce: true,
+    oltre: true,
+  })),
 ] as const;
 
 const statoDi = (page: Page) => page.getByRole("region", { name: it.rigaDiStato, exact: true }).locator("[data-stato-esecuzione]");
@@ -186,7 +217,7 @@ const statoDi = (page: Page) => page.getByRole("region", { name: it.rigaDiStato,
 for (const p of programmi)
   test(`la finestra risponde entro la soglia: ${p.nome}`, async ({ page }, info) => {
     test.setTimeout(240_000);
-    await apriVuota(page, { lingua: "it", formaDeiVettori: p.forma }, { esempi: { "1 pesante.algo": p.testo } });
+    await apriVuota(page, { lingua: "it", formaDeiVettori: p.forma, ...("matrici" in p ? { formaDelleMatrici: p.matrici } : {}) }, { esempi: { "1 pesante.algo": p.testo } });
     await apriEsempio(page, 0);
     await page.getByRole("region", { name: it.vistaFlowchart, exact: true }).click({ position: { x: 5, y: 5 } });
     const misure: { cosa: string; ms: number }[] = [];
@@ -222,7 +253,8 @@ for (const p of programmi)
     // misurare la stessa tabella. Un vettore in fila ha sempre la sua frase; con le colonne dei primi dieci solo oltre
     // il decimo elemento.
     const spiega = (await page.locator("[data-spiega]").allTextContents()).join(" ");
-    if (p.forma === "in-fila") expect(spiega, "la riga sopra la tabella").toContain("in una colonna sola");
+    if ("matrici" in p) expect(spiega, "la riga sopra la tabella").toContain(fraseDellaMatrice[p.matrici]);
+    else if (p.forma === "in-fila") expect(spiega, "la riga sopra la tabella").toContain("in una colonna sola");
     else if (p.oltre) expect(spiega, "la riga sopra la tabella").toContain("le colonne dei primi 10");
     else expect(spiega, "la riga sopra la tabella").toBe("");
     // Il valore iniziale si disegna leggero (in Chromium anche pesante starebbe sotto la soglia: misurato), quindi qui si

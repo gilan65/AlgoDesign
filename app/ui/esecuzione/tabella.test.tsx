@@ -52,6 +52,18 @@ import {
   regolaDiRComeElenco,
   regolaDiRComeValoreSolo,
 } from "../../core/esecuzione/atteso-del-vettore";
+import {
+  cambiateDellaCopiaPerRiga,
+  copiaInFila,
+  copiaPerElemento,
+  copiaPerRiga,
+  progettoDellaCopia,
+  progettoDelleUndiciRighe,
+  undiciCsvPerElemento,
+  undiciInFila,
+  undiciPerElemento,
+  undiciPerRiga,
+} from "../../core/esecuzione/atteso-della-matrice";
 import { TabellaMostrata } from "../../core/esecuzione/traccia";
 import { apri } from "../../core/progetto/formato";
 import { en } from "../../i18n/en";
@@ -629,3 +641,43 @@ test("una riga sola tolta: sopra la tabella e nel messaggio dopo l'esportazione 
   await esporta(it);
   expect(avviso()).toBe(riempi(it.esportataSenzaLaPrima, { file: "traccia.csv" }));
 }, 60_000);
+
+// ------------------------------------------------------------------------------------- una matrice
+
+// La matrice nella finestra, nelle tre forme scelte nelle Impostazioni: la tabella e il file coincidono con l'atteso
+// scritto a mano del nucleo (`atteso-della-matrice.ts`), cella per cella e byte per byte. La copia `b ← a` nella forma
+// espansa per le prime due forme (la regola di ogni azione è il testo del suo blocco), compatta in fila; undici righe
+// oltre il tetto in ogni forma.
+test("una matrice nelle tre forme delle Impostazioni: la tabella e il file sono l'atteso scritto a mano del nucleo", async () => {
+  const casi = [
+    { progetto: progettoDellaCopia, forma: "per-riga", copia: "espansa", tabella: copiaPerRiga, csv: "uguale", file: copiaPerRiga },
+    { progetto: progettoDellaCopia, forma: "per-elemento", copia: "espansa", tabella: copiaPerElemento, csv: "uguale", file: copiaPerElemento },
+    { progetto: progettoDellaCopia, forma: "in-fila", copia: "compatta", tabella: copiaInFila, csv: "uguale", file: copiaInFila },
+    { progetto: progettoDelleUndiciRighe, forma: "per-riga", copia: "compatta", tabella: undiciPerRiga, csv: "uguale", file: undiciPerRiga },
+    { progetto: progettoDelleUndiciRighe, forma: "per-elemento", copia: "compatta", tabella: undiciPerElemento, csv: "uguale", file: undiciPerElemento },
+    { progetto: progettoDelleUndiciRighe, forma: "in-fila", copia: "compatta", tabella: undiciInFila, csv: "per-elemento", file: undiciCsvPerElemento },
+  ] as const;
+  let confrontate = 0;
+  for (const c of casi) {
+    cleanup();
+    scritti = [];
+    await apriLaFinestra(`${c.progetto.metadata.name}.algo`, JSON.stringify(c.progetto), "it", { ...scelteIniziali, formaDelleMatrici: c.forma, copiaDeiVettori: c.copia, formaDelCsv: c.csv });
+    await premi("F5");
+    await aspetta("la fine", () => statoMostrato() === it.statoFinita);
+    const quale = `${c.progetto.metadata.name}, ${c.forma}`;
+    expect(differenze(comeCsv(), c.tabella), quale).toEqual([]);
+    confrontate += comeCsv().length;
+    if (c.progetto === progettoDellaCopia && c.forma === "per-riga")
+      expect(righe().map((tr) => [...tr.cells].slice(2, 8).map((td) => (td.hasAttribute("data-cambiata") ? "x" : ".")).join("")), quale).toEqual([...cambiateDellaCopiaPerRiga]);
+    const scritto = await esporta(it);
+    expect(scritto.testo, quale).toBe(`\u{feff}${c.file.join("\r\n")}\r\n`);
+  }
+  // La premessa: le righe confrontate sono tutte quelle degli attesi.
+  expect(confrontate).toBe(casi.reduce((n, c) => n + c.tabella.length, 0));
+  // Controllo positivo: la forma cambiata apposta (in fila invece di una colonna per riga) non è l'atteso.
+  cleanup();
+  await apriLaFinestra("copia.algo", JSON.stringify(progettoDellaCopia), "it", { ...scelteIniziali, formaDelleMatrici: "in-fila", copiaDeiVettori: "espansa" });
+  await premi("F5");
+  await aspetta("la fine", () => statoMostrato() === it.statoFinita);
+  expect(differenze(comeCsv(), copiaPerRiga).length).toBeGreaterThan(0);
+}, 180_000);

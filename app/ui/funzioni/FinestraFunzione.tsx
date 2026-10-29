@@ -7,7 +7,8 @@
 //   restituisce, il valore predefinito;
 // - RINOMINA: il nome nuovo (le chiamate lo prendono).
 // Che cosa restituisce si scrive coi campi della vista dei dati per un dato di quel tipo: il tipo, la forma (un valore
-// solo o un vettore) con gli elementi, e per una stringa la lunghezza massima nelle opzioni avanzate. Un vettore non ha
+// solo, un vettore con gli elementi o una matrice con le righe e le colonne), e per una stringa la lunghezza massima
+// nelle opzioni avanzate. Un vettore non ha
 // valore predefinito: il campo non c'è, e nemmeno per un record (scelto dopo i cinque tipi, fra i record del progetto).
 // Una dimensione o una lunghezza che non è un numero la segnala il controllo, come
 // per un dato.
@@ -38,7 +39,10 @@ export interface BozzaDellaFunzione {
   readonly record: string;
   /** Restituisce un vettore, coi suoi elementi come li scrive il campo. */
   readonly vettore: boolean;
+  /** Con `vettore`: una matrice, la dimensione sono le righe. */
+  readonly matrice: boolean;
   readonly dimensione: string;
+  readonly colonne: string;
   /** La lunghezza massima di una stringa restituita; vuota, la predefinita. */
   readonly lunghezza: string;
   readonly predefinito: string;
@@ -49,7 +53,7 @@ export type ErroriDellaFunzione = Partial<Record<"nome" | "predefinito", string>
 
 const nomiDeiTipi: Record<TipoRestituito, keyof Dizionario> = { integer: "tipoIntero", real: "tipoReale", character: "tipoCarattere", string: "tipoStringa", boolean: "tipoBooleano" };
 function bozzaIniziale(m: ModoDellaFinestra): BozzaDellaFunzione {
-  const misure = { vettore: false, dimensione: "", lunghezza: "" };
+  const misure = { vettore: false, matrice: false, dimensione: "", colonne: "", lunghezza: "" };
   if (m.modo === "nuova")
     return { genere: m.salto !== undefined ? "procedure" : m.soloFunzione ? "function" : (m.genere ?? "procedure"), nome: "", tipo: "integer", record: "", ...misure, predefinito: valorePredefinito.integer };
   const f = m.funzione;
@@ -60,7 +64,9 @@ function bozzaIniziale(m: ModoDellaFinestra): BozzaDellaFunzione {
     tipo,
     record: f.return_record ?? "",
     vettore: f.return_size !== undefined,
+    matrice: f.return_size !== undefined && f.return_columns !== undefined,
     dimensione: f.return_size === undefined ? "" : String(f.return_size),
+    colonne: f.return_columns === undefined ? "" : String(f.return_columns),
     lunghezza: f.return_max_length === undefined ? "" : String(f.return_max_length),
     predefinito: f.default_result ?? (tipo === "record" ? "" : valorePredefinito[tipo]),
   };
@@ -103,8 +109,9 @@ function Campi({
     if (sbagliato) modulo.current?.querySelector<HTMLElement>(`[data-campo="${sbagliato}"]`)?.focus();
     else conferma(bozza);
   }
-  /** Il campo di un numero: gli elementi di un vettore, la lunghezza massima di una stringa. */
-  const campoDelNumero = (campo: "dimensione" | "lunghezza", etichetta: string) => (
+  /** Il campo di un numero: gli elementi di un vettore (le righe di una matrice), le colonne, la lunghezza massima di una
+   * stringa. */
+  const campoDelNumero = (campo: "dimensione" | "colonne" | "lunghezza", etichetta: string) => (
     <div className={stili.voce}>
       <label htmlFor={`${id}-${campo}`}>{etichetta}</label>
       <input
@@ -206,13 +213,21 @@ function Campi({
       {conTipo && (
         <div className={stili.voce}>
           <label htmlFor={`${id}-forma`}>{testi.campoForma}</label>
-          <select id={`${id}-forma`} className={stili.campo} data-campo="forma" value={bozza.vettore ? "vettore" : "semplice"} onChange={(ev) => setBozza({ ...bozza, vettore: ev.target.value === "vettore" })}>
+          <select
+            id={`${id}-forma`}
+            className={stili.campo}
+            data-campo="forma"
+            value={bozza.vettore && bozza.matrice ? "matrice" : bozza.vettore ? "vettore" : "semplice"}
+            onChange={(ev) => setBozza({ ...bozza, vettore: ev.target.value !== "semplice", matrice: ev.target.value === "matrice" })}
+          >
             <option value="semplice">{testi.formaSemplice}</option>
             <option value="vettore">{testi.formaVettore}</option>
+            <option value="matrice">{testi.formaMatrice}</option>
           </select>
         </div>
       )}
-      {conTipo && bozza.vettore && campoDelNumero("dimensione", testi.campoElementi)}
+      {conTipo && bozza.vettore && campoDelNumero("dimensione", bozza.matrice ? testi.campoRighe : testi.campoElementi)}
+      {conTipo && bozza.vettore && bozza.matrice && campoDelNumero("colonne", testi.campoColonne)}
       {conTipo && bozza.tipo === "string" && (
         <details className={propri.avanzate} open={avanzate} onToggle={(ev) => setAvanzate(ev.currentTarget.open)}>
           <summary>{testi.opzioniAvanzate}</summary>

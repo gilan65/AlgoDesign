@@ -4,7 +4,7 @@
 // stampa (22, 18 e 12 mm): il verso, il numero dei fogli e i tagli, ricavati a mano dagli intervalli liberi stampati
 // da uno script scritto a parte, PRIMA di questo codice.
 //
-// Il corpus intero (ogni funzione delle tappe 1–4, dei record, nelle due forme della copia, e degli attesi), con le tre misure del testo delle prove, ai punti 6, 8
+// Il corpus intero (ogni funzione delle tappe 1–4, dei record e delle matrici, nelle due forme della copia, e degli attesi), con le tre misure del testo delle prove, ai punti 6, 8
 // e 12 e con «Adatta al foglio», sull'A4 e sulla metà sinistra di un foglio orizzontale (il flowchart affiancato al
 // codice): con un rilevatore SCRITTO QUI, dagli oggetti del disegno e non dagli ostacoli di `fogli.ts`, nessun taglio
 // passa dentro un oggetto (forma, intestazione, etichetta, unione, punta di una freccia; i lati di un riquadro e i tratti
@@ -262,9 +262,12 @@ describe("il corpus intero: nessun taglio dentro un oggetto, ogni oggetto in un 
       const deiRecord = corpus.filter((a) => a.nome.startsWith("casi/tipi/")).map((a) => disegna(a));
       const campi = deiRecord.flatMap((d) => d.elementi.filter((e) => e.campo !== undefined)).length;
       const scritte = deiRecord.flatMap((d) => d.riquadri.filter((r) => r.didascalia?.testo === cicliIt.copiaCampi)).length;
-      console.log(`fogli sul corpus: copie di un record, assegnazioni dei campi ${campi}, scritte della compatta ${scritte}`);
+      // E delle matrici: il ciclo delle colonne della copia espansa (le parti con `interno`).
+      const colonne = deiRecord.flatMap((d) => d.elementi.filter((e) => e.interno === true)).length;
+      console.log(`fogli sul corpus: copie di un record, assegnazioni dei campi ${campi}, scritte della compatta ${scritte}; parti del ciclo delle colonne ${colonne}`);
       expect(campi).toBeGreaterThan(0);
       expect(scritte).toBeGreaterThan(0);
+      expect(colonne).toBeGreaterThan(0);
       // Le premesse: il corpus discrimina (molte funzioni su più fogli, qualcuna ristretta, i due versi).
       expect(conti.divisioni).toBe(corpus.length * 24);
       expect(conti.suPiuFogli).toBeGreaterThan(100);

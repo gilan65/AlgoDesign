@@ -17,6 +17,8 @@ const cifre = (c: { elementi: number; caratteri: number; vettoreDiStringhe: numb
   limitiSpiegazione: [c.elementi, c.caratteri, c.vettoreDiStringhe],
   formaPrimiEAltri: [c.colonne],
   formaInFila: [c.colonne],
+  formaMatricePerRiga: [c.colonne],
+  formaMatricePerElemento: [c.colonne],
   consoleSpiegazione: [c.righe],
   consoleTolte: [c.righe],
   consoleTolta: [c.righe],
@@ -42,9 +44,9 @@ function mancanti(testi: Dizionario, attese: Cifre): string[] {
 test("le cifre dei testi sono quelle delle costanti, nelle due lingue", () => {
   expect(mancanti(it, cifre(vere))).toEqual([]);
   expect(mancanti(en, cifre(vere))).toEqual([]);
-  // Le premesse: le costanti che i testi dicono oggi, e otto testi per lingua guardati.
+  // Le premesse: le costanti che i testi dicono oggi, e dieci testi per lingua guardati.
   expect(vere).toEqual({ elementi: 1000, caratteri: 1000, vettoreDiStringhe: 10_000, colonne: 10, righe: 1000 });
-  expect(Object.keys(cifre(vere)).length).toBe(8);
+  expect(Object.keys(cifre(vere)).length).toBe(10);
 });
 
 test("controllo positivo: una costante cambiata fa mancare la sua cifra in ogni testo che la dice", () => {

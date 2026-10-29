@@ -93,9 +93,17 @@ export interface Importazione {
 /** Il contenuto senza ciò che non conta per «identica»: gli `id`, i punti d'interruzione, i casi d'uso. */
 const contenuto = (x: unknown): string => JSON.stringify(x, (k, v) => (k === "id" || k === "breakpoint" || k === "test_cases" ? undefined : v));
 
-/** Ciò che chi chiama vede di una procedura o funzione: genere, risultato, parametri (senza i nomi). */
+/** Ciò che chi chiama vede di una procedura o funzione: genere, risultato, parametri (senza i nomi); le colonne di una
+ * matrice comprese. */
 const firma = (f: Funzione): string =>
-  JSON.stringify([f.kind, f.return_type, f.return_size, f.return_max_length, f.data.filter((d) => d.parameter !== undefined).map((d) => [d.type, d.size, d.max_length, d.parameter])]);
+  JSON.stringify([
+    f.kind,
+    f.return_type,
+    f.return_size,
+    f.return_columns,
+    f.return_max_length,
+    f.data.filter((d) => d.parameter !== undefined).map((d) => [d.type, d.size, d.columns, d.max_length, d.parameter]),
+  ]);
 
 /** I blocchi in ordine di lettura, coi blocchi che contengono. */
 const inOrdine = (bs: readonly Blocco[]): Blocco[] => bs.flatMap((b) => [b, ...inOrdine(sottoblocchi(b))]);

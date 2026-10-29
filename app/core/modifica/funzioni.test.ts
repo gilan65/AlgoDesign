@@ -297,6 +297,24 @@ describe("le proprietà e il genere", () => {
     const r = proprietaDellaFunzione("f3", { genere: "function", tipo: "integer", dimensione: 3 })(conVettore, 28);
     expect(r.ok && r.progetto).toBe(conVettore);
   });
+
+  test("le colonne di una matrice restituita: date, tolte, lasciate come sono, e via con la dimensione o il genere", () => {
+    const matrice = dopo(proprietaDellaFunzione("f3", { genere: "function", tipo: "integer", dimensione: 2, colonne: 3 }));
+    expect(funzione(matrice, "f3")).toMatchObject({ return_type: "integer", return_size: 2, return_columns: 3 });
+    expect(funzione(matrice, "f3").default_result).toBeUndefined();
+    // Non date: restano; un altro tipo semplice le tiene.
+    expect(funzione(dopo(proprietaDellaFunzione("f3", { genere: "function", tipo: "real" }), matrice), "f3")).toMatchObject({ return_type: "real", return_size: 2, return_columns: 3 });
+    // Tolte (`null`): un vettore; senza la dimensione, un valore solo; una procedura non restituisce niente.
+    expect(funzione(dopo(proprietaDellaFunzione("f3", { genere: "function", tipo: "integer", colonne: null }), matrice), "f3")).toMatchObject({ return_size: 2 });
+    expect(funzione(dopo(proprietaDellaFunzione("f3", { genere: "function", tipo: "integer", colonne: null }), matrice), "f3").return_columns).toBeUndefined();
+    expect(funzione(dopo(proprietaDellaFunzione("f3", { genere: "function", tipo: "integer", dimensione: null }), matrice), "f3").return_columns).toBeUndefined();
+    expect(funzione(dopo(proprietaDellaFunzione("f3", { genere: "procedure" }), matrice), "f3").return_columns).toBeUndefined();
+    // Le stesse misure non cambiano il progetto; le colonne diverse sì.
+    const r = proprietaDellaFunzione("f3", { genere: "function", tipo: "integer", dimensione: 2, colonne: 3 })(matrice, 28);
+    expect(r.ok && r.progetto).toBe(matrice);
+    const altre = proprietaDellaFunzione("f3", { genere: "function", tipo: "integer", dimensione: 2, colonne: 4 })(matrice, 28);
+    expect(altre.ok && funzione(altre.progetto, "f3").return_columns).toBe(4);
+  });
 });
 
 describe("ciò che restituisce", () => {

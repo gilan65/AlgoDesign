@@ -1,6 +1,7 @@
 // Il watch: col puntatore sopra il nome di un dato in un blocco, durante l'esecuzione, un riquadro accanto al nome con
 // il nome, il tipo della vista dei dati e il valore della riga corrente della tabella di traccia (per un vettore,
-// quanti elementi e un elemento per riga; per un record, un campo per riga). I valori li dà il nucleo (`TabellaMostrata.watch`), mai ricalcolati qui.
+// quanti elementi e un elemento per riga; per una matrice, righe per colonne e la griglia; per un record, un campo per
+// riga). I valori li dà il nucleo (`TabellaMostrata.watch`), mai ricalcolati qui.
 // Si chiude quando il puntatore lascia il nome, o con Esc. Il riquadro non
 // prende il puntatore: lasciarlo non serve.
 //
@@ -113,16 +114,44 @@ export const Watch = memo(function Watch({
       {c.testo}
     </span>
   );
-  /** Gli elementi di un vettore, o i campi di un record, uno per riga. */
-  const elementi = (es: DatoNelWatch["elementi"]) => (
-    <table className={stili.elementi}>
+  /** Gli elementi di un vettore, o i campi di un record, uno per riga; di una matrice (`colonne`) la griglia, una riga
+   * della tabella per riga della matrice, coi numeri delle colonne in cima e quelli delle righe a sinistra. */
+  const elementi = (es: DatoNelWatch["elementi"]) =>
+    dato.colonne !== undefined ? (
+      griglia(es, dato.colonne)
+    ) : (
+      <table className={stili.elementi}>
+        <tbody>
+          {es.map((e) => (
+            <tr key={e.nome} data-watch-elemento="">
+              <td className={stili.indice} data-watch-indice="">
+                {e.nome}
+              </td>
+              <td>{valore(e.cella)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  const griglia = (es: DatoNelWatch["elementi"], colonne: number) => (
+    <table className={`${stili.elementi} ${stili.griglia}`} data-watch-griglia="">
+      <thead>
+        <tr>
+          <td />
+          {Array.from({ length: colonne }, (_, j) => (
+            <th key={j} scope="col" className={stili.indice}>{`[${j}]`}</th>
+          ))}
+        </tr>
+      </thead>
       <tbody>
-        {es.map((e) => (
-          <tr key={e.nome} data-watch-elemento="">
-            <td className={stili.indice} data-watch-indice="">
-              {e.nome}
-            </td>
-            <td>{valore(e.cella)}</td>
+        {Array.from({ length: Math.ceil(es.length / colonne) }, (_, i) => (
+          <tr key={i} data-watch-riga="">
+            <th scope="row" className={stili.indice}>{`[${i}]`}</th>
+            {es.slice(i * colonne, (i + 1) * colonne).map((e) => (
+              <td key={e.nome} data-watch-elemento="" title={e.nome}>
+                {valore(e.cella)}
+              </td>
+            ))}
           </tr>
         ))}
       </tbody>
@@ -141,7 +170,13 @@ export const Watch = memo(function Watch({
         {dato.vettore && quanti > 0 && (
           <span className={stili.tipo}>
             {" · "}
-            <span data-watch-elementi="">{quanti === 1 ? testi.watchElemento : riempi(testi.watchElementi, { n: String(quanti) })}</span>
+            <span data-watch-elementi="">
+              {dato.colonne !== undefined
+                ? riempi(testi.watchMatrice, { righe: String(Math.ceil(quanti / dato.colonne)), colonne: String(dato.colonne) })
+                : quanti === 1
+                  ? testi.watchElemento
+                  : riempi(testi.watchElementi, { n: String(quanti) })}
+            </span>
           </span>
         )}
       </span>

@@ -61,7 +61,7 @@
 import { analizza, parole } from "../espressioni/analizzatore";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import type { Posto, Ramo } from "../modifica/operazioni";
-import { eUnaCopia, eUnaCopiaDiUnRecord, nomiDeiRecord, nomiDeiVettori } from "../progetto/copia";
+import { eUnaCopia, eUnaCopiaDiUnRecord, nomiDeiRecord, nomiDelleMatrici, nomiDeiVettori, posizioniDellaCopia } from "../progetto/copia";
 import type { Blocco, Campo, Dato, DefinizioneDelRecord, Funzione } from "../progetto/modello";
 import { coppie, type Coppia, type Domanda } from "./domanda";
 import type { GeometriaDelTema } from "./tema";
@@ -109,6 +109,8 @@ export interface Elemento {
   /** Solo nella copia espansa di un record col suo nome: la posizione del campo che l'assegnazione copia (la fase è
    * «elemento», l'`id` quello dell'assegnazione). */
   readonly campo?: number;
+  /** Solo nella copia espansa di una matrice col suo nome: la parte è del ciclo delle colonne (quello dentro). */
+  readonly interno?: true;
   /** Solo per il rombo di un ciclo (`mentre`, `ripeti`, il `per` e il `per ogni` aperti, la copia espansa): ha il colore
    * dei cicli, non quello del «se». */
   readonly ciclo?: true;
@@ -443,6 +445,7 @@ export const risultatoDi = (f: Funzione): Dato => ({
   name: f.name ?? "",
   type: f.return_type ?? "integer",
   ...(f.return_size !== undefined ? { size: f.return_size } : {}),
+  ...(f.return_columns !== undefined ? { columns: f.return_columns } : {}),
   ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}),
 });
 
@@ -982,8 +985,9 @@ export function impagina(
   /** Quanti `per ogni` contengono il blocco che si sta impaginando: la posizione dell'elemento di uno dentro un altro ha
    * il numero del suo livello, come nel codice generato. */
   let perOgniAperti = 0;
-  /** I vettori che le regole vedono: riconoscono la copia col nome. */
+  /** I vettori e le matrici che le regole vedono: riconoscono la copia col nome (anche quella di una riga). */
   const vettori = nomiDeiVettori([...funzione.data, ...costantiComuni]);
+  const matrici = nomiDelleMatrici([...funzione.data, ...costantiComuni]);
 
   /** Un ciclo `per` o `per ogni` nella forma delle opzioni, nel suo riquadro. */
   function cicloPer(b: Extract<Blocco, { kind: "for" | "for_each" }>): Pezzo {
@@ -1033,7 +1037,8 @@ export function impagina(
   /** La copia di un vettore col suo nome nel riquadro con la sua scritta: compatta, l'assegnazione (la scritta sul bordo
    * non è un blocco); espansa, il `mentre` equivalente con la posizione (la partenza, il rombo, l'elemento copiato,
    * l'aumento), blocchi aggiunti con l'`id` dell'assegnazione e la loro fase, sotto un'intestazione che è il blocco.
-   * Nessun punto di inserimento dentro: l'assegnazione non ha un corpo. */
+   * La copia espansa di una matrice col suo nome ha il ciclo delle colonne (le sue parti con `interno`) al posto
+   * dell'elemento copiato, dentro quello delle righe. Nessun punto di inserimento dentro: l'assegnazione non ha un corpo. */
   function copiaNelRiquadro(b: Extract<Blocco, { kind: "assignment" }>): Pezzo {
     if (opzioni.copia === "compatta") {
       // Sotto l'assegnazione la linea che esce, come l'uscita di un ciclo: il fondo del riquadro la attraversa.
@@ -1041,10 +1046,15 @@ export function impagina(
       const conLUscita = { ...a, altezza: a.altezza + tema.discesa, connettori: [flusso(punto(0, a.altezza), punto(0, a.altezza + tema.discesa))] };
       return riquadro(b.id, [{ testo: testi.cicli.copia, espressione: false }], conLUscita, true);
     }
-    const testo = (fase: FaseDelCiclo) => partiDellaFase(b, fase, opzioni, testi, perOgniAperti + 1, [...funzione.data, ...costantiComuni])!;
-    const corpo = colonna([aggiunto(b.id, "elemento", testo("elemento")), aggiunto(b.id, "passo", testo("passo"))]);
-    const interno = colonna([aggiunto(b.id, "inizio", testo("inizio")), cicloInTesta(b.id, testo("condizione"), corpo, "condizione")]);
-    return riquadro(b.id, partiDellIntestazioneDellaCopia(b, testi), interno);
+    const dati = [...funzione.data, ...costantiComuni];
+    const testo = (fase: FaseDelCiclo, interno = false) => partiDellaFase(b, fase, opzioni, testi, perOgniAperti + 1, dati, interno)!;
+    const ciclo = (interno: boolean, elemento: Pezzo) =>
+      colonna([aggiunto(b.id, "inizio", testo("inizio", interno)), cicloInTesta(b.id, testo("condizione", interno), colonna([elemento, aggiunto(b.id, "passo", testo("passo", interno))]), "condizione")]);
+    const unaMatrice = posizioniDellaCopia(b, vettori, matrici) === 2;
+    const elemento = aggiunto(b.id, "elemento", testo("elemento", unaMatrice));
+    const dentro = unaMatrice ? ciclo(true, elemento) : elemento;
+    const colonne = unaMatrice ? { ...dentro, elementi: dentro.elementi.map((e) => ({ ...e, interno: true as const })) } : dentro;
+    return riquadro(b.id, partiDellIntestazioneDellaCopia(b, testi), ciclo(false, colonne));
   }
 
   /** La copia di un record col suo nome nel riquadro con la scritta «copia campo per campo»: compatta come quella del
@@ -1091,7 +1101,7 @@ export function impagina(
   function blocco(b: Blocco): Pezzo {
     switch (b.kind) {
       case "assignment": {
-        if (eUnaCopia(b, vettori)) return copiaNelRiquadro(b);
+        if (eUnaCopia(b, vettori, matrici)) return copiaNelRiquadro(b);
         const campi = campiDellaCopia(b, [...funzione.data, ...costantiComuni], records);
         return campi !== undefined ? copiaDelRecordNelRiquadro(b, campi) : semplice(b.id, "assegnazione", partiDelBlocco(b, testi));
       }

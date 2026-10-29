@@ -23,8 +23,9 @@ export type GenereDiSottoprogramma = "procedure" | "function";
 
 /** Ciò che si sceglie di una procedura o di una funzione: il genere e, per una funzione, il tipo restituito, il valore
  * predefinito (il letterale che prende il suo posto in un'espressione quando la si toglie), la dimensione di un vettore
- * restituito e la lunghezza massima di una stringa restituita (`null`: nessuna, un valore solo o la lunghezza
- * predefinita; assenti, restano come sono). Un vettore non ha valore predefinito. */
+ * restituito (le righe di una matrice), le colonne di una matrice restituita e la lunghezza massima di una stringa
+ * restituita (`null`: nessuna, un valore solo, un vettore o la lunghezza predefinita; assenti, restano come sono). Un
+ * vettore non ha valore predefinito. */
 export interface Proprieta {
   readonly genere: GenereDiSottoprogramma;
   /** Uno dei cinque, o un record (col nome in `record`). */
@@ -32,6 +33,7 @@ export interface Proprieta {
   readonly record?: string;
   readonly predefinito?: string;
   readonly dimensione?: number | null;
+  readonly colonne?: number | null;
   readonly lunghezza?: number | null;
 }
 
@@ -198,10 +200,10 @@ export function idDellaFunzioneNuova(p: Progetto): string {
 
 /** La funzione col genere e le proprietà date: una funzione ha il tipo restituito, il valore predefinito (omesso se è
  * quello del tipo, e sempre per un vettore) e ciò che restituisce (vuoto, se prima non c'era); una procedura nessuno dei
- * tre. La dimensione di un vettore restituito e la lunghezza massima, non date, restano alla funzione (la lunghezza solo
- * a una funzione che resta stringa). */
+ * tre. La dimensione di un vettore restituito, le colonne e la lunghezza massima, non date, restano alla funzione (la
+ * lunghezza solo a una funzione che resta stringa, le colonne solo a una che resta un vettore di un tipo semplice). */
 function conProprieta(f: Funzione, pr: Proprieta): Funzione {
-  const { return_type: _t, return_record: recordDi, return_size: dimensioneDi, return_max_length: lunghezzaDi, default_result: _d, ...resto } = f;
+  const { return_type: _t, return_record: recordDi, return_size: dimensioneDi, return_columns: colonneDi, return_max_length: lunghezzaDi, default_result: _d, ...resto } = f;
   const { return_value, ...fine } = f.end;
   if (pr.genere === "procedure") {
     // Una funzione non scrive (E042): l'output atteso dei suoi casi è fatto delle righe di ciò che restituisce, che una
@@ -227,12 +229,14 @@ function conProprieta(f: Funzione, pr: Proprieta): Funzione {
     };
   const tipo = (pr.tipo ?? f.return_type ?? "integer") as TipoRestituito;
   const return_max_length = pr.lunghezza === undefined ? lunghezzaDi : (pr.lunghezza ?? undefined);
+  const return_columns = return_size === undefined ? undefined : pr.colonne === undefined ? colonneDi : (pr.colonne ?? undefined);
   const predefinito = return_size !== undefined ? valorePredefinito[tipo] : (pr.predefinito ?? f.default_result ?? valorePredefinito[tipo]);
   return {
     ...resto,
     kind: "function",
     return_type: tipo,
     ...(return_size !== undefined ? { return_size } : {}),
+    ...(return_columns !== undefined ? { return_columns } : {}),
     ...(tipo === "string" && return_max_length !== undefined ? { return_max_length } : {}),
     ...(predefinito === valorePredefinito[tipo] ? {} : { default_result: predefinito }),
     end: { ...fine, return_value: return_value ?? "" },
@@ -309,6 +313,7 @@ export const proprietaDellaFunzione =
       nuova.kind === f.kind &&
       nuova.return_type === f.return_type &&
       nuova.return_size === f.return_size &&
+      nuova.return_columns === f.return_columns &&
       nuova.return_max_length === f.return_max_length &&
       (f.kind === "procedure" || predefinitoDi(nuova) === predefinitoDi(f));
     return stesse ? { ok: true, progetto: p, prossimo } : valida({ ...p, functions: p.functions.map((x) => (x.id === id ? nuova : x)) }, prossimo);

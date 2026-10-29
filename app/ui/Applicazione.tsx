@@ -83,7 +83,7 @@ import { eUnaParolaSola } from "../core/modifica/rinomina";
 import { sottoblocchi } from "../core/modifica/identificatori";
 import { importa as importaDa } from "../core/modifica/importa";
 import { apri as apriTesto, salva as testoDi } from "../core/progetto/formato";
-import { usaLeMatrici, type Blocco, type CasoDiUnaFunzione, type Dato, type DefinizioneDelRecord, type Funzione, type Progetto } from "../core/progetto/modello";
+import { type Blocco, type CasoDiUnaFunzione, type Dato, type DefinizioneDelRecord, type Funzione, type Progetto } from "../core/progetto/modello";
 import { bozzaDelCaso, casoDaBozza, datiDelleVoci, nomeDelCasoNuovo, stessoCaso, vociDelCasoNuovo, type BozzaDelCaso } from "./casi/bozza";
 import { casiDella, chiaveDelCaso, chiaviDeiCasi, selezioneDopoIlPasso, TuttiICasi } from "./casi/tutti";
 import { casoDallEsecuzione, casoUguale, stessoProgramma, type DallEsecuzione } from "../core/casi/dall-esecuzione";
@@ -669,6 +669,7 @@ export function Applicazione({
   // In un ciclo, la parte del riquadro: il disegno evidenzia il suo blocco, se la forma del ciclo ce l'ha.
   const faseCorrente = pausa?.fase ?? null;
   const campoCorrente = pausa?.campo ?? null;
+  const internoCorrente = pausa?.interno === true;
   const erroreFinale = statoEs?.genere === "finita" ? statoEs.errore : undefined;
   // Il testo dell'errore che ha fermato l'esecuzione: quello del risultato, sulla fine di una funzione (la stringa
   // restituita troppo lunga).
@@ -694,9 +695,19 @@ export function Applicazione({
   const tabellaMostrata = useMemo(
     () =>
       esecuzione
-        ? new TabellaMostrata(esecuzione.progetto, testiDellaTraccia(lingua), separatori.decimali, scelte.formaDeiVettori, valoreRipetuto, formeDeiCicli, esecuzione.funzione, RESTITUITO_NELLA_RIPRESA)
+        ? new TabellaMostrata(
+            esecuzione.progetto,
+            testiDellaTraccia(lingua),
+            separatori.decimali,
+            scelte.formaDeiVettori,
+            valoreRipetuto,
+            formeDeiCicli,
+            esecuzione.funzione,
+            RESTITUITO_NELLA_RIPRESA,
+            scelte.formaDelleMatrici,
+          )
         : null,
-    [esecuzione, lingua, separatori.decimali, scelte.formaDeiVettori, valoreRipetuto, formeDeiCicli],
+    [esecuzione, lingua, separatori.decimali, scelte.formaDeiVettori, scelte.formaDelleMatrici, valoreRipetuto, formeDeiCicli],
   );
   // «Dove sei»: la pila delle chiamate del nucleo, come la tabella all'ultima fermata durante un comando in corso (di
   // un'esecuzione appena cominciata, la sua).
@@ -758,8 +769,11 @@ export function Applicazione({
   };
   const chiesta = ((): { readonly nome: string; readonly di?: string } | null => {
     if (statoEs?.genere !== "chiede" || !esecuzione) return null;
-    // Un parametro chiesto elemento per elemento (un vettore) o campo per campo (un record).
-    const nome = statoEs.elemento !== undefined ? `${statoEs.dato}[${statoEs.elemento}]` : statoEs.campo !== undefined ? `${statoEs.dato}.${statoEs.campo}` : statoEs.dato;
+    // Un parametro chiesto elemento per elemento (un vettore; una matrice riga dopo riga, coi due indici) o campo per campo
+    // (un record).
+    const colonne = esecuzione.progetto.functions.find((f) => f.id === esecuzione.funzione)?.data.find((d) => d.name === statoEs.dato)?.columns;
+    const indici = (k: number) => (colonne === undefined || colonne < 1 ? `[${k}]` : `[${Math.floor(k / colonne)}][${k % colonne}]`);
+    const nome = statoEs.elemento !== undefined ? `${statoEs.dato}${indici(statoEs.elemento)}` : statoEs.campo !== undefined ? `${statoEs.dato}.${statoEs.campo}` : statoEs.dato;
     const l = pila.at(-1);
     const b = l === undefined ? undefined : trova(esecuzione.progetto, l.blocco);
     // Il dato della Lettura: il nome prima dell'indice di un elemento o del campo di un record.
@@ -1612,6 +1626,7 @@ export function Applicazione({
           ...(b.tipo === "record" ? { record: b.record } : {}),
           predefinito: b.predefinito,
           dimensione: b.vettore ? intero(b.dimensione) : null,
+          colonne: b.vettore && b.matrice ? intero(b.colonne) : null,
           lunghezza: b.tipo === "string" && b.lunghezza.trim() !== "" ? intero(b.lunghezza) : null,
         };
   /** Gli errori della finestra di una procedura o di una funzione, con le regole del controllo: il nome (vuoto, non valido,
@@ -1770,7 +1785,7 @@ export function Applicazione({
       const selettore = s.dato !== undefined && valoriIniziali === "mostrati" ? `[data-valore-iniziale="${s.dato}"]` : `[data-blocco="${id}"], [data-fine="${id}"]`;
       // In un ciclo aperto la parte della fase, che può stare lontana dall'intestazione (l'aumento in fondo al corpo).
       const parte =
-        s.dato === undefined && s.fase !== undefined ? `g[data-id="${id}"][data-fase="${s.fase}"]`
+        s.dato === undefined && s.fase !== undefined ? `g[data-id="${id}"][data-fase="${s.fase}"]${s.interno ? "[data-interno]" : ":not([data-interno])"}`
         : s.dato === undefined && s.campo !== undefined ? `g[data-id="${id}"][data-campo-della-copia="${s.campo}"]`
         : undefined;
       const inVista = () => ((parte ? tela.current?.querySelector(parte) : null) ?? tela.current?.querySelector(selettore))?.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -1933,7 +1948,7 @@ export function Applicazione({
   const segniPerLaStampa = (f: Funzione, d: Disegno): SegniDellEsecuzione => {
     const valore = pausa?.dato !== undefined && valoriIniziali === "mostrati" && funzioneDellaPausa === f.id && d.elementi.some((e) => e.dato === pausa.dato) ? pausa.dato : null;
     const blocco = pausa === undefined ? null : pausa.dato === undefined ? pausa.blocco : valore === null ? funzioneDellaPausa! : null;
-    return { corrente: blocco, faseCorrente, campoCorrente, ripresa: pausa?.ripresa !== undefined, correnteValore: valore, interruzioni };
+    return { corrente: blocco, faseCorrente, campoCorrente, internoCorrente, ripresa: pausa?.ripresa !== undefined, correnteValore: valore, interruzioni };
   };
   /** I fogli del flowchart di una funzione con le scelte della stampa (i segni, se ci sono, sono ostacoli dei tagli), sul
    * foglio intero o sul mezzo foglio degli affiancati. */
@@ -2035,7 +2050,7 @@ export function Applicazione({
   async function esportaIlFlowchart(s: ScelteDellEsportazione): Promise<void> {
     setScelteDellEsportazione(s);
     // Il disegno di adesso, prima delle finestre: ciò che si esporta è ciò che si vedeva quando si è scelto «Esporta…».
-    const segni = inEsecuzione ? { corrente, faseCorrente, campoCorrente, ripresa: pausa?.ripresa !== undefined, correnteValore, interruzioni } : undefined;
+    const segni = inEsecuzione ? { corrente, faseCorrente, campoCorrente, internoCorrente, ripresa: pausa?.ripresa !== undefined, correnteValore, interruzioni } : undefined;
     const svg = svgDelDisegno(disegno, {
       geometria: geometriaPredefinita,
       tavolozza: tavolozzaDellaPagina(),
@@ -3018,9 +3033,8 @@ export function Applicazione({
       });
       return;
     }
-    // Un progetto con un costrutto che l'interfaccia non conosce ancora non si apre: le matrici anche con gli errori
-    // statici, che altrimenti si mostrerebbero.
-    if (usaLeMatrici(esito.progetto) || controlla(esito.progetto, limiti).fuoriTappa) {
+    // Un progetto con un costrutto che l'interfaccia non conosce ancora non si apre.
+    if (controlla(esito.progetto, limiti).fuoriTappa) {
       setErrori({ titolo: riempi(testi.apriErroreTitolo, { file: nomeDelFile(percorso) }), voci: [{ testo: testi.apriFuoriTappa }] });
       return;
     }
@@ -3057,7 +3071,7 @@ export function Applicazione({
     }
     const esito = apriTesto(testo);
     if (!esito.ok) return nonSiApre(testoDelProblema({ genere: "apertura", errori: esito.errori }, testi));
-    if (usaLeMatrici(esito.progetto) || controlla(esito.progetto, limiti).fuoriTappa) return nonSiApre(testi.apriFuoriTappa);
+    if (controlla(esito.progetto, limiti).fuoriTappa) return nonSiApre(testi.apriFuoriTappa);
     setUltimaCartella(cartellaDi(percorso));
     return { sorgente: { nome: esito.progetto.metadata.name, percorso, progetto: esito.progetto } };
   }
@@ -3761,6 +3775,7 @@ export function Applicazione({
             corrente,
             faseCorrente,
             campoCorrente,
+            internoCorrente,
             ripresa: pausa?.ripresa !== undefined,
             correnteValore,
             interruzioni,

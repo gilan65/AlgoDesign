@@ -150,7 +150,7 @@ function corpo(d: Disegno, o: OpzioniDelSvg, t: Tavolozza, punta_: string, tagli
     const attributi =
       e.dato !== undefined ?
         `data-forma="${e.forma}" data-valore-iniziale="${testo(e.dato)}"`
-      : `data-forma="${e.forma}" data-id="${testo(e.id)}"${e.fase === undefined ? "" : ` data-fase="${e.fase}"`}${e.campo === undefined ? "" : ` data-campo-della-copia="${e.campo}"`}${e.ciclo ? ` data-ciclo=""` : ""}`;
+      : `data-forma="${e.forma}" data-id="${testo(e.id)}"${e.fase === undefined ? "" : ` data-fase="${e.fase}"`}${e.campo === undefined ? "" : ` data-campo-della-copia="${e.campo}"`}${e.interno ? ` data-interno=""` : ""}${e.ciclo ? ` data-ciclo=""` : ""}`;
     out.push(`<g ${attributi}>`, ...formaColTesto(e, t, g, stato), `</g>`);
   }
   for (const e of d.elementi) {
