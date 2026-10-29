@@ -10,6 +10,10 @@
 // nelle Impostazioni, l'elenco o un valore per tutti; un vettore che ha già un valore tiene il suo, e la casella
 // lo cambia per lui solo. Passando dal valore ripetuto all'elenco il campo si riempie col valore, uno per elemento.
 //
+// Una matrice è un vettore di righe (`vettore` e `matrice` veri, la dimensione sono le righe): il suo elenco si scrive per
+// righe, ogni riga fra graffe (`{{1, 2}, {3, 4}}`), e il valore ripetuto vale per ogni elemento. Un elenco che non è
+// fatto tutto di righe fra graffe passa com'è, piatto: lo segnala il controllo.
+//
 // Una dimensione o una lunghezza che non è un numero intero, o che lo è ma il file non la sa scrivere esatta (oltre 2^53,
 // fino all'infinito di `parseInt` con 309 cifre), diventa 0, che il controllo segnala come dato non valido: un numero che
 // il file non sa scrivere non arriva al modello, e la conferma della scheda non è mai rifiutata dal nucleo. La lunghezza massima vale solo
@@ -29,7 +33,10 @@ export interface BozzaDelDato {
   /** Col tipo `record`, il nome del record; altrimenti vuoto. */
   readonly record: string;
   readonly vettore: boolean;
+  /** Con `vettore`: una matrice, la dimensione sono le righe e `colonne` le colonne. */
+  readonly matrice: boolean;
   readonly dimensione: string;
+  readonly colonne: string;
   readonly costante: boolean;
   readonly iniziale: string;
   /** Per un vettore: il valore iniziale è un letterale ripetuto in ogni elemento (altrimenti l'elenco). */
@@ -58,14 +65,19 @@ export const conNatura = (b: BozzaDelDato, n: Natura): BozzaDelDato => ({
 /** La bozza di un dato; `nuovo` è il modo delle Impostazioni per un vettore che non ha ancora un valore; `globale`, se è
  * una costante comune. */
 export function bozzaDi(d: Dato, nuovo: ValoreRipetuto, globale = false): BozzaDelDato {
-  // Le righe di una matrice non arrivano qui: l'apertura rifiuta un progetto con le matrici (`usaLeMatrici`).
-  const iniziale = d.initial === undefined ? "" : typeof d.initial === "string" ? d.initial : "each" in d.initial ? d.initial.each : fraGraffe(d.initial as readonly string[]);
+  const iniziale =
+    d.initial === undefined ? ""
+    : typeof d.initial === "string" ? d.initial
+    : "each" in d.initial ? d.initial.each
+    : fraGraffe((d.initial as readonly (string | readonly string[])[]).map((x) => (typeof x === "string" ? x : fraGraffe(x))));
   return {
     nome: d.name,
     tipo: d.type,
     record: d.record ?? "",
     vettore: d.size !== undefined,
+    matrice: d.size !== undefined && d.columns !== undefined,
     dimensione: d.size === undefined ? "" : String(d.size),
+    colonne: d.columns === undefined ? "" : String(d.columns),
     costante: d.constant === true,
     iniziale,
     ripetuto: d.initial === undefined || typeof d.initial === "string" ? nuovo === "un-valore" : "each" in d.initial,
@@ -90,22 +102,25 @@ export const intero = (testo: string): number => {
 };
 
 /** Le parti di un elenco separate da virgole, fuori dai letterali fra apici o virgolette (con le loro
- * sequenze di escape). Ogni parte senza gli spazi ai lati. */
-export function elementi(testo: string): string[] {
+ * sequenze di escape) e, con `graffe`, fuori dalle graffe (le righe di una matrice). Ogni parte senza gli spazi ai lati. */
+export function elementi(testo: string, graffe = false): string[] {
   const parti: string[] = [];
   let corrente = "";
   let dentro: string | null = null;
+  let profondita = 0;
   for (let i = 0; i < testo.length; i++) {
     const c = testo[i]!;
     if (dentro !== null) {
       corrente += c;
       if (c === "\\" && i + 1 < testo.length) corrente += testo[++i];
       else if (c === dentro) dentro = null;
-    } else if (c === ",") {
+    } else if (c === "," && profondita === 0) {
       parti.push(corrente.trim());
       corrente = "";
     } else {
       if (c === '"' || c === "'") dentro = c;
+      else if (graffe && c === "{") profondita++;
+      else if (graffe && c === "}") profondita = Math.max(0, profondita - 1);
       corrente += c;
     }
   }
@@ -113,33 +128,48 @@ export function elementi(testo: string): string[] {
   return parti;
 }
 
+/** Un numero di righe, di colonne o di elementi scritto in un campo: un intero, o 0. */
+const misura = (testo: string) => (/^\s*\d+\s*$/.test(testo) ? Number.parseInt(testo, 10) : 0);
+
 /** La casella del valore iniziale di un vettore cambiata: dal valore ripetuto all'elenco, il campo si riempie col
- * valore, uno per elemento, se c'è un valore e la dimensione è un intero fra 1 e il massimo di un vettore; altrimenti
- * resta com'è. */
+ * valore, uno per elemento (di una matrice, riga per riga), se c'è un valore e gli elementi sono fra 1 e il massimo di un
+ * vettore (per una matrice righe per colonne, ognuna almeno 1); altrimenti resta com'è. */
 export function conRipetuto(b: BozzaDelDato, ripetuto: boolean): BozzaDelDato {
   const valore = b.iniziale.trim();
-  const n = /^\s*\d+\s*$/.test(b.dimensione) ? Number.parseInt(b.dimensione, 10) : 0;
-  const riempie = b.ripetuto && !ripetuto && valore !== "" && n >= 1 && n <= intervalli.elementiDiUnVettore.massimo;
-  return { ...b, ripetuto, ...(riempie ? { iniziale: fraGraffe(Array<string>(n).fill(valore)) } : {}) };
+  const n = misura(b.dimensione);
+  const c = b.matrice ? misura(b.colonne) : 1;
+  const riempie = b.ripetuto && !ripetuto && valore !== "" && n >= 1 && c >= 1 && n * c <= intervalli.elementiDiUnVettore.massimo;
+  if (!riempie) return { ...b, ripetuto };
+  const riga = fraGraffe(Array<string>(c).fill(valore));
+  return { ...b, ripetuto, iniziale: fraGraffe(b.matrice ? Array<string>(n).fill(riga) : Array<string>(n).fill(valore)) };
 }
 
 /** Il valore iniziale scritto nel campo, come il dato lo tiene: vuoto, nessuno; un vettore, l'elenco o il valore
- * ripetuto; un record (`record`), l'elenco dei valori dei campi, fra graffe come quello di un vettore. Lo stesso per la
- * vista dei dati e per i campi del blocco del valore iniziale nel flowchart. */
-export function inizialeDaBozza(b: Pick<BozzaDelDato, "iniziale" | "vettore" | "ripetuto">, record = false): Dato["initial"] {
+ * ripetuto; una matrice (`matrice`), l'elenco delle righe, ognuna fra graffe, o il valore ripetuto; un record (`record`),
+ * l'elenco dei valori dei campi, fra graffe come quello di un vettore. Lo stesso per la vista dei dati e per i campi del
+ * blocco del valore iniziale nel flowchart. */
+export function inizialeDaBozza(b: Pick<BozzaDelDato, "iniziale" | "vettore" | "ripetuto"> & Partial<Pick<BozzaDelDato, "matrice">>, record = false): Dato["initial"] {
   const testo = b.iniziale.trim();
   if (testo === "") return undefined;
   if (!b.vettore && !record) return testo;
   if (b.ripetuto && !record) return { each: testo };
   // Le graffe vuote sono l'elenco vuoto: nessun valore, come il campo vuoto.
   const dentro = senzaGraffe(testo);
-  return dentro === "" ? undefined : elementi(dentro);
+  if (dentro === "") return undefined;
+  if (b.matrice !== true || record) return elementi(dentro);
+  // Le righe di una matrice: tutte fra graffe, ognuna un elenco. Le graffe esterne si possono omettere con almeno due righe
+  // (`{1, 2}, {3, 4}` comincia e finisce con una graffa, ma non sono le esterne); altrimenti l'elenco piatto, che il
+  // controllo segnala.
+  const diRighe = (rs: readonly string[]) => rs.every((r) => r.startsWith("{") && r.endsWith("}"));
+  const senzaEsterne = elementi(testo, true);
+  const righe = [elementi(dentro, true), ...(senzaEsterne.length >= 2 ? [senzaEsterne] : [])].find(diRighe);
+  return righe === undefined ? elementi(dentro, true) : righe.map((r) => elementi(senzaGraffe(r), true));
 }
 
 /** Il dato col valore iniziale della bozza, tutto il resto com'è (i campi del blocco del valore iniziale). */
 export function conIlValoreDi(d: Dato, b: Pick<BozzaDelDato, "iniziale" | "vettore" | "ripetuto">): Dato {
   const { initial: _, ...senza } = d;
-  const iniziale = inizialeDaBozza(b, d.type === "record");
+  const iniziale = inizialeDaBozza({ ...b, matrice: d.columns !== undefined }, d.type === "record");
   return iniziale === undefined ? senza : { ...senza, initial: iniziale };
 }
 
@@ -150,6 +180,7 @@ export function datoDaBozza(b: BozzaDelDato): Dato {
     type: b.tipo,
     ...(b.tipo === "record" ? { record: b.record } : {}),
     ...(b.vettore ? { size: intero(b.dimensione) } : {}),
+    ...(b.vettore && b.matrice ? { columns: intero(b.colonne) } : {}),
     ...(b.costante && b.parametro === "" ? { constant: true } : {}),
     ...(iniziale === undefined ? {} : { initial: iniziale }),
     ...(b.ruolo === "" || b.parametro !== "" ? {} : { role: b.ruolo }),

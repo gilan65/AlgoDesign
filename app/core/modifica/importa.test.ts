@@ -601,3 +601,35 @@ describe("i record di ciò che entra", () => {
     ]);
   });
 });
+
+test("la firma conta le colonne di una matrice: un parametro o un risultato con le colonne diverse è una firma diversa", () => {
+  /** Un programma con la funzione `prima` che riceve una matrice di 2 righe e `colonne` colonne e restituisce un suo
+   * elemento o, con `restituite`, la matrice (2 righe e `restituite` colonne); `corpo`, le sue regole. */
+  const conLaMatrice = (colonne: number, restituite?: number, elemento = "x[0][0]", corpo: Json[] = []): Json => ({
+    format: "algodesign",
+    schema_version: 2,
+    metadata: { name: "m" },
+    functions: [
+      { id: "f1", kind: "main", data: [], body: [], end: { id: "b1" } },
+      {
+        id: "f2",
+        kind: "function",
+        name: "prima",
+        return_type: "integer",
+        ...(restituite === undefined ? {} : { return_size: 2, return_columns: restituite }),
+        data: [{ name: "x", type: "integer", size: 2, columns: colonne, parameter: "value" }],
+        body: corpo,
+        end: { id: "b2", return_value: restituite === undefined ? elemento : "x" },
+      },
+    ],
+  });
+  const lib = progetto({ ...(conLaMatrice(2) as object), metadata: { name: "lib", library: true } });
+  const diversa = (p: Json) => riepilogoDellImportazione(progetto(p), lib, ["f2"]).voci[0]!.firmaDiversa;
+  expect(diversa(conLaMatrice(3))).toBe(true);
+  // Controllo positivo: le stesse colonne e un'altra regola, un conflitto con la stessa firma.
+  expect(riepilogoDellImportazione(progetto(conLaMatrice(2, undefined, "x[1][1]")), lib, ["f2"]).voci[0]).toMatchObject({ stato: "conflitto", firmaDiversa: false });
+  const libR = progetto({ ...(conLaMatrice(2, 2) as object), metadata: { name: "lib", library: true } });
+  expect(riepilogoDellImportazione(progetto(conLaMatrice(2, 3)), libR, ["f2"]).voci[0]!.firmaDiversa).toBe(true);
+  const conUnaRegola = conLaMatrice(2, 2, undefined, [{ id: "b3", kind: "assignment", target: "x[0][0]", value: "1" }]);
+  expect(riepilogoDellImportazione(progetto(conUnaRegola), libR, ["f2"]).voci[0]).toMatchObject({ stato: "conflitto", firmaDiversa: false });
+});

@@ -218,6 +218,40 @@ test("un parametro vettore si chiede elemento per elemento; «A ogni elemento» 
   await scriviNellaConsole("ok");
   expect({ stato: statoMostrato(), output: outputMostrato() }).toEqual({ stato: testi.statoFinita, output: COPIE_ATTESO });
 });
+
+test("un parametro matrice si chiede elemento per elemento coi due indici, riga dopo riga", async () => {
+  const testo = JSON.stringify({
+    format: "algodesign",
+    schema_version: 2,
+    metadata: { name: "seconda" },
+    functions: [
+      { id: "f1", kind: "main", data: [], body: [], end: { id: "fine" } },
+      {
+        id: "f2",
+        kind: "procedure",
+        name: "seconda",
+        data: [
+          { name: "m", type: "integer", size: 2, columns: 2, parameter: "value" },
+          { name: "x", type: "integer" },
+        ],
+        body: [{ id: "c1", kind: "for_each", item: "x", source: "m[1]", body: [{ id: "c2", kind: "write", values: ["x"], newline: false }] }],
+        end: { id: "c3" },
+      },
+    ],
+  });
+  await apriLaFinestra(testo, "seconda.algo");
+  await mostraLaFunzione("f2");
+  await premi("F5");
+  const chiesti: string[] = [];
+  for (const valore of ["1", "2", "3", "5"]) {
+    await aspetta("un elemento", () => statoMostrato().startsWith(riempi(testi.statoChiede, { dato: "m[" }).split("m[")[0]!));
+    chiesti.push(statoMostrato());
+    await scriviNellaConsole(valore);
+  }
+  // Scritti a mano: gli elementi riga dopo riga, coi due indici (mai l'indice piatto, `m[2]`).
+  expect(chiesti).toEqual(["m[0][0]", "m[0][1]", "m[1][0]", "m[1][1]"].map((dato) => riempi(testi.statoChiede, { dato })));
+  expect({ stato: statoMostrato(), output: outputMostrato() }).toEqual({ stato: testi.statoFinita, output: "35" });
+});
 // L'atteso del caso «vettore ripetuto» del corpus, lo stesso valore a tutti gli elementi.
 const COPIE_ATTESO = "99 ok!\n";
 

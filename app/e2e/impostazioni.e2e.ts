@@ -258,6 +258,9 @@ test("ogni scelta confermata vale subito e si scrive nel file intero delle prefe
   await f.getByRole("group", { name: it.separatoreCsv, exact: true }).getByRole("radio", { name: it.segnoVirgola, exact: true }).check();
   await f.getByRole("group", { name: it.decimaliCsv, exact: true }).getByRole("radio", { name: it.segnoPunto, exact: true }).check();
   await f.getByRole("radio", { name: it.formaInFila, exact: true }).check();
+  // La forma delle matrici, accanto a quella dei vettori: la predefinita è una colonna per riga.
+  await expect(f.getByRole("group", { name: it.formaDelleMatrici, exact: true }).getByRole("radio", { name: it.formaMatricePerRiga, exact: true })).toBeChecked();
+  await f.getByRole("group", { name: it.formaDelleMatrici, exact: true }).getByRole("radio", { name: it.formaMatricePerElemento, exact: true }).check();
   await f.getByRole("radio", { name: it.csvPerElemento, exact: true }).check();
   await scheda(f, it.impostazioniConsole);
   await f.getByRole("radio", { name: it.righeLaFine, exact: true }).check();
@@ -274,6 +277,7 @@ test("ogni scelta confermata vale subito e si scrive nel file intero delle prefe
     separatoreCsv: ",",
     decimaliCsv: ".",
     formaDeiVettori: "in-fila",
+    formaDelleMatrici: "per-elemento",
     formaDelCsv: "per-elemento",
     righeLunghe: "la-fine",
     caratteriPerRiga: 80,
@@ -293,6 +297,21 @@ test("ogni scelta confermata vale subito e si scrive nel file intero delle prefe
   // Le celle: un dato aggiunto ha il nome in un campo della sua riga.
   await page.getByRole("button", { name: it.aggiungiDato, exact: true }).click();
   await expect(page.getByRole("region", { name: it.vistaDati, exact: true }).getByRole("textbox").first()).toBeFocused();
+});
+
+test("la forma delle matrici scelta torna al riavvio, letta dal file delle preferenze", async ({ page }) => {
+  for (const [forma, voce] of [
+    ["in-fila", it.formaMatriceInFila],
+    ["per-riga", it.formaMatricePerRiga],
+  ] as const) {
+    await apriVuota(page, fileDa("it", { ...scelteIniziali, formaDelleMatrici: forma }));
+    const f = await apriLe(page);
+    await scheda(f, it.impostazioniTabella);
+    const gruppo = f.getByRole("group", { name: it.formaDelleMatrici, exact: true });
+    await expect(gruppo.getByRole("radio", { name: voce, exact: true }), forma).toBeChecked();
+    // Controllo positivo: delle tre una sola è scelta.
+    await expect(gruppo.getByRole("radio", { checked: true })).toHaveCount(1);
+  }
 });
 
 test("i valori iniziali nascosti spariscono dal flowchart; il valore iniziale di un vettore nelle due forme, nel disegno e nella vista dei dati", async ({ page }) => {
@@ -378,9 +397,10 @@ test("ogni gruppo di opzioni sta in un riquadro, con la sua domanda dentro", asy
   }
   // Controllo positivo della premessa: i gruppi sono quelli che le schede hanno (14 in Aspetto, coi tre dei cicli, quello
   // della copia di un vettore, quello dei blocchi selezionati, quello del blocco di Lettura, quello dei colori dei
-  // blocchi e quello della guida; 6 in Modifica, con quello delle parentesi, quello dei casi d'uso e quello dei record; 5
-  // nella tabella di traccia, 2 nella console, con quello dei linguaggi del codice generato).
-  expect({ gruppi, senzaRiquadro: esiti }).toEqual({ gruppi: 27, senzaRiquadro: [] });
+  // blocchi e quello della guida; 6 in Modifica, con quello delle parentesi, quello dei casi d'uso e quello dei record; 6
+  // nella tabella di traccia, con quello della forma delle matrici; 2 nella console, con quello dei linguaggi del codice
+  // generato).
+  expect({ gruppi, senzaRiquadro: esiti }).toEqual({ gruppi: 28, senzaRiquadro: [] });
 });
 
 test("il menu dei linguaggi: ▲ ▼ spostano una riga col fuoco sul pulsante, l'ultimo acceso non si spegne, «Conferma» dà le linguette nell'ordine e le scrive, e al riavvio tornano", async ({ page }) => {

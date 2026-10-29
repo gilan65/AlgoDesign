@@ -31,6 +31,7 @@ const tutte = {
   colonneFerme: "numero",
   velocitaAnimata: "veloce",
   formaDeiVettori: "in-fila",
+  formaDelleMatrici: "in-fila",
   formaDelCsv: "per-elemento",
   righeLunghe: "la-fine",
   caratteriPerRiga: 80,
@@ -100,6 +101,8 @@ const rotti: Record<string, readonly unknown[]> = {
   velocitaAnimata: ["velocissima", 2, null],
   // Una colonna per elemento è la forma del CSV con tutti gli elementi, non una scelta della tabella.
   formaDeiVettori: ["per-elemento", "colonne", 1, null],
+  // Le tre forme della matrice sono del nucleo; «primi-e-altri» è una forma dei vettori, non delle matrici.
+  formaDelleMatrici: ["primi-e-altri", "righe", 2, null],
   formaDelCsv: ["tutti", true, null],
   righeLunghe: ["taglia", 0, null],
   caratteriPerRiga: [0, 49, 1001, 2.5, "80", null],
@@ -134,7 +137,7 @@ test("un campo rotto scarta lui solo: gli altri restano", () => {
     }
   // Ogni campo del file ha le sue prove (i limiti hanno la loro).
   expect(Object.keys(rotti).sort()).toEqual(Object.keys(tutte).filter((k) => k !== "limiti").sort());
-  expect(provati).toBe(125);
+  expect(provati).toBe(129);
 });
 
 test("un limite rotto scarta lui solo, e un oggetto dei limiti rotto li scarta tutti e tre", () => {
@@ -204,6 +207,10 @@ test("la tabella, il CSV e la console: le colonne dei primi dieci, il CSV uguale
   for (const n of [50, 1000]) expect(preferenzeDa({ caratteriPerRiga: n }).scelte.caratteriPerRiga).toBe(n);
   for (const forma of ["primi-e-altri", "in-fila"] as const) expect(fileDa("it", preferenzeDa({ formaDeiVettori: forma }).scelte).formaDeiVettori).toBe(forma);
   for (const forma of ["uguale", "per-elemento"] as const) expect(fileDa("it", preferenzeDa({ formaDelCsv: forma }).scelte).formaDelCsv).toBe(forma);
+  // La forma delle matrici: una colonna per riga, predefinita anche per un file scritto prima che la scelta esistesse; le
+  // tre forme si leggono e si riscrivono.
+  expect([scelteIniziali.formaDelleMatrici, preferenzeDa({ lingua: "it", formaDeiVettori: "in-fila" }).scelte.formaDelleMatrici]).toEqual(["per-riga", "per-riga"]);
+  for (const forma of ["per-riga", "per-elemento", "in-fila"] as const) expect(fileDa("it", preferenzeDa({ formaDelleMatrici: forma }).scelte).formaDelleMatrici).toBe(forma);
   for (const modo of ["a-capo", "la-fine"] as const) expect(fileDa("it", preferenzeDa({ righeLunghe: modo }).scelte).righeLunghe).toBe(modo);
 });
 

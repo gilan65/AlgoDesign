@@ -43,7 +43,10 @@ export interface Campi {
   nome: ReactElement;
   tipo: ReactElement;
   forma: ReactElement;
+  /** Gli elementi di un vettore, le righe di una matrice. */
   elementi: ReactElement | null;
+  /** Le colonne di una matrice. */
+  colonne: ReactElement | null;
   natura: ReactElement;
   /** La casella «globale», solo per una costante. */
   globale: ReactElement | null;
@@ -57,6 +60,8 @@ export interface Campi {
 /** La scelta del tipo: uno dei cinque col suo nome, o un record col prefisso (un record può chiamarsi come nessun tipo). */
 const sceltaDelTipo = (b: Pick<BozzaDelDato, "tipo" | "record">) => (b.tipo === "record" ? `record:${b.record}` : b.tipo);
 const daScelta = (v: string): { tipo: TipoDelDato; record: string } => (v.startsWith("record:") ? { tipo: "record", record: v.slice("record:".length) } : { tipo: v as Tipo, record: "" });
+/** La forma della bozza: una matrice è anche un vettore (di righe). */
+const formaDi = (b: Pick<BozzaDelDato, "vettore" | "matrice">) => (b.vettore && b.matrice ? "matrice" : b.vettore ? "vettore" : "semplice");
 
 /**
  * I campi della bozza. `nome(campo)` dà il nome accessibile di un campo: nella scheda è l'etichetta
@@ -106,16 +111,19 @@ export function campiDelDato(b: BozzaDelDato, cambia: (b: BozzaDelDato) => void,
         ))}
       </select>
     ),
+    // Da vettore a matrice gli elementi diventano le righe: la dimensione resta.
     forma: scelta(
       testi.campoForma,
-      b.vettore ? "vettore" : "semplice",
+      formaDi(b),
       [
         ["semplice", testi.formaSemplice],
         ["vettore", testi.formaVettore],
+        ["matrice", testi.formaMatrice],
       ],
-      (v) => cambia({ ...b, vettore: v === "vettore" }),
+      (v) => cambia({ ...b, vettore: v !== "semplice", matrice: v === "matrice" }),
     ),
-    elementi: b.vettore ? testo(testi.campoElementi, b.dimensione, (v) => cambia({ ...b, dimensione: v }), false, true) : null,
+    elementi: b.vettore ? testo(b.matrice ? testi.campoRighe : testi.campoElementi, b.dimensione, (v) => cambia({ ...b, dimensione: v }), false, true) : null,
+    colonne: b.vettore && b.matrice ? testo(testi.campoColonne, b.colonne, (v) => cambia({ ...b, colonne: v }), false, true) : null,
     natura: scelta(
       testi.datiNatura,
       naturaDi(b),
@@ -132,10 +140,10 @@ export function campiDelDato(b: BozzaDelDato, cambia: (b: BozzaDelDato) => void,
     iniziale: parametro ? null : testo(testi.datiIniziale, b.iniziale, (v) => cambia({ ...b, iniziale: v }), true, false, "iniziale", (b.vettore && !b.ripetuto) || b.tipo === "record" ? "elenco" : "espressione"),
     inizialeVettore: b.vettore && !parametro
       ? scelta(
-          testi.campoInizialeVettore,
+          b.matrice ? testi.campoInizialeMatrice : testi.campoInizialeVettore,
           b.ripetuto ? "ripetuto" : "elenco",
           [
-            ["elenco", testi.inizialeElenco],
+            ["elenco", b.matrice ? testi.inizialeElencoPerRighe : testi.inizialeElenco],
             ["ripetuto", testi.inizialeRipetuto],
           ],
           (v) => cambia(conRipetuto(b, v === "ripetuto")),
@@ -245,11 +253,12 @@ export function SchedaDelDato({
         {etichettato(testi.datiNome, c.nome)}
         {etichettato(testi.datiTipo, c.tipo)}
         {etichettato(testi.campoForma, c.forma)}
-        {c.elementi && etichettato(testi.campoElementi, c.elementi)}
+        {c.elementi && etichettato(bozza.matrice ? testi.campoRighe : testi.campoElementi, c.elementi)}
+        {c.colonne && etichettato(testi.campoColonne, c.colonne)}
         {etichettato(testi.datiNatura, c.natura)}
         {c.globale}
         {c.iniziale && etichettato(testi.datiIniziale, c.iniziale)}
-        {c.inizialeVettore && etichettato(testi.campoInizialeVettore, c.inizialeVettore)}
+        {c.inizialeVettore && etichettato(bozza.matrice ? testi.campoInizialeMatrice : testi.campoInizialeVettore, c.inizialeVettore)}
         {c.ruolo && etichettato(testi.datiRuolo, c.ruolo)}
       </div>
       {c.lunghezza && (

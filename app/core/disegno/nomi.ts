@@ -18,7 +18,7 @@
 // domanda ha i nomi delle sue due righe, la domanda e la Lettura, sotto l'`id` della Lettura.
 
 import { parole } from "../espressioni/analizzatore";
-import { livelliDellePosizioni, nomiDeiVettori } from "../progetto/copia";
+import { livelliDellePosizioni, nomiDelleMatrici, nomiDeiVettori } from "../progetto/copia";
 import type { Blocco, Dato, Funzione } from "../progetto/modello";
 import { domandaDellaScrittura } from "./domanda";
 import {
@@ -173,7 +173,7 @@ export function nomiDelDisegno(
   funzioni: ReadonlySet<string> = new Set(),
 ): ReadonlyMap<string, readonly NomeNelDisegno[]> {
   const blocchi = blocchiPerId(funzione.body);
-  const livelli = livelliDellePosizioni(funzione.body, nomiDeiVettori([...funzione.data, ...comuni]));
+  const livelli = livelliDellePosizioni(funzione.body, nomiDeiVettori([...funzione.data, ...comuni]), nomiDelleMatrici([...funzione.data, ...comuni]));
   const fuori = new Map<string, NomeNelDisegno[]>();
   for (const e of d.elementi) {
     // La fine di una funzione: ciò che restituisce, coi pezzi disegnati se ha uno stile.
@@ -194,7 +194,7 @@ export function nomiDelDisegno(
       : b.kind === "call" && e.pezzi !== undefined ? riunite(e.pezzi.flat())
       : b.kind === "assignment" && e.forma === "intestazione" ? partiDellIntestazioneDellaCopia(b, testi)
       : e.fase === undefined ? partiDelBlocco(b, testi)
-      : b.kind === "for" || b.kind === "for_each" || b.kind === "assignment" ? partiDellaFase(b, e.fase, forme, testi, livelli.get(b.id) ?? 1, [...funzione.data, ...comuni])
+      : b.kind === "for" || b.kind === "for_each" || b.kind === "assignment" ? partiDellaFase(b, e.fase, forme, testi, livelli.get(b.id) ?? 1, [...funzione.data, ...comuni], e.interno === true)
       : undefined;
     const nomi = parti === undefined ? [] : nomiNelleParti(parti, dati, funzioni);
     if (nomi.length > 0) fuori.set(e.id, [...(fuori.get(e.id) ?? []), ...nelleRighe(e, nomi, tema, misura)]);

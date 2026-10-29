@@ -3,7 +3,7 @@
 // dizionario, e `tsc` fa rosso un tipo o un ruolo del modello senza la sua voce. Il valore iniziale si mostra come lo mostra il blocco sotto
 // «Inizio» nel flowchart: lo scrive il nucleo (`valoreIniziale`), col modo del valore ripetuto delle Impostazioni.
 //
-// Il tipo dice anche la forma («vettore di 5 interi») e la lunghezza massima di una stringa, se il file la
+// Il tipo dice anche la forma («vettore di 5 interi», «matrice di 3 × 4 interi») e la lunghezza massima di una stringa, se il file la
 // dichiara: la predefinita non è nel file e non si scrive. Un dato record ha per tipo il nome del record («alunno»).
 import { valoreIniziale, type TestiDelDisegno, type ValoreRipetuto } from "../../core/disegno/impaginazione";
 import type { Dato, Ruolo, Tipo } from "../../core/progetto/modello";
@@ -38,7 +38,10 @@ export const nomiDeiRuoli: Record<Ruolo, keyof Dizionario> = {
 export function tipoDelDato(dato: Dato, testi: Dizionario): string {
   // Un record si chiama col suo nome, uguale al singolare e al plurale.
   const [uno, molti] = dato.type === "record" ? [dato.record ?? "", dato.record ?? ""] : nomiDeiTipi[dato.type].map((k) => testi[k]);
-  const tipo = dato.size === undefined ? uno! : riempi(testi.datiVettore, { n: String(dato.size), tipo: dato.size === 1 ? uno! : molti! });
+  const tipo =
+    dato.size === undefined ? uno!
+    : dato.columns !== undefined ? riempi(testi.datiMatrice, { righe: String(dato.size), colonne: String(dato.columns), tipo: dato.size * dato.columns === 1 ? uno! : molti! })
+    : riempi(testi.datiVettore, { n: String(dato.size), tipo: dato.size === 1 ? uno! : molti! });
   return dato.max_length === undefined ? tipo : riempi(dato.max_length === 1 ? testi.datiLunghezzaUno : testi.datiLunghezza, { tipo, n: String(dato.max_length) });
 }
 

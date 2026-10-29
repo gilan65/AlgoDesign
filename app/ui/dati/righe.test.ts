@@ -77,3 +77,18 @@ test("il valore iniziale come lo mostra il blocco sotto «Inizio»: il valore ri
   expect(rigaDelDato(lungo, it, "elenco", testiDelDisegno("it")).iniziale).toBe(`{${primiDieci}, … altri 2}`);
   expect(rigaDelDato(lungo, en, "elenco", testiDelDisegno("en")).iniziale).toBe(`{${primiDieci}, … 2 more}`);
 });
+
+test("una matrice: il tipo con le righe e le colonne nelle due lingue, il valore iniziale per righe come nel blocco", () => {
+  const disegno = testiDelDisegno("it");
+  const m: Dato = { name: "m", type: "integer", size: 3, columns: 4, initial: [["1", "2", "3", "4"], ["5", "6", "7", "8"], ["9", "10", "11", "12"]] };
+  // Gli attesi scritti a mano.
+  expect(rigaDelDato(m, it, "elenco", disegno)).toEqual({ nome: "m", tipo: "matrice di 3 × 4 interi", natura: "variabile", iniziale: "{{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}}", ruolo: "di lavoro" });
+  expect(rigaDelDato(m, en, "elenco", testiDelDisegno("en")).tipo).toBe("matrix of 3 × 4 integers");
+  // Un elemento solo, al singolare; una matrice di stringhe con la lunghezza; il valore ripetuto nei due modi.
+  expect(rigaDelDato({ name: "u", type: "real", size: 1, columns: 1 }, it, "elenco", disegno).tipo).toBe("matrice di 1 × 1 reale");
+  expect(rigaDelDato({ name: "s", type: "string", size: 2, columns: 2, max_length: 5 }, it, "elenco", disegno).tipo).toBe("matrice di 2 × 2 stringhe, al più 5 caratteri");
+  const k: Dato = { name: "k", type: "integer", size: 2, columns: 2, constant: true, initial: { each: "7" } };
+  expect([rigaDelDato(k, it, "elenco", disegno).iniziale, rigaDelDato(k, it, "un-valore", disegno).iniziale]).toEqual(["{{7, 7}, {7, 7}}", "7 in ogni elemento"]);
+  // Controllo positivo: senza le colonne lo stesso dato è un vettore.
+  expect(rigaDelDato({ ...m, columns: undefined }, it, "elenco", disegno).tipo).toBe("vettore di 3 interi");
+});

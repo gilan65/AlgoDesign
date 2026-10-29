@@ -68,10 +68,11 @@ export type Stato =
   /** Ferma prima di un'azione: un blocco, o il valore iniziale di `dato` (col blocco vuoto, come nel disegno; della
    * funzione `funzione`, se non è il programma principale) alla profondità delle chiamate attive; in un ciclo
    * `per` o `per ogni`, la sua parte (`fase`), quella che il disegno, la tabella e il codice evidenziano; nella copia di un
-   * record col suo nome, la posizione del campo (`campo`). Con `ripresa`
+   * record col suo nome, la posizione del campo (`campo`); nella copia di una matrice col suo nome, `interno` per le
+   * parti del ciclo delle colonne. Con `ripresa`
    * (il valore che la funzione chiamata ha restituito) è la ripresa dell'azione del blocco, al livello di chi chiama,
    * dopo il ritorno da una funzione chiamata nella sua espressione: non un'azione, e il numero delle azioni non cambia. */
-  | { readonly genere: "pausa"; readonly blocco: string; readonly dato?: string; readonly fase?: FaseDelCiclo; readonly campo?: number; readonly funzione?: string; readonly profondita: number; readonly ripresa?: Restituito }
+  | { readonly genere: "pausa"; readonly blocco: string; readonly dato?: string; readonly fase?: FaseDelCiclo; readonly campo?: number; readonly interno?: true; readonly funzione?: string; readonly profondita: number; readonly ripresa?: Restituito }
   /** Un comando in corso, fra due fette. */
   | { readonly genere: "in corso" }
   /** Aspetta la riga di una lettura; `nonValido` se la riga data prima non andava; `parametro`, per un parametro della
@@ -460,6 +461,7 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
           ...(x.dato !== undefined ? { dato: x.dato } : {}),
           ...(x.fase !== undefined ? { fase: x.fase } : {}),
           ...(x.campo !== undefined ? { campo: x.campo } : {}),
+          ...(x.interno ? { interno: true as const } : {}),
           ...(x.funzione !== undefined ? { funzione: x.funzione } : {}),
           profondita: x.profondita,
         };

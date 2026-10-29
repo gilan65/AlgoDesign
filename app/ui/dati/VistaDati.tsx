@@ -240,6 +240,7 @@ function Tabella({
                       {c.tipo}
                       {c.forma}
                       {c.elementi}
+                      {c.colonne}
                       {c.lunghezza}
                     </span>
                   </td>

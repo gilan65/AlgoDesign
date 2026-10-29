@@ -16,6 +16,8 @@ export interface SegniDellEsecuzione {
   readonly faseCorrente?: FaseDelCiclo | null;
   /** Nella copia di un record col suo nome, la posizione del campo copiato. */
   readonly campoCorrente?: number | null;
+  /** Nella copia di una matrice col suo nome, la parte è del ciclo delle colonne. */
+  readonly internoCorrente?: boolean;
   readonly ripresa?: boolean;
   readonly correnteValore?: string | null;
   readonly interruzioni?: ReadonlySet<string>;
@@ -32,7 +34,8 @@ export interface SegniDellElemento {
 /** Le regole dei segni per gli elementi di un disegno; senza esecuzione, nessun segno. Il blocco corrente: per `id`, o il
  * valore iniziale per il nome del dato (il suo `id` è vuoto, come quello di ogni altro valore iniziale); di un ciclo la
  * parte della fase se il disegno la ha (il ciclo aperto), l'intestazione se no; della copia di un record col suo nome
- * l'assegnazione del campo se il disegno la ha (la copia espansa), l'assegnazione se no. Una Lettura con la domanda è corrente anche
+ * l'assegnazione del campo se il disegno la ha (la copia espansa), l'assegnazione se no; della copia espansa di una
+ * matrice la parte del ciclo della pausa, delle righe o delle colonne (`internoCorrente`). Una Lettura con la domanda è corrente anche
  * sulla sua Scrittura (la domanda), e ha il punto se ce l'ha una delle due. Il punto c'è solo sui blocchi dell'albero
  * (non sui valori iniziali, non sulle parti che il riquadro aggiunge). */
 export function segniDelDisegno(elementi: readonly Elemento[], esecuzione: SegniDellEsecuzione | undefined): (e: Elemento) => SegniDellElemento {
@@ -40,7 +43,10 @@ export function segniDelDisegno(elementi: readonly Elemento[], esecuzione: Segni
   const correnteValore = esecuzione?.correnteValore;
   const fase = esecuzione?.faseCorrente;
   const interruzioni = esecuzione?.interruzioni;
-  const faseDisegnata = fase != null && elementi.some((e) => e.dato === undefined && e.id === corrente && e.fase === fase) ? fase : undefined;
+  // Nella copia espansa di una matrice la stessa fase c'è due volte, delle righe e delle colonne: vale quella della pausa.
+  const interno = esecuzione?.internoCorrente === true;
+  const stessoCiclo = (e: Elemento) => (e.interno === true) === interno;
+  const faseDisegnata = fase != null && elementi.some((e) => e.dato === undefined && e.id === corrente && e.fase === fase && stessoCiclo(e)) ? fase : undefined;
   // Il campo della copia di un record: la sua assegnazione nella copia espansa (fase «elemento»), l'assegnazione intera
   // nella compatta.
   const campo = esecuzione?.campoCorrente;
@@ -49,7 +55,7 @@ export function segniDelDisegno(elementi: readonly Elemento[], esecuzione: Segni
   const eCorrente = (e: Elemento) =>
     e.dato !== undefined
       ? correnteValore != null && e.dato === correnteValore
-      : e.fase === faseDelCorrente && e.campo === campoDisegnato && (e.id === corrente || (e.scrittura !== undefined && e.scrittura === corrente));
+      : e.fase === faseDelCorrente && e.campo === campoDisegnato && (faseDelCorrente === undefined || stessoCiclo(e)) && (e.id === corrente || (e.scrittura !== undefined && e.scrittura === corrente));
   const conPunto = (e: Elemento) =>
     esecuzione !== undefined && e.dato === undefined && e.fase === undefined && (interruzioni?.has(e.id) === true || (e.scrittura !== undefined && interruzioni?.has(e.scrittura) === true));
   return (e) => {

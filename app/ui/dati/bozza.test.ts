@@ -158,3 +158,69 @@ test("nessuna bozza di un dato, anche coi campi più strani, è rifiutata dal nu
   // Controllo positivo: un dato con un genere che il file non conosce è rifiutato.
   expect(cambiaDato(0, { name: "n", type: "intero" } as unknown as Dato)(a.progetto, 1000).ok).toBe(false);
 });
+
+// ------------------------------------------------------------------------------------- le matrici
+
+/** I dati con le colonne del corpus dei tipi: dati, parametri e costanti comuni. */
+const delleMatrici = readdirSync(join(import.meta.dir, "..", "..", "casi", "tipi"))
+  .filter((f) => f.endsWith(".algo"))
+  .flatMap((f) => {
+    const a = apri(readFileSync(join(import.meta.dir, "..", "..", "casi", "tipi", f), "utf8"));
+    if (!a.ok) throw new Error(f);
+    return [...(a.progetto.shared_constants ?? []), ...a.progetto.functions.flatMap((x) => x.data)].filter((d) => d.columns !== undefined);
+  });
+
+test("una matrice: andata e ritorno di ogni matrice del corpus dei tipi, col valore per righe o ripetuto", () => {
+  const scritte: Dato[] = [
+    { name: "m", type: "integer", size: 2, columns: 3, initial: [["1", "2", "3"], ["4", "5", "6"]] },
+    { name: "s", type: "string", size: 2, columns: 2, initial: [['"a, b"', '"}"'], ['"{"', '""']], max_length: 4 },
+    { name: "k", type: "real", size: 3, columns: 1, constant: true, initial: { each: "0.5" } },
+  ];
+  const tutte = [...delleMatrici, ...scritte];
+  const diverse = tutte.filter((d) => !stessoDato(datoDaBozza(bozzaDi(d, "elenco")), d) || !stessoDato(datoDaBozza(bozzaDi(d, "un-valore")), d)).map((d) => d.name);
+  console.log(`bozza delle matrici: corpus ${delleMatrici.length}, scritte qui ${scritte.length}; diverse al ritorno ${diverse.length}`);
+  expect(diverse).toEqual([]);
+  // La premessa: il corpus ha matrici, con l'elenco per righe e col valore ripetuto.
+  expect(delleMatrici.length).toBeGreaterThanOrEqual(8);
+  expect(delleMatrici.some((d) => Array.isArray(d.initial)) && delleMatrici.some((d) => d.initial !== undefined && !Array.isArray(d.initial))).toBe(true);
+  // La bozza di una matrice: la forma, le righe nella dimensione, le colonne, l'elenco per righe fra graffe.
+  expect(bozzaDi(scritte[0]!, "elenco")).toMatchObject({ vettore: true, matrice: true, dimensione: "2", colonne: "3", iniziale: "{{1, 2, 3}, {4, 5, 6}}", ripetuto: false });
+  // Controllo positivo: senza le colonne il ritorno è un vettore, e il confronto lo vede.
+  expect(stessoDato(datoDaBozza({ ...bozzaDi(scritte[0]!, "elenco"), matrice: false }), scritte[0]!)).toBe(false);
+});
+
+test("l'elenco di una matrice si legge per righe, con o senza le graffe esterne; non fatto di righe passa piatto", () => {
+  const letto = (iniziale: string) => inizialeDaBozza({ iniziale, vettore: true, matrice: true, ripetuto: false });
+  expect(letto("{{1, 2}, {3, 4}}")).toEqual([["1", "2"], ["3", "4"]]);
+  expect(letto(" {1, 2} , {3,4} ")).toEqual([["1", "2"], ["3", "4"]]);
+  // Le virgole e le graffe dentro un letterale non separano.
+  expect(letto(`{{"a, }", 'x'}, {"{", ""}}`)).toEqual([['"a, }"', "'x'"], ['"{"', '""']]);
+  // Righe e valori mescolati, o le righe senza le loro graffe: l'elenco piatto, che il controllo segnala.
+  expect(letto("{{1, 2}, 3}")).toEqual(["{1, 2}", "3"]);
+  expect(letto("{1, 2, {3, 4}}")).toEqual(["1", "2", "{3, 4}"]);
+  expect(letto("{1, 2}")).toEqual(["1", "2"]);
+  // Una riga sola vuole le graffe esterne.
+  expect(letto("{{1, 2}}")).toEqual([["1", "2"]]);
+  expect(letto("{}")).toBeUndefined();
+  expect(inizialeDaBozza({ iniziale: "7", vettore: true, matrice: true, ripetuto: true })).toEqual({ each: "7" });
+  // Lo stesso testo per un vettore: le virgole dentro le graffe separano come prima.
+  expect(inizialeDaBozza({ iniziale: "{{1, 2}, {3, 4}}", vettore: true, ripetuto: false })).toEqual(["{1", "2}", "{3", "4}"]);
+});
+
+test("da un valore ripetuto all'elenco, una matrice si riempie riga per riga, entro il massimo degli elementi", () => {
+  const b = bozzaDi({ name: "m", type: "integer", size: 2, columns: 3, initial: { each: "0" } }, "un-valore");
+  expect(conRipetuto(b, false).iniziale).toBe("{{0, 0, 0}, {0, 0, 0}}");
+  // Righe per colonne oltre il massimo (1000), o colonne che non sono un numero: il campo resta com'è.
+  expect(conRipetuto({ ...b, dimensione: "40", colonne: "26" }, false).iniziale).toBe("0");
+  expect(conRipetuto({ ...b, colonne: "tre" }, false).iniziale).toBe("0");
+  expect(conRipetuto({ ...b, dimensione: "40", colonne: "25" }, false).iniziale.split("{").length - 2).toBe(40);
+});
+
+test("una matrice nuova scrive le righe e le colonne; un vettore che diventa matrice tiene gli elementi come righe", () => {
+  const v = bozzaDi({ name: "v", type: "integer", size: 4 }, "elenco");
+  expect(datoDaBozza({ ...v, matrice: true, colonne: "2" })).toEqual({ name: "v", type: "integer", size: 4, columns: 2 });
+  // Le colonne che non sono un numero valgono 0, come la dimensione: lo segnala il controllo.
+  expect(datoDaBozza({ ...v, matrice: true, colonne: "" })).toEqual({ name: "v", type: "integer", size: 4, columns: 0 });
+  // Una forma semplice non scrive né la dimensione né le colonne, anche se la bozza le tiene.
+  expect(datoDaBozza({ ...v, vettore: false, matrice: true, colonne: "2" })).toEqual({ name: "v", type: "integer" });
+});

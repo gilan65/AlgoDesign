@@ -125,6 +125,8 @@ export interface Interazione {
   readonly faseCorrente?: FaseDelCiclo | null;
   /** Nella copia di un record col suo nome, la posizione del campo della pausa. */
   readonly campoCorrente?: number | null;
+  /** Nella copia di una matrice col suo nome, la parte della pausa è del ciclo delle colonne. */
+  readonly internoCorrente?: boolean;
   /** La pausa è sulla ripresa dell'azione del blocco corrente, dopo il ritorno da una funzione chiamata nella sua
    * espressione: l'azione è a metà, non deve ancora cominciare. */
   readonly ripresa?: boolean;
@@ -596,11 +598,12 @@ export function Flowchart({
           </g>
         ) : (
           <g
-            key={`${e.forma}-${e.id}-${e.fase ?? ""}-${e.campo ?? ""}`}
+            key={`${e.forma}-${e.id}-${e.fase ?? ""}-${e.campo ?? ""}-${e.interno ? "interno" : ""}`}
             data-forma={e.forma}
             data-id={e.id}
             data-fase={e.fase}
             data-campo-della-copia={e.campo}
+            data-interno={e.interno ? "" : undefined}
             data-ciclo={e.ciclo ? "" : undefined}
             className={eCorrente(e) ? stili.corrente : conPunto(e) ? stili.conPunto : undefined}
             onDoubleClick={e.fase !== undefined && interazione?.apriParte && !interazione.solaLettura ? () => interazione.apriParte?.(e.id) : undefined}

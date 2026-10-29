@@ -13,7 +13,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { tetti, type Tetti } from "../core/controllo/controllo";
 import type { CondizioniLunghe, FormaDellaCopia, FormaDelPer, FormaDelPerOgni, ValoreRipetuto, ValoriIniziali } from "../core/disegno/impaginazione";
 import { righeLunghePredefinite, type RigheLunghe } from "../core/esecuzione/esecuzione";
-import { separatoriPredefiniti, type FormaDeiVettori, type FormaDelCsv, type Separatori } from "../core/esecuzione/traccia";
+import { separatoriPredefiniti, type FormaDeiVettori, type FormaDelCsv, type FormaDelleMatrici, type Separatori } from "../core/esecuzione/traccia";
 import { linguaggi, type Linguaggio } from "../core/genera/linguaggi";
 import { limitiDellaPila, opzioniPredefinite } from "../core/progetto/modello";
 import { linguaValida, type Lingua } from "../i18n/lingue";
@@ -73,6 +73,9 @@ export interface Scelte {
   readonly colonneFerme: ColonneFerme;
   readonly velocitaAnimata: VelocitaAnimata;
   readonly formaDeiVettori: FormaDeiVettoriNellaTabella;
+  /** Come si mostra una matrice nella tabella di traccia: una colonna per riga coi valori in fila, una colonna per
+   * elemento come un vettore, o tutta in una colonna sola. */
+  readonly formaDelleMatrici: FormaDelleMatrici;
   readonly formaDelCsv: FormaDelCsv;
   readonly righeLunghe: ModoDelleRigheLunghe;
   readonly caratteriPerRiga: number;
@@ -128,6 +131,7 @@ export const scelteIniziali: Scelte = {
   colonneFerme: "numero-e-regola",
   velocitaAnimata: "media",
   formaDeiVettori: "primi-e-altri",
+  formaDelleMatrici: "per-riga",
   formaDelCsv: "uguale",
   righeLunghe: righeLunghePredefinite.modo,
   caratteriPerRiga: righeLunghePredefinite.caratteri,
@@ -159,6 +163,7 @@ export const voci = {
   colonneFerme: ["numero-e-regola", "numero"],
   velocitaAnimata: ["lenta", "media", "veloce"],
   formaDeiVettori: ["primi-e-altri", "in-fila"],
+  formaDelleMatrici: ["per-riga", "per-elemento", "in-fila"],
   formaDelCsv: ["uguale", "per-elemento"],
   righeLunghe: ["a-capo", "la-fine"],
   valoriIniziali: ["mostrati", "nascosti"],
@@ -179,6 +184,7 @@ export const voci = {
     | "colonneFerme"
     | "velocitaAnimata"
     | "formaDeiVettori"
+    | "formaDelleMatrici"
     | "formaDelCsv"
     | "righeLunghe"
     | "valoriIniziali"
@@ -282,6 +288,7 @@ export function preferenzeDa(file: unknown): { lingua: Lingua | undefined; scelt
       colonneFerme: uno(voci.colonneFerme, f.colonneFerme) ?? scelteIniziali.colonneFerme,
       velocitaAnimata: uno(voci.velocitaAnimata, f.velocitaAnimata) ?? scelteIniziali.velocitaAnimata,
       formaDeiVettori: uno(voci.formaDeiVettori, f.formaDeiVettori) ?? scelteIniziali.formaDeiVettori,
+      formaDelleMatrici: uno(voci.formaDelleMatrici, f.formaDelleMatrici) ?? scelteIniziali.formaDelleMatrici,
       formaDelCsv: uno(voci.formaDelCsv, f.formaDelCsv) ?? scelteIniziali.formaDelCsv,
       righeLunghe: uno(voci.righeLunghe, f.righeLunghe) ?? scelteIniziali.righeLunghe,
       caratteriPerRiga: caratteriValidi(f.caratteriPerRiga) ? f.caratteriPerRiga : scelteIniziali.caratteriPerRiga,
@@ -324,6 +331,7 @@ export function fileDa(lingua: Lingua, s: Scelte): Record<string, unknown> {
     colonneFerme: s.colonneFerme,
     velocitaAnimata: s.velocitaAnimata,
     formaDeiVettori: s.formaDeiVettori,
+    formaDelleMatrici: s.formaDelleMatrici,
     formaDelCsv: s.formaDelCsv,
     righeLunghe: s.righeLunghe,
     caratteriPerRiga: s.caratteriPerRiga,

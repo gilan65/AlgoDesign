@@ -288,7 +288,7 @@ test("nome e cartella di un percorso, nome proposto, errore del guscio riconosci
   expect(erroreDelFile(new Error("file non trovato"))).toEqual({ genere: "sistema", dettaglio: "file non trovato" });
 });
 
-test("un esempio coi record si apre: ogni file della cartella dei record, anche con un errore statico (lo dice il controllo nella finestra); uno con le matrici no, finché l'interfaccia non le mostra", () => {
+test("un esempio coi record o con le matrici si apre: ogni file della cartella dei tipi, anche con un errore statico (lo dice il controllo nella finestra)", () => {
   const radice = join(import.meta.dir, "..", "casi", "tipi");
   const file = Object.fromEntries(
     readdirSync(radice)
@@ -300,11 +300,9 @@ test("un esempio coi record si apre: ogni file della cartella dei record, anche 
     return a.ok && usaLeMatrici(a.progetto);
   };
   const esempi = esempiDa(cartella(file), tetti).sciolti;
-  expect(esempi.map((e) => [e.nome, e.progetto !== null, e.problema?.genere ?? null])).toEqual(
-    Object.entries(file).map(([n, testo]) => (conLeMatrici(testo) ? [n, false, "fuori_tappa"] : [n, true, null])),
-  );
+  expect(esempi.map((e) => [e.nome, e.progetto !== null, e.problema?.genere ?? null])).toEqual(Object.keys(file).map((n) => [n, true, null]));
   // Controllo positivo: il denominatore è la cartella intera (dei record sette file giusti e cinque sbagliati, delle
-  // matrici otto, tre con un errore statico, che non si aprono lo stesso), e un esempio senza record accanto si apre come
+  // matrici otto, tre con un errore statico, che si aprono lo stesso), e un esempio senza record accanto si apre come
   // loro.
   expect(esempi.length).toBe(20);
   expect(Object.values(file).filter(conLeMatrici).length).toBe(8);

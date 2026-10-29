@@ -66,6 +66,7 @@ import {
   type Rettangolo,
   type TestiDelDisegno,
 } from "./impaginazione";
+import { segniDelDisegno } from "./segni";
 import { geometriaPredefinita, type GeometriaDelTema } from "./tema";
 
 type Impagina = typeof impagina;
@@ -2236,5 +2237,84 @@ describe("la copia di un record nel riquadro", () => {
     expect(d.riquadri.length).toBe(0);
     // Senza i record del progetto (il record non c'è) l'assegnazione resta semplice.
     expect(impagina(f, tema, misura, testi, { ...opzioniPredefinite, copia: "espansa" }, [], p.functions).riquadri.length).toBe(0);
+  });
+});
+
+// La copia di una matrice col suo nome (`b ← a`) e di una sua riga, sul programma del corpus
+// `casi/tipi/copia-di-una-matrice.algo`: gli attesi scritti qui a mano dal flowchart. Espansa, la copia della matrice ha il
+// ciclo delle colonne (`_indice2`, le parti con `interno`) dentro quello delle righe (`_indice`); la copia di una riga è
+// quella di un vettore, lunga quanto le colonne. Compatta, il riquadro con la scritta come per un vettore. I segni
+// dell'esecuzione distinguono la stessa fase nei due cicli.
+describe("la copia di una matrice nel riquadro", () => {
+  const e = apri(readFileSync(join(import.meta.dir, "..", "..", "casi", "tipi", "copia-di-una-matrice.algo"), "utf8"));
+  if (!e.ok) throw new Error("copia-di-una-matrice non si apre");
+  const p = e.progetto;
+  const disegno = (copia: "compatta" | "espansa") => impagina(p.functions[0]!, tema, misura, testi, { ...opzioniPredefinite, copia }, [], p.functions, p.records ?? []);
+  /** Di un blocco: gli elementi in ordine dall'alto, col testo, la forma, la fase e `interno`. */
+  const di = (d: Disegno, id: string) =>
+    d.elementi
+      .filter((x) => x.id === id && x.dato === undefined)
+      .sort((a, b) => a.riquadro.y - b.riquadro.y)
+      .map((x) => ({ testo: x.testo, forma: x.forma, ...(x.fase !== undefined ? { fase: x.fase } : {}), ...(x.interno ? { interno: true } : {}) }));
+
+  test("espansa: il ciclo delle colonne dentro quello delle righe, tutto nel riquadro, senza sovrapporsi", () => {
+    const d = disegno("espansa");
+    expect(di(d, "b1")).toEqual([
+      { testo: "b ← a: copia elemento per elemento", forma: "intestazione" },
+      { testo: "_indice ← 0", forma: "assegnazione", fase: "inizio" },
+      { testo: "_indice < 2", forma: "condizione", fase: "condizione" },
+      { testo: "_indice2 ← 0", forma: "assegnazione", fase: "inizio", interno: true },
+      { testo: "_indice2 < 2", forma: "condizione", fase: "condizione", interno: true },
+      { testo: "b[_indice][_indice2] ← a[_indice][_indice2]", forma: "assegnazione", fase: "elemento", interno: true },
+      { testo: "_indice2 ← _indice2 + 1", forma: "assegnazione", fase: "passo", interno: true },
+      { testo: "_indice ← _indice + 1", forma: "assegnazione", fase: "passo" },
+    ]);
+    const r = d.riquadri.filter((x) => x.blocco === "b1");
+    expect(r.length).toBe(1);
+    const bordo = r[0]!.bordo;
+    const difetti: string[] = [];
+    for (const x of d.elementi.filter((y) => y.id === "b1" && y.fase !== undefined)) {
+      const q = x.riquadro;
+      if (!(q.x > bordo.x && q.x + q.larghezza < bordo.x + bordo.larghezza && q.y > bordo.y && q.y + q.altezza < bordo.y + bordo.altezza)) difetti.push(`${x.testo} fuori dal riquadro`);
+    }
+    const forme = d.elementi.filter((x) => x.dato === undefined);
+    forme.forEach((a, i) => forme.slice(i + 1).forEach((b) => sovrapposti(a.riquadro, b.riquadro, DISTANZA_MINIMA) && difetti.push(`${a.testo} tocca ${b.testo}`)));
+    for (const x of forme.filter((f) => f.id !== "b1")) if (sovrapposti(x.riquadro, bordo, 0)) difetti.push(`${x.testo} dentro il riquadro della copia`);
+    expect(difetti).toEqual([]);
+  });
+
+  test("espansa: la copia di una riga, nei due versi, è quella di un vettore lunga quanto le colonne", () => {
+    const d = disegno("espansa");
+    expect(di(d, "b5").map((x) => x.testo)).toEqual(["v ← a[1]: copia elemento per elemento", "_indice ← 0", "_indice < 2", "v[_indice] ← a[1][_indice]", "_indice ← _indice + 1"]);
+    expect(di(d, "b8").map((x) => x.testo)).toEqual(["a[0] ← v: copia elemento per elemento", "_indice ← 0", "_indice < 2", "a[0][_indice] ← v[_indice]", "_indice ← _indice + 1"]);
+    expect(di(d, "b5").some((x) => "interno" in x) || di(d, "b8").some((x) => "interno" in x)).toBe(false);
+  });
+
+  test("compatta: le tre copie nel riquadro con la scritta, come quella di un vettore", () => {
+    const d = disegno("compatta");
+    for (const id of ["b1", "b5", "b8"]) {
+      const r = d.riquadri.filter((x) => x.blocco === id);
+      expect(r.length, id).toBe(1);
+      expect(r[0]!.didascalia?.testo, id).toBe("copia elemento per elemento");
+    }
+    expect(di(d, "b1")).toEqual([{ testo: "b ← a", forma: "assegnazione" }]);
+  });
+
+  test("i segni: la stessa fase delle righe o delle colonne, secondo la pausa; nella compatta l'assegnazione", () => {
+    const d = disegno("espansa");
+    const correnti = (interno: boolean, fase: "inizio" | "condizione" | "elemento" | "passo") => {
+      const segni = segniDelDisegno(d.elementi, { corrente: "b1", faseCorrente: fase, internoCorrente: interno });
+      return d.elementi.filter((x) => segni(x).corrente).map((x) => x.testo);
+    };
+    expect(correnti(false, "inizio")).toEqual(["_indice ← 0"]);
+    expect(correnti(true, "inizio")).toEqual(["_indice2 ← 0"]);
+    expect(correnti(false, "passo")).toEqual(["_indice ← _indice + 1"]);
+    expect(correnti(true, "passo")).toEqual(["_indice2 ← _indice2 + 1"]);
+    expect(correnti(true, "elemento")).toEqual(["b[_indice][_indice2] ← a[_indice][_indice2]"]);
+    // Controllo positivo: senza distinguere i due cicli, la stessa fase ne accenderebbe due.
+    expect(d.elementi.filter((x) => x.id === "b1" && x.fase === "inizio").length).toBe(2);
+    const compatta = disegno("compatta");
+    const segni = segniDelDisegno(compatta.elementi, { corrente: "b1", faseCorrente: "elemento", internoCorrente: true });
+    expect(compatta.elementi.filter((x) => segni(x).corrente).map((x) => x.testo)).toEqual(["b ← a"]);
   });
 });

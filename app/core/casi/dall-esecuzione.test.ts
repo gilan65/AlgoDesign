@@ -20,6 +20,7 @@ import { apri, leggi } from "../progetto/formato";
 import type { CasoDiUnaFunzione, Progetto } from "../progetto/modello";
 import { casoDallEsecuzione, casoUguale, stessoProgramma, type DallEsecuzione } from "./dall-esecuzione";
 import { comeTesto } from "./esito";
+import { eseguiCaso } from "./esecutore";
 
 const corpus = join(import.meta.dir, "..", "..", "casi");
 
@@ -218,6 +219,54 @@ test("«a ogni elemento» di un parametro vettore resta una voce sola con each",
   if (!r.ok) throw new Error(r.motivo);
   expect(r.inputs).toEqual([{ data: s.dato, text: "4", each: true }]);
   expect(r.expected.output).toBe("444");
+});
+
+test("un parametro matrice: «a ogni elemento» una voce sola con each, elemento per elemento una voce per elemento riga dopo riga; il caso composto si rifà uguale", () => {
+  const p = programma([], [], [
+    {
+      id: "f2",
+      kind: "procedure",
+      name: "seconda",
+      data: [
+        { name: "m", type: "integer", size: 2, columns: 2, parameter: "value" },
+        { name: "x", type: "integer" },
+      ],
+      body: [{ id: "c1", kind: "for_each", item: "x", source: "m[1]", body: [{ id: "c2", kind: "write", values: ["x"], newline: false }] }],
+      end: { id: "c3" },
+    },
+  ]);
+  /** L'esecuzione della procedura da sola con le righe date, e il caso che ne compone. */
+  const eseguita = (righe: readonly (string | { ognuno: string })[]) => {
+    const e = new Esecuzione<CasoDiUnaFunzione>(p, tetti, { funzione: "f2" });
+    e.comanda("continua");
+    const elementi: number[] = [];
+    for (const riga of righe) {
+      e.fetta(() => 0, Infinity);
+      const s = e.stato;
+      if (s.genere !== "chiede") throw new Error(`esecuzione ${s.genere}`);
+      elementi.push(s.elemento!);
+      e.inserisci(riga);
+    }
+    e.fetta(() => 0, Infinity);
+    const r = casoDallEsecuzione(e);
+    if (!r.ok) throw new Error(r.motivo);
+    return { r, elementi };
+  };
+  const ripetuto = eseguita([{ ognuno: "4" }]);
+  expect(ripetuto.r.inputs).toEqual([{ data: "m", text: "4", each: true }]);
+  expect(ripetuto.r.expected.output).toBe("44");
+  const unoPerUno = eseguita(["1", "2", "3", "5"]);
+  expect(unoPerUno.elementi).toEqual([0, 1, 2, 3]);
+  expect(unoPerUno.r.inputs).toEqual(["1", "2", "3", "5"].map((text) => ({ data: "m", text })));
+  expect(unoPerUno.r.expected.output).toBe("35");
+  // Il caso composto, rieseguito come caso d'uso, è raggiunto; controllo positivo: con un elemento cambiato no.
+  const caso = (inputs: CasoDiUnaFunzione["inputs"]): CasoDiUnaFunzione => ({ name: "c", inputs, expected: unoPerUno.r.expected });
+  const raggiunto = (inputs: CasoDiUnaFunzione["inputs"]) => {
+    const esito = eseguiCaso(p, caso(inputs), tetti, "f2");
+    return "raggiunto" in esito && esito.raggiunto;
+  };
+  expect(raggiunto(unoPerUno.r.inputs)).toBe(true);
+  expect(raggiunto([...unoPerUno.r.inputs.slice(0, 3), { data: "m", text: "6" }])).toBe(false);
 });
 
 test("lo stesso programma: un caso d'uso o i metadati cambiati no, un blocco cambiato sì", () => {

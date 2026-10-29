@@ -70,6 +70,13 @@ export const programmaDeiRecord: DaCostruire = {
   atteso: leggiProgetto("./attesi/copia-di-un-record.algo"),
 };
 
+/** Il programma con le matrici: una matrice col valore iniziale per righe e una senza, un vettore, la copia col nome di
+ * una matrice e di una riga nei due versi, gli elementi scritti e letti, il «per ogni» su una riga. */
+export const programmaDelleMatrici: DaCostruire = {
+  progetto: leggiProgetto("../casi/tipi/copia-di-una-matrice.algo").progetto,
+  atteso: leggiProgetto("./attesi/copia-di-una-matrice.algo"),
+};
+
 export interface Modi {
   blocchi: "riquadro" | "pannello";
   dati: "scheda" | "celle";
@@ -217,7 +224,8 @@ export async function costruisci(
   const scriviIDati = async (f: Funzione): Promise<void> => {
     let parametri = 0;
     for (const [i, d] of f.data.entries()) {
-      if (d.size !== undefined || d.max_length !== undefined) throw new Error(`costruzione: il dato «${d.name}» ha una forma che la costruzione non scrive`);
+      if (d.max_length !== undefined || (d.size !== undefined && (d.parameter !== undefined || modi.dati === "celle")) || (d.initial !== undefined && !Array.isArray(d.initial) && typeof d.initial !== "string"))
+        throw new Error(`costruzione: il dato «${d.name}» ha una forma che la costruzione non scrive`);
       const parametro = d.parameter !== undefined;
       if (parametro && modi.dati === "celle") throw new Error("costruzione: i parametri si scrivono solo nella scheda del dato");
       await page.getByRole("button", { name: parametro ? t.aggiungiParametro : t.aggiungiDato, exact: true }).click();
@@ -227,7 +235,10 @@ export async function costruisci(
       await aspetta(campoNome, `il campo «${nome(t.datiNome)}» del dato «${d.name}» (${modi.dati})`);
       await campoNome.fill(d.name);
       await dove.getByRole("combobox", { name: nome(t.datiTipo), exact: true }).selectOption({ label: d.type === "record" ? d.record! : t[nomiDeiTipi[d.type]] });
-      await dove.getByRole("combobox", { name: nome(t.campoForma), exact: true }).selectOption({ label: t.formaSemplice });
+      // La forma: un vettore con gli elementi, una matrice con le righe e le colonne.
+      await dove.getByRole("combobox", { name: nome(t.campoForma), exact: true }).selectOption({ label: d.columns !== undefined ? t.formaMatrice : d.size !== undefined ? t.formaVettore : t.formaSemplice });
+      if (d.size !== undefined) await dove.getByRole("spinbutton", { name: nome(d.columns !== undefined ? t.campoRighe : t.campoElementi), exact: true }).fill(String(d.size));
+      if (d.columns !== undefined) await dove.getByRole("spinbutton", { name: nome(t.campoColonne), exact: true }).fill(String(d.columns));
       const natura =
         d.parameter === "reference" ? t.naturaParametroRiferimento
         : d.parameter === "out" ? t.naturaParametroUscita
@@ -237,8 +248,10 @@ export async function costruisci(
       await dove.getByRole("combobox", { name: nome(t.datiNatura), exact: true }).selectOption({ label: natura });
       // Un parametro non ha valore iniziale né ruolo: i loro campi non ci sono.
       if (!parametro) {
-        // Il valore di un record: un letterale per campo, fra graffe.
-        const iniziale = typeof d.initial === "string" ? espressione(d.initial) : Array.isArray(d.initial) && d.type === "record" ? `{${(d.initial as readonly string[]).map(espressione).join(", ")}}` : "";
+        // L'elenco di un vettore e il valore di un record: un letterale per elemento o per campo, fra graffe; di una matrice
+        // le righe, ognuna fra graffe.
+        const elenco = (xs: readonly (string | readonly string[])[]): string => `{${xs.map((x) => (typeof x === "string" ? espressione(x) : elenco(x))).join(", ")}}`;
+        const iniziale = typeof d.initial === "string" ? espressione(d.initial) : Array.isArray(d.initial) ? elenco(d.initial as readonly (string | readonly string[])[]) : "";
         await dove.getByRole("textbox", { name: nome(t.datiIniziale), exact: true }).fill(iniziale);
         // Una costante non ha la scelta del ruolo.
         if (!d.constant) await dove.getByRole("combobox", { name: nome(t.datiRuolo), exact: true }).selectOption({ label: d.role === undefined ? t.ruoloDiLavoro : t[nomiDeiRuoli[d.role]] });
