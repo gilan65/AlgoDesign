@@ -1,0 +1,159 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "scambio-e-ordinamento",
+    "description": "L'ordinamento a bolle di una tabella per voto: due record si scambiano con un record di appoggio, campo per campo."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "classe",
+          "type": "string",
+          "max_length": 3
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "t",
+          "type": "record",
+          "record": "alunno",
+          "size": 4,
+          "initial": [
+            [
+              "\"Anna\"",
+              "\"3A\"",
+              "7"
+            ],
+            [
+              "\"Bruno\"",
+              "\"3B\"",
+              "5"
+            ],
+            [
+              "\"Carla\"",
+              "\"3A\"",
+              "9"
+            ],
+            [
+              "\"Dario\"",
+              "\"3C\"",
+              "6"
+            ]
+          ]
+        },
+        {
+          "name": "tmp",
+          "type": "record",
+          "record": "alunno"
+        },
+        {
+          "name": "a",
+          "type": "record",
+          "record": "alunno"
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        },
+        {
+          "name": "j",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for",
+          "counter": "i",
+          "from": "0",
+          "to": "2",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "for",
+              "counter": "j",
+              "from": "0",
+              "to": "2 - i",
+              "body": [
+                {
+                  "id": "b3",
+                  "kind": "if",
+                  "condition": "t[j].voto > t[j + 1].voto",
+                  "then": [
+                    {
+                      "id": "b4",
+                      "kind": "assignment",
+                      "target": "tmp",
+                      "value": "t[j]"
+                    },
+                    {
+                      "id": "b5",
+                      "kind": "assignment",
+                      "target": "t[j]",
+                      "value": "t[j + 1]"
+                    },
+                    {
+                      "id": "b6",
+                      "kind": "assignment",
+                      "target": "t[j + 1]",
+                      "value": "tmp"
+                    }
+                  ],
+                  "else": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b7",
+          "kind": "for_each",
+          "item": "a",
+          "source": "t",
+          "body": [
+            {
+              "id": "b8",
+              "kind": "write",
+              "values": [
+                "a.nome",
+                "\" \"",
+                "a.voto"
+              ],
+              "newline": true
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "scambio-e-ordinamento",
+      "inputs": [],
+      "expected": {
+        "output": "Bruno 5\nDario 6\nAnna 7\nCarla 9\n"
+      }
+    }
+  ]
+}

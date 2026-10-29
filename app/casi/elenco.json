@@ -198,6 +198,7 @@
     "copia-con-un-campo-senza-valore#copia-con-un-campo-senza-valore",
     "copia-di-un-record#copia-di-un-record",
     "copia-di-una-matrice#copia-di-una-matrice",
+    "copia-di-una-tabella#copia-di-una-tabella",
     "copie-di-un-record#copie-di-un-record",
     "funzione-con-un-record#funzione-con-un-record",
     "funzione-con-un-record#migliore/da-sola",
@@ -223,9 +224,18 @@
     "riferimento-a-un-record-senza-valore#con-un-campo",
     "righe-calcolate#righe-calcolate",
     "righe-calcolate#riempi/tutta",
+    "scambio-e-ordinamento#scambio-e-ordinamento",
     "stessa-cella-della-matrice#diversi",
     "stessa-cella-della-matrice#stesso-elemento",
     "stessa-cella-della-matrice#riga-e-suo-elemento",
+    "stesso-record-della-tabella#diversi",
+    "stesso-record-della-tabella#stesso-record",
+    "stesso-record-della-tabella#record-e-suo-campo",
+    "tabella-come-parametro#tabella-come-parametro",
+    "tabella-come-parametro#crea/da-sola",
+    "tabella-come-parametro#migliore/da-sola",
+    "tabella-come-parametro#alzata/da-sola",
+    "tabella-oltre-il-tetto#tabella-oltre-il-tetto",
     "vettore-di-record#vettore-di-record"
   ]
 }

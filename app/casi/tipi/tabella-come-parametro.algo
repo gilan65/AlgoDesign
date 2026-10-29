@@ -1,0 +1,526 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "tabella-come-parametro",
+    "description": "Una tabella per valore e per riferimento, per uscita riempita record per record, un record della tabella per valore, il risultato di una funzione un record della tabella o una tabella intera (anche da una costante comune, sempre una copia), il campo di un record della tabella restituita e il «per ogni» sul risultato di una funzione."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "classe",
+          "type": "string",
+          "max_length": 3
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "shared_constants": [
+    {
+      "name": "INIZIALI",
+      "type": "record",
+      "record": "alunno",
+      "size": 3,
+      "constant": true,
+      "initial": [
+        [
+          "\"Ada\"",
+          "\"1A\"",
+          "1"
+        ],
+        [
+          "\"Ben\"",
+          "\"1B\"",
+          "2"
+        ],
+        [
+          "\"Cloe\"",
+          "\"1C\"",
+          "3"
+        ]
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "t",
+          "type": "record",
+          "record": "alunno",
+          "size": 3,
+          "initial": [
+            [
+              "\"Anna\"",
+              "\"3A\"",
+              "7"
+            ],
+            [
+              "\"Bruno\"",
+              "\"3B\"",
+              "5"
+            ],
+            [
+              "\"Carla\"",
+              "\"3A\"",
+              "9"
+            ]
+          ]
+        },
+        {
+          "name": "u",
+          "type": "record",
+          "record": "alunno",
+          "size": 3
+        },
+        {
+          "name": "m",
+          "type": "record",
+          "record": "alunno"
+        },
+        {
+          "name": "a",
+          "type": "record",
+          "record": "alunno"
+        }
+      ],
+      "body": [
+        {
+          "id": "c1",
+          "kind": "call",
+          "callee": "alza",
+          "arguments": [
+            "t",
+            "t"
+          ]
+        },
+        {
+          "id": "c2",
+          "kind": "call",
+          "callee": "crea",
+          "arguments": [
+            "u",
+            "t[2]"
+          ]
+        },
+        {
+          "id": "c3",
+          "kind": "write",
+          "values": [
+            "u[1].nome",
+            "\" \"",
+            "u[1].voto",
+            "\" \"",
+            "u[2].voto",
+            "\" \"",
+            "t[2].voto"
+          ],
+          "newline": true
+        },
+        {
+          "id": "c4",
+          "kind": "assignment",
+          "target": "m",
+          "value": "migliore(t)"
+        },
+        {
+          "id": "c5",
+          "kind": "write",
+          "values": [
+            "m.nome"
+          ],
+          "newline": true
+        },
+        {
+          "id": "c6",
+          "kind": "assignment",
+          "target": "u",
+          "value": "alzata(t)"
+        },
+        {
+          "id": "c7",
+          "kind": "write",
+          "values": [
+            "u[1].voto",
+            "\" \"",
+            "t[1].voto",
+            "\" \"",
+            "alzata(t)[2].nome"
+          ],
+          "newline": true
+        },
+        {
+          "id": "c8",
+          "kind": "assignment",
+          "target": "u",
+          "value": "iniziali()"
+        },
+        {
+          "id": "c9",
+          "kind": "assignment",
+          "target": "u[0].voto",
+          "value": "50"
+        },
+        {
+          "id": "c10",
+          "kind": "write",
+          "values": [
+            "u[0].voto",
+            "\" \"",
+            "INIZIALI[0].voto"
+          ],
+          "newline": true
+        },
+        {
+          "id": "c11",
+          "kind": "for_each",
+          "item": "a",
+          "source": "iniziali()",
+          "body": [
+            {
+              "id": "c12",
+              "kind": "write",
+              "values": [
+                "a.nome"
+              ],
+              "newline": true
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "alza",
+      "data": [
+        {
+          "name": "x",
+          "type": "record",
+          "record": "alunno",
+          "size": 3,
+          "parameter": "value"
+        },
+        {
+          "name": "y",
+          "type": "record",
+          "record": "alunno",
+          "size": 3,
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "g1",
+          "kind": "assignment",
+          "target": "y[0].voto",
+          "value": "8"
+        },
+        {
+          "id": "g2",
+          "kind": "write",
+          "values": [
+            "x[0].voto",
+            "\" \"",
+            "y[0].voto"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "g3"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "procedure",
+      "name": "crea",
+      "data": [
+        {
+          "name": "z",
+          "type": "record",
+          "record": "alunno",
+          "size": 3,
+          "parameter": "out"
+        },
+        {
+          "name": "s",
+          "type": "record",
+          "record": "alunno",
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "h1",
+          "kind": "assignment",
+          "target": "z[0]",
+          "value": "s"
+        },
+        {
+          "id": "h2",
+          "kind": "assignment",
+          "target": "z[1]",
+          "value": "s"
+        },
+        {
+          "id": "h3",
+          "kind": "assignment",
+          "target": "z[2]",
+          "value": "s"
+        },
+        {
+          "id": "h4",
+          "kind": "assignment",
+          "target": "z[1].voto",
+          "value": "0"
+        },
+        {
+          "id": "h6",
+          "kind": "assignment",
+          "target": "s.voto",
+          "value": "99"
+        }
+      ],
+      "end": {
+        "id": "h5"
+      },
+      "test_cases": [
+        {
+          "name": "da-sola",
+          "inputs": [
+            {
+              "data": "s",
+              "text": "Zoe"
+            },
+            {
+              "data": "s",
+              "text": "4A"
+            },
+            {
+              "data": "s",
+              "text": "6"
+            }
+          ],
+          "expected": {
+            "output": "\nz[0].nome = Zoe\nz[0].classe = 4A\nz[0].voto = 6\nz[1].nome = Zoe\nz[1].classe = 4A\nz[1].voto = 0\nz[2].nome = Zoe\nz[2].classe = 4A\nz[2].voto = 6\n"
+          }
+        }
+      ]
+    },
+    {
+      "id": "f4",
+      "kind": "function",
+      "name": "migliore",
+      "return_type": "record",
+      "return_record": "alunno",
+      "data": [
+        {
+          "name": "x",
+          "type": "record",
+          "record": "alunno",
+          "size": 3,
+          "parameter": "value"
+        },
+        {
+          "name": "b",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "k",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "k1",
+          "kind": "for",
+          "counter": "k",
+          "from": "1",
+          "to": "2",
+          "body": [
+            {
+              "id": "k2",
+              "kind": "if",
+              "condition": "x[k].voto > x[b].voto",
+              "then": [
+                {
+                  "id": "k3",
+                  "kind": "assignment",
+                  "target": "b",
+                  "value": "k"
+                }
+              ],
+              "else": []
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "k4",
+        "return_value": "x[b]"
+      },
+      "test_cases": [
+        {
+          "name": "da-sola",
+          "inputs": [
+            {
+              "data": "x",
+              "text": "Ugo"
+            },
+            {
+              "data": "x",
+              "text": "2B"
+            },
+            {
+              "data": "x",
+              "text": "4"
+            },
+            {
+              "data": "x",
+              "text": "Vera"
+            },
+            {
+              "data": "x",
+              "text": "2B"
+            },
+            {
+              "data": "x",
+              "text": "9"
+            },
+            {
+              "data": "x",
+              "text": "Walter"
+            },
+            {
+              "data": "x",
+              "text": "2C"
+            },
+            {
+              "data": "x",
+              "text": "6"
+            }
+          ],
+          "expected": {
+            "output": "→ .nome = Vera\n→ .classe = 2B\n→ .voto = 9\n"
+          }
+        }
+      ]
+    },
+    {
+      "id": "f5",
+      "kind": "function",
+      "name": "alzata",
+      "return_type": "record",
+      "return_record": "alunno",
+      "return_size": 3,
+      "data": [
+        {
+          "name": "x",
+          "type": "record",
+          "record": "alunno",
+          "size": 3,
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "l1",
+          "kind": "assignment",
+          "target": "x[1].voto",
+          "value": "100"
+        }
+      ],
+      "end": {
+        "id": "l2",
+        "return_value": "x"
+      },
+      "test_cases": [
+        {
+          "name": "da-sola",
+          "inputs": [
+            {
+              "data": "x",
+              "text": "A"
+            },
+            {
+              "data": "x",
+              "text": "1A"
+            },
+            {
+              "data": "x",
+              "text": "1"
+            },
+            {
+              "data": "x",
+              "text": "B"
+            },
+            {
+              "data": "x",
+              "text": "1B"
+            },
+            {
+              "data": "x",
+              "text": "2"
+            },
+            {
+              "data": "x",
+              "text": "C"
+            },
+            {
+              "data": "x",
+              "text": "1C"
+            },
+            {
+              "data": "x",
+              "text": "3"
+            }
+          ],
+          "expected": {
+            "output": "→ [0].nome = A\n→ [0].classe = 1A\n→ [0].voto = 1\n→ [1].nome = B\n→ [1].classe = 1B\n→ [1].voto = 100\n→ [2].nome = C\n→ [2].classe = 1C\n→ [2].voto = 3\n"
+          }
+        }
+      ]
+    },
+    {
+      "id": "f6",
+      "kind": "function",
+      "name": "iniziali",
+      "return_type": "record",
+      "return_record": "alunno",
+      "return_size": 3,
+      "data": [],
+      "body": [],
+      "end": {
+        "id": "m1",
+        "return_value": "INIZIALI"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "tabella-come-parametro",
+      "inputs": [],
+      "expected": {
+        "output": "7 8\nCarla 0 9 9\nCarla\n100 5 Carla\n50 1\nAda\nBen\nCloe\n"
+      }
+    }
+  ]
+}

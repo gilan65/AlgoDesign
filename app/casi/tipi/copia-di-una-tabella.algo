@@ -1,0 +1,168 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "copia-di-una-tabella",
+    "description": "Ogni via di copia di una tabella e dei suoi record dà una copia: la tabella col suo nome, un record della tabella in un record, un record in un record della tabella, un record della tabella in un altro; cambiare la sorgente dopo non cambia la copia."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "classe",
+          "type": "string",
+          "max_length": 3
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "t",
+          "type": "record",
+          "record": "alunno",
+          "size": 2,
+          "initial": [
+            [
+              "\"Anna\"",
+              "\"3A\"",
+              "7"
+            ],
+            [
+              "\"Bruno\"",
+              "\"3B\"",
+              "5"
+            ]
+          ]
+        },
+        {
+          "name": "u",
+          "type": "record",
+          "record": "alunno",
+          "size": 2
+        },
+        {
+          "name": "r",
+          "type": "record",
+          "record": "alunno"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "u",
+          "value": "t"
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "t[0].voto",
+          "value": "1"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "u[0].voto",
+            "\" \"",
+            "t[0].voto"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "r",
+          "value": "t[1]"
+        },
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "t[1].voto",
+          "value": "2"
+        },
+        {
+          "id": "b6",
+          "kind": "write",
+          "values": [
+            "r.voto",
+            "\" \"",
+            "t[1].voto"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b7",
+          "kind": "assignment",
+          "target": "u[1]",
+          "value": "r"
+        },
+        {
+          "id": "b8",
+          "kind": "assignment",
+          "target": "r.voto",
+          "value": "3"
+        },
+        {
+          "id": "b9",
+          "kind": "write",
+          "values": [
+            "u[1].voto",
+            "\" \"",
+            "r.voto"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b10",
+          "kind": "assignment",
+          "target": "u[0]",
+          "value": "u[1]"
+        },
+        {
+          "id": "b11",
+          "kind": "assignment",
+          "target": "u[1].nome",
+          "value": "\"Zeno\""
+        },
+        {
+          "id": "b12",
+          "kind": "write",
+          "values": [
+            "u[0].nome",
+            "\" \"",
+            "u[1].nome"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "copia-di-una-tabella",
+      "inputs": [],
+      "expected": {
+        "output": "7 1\n5 2\n5 3\nBruno Zeno\n"
+      }
+    }
+  ]
+}

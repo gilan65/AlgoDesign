@@ -1,6 +1,6 @@
 // Il test differenziale: ogni caso d'uso delle tappe che il controllo statico non dice fuori tappa (oggi 1, 2, 3 e 4,
 // anche i casi che si fermano ai tetti della ricorsione, uguali nei tre esecutori, e i tipi non semplici della cartella
-// `tipi/`, i record e le matrici),
+// `tipi/`, i record e le matrici; le tabelle fuori tappa se il progetto è giusto, finché i generatori non le scrivono),
 // quelli del programma e quelli di ogni
 // procedura o funzione eseguita da sola (`file#funzione/
 // caso`, come in `bun run casi`), eseguito dall'interprete, dal Python generato e dal C generato
@@ -83,7 +83,7 @@ import { linguaggi, type Linguaggio, type VoceDelLinguaggio } from "../core/gene
 import { codiceDelMotivo } from "../core/genera/motivi";
 import type { LinguaDelCodice } from "../core/genera/nomi";
 import { apri } from "../core/progetto/formato";
-import { usaIRecord, usaLeMatrici, type Atteso, type CasoDiUnaFunzione, type Funzione, type Progetto } from "../core/progetto/modello";
+import { usaIRecord, usaLeMatrici, usaLeTabelle, type Atteso, type CasoDiUnaFunzione, type Funzione, type Progetto } from "../core/progetto/modello";
 import { paroleDelloPseudocodice } from "../ui/genera/parole";
 import { ambienteDi, appaia, esecutoreDel, esecutori as tuttiGliEsecutori, lingueDelCodice as lingue, trovaToolchain, type Esecutore, type Macchina } from "./esecutori";
 import { righeDellEsito } from "./righe-dei-casi";
@@ -275,6 +275,14 @@ file.forEach(({ nome, percorso }, k) => {
     fuoriTappa += casi.length;
     fileFuoriTappa++;
     righeDiPrima.push(`FUORI TAPPA ${nome} (casi: ${casi.length})`);
+    return;
+  }
+  // Le tabelle si eseguono ma i generatori non le scrivono ancora: un progetto giusto che le usa resta fuori dal confronto
+  // (con un errore statico si confronta, perché il programma generato non c'è in nessun esecutore).
+  if (controllo.errori.length === 0 && usaLeTabelle(p)) {
+    fuoriTappa += casi.length;
+    fileFuoriTappa++;
+    righeDiPrima.push(`FUORI TAPPA ${nome} (casi: ${casi.length}): le tabelle, che i generatori non scrivono ancora`);
     return;
   }
   const base = basename(nome).replace(/\.algo$/, "");

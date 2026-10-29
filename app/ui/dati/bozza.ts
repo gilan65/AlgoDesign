@@ -68,7 +68,7 @@ export function bozzaDi(d: Dato, nuovo: ValoreRipetuto, globale = false): BozzaD
   const iniziale =
     d.initial === undefined ? ""
     : typeof d.initial === "string" ? d.initial
-    : "each" in d.initial ? d.initial.each
+    : "each" in d.initial ? (typeof d.initial.each === "string" ? d.initial.each : fraGraffe(d.initial.each))
     : fraGraffe((d.initial as readonly (string | readonly string[])[]).map((x) => (typeof x === "string" ? x : fraGraffe(x))));
   return {
     nome: d.name,

@@ -101,21 +101,21 @@ La stessa forma vale per una costante comune (`shared_constants`) e per un dato 
 | `name` | `string` | sì | il nome, con le regole dei nomi dell'app |
 | `type` | `string` | sì | `integer` (intero), `real` (reale), `character` (carattere), `string` (stringa), `boolean` (booleano), `record` (un record del progetto, col suo nome nel campo che segue) |
 | `record` | `string` | no | col tipo `record`, e solo con lui, obbligatorio: il nome di un record del progetto |
-| `size` | `integer` | no | presente: il dato è un vettore di tanti elementi, da 1 al limite delle Impostazioni (con `columns`, le righe di una matrice); assente: un dato semplice |
+| `size` | `integer` | no | presente: il dato è un vettore di tanti elementi, da 1 al limite delle Impostazioni (con `columns`, le righe di una matrice; col tipo `record`, i record di una tabella, e il limite vale sul totale, record per campi); assente: un dato semplice |
 | `columns` | `integer` | no | solo con `size`: il dato è una matrice di `size` righe e di tante colonne, da 1 in su; ogni riga è un vettore delle colonne, e il limite delle Impostazioni vale sul totale, righe per colonne. Un record non fa una matrice |
 | `constant` | `boolean` | no | `true`: una costante, che vuole un valore iniziale; assente: una variabile. Una costante comune ha sempre `true` |
-| `initial` | `string`, `array` o `object` | no | il valore iniziale: un letterale, e per un intero o un reale anche col meno davanti (`"-7"`); per un vettore l'elenco completo dei letterali, uno per elemento, oppure `{ "each": … }` con un letterale per tutti; per una matrice l'elenco delle righe, ognuna l'elenco dei suoi letterali (`[["1", "2"], ["3", "4"]]`), oppure `{ "each": … }`; per un record l'elenco dei letterali, uno per campo nell'ordine dei campi |
+| `initial` | `string`, `array` o `object` | no | il valore iniziale: un letterale, e per un intero o un reale anche col meno davanti (`"-7"`); per un vettore l'elenco completo dei letterali, uno per elemento, oppure `{ "each": … }` con un letterale per tutti; per una matrice l'elenco delle righe, ognuna l'elenco dei suoi letterali (`[["1", "2"], ["3", "4"]]`), oppure `{ "each": … }`; per un record l'elenco dei letterali, uno per campo nell'ordine dei campi; per una tabella (un vettore di record) l'elenco dei record, ognuno l'elenco dei letterali dei suoi campi (`[["\"Anna\"", "7"], ["\"Bruno\"", "5"]]`), oppure `{ "each": … }` con un record per tutti |
 | `role` | `string` | no | `input` (di input), `output` (di output), `input_output` (di input e output); assente: un dato di lavoro. Mai su una costante né su un parametro |
 | `max_length` | `integer` | no | solo per una stringa: la lunghezza massima, da 1 al limite delle Impostazioni; assente vale 255 |
 | `parameter` | `string` | no | presente: il dato è un parametro della procedura o della funzione, e la sua posizione è quella nell'elenco; `value` (per valore: arriva una copia), `reference` (*rif*: il dato entra ed esce), `out` (*out*: il dato solo esce). Un parametro non ha valore iniziale, ruolo né il segno di costante; una funzione ha solo parametri per valore |
 
 ### Lo stesso valore per tutti gli elementi — `shared_constants[].initial{each}`
 
-La forma `{ "each": … }` del valore iniziale di un vettore: tutti gli elementi partono dallo stesso valore.
+La forma `{ "each": … }` del valore iniziale di un vettore: tutti gli elementi partono dallo stesso valore; in una tabella tutti i record partono dallo stesso record.
 
 | Campo | Tipo | Obbligatorio | Valori e regole |
 |---|---|---|---|
-| `each` | `string` | sì | il letterale di ogni elemento |
+| `each` | `string` o `array` | sì | il letterale di ogni elemento; per una tabella l'elenco dei letterali di ogni record, uno per campo nell'ordine dei campi (`["\"-\"", "0"]`) |
 
 ## 6. Il programma, le procedure e le funzioni
 

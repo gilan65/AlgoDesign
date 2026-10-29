@@ -169,7 +169,17 @@
                 "type": "object",
                 "properties": {
                   "each": {
-                    "type": "string"
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
                   }
                 },
                 "required": [
@@ -335,7 +345,17 @@
                             "type": "object",
                             "properties": {
                               "each": {
-                                "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                ]
                               }
                             },
                             "required": [
@@ -519,7 +539,17 @@
                             "type": "object",
                             "properties": {
                               "each": {
-                                "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                ]
                               }
                             },
                             "required": [
@@ -931,7 +961,17 @@
                             "type": "object",
                             "properties": {
                               "each": {
-                                "type": "string"
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                ]
                               }
                             },
                             "required": [

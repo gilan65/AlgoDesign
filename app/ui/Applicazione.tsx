@@ -83,7 +83,7 @@ import { eUnaParolaSola } from "../core/modifica/rinomina";
 import { sottoblocchi } from "../core/modifica/identificatori";
 import { importa as importaDa } from "../core/modifica/importa";
 import { apri as apriTesto, salva as testoDi } from "../core/progetto/formato";
-import { type Blocco, type CasoDiUnaFunzione, type Dato, type DefinizioneDelRecord, type Funzione, type Progetto } from "../core/progetto/modello";
+import { usaLeTabelle, type Blocco, type CasoDiUnaFunzione, type Dato, type DefinizioneDelRecord, type Funzione, type Progetto } from "../core/progetto/modello";
 import { bozzaDelCaso, casoDaBozza, datiDelleVoci, nomeDelCasoNuovo, stessoCaso, vociDelCasoNuovo, type BozzaDelCaso } from "./casi/bozza";
 import { casiDella, chiaveDelCaso, chiaviDeiCasi, selezioneDopoIlPasso, TuttiICasi } from "./casi/tutti";
 import { casoDallEsecuzione, casoUguale, stessoProgramma, type DallEsecuzione } from "../core/casi/dall-esecuzione";
@@ -1710,6 +1710,11 @@ export function Applicazione({
   function avvia(comando: Comando, indiceDelCaso?: number): boolean {
     const c = confermaIApertiCampi();
     if (!c) return false;
+    // La finestra in esecuzione non mostra ancora le tabelle (la tabella di traccia, il watch, le voci dei record).
+    if (usaLeTabelle(c.presente)) {
+      setAvviso(testi.apriFuoriTappa);
+      return false;
+    }
     const dellaScheda = nelProgramma ? undefined : mostrata.id;
     const radice = indiceDelCaso === undefined && esecuzione !== null ? esecuzione.funzione : dellaScheda;
     const funzione = radice !== undefined && c.presente.functions.some((f) => f.id === radice) ? radice : undefined;
@@ -2777,6 +2782,10 @@ export function Applicazione({
     const tuttiICasi = c ? casiDella(c.presente, funzioneDeiCasi) : [];
     const indici = tuttiICasi.flatMap((x, i) => (!soloSelezionati || selezionati.has(chiaveDiUnCaso(x.name)) ? [i] : []));
     if (!c || indici.length === 0) return;
+    if (usaLeTabelle(c.presente)) {
+      setAvviso(testi.apriFuoriTappa);
+      return;
+    }
     setEsecuzione(null);
     setTutti(new TuttiICasi(c.presente, limiti, indici, funzioneDeiCasi));
     setAvviso(null);

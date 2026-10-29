@@ -522,10 +522,10 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
 }
 
 /** Una riga che la lettura `l` ammette: `senzaValore` solo per un parametro per riferimento della funzione eseguita da
- * sola, `ognuno` solo al primo elemento di un suo parametro vettore. */
-function rigaAmmessa(riga: Exclude<Riga, undefined>, l: { readonly parametro?: "valore" | "riferimento"; readonly elemento?: number }): boolean {
+ * sola, `ognuno` solo al primo elemento di un suo parametro vettore (mai di una tabella, che chiede anche il campo). */
+function rigaAmmessa(riga: Exclude<Riga, undefined>, l: { readonly parametro?: "valore" | "riferimento"; readonly elemento?: number; readonly campo?: string }): boolean {
   const testo = typeof riga === "object" ? riga.ognuno : riga;
-  return (testo !== senzaValore || l.parametro === "riferimento") && (typeof riga !== "object" || l.elemento === 0);
+  return (testo !== senzaValore || l.parametro === "riferimento") && (typeof riga !== "object" || (l.elemento === 0 && l.campo === undefined));
 }
 
 /** Dove finiscono i primi `n` codici di un testo (un carattere fuori dal piano di base è un codice, due unità). */

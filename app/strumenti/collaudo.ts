@@ -329,20 +329,31 @@ const tappeDelDifferenziale = [1, 2, 3, 4];
 const tappeFuoriDalDifferenziale: number[] = [];
 const casiDelleTappe = (cartella: string, tappe: readonly number[], funzioni: "con" | "senza" | "sole" = "senza") => tappe.reduce((n, t) => n + casiDellaTappa(cartella, t, funzioni), 0);
 
-/** I casi dei tipi non semplici (la cartella `tipi/`, i record e le matrici): `bun run casi` li esegue tutti (`tutti`), e
- * tutti entrano nel differenziale come quelli delle tappe (quelli che attendono l'errore statico senza programma,
- * `conStatico`); `diFunzioni`, quelli delle funzioni eseguite da sole. */
-function casiDeiTipi(cartella: string): { tutti: number; diFunzioni: number; conStatico: number } {
+/** I casi dei tipi non semplici (la cartella `tipi/`, i record, le matrici e le tabelle): `bun run casi` li esegue tutti
+ * (`tutti`), e tutti entrano nel differenziale come quelli delle tappe (quelli che attendono l'errore statico senza
+ * programma, `conStatico`); `diFunzioni`, quelli delle funzioni eseguite da sole. Tranne i file giusti con le tabelle,
+ * che i generatori non scrivono ancora: il differenziale li dice fuori tappa (`fuori`, coi casi, quelli delle funzioni e
+ * i file). Giusto vuol dire senza un caso che attende l'errore statico. */
+function casiDeiTipi(cartella: string): { tutti: number; diFunzioni: number; conStatico: number; fuori: { casi: number; diFunzioni: number; file: number } } {
   const dove = join(cartella, "tipi");
-  const conti = { tutti: 0, diFunzioni: 0, conStatico: 0 };
+  const conti = { tutti: 0, diFunzioni: 0, conStatico: 0, fuori: { casi: 0, diFunzioni: 0, file: 0 } };
   if (!existsSync(dove)) return conti;
+  type DelTipo = { type?: string; size?: number };
   for (const f of readdirSync(dove).filter((x) => x.endsWith(".algo"))) {
     const p = JSON.parse(readFileSync(join(dove, f), "utf8"));
-    const funzioni = p.functions as { test_cases?: unknown[] }[];
+    const funzioni = p.functions as { test_cases?: unknown[]; data: DelTipo[]; return_type?: string; return_size?: number }[];
     const casi = [...(p.test_cases ?? []), ...funzioni.flatMap((g) => g.test_cases ?? [])] as { expected: { static_error?: unknown } }[];
+    const statici = casi.filter((c) => c.expected.static_error !== undefined).length;
     conti.tutti += casi.length;
     conti.diFunzioni += casi.length - (p.test_cases ?? []).length;
-    conti.conStatico += casi.filter((c) => c.expected.static_error !== undefined).length;
+    conti.conStatico += statici;
+    const tabella = (d: DelTipo) => d.type === "record" && d.size !== undefined;
+    const conLeTabelle = ((p.shared_constants ?? []) as DelTipo[]).some(tabella) || funzioni.some((g) => g.data.some(tabella) || (g.return_type === "record" && g.return_size !== undefined));
+    if (conLeTabelle && statici === 0) {
+      conti.fuori.casi += casi.length;
+      conti.fuori.diFunzioni += casi.length - (p.test_cases ?? []).length;
+      conti.fuori.file++;
+    }
   }
   return conti;
 }
@@ -736,12 +747,12 @@ async function portaDifferenziale(): Promise<void> {
     rosso("differenziale", `casi nel confronto ${n}; esecutori non verdi su tutti: ${JSON.stringify(nonTutti.map((m) => m?.[0]))}; richiesti ${esecutoriRichiesti.length} dal contratto, mancanti: ${JSON.stringify(mancanti)}, eseguiti in più: ${JSON.stringify(eseguitiInPiu)} | ${toolchain}`);
   const cartellaDeiCasi = join(radice, "casi");
   // I casi dei tipi non semplici entrano nel confronto come quelli delle tappe, tranne quelli dei file giusti con le
-  // matrici, fuori tappa.
+  // tabelle, fuori tappa.
   const deiTipi = casiDeiTipi(cartellaDeiCasi);
-  const contati = casiDelleTappe(cartellaDeiCasi, tappeDelDifferenziale, "con") + deiTipi.tutti;
+  const contati = casiDelleTappe(cartellaDeiCasi, tappeDelDifferenziale, "con") + deiTipi.tutti - deiTipi.fuori.casi;
   if (n + Number(riepilogo[5]) !== contati || Number(riepilogo[5]) !== esclusiDalDifferenziale.length)
     rosso("differenziale", `casi delle tappe ${tappeDelDifferenziale.join(", ")} e dei tipi che si eseguono contati ${contati}, nel confronto ${n}, esclusi ${riepilogo[5]} (attesi ${esclusiDalDifferenziale.length})`);
-  const diFunzioni = casiDelleTappe(cartellaDeiCasi, tappeDelDifferenziale, "sole") + deiTipi.diFunzioni;
+  const diFunzioni = casiDelleTappe(cartellaDeiCasi, tappeDelDifferenziale, "sole") + deiTipi.diFunzioni - deiTipi.fuori.diFunzioni;
   if (Number(riepilogo[3]) !== diFunzioni) rosso("differenziale", `casi di funzioni nel confronto ${riepilogo[3]}, contati nei file ${diFunzioni}`);
   // Gli esclusi per nome, nei due versi: le righe ESCLUSO e l'elenco delle decisioni.
   const esclusiStampati = [...vera.uscita.matchAll(/^ESCLUSO (\S+)#/gm)].map((m) => m[1]!);
@@ -766,10 +777,10 @@ async function portaDifferenziale(): Promise<void> {
   if (Number(riepilogo[4]) !== conStatico || statiche !== conStatico)
     rosso("differenziale", `casi con l'errore statico: nel riepilogo ${riepilogo[4]}, righe ${statiche}, attesi nei file ${conStatico}`);
   const fileDelle = (tappe: readonly number[]) => tappe.reduce((k, t) => k + readdirSync(join(cartellaDeiCasi, `tappa-${t}`)).filter((f) => f.endsWith(".algo")).length, 0);
-  const fuoriContati = casiDelleTappe(cartellaDeiCasi, tappeFuoriDalDifferenziale, "con");
-  const fileFuori = fileDelle(tappeFuoriDalDifferenziale);
+  const fuoriContati = casiDelleTappe(cartellaDeiCasi, tappeFuoriDalDifferenziale, "con") + deiTipi.fuori.casi;
+  const fileFuori = fileDelle(tappeFuoriDalDifferenziale) + deiTipi.fuori.file;
   if (Number(riepilogo[6]) !== fuoriContati || Number(riepilogo[7]) !== fileFuori)
-    rosso("differenziale", `fuori tappa ${riepilogo[6]} in ${riepilogo[7]} file; contati nelle tappe ${tappeFuoriDalDifferenziale.join(", ")} e nelle matrici: ${fuoriContati} in ${fileFuori} file`);
+    rosso("differenziale", `fuori tappa ${riepilogo[6]} in ${riepilogo[7]} file; contati nelle tappe ${tappeFuoriDalDifferenziale.join(", ")} e nelle tabelle: ${fuoriContati} in ${fileFuori} file`);
 
   // Gli avvisi della compilazione nella corsa vera: nessuno non atteso né mancante, e gli attesi su ogni macchina che
   // compila e lingua.

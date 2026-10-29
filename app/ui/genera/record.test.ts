@@ -17,7 +17,7 @@ import { linguaggi } from "../../core/genera/linguaggi";
 import { pseudocodice } from "../../core/genera/pseudocodice";
 import { python } from "../../core/genera/python";
 import { apri } from "../../core/progetto/formato";
-import { usaLeMatrici, type Progetto } from "../../core/progetto/modello";
+import { usaLeMatrici, usaLeTabelle, type Progetto } from "../../core/progetto/modello";
 import type { Lingua } from "../../i18n/lingue";
 import {
   copiaC,
@@ -39,8 +39,26 @@ const progetto = (nome: string): Progetto => {
   if (!a.ok) throw new Error(nome);
   return a.progetto;
 };
-// I file dei record: quelli delle matrici, nella stessa cartella, li prova `matrici.test.ts`.
-const file = readdirSync(cartella).filter((f) => f.endsWith(".algo") && !usaLeMatrici(progetto(f)));
+// I file dei record: quelli delle matrici, nella stessa cartella, li prova `matrici.test.ts`; quelli delle tabelle i
+// generatori non li scrivono ancora (la prova della guardia, qui sotto).
+const tutti = readdirSync(cartella).filter((f) => f.endsWith(".algo") && !usaLeMatrici(progetto(f)));
+const conLeTabelle = tutti.filter((f) => usaLeTabelle(progetto(f)));
+const file = tutti.filter((f) => !conLeTabelle.includes(f));
+
+test("le tabelle i generatori non le scrivono ancora: ogni linguaggio dice fuori tappa il progetto giusto, con gli errori quello sbagliato", () => {
+  const esiti = conLeTabelle.flatMap((nome) => {
+    const p = progetto(nome);
+    const k = controlla(p, tetti);
+    const atteso = !k.fuoriTappa && k.errori.length > 0 ? "errori-statici" : "fuori-tappa";
+    return linguaggi.map((v) => {
+      const g = v.genera(p, tetti, "it", paroleDelloPseudocodice("it"), undefined);
+      return { chi: `${nome} ${v.id}`, giusto: !g.generato && g.perche === atteso, atteso };
+    });
+  });
+  expect(esiti.filter((e) => !e.giusto).map((e) => e.chi)).toEqual([]);
+  // Il denominatore: cinque file giusti e uno sbagliato, ognuno per ogni linguaggio.
+  expect([esiti.filter((e) => e.atteso === "fuori-tappa").length, esiti.filter((e) => e.atteso === "errori-statici").length]).toEqual([5 * linguaggi.length, 1 * linguaggi.length]);
+});
 
 /** Il confronto col messaggio che nomina la prima riga diversa, con le due forme. */
 function uguale(generato: string, atteso: string, chi: string) {
@@ -73,8 +91,8 @@ test("ogni linguaggio scrive i record: generato il progetto giusto, con gli erro
     return { nome, giusto, atteso, ottenuti };
   });
   expect(esiti.filter((e) => !e.giusto)).toEqual([]);
-  // Controllo positivo dei denominatori: sette file giusti e cinque sbagliati, ognuno per ogni linguaggio.
-  expect([esiti.filter((e) => e.atteso === "generato").length, esiti.filter((e) => e.atteso === "errori-statici").length, linguaggi.length]).toEqual([7, 5, 4]);
+  // Controllo positivo dei denominatori: sette file giusti e quattro sbagliati, ognuno per ogni linguaggio.
+  expect([esiti.filter((e) => e.atteso === "generato").length, esiti.filter((e) => e.atteso === "errori-statici").length, linguaggi.length]).toEqual([7, 4, 4]);
 });
 
 test("il programma di prova di ogni caso di una funzione coi record si genera in ogni linguaggio da eseguire", () => {

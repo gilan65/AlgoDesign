@@ -486,7 +486,7 @@ export const conErroriStatici: readonly string[] = [
   "tipi/per-ogni-su-una-matrice",
   "tipi/record-sconosciuto",
   "tipi/record-senza-campi",
-  "tipi/vettore-di-record",
+  "tipi/tabella-oltre-il-tetto",
 ];
 
 /** I file del corpus che danno il codice: ci stanno e il controllo statico li lascia eseguire. */

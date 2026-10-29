@@ -553,7 +553,8 @@ describe("la causa precisa dei codici del controllo", () => {
     ["record_name_in_use", "nome_di_un_tipo", "record", conRecord([rec("record", "x")]), progetto],
     ["invalid_record", "senza_campi", "r", conRecord([rec("r")]), progetto],
     ["invalid_record", "campo_doppio", "x", conRecord([rec("r", "x", "x")]), progetto],
-    ["invalid_data_item", "vettore_di_record", undefined, conRecord([rec("r", "x")], [delRecord("t", "r", { size: 2 })]), primo],
+    // La riga della matrice restituita da una funzione, passata per valore.
+    ["argument_mismatch", "parte_di_un_risultato", "r", nelProgramma([], [salta("b1", "p", "g()[0]")], conValore("integer", { size: 2 }), funzione("f3", "g", "integer", [dato("w", "integer", { size: 2, columns: 2, initial: { each: "1" } })], [], "w", { return_size: 2, return_columns: 2 })), b1],
     ["limit_exceeded", "oltre_elementi", "1000", nelProgramma([dato("v", "integer", { size: 1001 })]), primo],
     ["limit_exceeded", "oltre_lunghezza", "1000", nelProgramma([dato("s", "string", { max_length: 1001 })]), primo],
     ["limit_exceeded", "oltre_caratteri", "10000", nelProgramma([dato("v", "string", { size: 100, max_length: 101 })]), primo],
@@ -1360,14 +1361,49 @@ test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l
     // La matrice per uscita riempita solo dentro due «per»: lo stesso.
     "tipi/righe-calcolate.algo b14 u",
   ]);
-  // Col corpus dei record e delle matrici: nessuno è fuori tappa; quello del riferimento senza valore ha l'avviso, i cinque
-  // sbagliati no.
-  expect([file, controllati]).toEqual([168, 168]);
+  // Col corpus dei record, delle matrici e delle tabelle: nessuno è fuori tappa; quello del riferimento senza valore ha
+  // l'avviso, i sei sbagliati no (le tabelle nuove non ne hanno: `crea` le dà un valore record per record fuori dai cicli).
+  expect([file, controllati]).toEqual([173, 173]);
 });
 
 test("i limiti sono un parametro senza predefinito: chi chiama il controllo li passa sempre", () => {
   // Un parametro con un predefinito non si conta nella lunghezza della funzione.
   expect(controlla.length).toBe(2);
+});
+
+// Le tabelle (vettori di record): un record della tabella va dove va un record dello stesso record, l'elemento del «per
+// ogni» è un record dello stesso record, la copia vuole lo stesso record; le sonde false accanto a quelle giuste.
+test("le tabelle: il record della tabella dove va un record, l'elemento del «per ogni», la copia col nome", () => {
+  const records = ["al", "bo"].map((name) => ({ name, fields: [{ name: "voto", type: "integer" }] }));
+  const tab = (name: string, record: string, size?: number) => ({ name, type: "record", record, ...(size === undefined ? {} : { size }) });
+  // Coi valori iniziali, che un riferimento vuole: la tabella col record ripetuto, il record con un letterale per campo.
+  const data = [tab("t", "al", 2), tab("u", "bo", 2), tab("w", "al", 2), tab("r", "al"), tab("s", "bo")].map((d) => ({ ...d, initial: d.size === undefined ? ["1"] : { each: ["1"] } }));
+  const codici = (body: Json[], ...altre: Json[]) => {
+    const l = leggi({ format: "algodesign", schema_version: 2, metadata: { name: "prova" }, records, functions: [{ id: "f1", kind: "main", data, body, end: { id: "fine" } }, ...altre] });
+    if (!l.ok) throw new Error(JSON.stringify(l.errori));
+    const k = controlla(l.progetto, tetti);
+    if (k.fuoriTappa) throw new Error("fuori tappa");
+    return k.errori.map((e) => `${e.code}@${e.block}`);
+  };
+  const perOgni = (item: string, source: string) => ({ id: "b1", kind: "for_each", item, source, body: [] });
+  expect(codici([assegna("b1", "r", "t[0]"), assegna("b2", "t[1]", "r"), assegna("b3", "t[0].voto", "t[1].voto + 1"), assegna("b4", "w", "t"), assegna("b5", "t[0]", "t[1]")])).toEqual([]);
+  expect(codici([perOgni("r", "t")])).toEqual([]);
+  expect(codici([assegna("b1", "s", "t[0]")])).toEqual(["array_assignment@b1"]);
+  expect(codici([assegna("b1", "u", "t")])).toEqual(["array_assignment@b1"]);
+  expect(codici([assegna("b1", "t[0]", "t")])).toEqual(["array_assignment@b1"]);
+  expect(codici([assegna("b1", "r.voto", "t[0]")])).toEqual(["type_mismatch@b1"]);
+  expect(codici([assegna("b1", "t.voto", "1")])).toEqual(["unknown_record_field@b1"]);
+  expect(codici([perOgni("s", "t")])).toEqual(["type_mismatch@b1"]);
+  // Per valore e per riferimento: il record della tabella per un record, la tabella per una tabella dello stesso record.
+  const p = (modo: string, parametro: Json) => ({ id: "f2", kind: "procedure", name: "p", data: [{ name: "x", ...parametro, parameter: modo }], body: [], end: { id: "e2" } });
+  const salto = (argomento: string) => [{ id: "b1", kind: "call", callee: "p", arguments: [argomento] }];
+  for (const modo of ["value", "reference"]) {
+    expect(codici(salto("t[1]"), p(modo, tab("x", "al")))).toEqual([]);
+    expect(codici(salto("t"), p(modo, tab("x", "al", 2)))).toEqual([]);
+    expect(codici(salto("t[1]"), p(modo, tab("x", "bo")))).toEqual(["argument_mismatch@b1"]);
+    expect(codici(salto("u"), p(modo, tab("x", "al", 2)))).toEqual(["argument_mismatch@b1"]);
+  }
+  expect(codici(salto("t[1].voto"), p("reference", { type: "integer" }))).toEqual([]);
 });
 
 test("la ricorsione, diretta o attraverso altre funzioni: il controllo la accetta; le funzioni del giro e i giri da dire all'utente", () => {
@@ -1767,8 +1803,14 @@ describe("i record", () => {
   test("i codici di prima sulle forme nuove", () => {
     const r = (p: Json) => p.records[0];
     const k = (p: Json) => p.shared_constants[0];
-    // Un vettore di record è un errore del dato, e i blocchi lo usano come un record.
-    expect(errori((p) => (main(p).data[0].size = 3))).toEqual({ errori: ["invalid_data_item@f1"], cause: [] });
+    // Un vettore di record è una tabella, un dato giusto: i blocchi che lo usano come un record no (la copia del record
+    // intero e i campi senza l'indice).
+    expect(errori((p) => (main(p).data[0].size = 3))).toEqual({
+      errori: ["array_assignment@b1", "unknown_record_field@b2", "unknown_record_field@b3"],
+      cause: ["unknown_record_field@b2 non_un_record «voto»", "unknown_record_field@b3 non_un_record «nome»"],
+    });
+    // Il record ripetuto su un vettore di interi.
+    expect(errori((p) => main(p).data.push(dato("v", "integer", { size: 2, initial: { each: ["1", "2"] } })))).toEqual({ errori: ["invalid_data_item@f1"], cause: [] });
     expect(errori((p) => (r(p).fields[2].name = "1voto"))).toEqual({ errori: ["invalid_name@", "unknown_record_field@b2", "unknown_record_field@b3", "unknown_record_field@b5"], cause: ["invalid_name@ nome_cifra", "unknown_record_field@b2 campo_assente «voto»", "unknown_record_field@b3 campo_assente «voto»", "unknown_record_field@b5 campo_assente «voto»"] });
     expect(errori(rinominato("and"))).toEqual({ errori: ["invalid_name@"], cause: ["invalid_name@ nome_riservato «and»"] });
     expect(errori((p) => (r(p).fields[2].max_length = 5))).toEqual({ errori: ["invalid_data_item@"], cause: ["invalid_data_item@ lunghezza_non_stringa"] });
@@ -1787,7 +1829,15 @@ describe("i record", () => {
       const r = controllato(modifica);
       return r.fuoriTappa ? "fuori tappa" : r.dati.map((d) => `${d.code}@${d.funzione}:${d.indice} ${d.fermata?.causa ?? ""}${d.fermata?.segno === undefined ? "" : ` «${d.fermata.segno}»`}`);
     };
-    expect(dati((p) => (main(p).data[0].size = 3))).toEqual(["invalid_data_item@f1:0 vettore_di_record"]);
+    // Una tabella è un dato giusto; il suo valore iniziale è un elenco di record o un record ripetuto, con le cause del
+    // record, record per record.
+    expect(dati((p) => (main(p).data[0].size = 3))).toEqual([]);
+    expect(dati((p) => Object.assign(p.shared_constants[0], { size: 2, initial: [['"Anna"', '"3A"', "7"], ['"Bruno"', '"3B"', "5"]] }))).toEqual([]);
+    expect(dati((p) => Object.assign(p.shared_constants[0], { size: 2, initial: { each: ['"-"', '"0X"', "0"] } }))).toEqual([]);
+    expect(dati((p) => Object.assign(p.shared_constants[0], { size: 2, initial: { each: '"Anna"' } }))).toEqual(["invalid_data_item@:0 forma_del_valore"]);
+    expect(dati((p) => Object.assign(p.shared_constants[0], { size: 2, initial: ['"Anna"', '"3A"', "7"] }))).toEqual(["invalid_data_item@:0 forma_del_valore"]);
+    expect(dati((p) => Object.assign(p.shared_constants[0], { size: 2, initial: [['"Anna"', '"3A"', "7"]] }))).toEqual(["invalid_data_item@:0 elenco_di_altra_lunghezza «1»"]);
+    expect(dati((p) => Object.assign(p.shared_constants[0], { size: 2, initial: { each: ['"Anna"', "7"] } }))).toEqual(["invalid_data_item@:0 elenco_di_altra_lunghezza «2»"]);
     expect(dati((p) => (p.shared_constants[0].initial = ['"Anna"', '"3A"']))).toEqual(["invalid_data_item@:0 elenco_di_altra_lunghezza «2»"]);
     expect(dati((p) => (p.shared_constants[0].initial = { each: "7" }))).toEqual(["invalid_data_item@:0 forma_del_valore"]);
   });

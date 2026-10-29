@@ -54,7 +54,7 @@ import {
 import { funzioniDelGiro } from "../controllo/controllo";
 import { funzioniChiamabili, testoDelValore, type FaseDelCiclo, type Fotografia, type FotografiaDiUnaChiamata, type Origine, type Restituito, type Valore } from "../interprete/interprete";
 import { livelliDellePosizioni, nomiDeiVettori, nomiDelleMatrici, quantePosizioni } from "../progetto/copia";
-import { opzioniPredefinite, type Blocco, type Dato, type Funzione, type Progetto, type Tipo } from "../progetto/modello";
+import { opzioniPredefinite, usaLeTabelle, type Blocco, type Dato, type Funzione, type Progetto, type Tipo } from "../progetto/modello";
 
 export interface Riga {
   /** L'azione: per una ripresa, quella che riprende. */
@@ -488,6 +488,9 @@ export class TabellaMostrata {
     readonly restituitoNellaRipresa = false,
     readonly formaDelleMatrici: FormaDelleMatrici = "per-riga",
   ) {
+    // Le forme della tabella nella tabella di traccia non ci sono ancora: un progetto con le tabelle non arriva qui
+    // (l'esecuzione nella finestra lo rifiuta), e chi ce lo porta lo sa subito.
+    if (usaLeTabelle(p)) throw new Error("la tabella di traccia non mostra ancora le tabelle");
     const main = p.functions.find((f) => f.kind === "main")!;
     const principale = radice === undefined ? main : p.functions.find((f) => f.id === radice)!;
     const comuni = p.shared_constants ?? [];

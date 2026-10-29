@@ -232,6 +232,7 @@ const causeDeiRami: Record<string, Record<string, readonly Causa[]>> = {
     "elementi > limiti": [
       { it: "elementi di un vettore", en: "elements of an array" },
       { it: "righe per colonne", en: "rows times columns" },
+      { it: "record per campi", en: "records times fields" },
     ],
     "d.max_length > limiti": [{ it: "lunghezza massima di una stringa", en: "maximum length of a string" }],
     caratteriDiUnVettoreDiStringhe: [{ it: "caratteri di un vettore di stringhe", en: "characters of an array of strings" }],
@@ -285,10 +286,14 @@ const causeDeiRami: Record<string, Record<string, readonly Causa[]>> = {
     "d.initial.length !== d.size": [{ it: "valore iniziale", en: "initial value" }],
     "includes(o.genere)": [{ it: "valore iniziale", en: "initial value" }],
     "if (t === undefined)": [{ it: "valore iniziale", en: "initial value" }],
-    'd.type === "record" && d.size !== undefined': [{ it: "vettore di record", en: "array of records" }],
-    '? difetto("invalid_data_item", "vettore_di_record")': [{ it: "vettore di record", en: "array of records" }],
     "if (!Array.isArray(d.initial))": [{ it: "valore iniziale", en: "initial value" }],
-    "d.initial.length !== record.fields.length": [{ it: "valore iniziale", en: "initial value" }],
+    // Un record e ogni record di una tabella: un letterale per campo.
+    "x.some((y) => typeof y": [{ it: "valore iniziale", en: "initial value" }],
+    "x.length !== record.fields.length": [{ it: "valore iniziale", en: "initial value" }],
+    "d.initial.every(Array.isArray)": [{ it: "valore iniziale", en: "initial value" }],
+    "d.size !== d.initial.length": [{ it: "valore iniziale", en: "initial value" }],
+    // Il record ripetuto su un vettore che non è una tabella.
+    'each: unknown }).each !== "string"': [{ it: "valore iniziale", en: "initial value" }],
     "d.columns < 1": [{ it: "colonne", en: "columns" }],
     '"colonne_senza_righe"': [{ it: "colonne", en: "columns" }],
     'd.type === "record" && d.columns !== undefined': [{ it: "matrice di record", en: "matrix of records" }],
@@ -322,6 +327,7 @@ const causeDeiRami: Record<string, Record<string, readonly Causa[]>> = {
   },
   argument_mismatch: {
     '"argomenti_in_piu"': [{ it: "più o meno dei parametri", en: "more or fewer than the parameters" }],
+    '"parte_di_un_risultato"': [{ it: "record del risultato di una funzione", en: "record of the result of a function" }],
     "if (!v.vettore)": [{ it: "stessa dimensione", en: "same size" }],
     "!stesseMisure(v, parametro)": [
       { it: "stesso tipo", en: "same type" },
