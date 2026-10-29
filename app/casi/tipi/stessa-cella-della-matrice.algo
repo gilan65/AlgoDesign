@@ -1,0 +1,238 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "stessa-cella-della-matrice",
+    "description": "Due elementi di una matrice, o una riga e un elemento, passati per riferimento con gli indici calcolati: diversi si passano, lo stesso elemento o un elemento della riga fermano il salto."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "m",
+          "type": "integer",
+          "size": 2,
+          "columns": 2,
+          "initial": [
+            [
+              "1",
+              "2"
+            ],
+            [
+              "3",
+              "4"
+            ]
+          ]
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        },
+        {
+          "name": "j",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "i"
+        },
+        {
+          "id": "b2",
+          "kind": "read",
+          "target": "j"
+        },
+        {
+          "id": "b3",
+          "kind": "call",
+          "callee": "scambia",
+          "arguments": [
+            "m[i][j]",
+            "m[1][0]"
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "m[0][1]",
+            "\" \"",
+            "m[1][0]",
+            "\" \"",
+            "m[1][1]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b5",
+          "kind": "call",
+          "callee": "azzera",
+          "arguments": [
+            "m[i]",
+            "m[1][j]"
+          ]
+        },
+        {
+          "id": "b6",
+          "kind": "write",
+          "values": [
+            "m[0][0]",
+            "\" \"",
+            "m[1][1]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "scambia",
+      "data": [
+        {
+          "name": "a",
+          "type": "integer",
+          "parameter": "reference"
+        },
+        {
+          "name": "b",
+          "type": "integer",
+          "parameter": "reference"
+        },
+        {
+          "name": "t",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "c1",
+          "kind": "assignment",
+          "target": "t",
+          "value": "a"
+        },
+        {
+          "id": "c2",
+          "kind": "assignment",
+          "target": "a",
+          "value": "b"
+        },
+        {
+          "id": "c3",
+          "kind": "assignment",
+          "target": "b",
+          "value": "t"
+        }
+      ],
+      "end": {
+        "id": "c4"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "procedure",
+      "name": "azzera",
+      "data": [
+        {
+          "name": "r",
+          "type": "integer",
+          "size": 2,
+          "parameter": "reference"
+        },
+        {
+          "name": "e",
+          "type": "integer",
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "d1",
+          "kind": "assignment",
+          "target": "r[0]",
+          "value": "0"
+        },
+        {
+          "id": "d2",
+          "kind": "assignment",
+          "target": "r[1]",
+          "value": "0"
+        },
+        {
+          "id": "d3",
+          "kind": "assignment",
+          "target": "e",
+          "value": "0"
+        }
+      ],
+      "end": {
+        "id": "d4"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "diversi",
+      "inputs": [
+        {
+          "data": "i",
+          "text": "0"
+        },
+        {
+          "data": "j",
+          "text": "1"
+        }
+      ],
+      "expected": {
+        "output": "3 2 4\n0 0\n"
+      }
+    },
+    {
+      "name": "stesso-elemento",
+      "inputs": [
+        {
+          "data": "i",
+          "text": "1"
+        },
+        {
+          "data": "j",
+          "text": "0"
+        }
+      ],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "same_reference",
+          "block": "b3"
+        }
+      }
+    },
+    {
+      "name": "riga-e-suo-elemento",
+      "inputs": [
+        {
+          "data": "i",
+          "text": "1"
+        },
+        {
+          "data": "j",
+          "text": "1"
+        }
+      ],
+      "expected": {
+        "output": "2 4 3\n",
+        "error": {
+          "code": "same_reference",
+          "block": "b5"
+        }
+      }
+    }
+  ]
+}

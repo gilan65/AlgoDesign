@@ -1,6 +1,6 @@
 // Il test differenziale: ogni caso d'uso delle tappe che il controllo statico non dice fuori tappa (oggi 1, 2, 3 e 4,
 // anche i casi che si fermano ai tetti della ricorsione, uguali nei tre esecutori, e i tipi non semplici della cartella
-// `tipi/`, i record e le matrici, queste fuori tappa se il progetto è giusto, finché i generatori non le scrivono),
+// `tipi/`, i record e le matrici),
 // quelli del programma e quelli di ogni
 // procedura o funzione eseguita da sola (`file#funzione/
 // caso`, come in `bun run casi`), eseguito dall'interprete, dal Python generato e dal C generato
@@ -56,8 +56,8 @@
 // Righe: per ogni caso ed esecutore quelle di `righe-dei-casi.ts` precedute dall'esecutore (`VERDE gcc it
 // tappa-1/x#x`), o `ROSSO … senza esito: …`; `ESCLUSO <caso>: <ragione>`; `ERRORE STATICO <caso>: <codice> <blocco>,
 // nessun programma generato`; `FUORI TAPPA <file> (casi: <n>)`; `PROBLEMA …`;
-// in fondo la riga `toolchain: …`, quella dei casi per tipo (`per tipo: …`, i casi nel confronto che usano i record e
-// quelli che non li usano) e quella del riepilogo `differenziale: …`. Un caso con gli avvisi diversi è rosso:
+// in fondo la riga `toolchain: …`, quella dei casi per tipo (`per tipo: …`, i casi nel confronto che usano i record,
+// quelli che usano le matrici e gli altri) e quella del riepilogo `differenziale: …`. Un caso con gli avvisi diversi è rosso:
 // qui ogni differenza lo è. Esce con 1 se c'è un rosso o un problema.
 //
 // Gli avvisi della compilazione: ogni programma della tappa (anche quelli dei casi esclusi) e ogni programma di prova si
@@ -98,6 +98,7 @@ export const esclusi: Readonly<Record<string, string>> = {
   "overflow-fattoriale": "overflow di un intero, che il C non definisce",
   "divisione-per-zero": "divisione intera per zero, che il C non definisce",
   "indice-fuori": "indice fuori da un vettore, che il C non definisce",
+  "indice-fuori-dalla-matrice": "indice fuori da una matrice, che il C non definisce",
   "reale-fuori-intervallo": "reale fuori intervallo convertito in intero, che il C non definisce",
   "reale-fuori-intervallo-parametro": "reale fuori intervallo convertito in intero, che il C non definisce",
   "reale-non-finito": "reale non finito, che l'interprete ferma per regola sua",
@@ -276,14 +277,6 @@ file.forEach(({ nome, percorso }, k) => {
     righeDiPrima.push(`FUORI TAPPA ${nome} (casi: ${casi.length})`);
     return;
   }
-  // Le matrici si eseguono ma i generatori non le scrivono ancora: un progetto giusto che le usa resta fuori dal confronto
-  // (con un errore statico si confronta, perché il programma generato non c'è in nessun esecutore).
-  if (controllo.errori.length === 0 && usaLeMatrici(p)) {
-    fuoriTappa += casi.length;
-    fileFuoriTappa++;
-    righeDiPrima.push(`FUORI TAPPA ${nome} (casi: ${casi.length}): le matrici, che i generatori non scrivono ancora`);
-    return;
-  }
   const base = basename(nome).replace(/\.algo$/, "");
   nomiTrovati.add(base);
   // Ogni programma della tappa si genera e si compila, anche quelli dei casi esclusi: gli avvisi si contano su tutti.
@@ -456,15 +449,18 @@ for (const d of daConfrontare)
   }
 const n = daConfrontare.length;
 if (n === 0) problemi.push("nessun caso nel confronto");
-// I casi per tipo: quelli dei progetti che usano i record, contati a parte perché si vedano.
+// I casi per tipo: quelli dei progetti che usano i record e quelli che usano le matrici, contati a parte perché si vedano.
+const verdiConOgni = (casi: readonly { id: string }[]) => casi.filter((d) => esecutori.every((e) => risultati.get(`${e} ${d.id}`)?.genere === "verde")).length;
 const coiRecord = daConfrontare.filter((d) => usaIRecord(d.progetto));
-const verdiCoiRecord = coiRecord.filter((d) => esecutori.every((e) => risultati.get(`${e} ${d.id}`)?.genere === "verde")).length;
+const conLeMatrici = daConfrontare.filter((d) => usaLeMatrici(d.progetto));
 for (const p of problemi) console.log(`PROBLEMA ${p}`);
 console.log(
   `toolchain: ${toolchain.map(({ esecutore, da, macchine, mancanti }) => `${esecutore.nome} da ${da}: ${macchine.map((k) => `${k.nome} ${k.versione} (${k.percorso})`).join(", ") || "nessuno"}${mancanti.length > 0 ? ` (manca: ${mancanti.join(", ")})` : ""}`).join("; ")}`,
 );
 const avvisiAttesi = daEseguire.flatMap(({ voce, esecutore }) => Object.entries(esecutore.avvisiAttesi).map(([f, o]) => `${voce.id} ${f} ${o}`));
-console.log(`per tipo: con i record ${coiRecord.length} casi nel confronto (verdi con ogni esecutore ${verdiCoiRecord}), senza ${n - coiRecord.length}`);
+console.log(
+  `per tipo: con i record ${coiRecord.length} casi nel confronto (verdi con ogni esecutore ${verdiConOgni(coiRecord)}), con le matrici ${conLeMatrici.length} (verdi con ogni esecutore ${verdiConOgni(conLeMatrici)}), senza ${n - coiRecord.length - conLeMatrici.length}`,
+);
 console.log(
   `avvisi della compilazione: compilazioni ${compilazioni.length}, con gli avvisi attesi ${compilazioniConAvvisiAttesi} (${avvisiAttesi.join(", ")}), non attesi ${avvisiNonAttesi}, attesi e mancanti ${avvisiMancanti}`,
 );

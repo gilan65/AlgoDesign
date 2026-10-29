@@ -202,8 +202,8 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
   const matrici = deiRecord.filter((c) => conLeMatrici(c.testo)).length;
   console.log(`apri e salva: i tipi, ${deiRecord.length} file (delle matrici ${matrici}), ${righe} righe nella tabella «Record», eseguiti ${eseguiti.length}, identici ${identiciDeiRecord.length}`);
   // Dei record cinque giusti senza letture (uno si ferma col suo errore), cinque con un errore statico, due che leggono;
-  // delle matrici cinque giuste senza letture (una si ferma col suo errore) e tre con un errore statico.
-  expect({ identici: identiciDeiRecord.length, eseguiti: eseguiti.length, corpus: deiRecord.length, matrici }).toEqual({ identici: 20, eseguiti: 10, corpus: 20, matrici: 8 });
+  // delle matrici cinque giuste senza letture (una si ferma col suo errore), tre con un errore statico, due che leggono.
+  expect({ identici: identiciDeiRecord.length, eseguiti: eseguiti.length, corpus: deiRecord.length, matrici }).toEqual({ identici: 22, eseguiti: 10, corpus: 22, matrici: 10 });
   expect(righe).toBeGreaterThanOrEqual(11);
 });
 

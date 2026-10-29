@@ -717,7 +717,8 @@ export function Applicazione({
   // Le righe del codice delle chiamate in corso ai livelli di sopra (i blocchi della pila tranne l'ultimo), con lo sfondo
   // del livello che ciascuna apre. Sull'errore, la parte del ciclo dell'ultima azione, se è del blocco dell'errore (un
   // errore nel controllo di un `per` evidenzia la riga del controllo, non tutte quelle del ciclo). La pausa su un campo
-  // della copia di un record evidenzia la riga di quel campo.
+  // della copia di un record evidenzia la riga di quel campo; quella del ciclo delle colonne della copia di una matrice, la
+  // riga di quel ciclo.
   const evidenziate = useMemo((): RigheEvidenziate | null => {
     // Durante «tutto insieme» non c'è né pausa né errore: le chiamate non si calcolano (la pila cambia a ogni fetta).
     if (!codice?.generato || (!pausa && !erroreFinale)) return null;
@@ -739,7 +740,12 @@ export function Applicazione({
           codice.righe,
           pausa.dato !== undefined
             ? { dato: pausa.dato }
-            : { blocco: pausa.blocco, ...(pausa.fase !== undefined ? { fase: pausa.fase } : {}), ...(pausa.campo !== undefined ? { campo: pausa.campo } : {}) },
+            : {
+                blocco: pausa.blocco,
+                ...(pausa.fase !== undefined ? { fase: pausa.fase } : {}),
+                ...(pausa.campo !== undefined ? { campo: pausa.campo } : {}),
+                ...(pausa.interno === true ? { interno: true as const } : {}),
+              },
         ),
         genere: "corrente",
         passo: passi,
@@ -748,7 +754,8 @@ export function Applicazione({
     if (erroreFinale) {
       const ultima = esecuzione?.traccia.righe.at(-1);
       const fase = ultima?.blocco === erroreFinale.block ? ultima.fase : undefined;
-      return { righe: righeDi(codice.righe, { blocco: erroreFinale.block, ...(fase !== undefined ? { fase } : {}) }), genere: "errore", passo: passi, chiamate };
+      const interno = ultima?.blocco === erroreFinale.block && ultima.interno === true;
+      return { righe: righeDi(codice.righe, { blocco: erroreFinale.block, ...(fase !== undefined ? { fase } : {}), ...(interno ? { interno: true as const } : {}) }), genere: "errore", passo: passi, chiamate };
     }
     return null;
   }, [codice, pausa, erroreFinale, passi, pila, esecuzione]);

@@ -24,6 +24,8 @@
 //   voci del record (la costante comune e i due dati) e del testo fra virgolette, scritte a mano; il clic sulla costante
 //   comune dà il fuoco alla sua riga; eliminato il blocco del testo, l'elenco si aggiorna senza la sua voce.
 // - La copia di un record col nome nel Python, a ogni pausa di F10: la riga del campo che si copia, una alla volta.
+// - La copia di una matrice col nome nel Python, a ogni pausa di F10: la riga del ciclo delle righe o di quello delle
+//   colonne, secondo la pausa.
 //
 // CHE COSA NON GUARDA:
 // - il contrasto dei testi del codice (`tabella.e2e.ts`, con quelli della colonna dell'esecuzione);
@@ -381,6 +383,30 @@ test("la copia di un record col nome nel Python: a ogni pausa la riga del campo 
     [2, "    b.nome = a.nome"],
     [3, "    b.classe = a.classe"],
     [4, "    b.voto = a.voto"],
+  ] as const) {
+    await page.keyboard.press("F10");
+    await expect(statoDi(page)).toHaveText(riempi(it.statoInPausa, { n: String(n) }));
+    await expect(evidenziate(page).locator("> span:last-child")).toHaveText([riga]);
+  }
+});
+
+test("la copia di una matrice col nome nel Python: a ogni pausa la riga del ciclo delle righe o di quello delle colonne", async ({ page }) => {
+  const testo = deiRecord("copia-di-una-matrice");
+  await apriVuota(page, { lingua: "it", linguaggiDelCodice: ["pseudocodice", "python"] }, { argomento: "C:\\scuola\\copia.algo", file: { "C:\\scuola\\copia.algo": testo } });
+  await genera(page).click();
+  await riquadro(page).getByRole("tab", { name: it.linguaggioPython, exact: true }).click();
+  await page.getByRole("region", { name: it.vistaFlowchart, exact: true }).click({ position: { x: 5, y: 5 } });
+  // Il valore iniziale di «a», poi la copia «b ← a»: la partenza e il controllo delle righe, poi quelli delle colonne, il
+  // primo elemento, l'aumento della colonna e di nuovo il suo controllo.
+  for (const [n, riga] of [
+    [1, "    a: list[list[int]] = [[1, 2], [3, 4]]"],
+    [2, "    _indice = 0"],
+    [3, "    while _indice < 2:"],
+    [4, "        _indice2 = 0"],
+    [5, "        while _indice2 < 2:"],
+    [6, "            b[_indice][_indice2] = a[_indice][_indice2]"],
+    [7, "            _indice2 = _indice2 + 1"],
+    [8, "        while _indice2 < 2:"],
   ] as const) {
     await page.keyboard.press("F10");
     await expect(statoDi(page)).toHaveText(riempi(it.statoInPausa, { n: String(n) }));

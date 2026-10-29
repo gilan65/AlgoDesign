@@ -221,6 +221,11 @@
     "record-senza-campi#record-senza-campi",
     "riferimento-a-un-record-senza-valore#senza-valore",
     "riferimento-a-un-record-senza-valore#con-un-campo",
+    "righe-calcolate#righe-calcolate",
+    "righe-calcolate#riempi/tutta",
+    "stessa-cella-della-matrice#diversi",
+    "stessa-cella-della-matrice#stesso-elemento",
+    "stessa-cella-della-matrice#riga-e-suo-elemento",
     "vettore-di-record#vettore-di-record"
   ]
 }
