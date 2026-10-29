@@ -56,8 +56,8 @@
 // Righe: per ogni caso ed esecutore quelle di `righe-dei-casi.ts` precedute dall'esecutore (`VERDE gcc it
 // tappa-1/x#x`), o `ROSSO … senza esito: …`; `ESCLUSO <caso>: <ragione>`; `ERRORE STATICO <caso>: <codice> <blocco>,
 // nessun programma generato`; `FUORI TAPPA <file> (casi: <n>)`; `PROBLEMA …`;
-// in fondo la riga `toolchain: …`, quella dei casi per tipo (`per tipo: …`, i casi nel confronto che usano i record,
-// quelli che usano le matrici e gli altri) e quella del riepilogo `differenziale: …`. Un caso con gli avvisi diversi è rosso:
+// in fondo la riga `toolchain: …`, quella dei casi per tipo (`per tipo: …`, i casi nel confronto che usano i record, fra
+// loro quelli che usano le tabelle, quelli che usano le matrici e gli altri) e quella del riepilogo `differenziale: …`. Un caso con gli avvisi diversi è rosso:
 // qui ogni differenza lo è. Esce con 1 se c'è un rosso o un problema.
 //
 // Gli avvisi della compilazione: ogni programma della tappa (anche quelli dei casi esclusi) e ogni programma di prova si
@@ -277,14 +277,6 @@ file.forEach(({ nome, percorso }, k) => {
     righeDiPrima.push(`FUORI TAPPA ${nome} (casi: ${casi.length})`);
     return;
   }
-  // Le tabelle si eseguono ma i generatori non le scrivono ancora: un progetto giusto che le usa resta fuori dal confronto
-  // (con un errore statico si confronta, perché il programma generato non c'è in nessun esecutore).
-  if (controllo.errori.length === 0 && usaLeTabelle(p)) {
-    fuoriTappa += casi.length;
-    fileFuoriTappa++;
-    righeDiPrima.push(`FUORI TAPPA ${nome} (casi: ${casi.length}): le tabelle, che i generatori non scrivono ancora`);
-    return;
-  }
   const base = basename(nome).replace(/\.algo$/, "");
   nomiTrovati.add(base);
   // Ogni programma della tappa si genera e si compila, anche quelli dei casi esclusi: gli avvisi si contano su tutti.
@@ -457,9 +449,11 @@ for (const d of daConfrontare)
   }
 const n = daConfrontare.length;
 if (n === 0) problemi.push("nessun caso nel confronto");
-// I casi per tipo: quelli dei progetti che usano i record e quelli che usano le matrici, contati a parte perché si vedano.
+// I casi per tipo: quelli dei progetti che usano i record (fra loro quelli che usano le tabelle) e quelli che usano le
+// matrici, contati a parte perché si vedano.
 const verdiConOgni = (casi: readonly { id: string }[]) => casi.filter((d) => esecutori.every((e) => risultati.get(`${e} ${d.id}`)?.genere === "verde")).length;
 const coiRecord = daConfrontare.filter((d) => usaIRecord(d.progetto));
+const conLeTabelle = daConfrontare.filter((d) => usaLeTabelle(d.progetto));
 const conLeMatrici = daConfrontare.filter((d) => usaLeMatrici(d.progetto));
 for (const p of problemi) console.log(`PROBLEMA ${p}`);
 console.log(
@@ -467,7 +461,7 @@ console.log(
 );
 const avvisiAttesi = daEseguire.flatMap(({ voce, esecutore }) => Object.entries(esecutore.avvisiAttesi).map(([f, o]) => `${voce.id} ${f} ${o}`));
 console.log(
-  `per tipo: con i record ${coiRecord.length} casi nel confronto (verdi con ogni esecutore ${verdiConOgni(coiRecord)}), con le matrici ${conLeMatrici.length} (verdi con ogni esecutore ${verdiConOgni(conLeMatrici)}), senza ${n - coiRecord.length - conLeMatrici.length}`,
+  `per tipo: con i record ${coiRecord.length} casi nel confronto (verdi con ogni esecutore ${verdiConOgni(coiRecord)}; con le tabelle ${conLeTabelle.length}, verdi con ogni esecutore ${verdiConOgni(conLeTabelle)}), con le matrici ${conLeMatrici.length} (verdi con ogni esecutore ${verdiConOgni(conLeMatrici)}), senza ${n - coiRecord.length - conLeMatrici.length}`,
 );
 console.log(
   `avvisi della compilazione: compilazioni ${compilazioni.length}, con gli avvisi attesi ${compilazioniConAvvisiAttesi} (${avvisiAttesi.join(", ")}), non attesi ${avvisiNonAttesi}, attesi e mancanti ${avvisiMancanti}`,

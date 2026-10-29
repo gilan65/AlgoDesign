@@ -44,6 +44,16 @@
 // nome), si passa e si percorre col «per ogni»; l'indice di una riga che non è un numero né un nome si calcola una volta,
 // nella partenza della copia, come nell'interprete, e nel «per ogni» la riga scelta sta in `_sorgente`.
 //
+// Le tabelle (i vettori di record): una lista di oggetti della classe di dati, ognuno dal suo costruttore
+// (`[alunno() for _ in range(3)]`, mai `[alunno()] * 3`, che ripete lo stesso oggetto), e nessun record è mai condiviso da
+// due dati: per valore e nel risultato dal nome la tabella si copia record per record col costruttore
+// (`x = [alunno(_elemento.nome, _elemento.classe, _elemento.voto) for _elemento in x]`), mai con `list(t)`. La copia col
+// nome (`u ← t`) è il `mentre` dei record con dentro una riga per campo, ognuna col campo che copia, come gli eventi del
+// nucleo. Il record `t[i]` è un record: la copia con un record (`r ← t[i]`, `t[i] ← r`, `t[i] ← t[j]`) campo per campo,
+// con l'indice che non è un numero né un nome calcolato una volta prima, sulla riga del primo campo; restituito, un oggetto
+// nuovo; l'elemento del «per ogni» su una tabella un oggetto nuovo, preso in una riga. Un record e un campo di un record
+// della stessa tabella per riferimento nello stesso salto passano da `elementi_diversi`.
+//
 // La ricorsione: la prima riga delle sole funzioni del giro (`funzioniDelGiro`) conta la chiamata
 // col suo spazio (`entra_nella_ricorsione`, lo spazio di `spazioDiUnaChiamata`) e si ferma oltre un tetto; l'ultima la
 // toglie (`esci_dalla_ricorsione`), dopo il valore restituito, calcolato prima in `_valore` se può far partire chiamate
@@ -93,7 +103,7 @@ import {
   type Tipo,
   type TipoDelDato,
 } from "../progetto/modello";
-import { eUnaCopiaDiUnRecord, nomiDeiRecord } from "../progetto/copia";
+import { eUnaCopiaDiUnRecord, nomiDeiRecord, nomiDelleTabelle } from "../progetto/copia";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import { controlliDegliElementi, genera, parametriDelCaso, posizioni, segnate, type Generato, type Riga } from "./forma";
 import { motiviCol } from "./motivi";
@@ -347,9 +357,21 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
       ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}),
     };
   };
-  /** Il record di un'espressione che ne dà uno intero: il nome di un dato record, o una funzione che lo restituisce. */
+  /** Il record dei record di una tabella intera: il nome di una tabella, o una funzione che ne restituisce una. */
+  const tabellaDi = (e: Espressione): string | undefined =>
+    e.genere === "nome" ? (dati.get(e.nome)!.size !== undefined ? dati.get(e.nome)!.record : undefined)
+    : e.genere === "chiamata" ? (perNome.get(e.nome)?.return_size !== undefined ? perNome.get(e.nome)?.return_record : undefined)
+    : undefined;
+  /** Il record di un'espressione che ne dà uno intero: il nome di un dato record, una funzione che lo restituisce, o un
+   * record di una tabella (`t[i]`, anche di quella restituita da una funzione). */
   const recordDi = (e: Espressione): string | undefined =>
-    e.genere === "nome" ? (dati.get(e.nome)!.size === undefined ? dati.get(e.nome)!.record : undefined) : e.genere === "chiamata" ? perNome.get(e.nome)?.return_record : undefined;
+    e.genere === "nome" ? (dati.get(e.nome)!.size === undefined ? dati.get(e.nome)!.record : undefined)
+    : e.genere === "chiamata" ? (perNome.get(e.nome)?.return_size === undefined ? perNome.get(e.nome)?.return_record : undefined)
+    : e.genere === "indice" ? tabellaDi(e.base)
+    : undefined;
+  /** Un record nuovo dai campi di `x`, col costruttore della sua classe: la copia di un record, che non è mai lo stesso
+   * oggetto. */
+  const costruttore = (record: string, x: string) => `${record}(${campiDi(record).map((c) => `${x}.${c.name}`).join(", ")})`;
   /** Il campo di un'espressione `base.campo`: la base è un dato record o una funzione che restituisce un record. */
   const campoDi = (e: Extract<Espressione, { genere: "campo" }>): Campo => campiDi(recordDi(e.base)).find((c) => c.name === e.campo)!;
   function tipo(e: Espressione): TipoDelDato {
@@ -555,13 +577,16 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
 
   /** Un vettore intero che va in un dato o nel risultato di una funzione (`verso`): una lista nuova. Dal nome di un
    * vettore, o da una riga di una matrice, la copia; con gli elementi stringa che possono essere più lunghi di quelli di
-   * `verso`, ognuno dal controllo. Una matrice dal suo nome si copia riga per riga. */
+   * `verso`, ognuno dal controllo. Una matrice dal suo nome si copia riga per riga, una tabella record per record, ognuno
+   * col costruttore. */
   function listaNuova(e: Espressione, verso: Pick<Dato, "type" | "max_length">): string {
     const x = espressione(e).t;
     const massima = verso.max_length ?? lunghezzaPredefinita;
     const lungo = verso.type === "string" && (misureDi(e).max_length ?? lunghezzaPredefinita) > massima;
     const elemento = nomeDellElemento[lingua];
     const riga = nomeDellaRigaCopiata[lingua];
+    const tabella = tabellaDi(e);
+    if (tabella !== undefined) return e.genere === "nome" ? `[${costruttore(tabella, elemento)} for ${elemento} in ${x}]` : x;
     if (matrice(e)) {
       if (lungo) return `[[${conArresto("alPiu", elemento, String(massima)).t} for ${elemento} in ${riga}] for ${riga} in ${x}]`;
       return e.genere === "nome" ? `[list(${riga}) for ${riga} in ${x}]` : x;
@@ -570,12 +595,25 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
     return e.genere === "nome" || e.genere === "indice" ? `list(${x})` : x;
   }
 
-  /** Un record intero che va in un risultato: dal nome di un record un oggetto nuovo, campo per campo; da una funzione
-   * è già nuovo. */
-  function recordNuovo(e: Espressione): string {
+  /** Un record intero che va in un risultato: dal nome di un record, o da un record di una tabella, un oggetto nuovo, campo
+   * per campo; da una funzione è già nuovo. L'indice di un record di una tabella che non è un numero né un nome si calcola
+   * una volta prima, in una riga del blocco `id`. */
+  function recordNuovo(e: Espressione, id?: string): string {
+    if (e.genere === "indice") return costruttore(recordDi(e)!, recordDellaTabella(rientro, id!, e));
     const x = espressione(e).t;
     if (e.genere !== "nome") return x;
-    return `${recordDi(e)!}(${campiDi(recordDi(e)).map((c) => `${x}.${c.name}`).join(", ")})`;
+    return costruttore(recordDi(e)!, x);
+  }
+
+  /** Il testo di un record di una tabella (`t[i]`) letto più volte: con un indice che non è un numero né un nome, calcolato
+   * una volta prima in un nome suo (`calcolati` conta quelli già presi dalla stessa regola), in una riga del blocco `id`
+   * (col `campo` 0 nella copia campo per campo, la cui prima azione calcola gli indici). */
+  function recordDellaTabella(r: string, id: string, e: Extract<Espressione, { genere: "indice" }>, calcolati = 0, campo?: number): string {
+    const nome = (e.base as { nome: string }).nome;
+    if (e.indice.genere === "intero" || e.indice.genere === "nome") return `${nome}[${espressione(e.indice).t}]`;
+    const indice = indiceDelLivello(lingua, cicliPerOgni + calcolati + 1);
+    corpo.push({ testo: `${r}${indice} = ${espressione(e.indice).t}`, blocco: id, ...(campo !== undefined ? { campo } : {}) });
+    return `${nome}[${indice}]`;
   }
 
   // ---------------------------------------------------------------------------------------- le dichiarazioni
@@ -589,10 +627,14 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
   const annotazioneDelRisultato = (f: Funzione) => forma(delTipo(f.return_type!, f.return_record), f.return_size, f.return_columns);
   const valoreIniziale = (d: Dato): string | undefined => {
     const v = d.initial;
-    // Un record nasce sempre come oggetto: senza valore coi campi `None`, con un valore un letterale per campo.
-    if (d.type === "record" && d.size === undefined) {
-      const valori = v === undefined ? [] : (v as readonly string[]).map((x, k) => nelDato(albero(x), campiDi(d.record)[k]!));
-      return `${d.record!}(${valori.join(", ")})`;
+    // Un record nasce sempre come oggetto: senza valore coi campi `None`, con un valore un letterale per campo. Una tabella
+    // un oggetto per record, ognuno dal suo costruttore (mai `[alunno()] * 3`, che ripete lo stesso oggetto).
+    if (d.type === "record") {
+      const uno = (valori: readonly string[] | undefined) => `${d.record!}(${(valori ?? []).map((x, k) => nelDato(albero(x), campiDi(d.record)[k]!)).join(", ")})`;
+      if (d.size === undefined) return uno(v as readonly string[] | undefined);
+      if (v === undefined) return `[${uno(undefined)} for _ in range(${d.size})]`;
+      if (Array.isArray(v)) return `[${(v as readonly (readonly string[])[]).map(uno).join(", ")}]`;
+      return `[${uno((v as unknown as { readonly each: readonly string[] }).each)} for _ in range(${d.size})]`;
     }
     // Una matrice: ogni riga dalla sua comprensione, perché nessuna sia la stessa lista di un'altra.
     if (d.columns !== undefined) {
@@ -627,8 +669,9 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
 
   let corpo: Riga[] = [];
   const struttura = (testo: string) => corpo.push({ testo });
-  /** I record della funzione che si scrive (con le costanti comuni): riconoscono la copia col nome. */
+  /** I record e le tabelle della funzione che si scrive (con le costanti comuni): riconoscono la copia col nome. */
   let record: ReadonlySet<string> = new Set();
+  let tabelle: ReadonlySet<string> = new Set();
 
   /** Quanti cicli `per ogni` contengono la regola che si scrive: l'indice di un ciclo, o quello calcolato prima del
    * valore, è quello del livello dopo. */
@@ -644,15 +687,16 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
       corpo.push({ testo: `${r}${e.nome} = ${valore(dati.get(e.nome)!)}`, blocco: id });
       return;
     }
-    if (e.genere === "campo") {
+    if (e.genere === "campo" && e.base.genere !== "indice") {
       // Il campo di un dato record riceve il valore come un dato del tipo del campo.
       const destinazione = `${espressione(e.base).t}.${e.campo}`;
       corpo.push({ testo: `${r}${destinazione} = ${valore({ ...campoDi(e), name: destinazione })}`, blocco: id });
       return;
     }
-    // Un elemento di un vettore o di una matrice, o la riga di una matrice. Se un indice si può fermare, tutti quelli che
-    // non sono un numero si calcolano prima, nel loro ordine.
-    const { nome, indici } = elementoDi(e);
+    // Un elemento di un vettore o di una matrice, la riga di una matrice, o il campo di un record di una tabella. Se un
+    // indice si può fermare, tutti quelli che non sono un numero si calcolano prima, nel loro ordine.
+    const campo = e.genere === "campo" ? e : undefined;
+    const { nome, indici } = elementoDi(campo?.base ?? e);
     const testi = indici.map((x) => {
       ferma = false;
       return { t: espressione(x).t, ferma, scritto: x.genere === "intero" };
@@ -667,9 +711,10 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
         })
       : testi.map((x) => x.t);
     const d = dati.get(nome)!;
-    // La riga di una matrice riceve un vettore delle sue colonne.
-    const verso = d.columns !== undefined && indici.length === 1 ? { ...d, size: d.columns, columns: undefined } : d;
-    corpo.push({ testo: `${r}${nome}${usati.map((i) => `[${i}]`).join("")} = ${valore(verso)}`, blocco: id });
+    const posto = `${nome}${usati.map((i) => `[${i}]`).join("")}${campo !== undefined ? `.${campo.campo}` : ""}`;
+    // La riga di una matrice riceve un vettore delle sue colonne; il campo di un record un valore del tipo del campo.
+    const verso = campo !== undefined ? { ...campoDi(campo), name: posto } : d.columns !== undefined && indici.length === 1 ? { ...d, size: d.columns, columns: undefined } : d;
+    corpo.push({ testo: `${r}${posto} = ${valore(verso)}`, blocco: id });
   }
 
   /** La copia col nome (`altri ← voti`, `v ← m[1]`, `m[0] ← v`, `b ← a` fra due matrici), elemento per elemento: il
@@ -697,6 +742,16 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
     const lungo = tipo(t) === "string" && (misureDi(v).max_length ?? lunghezzaPredefinita) > massima;
     const preso = (x: string) => (lungo ? conArresto("alPiu", x, String(massima)).t : x);
     const i = indiceDelLivello(lingua, cicliPerOgni + 1);
+    const tabella = tabellaDi(t);
+    if (tabella !== undefined) {
+      // Una tabella: il ciclo dei record, con dentro una riga per campo, ognuna col campo che copia (lo stesso record: le
+      // stringhe hanno la stessa lunghezza).
+      fase(`${r}${i} = 0`, undefined, "inizio");
+      fase(`${r}while ${i} < ${misure.size}:`, undefined, "condizione");
+      campiDi(tabella).forEach((c, k) => corpo.push({ testo: `${r}${rientro}${verso}[${i}].${c.name} = ${da}[${i}].${c.name}`, blocco: id, fasi: ["elemento"], campo: k }));
+      fase(`${r}${rientro}${i} = ${i} + 1`, undefined, "passo");
+      return;
+    }
     if (misure.columns === undefined) {
       fase(`${r}${i} = 0`, undefined, "inizio");
       fase(`${r}while ${i} < ${misure.size}:`, undefined, "condizione");
@@ -730,13 +785,24 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
     type Argomento =
       | { readonly genere: "valore"; readonly testo: string; readonly ferma: boolean }
       | { readonly genere: "nome"; readonly testo: string }
-      | { readonly genere: "elemento"; readonly vettore: string; readonly indici: readonly { readonly t: string; readonly scritto: boolean }[]; readonly ferma: boolean };
+      | {
+          readonly genere: "elemento";
+          readonly vettore: string;
+          readonly indici: readonly { readonly t: string; readonly scritto: boolean }[];
+          readonly ferma: boolean;
+          readonly campo?: string;
+        };
     const argomenti: Argomento[] = b.arguments.map((testo, k) => {
       const d = parametri[k]!;
       const a = albero(testo);
       ferma = false;
       if (d.parameter === "value") return { genere: "valore", testo: nelDato(a, d), ferma };
       if (a.genere === "nome") return { genere: "nome", testo: a.nome };
+      // Il campo di un record di una tabella: un elemento della tabella col suo campo, gli indici dal primo.
+      if (a.genere === "campo" && a.base.genere === "indice") {
+        const { nome, indici } = elementoDi(a.base);
+        return { genere: "elemento", vettore: nome, indici: indici.map((i) => ({ t: espressione(i).t, scritto: i.genere === "intero" })), ferma, campo: a.campo };
+      }
       // Un campo per riferimento si passa e si riassegna come un dato.
       if (a.genere === "campo") return { genere: "nome", testo: espressione(a).t };
       // Un elemento di un vettore o di una matrice, o la riga di una matrice: gli indici dal primo.
@@ -765,14 +831,17 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
           riga(`${nome} = ${i.t}`);
           return nome;
         });
-        passati.push(`${a.vettore}${usati[k]!.map((i) => `[${i}]`).join("")}`);
+        passati.push(`${a.vettore}${usati[k]!.map((i) => `[${i}]`).join("")}${a.campo !== undefined ? `.${a.campo}` : ""}`);
       } else if (a.genere === "valore" && a.ferma && k < ultimaCheFerma) {
         const nome = ++valori === 1 ? nomeDelValore[lingua] : `${nomeDelValore[lingua]}${valori}`;
         riga(`${nome} = ${a.testo}`);
         passati.push(nome);
       } else passati.push(a.testo);
     });
-    for (const ks of gruppi) for (const confronto of controlliDegliElementi(ks.map((k) => usati[k]!), dati.get((argomenti[ks[0]!] as { vettore: string }).vettore)!)) riga(`${usa("elementiDiversi")}(${confronto.join(", ")})`);
+    const campoDellArgomento = (k: number) => (argomenti[k] as { campo?: string }).campo;
+    for (const ks of gruppi)
+      for (const confronto of controlliDegliElementi(ks.map((k) => usati[k]!), dati.get((argomenti[ks[0]!] as { vettore: string }).vettore)!, ks.map(campoDellArgomento)))
+        riga(`${usa("elementiDiversi")}(${confronto.join(", ")})`);
     const chiamata = `${b.callee}(${passati.filter((_, k) => parametri[k]!.parameter !== "out").join(", ")})`;
     const riassegnati = argomenti.flatMap((a, k) => (a.genere === "valore" ? [] : [passati[k]!]));
     riga(riassegnati.length === 0 ? chiamata : `${riassegnati.join(", ")} = ${chiamata}`);
@@ -830,12 +899,15 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
           });
         }
         const t = albero(b.target);
-        if (eUnaCopiaDiUnRecord(b, record)) {
-          // La copia di un record col suo nome, campo per campo: una riga per campo, col campo che copia.
-          const da = espressione(v).t;
-          campiDi(dati.get((t as { nome: string }).nome)!.record).forEach((c, k) =>
-            corpo.push({ testo: `${r}${espressione(t).t}.${c.name} = ${da}.${c.name}`, blocco: b.id, campo: k }),
-          );
+        if (eUnaCopiaDiUnRecord(b, record, tabelle)) {
+          // La copia di un record col suo nome, o di un record di una tabella, campo per campo: una riga per campo, col campo
+          // che copia. Gli indici che non sono un numero né un nome si calcolano prima, come nella prima azione
+          // dell'interprete: quello della destinazione, poi quello della sorgente.
+          const recordIn = (e: Espressione, calcolati: number) => (e.genere === "indice" ? recordDellaTabella(r, b.id, e, calcolati, 0) : espressione(e).t);
+          const calcolato = (e: Espressione) => (e.genere === "indice" && e.indice.genere !== "intero" && e.indice.genere !== "nome" ? 1 : 0);
+          const verso = recordIn(t, 0);
+          const da = recordIn(v, calcolato(t));
+          campiDi(recordDi(t)).forEach((c, k) => corpo.push({ testo: `${r}${verso}.${c.name} = ${da}.${c.name}`, blocco: b.id, campo: k }));
           return;
         }
         if (vettore(t)) {
@@ -923,7 +995,12 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
         // Un elemento stringa che può essere più lungo del dato che lo riceve passa dal controllo.
         const massima = dati.get(elemento)!.max_length ?? lunghezzaPredefinita;
         const lungo = dati.get(elemento)!.type === "string" && (lunghezzaDellaSorgente ?? lunghezzaPredefinita) > massima;
-        const preso = lungo ? conArresto("alPiu", `${sorgente}[${indice}]`, String(massima)).t : `${sorgente}[${indice}]`;
+        // Il record di una tabella è un oggetto nuovo, dal costruttore (l'interprete lo prende in un'azione).
+        const tabella = tabellaDi(s);
+        const preso =
+          tabella !== undefined ? costruttore(tabella, `${sorgente}[${indice}]`)
+          : lungo ? conArresto("alPiu", `${sorgente}[${indice}]`, String(massima)).t
+          : `${sorgente}[${indice}]`;
         fase(`${r}${indice} = 0`, "inizio");
         fase(`${r}while ${indice} < len(${sorgente}):`, "condizione");
         fase(`${r}${rientro}${elemento} = ${preso}`, "elemento");
@@ -947,6 +1024,7 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
   function scriviFunzione(f: Funzione): Riga[] {
     dati = new Map<string, Dato>([...comuni, ...f.data].map((d) => [d.name, d]));
     record = nomiDeiRecord([...comuni, ...f.data]);
+    tabelle = nomiDelleTabelle([...comuni, ...f.data]);
     corpo = [];
     cicliPerOgni = 0;
     sorgenti = 0;
@@ -1001,7 +1079,7 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
       // Un vettore torna come lista nuova; una stringa col controllo della lunghezza massima del risultato.
       const e = albero(f.end.return_value!);
       const verso = { type: f.return_type!, ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}) };
-      restituisce(e, f.return_size !== undefined ? listaNuova(e, verso) : f.return_type === "record" ? recordNuovo(e) : nelDato(e, verso));
+      restituisce(e, f.return_size !== undefined ? listaNuova(e, verso) : f.return_type === "record" ? recordNuovo(e, f.end.id) : nelDato(e, verso));
     } else if (riferimenti.length > 0) restituisce(undefined, riferimenti.map((d) => d.name).join(", "));
     else uscita();
     // Senza dichiarazioni, senza copie e senza azioni, il corpo vuole `pass`.
@@ -1024,8 +1102,11 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
       const delCampo = (x: "riga" | "nessuno", c: Campo) => (x === "riga" ? leggi(c) : "None");
       // Una matrice riga dopo riga; con un valore per ogni elemento, letto una volta e copiato in ogni riga.
       const riga = nomeDellaRigaCopiata[lingua];
+      // Una tabella record dopo record, ognuno un campo per voce.
+      const delRecord = (i: number) => `${d.record!}(${campiDi(d.record).map((c, k) => delCampo(elementi[i * campiDi(d.record).length + k]!, c)).join(", ")})`;
       const valore =
-        d.type === "record" ? `${d.record!}(${campiDi(d.record).map((c, k) => delCampo(elementi[k]!, c)).join(", ")})`
+        d.type === "record" && d.size !== undefined ? `[${[...Array(d.size).keys()].map(delRecord).join(", ")}]`
+        : d.type === "record" ? delRecord(0)
         : d.size === undefined ? uno(elementi[0]!)
         : d.columns !== undefined && ognuno ? `[list(${riga}) for ${riga} in [[${uno(elementi[0]!)}] * ${d.columns}] * ${d.size}]`
         : d.columns !== undefined ? `[${[...Array(d.size).keys()].map((i) => `[${elementi.slice(i * d.columns!, (i + 1) * d.columns!).map(uno).join(", ")}]`).join(", ")}]`
@@ -1039,7 +1120,15 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
     // La prima chiamata di una funzione del giro si può fermare per lo spazio: la riga che la chiama ha la provenienza
     // della funzione, come le letture dei parametri (l'esecuzione si ferma lì).
     const delCaso = delGiro.has(f) ? { blocco: f.id } : {};
-    if (f.kind === "function" && f.return_size !== undefined) {
+    /** Le parti di un record di una tabella, o di un record, come le scrive l'esecuzione (`[0].nome`, `.nome`), col tipo. */
+    const campiScritti = (record: string | undefined, davanti: string): [string, TipoDelDato][] => campiDi(record).map((c) => [`${davanti}.${c.name}`, c.type]);
+    if (f.kind === "function" && f.return_size !== undefined && f.return_type === "record") {
+      // La funzione si chiama una volta, poi una riga per campo di ogni record.
+      const nome = nomeDelRisultato[lingua];
+      righe.push({ testo: `${rientro}${nome} = ${chiamataDiF}`, ...delCaso });
+      for (const k of posizioni(f.return_size, undefined))
+        for (const [x, t] of campiScritti(f.return_record, k)) righe.push({ testo: `${rientro}print("→ ${x} = ", ${comeScritto(`${nome}${x}`, t)}, sep="")` });
+    } else if (f.kind === "function" && f.return_size !== undefined) {
       // La funzione si chiama una volta, poi una riga per elemento: se si ferma, nulla è scritto.
       const nome = nomeDelRisultato[lingua];
       righe.push({ testo: `${rientro}${nome} = ${chiamataDiF}`, ...delCaso });
@@ -1056,7 +1145,8 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
       for (const d of riferimenti) {
         // Un record una riga per campo, `r.nome = …`.
         const pezzi: [string, TipoDelDato][] =
-          d.type === "record" ? campiDi(d.record).map((c) => [`${d.name}.${c.name}`, c.type])
+          d.type === "record" && d.size !== undefined ? posizioni(d.size, undefined).flatMap((k) => campiScritti(d.record, `${d.name}${k}`))
+          : d.type === "record" ? campiScritti(d.record, d.name)
           : d.size === undefined ? [[d.name, d.type]]
           : posizioni(d.size, d.columns).map((k) => [`${d.name}${k}`, d.type]);
         for (const [nome, t] of pezzi) righe.push({ testo: `${rientro}print("${nome} = ", ${comeScritto(nome, t)}, sep="")` });

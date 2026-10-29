@@ -1,5 +1,5 @@
 // «Accademico»: la sintassi dello pseudocodice delle Selezioni scolastiche, da leggere. Ha meno costrutti del flowchart
-// (un solo tipo semplice, l'intero, e il vettore di interi: niente record; niente lettura, niente *rif* né *out*, gli operatori
+// (un solo tipo semplice, l'intero, e il vettore di interi: niente record, matrici né tabelle; niente lettura, niente *rif* né *out*, gli operatori
 // aritmetici, di confronto e logici): un progetto si scrive solo se ci sta tutto, altrimenti la verifica dà l'elenco di
 // ciò che manca, tutto insieme e nell'ordine del progetto, ognuno col suo posto. Il testo è sempre puro: nessuna parola
 // che la sintassi non abbia.
@@ -101,7 +101,8 @@ export function mancanzeDiAccademico(p: Progetto): Mancanza[] {
 
   const dato = (d: Dato, funzione: string | undefined) => {
     const posto = { dato: d.name, ...(funzione !== undefined ? { funzione } : {}) };
-    const specie = specieDi(d.type);
+    // Una tabella (un vettore di record) ha la sua specie, al posto di quella del record.
+    const specie = d.type === "record" && d.size !== undefined ? "tabella" : specieDi(d.type);
     if (specie !== undefined) segna({ specie, ...posto });
     // Una matrice di interi non è un `integer[]`: la sintassi ha i soli vettori.
     if (d.columns !== undefined) segna({ specie: "matrice", ...posto });
@@ -114,7 +115,7 @@ export function mancanzeDiAccademico(p: Progetto): Mancanza[] {
   for (const f of p.functions) {
     const funzione = f.kind === "main" ? undefined : f.id;
     if (f.name !== undefined && parola.has(f.name)) segna({ specie: "parola-del-linguaggio", funzione: f.id });
-    const r = f.kind === "function" ? specieDi(f.return_type!) : undefined;
+    const r = f.kind !== "function" ? undefined : f.return_type === "record" && f.return_size !== undefined ? "tabella" : specieDi(f.return_type!);
     if (r !== undefined) segna({ specie: r, funzione: f.id });
     if (f.return_columns !== undefined) segna({ specie: "matrice", funzione: f.id });
     f.data.forEach((d) => dato(d, funzione));

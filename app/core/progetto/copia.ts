@@ -7,6 +7,9 @@
 // La riga di una matrice (`m[i]`) è un vettore: `m[i] ← v` e `v ← m[i]` sono copie con una posizione, come quella di un
 // vettore. La copia di una matrice col suo nome (`b ← a`) ha due posizioni, come due `per ogni` uno dentro l'altro: la
 // riga al livello della copia, la colonna al successivo.
+//
+// Il record di una tabella (`t[i]`) è un record: `r ← t[i]`, `t[i] ← r` e `t[i] ← t[j]` sono copie campo per campo, come
+// `b ← a` fra due record (chi lo sa già: l'interprete e i generatori, che passano le tabelle).
 
 import { analizza, type Espressione } from "../espressioni/analizzatore";
 import type { Blocco, Dato } from "./modello";
@@ -57,13 +60,18 @@ export function posizioniDellaCopia(b: Blocco, vettori: ReadonlySet<string>, mat
 /** I nomi dei record (non dei vettori di record) che le regole di una funzione vedono. */
 export const nomiDeiRecord = (dati: readonly Dato[]): ReadonlySet<string> => new Set(dati.filter((d) => d.type === "record" && d.size === undefined).map((d) => d.name));
 
+/** I nomi delle tabelle (i vettori di record) che le regole di una funzione vedono. */
+export const nomiDelleTabelle = (dati: readonly Dato[]): ReadonlySet<string> => new Set(dati.filter((d) => d.type === "record" && d.size !== undefined).map((d) => d.name));
+
 /** L'assegnazione di un record intero dal nome di un record (`b ← a`): la copia campo per campo, un'azione per campo, senza
  * una posizione nascosta (i campi hanno un nome). Un riconoscimento suo, mai `eUnaCopia`: il record non ha la posizione
- * del vettore. */
-export function eUnaCopiaDiUnRecord(b: Blocco, record: ReadonlySet<string>): boolean {
+ * del vettore. Con le `tabelle`, anche un record di una tabella scritto col nome e un indice (`t[i]`) da una parte o
+ * dall'altra, come fa l'interprete. */
+export function eUnaCopiaDiUnRecord(b: Blocco, record: ReadonlySet<string>, tabelle: ReadonlySet<string> = new Set()): boolean {
   if (b.kind !== "assignment") return false;
   const verso = soloUnNome(b.target);
-  return verso !== undefined && record.has(verso) && soloUnNome(b.value) !== undefined;
+  const versoUnRecord = (verso !== undefined && record.has(verso)) || unaRiga(b.target, tabelle);
+  return versoUnRecord && (soloUnNome(b.value) !== undefined || unaRiga(b.value, tabelle));
 }
 
 /** Il livello di ogni `per ogni` e di ogni copia col nome di un albero, per `id`: 1 se nessun `per ogni` li contiene,

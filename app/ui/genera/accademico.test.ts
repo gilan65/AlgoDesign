@@ -26,7 +26,7 @@ const leggi = (percorso: string): Progetto => {
   if (!r.ok) throw new Error(`${percorso} non si apre`);
   return r.progetto;
 };
-// Le tappe e i tipi (`tipi/`: i record e le matrici, che «Accademico» non ha e dice fra ciò che manca).
+// Le tappe e i tipi (`tipi/`: i record, le matrici e le tabelle, che «Accademico» non ha e dice fra ciò che manca).
 const corpus = readdirSync(cartella, { withFileTypes: true })
   .filter((d) => d.isDirectory() && (d.name.startsWith("tappa-") || d.name === "tipi"))
   .flatMap((d) => readdirSync(join(cartella, d.name)).filter((f) => f.endsWith(".algo")).map((f) => `${d.name}/${f.slice(0, -".algo".length)}`))
@@ -112,7 +112,8 @@ function secondoRilevatore(p: Progetto): Set<string> {
   const suiDati = (dati: readonly Dato[], funzione?: string) => {
     for (const d of dati) {
       const o = { dato: d.name, ...(funzione ? { funzione } : {}) };
-      if (daTipo[d.type]) chiave(daTipo[d.type]!, o);
+      if (d.type === "record" && d.size !== undefined) chiave("tabella", o);
+      else if (daTipo[d.type]) chiave(daTipo[d.type]!, o);
       if (d.columns !== undefined) chiave("matrice", o);
       if (d.parameter === "reference") chiave("rif", o);
       if (d.parameter === "out") chiave("out", o);
@@ -123,7 +124,8 @@ function secondoRilevatore(p: Progetto): Set<string> {
   for (const f of p.functions) {
     const funzione = f.kind === "main" ? undefined : f.id;
     if (f.name && parole.has(f.name)) chiave("parola-del-linguaggio", { funzione: f.id });
-    if (f.return_type && daTipo[f.return_type]) chiave(daTipo[f.return_type]!, { funzione: f.id });
+    if (f.return_type === "record" && f.return_size !== undefined) chiave("tabella", { funzione: f.id });
+    else if (f.return_type && daTipo[f.return_type]) chiave(daTipo[f.return_type]!, { funzione: f.id });
     if (f.return_columns !== undefined) chiave("matrice", { funzione: f.id });
     suiDati(f.data, funzione);
     const booleani = new Set([...(p.shared_constants ?? []), ...f.data].filter((d) => d.type === "boolean").map((d) => d.name));
@@ -177,7 +179,7 @@ function secondoRilevatore(p: Progetto): Set<string> {
 const comeChiave = (m: Mancanza) => `${m.specie}|${m.operatore ?? ""}|${m.blocco ?? ""}|${m.dato ?? ""}|${m.funzione ?? ""}`;
 
 describe("l'esito di ogni file del corpus", () => {
-  test("173 file: 36 col codice, 18 con gli errori statici, 114 con le mancanze, 5 fuori tappa (le tabelle giuste), appaiati file per file", () => {
+  test("173 file: 36 col codice, 18 con gli errori statici, 119 con le mancanze, nessuno fuori tappa, appaiati file per file", () => {
     const esiti = new Map(corpus.map((f) => [f, accademico(leggi(f), tetti, "it")]));
     const di = (perche: string) => corpus.filter((f) => {
       const g = esiti.get(f)!;
@@ -186,12 +188,11 @@ describe("l'esito di ogni file del corpus", () => {
     const codice = di("codice");
     const statici = di("errori-statici");
     const nonCiSta = di("non-ci-sta");
-    // Le tabelle giuste: i generatori non le scrivono ancora, e la guardia le dice fuori tappa prima di ciò che manca.
+    // Nessuno fuori tappa: anche le tabelle giuste dicono ciò che manca.
     const fuori = di("fuori-tappa");
     // nessun file ha due esiti, nessuno resta fuori
     expect(codice.length + statici.length + nonCiSta.length + fuori.length).toBe(corpus.length);
-    expect([corpus.length, codice.length, statici.length, nonCiSta.length, fuori.length]).toEqual([173, 36, 18, 114, 5]);
-    expect(fuori.filter((f) => !usaLeTabelle(leggi(f)))).toEqual([]);
+    expect([corpus.length, codice.length, statici.length, nonCiSta.length, fuori.length]).toEqual([173, 36, 18, 119, 0]);
     // appaiati per elemento nei due versi: i file in più e quelli che mancano
     expect(codice.filter((f) => !conIlCodice.includes(f))).toEqual([]);
     expect(conIlCodice.filter((f) => !codice.includes(f))).toEqual([]);
@@ -213,9 +214,9 @@ describe("l'esito di ogni file del corpus", () => {
       voci += prima.length;
       if (prima.length > 0) conMancanze++;
     }
-    // il denominatore: i file con mancanze sono i 114 che non ci stanno, i 5 delle tabelle giuste (fuori tappa per la
-    // generazione, ma il rilevatore dice i record) e i 10 che hanno anche errori statici (4 delle tappe, 2 dei record: un
-    // dato record anche se il record non c'è o è sbagliato; 3 delle matrici: la matrice c'è; 1 della tabella oltre il tetto)
+    // il denominatore: i file con mancanze sono i 119 che non ci stanno (le 5 tabelle giuste comprese) e i 10 che hanno
+    // anche errori statici (4 delle tappe, 2 dei record: un dato record anche se il record non c'è o è sbagliato; 3 delle
+    // matrici: la matrice c'è; 1 della tabella oltre il tetto)
     expect(conMancanze).toBe(129);
     expect(voci).toBeGreaterThan(conMancanze);
     console.log(`mancanze: ${voci} voci in ${conMancanze} file su ${corpus.length}`);
@@ -226,6 +227,7 @@ describe("l'esito di ogni file del corpus", () => {
     expect([...secondoRilevatore(leggi("tappa-2/parola-al-contrario"))].some((k) => k.startsWith("stringa|"))).toBe(true);
     expect(secondoRilevatore(leggi("tipi/copia-di-un-record"))).toContain("record|||a|");
     expect(secondoRilevatore(leggi("tipi/copia-di-una-matrice"))).toContain("matrice|||a|");
+    expect(secondoRilevatore(leggi("tipi/vettore-di-record"))).toContain("tabella|||classe|");
   });
 
   test("ogni progetto giusto coi record non ci sta, e dice il record dove sta: il dato, la costante comune, il parametro, il risultato", () => {
@@ -257,6 +259,28 @@ describe("l'esito di ogni file del corpus", () => {
     // mancanze sono le matrici (il dato e la costante comune).
     const g = accademico(leggi("tipi/matrice-in-un-programma"), tetti, "it");
     expect(!g.generato && g.perche === "non-ci-sta" ? g.mancanze.map(comeChiave) : []).toEqual(["matrice|||K|", "matrice|||m|"]);
+  });
+
+  test("ogni progetto giusto con le tabelle non ci sta, e dice la tabella dove sta: il dato, la costante comune, il parametro, il risultato", () => {
+    const conLeTabelle = corpus.filter((f) => usaLeTabelle(leggi(f)));
+    const esiti = conLeTabelle.map((f) => ({ f, g: accademico(leggi(f), tetti, "it") }));
+    const giusti = esiti.filter(({ g }) => g.generato || g.perche !== "errori-statici");
+    const senzaLaTabella = giusti.filter(({ g }) => g.generato || g.perche !== "non-ci-sta" || !g.mancanze.some((m) => m.specie === "tabella"));
+    expect(senzaLaTabella.map((x) => x.f)).toEqual([]);
+    const voci = giusti.flatMap(({ g }) => (!g.generato && g.perche === "non-ci-sta" ? g.mancanze.filter((m) => m.specie === "tabella") : []));
+    const posti = {
+      dati: voci.filter((m) => m.dato !== undefined && m.funzione === undefined).length,
+      diFunzioni: voci.filter((m) => m.dato !== undefined && m.funzione !== undefined).length,
+      risultati: voci.filter((m) => m.dato === undefined).length,
+    };
+    console.log(`tabelle in «Accademico»: ${giusti.length} progetti giusti su ${conLeTabelle.length}, ${voci.length} voci (${JSON.stringify(posti)})`);
+    expect([giusti.length, conLeTabelle.length]).toEqual([5, 6]);
+    expect(Object.values(posti).every((n) => n > 0)).toBe(true);
+    // Controllo positivo: la tabella dice «tabella», non «record»; il record da solo resta «record» (`a`, il record del
+    // «per ogni»), e la costante comune ha la sua voce.
+    const g = accademico(leggi("tipi/vettore-di-record"), tetti, "it");
+    const chiavi = !g.generato && g.perche === "non-ci-sta" ? g.mancanze.map(comeChiave) : [];
+    expect(chiavi.filter((k) => k.startsWith("tabella|") || k.startsWith("record|"))).toEqual(["tabella|||VUOTI|", "tabella|||classe|", "record|||a|"]);
   });
 });
 
