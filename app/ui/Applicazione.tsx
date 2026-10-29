@@ -83,7 +83,7 @@ import { eUnaParolaSola } from "../core/modifica/rinomina";
 import { sottoblocchi } from "../core/modifica/identificatori";
 import { importa as importaDa } from "../core/modifica/importa";
 import { apri as apriTesto, salva as testoDi } from "../core/progetto/formato";
-import { usaLeTabelle, type Blocco, type CasoDiUnaFunzione, type Dato, type DefinizioneDelRecord, type Funzione, type Progetto } from "../core/progetto/modello";
+import { type Blocco, type CasoDiUnaFunzione, type Dato, type DefinizioneDelRecord, type Funzione, type Progetto } from "../core/progetto/modello";
 import { bozzaDelCaso, casoDaBozza, datiDelleVoci, nomeDelCasoNuovo, stessoCaso, vociDelCasoNuovo, type BozzaDelCaso } from "./casi/bozza";
 import { casiDella, chiaveDelCaso, chiaviDeiCasi, selezioneDopoIlPasso, TuttiICasi } from "./casi/tutti";
 import { casoDallEsecuzione, casoUguale, stessoProgramma, type DallEsecuzione } from "../core/casi/dall-esecuzione";
@@ -259,9 +259,14 @@ function chiaveDelDato(p: Progetto, scelta: { readonly chiave: string; readonly 
 }
 
 /** I parametri di una procedura o di una funzione per i campi dei suoi casi: per nome, se per riferimento, se vettori
- * che si chiedono (un parametro per uscita non si chiede: nessuna casella «in ogni elemento») e se per uscita. */
+ * che si chiedono (un parametro per uscita non si chiede: nessuna casella «in ogni elemento»; nemmeno una tabella, i cui
+ * campi hanno tipi diversi) e se per uscita. */
 const parametriDi = (f: Funzione) =>
-  new Map(f.data.filter((d) => d.parameter !== undefined).map((d) => [d.name, { rif: d.parameter === "reference", vettore: d.size !== undefined && d.parameter !== "out", uscita: d.parameter === "out" }]));
+  new Map(
+    f.data
+      .filter((d) => d.parameter !== undefined)
+      .map((d) => [d.name, { rif: d.parameter === "reference", vettore: d.size !== undefined && d.type !== "record" && d.parameter !== "out", uscita: d.parameter === "out" }]),
+  );
 
 /** La funzione che contiene il blocco con quell'`id`. */
 function funzioneCon(p: Progetto, id: string): Funzione | undefined {
@@ -705,9 +710,10 @@ export function Applicazione({
             esecuzione.funzione,
             RESTITUITO_NELLA_RIPRESA,
             scelte.formaDelleMatrici,
+            scelte.formaDelleTabelle,
           )
         : null,
-    [esecuzione, lingua, separatori.decimali, scelte.formaDeiVettori, scelte.formaDelleMatrici, valoreRipetuto, formeDeiCicli],
+    [esecuzione, lingua, separatori.decimali, scelte.formaDeiVettori, scelte.formaDelleMatrici, scelte.formaDelleTabelle, valoreRipetuto, formeDeiCicli],
   );
   // «Dove sei»: la pila delle chiamate del nucleo, come la tabella all'ultima fermata durante un comando in corso (di
   // un'esecuzione appena cominciata, la sua).
@@ -776,11 +782,12 @@ export function Applicazione({
   };
   const chiesta = ((): { readonly nome: string; readonly di?: string } | null => {
     if (statoEs?.genere !== "chiede" || !esecuzione) return null;
-    // Un parametro chiesto elemento per elemento (un vettore; una matrice riga dopo riga, coi due indici) o campo per campo
-    // (un record).
+    // Un parametro chiesto elemento per elemento (un vettore; una matrice riga dopo riga, coi due indici), campo per campo
+    // (un record) o record per record e campo per campo (una tabella: l'elemento e il campo insieme, `t[0].nome`).
     const colonne = esecuzione.progetto.functions.find((f) => f.id === esecuzione.funzione)?.data.find((d) => d.name === statoEs.dato)?.columns;
     const indici = (k: number) => (colonne === undefined || colonne < 1 ? `[${k}]` : `[${Math.floor(k / colonne)}][${k % colonne}]`);
-    const nome = statoEs.elemento !== undefined ? `${statoEs.dato}${indici(statoEs.elemento)}` : statoEs.campo !== undefined ? `${statoEs.dato}.${statoEs.campo}` : statoEs.dato;
+    const campo = statoEs.campo !== undefined ? `.${statoEs.campo}` : "";
+    const nome = `${statoEs.dato}${statoEs.elemento !== undefined ? indici(statoEs.elemento) : ""}${campo}`;
     const l = pila.at(-1);
     const b = l === undefined ? undefined : trova(esecuzione.progetto, l.blocco);
     // Il dato della Lettura: il nome prima dell'indice di un elemento o del campo di un record.
@@ -1710,11 +1717,6 @@ export function Applicazione({
   function avvia(comando: Comando, indiceDelCaso?: number): boolean {
     const c = confermaIApertiCampi();
     if (!c) return false;
-    // La finestra in esecuzione non mostra ancora le tabelle (la tabella di traccia, il watch, le voci dei record).
-    if (usaLeTabelle(c.presente)) {
-      setAvviso(testi.apriFuoriTappa);
-      return false;
-    }
     const dellaScheda = nelProgramma ? undefined : mostrata.id;
     const radice = indiceDelCaso === undefined && esecuzione !== null ? esecuzione.funzione : dellaScheda;
     const funzione = radice !== undefined && c.presente.functions.some((f) => f.id === radice) ? radice : undefined;
@@ -2782,10 +2784,6 @@ export function Applicazione({
     const tuttiICasi = c ? casiDella(c.presente, funzioneDeiCasi) : [];
     const indici = tuttiICasi.flatMap((x, i) => (!soloSelezionati || selezionati.has(chiaveDiUnCaso(x.name)) ? [i] : []));
     if (!c || indici.length === 0) return;
-    if (usaLeTabelle(c.presente)) {
-      setAvviso(testi.apriFuoriTappa);
-      return;
-    }
     setEsecuzione(null);
     setTutti(new TuttiICasi(c.presente, limiti, indici, funzioneDeiCasi));
     setAvviso(null);
@@ -3896,6 +3894,7 @@ export function Applicazione({
                         volta: esecuzione.consoleTolte + esecuzione.console.length,
                         ...(statoEs.parametro !== undefined ? { parametro: statoEs.parametro } : {}),
                         ...(statoEs.elemento !== undefined ? { elemento: statoEs.elemento } : {}),
+                        ...(statoEs.campo !== undefined ? { campo: statoEs.campo } : {}),
                       }
                     : null
                 }

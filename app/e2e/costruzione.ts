@@ -77,6 +77,13 @@ export const programmaDelleMatrici: DaCostruire = {
   atteso: leggiProgetto("./attesi/copia-di-una-matrice.algo"),
 };
 
+/** Il programma con le tabelle: il record definito, una tabella con l'elenco per record, una costante comune col record
+ * ripetuto, il campo di un record letto, scritto e letto dalla console, il «per ogni» sui record. */
+export const programmaDelleTabelle: DaCostruire = {
+  progetto: leggiProgetto("../casi/tipi/vettore-di-record.algo").progetto,
+  atteso: leggiProgetto("./attesi/vettore-di-record.algo"),
+};
+
 export interface Modi {
   blocchi: "riquadro" | "pannello";
   dati: "scheda" | "celle";
@@ -220,11 +227,12 @@ export async function costruisci(
   }
 
   /** I dati di una funzione, nell'ordine della vista: un parametro con «Aggiungi un parametro» e la sua natura, un dato
-   * con «Aggiungi un dato». */
-  const scriviIDati = async (f: Funzione): Promise<void> => {
+   * con «Aggiungi un dato»; con `comuni`, le costanti comuni (una costante con la casella «globale», che la porta nella
+   * tabella delle costanti comuni). */
+  const scriviIDati = async (f: Pick<Funzione, "data">, comuni = false): Promise<void> => {
     let parametri = 0;
     for (const [i, d] of f.data.entries()) {
-      if (d.max_length !== undefined || (d.size !== undefined && (d.parameter !== undefined || modi.dati === "celle")) || (d.initial !== undefined && !Array.isArray(d.initial) && typeof d.initial !== "string"))
+      if (d.max_length !== undefined || (d.size !== undefined && (d.parameter !== undefined || modi.dati === "celle")) || (comuni && (!d.constant || modi.dati === "celle")))
         throw new Error(`costruzione: il dato «${d.name}» ha una forma che la costruzione non scrive`);
       const parametro = d.parameter !== undefined;
       if (parametro && modi.dati === "celle") throw new Error("costruzione: i parametri si scrivono solo nella scheda del dato");
@@ -246,12 +254,21 @@ export async function costruisci(
         : d.constant ? t.naturaCostante
         : t.naturaVariabile;
       await dove.getByRole("combobox", { name: nome(t.datiNatura), exact: true }).selectOption({ label: natura });
+      if (comuni) await dove.getByRole("checkbox", { name: nome(t.campoGlobale), exact: true }).check();
       // Un parametro non ha valore iniziale né ruolo: i loro campi non ci sono.
       if (!parametro) {
         // L'elenco di un vettore e il valore di un record: un letterale per elemento o per campo, fra graffe; di una matrice
-        // le righe, ognuna fra graffe.
+        // le righe e di una tabella i record, ognuno fra graffe. Il valore ripetuto (un letterale, o un record fra graffe)
+        // dopo la scelta «un valore ripetuto».
         const elenco = (xs: readonly (string | readonly string[])[]): string => `{${xs.map((x) => (typeof x === "string" ? espressione(x) : elenco(x))).join(", ")}}`;
-        const iniziale = typeof d.initial === "string" ? espressione(d.initial) : Array.isArray(d.initial) ? elenco(d.initial as readonly (string | readonly string[])[]) : "";
+        const ripetuto = d.initial !== undefined && typeof d.initial === "object" && "each" in d.initial ? d.initial.each : undefined;
+        if (ripetuto !== undefined)
+          await dove.getByRole("combobox", { name: nome(d.columns !== undefined ? t.campoInizialeMatrice : t.campoInizialeVettore), exact: true }).selectOption({ label: t.inizialeRipetuto });
+        const iniziale =
+          ripetuto !== undefined ? (typeof ripetuto === "string" ? espressione(ripetuto) : elenco(ripetuto))
+          : typeof d.initial === "string" ? espressione(d.initial)
+          : Array.isArray(d.initial) ? elenco(d.initial as readonly (string | readonly string[])[])
+          : "";
         await dove.getByRole("textbox", { name: nome(t.datiIniziale), exact: true }).fill(iniziale);
         // Una costante non ha la scelta del ruolo.
         if (!d.constant) await dove.getByRole("combobox", { name: nome(t.datiRuolo), exact: true }).selectOption({ label: d.role === undefined ? t.ruoloDiLavoro : t[nomiDeiRuoli[d.role]] });
@@ -461,6 +478,8 @@ export async function costruisci(
     await campo(dove, primo).press("Enter");
   };
 
+  // Le costanti comuni prima dei dati del programma: nascono nella sua scheda e vanno nella loro tabella.
+  if ((p.shared_constants ?? []).length > 0) await scriviIDati({ data: p.shared_constants! }, true);
   await scriviIDati(main);
   // Il caso d'uso del programma, nella sua scheda, prima delle regole.
   const casi = p.test_cases ?? [];

@@ -639,3 +639,48 @@ test("una matrice: il tipo, righe per colonne e la griglia; il nome di una funzi
   expect(griglia()).toBeNull();
   expect(document.querySelectorAll('[role="tooltip"][data-watch] [data-watch-indice]').length).toBe(3);
 }, 120_000);
+
+// ------------------------------------------------------------------------------------- una tabella
+
+test("una tabella: il record, quanti record e la griglia coi nomi dei campi; il nome di una funzione che restituisce una tabella, la griglia di ciò che ha restituito", async () => {
+  const testo = readFileSync(new URL("../../casi/tipi/tabella-come-parametro.algo", import.meta.url), "utf8");
+  await apriLaFinestra("tabella-come-parametro.algo", testo);
+  /** La griglia del watch aperto: per riga, il numero del record e i valori; in cima i nomi dei campi. */
+  const griglia = () => {
+    const g = document.querySelector('[role="tooltip"][data-watch] [data-watch-griglia]');
+    if (!g) return null;
+    return [...g.querySelectorAll("tr")].map((tr) => [...tr.cells].map((c) => c.textContent));
+  };
+  const nome = (blocco: string, attributo: string, valore: string) => document.querySelector(`[data-blocco="${blocco}"] [${attributo}="${valore}"]`);
+  // Passo dopo passo fino a quando la funzione `alzata` di c6 ha restituito qualcosa.
+  let visto: (string | null)[][] | null = null;
+  let tipo: string | null | undefined;
+  for (let k = 0; k < 200 && visto === null; k++) {
+    await premi("F10");
+    const a = nome("c6", "data-watch-funzione", "alzata");
+    if (!a) continue;
+    await punta(a);
+    if (document.querySelector('[role="tooltip"][data-watch] [data-watch-chiamata]')) {
+      visto = griglia();
+      tipo = document.querySelector("[data-watch-elementi]")?.textContent;
+    }
+    await lascia(a);
+  }
+  // `t` prima della chiamata: il voto di Anna a 8 (`alza` l'ha cambiato per riferimento); `alzata` ne alza il secondo a 100.
+  const intestazione = ["", "nome", "classe", "voto"];
+  expect(visto).toEqual([intestazione, ["[0]", "Anna", "3A", "8"], ["[1]", "Bruno", "3B", "100"], ["[2]", "Carla", "3A", "9"]]);
+  expect(tipo).toBe(riempi(it.watchTabella, { n: "3" }));
+  const t = nome("c1", "data-watch-dato", "t")!;
+  await punta(t);
+  expect(document.querySelector("[data-watch-tipo]")?.textContent).toBe("alunno");
+  expect(document.querySelector("[data-watch-elementi]")?.textContent).toBe(riempi(it.watchTabella, { n: "3" }));
+  expect(griglia()).toEqual([intestazione, ["[0]", "Anna", "3A", "8"], ["[1]", "Bruno", "3B", "5"], ["[2]", "Carla", "3A", "9"]]);
+  // Ogni cella ha il nome del campo del record nel suo `title`, come lo scrive il nucleo.
+  expect([...document.querySelectorAll("[data-watch-griglia] td[title]")].map((c) => c.getAttribute("title")).slice(0, 4)).toEqual(["t[0].nome", "t[0].classe", "t[0].voto", "t[1].nome"]);
+  await lascia(t);
+  // Controllo positivo: un record (`m`, tre campi) resta un campo per riga, senza griglia.
+  const m = nome("c4", "data-watch-dato", "m")!;
+  await punta(m);
+  expect(griglia()).toBeNull();
+  expect(document.querySelectorAll('[role="tooltip"][data-watch] [data-watch-indice]').length).toBe(3);
+}, 120_000);

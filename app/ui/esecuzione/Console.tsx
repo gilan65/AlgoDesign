@@ -13,7 +13,8 @@
 // portata.
 //
 // Per un parametro della procedura o della funzione eseguita da sola, accanto alla riga della lettura: «A ogni elemento» al
-// primo elemento di un vettore (il valore scritto va a tutti). Nessun comando per farlo arrivare senza valore: un parametro
+// primo elemento di un vettore (il valore scritto va a tutti), mai di una tabella (si chiede campo per campo: i campi hanno
+// tipi diversi). Nessun comando per farlo arrivare senza valore: un parametro
 // per riferimento vuole il valore, e uno per uscita non si chiede. La riga di un parametro arrivato senza valore (la voce
 // senza testo di un caso d'uso scritto prima di questa regola) si mostra com'è, e l'errore la segue. Un vettore si chiede elemento per elemento, col suo indice (lo scrive già chi
 // monta la console nel nome). Una lettura dentro una procedura il cui valore va a un dato di chi chiama lo dice accanto.
@@ -44,7 +45,7 @@ export function Console({
   tolte: number;
   /** Il dato di cui il programma aspetta il valore, se lo aspetta; `volta` cambia a ogni richiesta. Per un parametro
    * della funzione eseguita da sola, `parametro` (`riferimento`: può arrivare senza valore) ed `elemento` per un vettore. */
-  chiede: { readonly dato: string; readonly di?: string; readonly volta: number; readonly parametro?: "valore" | "riferimento"; readonly elemento?: number } | null;
+  chiede: { readonly dato: string; readonly di?: string; readonly volta: number; readonly parametro?: "valore" | "riferimento"; readonly elemento?: number; readonly campo?: string } | null;
   inserisci: (riga: Exclude<Riga, undefined>) => void;
   /** A esecuzione finita: la riga della fine o dell'errore (col testo breve), e la spiegazione dell'errore, che si apre con
    * «Spiegazione»: ciò che è successo, quando dice più del breve, e il suggerimento. */
@@ -177,7 +178,7 @@ export function Console({
             }}
           />
         </label>
-        {chiede.elemento === 0 && (
+        {chiede.elemento === 0 && chiede.campo === undefined && (
           <button type="button" className={stili.comando} title={testi.consoleOgniElementoSuggerimento} data-ogni-elemento="" onClick={() => inserisci({ ognuno: riga })}>
             {testi.consoleOgniElemento}
           </button>

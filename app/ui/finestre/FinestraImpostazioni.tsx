@@ -537,6 +537,14 @@ function Contenuto({
             cambia={(formaDelleMatrici) => cambia({ formaDelleMatrici })}
           />
           <Opzioni
+            legenda={testi.formaDelleTabelle}
+            nome="formaDelleTabelle"
+            valore={s.formaDelleTabelle}
+            ammessi={voci.formaDelleTabelle}
+            testo={(v) => (v === "per-record" ? testi.formaTabellaPerRecord : v === "per-elemento" ? testi.formaTabellaPerElemento : testi.formaTabellaPerCampo)}
+            cambia={(formaDelleTabelle) => cambia({ formaDelleTabelle })}
+          />
+          <Opzioni
             legenda={testi.colonneFerme}
             nome="colonneFerme"
             valore={s.colonneFerme}

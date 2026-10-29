@@ -68,14 +68,15 @@ export function nomeDelCasoNuovo(casi: readonly CasoDiUnaFunzione[], modello: (n
 
 /** Le voci di un caso nuovo di una procedura o di una funzione: una per parametro, nell'ordine della firma, senza testo
  * da scrivere; per un parametro vettore una voce per ogni elemento; per un parametro record una voce per campo,
- * nell'ordine dei campi, col nome del parametro (mai per ogni elemento: i campi hanno tipi diversi). Un parametro per
- * uscita nessuna (non si chiede: parte senza valore), e così il programma principale. */
+ * nell'ordine dei campi, col nome del parametro (mai per ogni elemento: i campi hanno tipi diversi); per un parametro
+ * tabella una voce per campo di ogni record, record dopo record. Un parametro per uscita nessuna (non si chiede: parte senza
+ * valore), e così il programma principale. */
 export function vociDelCasoNuovo(dati: readonly Dato[], records: readonly DefinizioneDelRecord[] = []): VoceDellaBozza[] {
   return dati
     .filter((d) => d.parameter !== undefined && d.parameter !== "out")
     .flatMap((d) => {
-      const campi = d.type === "record" && d.size === undefined ? records.find((r) => r.name === d.record)?.fields : undefined;
-      if (campi !== undefined) return campi.map(() => ({ dato: d.name, testo: "" }));
+      const campi = d.type === "record" ? records.find((r) => r.name === d.record)?.fields : undefined;
+      if (campi !== undefined) return Array.from({ length: (d.size ?? 1) * campi.length }, () => ({ dato: d.name, testo: "" }));
       return [{ dato: d.name, testo: "", ...(d.size !== undefined ? { ognuno: true as const } : {}) }];
     });
 }

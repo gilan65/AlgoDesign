@@ -121,3 +121,11 @@
   font-size: 0.85em;
   opacity: 0.75;
 }
+
+/* La griglia di una tabella (un vettore di record): i nomi dei campi in cima e i valori allineati all'inizio, perché un
+   record mescola testi e numeri. Con la classe della griglia, per vincere la sua regola qualunque sia l'ordine nel foglio
+   prodotto. */
+.griglia.deiRecord td,
+.griglia.deiRecord thead th {
+  text-align: start;
+}

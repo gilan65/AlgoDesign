@@ -64,6 +64,7 @@ import {
   undiciPerElemento,
   undiciPerRiga,
 } from "../../core/esecuzione/atteso-della-matrice";
+import * as dellaTabella from "../../core/esecuzione/atteso-della-tabella";
 import { TabellaMostrata } from "../../core/esecuzione/traccia";
 import { apri } from "../../core/progetto/formato";
 import { en } from "../../i18n/en";
@@ -681,3 +682,66 @@ test("una matrice nelle tre forme delle Impostazioni: la tabella e il file sono 
   await aspetta("la fine", () => statoMostrato() === it.statoFinita);
   expect(differenze(comeCsv(), copiaPerRiga).length).toBeGreaterThan(0);
 }, 180_000);
+
+// ------------------------------------------------------------------------------------- una tabella
+
+// La tabella (un vettore di record) nella finestra, nelle tre forme scelte nelle Impostazioni: la tabella e il file
+// coincidono con l'atteso scritto a mano del nucleo (`atteso-della-tabella.ts`), cella per cella e byte per byte. La copia
+// `u ← t` nella forma espansa per le prime due forme (la regola di ogni azione è il testo del suo blocco, col campo),
+// compatta per campo; undici record oltre il tetto in ogni forma.
+test("una tabella nelle tre forme delle Impostazioni: la tabella e il file sono l'atteso scritto a mano del nucleo", async () => {
+  const t = dellaTabella;
+  const casi = [
+    { progetto: t.progettoDellaCopia, forma: "per-record", copia: "espansa", tabella: t.copiaPerRecord, csv: "uguale", file: t.copiaPerRecord },
+    { progetto: t.progettoDellaCopia, forma: "per-elemento", copia: "espansa", tabella: t.copiaPerElemento, csv: "uguale", file: t.copiaPerElemento },
+    { progetto: t.progettoDellaCopia, forma: "per-record", copia: "espansa", tabella: t.copiaPerRecord, csv: "per-elemento", file: t.copiaPerElemento },
+    { progetto: t.progettoDellaCopia, forma: "per-campo", copia: "compatta", tabella: t.copiaPerCampo, csv: "uguale", file: t.copiaPerCampo },
+    { progetto: t.progettoDegliUndiciRecord, forma: "per-record", copia: "compatta", tabella: t.undiciPerRecord, csv: "uguale", file: t.undiciPerRecord },
+    { progetto: t.progettoDegliUndiciRecord, forma: "per-elemento", copia: "compatta", tabella: t.undiciPerElemento, csv: "uguale", file: t.undiciPerElemento },
+    { progetto: t.progettoDegliUndiciRecord, forma: "per-campo", copia: "compatta", tabella: t.undiciPerCampo, csv: "per-elemento", file: t.undiciCsvPerElemento },
+  ] as const;
+  let confrontate = 0;
+  for (const c of casi) {
+    cleanup();
+    scritti = [];
+    await apriLaFinestra(`${c.progetto.metadata.name}.algo`, JSON.stringify(c.progetto), "it", { ...scelteIniziali, formaDelleTabelle: c.forma, copiaDeiVettori: c.copia, formaDelCsv: c.csv });
+    await premi("F5");
+    await aspetta("la fine", () => statoMostrato() === it.statoFinita);
+    const quale = `${c.progetto.metadata.name}, ${c.forma}, CSV ${c.csv}`;
+    // La finestra mostra il testo delle celle; l'atteso è il CSV, che cita una cella con le virgolette.
+    expect(differenze(comeCsv(), c.tabella.map((r) => celleDelCsv(r, ";").join(";"))), quale).toEqual([]);
+    confrontate += comeCsv().length;
+    if (c.progetto === t.progettoDellaCopia && c.forma === "per-record" && c.csv === "uguale")
+      expect(righe().map((tr) => [...tr.cells].slice(2, 9).map((td) => (td.hasAttribute("data-cambiata") ? "x" : ".")).join("")), quale).toEqual([...t.cambiateDellaCopiaPerRecord]);
+    const scritto = await esporta(it);
+    expect(scritto.testo, quale).toBe(`\u{feff}${c.file.join("\r\n")}\r\n`);
+  }
+  // La premessa: le righe confrontate sono tutte quelle degli attesi.
+  expect(confrontate).toBe(casi.reduce((n, c) => n + c.tabella.length, 0));
+  // Controllo positivo: la forma cambiata apposta (per campo invece di una colonna per record) non è l'atteso.
+  cleanup();
+  await apriLaFinestra("copia.algo", JSON.stringify(t.progettoDellaCopia), "it", { ...scelteIniziali, formaDelleTabelle: "per-campo", copiaDeiVettori: "espansa" });
+  await premi("F5");
+  await aspetta("la fine", () => statoMostrato() === it.statoFinita);
+  expect(differenze(comeCsv(), t.copiaPerRecord).length).toBeGreaterThan(0);
+}, 180_000);
+
+// Il nome della pausa nella copia di una tabella col suo nome è quello del blocco, come nella copia di un vettore e di una
+// matrice (la fase è del riquadro, che la tabella evidenzia); nella copia di un record della tabella, l'assegnazione del
+// campo. Scritti a mano dal flowchart di `atteso-della-tabella.ts`.
+test("la pausa nella copia di una tabella dice il blocco; in quella di un record della tabella, il campo", async () => {
+  await apriLaFinestra("copia.algo", JSON.stringify(dellaTabella.progettoDellaCopia), "it", { ...scelteIniziali, copiaDeiVettori: "espansa" });
+  const visti: string[] = [];
+  for (let k = 0; k < 16; k++) {
+    await premi("F10");
+    visti.push(avviso());
+  }
+  const messaggio = (testo: string, n: number) => riempi(it.annuncioPausa, { blocco: riempi(it.nomeDelBlocco, { genere: it.bloccoAssegnazione, testo }), n: String(n) });
+  expect(visti.slice(1, 15)).toEqual([
+    ...Array.from({ length: 10 }, (_, k) => messaggio("u ← t", k + 2)),
+    messaggio("r.nome ← u[1].nome", 12),
+    messaggio("r.voto ← u[1].voto", 13),
+    messaggio("u[0].nome ← r.nome", 14),
+    messaggio("u[0].voto ← r.voto", 15),
+  ]);
+});
