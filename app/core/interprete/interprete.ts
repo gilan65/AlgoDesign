@@ -670,8 +670,9 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
           const { elementi } = (yield* chiamaDentro(e.base)) as VettoreRestituito;
           return elementi[dentro(((yield* calcola(e.indice)) as Numero).v, elementi.length)] ?? ferma("uninitialized");
         }
-        // L'elemento di una matrice restituita: prima la chiamata, poi la riga, poi la colonna.
-        if (e.base.genere === "indice" && restituisceUnVettore(e.base.base)) {
+        // L'elemento di una matrice restituita: prima la chiamata, poi la riga, poi la colonna. Di un vettore di stringhe
+        // restituito, senza colonne, `g()[i][j]` è il carattere di una stringa (sotto).
+        if (e.base.genere === "indice" && restituisceUnaMatrice(e.base.base)) {
           const colonne = perNome.get((e.base.base as { nome: string }).nome)!.return_columns!;
           const { elementi } = (yield* chiamaDentro(e.base.base)) as VettoreRestituito;
           const r = dentro(((yield* calcola(e.base.indice)) as Numero).v, elementi.length / colonne);
@@ -714,11 +715,20 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
 
   /** Una chiamata la cui funzione dà come risultato un vettore. */
   const restituisceUnVettore = (e: Espressione): boolean => e.genere === "chiamata" && perNome.get(e.nome)!.return_size !== undefined;
+  /** Una chiamata la cui funzione dà come risultato una matrice. */
+  const restituisceUnaMatrice = (e: Espressione): boolean => e.genere === "chiamata" && perNome.get(e.nome)!.return_columns !== undefined;
 
   /** Gli elementi di un vettore intero, una copia: il nome di un vettore o di una matrice (gli elementi di quell'istante,
-   * una riga dopo l'altra), la riga di una matrice, o una funzione che lo restituisce. */
+   * una riga dopo l'altra), la riga di una matrice, anche di una restituita, o una funzione che lo restituisce. */
   function* elementiDi(e: Espressione): Generator<Pausa, Elementi, Riga> {
     if (e.genere === "nome") return cella(e.nome).valori;
+    // La riga di una matrice restituita (`to_string g()[1]`): prima la chiamata, poi la riga.
+    if (e.genere === "indice" && restituisceUnaMatrice(e.base)) {
+      const colonne = perNome.get((e.base as { nome: string }).nome)!.return_columns!;
+      const { elementi } = (yield* chiamaDentro(e.base)) as VettoreRestituito;
+      const r = dentro(((yield* calcola(e.indice)) as Numero).v, elementi.length / colonne);
+      return elementi.slice(r * colonne, (r + 1) * colonne);
+    }
     if (e.genere === "indice") return (yield* rigaDi(e)).valori;
     return ((yield* chiamaDentro(e)) as VettoreRestituito).elementi;
   }

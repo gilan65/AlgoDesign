@@ -1,0 +1,63 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "carattere-di-un-risultato",
+    "description": "parole()[0][1] è il secondo carattere della prima stringa del vettore restituito dalla funzione."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "parole()[0][1]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "parole",
+      "return_type": "string",
+      "return_size": 3,
+      "return_max_length": 10,
+      "data": [
+        {
+          "name": "r",
+          "type": "string",
+          "size": 3,
+          "initial": [
+            "\"ab\"",
+            "\"cd\"",
+            "\"ef\""
+          ],
+          "max_length": 10
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "g1",
+        "return_value": "r"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "carattere-di-un-risultato",
+      "inputs": [],
+      "expected": {
+        "output": "b\n"
+      }
+    }
+  ]
+}

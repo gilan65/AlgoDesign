@@ -80,6 +80,11 @@ const tappa3 = readdirSync(join(cartella, "tappa-3"))
   .map((f) => ({ f, p: leggi(`tappa-3/${f}`) }));
 /** Una funzione del progetto restituisce una stringa o un vettore: il Python non la traduce ancora, e lo dice. */
 const generatiDellaTappa3 = tappa3.map((x) => x.p).filter((p) => (p.test_cases ?? []).every((c) => c.expected.static_error === undefined));
+/** I programmi dei tipi senza errori statici: il valore iniziale di una matrice e di una tabella chiama `range`. */
+const generatiDeiTipi = readdirSync(join(cartella, "tipi"))
+  .filter((f) => f.endsWith(".algo"))
+  .map((f) => leggi(`tipi/${f}`))
+  .filter((p) => (p.test_cases ?? []).every((c) => c.expected.static_error === undefined));
 
 describe("il Python uguale all'atteso scritto a mano", () => {
   for (const l of lingue) {
@@ -317,12 +322,18 @@ describe("i nomi che il Python usa per sé", () => {
   });
 
   test("il programma generato chiama solo funzioni di supporto definite e nomi di Python riservati", () => {
-    const programmi = [...corpus.map((x) => x.p), tutteLeForme, altreForme, formeDeiCicli, ...generatiDellaTappa3, formeDelRisultato];
+    const programmi = [...corpus.map((x) => x.p), tutteLeForme, altreForme, formeDeiCicli, ...generatiDellaTappa3, formeDelRisultato, ...generatiDeiTipi];
+    // Il corpus dei tipi chiama `range`: senza, questa prova non lo vedrebbe.
+    expect(programmi.some((p) => lingue.some((l) => /\brange\(/.test(codice(p, l))))).toBe(true);
     let chiamate = 0;
     for (const l of lingue)
       for (const p of programmi) {
         const t = codice(p, l);
         const definite = new Set([...t.matchAll(/^def (\w+)\(/gm)].map((m) => m[1]!));
+        // Le classi dei record: il costruttore si chiama col nome del record, e sono tutte e sole quelle del progetto.
+        const classi = [...t.matchAll(/^class (\w+):/gm)].map((m) => m[1]!);
+        expect(classi.toSorted(), `${p.metadata.name} (${l}): le classi`).toEqual((p.records ?? []).map((r) => r.name).toSorted());
+        for (const c of classi) definite.add(c);
         // Le chiamate che non sono metodi, fuori dai letterali e dai commenti.
         const senza = t.replace(/"(\\.|[^"\\])*"|'(\\.|[^'\\])*'|#.*$/gm, "");
         for (const [, nome] of senza.matchAll(/(?<![.\w])([A-Za-z_]\w*)(?=\()/g)) {
@@ -331,8 +342,8 @@ describe("i nomi che il Python usa per sé", () => {
           expect(nomiDiPython as readonly string[], `${p.metadata.name} (${l}): ${nome}`).toContain(nome!);
         }
         for (const [, modulo] of t.matchAll(/^import (\w+)$/gm)) expect(nomiDiPython as readonly string[]).toContain(modulo!);
-        // Le procedure e le funzioni del progetto hanno i loro nomi; ogni altra definizione è del generatore.
-        const delProgetto = new Set(p.functions.flatMap((f) => (f.name === undefined ? [] : [f.name])));
+        // Le procedure, le funzioni e i record del progetto hanno i loro nomi; ogni altra definizione è del generatore.
+        const delProgetto = new Set([...p.functions.flatMap((f) => (f.name === undefined ? [] : [f.name])), ...classi]);
         for (const d of definite) if (!delProgetto.has(d)) expect(riservatiDelPython, `${p.metadata.name} (${l}): ${d}`).toContain(d);
       }
     expect(chiamate).toBeGreaterThan(500);

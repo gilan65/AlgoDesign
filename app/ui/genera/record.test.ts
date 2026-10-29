@@ -16,7 +16,7 @@ import { linguaggi } from "../../core/genera/linguaggi";
 import { pseudocodice } from "../../core/genera/pseudocodice";
 import { python } from "../../core/genera/python";
 import { apri } from "../../core/progetto/formato";
-import { usaLeMatrici, usaLeTabelle, type Progetto } from "../../core/progetto/modello";
+import { usaIRecord, usaLeMatrici, usaLeTabelle, type Progetto } from "../../core/progetto/modello";
 import type { Lingua } from "../../i18n/lingue";
 import {
   copiaC,
@@ -40,7 +40,7 @@ const progetto = (nome: string): Progetto => {
 };
 // I file dei record: quelli delle matrici e delle tabelle, nella stessa cartella, li provano `matrici.test.ts` e
 // `tabelle.test.ts`.
-const file = readdirSync(cartella).filter((f) => f.endsWith(".algo") && !usaLeMatrici(progetto(f)) && !usaLeTabelle(progetto(f)));
+const file = readdirSync(cartella).filter((f) => f.endsWith(".algo") && usaIRecord(progetto(f)) && !usaLeMatrici(progetto(f)) && !usaLeTabelle(progetto(f)));
 
 /** Il confronto col messaggio che nomina la prima riga diversa, con le due forme. */
 function uguale(generato: string, atteso: string, chi: string) {

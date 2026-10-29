@@ -52,8 +52,8 @@ test("ogni linguaggio scrive le matrici: generato il progetto giusto, con gli er
     return { nome, giusto, atteso, ottenuti };
   });
   expect(esiti.filter((e) => !e.giusto)).toEqual([]);
-  // Controllo positivo dei denominatori: sette file giusti e tre sbagliati, ognuno per ogni linguaggio.
-  expect([esiti.filter((e) => e.atteso === "generato").length, esiti.filter((e) => e.atteso === "errori-statici").length, linguaggi.length]).toEqual([7, 3, 4]);
+  // Controllo positivo dei denominatori: nove file giusti e quattro sbagliati, ognuno per ogni linguaggio.
+  expect([esiti.filter((e) => e.atteso === "generato").length, esiti.filter((e) => e.atteso === "errori-statici").length, linguaggi.length]).toEqual([9, 4, 4]);
 });
 
 test("il programma di prova di ogni caso di una funzione con le matrici si genera in ogni linguaggio da eseguire", () => {

@@ -1,0 +1,59 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "dato-chiamato-range",
+    "description": "range è un nome che il Python generato usa: un dato non può chiamarsi così."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "range",
+          "type": "integer",
+          "initial": "5"
+        },
+        {
+          "name": "m",
+          "type": "integer",
+          "size": 2,
+          "columns": 3
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "m[1][2]",
+          "value": "range"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "m[1][2]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "dato-chiamato-range",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "invalid_name",
+          "block": "f1"
+        }
+      }
+    }
+  ]
+}
