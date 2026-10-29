@@ -29,6 +29,10 @@ export const testiDelleMancanze: Record<Lingua, Record<SpecieDellaMancanza, Test
       breve: "La matrice non è supportata in Accademico.",
       suggerimento: "Usa un vettore per ogni riga: per esempio riga0[j] al posto di m[0][j].",
     },
+    tabella: {
+      breve: "La tabella non è supportata in Accademico.",
+      suggerimento: "Usa un vettore per ogni campo: per esempio voti[i] al posto di t[i].voto.",
+    },
     lettura: {
       breve: "La Lettura non è supportata in Accademico.",
       suggerimento: "Togli la Lettura e dai il valore con un'Assegnazione, o passalo come parametro a una procedura.",
@@ -110,6 +114,10 @@ export const testiDelleMancanze: Record<Lingua, Record<SpecieDellaMancanza, Test
     matrice: {
       breve: "The matrix is not supported in Academic.",
       suggerimento: "Use an array for each row: for example row0[j] instead of m[0][j].",
+    },
+    tabella: {
+      breve: "The table is not supported in Academic.",
+      suggerimento: "Use an array for each field: for example marks[i] instead of t[i].mark.",
     },
     lettura: {
       breve: "The Read block is not supported in Academic.",

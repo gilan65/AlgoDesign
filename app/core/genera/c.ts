@@ -20,6 +20,15 @@
 // nucleo); un record per valore e quello restituito sono la copia della `struct` del C; per riferimento e per uscita
 // passa l'indirizzo (`&a`), un campo per riferimento come un dato (`&a.voto`, una stringa `a.nome`).
 //
+// Le tabelle (i vettori di record): un vettore di `struct` (`alunno t[3]`), il valore iniziale un elenco di record, che
+// per valore e nel risultato si copia come un vettore (`memcpy`, i campi stringa stanno dentro la `struct`). La copia col
+// nome (`u ← t`) è il `for` dei record con le graffe e dentro una riga per campo, ognuna col campo che copia (`strcpy` per
+// una stringa). Il record `t[i]` è un record: la copia con un record campo per campo, con l'indice che non è un numero né
+// un nome calcolato una volta prima, sulla riga del primo campo, e `memmove` fra due record della stessa tabella che
+// possono essere lo stesso; l'elemento del «per ogni» l'assegnazione della `struct`; per riferimento il suo indirizzo
+// (`&t[i]`, `&t[i].voto`). Un record e un campo di un record della stessa tabella per riferimento nello stesso salto
+// passano da `elementi_diversi`.
+//
 // Procedure e funzioni: un parametro per riferimento è un puntatore (`int *a`, nella procedura `*a`,
 // nella chiamata `&n`), un vettore o una stringa per riferimento passano come sono. Un vettore o una stringa senza *rif*
 // arrivano come copia: la funzione chiamata la fa per prima cosa, dal parametro `_da_w` (`_from_w`) al dato `w`. Il dato
@@ -80,7 +89,7 @@ import { lunghezzaMassima as lunghezzaMassimaNelNucleo } from "../controllo/lung
 import { spazioDellaPila, spazioDiUnaChiamata, tettoDelleChiamate } from "../controllo/spazio";
 import { analizza, type Espressione } from "../espressioni/analizzatore";
 import type { FaseDelCiclo } from "../interprete/interprete";
-import { eUnaCopiaDiUnRecord, nomiDeiRecord } from "../progetto/copia";
+import { eUnaCopiaDiUnRecord, nomiDeiRecord, nomiDelleTabelle } from "../progetto/copia";
 import {
   opzioniPredefinite,
   tipoSemplice,
@@ -302,17 +311,27 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
   /** Una funzione che restituisce un vettore o una stringa: il C li restituisce in una struttura, col campo `v` o `s`. */
   const conStruttura = (f: FunzioneDelProgetto) => f.kind === "function" && (f.return_size !== undefined || f.return_type === "string");
   const campo = (f: FunzioneDelProgetto) => (f.return_size !== undefined ? ".v" : ".s");
-  /** Il risultato di una funzione come un dato: il tipo, e la dimensione e la lunghezza massima che ha. */
+  /** Il risultato di una funzione come un dato: il tipo (col record), e la dimensione e la lunghezza massima che ha. */
   const comeDato = (f: FunzioneDelProgetto): Dato => ({
     name: "",
     type: f.return_type!,
+    ...(f.return_record !== undefined ? { record: f.return_record } : {}),
     ...(f.return_size !== undefined ? { size: f.return_size } : {}),
     ...(f.return_columns !== undefined ? { columns: f.return_columns } : {}),
     ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}),
   });
-  /** Il record di un'espressione che ne dà uno intero: il nome di un dato record, o una funzione che lo restituisce. */
+  /** Il record dei record di una tabella intera: il nome di una tabella, o una funzione che ne restituisce una. */
+  const tabellaDi = (e: Espressione): string | undefined =>
+    e.genere === "nome" ? (dati.get(e.nome)!.size !== undefined ? dati.get(e.nome)!.record : undefined)
+    : e.genere === "chiamata" ? (perNome.get(e.nome)?.return_size !== undefined ? perNome.get(e.nome)?.return_record : undefined)
+    : undefined;
+  /** Il record di un'espressione che ne dà uno intero: il nome di un dato record, una funzione che lo restituisce, o un
+   * record di una tabella (`t[i]`, anche di quella restituita da una funzione). */
   const recordDi = (e: Espressione): string | undefined =>
-    e.genere === "nome" ? (dati.get(e.nome)!.size === undefined ? dati.get(e.nome)!.record : undefined) : e.genere === "chiamata" ? perNome.get(e.nome)?.return_record : undefined;
+    e.genere === "nome" ? (dati.get(e.nome)!.size === undefined ? dati.get(e.nome)!.record : undefined)
+    : e.genere === "chiamata" ? (perNome.get(e.nome)?.return_size === undefined ? perNome.get(e.nome)?.return_record : undefined)
+    : e.genere === "indice" ? tabellaDi(e.base)
+    : undefined;
   /** Il campo di un'espressione `base.campo`: la base è un dato record o una funzione che restituisce un record. */
   const campoDi = (e: Extract<Espressione, { genere: "campo" }>): Campo => campiDi(recordDi(e.base)).find((c) => c.name === e.campo)!;
   function tipo(e: Espressione): TipoDelDato {
@@ -521,9 +540,14 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         // Il campo di un dato (`->` da un parametro per riferimento), o del record restituito da una funzione: la stringa
         // di un record restituito esiste fino alla fine dell'istruzione, e messa da parte va col record intero.
         if (e.base.genere === "nome") return operando(`${e.base.nome}${puntatori.has(e.base.nome) ? "->" : "."}${e.campo}`);
+        // Il campo di un record di una tabella (`t[i].nome`): un dato come gli altri.
+        if (e.base.genere === "indice" && e.base.base.genere === "nome") return operando(`${espressione(e.base).t}.${e.campo}`);
         const x = espressione(e.base);
         const t = `${x.t}.${e.campo}`;
-        if (campoDi(e).type !== "string") return { ...x, t, forza: 16 };
+        if (campoDi(e).type !== "string") return { t, forza: 16 };
+        // La stringa di un record della tabella restituita da una funzione: la struttura del risultato, fino al campo.
+        if (x.struttura !== undefined) return { t, forza: 16, struttura: { ...x.struttura, campo: `${x.struttura.campo}.${e.campo}` } };
+        if (e.base.genere !== "chiamata") return operando(t);
         return { t, forza: 16, struttura: { tipo: recordDi(e.base)!, chiamata: x.t, campo: `.${e.campo}`, dentro: (y) => y } };
       }
       case "indice": {
@@ -535,6 +559,9 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         const parti = [aSe(() => espressione(e.base)), aSe(() => espressione(e.indice))];
         const daParte = tranneLUltima(parti);
         const { testi, avvolgi } = inOrdine(parti.map((parte, k) => ({ parte, tipo: k === 0 ? "string" : "integer", daParte: daParte[k]! })));
+        // Un record della tabella restituita: la struttura resta, fino al record (un suo campo stringa la vuole).
+        const s = testi[0]!.struttura;
+        if (vettore(e.base) && s !== undefined && tipo(e) === "record") return avvolgi({ t: `${testi[0]!.t}[${testi[1]!.t}]`, forza: 16, struttura: { ...s, campo: `${s.campo}[${testi[1]!.t}]` } });
         if (vettore(e.base)) return avvolgi(operando(`${testi[0]!.t}[${testi[1]!.t}]`));
         return avvolgi(conArresto("carattereDi", testi[0]!.t, testi[1]!.t));
       }
@@ -675,6 +702,9 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     // Una matrice per righe: un elenco di elenchi.
     const elenco = (x: unknown): string => (Array.isArray(x) ? `{${x.map(elenco).join(", ")}}` : espressione(albero(x as string)).t);
     if (Array.isArray(v)) return elenco(v);
+    // Un record ripetuto in ogni record di una tabella.
+    const ripetuto = (v as { readonly each: unknown }).each;
+    if (Array.isArray(ripetuto)) return `{${Array<string>(d.size!).fill(elenco(ripetuto)).join(", ")}}`;
     const ogni = albero((v as { readonly each: string }).each);
     const t = espressione(ogni).t;
     if (zero(ogni)) return `{${t}}`;
@@ -703,8 +733,9 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
 
   let corpo: Riga[] = [];
   const struttura = (testo: string) => corpo.push({ testo });
-  /** I record della funzione che si scrive (con le costanti comuni): riconoscono la copia col nome. */
+  /** I record e le tabelle della funzione che si scrive (con le costanti comuni): riconoscono la copia col nome. */
   let record: ReadonlySet<string> = new Set();
+  let tabelle: ReadonlySet<string> = new Set();
   /** Quanti cicli `per ogni` contengono la regola che si scrive: l'indice di un ciclo, o quello calcolato prima del
    * valore, è quello del livello dopo. Gli indici dichiarati sono quelli fino al livello più alto usato. */
   let cicliPerOgni = 0;
@@ -734,16 +765,17 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       corpo.push({ testo: `${r}${testo}`, blocco: id });
       return;
     }
-    if (e.genere === "campo") {
+    if (e.genere === "campo" && e.base.genere !== "indice") {
       // Il campo di un dato record riceve il valore come un dato del tipo del campo.
       const destinazione = espressione(e).t;
       const testo = calcola(r, id, () => istruzione(destinazione, { ...campoDi(e), name: destinazione }));
       corpo.push({ testo: `${r}${testo}`, blocco: id });
       return;
     }
-    // Un elemento di un vettore o di una matrice, o la riga di una matrice. Se un indice si può fermare, tutti quelli che
-    // non sono un numero si calcolano prima, nel loro ordine.
-    const { nome, indici: espressioni } = elementoDi(e);
+    // Un elemento di un vettore o di una matrice, la riga di una matrice, o il campo di un record di una tabella. Se un
+    // indice si può fermare, tutti quelli che non sono un numero si calcolano prima, nel loro ordine.
+    const campo = e.genere === "campo" ? e : undefined;
+    const { nome, indici: espressioni } = elementoDi(campo?.base ?? e);
     const testi = espressioni.map((x) => {
       let fermaLIndice = false;
       const t = calcola(r, id, () => {
@@ -764,8 +796,9 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         })
       : testi.map((x) => x.t);
     const d = dati.get(nome)!;
-    // La riga di una matrice riceve un vettore delle sue colonne.
-    const testo = calcola(r, id, () => istruzione(`${nome}${usati.map((i) => `[${i}]`).join("")}`, d.columns !== undefined && espressioni.length === 1 ? rigaDi(d) : d));
+    const posto = `${nome}${usati.map((i) => `[${i}]`).join("")}${campo !== undefined ? `.${campo.campo}` : ""}`;
+    // La riga di una matrice riceve un vettore delle sue colonne; il campo di un record un valore del tipo del campo.
+    const testo = calcola(r, id, () => istruzione(posto, campo !== undefined ? { ...campoDi(campo), name: posto } : d.columns !== undefined && espressioni.length === 1 ? rigaDi(d) : d));
     corpo.push({ testo: `${r}${testo}`, blocco: id });
   }
 
@@ -799,8 +832,10 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     if (d.type !== "string") return `${destinazione} = ${espressione(v).t};`;
     intestazioni.add("string.h");
     const x = espressione(v).t;
-    // Dallo stesso dato, o dallo stesso campo (il nome di un campo è la sua destinazione).
-    if (baseDi(v) === d.name || x === destinazione) return `memmove(${destinazione}, ${x}, strlen(${x}) + 1);`;
+    // Dallo stesso dato, o dallo stesso campo (il nome di un campo è la sua destinazione), anche di un record della stessa
+    // tabella, che può essere lo stesso record.
+    const stessoCampo = v.genere === "campo" && v.base.genere === "indice" && baseDi(v.base) !== undefined && destinazione.startsWith(`${baseDi(v.base)}[`) && destinazione.endsWith(`.${v.campo}`);
+    if (baseDi(v) === d.name || x === destinazione || stessoCampo) return `memmove(${destinazione}, ${x}, strlen(${x}) + 1);`;
     const massima = d.max_length ?? lunghezzaPredefinita;
     return lunghezzaMassima(v) > massima ? `strcpy(${destinazione}, ${conArresto("alPiu", x, String(massima)).t});` : `strcpy(${destinazione}, ${x});`;
   };
@@ -849,6 +884,17 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       return;
     }
     const i = indice();
+    if (d.type === "record") {
+      // Una tabella: il ciclo dei record, con dentro una riga per campo, ognuna col campo che copia (lo stesso record: le
+      // stringhe hanno la stessa lunghezza).
+      corpo.push({ testo: `${r}for (${i} = 0; ${i} < ${d.size}; ${i}++) {`, blocco: id, ...fasi("inizio", "condizione", "passo") });
+      campiDi(d.record).forEach((c, k) => {
+        const copia = calcola(r, id, () => elementoInElemento(`${destinazione}[${i}].${c.name}`, `${sorgente}[${i}].${c.name}`, c, c.max_length ?? lunghezzaPredefinita, sorgente === destinazione));
+        corpo.push({ testo: `${r}${rientro}${copia}`, blocco: id, ...fasi("elemento"), ...(conFasi ? { campo: k } : {}) });
+      });
+      struttura(`${r}}`);
+      return;
+    }
     corpo.push({ testo: `${r}for (${i} = 0; ${i} < ${d.size}; ${i}++)`, blocco: id, ...fasi("inizio", "condizione", "passo") });
     if (d.columns !== undefined) {
       // Una matrice: il ciclo delle colonne dentro quello delle righe, le sue righe `interno`.
@@ -973,7 +1019,13 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     type Argomento =
       | { readonly genere: "valore"; readonly parte: Parte; readonly tipo: TipoDelDato; readonly record?: string }
       | { readonly genere: "nome"; readonly testo: string }
-      | { readonly genere: "elemento"; readonly vettore: string; readonly indici: readonly { readonly parte: Parte; readonly scritto: boolean }[]; readonly indirizzo: boolean };
+      | {
+          readonly genere: "elemento";
+          readonly vettore: string;
+          readonly indici: readonly { readonly parte: Parte; readonly scritto: boolean }[];
+          readonly indirizzo: boolean;
+          readonly campo?: string;
+        };
     const argomenti: Argomento[] = b.arguments.map((testo, k) => {
       const d = parametri[k]!;
       const a = albero(testo);
@@ -982,6 +1034,12 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         const suo = dati.get(a.nome)!;
         const comeE = suo.size !== undefined || suo.type === "string" || puntatori.has(a.nome);
         return { genere: "nome", testo: comeE ? a.nome : `&${a.nome}` };
+      }
+      // Il campo di un record di una tabella: un elemento della tabella col suo campo (il suo indirizzo, una stringa così
+      // com'è), gli indici dal primo.
+      if (a.genere === "campo" && a.base.genere === "indice") {
+        const { nome, indici } = elementoDi(a.base);
+        return { genere: "elemento", vettore: nome, indici: indici.map((i) => ({ parte: aSe(() => espressione(i)), scritto: i.genere === "intero" })), indirizzo: campoDi(a).type !== "string", campo: a.campo };
       }
       // Un campo per riferimento come un dato: il suo indirizzo, una stringa così com'è.
       if (a.genere === "campo") return { genere: "nome", testo: campoDi(a).type === "string" ? espressione(a).t : `&${espressione(a).t}` };
@@ -1016,10 +1074,11 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         prima!.push(`${nome} = ${x.parte.x.t};`);
         return nome;
       });
-      return passati.push(`${a.indirizzo ? "&" : ""}${a.vettore}${nomiDegliIndici[k]!.map((i) => `[${i}]`).join("")}`);
+      return passati.push(`${a.indirizzo ? "&" : ""}${a.vettore}${nomiDegliIndici[k]!.map((i) => `[${i}]`).join("")}${a.campo !== undefined ? `.${a.campo}` : ""}`);
     });
+    const campoDellArgomento = (k: number) => (argomenti[k] as { campo?: string }).campo;
     for (const ks of gruppi)
-      for (const confronto of controlliDegliElementi(ks.map((k) => nomiDegliIndici[k]!), dati.get((argomenti[ks[0]!] as { vettore: string }).vettore)!))
+      for (const confronto of controlliDegliElementi(ks.map((k) => nomiDegliIndici[k]!), dati.get((argomenti[ks[0]!] as { vettore: string }).vettore)!, ks.map(campoDellArgomento)))
         prima!.push(`${usa("elementiDiversi")}(${confronto.join(", ")});`);
     for (const t of prima!) corpo.push({ testo: `${r}${t}`, blocco: b.id });
     prima = null;
@@ -1056,15 +1115,31 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
           });
         }
         const t = albero(b.target);
-        if (eUnaCopiaDiUnRecord(b, record)) {
-          // La copia di un record col suo nome, campo per campo: una riga per campo, col campo che copia (lo stesso record:
-          // le stringhe hanno la stessa lunghezza; dallo stesso dato con `memmove`).
-          const verso = (t as { nome: string }).nome;
-          const da = (v as { nome: string }).nome;
-          const campo = (nome: string, c: Campo) => `${nome}${puntatori.has(nome) ? "->" : "."}${c.name}`;
-          if (campiDi(dati.get(verso)!.record).some((c) => c.type === "string")) intestazioni.add("string.h");
-          campiDi(dati.get(verso)!.record).forEach((c, k) =>
-            corpo.push({ testo: `${r}${elementoInElemento(campo(verso, c), campo(da, c), c, c.max_length ?? lunghezzaPredefinita, verso === da)}`, blocco: b.id, campo: k }),
+        if (eUnaCopiaDiUnRecord(b, record, tabelle)) {
+          // La copia di un record col suo nome, o di un record di una tabella, campo per campo: una riga per campo, col campo
+          // che copia (lo stesso record: le stringhe hanno la stessa lunghezza; dallo stesso dato, o da un record della stessa
+          // tabella che può essere lo stesso, con `memmove`). Gli indici che non sono un numero né un nome si calcolano
+          // prima, come nella prima azione dell'interprete: quello della destinazione, poi quello della sorgente.
+          let calcolati = 0;
+          const recordIn = (e: Espressione): { campo: (c: Campo) => string; chiave: string; tabella?: string; numero?: boolean } => {
+            if (e.genere === "nome") return { campo: (c) => `${e.nome}${puntatori.has(e.nome) ? "->" : "."}${c.name}`, chiave: e.nome };
+            const x = e as Extract<Espressione, { genere: "indice" }>;
+            const tabella = (x.base as { nome: string }).nome;
+            let i = calcola(r, b.id, () => espressione(x.indice).t);
+            if (x.indice.genere !== "intero" && x.indice.genere !== "nome") {
+              const nome = indice(++calcolati);
+              corpo.push({ testo: `${r}${nome} = ${i};`, blocco: b.id, campo: 0 });
+              i = nome;
+            }
+            return { campo: (c) => `${tabella}[${i}].${c.name}`, chiave: `${tabella}[${i}]`, tabella, numero: x.indice.genere === "intero" };
+          };
+          const verso = recordIn(t);
+          const da = recordIn(v);
+          const stesso = verso.chiave === da.chiave || (verso.tabella !== undefined && verso.tabella === da.tabella && !(verso.numero === true && da.numero === true));
+          const campi = campiDi(recordDi(t));
+          if (campi.some((c) => c.type === "string")) intestazioni.add("string.h");
+          campi.forEach((c, k) =>
+            corpo.push({ testo: `${r}${elementoInElemento(verso.campo(c), da.campo(c), c, c.max_length ?? lunghezzaPredefinita, stesso)}`, blocco: b.id, campo: k }),
           );
           return;
         }
@@ -1272,6 +1347,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
   function scriviFunzione(f: FunzioneDelProgetto): Riga[] {
     dati = new Map<string, Dato>([...comuni, ...f.data].map((d) => [d.name, d]));
     record = nomiDeiRecord([...comuni, ...f.data]);
+    tabelle = nomiDelleTabelle([...comuni, ...f.data]);
     puntatori = new Set(parametriDi(f).filter((d) => d.parameter !== "value" && d.size === undefined && d.type !== "string").map((d) => d.name));
     fermaLaFunzione = delGiro.has(f);
     const righe =
@@ -1312,8 +1388,11 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     const scrittura = (testo: string) => righe.push({ testo: `${rientro}${testo}`, ...(delGiro.has(f) && testo.includes(chiamataDiF) ? { blocco: f.id } : {}) });
     for (const { dato: d, elementi, ognuno } of letti.parametri) {
       if (d.type === "record") {
-        // Un campo per voce, nell'ordine dei campi.
-        campiDi(d.record).forEach((c, k) => elementi[k] === "riga" && righe.push({ testo: `${rientro}${leggi(`${d.name}.${c.name}`, c)}`, blocco: f.id }));
+        // Un campo per voce, nell'ordine dei campi; una tabella record dopo record.
+        const campi = campiDi(d.record);
+        (d.size === undefined ? [""] : posizioni(d.size, undefined)).forEach((k, i) =>
+          campi.forEach((c, j) => elementi[i * campi.length + j] === "riga" && righe.push({ testo: `${rientro}${leggi(`${d.name}${k}.${c.name}`, c)}`, blocco: f.id })),
+        );
         continue;
       }
       if (d.size === undefined) {
@@ -1336,7 +1415,20 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       } else scrittura(`printf("${fisso}${specifica(t)}\\n", ${t === "boolean" ? chiamata(usa("booleano"), x).t : x});`);
     };
     const risultato: Riga[] = [];
-    if (f.kind === "function" && f.return_type === "record") {
+    /** Le parti di un record di una tabella, o di un record, come le scrive l'esecuzione (`[0].nome`, `.nome`), col tipo. */
+    const campiScritti = (record: string | undefined, davanti: string): [string, TipoDelDato][] =>
+      campiDi(record).map((c) => {
+        if (c.type === "boolean") intestazioni.add("stdbool.h");
+        if (c.type === "real") reali = true;
+        return [`${davanti}.${c.name}`, c.type];
+      });
+    if (f.kind === "function" && f.return_type === "record" && f.return_size !== undefined) {
+      // La funzione si chiama una volta, poi una riga per campo di ogni record.
+      const nome = nomeDelRisultato[lingua];
+      risultato.push({ testo: dichiarazioneDi({ nome, tipo: strutturaDelRisultato(lingua, f.name!) }) });
+      scrittura(`${nome} = ${chiamataDiF};`);
+      for (const k of posizioni(f.return_size, undefined)) for (const [x, t] of campiScritti(f.return_record, k)) scriviValore(`→ ${x} = `, `${nome}.v${x}`, t);
+    } else if (f.kind === "function" && f.return_type === "record") {
       // La funzione si chiama una volta, poi una riga per campo, come per un vettore.
       const nome = nomeDelRisultato[lingua];
       risultato.push({ testo: dichiarazioneDi({ nome, tipo: f.return_record! }) });
@@ -1368,9 +1460,10 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       const riferimenti = parametri.filter((d) => d.parameter !== "value");
       if (riferimenti.length > 0) scrittura('printf("\\n");');
       for (const d of riferimenti) {
-        // Un record una riga per campo, `r.nome = …`.
+        // Un record una riga per campo, `r.nome = …`; una tabella per ogni campo di ogni record, `t[0].nome = …`.
         const pezzi: [string, TipoDelDato][] =
-          d.type === "record" ? campiDi(d.record).map((c) => [`${d.name}.${c.name}`, c.type])
+          d.type === "record" && d.size !== undefined ? posizioni(d.size, undefined).flatMap((k) => campiScritti(d.record, `${d.name}${k}`))
+          : d.type === "record" ? campiScritti(d.record, d.name)
           : d.size === undefined ? [[d.name, d.type]]
           : posizioni(d.size, d.columns).map((i) => [`${d.name}${i}`, d.type]);
         for (const [nome, t] of pezzi) scriviValore(`${nome} = `, nome, t);
