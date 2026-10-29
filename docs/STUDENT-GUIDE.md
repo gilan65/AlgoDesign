@@ -13,11 +13,11 @@ The words this guide uses are these: a **data item** is a constant or a variable
 
 ## 2. The window
 
-- **The toolbar**, at the top, with the commands in groups, in working order: **Project** (a menu with New, Open, Save, Save as, Save as library…, Properties, New procedure or function…, Procedures and functions…, Import procedures and functions…, Export the flowchart…, Export the table… and Print… (§12); outside the menu there are also the Function and Save buttons), **Edit** (Undo, Redo and the commands of the chosen block), **Run** (Run, Step, Step in and Step out when the project has procedures or functions, Animate, Stop, Breakpoint, Clear points), **Views** (Data, Table, Code), and on the right **Settings** and **Help**. With the mouse pointer on a button you read its name and its key.
+- **The toolbar**, at the top, with the commands in groups, in working order: **Project** (a menu with New, Open, Save, Save as, Save as library…, Properties, Add a record (§5), New procedure or function…, Procedures and functions…, Import procedures and functions…, Export the flowchart…, Export the table… and Print… (§13); outside the menu there are also the Function and Save buttons), **Edit** (Undo, Redo and the commands of the chosen block), **Run** (Run, Step, Step in and Step out when the project has procedures or functions, Animate, Stop, Breakpoint, Clear points), **Views** (Data, Table, Code), and on the right **Settings** and **Help**. With the mouse pointer on a button you read its name and its key.
 - **The data view**, on the left, with two tabs: “Data” and “Test cases”. The “Data” button closes and reopens it; its right edge can be dragged to widen it.
-- **The flowchart**, on the right, with the zoom in the bottom bar (zoom out, the percentage, which goes back to 100% with a click, zoom in, “Fit to window”). When the project has procedures or functions, above the flowchart there is a tab for each of them (§8).
+- **The flowchart**, on the right, with the zoom in the bottom bar (zoom out, the percentage, which goes back to 100% with a click, zoom in, “Fit to window”). When the project has procedures or functions, above the flowchart there is a tab for each of them (§9).
 - **The status bar**, at the bottom: the file name, “modified” if there are unsaved changes, the errors and warnings of the project (a click on “Show the list” lists them, and a click on an item leads to the block or the data item), the state of the run and, at the far right, the interface language: “ITA” or “ENG”, and a click opens the menu with the two languages (the same choice as in the Settings).
-- **The student guide**: from the **Help** menu, in a window on the right that stays open while you work (§11).
+- **The student guide**: from the **Help** menu, in a window on the right that stays open while you work (§12).
 
 Every command can also be given from the keyboard: Tab moves from one element to the next, Enter opens and confirms, Esc cancels.
 
@@ -27,7 +27,7 @@ As an example, a program that reads a whole number and writes whether it is even
 
 ### The project
 
-From the **Project** menu choose **New** (Ctrl+N). Write the name of the project, which is required, and, if you like, the author, a description and some notes; confirm with **Create**. The same information can be changed later with **Properties**, which also has three options that change the result: how many decimal digits a real number has when it is written (2 unless you say otherwise), the character that fills an array of characters and the places of the call stack (§9).
+From the **Project** menu choose **New** (Ctrl+N). Write the name of the project, which is required, and, if you like, the author, a description and some notes; confirm with **Create**. The same information can be changed later with **Properties**, which also has three options that change the result: how many decimal digits a real number has when it is written (2 unless you say otherwise), the character that fills an array of characters and the places of the call stack (§10).
 
 Save the project with **Save as** (Ctrl+Shift+S): the file has the `.algo` extension. From then on **Save** (Ctrl+S) writes the same file. The file takes the name of the project; if that name has characters a file name cannot have, or is a name Windows reserves (such as `CON` or `NUL`), before the Windows dialog AlgoDesign says so and suggests another name, which can be changed: **Which names can be used?** tells the rules.
 
@@ -36,8 +36,8 @@ Save the project with **Save as** (Ctrl+Shift+S): the file has the `.algo` exten
 In the “Data” tab press **Add a data item** and fill in the fields:
 
 - **Name**: letters without accents, digits and the underscore, starting with a letter (`number`, `age`, not `età`), at most 63 characters; it cannot be a reserved word of C or Python (`if`, `while`, `int`, `return`…) or the name of an operator written as a word (`mod`, `length`…): this way the name goes unchanged into the generated code;
-- **Type**: integer, real, character, string or boolean;
-- **Shape**: single, or array with the number of elements (at most 1000);
+- **Type**: integer, real, character, string or boolean, or a record of the project (§5);
+- **Shape**: single, array with the number of elements (at most 1000), or matrix with the rows and the columns (§5);
 - **Kind**: variable or constant (a constant always has a value);
 - **Initial value**: optional for a variable; for an array, the list of values in braces, `{7, 8, 6}` (written without braces it works just the same);
 - **Role**: input, output, input and output, or working, the initial choice. A constant has no role.
@@ -77,7 +77,7 @@ A Write with several values has a field per value (**Add a value** opens another
 
 Often a Write just before a Read is its question: `write "Mark: "`, then `read mark`. In the Settings, “Appearance” tab, the box **Show the question in the Read block** (off at first) draws the two as a single block, on two lines: above, the question (`"Mark:"`; several values separated by a comma, and `↵` if it goes to a new line), below, `read mark`. It happens only when the console stays the same, that is when the Write goes to a new line or ends with a space (at the end of the last text, `"Mark: "`, or as a value on its own, `" "`). The other Writes stay separate blocks. In the fields of the Read, above the Target, there is then a field for each value of the question (**Question 1**, **Question 2**…, each with its ×), **Add a question** and **New line**. Without “New line” the value is typed on the same line, after a space AlgoDesign adds by itself. The block is moved, copied, deleted and undone all together, and between the question and the read there is no “+”: to insert a block between the two, turn the box off. Step by step the run stops first on the question and then on the read, on the same block, with the current line circled. The file and the generated code do not change: it is only another way to draw the same two blocks.
 
-In the “If” block the **True** branch is on the right and the **False** one on the left. In loops, True means “another round”. The “For” and “For each” loops have their own chapter, §4; procedures and functions §8.
+In the “If” block the **True** branch is on the right and the **False** one on the left. In loops, True means “another round”. The “For” and “For each” loops have their own chapter, §4; procedures and functions §9.
 
 For the example:
 
@@ -87,7 +87,7 @@ For the example:
 
 A block is opened with a double click or with Enter; **Enter** confirms, **Esc** cancels. The **“?”** next to “Confirm” tells what to write in the fields of that block. If what you write has an error, under the fields the error appears in a sentence, as you type: the sentence tells the precise cause when AlgoDesign recognizes it, such as “A parenthesis is opened and never closed.” or “The name has a space.”, and this holds for expressions, names, data, arguments and loops; the same sentence is in the status bar. **Explanation** opens the hint for that cause and, when the cause is not known, the possible causes. In a block just inserted, instead, the error appears when you confirm: the fields stay open to fix it, and a second confirmation keeps the block as it is, marked in the flowchart. A block is moved by dragging it onto another “+” (or from the keyboard with Space), copied, cut and pasted onto a “+”, deleted with Del. The right mouse button on a block (or, from the keyboard, the Menu key or Shift+F10) opens its menu: Cut, Copy, Delete. **Undo** (Ctrl+Z) and **Redo** (Ctrl+Y) go back and forward by one change.
 
-**Several blocks together.** Shift+click on another block also chooses the blocks between the two; from the keyboard, Shift+↑ and Shift+↓ widen the choice one block at a time. You choose neighboring blocks, in the same sequence: a block inside a loop or an “If” brings the choice to the loop or the “If” that contains it, with all its content. Each chosen block has the border, and a command applies to all of them in a single step: they are dragged onto a “+” (from the keyboard Space, then Tab to a “+” and Enter), cut, copied, deleted with Del, and Undo brings them all back. The right mouse button opens the menu of the chosen blocks. In the Settings (§13) the box “With a frame around them” also encloses them in a dashed frame.
+**Several blocks together.** Shift+click on another block also chooses the blocks between the two; from the keyboard, Shift+↑ and Shift+↓ widen the choice one block at a time. You choose neighboring blocks, in the same sequence: a block inside a loop or an “If” brings the choice to the loop or the “If” that contains it, with all its content. Each chosen block has the border, and a command applies to all of them in a single step: they are dragged onto a “+” (from the keyboard Space, then Tab to a “+” and Enter), cut, copied, deleted with Del, and Undo brings them all back. The right mouse button opens the menu of the chosen blocks. In the Settings (§14) the box “With a frame around them” also encloses them in a dashed frame.
 
 ### How expressions are written
 
@@ -154,7 +154,7 @@ An array is copied into another by its name, with an assignment: `others ← mar
 3. the copy of an element, `others[_index] ← marks[_index]`;
 4. the increase, `_index ← _index + 1`.
 
-In both forms each part is an action, step by step, and the breakpoint stops “Run” at each check, as in a loop. In the trace table the `_index` column is there only with the expanded form, where the drawing shows it. The array returned by a function is also assigned by its name (`doubled_marks ← doubles(marks)`, §8), but there the result arrives ready: it is a single action, with no frame.
+In both forms each part is an action, step by step, and the breakpoint stops “Run” at each check, as in a loop. In the trace table the `_index` column is there only with the expanded form, where the drawing shows it. The array returned by a function is also assigned by its name (`doubled_marks ← doubles(marks)`, §9), but there the result arrives ready: it is a single action, with no frame.
 
 ### Open or closed
 
@@ -171,22 +171,71 @@ With Step (F10) the run stops on each part of the loop: the start, each check, t
 
 ### Two examples
 
-Among the supplied examples (§11), in the “For and For each loops” group, two use these loops:
+Among the supplied examples (§12), in the “For and For each loops” group, two use these loops:
 
 - **Word backwards** reads a word, writes it backwards with a “For” that counts down (`for i from length parola - 1 to 0 step -1`) and counts its vowels with a “For each” on the characters: with `ciao` it writes `oaic` and `Vocali: 3`;
 - **Average of marks with For loops** is the “Average of marks” example with the two counting loops written as “For”: opening both examples you compare the same algorithm written in the two ways.
 
-## 5. Running
+## 5. Records, matrices and tables
+
+So far each data item held one value, or an array of values all of one type. Three shapes keep together values that belong together: the **record** gathers under one name values of different types (a student has a name, a class and a mark); the **matrix** lays out values of the same type in rows and columns (the marks of four students in three subjects); the **table** is an array of records (the whole class, one student per element). They are used like arrays: one piece at a time, by its name.
+
+### The record
+
+A record is a new type, defined once for the whole project. From the **Project** menu choose **Add a record**: at the top of the data view the “Records” table appears, with one row per record; below the row its card opens. There you write the **record name** (`student`) and the **fields**, one per row, each with its name, its type and, for a string, its maximum length. **Add a field** adds one; ↑ and ↓ move it, × removes it. A field has one of the five types of §3: it cannot be an array or another record. **Remove the record** takes it out of the project. The row of a record opens again with a double click or with Enter; its menu duplicates it, moves it and deletes it like the one of a data item. In the Settings, “Editing” tab, the box of the “Records” group (off at the start) puts **Add a record** also in the data view of a project that has none yet.
+
+Once the record is defined, its name is among the types of a data item: a data item `s` of type `student` has the three fields; a field is written with the name of the data item, a dot and the name of the field: `s.name`, `s.mark`. A field goes wherever a data item of its type goes: in an assignment (`s.mark ← s.mark + 1`), in a Read (`read s.name`), in a Write, in a condition. The initial value of a record is the list of its fields between braces, in their order: `{"Anna", "3A", 7}`.
+
+The whole record is written by its name only where it passes all together: in a copy (`b ← s`), as the argument of a procedure or of a function (by value, *ref* or *out*) and as the result of a function, which in its window can return a record. A record is not read or written all together; two records are not compared with `==`: one field at a time is read, written and compared.
+
+The copy `b ← s` goes one field at a time, as the copy of an array goes one element at a time (§4): in the flowchart the assignment sits in a dashed frame with the words “copy field by field”. In the expanded form the frame holds one assignment per field, `b.name ← s.name`, `b.class ← s.class`, `b.mark ← s.mark`; step by step each one is an action. A field without a value stops the copy on that field.
+
+### The matrix
+
+In the fields of a data item the **Shape** “matrix” asks for the **Rows** and the **Columns**: `m`, matrix of 2 × 3 integers, has 2 rows of 3 elements. An element is written with two indices, first the row and then the column, both from 0: `m[1][2]` is the last one. The limit on the elements is on the total: 40 rows by 26 columns are 1040 elements, too many.
+
+The initial value is written **by rows**, each row between braces: `{{7, 8, 6}, {5, 9, 4}}` (with at least two rows the outer braces can be left out); or it is a single value, repeated in every element.
+
+A row, `m[1]`, is an array: it goes wherever an array of its length goes. It is copied into an array (`v ← m[1]`) and the other way round (`m[0] ← v`), it is passed to a procedure, it is walked through with a “For each”. The “For each” walks through one row, not the whole matrix: for all the elements two loops are needed, one for the rows and inside it one for the columns. The whole matrix is copied by its name into another one with the same rows and the same columns, it is passed as a parameter (by value, *ref* or *out*) and it can be the result of a function. In the expanded form the copy `b ← a` has two loops, one inside the other: the one of the rows with `_index` and, inside, the one of the columns with `_index2`, which copies `b[_index][_index2] ← a[_index][_index2]`.
+
+In a matrix of strings `m[1][0]` is a string; in an array of strings `v[1][0]` is the first character of the string `v[1]`.
+
+### The table
+
+A table is an array of records: the **Shape** “array” with a record as its type. `pupils`, array of 3 `student`, holds three students: `pupils[1]` is the second one, a record; `pupils[1].mark` is its mark (first the index, then the field). The limit is on the total of the values, the records times the fields: 400 records of 3 fields are 1200 values, too many.
+
+The initial value is written **by records**, each record between braces: `{{"Anna", "3A", 7}, {"Bruno", "3B", 5}, {"Carla", "3A", 8}}`; or it is a single record repeated in every element, `{"-", "0X", 0}`.
+
+A record of the table goes wherever a record goes: it is copied (`r ← pupils[1]`, `pupils[0] ← r`, `pupils[0] ← pupils[2]`, each one a copy field by field), passed and returned. The whole table is copied by its name into another one of the same record and the same size, it is passed as a parameter (by value, *ref* or *out*) and it can be the result of a function. In the expanded form the copy `u ← t` is the loop of the records with one assignment per field inside: `u[_index].name ← t[_index].name`, then the class and the mark. The “For each” on a table gives a record at each round, taken in a single action: `for each s in pupils` copies the record into `s` before the body: changing `s` does not change the table.
+
+An example: sorting a class by mark with the bubble sort algorithm compares `t[j].mark > t[j + 1].mark` and swaps the two records with a spare record, `r ← t[j]`, `t[j] ← t[j + 1]`, `t[j + 1] ← r`.
+
+### Running
+
+In the **trace table** a record has one column per field, `s.name`, `s.class`, `s.mark`, gathered under the name of the data item. How a matrix and a table are shown is chosen in the Settings, “Trace table” tab:
+
+- **How a matrix is shown in the table**: a column for each row, with the values in a row and the changed element highlighted (it is the initial choice); a column for each element, like an array; or the whole matrix in a single column, with the rows separated by “‖”;
+- **How a table of records is shown in the trace table**: a column for each record, with its fields side by side (it is the initial choice); a column for each field of each record, like an array; or a column for each field, with the records side by side.
+
+With the mouse pointer on the name of a matrix or of a table, the value box shows a grid: for a matrix one row of the grid per row and one column per column (“matrix of 2 × 3 elements”); for a table one record per row, with the names of the fields at the top (“student · table of records (3)”). For a record, one field per row.
+
+A procedure or a function run on its own (§9) asks for a record, matrix or table parameter one piece at a time, each with its name: `s.name`, `m[0][1]`, `t[0].name`; for a record and for a table there is no “To every element”. The result is written in the same way, one line per piece: `→ .name = Bruno` for a record, `→ [0][1] = 4` for a matrix, `→ [0].name = Anna` for a table and `t[0].name = Anna` for a parameter by reference or output parameter. They are also the lines of the expected output of the test cases; a new case has an input for each piece that is asked.
+
+### The generated code
+
+In the pseudocode the records are defined at the top, `RECORD student` … `END RECORD`, one field per line with its type; the types of the data items are written as in the data view: `pupils: array of 3 student`, `m: matrix of 2 × 3 integers`. In Python a record is a data class (`@dataclass`), with the fields without a value at `None`; a matrix is a list of lists, a table a list of objects of that class. In C a record is a `struct` with the name of the record (`typedef struct { … } student;`), a matrix has two indices (`int m[2][3]`), a table is an array of `student`. The copies are written out in full, as in the expanded flowchart: one line per field, two loops for a matrix. “Academic” has no records, matrices or tables: for a project that uses them it says what is missing and where.
+
+## 6. Running
 
 When the project has no errors you run it:
 
 - **Run** (F5) goes to the end, or to the next breakpoint;
 - **Step** (F10) takes a single action: each press, one action;
-- **Animate** moves forward by itself, at one of the three speeds chosen in the menu next to it, and it also enters the procedures and functions that are called, like Step in (§8); a click pauses it;
+- **Animate** moves forward by itself, at one of the three speeds chosen in the menu next to it, and it also enters the procedures and functions that are called, like Step in (§9); a click pauses it;
 - **Stop** (Shift+F5) goes back to editing;
 - **Breakpoint** (F9) sets or removes a breakpoint on the chosen block: a red dot on the left of the block. “Run” stops there before executing it. “Clear points” removes them all.
 
-With procedures and functions there are also **Step in** (F11) and **Step out** (Shift+F11), to enter a call and leave it: §8.
+With procedures and functions there are also **Step in** (F11) and **Step out** (Shift+F11), to enter a call and leave it: §9.
 
 At the start, on the right of the flowchart a panel opens with the **trace table** above and the **console** below, and the current block is highlighted in yellow with an orange border. When the program reads a data item, at the bottom of the console there is the line where you type the value: type it and press **Enter**. A value that does not fit (letters instead of a number) is pointed out, and the same read is repeated.
 
@@ -198,7 +247,7 @@ With the mouse pointer on the name of a data item in a block, a box tells its ty
 
 If the program does something that cannot be done (an integer leaving its range, a division by zero, an index outside the array, a data item read before it has a value), the run stops on the block, and the console tells in a sentence what happened; **Explanation**, next to it, opens the rest with a **hint** to fix it. During the run the flowchart and the data can only be looked at: to change them press Stop, or wait for the end.
 
-## 6. Test cases: testing an algorithm
+## 7. Test cases: testing an algorithm
 
 A **test case** is a test: the values the user would type in the console, in order, and the **expected output**, that is the exact text the program must write. It can be written before the rules, as soon as the data exist: this way you decide what the program must do before deciding how.
 
@@ -216,34 +265,34 @@ On the row of a case, **Run** runs it like F5, with the table and the console an
 
 The menu of a case's row, like that of a data item, duplicates it, moves it and removes it. Undo also brings back the tick of a case that was removed or renamed, as it was before the change; the other cases keep the tick they have.
 
-A procedure or a function also has its own test cases, which test it on its own: §8.
+A procedure or a function also has its own test cases, which test it on its own: §9.
 
-## 7. The generated code
+## 8. The generated code
 
-The **Code** button, in the group of the views, opens on the right of the flowchart the panel of the **generated code**, with the tabs of the languages: at first **Pseudocode** (in the language of the interface), **Python** and **C**, but which languages have a tab, and in what order, is chosen in the Settings (§13); at the start the first one is shown. The code follows every change of the flowchart; with a project that has errors, instead of the code there is the invitation to fix them. “Code” and “Table” take turns in the same panel. Among the languages that can be turned on in the Settings there is also **Academic**, the pseudocode of the school selections of the Italian Olympiad in Informatics: how to use it for practice is explained in the guide to “Academic”, the file `GUIDA-AD-ACCADEMICO.md` (in Italian), which in the package is next to the program (and also in the package of the “Academic” tool), in the repository in the `docs` folder.
+The **Code** button, in the group of the views, opens on the right of the flowchart the panel of the **generated code**, with the tabs of the languages: at first **Pseudocode** (in the language of the interface), **Python** and **C**, but which languages have a tab, and in what order, is chosen in the Settings (§14); at the start the first one is shown. The code follows every change of the flowchart; with a project that has errors, instead of the code there is the invitation to fix them. “Code” and “Table” take turns in the same panel. Among the languages that can be turned on in the Settings there is also **Academic**, the pseudocode of the school selections of the Italian Olympiad in Informatics: how to use it for practice is explained in the guide to “Academic”, the file `GUIDA-AD-ACCADEMICO.md` (in Italian), which in the package is next to the program (and also in the package of the “Academic” tool), in the repository in the `docs` folder.
 
 During the run with Step or with Animate the code highlights the line (or the lines) of the current block; with Run, the line where the run stops on a breakpoint or on an error. This way you see, action by action, what each block corresponds to.
 
-The “For” and “For each” loops become, in the pseudocode, `FOR i FROM 1 TO n` … `END FOR` and `FOR EACH c IN word` … `END FOR EACH`; in Python a `while`, with the counter increased at the end of the body; in C a `for`. The “For each” goes through the array or the string with its position, `_index`, as in the open flowchart. During the run the line of the current part of the loop is highlighted: the start, the check, the element taken or the increase. How procedures and functions become code is told in §8.
+The “For” and “For each” loops become, in the pseudocode, `FOR i FROM 1 TO n` … `END FOR` and `FOR EACH c IN word` … `END FOR EACH`; in Python a `while`, with the counter increased at the end of the body; in C a `for`. The “For each” goes through the array or the string with its position, `_index`, as in the open flowchart. During the run the line of the current part of the loop is highlighted: the start, the check, the element taken or the increase. How procedures and functions become code is told in §9.
 
 **Copy** puts the code on the clipboard; **Save…** writes it to a file (`.txt`, `.py` or `.c`). The Python code runs with Python 3.9 or later; the C compiles with a C11 compiler (for example `gcc -std=c11 program.c -lm`).
 
 The generated code is made to be read: it does not check the calculations C leaves without a rule (an integer leaving its range, an integer division by zero, an index outside the array, a real outside the range of the integers converted to an integer, a data item read before it has a value), nor a real that becomes infinite or is not a number. A comment at the top of the Python and C program says so. AlgoDesign instead always stops them, and also stops a loop that does not end, after a million actions: that is why it is worth testing the algorithm in AlgoDesign first, with its test cases.
 
-## 8. Procedures and functions
+## 9. Procedures and functions
 
 A long algorithm reads better split into pieces, each with a name that says what it does: “read the number of marks”, “is the mark valid?”, “write the stars”. In AlgoDesign the pieces are of two kinds, and the difference lies in the problem, not in the programming language:
 
 - a **procedure does a job**: it reads, writes, changes the data it receives. It has no result, and it is called with a block of the flowchart, the “Procedure” block;
 - a **function computes a result** from the data it receives, and does nothing else: it does not read, does not write, does not change the data of whoever calls it. Its result (an integer, a real, a character, a boolean, a string or an array) is used inside an expression, like `valido(voto)` in the condition of an “If”.
 
-A function that reads or writes is an error, with the hint to turn it into a procedure. A procedure can call other procedures and functions; a function only other functions. A procedure or a function that calls itself, directly or through others (A calls B and B calls A), uses **recursion**: §9 tells about it.
+A function that reads or writes is an error, with the hint to turn it into a procedure. A procedure can call other procedures and functions; a function only other functions. A procedure or a function that calls itself, directly or through others (A calls B and B calls A), uses **recursion**: §10 tells about it.
 
 The program written so far is the **main program**: it is the one that runs first, and it calls the procedures and the functions.
 
 ### An example: the average of marks with functions
 
-Among the supplied examples (§11), in the “Functions and procedures” group, **Average of marks with functions** is the “Average of marks” split into three pieces (the names inside the examples are in Italian):
+Among the supplied examples (§12), in the “Functions and procedures” group, **Average of marks with functions** is the “Average of marks” split into three pieces (the names inside the examples are in Italian):
 
 - the procedure **leggi_numero**(*out* numero) asks how many marks to read, until the number is between 1 and 30, and gives it to whoever calls it;
 - the function **valido**(voto) returns a boolean: `voto >= 1 and voto <= 10`;
@@ -344,13 +393,13 @@ The name of a case of the program can contain “/” (“marks 6/7”), but it 
 
 In the code, procedures and functions come after the main program. In the pseudocode they are `PROCEDURE leggi_numero(out numero: integer)` and `FUNCTION boolean ← valido(voto: integer)`, which ends with `RETURNS …`, and the call of a procedure is `CALL leggi_numero(out n)`; a string or array result is written with the words of the data view, `FUNCTION array of 3 integers ← doubles(…)`. Python has no parameters by reference: a procedure returns the values of its parameters by reference and output parameters, and whoever calls it assigns them again; an output parameter is not even passed (`n = leggi_numero()`). In C a parameter by reference or an output parameter is a pointer (`void leggi_numero(int *numero)`, called with `leggi_numero(&n)`). An array passed by value is copied at the beginning of the called procedure, in Python and in C, so that the copy is really a copy; a string only in C, because in Python a string cannot be changed. For the same reason a function that returns an array gives in Python a new list (`return list(r)`); in C, which cannot return an array, the function returns a structure that contains it, and whoever calls it takes the array from it (`doubles(marks).v`; a string the same way, `.s`). The copy `others ← marks` is a real loop, one line for each of its parts, as in the expanded flowchart.
 
-## 9. Recursion
+## 10. Recursion
 
 A procedure or a function can call itself. The factorial of n is n times the factorial of n − 1, and the factorial of 1 is 1: the function “fatt” writes it exactly like that, `n * fatt(n - 1)`, and when `n <= 1` it returns 1 without calling itself any more. Every recursion has these two parts: the case in which the function no longer calls itself, and the call with a data item closer to that case. Each call in progress has its own data: while `fatt(3)` works, the `n` of `fatt(4)` is still 4 and waits for the result. Recursion can also go through other procedures or functions: “even” calls “odd”, which calls “even” again.
 
 ### Two examples
 
-Among the supplied examples (§11), in the “Functions and procedures” group:
+Among the supplied examples (§12), in the “Functions and procedures” group:
 
 - **Factorial with recursion**: the main program reads `n`, computes `r ← fatt(n)` and writes `r`; the function “fatt” has an “If” with the condition `n <= 1`, and in the True branch `f ← 1`, in the False one `f ← n * fatt(n - 1)`; then it returns `f`. With 10 it writes 3628800;
 - **Fibonacci sequence with recursion** reads `n` and writes the first n Fibonacci numbers, one per line: the function “fibonacci” calls itself twice, `fibonacci(n - 1) + fibonacci(n - 2)`, down to 0 and 1. Its test case “ventisei” stops: the work grows very fast with each number, and after 24 numbers it goes beyond a million actions.
@@ -359,7 +408,7 @@ AlgoDesign recognizes recursion by itself and says so, in the status bar and in 
 
 ### Running step by step
 
-Each call in progress is a **level**. Step in (F11) on `fatt(n - 1)` goes down one level; Step out (Shift+F11) goes up one, stopping partway through `f ← n * fatt(n - 1)`, on the resumption (§8).
+Each call in progress is a **level**. Step in (F11) on `fatt(n - 1)` goes down one level; Step out (Shift+F11) goes up one, stopping partway through `f ← n * fatt(n - 1)`, on the resumption (§9).
 
 - **Where you are** tells all the calls in progress up to seven levels; with more levels it shows the first two, “… 496 calls …” and the last three. A click on “…” opens the list “The other calls”, an item per level (“Level 37: fatt”), and an item shows that call.
 - In the **trace table** the group of “fatt” shows the data of the call of the action in progress, the deepest one.
@@ -371,9 +420,9 @@ If the case that stops the recursion is missing, or if the call does not get clo
 
 ### The generated code
 
-In the pseudocode and in Python the call stays `fatt(n - 1)`; in C it has an extra first argument, the line of the call: `fatt(__LINE__, n - 1)`. Unlike the other errors of §7, the generated code does check these two limits: the Python and the C count the calls in progress like AlgoDesign and stop at the same point, with the same sentence and the line of the call.
+In the pseudocode and in Python the call stays `fatt(n - 1)`; in C it has an extra first argument, the line of the call: `fatt(__LINE__, n - 1)`. Unlike the other errors of §8, the generated code does check these two limits: the Python and the C count the calls in progress like AlgoDesign and stop at the same point, with the same sentence and the line of the call.
 
-## 10. Libraries: importing procedures and functions
+## 11. Libraries: importing procedures and functions
 
 A well-written procedure or function is useful in several programs: `leggi_numero`, `valido`, a sort. Instead of writing it again, you **import** it: AlgoDesign copies part of another project into the open one. Afterwards, the copy belongs to the project: if the other one changes, the project does not.
 
@@ -385,7 +434,7 @@ A **library** is a project like the others, an `.algo` file, which collects proc
 
 From the Project menu, **Import procedures and functions…** opens the import window (**Import…** in the “Procedures and functions…” window does the same). At the top you choose where from:
 
-- from the **libraries folder**, divided into groups like that of the examples (§11), with the search at the top: **Choose** next to a library;
+- from the **libraries folder**, divided into groups like that of the examples (§12), with the search at the top: **Choose** next to a library;
 - or with **From another file…** from any project on the disk.
 
 Below, **What to import** lists the procedures and functions of the chosen project, each with its tick (**Change** goes back to choosing the project). If two have the same name, the second stays in the list turned off, with “Another one above has the same name: only that one is imported.” below it. Ticking one, **What goes into the project** tells what goes in and why: with it also go in the procedures and functions it calls, even through others (“Goes in: … calls it.”), and the shared constants they use (“Goes in: … uses it.”). What is already in the program, identical, does not go in again. The main program of the chosen project and its test cases never go in.
@@ -406,9 +455,9 @@ If the name already belongs to a data item or to another kind (an imported funct
 
 ### The libraries folder
 
-The libraries folder is chosen in the Settings, “Paths” tab (§13): for example a folder shared with the class. At first it sits next to the examples folder, and it does not exist until the first library goes in; AlgoDesign does not supply any. A project marked as a library goes in with **Add the open project**, at the bottom of the import window, in the group chosen next to it (“My libraries”, another group that exists, or a new one with “New group…”); if the file name is already used, the new file becomes “Name (2).algo”. With a project that is not marked the command is off, and the line next to it says to tick “It is a library” in the Properties. Libraries are not deleted from the window: they are deleted from the folder, with the system.
+The libraries folder is chosen in the Settings, “Paths” tab (§14): for example a folder shared with the class. At first it sits next to the examples folder, and it does not exist until the first library goes in; AlgoDesign does not supply any. A project marked as a library goes in with **Add the open project**, at the bottom of the import window, in the group chosen next to it (“My libraries”, another group that exists, or a new one with “New group…”); if the file name is already used, the new file becomes “Name (2).algo”. With a project that is not marked the command is off, and the line next to it says to tick “It is a library” in the Properties. Libraries are not deleted from the window: they are deleted from the folder, with the system.
 
-## 11. The examples
+## 12. The examples
 
 From the **Help** menu, **Examples…** opens the examples window: the projects of a folder, divided into **groups**, one for each of its subfolders. At the first start the folder receives twelve examples supplied with AlgoDesign, in three groups (the data, procedures and functions inside them have Italian names: a project does not change with the interface language):
 
@@ -418,11 +467,11 @@ From the **Help** menu, **Examples…** opens the examples window: the projects 
 
 A group is opened and closed with a click on its name; the **search** at the top finds an example by its name or its description. **Open** opens a copy of it, which is not tied to the file: to keep it use “Save as”. **Add the open project** puts it among the examples, in the group chosen next to it (“My examples”, or a new one with “New group…”). **Delete** deletes an example, and **Delete the group** deletes a group you created, with its examples (not the groups of the supplied examples): both ask first. **Restore the supplied examples** puts back the original ones, each in its group.
 
-In a folder used by an earlier version, the supplied examples move by themselves into their groups, your files stay where they are, and the new examples arrive with “Restore the supplied examples”. The folder is chosen in the Settings, “Paths” tab (§13), next to the libraries one: for example a folder shared with the class.
+In a folder used by an earlier version, the supplied examples move by themselves into their groups, your files stay where they are, and the new examples arrive with “Restore the supplied examples”. The folder is chosen in the Settings, “Paths” tab (§14), next to the libraries one: for example a folder shared with the class.
 
 From the same menu, **Student guide** opens this guide in a window on the right, in the language of the interface: on the left the chapters (a click leads to the chapter), on the right the text, with the search above it (a word, then Enter to go to the next one). The window stays open while you work: the app and its keys still work, and if the language changes the guide changes with it, staying on the same chapter. In the Settings, “Appearance” tab, it can also be moved, by dragging its title, and resized from its bottom corner. It closes with “Close” or with Esc. Finally, **About AlgoDesign** tells the version, its date and the licenses.
 
-## 12. Printing and exporting
+## 13. Printing and exporting
 
 The project can be printed on paper or to a PDF, and the flowchart can be exported as an image, to put in a report or a presentation. The two commands are in the **Project** menu; during a run they are there in pause, not while the program goes on (nor during “Run all”).
 
@@ -431,9 +480,9 @@ The project can be printed on paper or to a PDF, and the flowchart can be export
 **Print…** (Ctrl+P) opens the “Print” window. At the top you choose **Which procedures and functions**: **All**, or **Only the one shown**, that is the one of the open tab. With “All”, the box **Each procedure and function on a new sheet** makes each one start on a sheet of its own. Below are the parts to print, in the order in which they come out, each with its box:
 
 - **Project**: the name, the author, the description and the notes;
-- **Data**: the tables of the data view;
+- **Data**: the tables of the data view, with at the top a table for each record of the project, with its fields and their type;
 - **Flowchart**: with **Fit to the page** each flowchart stays on one page, even if the text gets small; otherwise the **Minimum flowchart text (points)**, from 6 to 12 (8 at first), decides when a flowchart goes on more pages. A flowchart wider than the page is printed smaller, and the window says so. In pause, **With the execution marks** also prints the current block and the breakpoints;
-- **Code in**, with the menu of the languages turned on in the Settings next to it (§13): the generated code, on portrait or landscape sheets;
+- **Code in**, with the menu of the languages turned on in the Settings next to it (§14): the generated code, on portrait or landscape sheets;
 - **Flowchart and code side by side**: instead of the flowchart and the code, on landscape sheets, the flowchart on the left and the code on the right, in the language chosen next to “Code in”. It can be chosen only together with the flowchart and the code. Python and C end with the **Support functions**, at the bottom, with the code only;
 - **Test cases**: for each case the name, the description, the values typed in the console and the expected output.
 
@@ -447,19 +496,19 @@ At first the flowchart and the code side by side are chosen, in the language of 
 
 **Export the flowchart…** exports the flowchart of the tab shown. The window says which flowchart it is and lets you choose the **Format**, **PNG (image)** or **SVG (drawing)**, the **Colors** (in color, in shades of gray, in black and white) and the **Transparent background**; without the box the background is white. **Export…** opens the Windows window to save, with the name of the project and, for a procedure or a function, its name in brackets: for example “media (leggi_numero).png”. The PNG is drawn at twice the size, so that it stays sharp; the SVG can be enlarged as much as you like without losing sharpness. In pause the image has the execution marks: the current block and the breakpoints. The choices stay until AlgoDesign is closed.
 
-## 13. The Settings
+## 14. The Settings
 
 The **Settings** button opens a window with six tabs; the choices apply after **Confirm** and stay after a restart:
 
-- **Appearance**: the language (Italian or English; it can also be changed from the status bar, §2), the flowchart colors (Soft, High contrast, Black and white) and the block colors (further below), long conditions on one or two lines, the initial values shown in the flowchart below “Start” or hidden, and the initial value of an array in a list or with a single value, how the “For” and “For each” loops and their frame are drawn (§4), the frame around the selected blocks (§3), the copy of an array by its name, compact or expanded (§4), the question in the Read block (§3), the look of the toolbar buttons, the run commands in a small bar above the flowchart, the search in the guide and its window, fixed or movable (§11);
-- **Editing**: where the fields of a block are written (in a box next to the block or in a panel on the right) and those of a data item (in a card below the row or in every cell), when to ask for confirmation before deleting a data item, whether brackets and quotes close by themselves as you type (§3), whether to offer to save a run as a test case (§6);
-- **Limits**: the elements of an array, the characters of a string and the characters of an array of strings (elements × maximum length), which can only be lowered; and the places of the call stack a new project starts with, from 5 to 500, which each project then changes in its Properties (§9);
-- **Paths**: the libraries folder (§10) and the examples one (§11);
-- **Trace table**: how an array is shown, what the CSV file has, the columns that stay in place, the separators;
-- **Console**: what a line that is too long does, and the **languages of the generated code** (§7): a row for each language, with the box that gives it a tab and the ▲ and ▼ buttons that move it up and down the list, which is the order of the tabs; at least one language stays on.
+- **Appearance**: the language (Italian or English; it can also be changed from the status bar, §2), the flowchart colors (Soft, High contrast, Black and white) and the block colors (further below), long conditions on one or two lines, the initial values shown in the flowchart below “Start” or hidden, and the initial value of an array in a list or with a single value, how the “For” and “For each” loops and their frame are drawn (§4), the frame around the selected blocks (§3), the copy of an array by its name, compact or expanded (§4), the question in the Read block (§3), the look of the toolbar buttons, the run commands in a small bar above the flowchart, the search in the guide and its window, fixed or movable (§12);
+- **Editing**: where the fields of a block are written (in a box next to the block or in a panel on the right) and those of a data item (in a card below the row or in every cell), whether “Add a record” is in the data view even without records (§5), when to ask for confirmation before deleting a data item, whether brackets and quotes close by themselves as you type (§3), whether to offer to save a run as a test case (§7);
+- **Limits**: the elements of an array, the characters of a string and the characters of an array of strings (elements × maximum length), which can only be lowered; and the places of the call stack a new project starts with, from 5 to 500, which each project then changes in its Properties (§10);
+- **Paths**: the libraries folder (§11) and the examples one (§12);
+- **Trace table**: how an array, a matrix and a table are shown (§5), what the CSV file has, the columns that stay in place, the separators;
+- **Console**: what a line that is too long does, and the **languages of the generated code** (§8): a row for each language, with the box that gives it a tab and the ▲ and ▼ buttons that move it up and down the list, which is the order of the tabs; at least one language stays on.
 
 **The block colors.** In the “Appearance” tab, under “Flowchart colors”, the **Block colors** box has a row per kind: Start and end, Assignment, Procedure, Read, Write, If, Loops (the diamond of each loop), Comment and Frame of the loops. Each row has a sample block, drawn with the color it will have, and the hues to choose from: the first, **As in the set**, keeps the color of the set chosen above; then seventeen hues for the blocks (nine soft and eight deep) and eight for the line of the frame of the loops. A chosen hue holds with every set: changing the set it stays, and the other kinds take the colors of the new one. **All as in the set** brings every kind back to the color of the set. At first, in “Soft”, start and end are gray, the assignment mauve, the procedure sand, the read green, the write light blue, the “If” orange, the loops deep orange and the comment white; in “High contrast” the same colors are stronger. Yellow is not there: it is the color of the current block during the run.
 
-## 14. License of this guide
+## 15. License of this guide
 
 This guide is by Giuseppe Lancellotti and is released under the Creative Commons Attribution 4.0 International license (CC BY 4.0): it can be copied, distributed and modified, also for commercial purposes, crediting the author and the license. The full text of the license is in the `LICENSE-DOCS` file.

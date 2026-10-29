@@ -16,9 +16,9 @@
 
 .voce {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template: auto / auto 1fr;
   column-gap: 0.5rem;
-  align-items: start;
+  place-items: start stretch;
 }
 
 .voce input {
@@ -40,7 +40,7 @@
 /* «Codice in» col menu dei linguaggi sulla stessa riga. */
 .codiceIn {
   display: flex;
-  align-items: center;
+  place-items: center;
   gap: 0.4rem;
 }
 
@@ -50,7 +50,7 @@
 
 .punti {
   display: flex;
-  align-items: center;
+  place-items: center;
   gap: 0.6rem;
 }
 
@@ -79,7 +79,7 @@
 }
 
 /* La pagina stampata: sullo schermo non c'è; in stampa è tutto ciò che si vede (il resto lo nascondono le regole dei
-   fogli). Colori fissi: la carta è bianca anche col tema scuro. */
+   fogli). Colori fissi: la carta è bianca anche col tema scuro; il carattere è quello del tema. */
 .pagina {
   display: none;
 }
@@ -89,7 +89,7 @@
     display: block;
     color: #000000;
     background: #ffffff;
-    font: 10pt system-ui, -apple-system, "Segoe UI", sans-serif;
+    font: 10pt var(--carattere);
   }
 }
 
@@ -118,8 +118,8 @@
 
 .metadati dd {
   margin: 1mm 0px 0px;
-  white-space: pre-wrap;
   line-height: 1.35;
+  white-space: pre-wrap;
 }
 
 .titoloDellaFunzione {
@@ -160,7 +160,7 @@
 .tabella td {
   border: 0.5pt solid #777777;
   padding: 1.2mm 1.6mm;
-  text-align: left;
+  text-align: start;
   vertical-align: top;
   white-space: pre-wrap;
 }
@@ -206,9 +206,9 @@
    minimo a zero: con `1fr` una riga del codice più larga del lato allargherebbe la sua metà invece di uscirne. */
 .accanto {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template: auto / repeat(2, minmax(0, 1fr));
   column-gap: 6mm;
-  align-items: start;
+  place-items: start stretch;
 }
 
 .accanto > .flowchart {

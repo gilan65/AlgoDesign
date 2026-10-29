@@ -6,6 +6,8 @@
 //   foglio di stile costruito dal CSSOM; le intestazioni; ogni foglio del flowchart uguale all'SVG che il nucleo scrive
 //   per quel foglio; il contenuto dei dati e dei casi d'uso contato a mano; in stampa la sola pagina; il PDF di Chromium
 //   coi versi dei fogli dalla `/MediaBox`; `afterprint` toglie la pagina e le sue regole;
+// - i dati di un programma coi record (`casi/tipi/vettore-di-record.algo`): una tabella per record in cima, coi campi e
+//   il loro tipo, poi le tabelle del programma principale coi tipi della tabella e del record;
 // - «Ogni procedura e funzione in un foglio nuovo», «solo quella mostrata» (la parte vuota spenta), le predefinite che
 //   stampano i soli affiancati, «Annulla» che non stampa, le scelte ricordate per la sessione; la nota dei flowchart
 //   ristretti coi punti del nucleo;
@@ -176,6 +178,8 @@ test("[Stampa] tutte le parti del riferimento della tappa 3: le predefinite, le 
     [NOMI[3], `${it.parametri}+${it.dati}`, "1+1"],
   ]);
   expect(await dati.locator("tbody th, tbody td").first().textContent()).toBe("n");
+  // Il riferimento non ha record: nessuna loro tabella.
+  expect(await dati.locator("[data-record-stampati] [data-record]").count()).toBe(0);
   // I casi d'uso: tre funzioni (non `leggi_numero`), coi nomi dei casi e gli output attesi.
   const casi = await page.locator('[data-stampa] [data-parte="casi"] [data-funzione]').evaluateAll((ff) =>
     ff.map((f) => [f.querySelector("h2")!.textContent, [...f.querySelectorAll("tbody tr")].map((t) => [t.children[0]!.textContent, t.children[3]!.textContent])]),
@@ -211,6 +215,47 @@ test("[Stampa] tutte le parti del riferimento della tappa 3: le predefinite, le 
   // `afterprint`: la pagina e le sue regole escono.
   await dopoLaStampa(page);
   expect(await page.evaluate(() => document.adoptedStyleSheets.length)).toBe(prima);
+});
+
+test("[Stampa] i dati di un programma coi record: una tabella per record in cima, coi campi e il loro tipo; poi le costanti comuni e i dati, con la tabella e il record come tipi", async ({ page }) => {
+  test.setTimeout(120_000);
+  const percorso = "C:\\Documenti\\vettore-di-record.algo";
+  const testo = readFileSync(fileURLToPath(new URL("../casi/tipi/vettore-di-record.algo", import.meta.url)), "utf8");
+  await page.addInitScript(() => {
+    (window as unknown as { __stampe__: number }).__stampe__ = 0;
+    window.print = () => {
+      (window as unknown as { __stampe__: number }).__stampe__++;
+    };
+  });
+  await apriVuota(page, { lingua: "it" }, { argomento: percorso, file: { [percorso]: testo } });
+  await expect(page.getByRole("status")).toHaveText(riempi(it.apertoIl, { file: "vettore-di-record.algo" }));
+  await page.keyboard.press("Control+p");
+  await expect(finestra(page)).toBeVisible();
+  await casella(page, it.stampaDati).check();
+  for (const n of [it.stampaFlowchart, it.stampaCodice]) await casella(page, n).uncheck();
+  await stampa(page, 1);
+  const dati = page.locator('[data-stampa] [data-parte="dati"]');
+  // L'atteso scritto a mano dal file: il record `alunno` coi tre campi; nel programma principale la costante comune
+  // `VUOTI` (una tabella di 2) e i dati `classe` (una tabella di 3), `a` (un record) e `somma`.
+  const tabelle = await dati.evaluate((d) =>
+    [...d.querySelectorAll("table")].map((t) => {
+      const sopra = t.previousElementSibling?.tagName === "H3" ? t.previousElementSibling.textContent : "";
+      return [sopra, [...t.querySelectorAll("tbody tr")].map((r) => [...r.children].slice(0, 2).map((c) => c.textContent).join(" | "))];
+    }),
+  );
+  expect(tabelle).toEqual([
+    ["Record alunno", ["nome | stringa, al più 20 caratteri", "classe | stringa, al più 3 caratteri", "voto | intero"]],
+    [it.costantiComuni, ["VUOTI | vettore di 2 alunno"]],
+    [it.dati, ["classe | vettore di 3 alunno", "a | alunno", "somma | intero"]],
+  ]);
+  // I record prima del titolo del programma principale.
+  const prima = await dati.evaluate((d) => {
+    const r = d.querySelector("[data-record-stampati]")!;
+    const h = d.querySelector("h2")!;
+    return (r.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+  });
+  expect(prima).toBe(true);
+  await dopoLaStampa(page);
 });
 
 test("[Stampa] le predefinite stampano i soli affiancati; «Annulla» non stampa; le scelte ricordate; ogni funzione in un foglio nuovo; solo quella mostrata, con la parte vuota spenta", async ({ page }) => {

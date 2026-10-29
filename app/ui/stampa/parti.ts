@@ -4,7 +4,8 @@
 // Flowchart e codice affiancati, Casi d'uso; dentro una parte le procedure e funzioni nell'ordine del file (il programma
 // principale per primo). Il flowchart di ogni funzione comincia su un foglio nuovo, coi fogli del nucleo
 // (`fogliDelDisegno`); i dati e i casi d'uso di più funzioni si seguono sugli stessi fogli, o ognuna da un foglio nuovo
-// con la casella «Ogni procedura e funzione in un foglio nuovo».
+// con la casella «Ogni procedura e funzione in un foglio nuovo». I record del progetto stanno una volta, in cima alla
+// parte «Dati», anche con la sola funzione mostrata.
 //
 // Il codice: quello del linguaggio scelto, coi fogli di `fogliDelCodice` (a 8 punti, verticali o orizzontali) e i numeri
 // veri delle righe del file; di seguito, o ogni parte (`partiDelCodice`) da un foglio nuovo con la stessa casella; con
@@ -109,13 +110,17 @@ export const comuniDi = (p: Progetto, f: Funzione) => (f.kind === "main" ? (p.sh
 /** Una funzione ha qualcosa da stampare nei dati: dati, parametri o (il programma principale) costanti comuni. */
 export const conDati = (p: Progetto, f: Funzione) => f.data.length > 0 || comuniDi(p, f).length > 0;
 
+/** I record del progetto si stampano una volta, in cima alla parte «Dati», con qualunque funzione: il tipo di un suo dato
+ * può essere un record. */
+const conRecord = (p: Progetto) => (p.records ?? []).length > 0;
+
 /** Le parti che hanno qualcosa da stampare per quelle funzioni: le altre sono spente nella finestra. Il progetto col solo
  * nome non fa un foglio. */
 export function partiPiene(p: Progetto, funzioni: readonly Funzione[]): Record<ParteDellaStampa, boolean> {
   const m = p.metadata;
   return {
     progetto: [m.author, m.description, m.notes].some((x) => (x ?? "").trim() !== ""),
-    dati: funzioni.some((f) => conDati(p, f)),
+    dati: funzioni.length > 0 && (conRecord(p) || funzioni.some((f) => conDati(p, f))),
     flowchart: funzioni.length > 0,
     codice: funzioni.length > 0,
     affiancati: funzioni.length > 0,
@@ -150,6 +155,8 @@ export interface Sezione {
   readonly foglio?: number;
   readonly codice?: CodiceDelFoglio;
   readonly senzaCodice?: true;
+  /** Solo per la prima sezione dei dati di un progetto coi record: le loro tabelle, prima delle funzioni. */
+  readonly record?: true;
 }
 
 /** Il nome di una funzione nella stampa: il programma principale col nome della sua scheda. */
@@ -278,8 +285,11 @@ export function sezioniDellaStampa(
       }
     } else {
       const conQualcosa = funzioni.filter((f) => (parte === "dati" ? conDati(p, f) : casiDi(p, f).length > 0));
-      if (divise) for (const f of conQualcosa) fuori.push({ parte, orizzontale: false, testa: testa(parte, f), destra: "", funzioni: [f] });
-      else fuori.push({ parte, orizzontale: false, testa: testa(parte), destra: "", funzioni: conQualcosa });
+      // I record nella prima sezione dei dati; con una funzione per sezione e nessun dato, in una sezione loro.
+      const record = parte === "dati" && conRecord(p) ? ({ record: true } as const) : {};
+      if (!divise) fuori.push({ parte, orizzontale: false, testa: testa(parte), destra: "", funzioni: conQualcosa, ...record });
+      else if (conQualcosa.length === 0) fuori.push({ parte, orizzontale: false, testa: testa(parte), destra: "", funzioni: [], ...record });
+      else conQualcosa.forEach((f, i) => fuori.push({ parte, orizzontale: false, testa: testa(parte, f), destra: "", funzioni: [f], ...(i === 0 ? record : {}) }));
     }
   }
   return fuori.map((s, k) => ({ ...s, nome: `stampa-${k}` }));

@@ -5,7 +5,8 @@
 // lo fermerebbe la politica di sicurezza dei contenuti.
 //
 // Le parti: il progetto (il nome e, se ci sono, l'autore, la descrizione e le note); i dati, con le tabelle della vista
-// dei dati in sola lettura (le costanti comuni col programma principale, i parametri con ciò che restituisce, i dati);
+// dei dati in sola lettura (in cima una tabella per record, coi campi e il loro tipo come lo dice la colonna «Tipo»; le
+// costanti comuni col programma principale, i parametri con ciò che restituisce, i dati);
 // il flowchart, un SVG del nucleo per foglio (mai la tela della finestra); i casi d'uso, una tabella per funzione col nome,
 // la descrizione, i valori scritti nella console e l'output atteso (con l'errore e gli avvisi attesi, come li dice la
 // scheda del caso). Le tabelle e i titoli delle funzioni si seguono; con una funzione per sezione il titolo resta.
@@ -165,6 +166,17 @@ export function PaginaStampata({
     );
   };
 
+  // I record: una tabella per record, un campo per riga col suo tipo (un campo ha il nome, il tipo e la lunghezza di un dato).
+  const record = (
+    <div data-record-stampati="">
+      {(progetto.records ?? []).map((r) => (
+        <div key={r.name} data-record={r.name}>
+          <Tabella titolo={riempi(testi.stampaRecord, { nome: r.name })} righe={[[testi.recordCampo, testi.datiTipo], ...r.fields.map((c) => [c.name, tipoDelDato(c, testi)])]} />
+        </div>
+      ))}
+    </div>
+  );
+
   const casi = (f: Funzione) => {
     const voci = (c: ReturnType<typeof casiDi>[number]) =>
       c.inputs.length === 0
@@ -236,7 +248,12 @@ export function PaginaStampata({
           </>
         );
       case "dati":
-        return <>{s.funzioni.map(dati)}</>;
+        return (
+          <>
+            {s.record && record}
+            {s.funzioni.map(dati)}
+          </>
+        );
       case "casi":
         return <>{s.funzioni.map(casi)}</>;
       case "flowchart":
