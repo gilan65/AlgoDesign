@@ -224,3 +224,48 @@ test("una matrice nuova scrive le righe e le colonne; un vettore che diventa mat
   // Una forma semplice non scrive né la dimensione né le colonne, anche se la bozza le tiene.
   expect(datoDaBozza({ ...v, vettore: false, matrice: true, colonne: "2" })).toEqual({ name: "v", type: "integer" });
 });
+
+// ------------------------------------------------------------------------------------- le tabelle
+
+/** Le tabelle (vettori di record) del corpus dei tipi col valore iniziale: dati e costanti comuni. */
+const delleTabelle = readdirSync(join(import.meta.dir, "..", "..", "casi", "tipi"))
+  .filter((f) => f.endsWith(".algo"))
+  .flatMap((f) => {
+    const a = apri(readFileSync(join(import.meta.dir, "..", "..", "casi", "tipi", f), "utf8"));
+    if (!a.ok) throw new Error(f);
+    return [...(a.progetto.shared_constants ?? []), ...a.progetto.functions.flatMap((x) => x.data)].filter((d) => d.type === "record" && d.size !== undefined && d.initial !== undefined);
+  });
+
+test("una tabella: andata e ritorno di ogni tabella del corpus dei tipi, con l'elenco per record o il record ripetuto", () => {
+  const diverse = delleTabelle.filter((d) => !stessoDato(datoDaBozza(bozzaDi(d, "elenco")), d) || !stessoDato(datoDaBozza(bozzaDi(d, "un-valore")), d)).map((d) => d.name);
+  console.log(`bozza delle tabelle: corpus ${delleTabelle.length}; diverse al ritorno ${diverse.length}`);
+  expect(diverse).toEqual([]);
+  // La premessa: il corpus ha tabelle con l'elenco per record e col record ripetuto.
+  expect(delleTabelle.length).toBeGreaterThanOrEqual(7);
+  expect(delleTabelle.some((d) => Array.isArray(d.initial)) && delleTabelle.some((d) => d.initial !== undefined && !Array.isArray(d.initial))).toBe(true);
+  // La bozza di una tabella: l'elenco dei record, ognuno fra graffe; il record ripetuto fra graffe.
+  const t: Dato = { name: "t", type: "record", record: "alunno", size: 2, initial: [['"Anna"', "7"], ['"Bruno"', "9"]] };
+  expect(bozzaDi(t, "elenco")).toMatchObject({ vettore: true, matrice: false, iniziale: '{{"Anna", 7}, {"Bruno", 9}}', ripetuto: false });
+  expect(bozzaDi({ ...t, initial: { each: ['"x"', "0"] } }, "elenco")).toMatchObject({ iniziale: '{"x", 0}', ripetuto: true });
+  // Controllo positivo: un record per elemento letto piatto non è la tabella, e il confronto lo vede.
+  expect(stessoDato({ ...t, initial: ['"Anna"', "7", '"Bruno"', "9"] }, t)).toBe(false);
+});
+
+test("l'elenco di una tabella si legge per record, con o senza le graffe esterne; il record ripetuto è un elenco di campi", () => {
+  const letto = (iniziale: string, ripetuto = false) => inizialeDaBozza({ iniziale, vettore: true, ripetuto }, true);
+  expect(letto('{{"Anna", 7}, {"Bruno", 9}}')).toEqual([['"Anna"', "7"], ['"Bruno"', "9"]]);
+  expect(letto('{"Anna", 7}, {"Bruno", 9}')).toEqual([['"Anna"', "7"], ['"Bruno"', "9"]]);
+  // Le virgole e le graffe dentro un letterale non separano.
+  expect(letto(`{{"a, }", 'x'}, {"{", 0}}`)).toEqual([['"a, }"', "'x'"], ['"{"', "0"]]);
+  expect(letto('{"x", 0}', true)).toEqual({ each: ['"x"', "0"] });
+  expect(letto('"x", 0', true)).toEqual({ each: ['"x"', "0"] });
+  expect(letto("{}")).toBeUndefined();
+  // Un record solo (non un vettore) resta l'elenco dei suoi campi.
+  expect(inizialeDaBozza({ iniziale: '{"Anna", 7}', vettore: false, ripetuto: false }, true)).toEqual(['"Anna"', "7"]);
+});
+
+test("da un record ripetuto all'elenco, una tabella si riempie record per record", () => {
+  const b = bozzaDi({ name: "t", type: "record", record: "alunno", size: 3, initial: { each: ['"x"', "0"] } }, "un-valore");
+  expect(conRipetuto(b, false).iniziale).toBe('{{"x", 0}, {"x", 0}, {"x", 0}}');
+  expect(datoDaBozza(conRipetuto(b, false)).initial).toEqual([['"x"', "0"], ['"x"', "0"], ['"x"', "0"]]);
+});

@@ -32,6 +32,7 @@ const tutte = {
   velocitaAnimata: "veloce",
   formaDeiVettori: "in-fila",
   formaDelleMatrici: "in-fila",
+  formaDelleTabelle: "per-campo",
   formaDelCsv: "per-elemento",
   righeLunghe: "la-fine",
   caratteriPerRiga: 80,
@@ -103,6 +104,8 @@ const rotti: Record<string, readonly unknown[]> = {
   formaDeiVettori: ["per-elemento", "colonne", 1, null],
   // Le tre forme della matrice sono del nucleo; «primi-e-altri» è una forma dei vettori, non delle matrici.
   formaDelleMatrici: ["primi-e-altri", "righe", 2, null],
+  // Le tre forme della tabella sono del nucleo; «per-riga» è una forma delle matrici, non delle tabelle.
+  formaDelleTabelle: ["per-riga", "in-fila", 3, null],
   formaDelCsv: ["tutti", true, null],
   righeLunghe: ["taglia", 0, null],
   caratteriPerRiga: [0, 49, 1001, 2.5, "80", null],
@@ -137,7 +140,7 @@ test("un campo rotto scarta lui solo: gli altri restano", () => {
     }
   // Ogni campo del file ha le sue prove (i limiti hanno la loro).
   expect(Object.keys(rotti).sort()).toEqual(Object.keys(tutte).filter((k) => k !== "limiti").sort());
-  expect(provati).toBe(129);
+  expect(provati).toBe(133);
 });
 
 test("un limite rotto scarta lui solo, e un oggetto dei limiti rotto li scarta tutti e tre", () => {
@@ -211,6 +214,9 @@ test("la tabella, il CSV e la console: le colonne dei primi dieci, il CSV uguale
   // tre forme si leggono e si riscrivono.
   expect([scelteIniziali.formaDelleMatrici, preferenzeDa({ lingua: "it", formaDeiVettori: "in-fila" }).scelte.formaDelleMatrici]).toEqual(["per-riga", "per-riga"]);
   for (const forma of ["per-riga", "per-elemento", "in-fila"] as const) expect(fileDa("it", preferenzeDa({ formaDelleMatrici: forma }).scelte).formaDelleMatrici).toBe(forma);
+  // La forma delle tabelle: una colonna per record, predefinita anche per un file di prima; le tre forme tornano.
+  expect([scelteIniziali.formaDelleTabelle, preferenzeDa({ lingua: "it", formaDelleMatrici: "in-fila" }).scelte.formaDelleTabelle]).toEqual(["per-record", "per-record"]);
+  for (const forma of ["per-record", "per-elemento", "per-campo"] as const) expect(fileDa("it", preferenzeDa({ formaDelleTabelle: forma }).scelte).formaDelleTabelle).toBe(forma);
   for (const modo of ["a-capo", "la-fine"] as const) expect(fileDa("it", preferenzeDa({ righeLunghe: modo }).scelte).righeLunghe).toBe(modo);
 });
 

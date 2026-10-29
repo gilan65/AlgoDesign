@@ -1,7 +1,7 @@
 // Il watch: col puntatore sopra il nome di un dato in un blocco, durante l'esecuzione, un riquadro accanto al nome con
 // il nome, il tipo della vista dei dati e il valore della riga corrente della tabella di traccia (per un vettore,
 // quanti elementi e un elemento per riga; per una matrice, righe per colonne e la griglia; per un record, un campo per
-// riga). I valori li dà il nucleo (`TabellaMostrata.watch`), mai ricalcolati qui.
+// riga; per una tabella, quanti record e la griglia, un record per riga e un campo per colonna). I valori li dà il nucleo (`TabellaMostrata.watch`), mai ricalcolati qui.
 // Si chiude quando il puntatore lascia il nome, o con Esc. Il riquadro non
 // prende il puntatore: lasciarlo non serve.
 //
@@ -115,10 +115,13 @@ export const Watch = memo(function Watch({
     </span>
   );
   /** Gli elementi di un vettore, o i campi di un record, uno per riga; di una matrice (`colonne`) la griglia, una riga
-   * della tabella per riga della matrice, coi numeri delle colonne in cima e quelli delle righe a sinistra. */
+   * della tabella per riga della matrice, coi numeri delle colonne in cima e quelli delle righe a sinistra; di una tabella
+   * la griglia, un record per riga coi nomi dei campi in cima. */
   const elementi = (es: DatoNelWatch["elementi"]) =>
     dato.colonne !== undefined ? (
       griglia(es, dato.colonne)
+    ) : campi !== undefined ? (
+      griglia(es, campi.length, campi)
     ) : (
       <table className={stili.elementi}>
         <tbody>
@@ -133,13 +136,17 @@ export const Watch = memo(function Watch({
         </tbody>
       </table>
     );
-  const griglia = (es: DatoNelWatch["elementi"], colonne: number) => (
-    <table className={`${stili.elementi} ${stili.griglia}`} data-watch-griglia="">
+  /** La griglia di una matrice (le colonne coi loro numeri) o di una tabella (`nomi`: le colonne sono i campi, coi loro
+   * nomi; i valori allineati all'inizio, perché un record mescola testi e numeri). */
+  const griglia = (es: DatoNelWatch["elementi"], colonne: number, nomi?: readonly string[]) => (
+    <table className={`${stili.elementi} ${stili.griglia}${nomi ? ` ${stili.deiRecord}` : ""}`} data-watch-griglia="">
       <thead>
         <tr>
           <td />
           {Array.from({ length: colonne }, (_, j) => (
-            <th key={j} scope="col" className={stili.indice}>{`[${j}]`}</th>
+            <th key={j} scope="col" className={stili.indice}>
+              {nomi ? nomi[j] : `[${j}]`}
+            </th>
           ))}
         </tr>
       </thead>
@@ -158,6 +165,10 @@ export const Watch = memo(function Watch({
     </table>
   );
   const quanti = "chiamate" in dato ? (dato.chiamate[0]?.length ?? 0) : dato.elementi.length;
+  // Una tabella (un vettore di record): i nomi dei campi, letti dai nomi che il nucleo dà ai valori del primo record
+  // (`t[0].nome`, o `[0].nome` per ciò che una funzione ha restituito).
+  const primi = "chiamate" in dato ? (dato.chiamate[0] ?? []) : dato.elementi;
+  const campi = dato.vettore && dato.record ? primi.flatMap((e) => (/^[^[]*\[0\]\./.test(e.nome) ? [e.nome.slice(e.nome.indexOf("].") + 2)] : [])) : undefined;
   const intestazione = (
     <div className={stili.intestazione}>
       <span>
@@ -173,9 +184,11 @@ export const Watch = memo(function Watch({
             <span data-watch-elementi="">
               {dato.colonne !== undefined
                 ? riempi(testi.watchMatrice, { righe: String(Math.ceil(quanti / dato.colonne)), colonne: String(dato.colonne) })
-                : quanti === 1
-                  ? testi.watchElemento
-                  : riempi(testi.watchElementi, { n: String(quanti) })}
+                : campi !== undefined && campi.length > 0
+                  ? riempi(testi.watchTabella, { n: String(Math.ceil(quanti / campi.length)) })
+                  : quanti === 1
+                    ? testi.watchElemento
+                    : riempi(testi.watchElementi, { n: String(quanti) })}
             </span>
           </span>
         )}

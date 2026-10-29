@@ -3,7 +3,7 @@
 // tappa 2 (coi cicli `per`), `riferimento-media-voti-funzioni.algo` contro quello della tappa 3 (le procedure e la
 // funzione nascono quando servono: la mappa segue l'ordine in cui la costruzione crea blocchi e fini, e ogni numero da
 // `b1` all'ultimo è usato una volta), `copia-di-un-record.algo` contro quello dei record (la fine del riferimento si
-// chiama `fine`, e la mappa la nomina).
+// chiama `fine`, e la mappa la nomina), `vettore-di-record.algo` contro quello delle tabelle (lo stesso).
 //
 // La mappa degli identificatori, dichiarata: un progetto nuovo ha la fine come `b1`; i blocchi creati dopo
 // prendono `b2`, `b3`, … nell'ordine di creazione, che è l'ordine del flusso. Nella tappa 1 il blocco `bN` del
@@ -84,6 +84,15 @@ const coppie = [
     riferimento: leggi("../../casi/tipi/copia-di-un-record.algo"),
     mappa: { b1: "b2", b2: "b3", b3: "b4", b4: "b5", b5: "b6", fine: "b1" } as Record<string, string>,
     blocchi: 5,
+  },
+  {
+    // La tabella con l'elenco per record e la costante comune col record ripetuto, il campo letto dalla console, il «per
+    // ogni» sui record (il suo corpo nasce dopo di lui: b4–b6 diventano b5–b7).
+    nome: "tabelle",
+    atteso: leggi("./vettore-di-record.algo"),
+    riferimento: leggi("../../casi/tipi/vettore-di-record.algo"),
+    mappa: { b1: "b2", b2: "b3", b3: "b4", b4: "b5", b5: "b6", b6: "b7", b7: "b8", fine: "b1" } as Record<string, string>,
+    blocchi: 7,
   },
 ];
 

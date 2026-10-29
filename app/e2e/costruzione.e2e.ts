@@ -40,7 +40,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
-import { costruisci, differenze, programmaDeiRecord, programmaDelleMatrici, riferimentoDellaTappa1, riferimentoDellaTappa2, riferimentoDellaTappa3, type DaCostruire, type Modi } from "./costruzione";
+import { costruisci, differenze, programmaDeiRecord, programmaDelleMatrici, programmaDelleTabelle, riferimentoDellaTappa1, riferimentoDellaTappa2, riferimentoDellaTappa3, type DaCostruire, type Modi } from "./costruzione";
 import { apriVuota, costruisciFinzione, voceDelMenu } from "./pagina";
 
 test.beforeAll(costruisciFinzione);
@@ -260,4 +260,28 @@ test("il programma con le matrici costruito solo con l'interfaccia (la forma «m
   const mutato = atteso.testo.replace('"columns": 2,\n          "initial"', '"columns": 3,\n          "initial"');
   expect(mutato).not.toBe(atteso.testo);
   expect(differenze(JSON.parse(testo), JSON.parse(mutato))).toEqual(["functions[0].data[0].columns"]);
+});
+
+test("il programma con le tabelle costruito solo con l'interfaccia (il record dal menu, la tabella con l'elenco per record, la costante comune col record ripetuto, il campo letto, il «per ogni» sui record) e salvato è byte per byte il file atteso, col caso verde dalla riga di comando", async ({ page }, info) => {
+  const { progetto: daCostruire, atteso } = programmaDelleTabelle;
+  await apriVuota(page, { lingua: "it" });
+  const inizio = Date.now();
+  const osservato = await costruisci(page, "it", { blocchi: "riquadro", dati: "scheda" }, true, async () => {}, programmaDelleTabelle);
+  const testo = await salvaConNome(page, "C:\\prove\\costruito-tabelle.algo");
+  const diverse = differenze(JSON.parse(testo), JSON.parse(atteso.testo));
+  console.log(
+    `[${info.project.name}] costruzione con le tabelle: record ${osservato.records} (campi ${osservato.campi}), dati ${osservato.dati}, blocchi ${osservato.blocchi} (cicli ${osservato.cicli}), valori del caso ${osservato.valoriDelCaso}; ${Buffer.byteLength(testo)} byte contro ${Buffer.byteLength(atteso.testo)} dell'atteso, campi diversi ${diverse.length}, ${((Date.now() - inizio) / 1000).toFixed(1)} s`,
+  );
+  expect(diverse, "il file salvato è diverso dall'atteso in questi campi").toEqual([]);
+  expect(testo, "il file salvato è diverso dall'atteso nei byte (ordine delle chiavi, spazi, fine riga)").toBe(atteso.testo);
+  // Le premesse: il record coi suoi tre campi, la costante comune e i tre dati, i sette blocchi (un «per ogni») e il valore
+  // del caso sono passati dall'interfaccia.
+  expect({ records: osservato.records, campi: osservato.campi, dati: osservato.dati, blocchi: osservato.blocchi, cicli: osservato.cicli, valori: osservato.valoriDelCaso }).toEqual({ records: 1, campi: 3, dati: 4, blocchi: 7, cicli: 1, valori: 1 });
+  const verde = rigaDiComando(join(app, ".collaudo", "costruzione"), `${info.project.name}-tabelle.algo`, testo);
+  expect(verde.uscita).toContain(`VERDE ${verde.file}#${daCostruire.test_cases![0]!.name}`);
+  expect(verde.codice).toBe(0);
+  // Controllo positivo: un campo del record ripetuto cambiato nell'atteso, e il rilevatore dice quel campo.
+  const mutato = atteso.testo.replace('"\\"0X\\""', '"\\"0Y\\""');
+  expect(mutato).not.toBe(atteso.testo);
+  expect(differenze(JSON.parse(testo), JSON.parse(mutato))).toEqual(["shared_constants[0].initial.each[1]"]);
 });

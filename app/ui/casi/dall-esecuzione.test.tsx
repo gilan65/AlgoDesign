@@ -289,3 +289,69 @@ test("un parametro record della procedura eseguita da sola: chiesto campo per ca
   expect(nomiDeiCasi()).toEqual(["caso 1", "caso 2"]);
   expect(vociDelCaso()[1]).toContain([riempi(testi.casoVoce, { dato: "r", testo: "" }), riempi(testi.casoVoce, { dato: "r", testo: "" })].join(" · "));
 });
+
+// --------------------------------------------------------------------------------------------- le tabelle
+
+/** Lo stesso record `alunno`: la procedura `seconda` riceve una tabella di due alunni per valore e scrive il nome del
+ * secondo. */
+const DELLE_TABELLE = JSON.stringify({
+  format: "algodesign",
+  schema_version: 2,
+  metadata: { name: "classe" },
+  records: [{ name: "alunno", fields: [{ name: "nome", type: "string", max_length: 10 }, { name: "voto", type: "integer" }] }],
+  functions: [
+    { id: "f1", kind: "main", data: [], body: [], end: { id: "b1" } },
+    {
+      id: "f2",
+      kind: "procedure",
+      name: "seconda",
+      data: [{ name: "t", type: "record", record: "alunno", size: 2, parameter: "value" }],
+      body: [{ id: "b2", kind: "write", values: ["t[1].nome", "t[0].voto"], newline: true }],
+      end: { id: "b3" },
+    },
+  ],
+});
+
+test("un parametro tabella della procedura eseguita da sola: chiesto record per record e campo per campo senza «A ogni elemento», il caso salvato e il caso nuovo con una voce per campo di ogni record", async () => {
+  await apriLaFinestra(scelteIniziali, DELLE_TABELLE, "classe.algo");
+  await clic(document.querySelector("[data-elenco-funzioni]")!);
+  await giro();
+  await clic(document.querySelector('[data-elenco] [data-voce-funzione="f2"]')!);
+  await giro();
+  await tasto(document.body, "F5");
+  const chiesti: string[] = [];
+  const pulsanti: boolean[] = [];
+  for (const [dato, valore] of [
+    ["t[0].nome", "Anna"],
+    ["t[0].voto", "7"],
+    ["t[1].nome", "Ugo"],
+    ["t[1].voto", "5"],
+  ] as const) {
+    await aspetta(dato, () => statoMostrato() === riempi(testi.statoChiede, { dato }));
+    chiesti.push(statoMostrato());
+    pulsanti.push(document.querySelector("[data-ogni-elemento]") !== null);
+    await scriviNellaConsole(valore);
+  }
+  await aspetta("la fine", () => statoMostrato() === testi.statoFinita);
+  // Scritti a mano: l'elemento e il campo insieme, mai «A ogni elemento» (i campi hanno tipi diversi).
+  expect(chiesti).toEqual(["t[0].nome", "t[0].voto", "t[1].nome", "t[1].voto"].map((dato) => riempi(testi.statoChiede, { dato })));
+  expect(pulsanti).toEqual([false, false, false, false]);
+  await clic(nellaConsole()!);
+  await giro();
+  await tasto(document.activeElement!, "Enter");
+  await giro();
+  expect(schedaMostrata()).toBe("f2");
+  expect(nomiDeiCasi()).toEqual(["caso 1"]);
+  expect(vociDelCaso()[0]).toContain(["Anna", "7", "Ugo", "5"].map((testo) => riempi(testi.casoVoce, { dato: "t", testo })).join(" · "));
+  await clic(document.querySelector('tr[data-caso="0"] [data-esegui-caso="tutto"]')!);
+  await aspetta("l'esito del caso", () => avviso() === riempi(testi.esitoDelCasoRaggiunto, { nome: "caso 1" }));
+  // Il caso nuovo: una voce per campo di ogni record, col nome del parametro, e nessuna casella «in ogni elemento».
+  await clic(document.querySelector("[data-aggiungi-caso]")!);
+  await giro();
+  expect(document.querySelectorAll("[data-campi-caso] select").length).toBe(4);
+  expect(document.querySelectorAll('[data-campi-caso] input[type="checkbox"]').length).toBe(0);
+  await tasto(document.activeElement!, "Enter");
+  await giro();
+  expect(nomiDeiCasi()).toEqual(["caso 1", "caso 2"]);
+  expect(vociDelCaso()[1]).toContain(Array.from({ length: 4 }, () => riempi(testi.casoVoce, { dato: "t", testo: "" })).join(" · "));
+}, 60_000);

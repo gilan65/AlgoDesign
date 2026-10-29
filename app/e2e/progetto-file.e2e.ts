@@ -170,7 +170,6 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
   // I tipi, i record, le matrici e le tabelle: ogni file si apre, anche con un errore statico (lo dice il controllo nella
   // finestra), con una riga per record nella tabella «Record» della vista dei dati; quelli giusti che non leggono niente si
   // eseguono (F5 fino alla fine, l'output del caso del programma nella console) e, eseguiti, salvati restano identici.
-  // Le tabelle la finestra in esecuzione non le mostra ancora: F5 lo dice nella riga di stato, e non parte.
   const conLeMatrici = (testo: string) => {
     const a = apriProgetto(testo);
     return a.ok && usaLeMatrici(a.progetto);
@@ -179,7 +178,6 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
     const a = apriProgetto(testo);
     return a.ok && usaLeTabelle(a.progetto);
   };
-  const fermatiDallaGuardia: string[] = [];
   const deiRecord = corpus.filter((c) => c.tappa === "tipi");
   const identiciDeiRecord: string[] = [];
   const eseguiti: string[] = [];
@@ -198,13 +196,6 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
       // e un F5 in quell'istante si perde (misurato sul build di produzione con la macchina carica, due corse su tre).
       await page.getByRole("region", { name: it.vistaFlowchart, exact: true }).click({ position: { x: 5, y: 5 } });
       await page.keyboard.press("F5");
-      if (conLeTabelle(c.testo)) {
-        await expect(page.getByText(it.apriFuoriTappa, { exact: true }).first(), c.percorso).toBeVisible();
-        await expect(page.locator('header [data-comando="ferma"]'), c.percorso).toHaveAttribute("aria-disabled", "true");
-        fermatiDallaGuardia.push(c.percorso);
-        if ((await salvaConNome(page, `C:\\uscita\\record-${i}.algo`)) === c.testo) identiciDeiRecord.push(c.percorso);
-        continue;
-      }
       await expect(page.locator("[data-stato-esecuzione]"), c.percorso).toHaveText(caso.expected.error === undefined ? it.statoFinita : it.statoFermataDaUnErrore);
       expect((await page.locator('[role="log"] [data-scrive]').allTextContents()).join(""), c.percorso).toBe(caso.expected.output);
       eseguiti.push(c.percorso);
@@ -214,11 +205,12 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
   }
   const matrici = deiRecord.filter((c) => conLeMatrici(c.testo)).length;
   const tabelle = deiRecord.filter((c) => conLeTabelle(c.testo)).length;
-  console.log(`apri e salva: i tipi, ${deiRecord.length} file (delle matrici ${matrici}, delle tabelle ${tabelle}), ${righe} righe nella tabella «Record», eseguiti ${eseguiti.length}, fermati dalla guardia delle tabelle ${fermatiDallaGuardia.length}, identici ${identiciDeiRecord.length}`);
+  const tabelleEseguite = deiRecord.filter((c) => eseguiti.includes(c.percorso) && conLeTabelle(c.testo)).length;
+  console.log(`apri e salva: i tipi, ${deiRecord.length} file (delle matrici ${matrici}, delle tabelle ${tabelle}), ${righe} righe nella tabella «Record», eseguiti ${eseguiti.length} (delle tabelle ${tabelleEseguite}), identici ${identiciDeiRecord.length}`);
   // Dei record cinque giusti senza letture (uno si ferma col suo errore), quattro con un errore statico, due che leggono;
   // delle matrici cinque giuste senza letture (una si ferma col suo errore), tre con un errore statico, due che leggono;
-  // delle tabelle tre giuste senza letture (fermate dalla guardia), una con un errore statico, due che leggono.
-  expect({ identici: identiciDeiRecord.length, eseguiti: eseguiti.length, guardia: fermatiDallaGuardia.length, corpus: deiRecord.length, matrici, tabelle }).toEqual({ identici: 27, eseguiti: 10, guardia: 3, corpus: 27, matrici: 10, tabelle: 6 });
+  // delle tabelle tre giuste senza letture, una con un errore statico, due che leggono.
+  expect({ identici: identiciDeiRecord.length, eseguiti: eseguiti.length, tabelleEseguite, corpus: deiRecord.length, matrici, tabelle }).toEqual({ identici: 27, eseguiti: 13, tabelleEseguite: 3, corpus: 27, matrici: 10, tabelle: 6 });
   expect(righe).toBeGreaterThanOrEqual(11);
 });
 

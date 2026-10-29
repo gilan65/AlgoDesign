@@ -12,7 +12,8 @@
 //
 // Una matrice è un vettore di righe (`vettore` e `matrice` veri, la dimensione sono le righe): il suo elenco si scrive per
 // righe, ogni riga fra graffe (`{{1, 2}, {3, 4}}`), e il valore ripetuto vale per ogni elemento. Un elenco che non è
-// fatto tutto di righe fra graffe passa com'è, piatto: lo segnala il controllo.
+// fatto tutto di righe fra graffe passa com'è, piatto: lo segnala il controllo. Una tabella (un vettore di record) si
+// scrive come una matrice, un record fra graffe al posto di ogni riga, e il valore ripetuto è un record (`{"x", 0}`).
 //
 // Una dimensione o una lunghezza che non è un numero intero, o che lo è ma il file non la sa scrivere esatta (oltre 2^53,
 // fino all'infinito di `parseInt` con 309 cifre), diventa 0, che il controllo segnala come dato non valido: un numero che
@@ -146,20 +147,23 @@ export function conRipetuto(b: BozzaDelDato, ripetuto: boolean): BozzaDelDato {
 
 /** Il valore iniziale scritto nel campo, come il dato lo tiene: vuoto, nessuno; un vettore, l'elenco o il valore
  * ripetuto; una matrice (`matrice`), l'elenco delle righe, ognuna fra graffe, o il valore ripetuto; un record (`record`),
- * l'elenco dei valori dei campi, fra graffe come quello di un vettore. Lo stesso per la vista dei dati e per i campi del
- * blocco del valore iniziale nel flowchart. */
+ * l'elenco dei valori dei campi, fra graffe come quello di un vettore; una tabella (un vettore di record), l'elenco dei
+ * record, ognuno fra graffe come le righe di una matrice, o il record ripetuto (l'elenco dei campi). Lo stesso per la vista
+ * dei dati e per i campi del blocco del valore iniziale nel flowchart. */
 export function inizialeDaBozza(b: Pick<BozzaDelDato, "iniziale" | "vettore" | "ripetuto"> & Partial<Pick<BozzaDelDato, "matrice">>, record = false): Dato["initial"] {
   const testo = b.iniziale.trim();
   if (testo === "") return undefined;
   if (!b.vettore && !record) return testo;
+  const tabella = b.vettore && record;
   if (b.ripetuto && !record) return { each: testo };
   // Le graffe vuote sono l'elenco vuoto: nessun valore, come il campo vuoto.
   const dentro = senzaGraffe(testo);
   if (dentro === "") return undefined;
-  if (b.matrice !== true || record) return elementi(dentro);
-  // Le righe di una matrice: tutte fra graffe, ognuna un elenco. Le graffe esterne si possono omettere con almeno due righe
-  // (`{1, 2}, {3, 4}` comincia e finisce con una graffa, ma non sono le esterne); altrimenti l'elenco piatto, che il
-  // controllo segnala.
+  if (b.ripetuto && tabella) return { each: elementi(dentro) };
+  if (b.matrice !== true && !tabella) return elementi(dentro);
+  // Le righe di una matrice, o i record di una tabella: tutti fra graffe, ognuno un elenco. Le graffe esterne si possono
+  // omettere con almeno due righe (`{1, 2}, {3, 4}` comincia e finisce con una graffa, ma non sono le esterne); altrimenti
+  // l'elenco piatto, che il controllo segnala.
   const diRighe = (rs: readonly string[]) => rs.every((r) => r.startsWith("{") && r.endsWith("}"));
   const senzaEsterne = elementi(testo, true);
   const righe = [elementi(dentro, true), ...(senzaEsterne.length >= 2 ? [senzaEsterne] : [])].find(diRighe);

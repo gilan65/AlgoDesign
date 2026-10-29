@@ -143,7 +143,7 @@ export function campiDelDato(b: BozzaDelDato, cambia: (b: BozzaDelDato) => void,
           b.matrice ? testi.campoInizialeMatrice : testi.campoInizialeVettore,
           b.ripetuto ? "ripetuto" : "elenco",
           [
-            ["elenco", b.matrice ? testi.inizialeElencoPerRighe : testi.inizialeElenco],
+            ["elenco", b.matrice ? testi.inizialeElencoPerRighe : b.tipo === "record" ? testi.inizialeElencoPerRecord : testi.inizialeElenco],
             ["ripetuto", testi.inizialeRipetuto],
           ],
           (v) => cambia(conRipetuto(b, v === "ripetuto")),
