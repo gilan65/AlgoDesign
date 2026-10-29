@@ -872,6 +872,11 @@ export const en: Dizionario = {
   tracciaVettorePrimiEAltri: "“{nome}” has {n} elements: here the columns of the first {primi}, the others in the column “{colonna}” when they change; all of them with a click on the name in the flowchart.",
   tracciaVettoreInFila: "“{nome}” has {n} elements in a single column: with the mouse pointer on a cell the first ones can be read, all of them with a click on the name in the flowchart.",
   tracciaVettoreInFilaUno: "“{nome}” has 1 element, in a single column.",
+  tracciaMatricePerRiga: "“{nome}” is a matrix of {righe} × {colonne} elements: a column for each row, with its values side by side.",
+  tracciaMatricePrimeEAltre:
+    "“{nome}” is a matrix of {righe} × {colonne} elements: here the columns of the first {prime} rows, the elements of the others in the column “{colonna}” when they change; all of them with a click on the name in the flowchart.",
+  tracciaMatriceInFila:
+    "“{nome}” is a matrix of {righe} × {colonne} elements in a single column, with the rows separated by “‖”: with the mouse pointer on a cell the first ones can be read, all of them with a click on the name in the flowchart.",
   tracciaCsvUguale: "The exported CSV is the same as the table.",
   tracciaCsvPerElemento: "The exported CSV has a column for each element.",
   colonnaMenu: "Column “{nome}”",

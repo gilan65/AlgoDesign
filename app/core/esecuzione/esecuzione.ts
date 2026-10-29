@@ -452,7 +452,7 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
       const funzione = x.funzione ?? this.#principale;
       this.#pila.length = x.profondita;
       this.#pila.push({ funzione, blocco: x.dato === undefined ? x.evento : funzione, ...(x.fase !== undefined ? { fase: x.fase } : {}) });
-      this.#traccia?.evento(x.evento, x.dati, x.dato, x.fase, x.profondita, x.funzione, x.campo);
+      this.#traccia?.evento(x.evento, x.dati, x.dato, x.fase, x.profondita, x.funzione, x.campo, x.interno);
       if (fermati(this.#comando, this.#partenza, this.puntiDiInterruzione, x))
         this.#stato = {
           genere: "pausa",

@@ -1003,6 +1003,11 @@ export const it = {
   tracciaVettorePrimiEAltri: "«{nome}» ha {n} elementi: qui le colonne dei primi {primi}, gli altri nella colonna «{colonna}» quando cambiano; tutti con un clic sul nome nel flowchart.",
   tracciaVettoreInFila: "«{nome}» ha {n} elementi in una colonna sola: col puntatore del mouse sopra una cella se ne leggono i primi, tutti con un clic sul nome nel flowchart.",
   tracciaVettoreInFilaUno: "«{nome}» ha 1 elemento, in una colonna sola.",
+  tracciaMatricePerRiga: "«{nome}» è una matrice di {righe} × {colonne} elementi: una colonna per riga, coi valori in fila.",
+  tracciaMatricePrimeEAltre:
+    "«{nome}» è una matrice di {righe} × {colonne} elementi: qui le colonne delle prime {prime} righe, gli elementi delle altre nella colonna «{colonna}» quando cambiano; tutti con un clic sul nome nel flowchart.",
+  tracciaMatriceInFila:
+    "«{nome}» è una matrice di {righe} × {colonne} elementi in una colonna sola, con le righe separate da «‖»: col puntatore del mouse sopra una cella se ne leggono le prime, tutte con un clic sul nome nel flowchart.",
   tracciaCsvUguale: "Il CSV esportato è uguale alla tabella.",
   tracciaCsvPerElemento: "Il CSV esportato ha una colonna per ogni elemento.",
   /** Il menu di una colonna della tabella (il tasto destro sull'intestazione, o dalla tastiera Invio, il tasto Menu,

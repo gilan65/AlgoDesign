@@ -572,18 +572,31 @@ export function partiDellaFase(
   livello: number,
   /** I dati che il ciclo vede: della funzione e, nel programma principale, le costanti comuni. */
   dati: readonly Dato[],
+  /** Nella copia di una matrice col suo nome, la fase è del ciclo delle colonne (la posizione del livello dopo). */
+  interno = false,
 ): ParteDelTesto[] | undefined {
   const mostrata = testi.espressione ?? ((t: string) => t);
   const e = (t: string): ParteDelTesto => ({ testo: mostrata(t), espressione: true });
   const resto = (testo: string): ParteDelTesto => ({ testo, espressione: false });
   if (b.kind === "assignment") {
     if (forme.copia === "compatta") return undefined;
-    const i = nomeDellaPosizione(testi, livello);
     const verso = b.target.trim();
-    if (fase === "inizio") return [resto(`${i} ← 0`)];
-    if (fase === "condizione") return [resto(`${i} < ${dati.find((d) => d.name === verso)?.size ?? "?"}`)];
-    if (fase === "elemento") return [e(verso), resto(`[${i}] ← `), e(b.value.trim()), resto(`[${i}]`)];
-    return [resto(`${i} ← ${i} + 1`)];
+    // Il dato che riceve: un vettore o una matrice col suo nome, o la riga di una matrice (`m[i]`), lunga quanto le colonne.
+    const nome = analizza(verso);
+    const base = nome.ok ? (nome.espressione.genere === "nome" ? nome.espressione.nome : nome.espressione.genere === "indice" && nome.espressione.base.genere === "nome" ? nome.espressione.base.nome : undefined) : undefined;
+    const d = dati.find((x) => x.name === base);
+    const unaRiga = nome.ok && nome.espressione.genere === "indice";
+    const i = nomeDellaPosizione(testi, livello);
+    // La copia di una matrice: la riga col livello della copia, la colonna col successivo.
+    const j = interno ? nomeDellaPosizione(testi, livello + 1) : i;
+    const quanti = interno || unaRiga ? d?.columns : d?.size;
+    if (fase === "inizio") return [resto(`${j} ← 0`)];
+    if (fase === "condizione") return [resto(`${j} < ${quanti ?? "?"}`)];
+    if (fase === "elemento") {
+      const dove = interno ? `[${i}][${j}]` : `[${i}]`;
+      return [e(verso), resto(`${dove} ← `), e(b.value.trim()), resto(dove)];
+    }
+    return [resto(`${j} ← ${j} + 1`)];
   }
   if (b.kind === "for") {
     if (forme.per === "chiuso") return undefined;
@@ -634,12 +647,14 @@ function attorno(modello: string, segnaposto: string): [string, string] {
 }
 
 /** Un elenco fra graffe di `quanti` elementi, di cui si danno i primi (al più `ELEMENTI_SCRITTI`), poi quanti ne
- * restano: lo stesso nel blocco del valore iniziale e, coi valori, nella tabella di traccia. */
-export function partiDellElenco(primi: readonly ParteDelTesto[], quanti: number, testi: TestiDelDisegno): ParteDelTesto[] {
+ * restano: lo stesso nel blocco del valore iniziale e, coi valori, nella tabella di traccia. Un elemento può essere a
+ * pezzi (la riga di una matrice, un elenco a sua volta). */
+export function partiDellElenco(primi: readonly (ParteDelTesto | readonly ParteDelTesto[])[], quanti: number, testi: TestiDelDisegno): ParteDelTesto[] {
   const resto = (testo: string): ParteDelTesto => ({ testo, espressione: false });
   const [prima, dopo] = attorno(testi.altri, "{n}");
   const altri = quanti - primi.length;
-  return [resto("{"), ...primi.flatMap((x, i) => (i === 0 ? [x] : [resto(", "), x])), ...(altri > 0 ? [resto(`, ${prima}${altri}${dopo}`)] : []), resto("}")];
+  const pezzi = (x: ParteDelTesto | readonly ParteDelTesto[]): readonly ParteDelTesto[] => ("testo" in x ? [x] : x);
+  return [resto("{"), ...primi.flatMap((x, i) => (i === 0 ? pezzi(x) : [resto(", "), ...pezzi(x)])), ...(altri > 0 ? [resto(`, ${prima}${altri}${dopo}`)] : []), resto("}")];
 }
 
 /**
@@ -658,10 +673,26 @@ export function partiDelValoreIniziale(d: Dato, testi: TestiDelDisegno, ripetuto
   /** Un elenco di `quanti` elementi, di cui si conoscono i primi (al più `ELEMENTI_SCRITTI`). */
   const elenco = (primi: readonly string[], quanti: number): ParteDelTesto[] => partiDellElenco(primi.map(e), quanti, testi);
   if (typeof v === "string") return [e(v)];
-  if (Array.isArray(v)) return elenco((v as readonly string[]).slice(0, ELEMENTI_SCRITTI), v.length);
+  /** L'elenco delle righe di una matrice, ogni riga un elenco: le prime righe, e di ognuna i primi elementi. */
+  const righe = (primi: readonly (readonly string[])[], quante: number, colonne: number): ParteDelTesto[] =>
+    partiDellElenco(
+      primi.slice(0, ELEMENTI_SCRITTI).map((r) => elenco(r.slice(0, ELEMENTI_SCRITTI), colonne)),
+      quante,
+      testi,
+    );
+  if (Array.isArray(v)) {
+    if (v.length > 0 && Array.isArray(v[0])) return righe(v as readonly (readonly string[])[], v.length, (v[0] as readonly string[]).length);
+    return elenco((v as readonly string[]).slice(0, ELEMENTI_SCRITTI), v.length);
+  }
   const ogni = (v as { readonly each: string }).each;
   const n = d.size;
-  if (ripetuto === "elenco" && n !== undefined && Number.isInteger(n) && n >= 1) return elenco(Array<string>(Math.min(n, ELEMENTI_SCRITTI)).fill(ogni), n);
+  const c = d.columns;
+  const misura = (x: number | undefined): x is number => x !== undefined && Number.isInteger(x) && x >= 1;
+  if (ripetuto === "elenco" && misura(n) && misura(c)) {
+    const riga = Array<string>(Math.min(c, ELEMENTI_SCRITTI)).fill(ogni);
+    return righe(Array.from({ length: Math.min(n, ELEMENTI_SCRITTI) }, () => riga), n, c);
+  }
+  if (ripetuto === "elenco" && misura(n) && c === undefined) return elenco(Array<string>(Math.min(n, ELEMENTI_SCRITTI)).fill(ogni), n);
   const [prima, dopo] = attorno(testi.ogniElemento, "{valore}");
   return [...(prima === "" ? [] : [resto(prima)]), e(ogni), ...(dopo === "" ? [] : [resto(dopo)])];
 }

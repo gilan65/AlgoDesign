@@ -88,6 +88,9 @@ export const testiIt: TestiDellaTraccia = {
   spiegazione: {
     primiEAltri: (nome, n, primi, colonna) => `${nome}: ${n}, i primi ${primi}, gli altri in ${colonna}.`,
     inFila: (nome, n) => `${nome}: ${n} in fila.`,
+    perRiga: (nome, righe, colonne) => `${nome}: ${righe} × ${colonne} per riga.`,
+    primeEAltre: (nome, righe, colonne, prime, colonna) => `${nome}: ${righe} × ${colonne}, le prime ${prime}, le altre in ${colonna}.`,
+    matriceInFila: (nome, righe, colonne) => `${nome}: ${righe} × ${colonne} in fila.`,
     csvUguale: "CSV uguale.",
     csvPerElemento: "CSV per elemento.",
   },
@@ -120,6 +123,9 @@ export const testiEn: TestiDellaTraccia = {
   spiegazione: {
     primiEAltri: (nome, n, primi, colonna) => `${nome}: ${n}, first ${primi}, others in ${colonna}.`,
     inFila: (nome, n) => `${nome}: ${n} in a row.`,
+    perRiga: (nome, righe, colonne) => `${nome}: ${righe} × ${colonne} per row.`,
+    primeEAltre: (nome, righe, colonne, prime, colonna) => `${nome}: ${righe} × ${colonne}, first ${prime}, others in ${colonna}.`,
+    matriceInFila: (nome, righe, colonne) => `${nome}: ${righe} × ${colonne} in a row.`,
     csvUguale: "CSV same.",
     csvPerElemento: "CSV per element.",
   },
