@@ -1,0 +1,60 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "tabella-oltre-il-tetto",
+    "description": "Il tetto dei valori di un vettore vale sul totale di una tabella, i record per i campi: 400 record da 3 campi sono 1200 valori."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "classe",
+          "type": "string",
+          "max_length": 3
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "t",
+          "type": "record",
+          "record": "alunno",
+          "size": 400
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "tabella-oltre-il-tetto",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "static_error": {
+          "code": "limit_exceeded",
+          "block": "f1"
+        }
+      }
+    }
+  ]
+}

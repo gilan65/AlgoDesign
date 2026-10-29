@@ -70,9 +70,10 @@ function aree(f: Funzione, p: Progetto): number {
   const perNome = new Map([...(p.shared_constants ?? []), ...f.data].map((d) => [d.name, d]));
   const datoDi = (nome: string) => perNome.get(nome);
   const funzioneDi = (nome: string) => p.functions.find((g) => g.name === nome);
-  /** Il campo di un dato record o del record restituito da una funzione. */
+  /** Il campo di un dato record o del record restituito da una funzione, o di un record di una tabella (`t[i].nome`,
+   * `f(x)[i].nome`). */
   const campoDi = (e: Extract<Espressione, { genere: "campo" }>): Campo | undefined => {
-    const b = e.base;
+    const b = e.base.genere === "indice" ? e.base.base : e.base;
     const di = b.genere === "nome" ? datoDi(b.nome) : b.genere === "chiamata" ? funzioneDi(b.nome) : undefined;
     const record = di === undefined ? undefined : "data" in di ? { type: di.return_type!, record: di.return_record } : di;
     return record === undefined ? undefined : campiDi(record, p)?.find((c) => c.name === e.campo);

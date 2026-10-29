@@ -242,7 +242,12 @@ const opzioni = lettore((v, p, c) => {
   return diverse.length === 0 ? undefined : Object.fromEntries(diverse);
 }, schemaDiCampi(campiDelleOpzioni));
 
-const perOgniElemento: Campi = { each: campo(stringa) };
+/** Il valore di ogni elemento: un letterale, o un record (un letterale per campo) per ogni record di una tabella. */
+const letteraleORecord = lettore((v, p, c) => (typeof v === "string" ? v : Array.isArray(v) ? elenco(stringa)(v, p, c) : segnala(c, p, "wrong_type")), {
+  anyOf: [stringa.schema, elenco(stringa).schema],
+});
+
+const perOgniElemento: Campi = { each: campo(letteraleORecord) };
 
 /** Le righe di una matrice: un elenco di letterali per riga. Un elenco con dentro un elenco è tutto di righe. */
 const perRighe = elenco(elenco(stringa));

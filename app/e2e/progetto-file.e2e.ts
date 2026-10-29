@@ -64,7 +64,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { apri as apriProgetto, livelliMassimi, motivi, type Motivo } from "../core/progetto/formato";
-import { usaLeMatrici } from "../core/progetto/modello";
+import { usaLeMatrici, usaLeTabelle } from "../core/progetto/modello";
 import { en } from "../i18n/en";
 import { it, type Dizionario } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
@@ -167,13 +167,19 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
   console.log(`apri e salva: corpus ${delleTappe.length} file, della ricorsione ${ricorsione}: identici ${identici.length}, diversi ${diversi.length}`);
   expect(diversi).toEqual([]);
   expect({ ricorsione, identici: identici.length, corpus: delleTappe.length }).toEqual({ ricorsione: 22, identici: 146, corpus: 146 });
-  // I tipi, i record e le matrici: ogni file si apre, anche con un errore statico (lo dice il controllo nella finestra),
-  // con una riga per record nella tabella «Record» della vista dei dati; quelli giusti che non leggono niente si eseguono
-  // (F5 fino alla fine, l'output del caso del programma nella console) e, eseguiti, salvati restano identici.
+  // I tipi, i record, le matrici e le tabelle: ogni file si apre, anche con un errore statico (lo dice il controllo nella
+  // finestra), con una riga per record nella tabella «Record» della vista dei dati; quelli giusti che non leggono niente si
+  // eseguono (F5 fino alla fine, l'output del caso del programma nella console) e, eseguiti, salvati restano identici.
+  // Le tabelle la finestra in esecuzione non le mostra ancora: F5 lo dice nella riga di stato, e non parte.
   const conLeMatrici = (testo: string) => {
     const a = apriProgetto(testo);
     return a.ok && usaLeMatrici(a.progetto);
   };
+  const conLeTabelle = (testo: string) => {
+    const a = apriProgetto(testo);
+    return a.ok && usaLeTabelle(a.progetto);
+  };
+  const fermatiDallaGuardia: string[] = [];
   const deiRecord = corpus.filter((c) => c.tappa === "tipi");
   const identiciDeiRecord: string[] = [];
   const eseguiti: string[] = [];
@@ -192,6 +198,13 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
       // e un F5 in quell'istante si perde (misurato sul build di produzione con la macchina carica, due corse su tre).
       await page.getByRole("region", { name: it.vistaFlowchart, exact: true }).click({ position: { x: 5, y: 5 } });
       await page.keyboard.press("F5");
+      if (conLeTabelle(c.testo)) {
+        await expect(page.getByText(it.apriFuoriTappa, { exact: true }).first(), c.percorso).toBeVisible();
+        await expect(page.locator('header [data-comando="ferma"]'), c.percorso).toHaveAttribute("aria-disabled", "true");
+        fermatiDallaGuardia.push(c.percorso);
+        if ((await salvaConNome(page, `C:\\uscita\\record-${i}.algo`)) === c.testo) identiciDeiRecord.push(c.percorso);
+        continue;
+      }
       await expect(page.locator("[data-stato-esecuzione]"), c.percorso).toHaveText(caso.expected.error === undefined ? it.statoFinita : it.statoFermataDaUnErrore);
       expect((await page.locator('[role="log"] [data-scrive]').allTextContents()).join(""), c.percorso).toBe(caso.expected.output);
       eseguiti.push(c.percorso);
@@ -200,10 +213,12 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
     if (eseguiti.at(-1) === c.percorso) await page.keyboard.press("Shift+F5");
   }
   const matrici = deiRecord.filter((c) => conLeMatrici(c.testo)).length;
-  console.log(`apri e salva: i tipi, ${deiRecord.length} file (delle matrici ${matrici}), ${righe} righe nella tabella «Record», eseguiti ${eseguiti.length}, identici ${identiciDeiRecord.length}`);
-  // Dei record cinque giusti senza letture (uno si ferma col suo errore), cinque con un errore statico, due che leggono;
-  // delle matrici cinque giuste senza letture (una si ferma col suo errore), tre con un errore statico, due che leggono.
-  expect({ identici: identiciDeiRecord.length, eseguiti: eseguiti.length, corpus: deiRecord.length, matrici }).toEqual({ identici: 22, eseguiti: 10, corpus: 22, matrici: 10 });
+  const tabelle = deiRecord.filter((c) => conLeTabelle(c.testo)).length;
+  console.log(`apri e salva: i tipi, ${deiRecord.length} file (delle matrici ${matrici}, delle tabelle ${tabelle}), ${righe} righe nella tabella «Record», eseguiti ${eseguiti.length}, fermati dalla guardia delle tabelle ${fermatiDallaGuardia.length}, identici ${identiciDeiRecord.length}`);
+  // Dei record cinque giusti senza letture (uno si ferma col suo errore), quattro con un errore statico, due che leggono;
+  // delle matrici cinque giuste senza letture (una si ferma col suo errore), tre con un errore statico, due che leggono;
+  // delle tabelle tre giuste senza letture (fermate dalla guardia), una con un errore statico, due che leggono.
+  expect({ identici: identiciDeiRecord.length, eseguiti: eseguiti.length, guardia: fermatiDallaGuardia.length, corpus: deiRecord.length, matrici, tabelle }).toEqual({ identici: 27, eseguiti: 10, guardia: 3, corpus: 27, matrici: 10, tabelle: 6 });
   expect(righe).toBeGreaterThanOrEqual(11);
 });
 

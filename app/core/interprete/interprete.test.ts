@@ -791,6 +791,19 @@ const fotografieAttese: { nome: string; ottieni: (es: Esegui) => string[]; attes
     atteso: ["a [null,null]", "b1:inizio [null,null]", ...rigaDellaCopia(0, null), ...rigaDellaCopia(1, 2), "b1:condizione [2,2]", "fine [2,2]"],
   },
   {
+    // `u ← t` di due record da tre campi: il ciclo dei record, e dentro un'azione per campo con la sua posizione; `r ←
+    // t[1]`, `u[1] ← r` e `u[0] ← u[1]` la copia di un record, un'azione per campo, senza fasi.
+    nome: "la copia di una tabella col suo nome, record per record e ogni record campo per campo; il record di una tabella copiato campo per campo",
+    ottieni: (es) =>
+      [...es(progetti.get("tipi/copia-di-una-tabella")!, tetti)].flatMap((x) => ("evento" in x && ["b1", "b4", "b7", "b10"].includes(x.evento) ? [`${x.evento}:${x.fase ?? ""}:${x.campo ?? ""}`] : [])),
+    atteso: [
+      "b1:inizio:",
+      ...[0, 1].flatMap(() => ["b1:condizione:", "b1:elemento:0", "b1:elemento:1", "b1:elemento:2", "b1:passo:"]),
+      "b1:condizione:",
+      ...["b4", "b7", "b10"].flatMap((b) => [`${b}::0`, `${b}::1`, `${b}::2`]),
+    ],
+  },
+  {
     nome: "la posizione nascosta della copia di un vettore col suo nome nella fotografia",
     ottieni: (es) => posizioniDi(es, conMostra([votiDue, altriDue], [assegna("b1", "altri", "voti"), scrivi("b2", "altri[1]")])),
     atteso: ["voti [null]", "b1:inizio [null]", ...[0, 1].flatMap((i) => [`b1:condizione [${i}]`, `b1:elemento [${i}]`, `b1:passo [${i}]`]), "b1:condizione [2]", "b2 [2]", "fine [2]"],
@@ -957,14 +970,48 @@ const mutazioni: Record<string, [string, string]> = {
   ],
   // Il nome di un record assegnato a un record che diventa un alias: cambiare la copia cambia la sorgente.
   "copia di un record come alias": [
-    '        if (record && e.genere === "nome") return yield* copiaDelRecord(b.id, cella(t.nome), cella(e.nome));',
-    '        if (record && e.genere === "nome") {\n          yield evento(b.id, undefined, 0);\n          qui.celle.set(t.nome, cella(e.nome));\n          return;\n        }',
+    '        if (record && (e.genere === "nome" || eUnRecord(e))) return yield* copiaDelRecord(b.id, t, e);',
+    '        if (record && t.genere === "nome" && e.genere === "nome") {\n          yield evento(b.id, undefined, 0);\n          qui.celle.set(t.nome, cella(e.nome));\n          return;\n        }\n        if (record && (e.genere === "nome" || eUnRecord(e))) return yield* copiaDelRecord(b.id, t, e);',
   ],
   // La copia di un record in un'azione sola, come da una funzione: le azioni dei campi non ci sono.
   "copia di un record in un'azione sola": [
-    '        if (record && e.genere === "nome") return yield* copiaDelRecord(b.id, cella(t.nome), cella(e.nome));',
+    '        if (record && (e.genere === "nome" || eUnRecord(e))) return yield* copiaDelRecord(b.id, t, e);',
     "",
   ],
+  // Il nome di una tabella assegnato a una tabella che diventa un alias (la cella condivisa).
+  "copia di una tabella come alias": [
+    '        if (intero && (e.genere === "nome" || eUnaRiga(e))) return yield* copia(b.id, t, e);',
+    '        if (intero && t.genere === "nome" && e.genere === "nome" && cella(t.nome).dato.type === "record") {\n          yield evento(b.id);\n          qui.celle.set(t.nome, cella(e.nome));\n          return;\n        }\n        if (intero && (e.genere === "nome" || eUnaRiga(e))) return yield* copia(b.id, t, e);',
+  ],
+  // La copia di una tabella col suo nome con un'azione per record, come un vettore: le azioni dei campi non ci sono.
+  "copia di una tabella in un'azione per record": ['          yield evento(blocco, "elemento", k);', '          if (k === 0) yield evento(blocco, "elemento");'],
+  // Il record di una tabella preso in un record che diventa un alias: `r ← t[1]`, poi `t[1].voto ← 2` cambia `r`.
+  "record della tabella in un record come alias": [
+    '        if (record && (e.genere === "nome" || eUnRecord(e))) return yield* copiaDelRecord(b.id, t, e);',
+    '        if (record && t.genere === "nome" && eUnRecord(e)) {\n          yield evento(b.id, undefined, 0);\n          qui.celle.set(t.nome, yield* rigaDi(e));\n          return;\n        }\n        if (record && (e.genere === "nome" || eUnRecord(e))) return yield* copiaDelRecord(b.id, t, e);',
+  ],
+  // Il record di una tabella passato per valore che arriva come il record stesso: la procedura cambia la tabella.
+  "record della tabella per valore come il record stesso": [
+    '      } else if (d.size !== undefined || d.type === "record") dati.push({ copia: yield* elementiDi(a) });',
+    '      } else if (eUnRecord(a)) dati.push({ cella: yield* rigaDi(a), scritto: "x" });\n      else if (d.size !== undefined || d.type === "record") dati.push({ copia: yield* elementiDi(a) });',
+  ],
+  // La tabella passata per valore che arriva come la cella di chi chiama (dopo il controllo dello stesso dato due volte):
+  // `alza(t, t)` vede nella copia ciò che scrive nel riferimento.
+  "tabella per valore come la tabella stessa": [
+    "      if (x.copia !== undefined) c.valori = x.copia;",
+    '      if (x.copia !== undefined && d.size !== undefined && d.type === "record" && argomenti[k]!.genere === "nome") nuova.celle.set(d.name, chi.celle.get((argomenti[k] as { nome: string }).nome)!);\n      else if (x.copia !== undefined) c.valori = x.copia;',
+  ],
+  // L'elemento del «per ogni» su una tabella che è il record stesso, non una copia presa prima del corpo.
+  "elemento del per ogni su una tabella come alias": ['            elemento.valori = preso.map((v) => v ?? ferma("uninitialized"));', "            qui.celle.set(nomeDi(b.item), rigaIn(sorgente, indice));"],
+  // Il risultato di una funzione che restituisce una costante comune (una tabella) assegnato a una tabella che diventa la
+  // costante stessa: `u ← iniziali()`, poi `u[0].voto ← 50` cambia `INIZIALI`.
+  "risultato da una costante comune come la costante stessa": [
+    "        else if (intero || record) tuttiIn(c, yield* elementiDi(e));",
+    '        else if (intero && e.genere === "chiamata" && comuni.some((x) => x.dato.name === (albero(perNome.get(e.nome)!.end.return_value!) as { nome?: string }).nome)) {\n          yield* chiamaDentro(e);\n          qui.celle.set((t as { nome: string }).nome, comuni.find((x) => x.dato.name === (albero(perNome.get(e.nome)!.end.return_value!) as { nome: string }).nome)!);\n        } else if (intero || record) tuttiIn(c, yield* elementiDi(e));',
+  ],
+  // Un valore scritto nell'elenco della cella invece che in un elenco nuovo: chi ha ricevuto lo stesso elenco (il
+  // risultato di una funzione, una copia per valore) vede la scrittura.
+  "elenco della cella cambiato sul posto": ["    const nuovi = [...c.valori];\n    nuovi[i] = v;\n    c.valori = nuovi;", "    (c.valori as (Valore | undefined)[])[i] = v;"],
   // La posizione della copia col nome che resta una variabile della copia: la fotografia non la vede.
   "posizione della copia mai scritta": ["    const da = yield* cellaIntera(e);\n    posizione(0);", "    const da = yield* cellaIntera(e);"],
   // La posizione della copia allo stesso livello del «per ogni» che la contiene: la copia scrive su quella del ciclo.

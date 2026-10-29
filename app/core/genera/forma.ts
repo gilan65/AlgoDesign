@@ -5,7 +5,8 @@
 //
 // Un progetto si genera solo se il controllo statico lo lascia eseguire: con un errore statico, o con un
 // costrutto delle tappe successive, il risultato dice perché e non c'è un testo a metà. Gli avvisi non
-// fermano la generazione, come non fermano l'esecuzione.
+// fermano la generazione, come non fermano l'esecuzione. Le tabelle (i vettori di record) si eseguono ma non si traducono
+// ancora: un progetto che le usa, senza errori statici, è fuori tappa qui.
 //
 // Una riga di un ciclo `per` o `per ogni` porta anche le fasi del ciclo che mostra (quelle degli eventi del nucleo):
 // la riga d'apertura di un `for` del C le mostra tutte, il Python ha una riga per fase, e le righe dell'indice
@@ -19,7 +20,7 @@
 import { controlla, type Tetti } from "../controllo/controllo";
 import type { OperatoreUnario } from "../espressioni/analizzatore";
 import type { FaseDelCiclo } from "../interprete/interprete";
-import { type CasoDiUnaFunzione, type Dato, type DefinizioneDelRecord, type Funzione, type Progetto } from "../progetto/modello";
+import { usaLeTabelle, type CasoDiUnaFunzione, type Dato, type DefinizioneDelRecord, type Funzione, type Progetto } from "../progetto/modello";
 
 /** Una riga del codice generato. Al più una provenienza: il blocco, o il dato di una dichiarazione (con la
  * funzione che lo possiede, se non è il programma principale: due funzioni possono avere un dato con lo stesso nome);
@@ -76,6 +77,7 @@ export function genera(p: Progetto, limiti: Tetti, scrivi: (p: Progetto) => read
   const c = controlla(p, limiti);
   if (c.fuoriTappa) return { generato: false, perche: "fuori-tappa" };
   if (c.errori.length > 0) return { generato: false, perche: "errori-statici" };
+  if (usaLeTabelle(p)) return { generato: false, perche: "fuori-tappa" };
   const mancanze = manca?.(p) ?? [];
   if (mancanze.length > 0) return { generato: false, perche: "non-ci-sta", mancanze };
   return { generato: true, righe: scrivi(p) };

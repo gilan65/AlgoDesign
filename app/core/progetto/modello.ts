@@ -91,9 +91,17 @@ export function usaLeMatrici(p: Pick<Progetto, "shared_constants" | "functions">
   return (p.shared_constants ?? []).some(matrice) || p.functions.some((f) => f.data.some(matrice) || f.return_columns !== undefined);
 }
 
+/** Se il progetto usa le tabelle (i vettori di record): un dato, una costante comune o un risultato record con la
+ * dimensione. Chi non conosce ancora le tabelle lo rifiuta prima di guardarlo, anche con gli errori statici. */
+export function usaLeTabelle(p: Pick<Progetto, "shared_constants" | "functions">): boolean {
+  const tabella = (d: Dato) => d.type === "record" && d.size !== undefined;
+  return (p.shared_constants ?? []).some(tabella) || p.functions.some((f) => f.data.some(tabella) || (f.return_type === "record" && f.return_size !== undefined));
+}
+
 /** Il valore iniziale: un letterale; un letterale per elemento di un vettore (o per campo di un record); un elenco per
- * riga di una matrice; lo stesso letterale per ogni elemento. */
-export type ValoreIniziale = string | readonly string[] | readonly (readonly string[])[] | { readonly each: string };
+ * riga di una matrice o per record di una tabella; lo stesso letterale per ogni elemento, o lo stesso record (un
+ * letterale per campo) per ogni record di una tabella. */
+export type ValoreIniziale = string | readonly string[] | readonly (readonly string[])[] | { readonly each: string | readonly string[] };
 
 export interface Dato {
   readonly name: string;

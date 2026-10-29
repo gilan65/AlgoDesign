@@ -60,6 +60,10 @@ const p: Progetto = (() => {
       procedura("f16", "matrice_per_valore", [stringa("s", 2, { size: 2, columns: 2, parameter: "value" })]),
       funzione("f17", "restituisce_matrice", { return_type: "integer", return_size: 2, return_columns: 2 }, [intero("u", { size: 2, columns: 2, initial: { each: "0" } })], "u"),
       procedura("f18", "concatena_matrice", [stringa("ms", 3, { size: 2, columns: 2 }), stringa("d", 6)], [assegna("b7", "d", "ms[0][1] + ms[1][0]")]),
+      procedura("f19", "tabella", [alunno("t", { size: 3 })]),
+      procedura("f20", "tabella_per_valore", [alunno("t", { size: 2, parameter: "value" }), alunno("r", { parameter: "value" })]),
+      funzione("f21", "restituisce_tabella", { return_type: "record", return_record: "alunno", return_size: 2 }, [alunno("u", { size: 2, initial: { each: ['"a"', '"b"', "0"] } })], "u"),
+      procedura("f22", "concatena_tabella", [alunno("t", { size: 2 }), stringa("d", 25)], [assegna("b8", "d", "t[0].nome + t[1].classe"), assegna("b9", "d", "restituisce_tabella()[1].nome + t[0].classe")]),
     ],
   });
   if (!r.ok) throw new Error(JSON.stringify(r.errori));
@@ -100,6 +104,15 @@ const attesi: Record<string, number> = {
   restituisce_matrice: 16 + 16,
   // ms 2 · 2 stringhe da 3 (13 ciascuna), d 25; la concatenazione di due elementi della matrice, lunga al più 6 (25).
   concatena_matrice: 52 + 25 + 25,
+  // Una tabella: i record per il record (112).
+  tabella: 3 * 112,
+  // la tabella per valore (8 + 2 · 112) e il record di una tabella per valore (8 + 112).
+  tabella_per_valore: 8 + 224 + 8 + 112,
+  // il dato u e il risultato, 2 · 112 ciascuno.
+  restituisce_tabella: 224 + 224,
+  // t 224, d 101; due concatenazioni di un nome (20) e di una classe (3), lunghe al più 23 (93 ciascuna); la struttura
+  // della chiamata di «restituisce_tabella» (224).
+  concatena_tabella: 224 + 101 + 93 + 93 + 224,
 };
 
 const misurati = (s: typeof spazio) => Object.fromEntries(p.functions.flatMap((f) => (f.kind === "main" ? [] : [[f.name!, s.spazioDiUnaChiamata(f, p)]])));
@@ -151,6 +164,7 @@ describe("lo spazio di una chiamata, termine per termine", () => {
     ["la struttura restituita non contata", 'if (e.genere === "chiamata") {', "if (false) {"],
     ["la matrice senza le colonne", "(d.size ?? 1) * (d.columns ?? 1) *", "(d.size ?? 1) *"],
     ["l'elemento di una matrice di stringhe non concatena", 'return elementoDi(e, datoDi, funzioneDi)?.type === "string";', "return false;"],
+    ["il campo di un record di una tabella non riconosciuto", 'const b = e.base.genere === "indice" ? e.base.base : e.base;', "const b = e.base;"],
   ] as const)
     test(`mutazione dello spazio: ${nome}`, async () => {
       if (vecchio !== "") expect(sorgente.split(vecchio).length - 1).toBe(1);

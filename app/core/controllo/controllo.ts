@@ -490,9 +490,8 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     if (delNome !== undefined) return { codice: "invalid_name", fermata: delNome };
     const record = d.type === "record" ? records.get(d.record!) : undefined;
     if (d.type === "record" && record === undefined) return difetto("unknown_record");
-    // Una matrice di record non c'è; un vettore di record (una tabella) non c'è ancora.
+    // Una matrice di record non c'è; un vettore di record è una tabella.
     if (d.type === "record" && d.columns !== undefined) return difetto("invalid_data_item", "matrice_di_record");
-    if (d.type === "record" && d.size !== undefined) return difetto("invalid_data_item", "vettore_di_record");
     const misura = erroreDellaMisura(d);
     if (misura !== undefined) return misura;
     if (d.parameter !== undefined) {
@@ -508,13 +507,23 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     if (d.constant === true && d.role !== undefined) return difetto("invalid_data_item", "costante_con_ruolo");
     if (d.initial === undefined) return undefined;
     if (record !== undefined) {
-      // Un letterale per campo, nell'ordine dei campi.
-      if (!Array.isArray(d.initial)) return difetto("invalid_data_item", "forma_del_valore");
-      if (d.initial.length !== record.fields.length) return difetto("invalid_data_item", "elenco_di_altra_lunghezza", String(d.initial.length));
-      return d.initial.map((x, i) => erroreDelLetterale(x, record.fields[i]!)).find((c) => c !== undefined);
+      // Un record: un letterale per campo, nell'ordine dei campi. Una tabella: un record così per ogni record, o lo
+      // stesso record per tutti.
+      const delRecord = (x: unknown): Difetto | undefined => {
+        if (!Array.isArray(x) || x.some((y) => typeof y !== "string")) return difetto("invalid_data_item", "forma_del_valore");
+        if (x.length !== record.fields.length) return difetto("invalid_data_item", "elenco_di_altra_lunghezza", String(x.length));
+        return (x as readonly string[]).map((y, i) => erroreDelLetterale(y, record.fields[i]!)).find((c) => c !== undefined);
+      };
+      if (d.size === undefined) return delRecord(d.initial);
+      if (!Array.isArray(d.initial)) return typeof d.initial === "string" ? difetto("invalid_data_item", "forma_del_valore") : delRecord((d.initial as { each: unknown }).each);
+      if (!d.initial.every(Array.isArray)) return difetto("invalid_data_item", "forma_del_valore");
+      if (d.size !== d.initial.length) return difetto("invalid_data_item", "elenco_di_altra_lunghezza", String(d.initial.length));
+      return d.initial.map(delRecord).find((c) => c !== undefined);
     }
     if (d.size === undefined) return typeof d.initial === "string" ? erroreDelLetterale(d.initial, d) : difetto("invalid_data_item", "forma_del_valore");
     if (typeof d.initial === "string") return difetto("invalid_data_item", "forma_del_valore");
+    // Un record ripetuto è solo di una tabella.
+    if (!Array.isArray(d.initial) && typeof (d.initial as { each: unknown }).each !== "string") return difetto("invalid_data_item", "forma_del_valore");
     // Una matrice un elenco per riga, un letterale per colonna; un vettore un elenco di letterali.
     const perRighe = Array.isArray(d.initial) && d.initial.some(Array.isArray);
     if (Array.isArray(d.initial) && d.initial.length > 0 && perRighe !== (d.columns !== undefined)) return difetto("invalid_data_item", "forma_del_valore");
@@ -536,17 +545,22 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
 
   /** La dimensione e la lunghezza massima di un dato, o del risultato di una funzione: dentro i limiti, la lunghezza solo
    * per una stringa. Un limite superato cita il limite. */
-  function erroreDellaMisura(d: Pick<Dato, "type" | "size" | "columns" | "max_length">): Difetto | undefined {
+  function erroreDellaMisura(d: Pick<Dato, "type" | "record" | "size" | "columns" | "max_length">): Difetto | undefined {
     if (d.columns !== undefined && d.size === undefined) return difetto("invalid_data_item", "colonne_senza_righe");
     if (d.size !== undefined && d.size < 1) return difetto("invalid_data_item", "dimensione_non_valida");
     if (d.columns !== undefined && d.columns < 1) return difetto("invalid_data_item", "dimensione_non_valida");
-    // Il tetto degli elementi vale sul totale: righe per colonne.
-    const elementi = d.size === undefined ? 0 : d.size * (d.columns ?? 1);
+    // Il tetto degli elementi vale sul totale: righe per colonne, record per campi. I caratteri dei campi stringa di una
+    // tabella hanno il tetto dei caratteri di un vettore di stringhe.
+    const campi = d.type === "record" ? (records.get(d.record ?? "")?.fields ?? []) : undefined;
+    const elementi = d.size === undefined ? 0 : d.size * (d.columns ?? campi?.length ?? 1);
     if (elementi > limiti.elementiDiUnVettore) return difetto("limit_exceeded", "oltre_elementi", String(limiti.elementiDiUnVettore));
     if (d.max_length !== undefined && d.type !== "string") return difetto("invalid_data_item", "lunghezza_non_stringa");
     if (d.max_length !== undefined && d.max_length < 1) return difetto("invalid_data_item", "lunghezza_non_valida");
     if (d.max_length !== undefined && d.max_length > limiti.lunghezzaDiUnaStringa) return difetto("limit_exceeded", "oltre_lunghezza", String(limiti.lunghezzaDiUnaStringa));
-    if (d.type === "string" && d.size !== undefined && elementi * lunghezza(d) > limiti.caratteriDiUnVettoreDiStringhe)
+    // I caratteri di un vettore di stringhe, o dei campi stringa di tutti i record di una tabella.
+    const caratteriDeiCampi = (campi ?? []).reduce((somma, c) => somma + (c.type === "string" ? lunghezza(c) : 0), 0);
+    const caratteri = d.size === undefined ? 0 : campi !== undefined ? d.size * caratteriDeiCampi : d.type === "string" ? elementi * lunghezza(d) : 0;
+    if (caratteri > limiti.caratteriDiUnVettoreDiStringhe)
       return difetto("limit_exceeded", "oltre_caratteri", String(limiti.caratteriDiUnVettoreDiStringhe));
     return undefined;
   }
@@ -632,10 +646,10 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     return recordDi(v.record).fields.find((c) => c.name === nome) ?? errore("unknown_record_field", { causa: "campo_assente", segno: nome });
   }
 
-  /** Il valore di un dato, o di un risultato con le misure di un dato. */
+  /** Il valore di un dato, o di un risultato con le misure di un dato. Una tabella è un vettore di record. */
   const valoreDi = (d: Pick<Dato, "type" | "record" | "size" | "columns" | "max_length">): Valore =>
     d.type === "record"
-      ? (recordDi(d.record), { tipo: "record", record: d.record!, vettore: false, divisioneIntera: false })
+      ? (recordDi(d.record), d.size === undefined ? recordDelTipo(d.record!) : { tipo: "record", record: d.record!, vettore: true, divisioneIntera: false, dimensione: d.size })
       : d.size === undefined
         ? semplice(d.type)
         : { tipo: d.type, vettore: true, divisioneIntera: false, dimensione: d.size, ...(d.columns === undefined ? {} : { colonne: d.columns }), lunghezza: lunghezza(d) };
@@ -643,8 +657,16 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
   /** La riga di una matrice intera: un vettore di tante colonne. */
   const rigaDi = (m: Valore): Valore => ({ tipo: m.tipo, vettore: true, divisioneIntera: false, dimensione: m.colonne!, ...(m.lunghezza === undefined ? {} : { lunghezza: m.lunghezza }) });
 
-  /** Le misure di un vettore intero (una riga compresa) o di una matrice: le stesse per una copia o un argomento. */
-  const stesseMisure = (v: Valore, d: Pick<Dato, "type" | "size" | "columns">) => v.vettore && v.tipo === d.type && v.dimensione === d.size && v.colonne === d.columns;
+  /** Un record intero del record dato. */
+  const recordDelTipo = (record: string): Valore => ({ tipo: "record", record, vettore: false, divisioneIntera: false });
+
+  /** L'elemento di un vettore intero (una riga compresa): un valore semplice, o un record per una tabella. */
+  const elementoDi = (v: Valore): Valore => (v.tipo === "record" ? recordDelTipo(v.record!) : semplice(v.tipo as Tipo));
+
+  /** Le misure di un vettore intero (una riga compresa), di una matrice o di una tabella: le stesse per una copia o un
+   * argomento, col record per una tabella. */
+  const stesseMisure = (v: Valore, d: Pick<Dato, "type" | "record" | "size" | "columns">) =>
+    v.vettore && v.tipo === d.type && v.record === d.record && v.dimensione === d.size && v.colonne === d.columns;
 
   const comuni = new Map<string, Dato>();
   datiDi(p.shared_constants ?? [], comuni, "", undefined);
@@ -740,7 +762,9 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
         if (e.genere !== "nome" && e.genere !== "chiamata" && !eUnaRiga(e)) errore("type_mismatch");
         const sorgente = valore(e, b.id);
         if ((!sorgente.vettore && sorgente.tipo !== "string") || sorgente.colonne !== undefined) errore("type_mismatch");
-        if (delCiclo(b.item, b.id, "solo_per_ogni").tipo !== (sorgente.vettore ? sorgente.tipo : "character")) errore("type_mismatch");
+        // L'elemento di una tabella è un record dello stesso record.
+        const elemento = delCiclo(b.item, b.id, "solo_per_ogni");
+        if (elemento.tipo !== (sorgente.vettore ? sorgente.tipo : "character") || elemento.dato.record !== sorgente.record) errore("type_mismatch");
         return;
       }
       case "comment":
@@ -821,6 +845,9 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
   function perValore(parametro: Dato, e: Espressione, block: string): void {
     const v = valore(e, block);
     const per = (causa: Causa): Fermata => ({ causa, segno: parametro.name });
+    // Una riga o un record del risultato di una funzione non si passa da solo: la funzione si chiama per il risultato
+    // intero, come in una copia.
+    if (e.genere === "indice" && e.base.genere === "chiamata" && (v.vettore || v.tipo === "record")) errore("argument_mismatch", per("parte_di_un_risultato"));
     if (parametro.size !== undefined) {
       // La copia di un vettore intero (il suo nome, una riga di una matrice, o una funzione che lo restituisce) o di una
       // matrice: lo stesso tipo e le stesse misure.
@@ -870,7 +897,9 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     const perNome =
       e.genere === "nome" ||
       ((e.genere === "indice" || e.genere === "campo") && e.base.genere === "nome") ||
-      (e.genere === "indice" && e.base.genere === "indice" && e.base.base.genere === "nome" && dati.get(e.base.base.nome)?.columns !== undefined);
+      (e.genere === "indice" && e.base.genere === "indice" && e.base.base.genere === "nome" && dati.get(e.base.base.nome)?.columns !== undefined) ||
+      // Il campo di un record di una tabella.
+      (e.genere === "campo" && eUnRecordDellaTabella(e.base));
     // Un argomento che non è un dato si dice col nome del parametro: un argomento di una chiamata dentro un'espressione
     // non ha il suo testo.
     if (!perNome) errore("reference_not_assignable", { causa: "non_un_dato", segno: parametro.name });
@@ -882,16 +911,24 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     if (soloLettura.has(nome)) errore("reference_not_assignable", delCicloInCorso(nome, "contatore_passato", "elemento_passato"));
     // Un campo si passa come un dato semplice del suo tipo.
     const campo = e.genere === "campo" ? e.campo : undefined;
-    let dato: Pick<Dato, "type" | "record" | "size" | "columns" | "max_length"> = campo === undefined ? delDato : campoDi(valoreDi(delDato), campo);
-    // Gli indici dal più esterno: su una matrice il primo dà la riga (un vettore), su un vettore l'elemento.
+    let dato: Pick<Dato, "type" | "record" | "size" | "columns" | "max_length"> = delDato;
+    // Gli indici dal più esterno: su una matrice il primo dà la riga (un vettore), su un vettore l'elemento, su una tabella
+    // il record; poi il campo.
     const indici = indiciDellaDestinazione(e);
     for (const indice of indici) {
       if (dato.size === undefined && dato.type === "string") errore("reference_not_assignable", { causa: "carattere_passato", segno: nome });
       if (dato.size === undefined) errore("type_mismatch");
       const i = valore(indice, block);
       if (i.tipo !== "integer" || i.vettore) errore("type_mismatch");
-      dato = dato.columns !== undefined ? { type: dato.type, size: dato.columns, ...(dato.max_length === undefined ? {} : { max_length: dato.max_length }) } : { type: dato.type, ...(dato.max_length === undefined ? {} : { max_length: dato.max_length }) };
+      const lunga = dato.max_length === undefined ? {} : { max_length: dato.max_length };
+      dato =
+        dato.columns !== undefined
+          ? { type: dato.type, size: dato.columns, ...lunga }
+          : dato.type === "record"
+            ? { type: "record", record: dato.record! }
+            : { type: dato.type, ...lunga };
     }
+    if (campo !== undefined) dato = campoDi(valoreDi(dato), campo);
     // Lo stesso tipo e le stesse misure: un vettore intero (o una riga) per un vettore della stessa dimensione, una
     // matrice per una matrice, un dato semplice o un elemento per un parametro semplice.
     const vettore = dato.size !== undefined;
@@ -944,6 +981,8 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
       const lunga = di.misura.max_length === undefined ? {} : { max_length: di.misura.max_length };
       // La riga di una matrice è un vettore delle sue colonne.
       if (di.v.colonne !== undefined) return { v: rigaDi(di.v), misura: { type: di.misura.type, size: di.v.colonne, ...lunga } };
+      // Il record di una tabella è un record.
+      if (di.v.vettore && di.v.tipo === "record") return { v: elementoDi(di.v), misura: { type: "record", record: di.v.record! } };
       return di.v.vettore ? { v: semplice(di.v.tipo as Tipo), misura: { type: di.misura.type, ...lunga } } : { v: semplice("character"), misura: { type: "character" } };
     };
     const { v, misura } = pezzo(e, true);
@@ -951,7 +990,7 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
   }
 
   /** Il contatore o l'elemento di un ciclo: una destinazione che è un dato semplice, non un vettore né un suo elemento. */
-  function delCiclo(testo: string, block: string, da: Provenienza): { nome: string; tipo: TipoDelDato } {
+  function delCiclo(testo: string, block: string, da: Provenienza): { nome: string; tipo: TipoDelDato; dato: Pick<Dato, "record"> } {
     const d = destinazione(testo, block, da);
     if (d.vettore || analizzato(testo).genere !== "nome") errore("type_mismatch");
     return d;
@@ -982,7 +1021,7 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
 
   /** Un vettore (una riga di una matrice compresa) o una matrice che riceve un valore tutto insieme: da uno dello stesso
    * tipo e delle stesse misure, il suo nome o una riga (la copia elemento per elemento) o una funzione che lo restituisce. */
-  function vettoreIntero(e: Espressione, verso: Pick<Dato, "type" | "size" | "columns">, block: string): void {
+  function vettoreIntero(e: Espressione, verso: Pick<Dato, "type" | "record" | "size" | "columns">, block: string): void {
     if (e.genere !== "nome" && e.genere !== "chiamata" && !eUnaRiga(e)) errore("array_assignment");
     if (!stesseMisure(valore(e, block), verso)) errore("array_assignment");
   }
@@ -994,11 +1033,19 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     return dati.get(e.base.nome)?.columns !== undefined;
   }
 
-  /** Un record che riceve un valore tutto insieme: da un record dello stesso tipo, il suo nome (la copia campo per campo)
-   * o una funzione che lo restituisce. */
+  /** Un record di una tabella scritto col nome e un indice (`t[i]`): un record, che va dove va il nome di un record. Un
+   * record di una tabella restituita da una funzione no: la funzione si chiama per la tabella intera. */
+  function eUnRecordDellaTabella(e: Espressione): boolean {
+    if (e.genere !== "indice" || e.base.genere !== "nome") return false;
+    const d = dati.get(e.base.nome);
+    return d?.type === "record" && d.size !== undefined;
+  }
+
+  /** Un record che riceve un valore tutto insieme: da un record dello stesso tipo, il suo nome o un record di una tabella
+   * (la copia campo per campo) o una funzione che lo restituisce. */
   function recordIntero(e: Espressione, verso: string | undefined, block: string): void {
     recordDi(verso);
-    if (e.genere !== "nome" && e.genere !== "chiamata") errore("array_assignment");
+    if (e.genere !== "nome" && e.genere !== "chiamata" && !eUnRecordDellaTabella(e)) errore("array_assignment");
     const v = valore(e, block);
     if (v.vettore || v.tipo !== "record" || v.record !== verso) errore("array_assignment");
   }
@@ -1060,7 +1107,7 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
         // Su una matrice la riga, su un vettore (una riga compresa) l'elemento, su una stringa il carattere: `v[i][j]` è un
         // carattere della stringa `v[i]` se `v` è un vettore di stringhe, una stringa se `v` è una matrice di stringhe.
         if (base.colonne !== undefined) return rigaDi(base);
-        if (base.vettore) return semplice(base.tipo as Tipo);
+        if (base.vettore) return elementoDi(base);
         return base.tipo === "string" ? semplice("character") : errore("type_mismatch");
       }
       case "chiamata": {
@@ -1182,8 +1229,6 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
           ? difetto("unknown_record")
           : f.return_type === "record" && f.return_columns !== undefined
             ? difetto("invalid_data_item", "matrice_di_record")
-          : f.return_type === "record" && f.return_size !== undefined
-            ? difetto("invalid_data_item", "vettore_di_record")
             : erroreDellaMisura(comeDato(f));
       if (misura !== undefined) dellaFunzione(f, misura);
       // Un vettore e un record non hanno un valore predefinito.

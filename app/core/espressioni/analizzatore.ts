@@ -62,14 +62,14 @@ export const causeDeiCodici = {
   invalid_data_item: [
     "dimensione_non_valida", "lunghezza_non_valida", "lunghezza_non_stringa", "costante_senza_valore", "costante_con_ruolo",
     "elenco_di_altra_lunghezza", "valore_non_scritto", "parametro_fuori_posto", "parametro_con_attributi", "comune_non_costante",
-    "forma_del_valore", "vettore_di_record", "matrice_di_record", "colonne_senza_righe", "righe_diverse", "colonne_diverse",
+    "forma_del_valore", "matrice_di_record", "colonne_senza_righe", "righe_diverse", "colonne_diverse",
   ],
   constant_loop_condition: ["sempre_vera", "mentre_falsa", "ripeti_falsa"],
   assign_to_read_only: ["carattere_della_stringa", "contatore_del_ciclo", "elemento_del_ciclo"],
   function_with_effect: ["funzione_legge", "funzione_scrive", "funzione_salta", "parametro_non_copia"],
   argument_mismatch: [
     "argomenti_in_piu", "argomenti_in_meno", "tipo_diverso", "tipo_per_riferimento", "lunghezza_diversa", "vettore_per_semplice",
-    "semplice_per_vettore", "vettore_diverso", "lunghezza_diversa_nel_vettore",
+    "semplice_per_vettore", "vettore_diverso", "lunghezza_diversa_nel_vettore", "parte_di_un_risultato",
   ],
   reference_not_assignable: ["non_un_dato", "fra_parentesi", "costante_passata", "contatore_passato", "elemento_passato", "carattere_passato"],
   unused_value: ["solo_iniziale", "solo_assegnazione", "solo_lettura", "solo_per_ogni", "solo_parametro"],

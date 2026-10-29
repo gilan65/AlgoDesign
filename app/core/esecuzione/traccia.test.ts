@@ -141,6 +141,15 @@ describe("un vettore di 12 elementi riempito da un ciclo, contro l'atteso scritt
     expect(traccia.tettoDelleColonne).toBe(10);
   });
 
+  test("la tabella non mostra ancora le tabelle (i vettori di record): un progetto che le usa si rifiuta subito; un record no", () => {
+    const a = apri(readFileSync(join(import.meta.dir, "..", "..", "casi", "tipi", "copia-di-una-tabella.algo"), "utf8"));
+    if (!a.ok) throw new Error("copia-di-una-tabella non si apre");
+    expect(() => new TabellaMostrata(a.progetto, testiIt, ",", "primi-e-altri", "elenco", opzioniDelDisegno)).toThrow("la tabella di traccia non mostra ancora le tabelle");
+    // Controllo positivo: lo stesso progetto senza la dimensione (le tabelle fatte record) si mostra.
+    const senza = { ...a.progetto, functions: a.progetto.functions.map((f) => ({ ...f, data: f.data.map(({ size: _, initial: __, ...d }) => d), body: [] })) };
+    expect(() => new TabellaMostrata(senza, testiIt, ",", "primi-e-altri", "elenco", opzioniDelDisegno)).not.toThrow();
+  });
+
   test("la tabella mostra le matrici: un progetto che le usa si costruisce, e ogni riga ha una cella per colonna", () => {
     const a = apri(readFileSync(join(import.meta.dir, "..", "..", "casi", "tipi", "copia-di-una-matrice.algo"), "utf8"));
     if (!a.ok) throw new Error("copia-di-una-matrice non si apre");

@@ -3,7 +3,7 @@
   "schema_version": 2,
   "metadata": {
     "name": "vettore-di-record",
-    "description": "Un vettore di record non si può ancora usare."
+    "description": "Una tabella (un vettore di record) col valore iniziale per record e una costante comune con un record ripetuto: il campo di un record letto, scritto e letto dalla console, e il «per ogni» sui record, il cui elemento è una copia presa prima del corpo."
   },
   "records": [
     {
@@ -26,6 +26,22 @@
       ]
     }
   ],
+  "shared_constants": [
+    {
+      "name": "VUOTI",
+      "type": "record",
+      "record": "alunno",
+      "size": 2,
+      "constant": true,
+      "initial": {
+        "each": [
+          "\"-\"",
+          "\"0X\"",
+          "0"
+        ]
+      }
+    }
+  ],
   "functions": [
     {
       "id": "f1",
@@ -35,10 +51,91 @@
           "name": "classe",
           "type": "record",
           "record": "alunno",
-          "size": 3
+          "size": 3,
+          "initial": [
+            [
+              "\"Anna\"",
+              "\"3A\"",
+              "7"
+            ],
+            [
+              "\"Bruno\"",
+              "\"3B\"",
+              "5"
+            ],
+            [
+              "\"Carla\"",
+              "\"3A\"",
+              "8"
+            ]
+          ]
+        },
+        {
+          "name": "a",
+          "type": "record",
+          "record": "alunno"
+        },
+        {
+          "name": "somma",
+          "type": "integer",
+          "initial": "0"
         }
       ],
-      "body": [],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "classe[1].voto",
+          "value": "classe[1].voto + 1"
+        },
+        {
+          "id": "b2",
+          "kind": "read",
+          "target": "classe[2].nome"
+        },
+        {
+          "id": "b3",
+          "kind": "for_each",
+          "item": "a",
+          "source": "classe",
+          "body": [
+            {
+              "id": "b4",
+              "kind": "assignment",
+              "target": "classe[0].voto",
+              "value": "0"
+            },
+            {
+              "id": "b5",
+              "kind": "write",
+              "values": [
+                "a.nome",
+                "\" \"",
+                "a.voto"
+              ],
+              "newline": true
+            },
+            {
+              "id": "b6",
+              "kind": "assignment",
+              "target": "somma",
+              "value": "somma + a.voto"
+            }
+          ]
+        },
+        {
+          "id": "b7",
+          "kind": "write",
+          "values": [
+            "VUOTI[1].classe",
+            "\" \"",
+            "somma",
+            "\" \"",
+            "classe[0].voto"
+          ],
+          "newline": true
+        }
+      ],
       "end": {
         "id": "fine"
       }
@@ -47,13 +144,14 @@
   "test_cases": [
     {
       "name": "vettore-di-record",
-      "inputs": [],
-      "expected": {
-        "output": "",
-        "static_error": {
-          "code": "invalid_data_item",
-          "block": "f1"
+      "inputs": [
+        {
+          "data": "classe",
+          "text": "Dario"
         }
+      ],
+      "expected": {
+        "output": "Anna 7\nBruno 6\nDario 8\n0X 21 0\n"
       }
     }
   ]

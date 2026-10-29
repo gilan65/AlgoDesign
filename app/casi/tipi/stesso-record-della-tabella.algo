@@ -1,0 +1,277 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "stesso-record-della-tabella",
+    "description": "Due record della tabella per riferimento si scambiano; lo stesso record due volte, o un record insieme a un suo campo, con gli indici calcolati, si ferma sul salto."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "classe",
+          "type": "string",
+          "max_length": 3
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "t",
+          "type": "record",
+          "record": "alunno",
+          "size": 2,
+          "initial": [
+            [
+              "\"Anna\"",
+              "\"3A\"",
+              "7"
+            ],
+            [
+              "\"Bruno\"",
+              "\"3B\"",
+              "5"
+            ]
+          ]
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        },
+        {
+          "name": "j",
+          "type": "integer"
+        },
+        {
+          "name": "k",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "i"
+        },
+        {
+          "id": "b2",
+          "kind": "read",
+          "target": "j"
+        },
+        {
+          "id": "b3",
+          "kind": "read",
+          "target": "k"
+        },
+        {
+          "id": "b4",
+          "kind": "call",
+          "callee": "scambia",
+          "arguments": [
+            "t[i]",
+            "t[j]"
+          ]
+        },
+        {
+          "id": "b5",
+          "kind": "write",
+          "values": [
+            "t[0].nome",
+            "\" \"",
+            "t[1].nome"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b6",
+          "kind": "call",
+          "callee": "metti",
+          "arguments": [
+            "t[i]",
+            "t[k].voto"
+          ]
+        },
+        {
+          "id": "b7",
+          "kind": "write",
+          "values": [
+            "t[0].voto",
+            "\" \"",
+            "t[1].voto"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "scambia",
+      "data": [
+        {
+          "name": "x",
+          "type": "record",
+          "record": "alunno",
+          "parameter": "reference"
+        },
+        {
+          "name": "y",
+          "type": "record",
+          "record": "alunno",
+          "parameter": "reference"
+        },
+        {
+          "name": "tmp",
+          "type": "record",
+          "record": "alunno"
+        }
+      ],
+      "body": [
+        {
+          "id": "c1",
+          "kind": "assignment",
+          "target": "tmp",
+          "value": "x"
+        },
+        {
+          "id": "c2",
+          "kind": "assignment",
+          "target": "x",
+          "value": "y"
+        },
+        {
+          "id": "c3",
+          "kind": "assignment",
+          "target": "y",
+          "value": "tmp"
+        }
+      ],
+      "end": {
+        "id": "c4"
+      }
+    },
+    {
+      "id": "f3",
+      "kind": "procedure",
+      "name": "metti",
+      "data": [
+        {
+          "name": "x",
+          "type": "record",
+          "record": "alunno",
+          "parameter": "reference"
+        },
+        {
+          "name": "v",
+          "type": "integer",
+          "parameter": "reference"
+        }
+      ],
+      "body": [
+        {
+          "id": "d1",
+          "kind": "assignment",
+          "target": "v",
+          "value": "0"
+        },
+        {
+          "id": "d2",
+          "kind": "assignment",
+          "target": "x.voto",
+          "value": "1"
+        }
+      ],
+      "end": {
+        "id": "d3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "diversi",
+      "inputs": [
+        {
+          "data": "i",
+          "text": "0"
+        },
+        {
+          "data": "j",
+          "text": "1"
+        },
+        {
+          "data": "k",
+          "text": "1"
+        }
+      ],
+      "expected": {
+        "output": "Bruno Anna\n1 0\n"
+      }
+    },
+    {
+      "name": "stesso-record",
+      "inputs": [
+        {
+          "data": "i",
+          "text": "1"
+        },
+        {
+          "data": "j",
+          "text": "1"
+        },
+        {
+          "data": "k",
+          "text": "0"
+        }
+      ],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "same_reference",
+          "block": "b4"
+        }
+      }
+    },
+    {
+      "name": "record-e-suo-campo",
+      "inputs": [
+        {
+          "data": "i",
+          "text": "0"
+        },
+        {
+          "data": "j",
+          "text": "1"
+        },
+        {
+          "data": "k",
+          "text": "0"
+        }
+      ],
+      "expected": {
+        "output": "Bruno Anna\n",
+        "error": {
+          "code": "same_reference",
+          "block": "b6"
+        }
+      }
+    }
+  ]
+}

@@ -94,7 +94,7 @@ const daScrivere: Dato[] = [
 
 /** I campi di un dato come li vede chi li compila: il testo di ogni campo, le voci scelte. */
 function campiAttesi(d: Dato): string[] {
-  const iniziale = d.initial === undefined ? "" : typeof d.initial === "string" ? d.initial : "each" in d.initial ? d.initial.each : `{${d.initial.join(", ")}}`;
+  const iniziale = d.initial === undefined ? "" : typeof d.initial === "string" ? d.initial : "each" in d.initial ? String(d.initial.each) : `{${d.initial.join(", ")}}`;
   return [
     d.name,
     it[nomiDeiTipi[tipoSemplice(d.type)]],
