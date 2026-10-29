@@ -572,11 +572,11 @@ export const it = {
   recordEliminaIlCampo: "Elimina il campo «{nome}»",
   recordAggiungiCampo: "Aggiungi un campo",
   recordElimina: "Elimina il record",
-  guidaRecord: "Un record è un tipo fatto di campi, come una scheda con le sue voci: per esempio alunno con nome, classe e voto. Dopo averlo definito, un dato può avere il tipo alunno, e a.voto è il suo campo voto.",
+  guidaRecord: "Un record è un tipo fatto di campi, come una scheda con le sue voci: per esempio alunno con nome, classe e voto. Dopo averlo definito, un dato a può avere il tipo alunno e a.voto è il suo campo voto.",
   eliminaRecordTitolo: "Eliminare il record «{nome}»?",
-  eliminaRecordUsato: "È il tipo di {n} dati: dopo la cancellazione mostreranno un errore. «Annulla» lo riporta indietro.",
-  eliminaRecordUsatoUno: "È il tipo di un dato: dopo la cancellazione mostrerà un errore. «Annulla» lo riporta indietro.",
-  eliminaRecordNonUsato: "Nessun dato ha questo tipo. «Annulla» lo riporta indietro.",
+  eliminaRecordUsato: "Lo usano {n} fra dati e funzioni: dopo la cancellazione mostreranno un errore. «Annulla» lo riporta indietro.",
+  eliminaRecordUsatoUno: "Lo usa un dato o una funzione: dopo la cancellazione mostrerà un errore. «Annulla» lo riporta indietro.",
+  eliminaRecordNonUsato: "Nessun dato e nessuna funzione lo usano. «Annulla» lo riporta indietro.",
   menuDelCaso: "Comandi del caso «{nome}»",
   /** Il menu di un blocco del flowchart (il tasto destro sul blocco, o dalla tastiera il tasto Menu o Maiusc+F10 sul
    * blocco col fuoco): {blocco} è il nome del blocco; le voci coi loro tasti ({tasto}: «Ctrl+X», sul Mac «⌘X»). */
@@ -959,7 +959,7 @@ export const it = {
   consoleArrivatoSenzaValore: "«{dato}» senza valore",
   /** Il comando accanto alla richiesta del primo elemento di un parametro vettore: lo stesso valore a tutti. */
   consoleOgniElemento: "A ogni elemento",
-  consoleOgniElementoSuggerimento: "Lo stesso valore a ogni elemento del vettore",
+  consoleOgniElementoSuggerimento: "Lo stesso valore a ogni elemento",
   // «Dove sei»: le procedure e le funzioni attive, dal programma principale (o da quella eseguita da sola) a quella
   // dell'azione in corso. {nome} è il nome di una procedura o di una funzione.
   doveSei: "Dove sei",
@@ -1023,7 +1023,7 @@ export const it = {
   tracciaTabellaPrimiRecordEAltri:
     "«{nome}» è una tabella di {record} record: qui le colonne dei primi {primi}, i campi degli altri nella colonna «{colonna}» quando cambiano; tutti con un clic sul nome nel flowchart.",
   tracciaTabellaPerCampo:
-    "«{nome}» è una tabella di {record} record: una colonna per campo, coi record in fila: col puntatore del mouse sopra una cella se ne leggono i primi, tutti con un clic sul nome nel flowchart.",
+    "«{nome}» è una tabella di {record} record: una colonna per campo, coi record in fila; col puntatore del mouse sopra una cella se ne leggono i primi, tutti con un clic sul nome nel flowchart.",
   tracciaTabellaPrimiEAltri:
     "«{nome}» è una tabella di {record} record con {valori} valori in tutto: qui le colonne dei primi {primi}, gli altri nella colonna «{colonna}» quando cambiano; tutti con un clic sul nome nel flowchart.",
   tracciaCsvUguale: "Il CSV esportato è uguale alla tabella.",

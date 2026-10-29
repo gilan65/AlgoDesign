@@ -42,7 +42,7 @@
 // dentro quello delle colonne, una riga per fase, quelle del ciclo delle colonne `interno`, come gli eventi del nucleo.
 // La riga `m[i]` è un vettore dovunque ne va uno: si copia come un vettore (`list(m[i])`, il `mentre` della copia col
 // nome), si passa e si percorre col «per ogni»; l'indice di una riga che non è un numero né un nome si calcola una volta,
-// nella partenza della copia, come nell'interprete, e nel «per ogni» la riga scelta sta in `_sorgente`.
+// nella partenza della copia, come nell'interprete, e nel «per ogni» l'indice della riga scelta sta in `_sorgente`.
 //
 // Le tabelle (i vettori di record): una lista di oggetti della classe di dati, ognuno dal suo costruttore
 // (`[alunno() for _ in range(3)]`, mai `[alunno()] * 3`, che ripete lo stesso oggetto), e nessun record è mai condiviso da
@@ -676,7 +676,8 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
   /** Quanti cicli `per ogni` contengono la regola che si scrive: l'indice di un ciclo, o quello calcolato prima del
    * valore, è quello del livello dopo. */
   let cicliPerOgni = 0;
-  /** Quante sorgenti di un `per ogni` su una funzione ha la funzione che si scrive: `_sorgente`, poi `_sorgente2`. */
+  /** Quante sorgenti di un `per ogni` su una funzione, o indici della riga di un `per ogni` su una matrice, ha la funzione
+   * che si scrive: `_sorgente`, poi `_sorgente2`. */
   let sorgenti = 0;
 
   /** Una destinazione e il valore che riceve. L'indice si calcola prima del valore, come nel flowchart: se il suo
@@ -970,8 +971,10 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
         const fase = (testo: string, ...fasi: FaseDelCiclo[]) => corpo.push({ testo, blocco: b.id, fasi });
         const elemento = (albero(b.item) as { nome: string }).nome;
         // Il nome di un vettore o di una stringa; una funzione si chiama una volta, alla partenza, e il suo risultato
-        // sta in `_sorgente`. La riga di una matrice si sceglie alla partenza: con un indice che non è un numero, la riga
-        // (la stessa lista, che il ciclo legge com'è a ogni giro) sta in `_sorgente`.
+        // sta in `_sorgente`. La riga di una matrice si sceglie alla partenza: con un indice che non è un numero, l'indice
+        // sta in `_sorgente` e il ciclo legge `m[_sorgente]` a ogni giro. Tenere la lista della riga non basta: una
+        // riga assegnata col risultato di una funzione, o con una conversione, è una lista nuova, e l'interprete e il C
+        // leggono la riga che c'è.
         const s = albero(b.source);
         let sorgente: string;
         let lunghezzaDellaSorgente: number | undefined;
@@ -982,8 +985,9 @@ function righeDelPython(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati,
           lunghezzaDellaSorgente = misureDi(s).max_length;
           if (s.indice.genere === "intero") sorgente = espressione(s).t;
           else {
-            sorgente = ++sorgenti === 1 ? nomeDellaSorgente[lingua] : `${nomeDellaSorgente[lingua]}${sorgenti}`;
-            fase(`${r}${sorgente} = ${espressione(s).t}`, "inizio");
+            const riga = ++sorgenti === 1 ? nomeDellaSorgente[lingua] : `${nomeDellaSorgente[lingua]}${sorgenti}`;
+            fase(`${r}${riga} = ${espressione(s.indice).t}`, "inizio");
+            sorgente = `${espressione(s.base).t}[${riga}]`;
           }
         } else {
           const g = perNome.get((s as { nome: string }).nome)!;

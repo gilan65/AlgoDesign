@@ -151,8 +151,8 @@ test("il controllo statico del corpus: tappe dalla 1 alla 4 con l'errore statico
   expect(controllati + fuoriTappa).toBe(suDisco.length);
   // Controllo positivo del confronto degli avvisi e degli errori: il corpus ne attende.
   expect(avvisiAttesi).toBeGreaterThan(0);
-  // Dieci delle tappe, cinque dei record e tre delle matrici.
-  expect(erroriAttesi).toBe(18);
+  // Dieci delle tappe, cinque dei record e quattro delle matrici (una è il nome `range`).
+  expect(erroriAttesi).toBe(19);
 });
 
 test("controllo positivo: un file fuori forma canonica si salva diverso dal sorgente, e poi resta fermo", () => {

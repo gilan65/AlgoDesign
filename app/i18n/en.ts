@@ -498,11 +498,11 @@ export const en: Dizionario = {
   recordEliminaIlCampo: "Remove field “{nome}”",
   recordAggiungiCampo: "Add a field",
   recordElimina: "Remove the record",
-  guidaRecord: "A record is a type made of fields, like a form with its entries: for example pupil with name, class and mark. Once it is defined, a data item can have the type pupil, and a.mark is its mark field.",
+  guidaRecord: "A record is a type made of fields, like a form with its entries: for example pupil with name, class and mark. Once it is defined, a data item a can have the type pupil and a.mark is its mark field.",
   eliminaRecordTitolo: "Remove record “{nome}”?",
-  eliminaRecordUsato: "It is the type of {n} data items: once it is gone they will show an error. “Undo” brings it back.",
-  eliminaRecordUsatoUno: "It is the type of one data item: once it is gone it will show an error. “Undo” brings it back.",
-  eliminaRecordNonUsato: "No data item has this type. “Undo” brings it back.",
+  eliminaRecordUsato: "{n} data items and functions use it: once it is gone they will show an error. “Undo” brings it back.",
+  eliminaRecordUsatoUno: "One data item or function uses it: once it is gone it will show an error. “Undo” brings it back.",
+  eliminaRecordNonUsato: "No data item and no function uses it. “Undo” brings it back.",
   menuDelCaso: "Commands for test case “{nome}”",
   menuDelBlocco: "Commands for block “{blocco}”",
   menuTaglia: "Cut ({tasto})",
@@ -841,7 +841,7 @@ export const en: Dizionario = {
   watchLivello: "Call at level {di} of {su}",
   consoleArrivatoSenzaValore: "“{dato}” without a value",
   consoleOgniElemento: "To every element",
-  consoleOgniElementoSuggerimento: "The same value to every element of the array",
+  consoleOgniElementoSuggerimento: "The same value to every element",
   doveSei: "Where you are",
   doveSeiLivello: "Show “{nome}” at the calling block",
   doveSeiCorrente: "Show “{nome}” at the current action",
@@ -890,7 +890,7 @@ export const en: Dizionario = {
   tracciaTabellaPrimiRecordEAltri:
     "“{nome}” is a table of records ({record}): here the columns of the first {primi}, the fields of the others in the column “{colonna}” when they change; all of them with a click on the name in the flowchart.",
   tracciaTabellaPerCampo:
-    "“{nome}” is a table of records ({record}): a column for each field, with the records side by side: with the mouse pointer on a cell the first ones can be read, all of them with a click on the name in the flowchart.",
+    "“{nome}” is a table of records ({record}): a column for each field, with the records side by side; with the mouse pointer on a cell the first ones can be read, all of them with a click on the name in the flowchart.",
   tracciaTabellaPrimiEAltri:
     "“{nome}” is a table of records ({record}) with {valori} values in all: here the columns of the first {primi}, the others in the column “{colonna}” when they change; all of them with a click on the name in the flowchart.",
   tracciaCsvUguale: "The exported CSV is the same as the table.",

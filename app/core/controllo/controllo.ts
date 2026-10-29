@@ -1027,7 +1027,8 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
   }
 
   /** La riga di una matrice scritta col nome e un indice (`m[i]`): un vettore, che va dove va il nome di un vettore. Una
-   * riga di una matrice restituita da una funzione no: la funzione si chiama per la matrice intera. */
+   * riga di una matrice restituita da una funzione no: la funzione si chiama per la matrice intera (come operando di
+   * `to_string` sì, e la regola sta lì). */
   function eUnaRiga(e: Espressione): boolean {
     if (e.genere !== "indice" || e.base.genere !== "nome") return false;
     return dati.get(e.base.nome)?.columns !== undefined;

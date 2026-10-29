@@ -167,8 +167,8 @@ test("il corpus: i casi delle tappe dalla 1 alla 4 e dei record danno output, co
   expect(esito.senzaCasi).toEqual([]);
   expect(esito.file).toBe(tappeEseguite.reduce((n, t) => n + fileDellElenco(t).length, 0));
   expect(esito.nonPartiti + esito.file).toBe(suDisco.length);
-  // Dieci delle tappe, cinque dei record e tre delle matrici.
-  expect(esito.statici).toBe(18);
+  // Dieci delle tappe, cinque dei record e quattro delle matrici (una è il nome `range`).
+  expect(esito.statici).toBe(19);
 }, tempoDelCorpus);
 
 test("il corpus: un file della tappa 1 senza casi d'uso lo fa rosso (controllo positivo su una copia)", () => {

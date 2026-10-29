@@ -23,7 +23,7 @@ Un programma si scrive in «Accademico» se usa solo ciò che la sintassi ha:
 - **le procedure e le funzioni**, coi parametri per valore e il risultato intero, booleano o vettore di interi, anche ricorsive;
 - **le operazioni** `+`, `-`, `*`, `/`, `mod`, i confronti, `and`, `or`, `not`.
 
-Non ci stanno: i tipi reale, carattere e stringa (un testo fra virgolette va bene solo in una Scrittura), la **Lettura**, i parametri *rif* e *out*, le operazioni a parola (`elevato_a`, `radice_quadrata`, `valore_assoluto`, `arrotonda` e le sue sorelle, le conversioni, `lunghezza`) e `pi_greco`. Un dato, una procedura o una funzione non può avere il nome di una parola di «Accademico»: `function`, `return`, `if`, `then`, `else`, `for`, `in`, `while`, `do`, `end`, `variable`, `and`, `or`, `not`, `mod`, `output`, `min`, `max`, `integer`. E una condizione può essere tutto il valore di un'assegnazione a un booleano, di una scrittura o di ciò che una funzione booleana restituisce (diventa un `if`, §4.2), ma non un pezzo di un'altra espressione, come l'argomento di una chiamata.
+Non ci stanno: i tipi reale, carattere e stringa (un testo fra virgolette va bene solo in una Scrittura), i record, le matrici e le tabelle, la **Lettura**, i parametri *rif* e *out*, le operazioni a parola (`elevato_a`, `radice_quadrata`, `valore_assoluto`, `arrotonda` e le sue sorelle, le conversioni, `lunghezza`) e `pi_greco`. Un dato, una procedura o una funzione non può avere il nome di una parola di «Accademico»: `function`, `return`, `if`, `then`, `else`, `for`, `in`, `while`, `do`, `end`, `variable`, `and`, `or`, `not`, `mod`, `output`, `min`, `max`, `integer`. E una condizione può essere tutto il valore di un'assegnazione a un booleano, di una scrittura o di ciò che una funzione booleana restituisce (diventa un `if`, §4.2), ma non un pezzo di un'altra espressione, come l'argomento di una chiamata.
 
 ### L'elenco di ciò che manca
 
@@ -47,6 +47,9 @@ Le cose che possono mancare, e che cosa fare (lo stesso suggerimento della riga 
 | il tipo reale | Usa un intero: per esempio un prezzo in euro diventa un numero di centesimi. |
 | il tipo carattere | Usa un intero al suo posto: per esempio 1 per «sì» e 0 per «no» invece di 's' e 'n'. |
 | il tipo stringa | Un testo si può solo scrivere: metti la frase fra virgolette direttamente nella Scrittura. |
+| il tipo record | Usa un dato intero per ogni campo: per esempio voto_anna al posto di anna.voto. |
+| la matrice | Usa un vettore per ogni riga: per esempio riga0[j] al posto di m[0][j]. |
+| la tabella | Usa un vettore per ogni campo: per esempio voti[i] al posto di t[i].voto. |
 | la Lettura | Togli la Lettura e dai il valore con un'Assegnazione, o passalo come parametro a una procedura. |
 | il parametro per riferimento (*rif*) | Fai restituire il valore da una funzione, o passa il parametro per valore se non va cambiato. |
 | il parametro per uscita (*out*) | Fai restituire il valore da una funzione invece di metterlo nel parametro. |

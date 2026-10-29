@@ -1,0 +1,89 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "riga-di-un-risultato-in-stringa",
+    "description": "to_string g()[1] fa una stringa della seconda riga della matrice di caratteri restituita dalla funzione; g()[1][2] ne è l'ultimo elemento."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "s",
+          "value": "to_string g()[1]"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "s"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "g()[1][2]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "g",
+      "return_type": "character",
+      "return_size": 2,
+      "return_columns": 3,
+      "data": [
+        {
+          "name": "c",
+          "type": "character",
+          "size": 2,
+          "columns": 3,
+          "initial": [
+            [
+              "'a'",
+              "'b'",
+              "'c'"
+            ],
+            [
+              "'d'",
+              "'e'",
+              "'f'"
+            ]
+          ]
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "g1",
+        "return_value": "c"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "riga-di-un-risultato-in-stringa",
+      "inputs": [],
+      "expected": {
+        "output": "def\nf\n"
+      }
+    }
+  ]
+}

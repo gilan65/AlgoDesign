@@ -1,0 +1,117 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "riga-sostituita-nel-per-ogni",
+    "description": "Il per ogni su m[k] con un indice in un dato legge la riga che c'è a ogni giro, anche se il corpo la sostituisce col risultato di una funzione."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "m",
+          "type": "integer",
+          "size": 2,
+          "columns": 3,
+          "initial": [
+            [
+              "1",
+              "2",
+              "3"
+            ],
+            [
+              "4",
+              "5",
+              "6"
+            ]
+          ]
+        },
+        {
+          "name": "k",
+          "type": "integer"
+        },
+        {
+          "name": "x",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "k",
+          "value": "0"
+        },
+        {
+          "id": "b2",
+          "kind": "for_each",
+          "item": "x",
+          "source": "m[k]",
+          "body": [
+            {
+              "id": "b3",
+              "kind": "write",
+              "values": [
+                "x",
+                "\" \""
+              ],
+              "newline": false
+            },
+            {
+              "id": "b4",
+              "kind": "assignment",
+              "target": "m[k]",
+              "value": "uni()"
+            }
+          ]
+        },
+        {
+          "id": "b5",
+          "kind": "write",
+          "values": [
+            "\"|\""
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "uni",
+      "return_type": "integer",
+      "return_size": 3,
+      "data": [
+        {
+          "name": "r",
+          "type": "integer",
+          "size": 3,
+          "initial": [
+            "9",
+            "9",
+            "9"
+          ]
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "g1",
+        "return_value": "r"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "riga-sostituita-nel-per-ogni",
+      "inputs": [],
+      "expected": {
+        "output": "1 9 9 |\n"
+      }
+    }
+  ]
+}

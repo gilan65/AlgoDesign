@@ -480,6 +480,7 @@ export const conErroriStatici: readonly string[] = [
   "tappa-3/valore-predefinito-sbagliato",
   "tappa-3/vettore-di-dimensione-diversa",
   "tipi/campo-sconosciuto",
+  "tipi/dato-chiamato-range",
   "tipi/matrice-di-altre-misure",
   "tipi/matrice-oltre-il-tetto",
   "tipi/nome-del-record-gia-usato",

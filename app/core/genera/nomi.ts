@@ -92,10 +92,11 @@ export const contatoriDellaRicorsione: Readonly<Record<LinguaDelCodice, { readon
 };
 
 /** I nomi di Python che il programma generato legge: le funzioni predefinite, i tipi delle annotazioni, le eccezioni, i
- * moduli, `main` e la classe di dati dei record (il modulo e il decoratore). */
+ * moduli, `main`, la classe di dati dei record (il modulo e il decoratore) e `range`, che riempie le righe di una matrice e
+ * i record di una tabella nel valore iniziale. */
 export const nomiDiPython = [
   "main", "print", "int", "float", "str", "bool", "list", "tuple", "set", "abs", "len", "ord", "chr", "sys", "math", "re",
-  "UnicodeDecodeError", "dataclass", "dataclasses",
+  "UnicodeDecodeError", "dataclass", "dataclasses", "range",
 ] as const;
 
 /** Il nome che il generatore dà all'indice calcolato prima del valore, e all'indice nascosto di un `per ogni`. */
@@ -110,7 +111,8 @@ export const prefissoDellaCopia: Readonly<Record<LinguaDelCodice, string>> = { i
  * arresto per i tetti della ricorsione scrive. */
 export const nomeDellaRiga: Readonly<Record<LinguaDelCodice, string>> = { it: "_riga", en: "_line" };
 /** Il nome che il generatore dà al risultato vettore o stringa di una funzione, dentro la funzione e nel programma di
- * prova (`_risultato`), e alla sorgente di un `per ogni` su una funzione, chiamata una volta (`_sorgente`, `_sorgente2`). */
+ * prova (`_risultato`), e alla sorgente di un `per ogni` su una funzione, chiamata una volta (`_sorgente`, `_sorgente2`;
+ * nel Python anche l'indice della riga di un `per ogni` su una matrice, calcolato una volta). */
 export const nomeDelRisultato: Readonly<Record<LinguaDelCodice, string>> = { it: "_risultato", en: "_result" };
 export const nomeDellaSorgente: Readonly<Record<LinguaDelCodice, string>> = { it: "_sorgente", en: "_source" };
 /** In «Accademico», l'intero 0/1 «ancora un giro» del `while` che scrive un ripeti: `_ancora`, poi `_ancora2` per un

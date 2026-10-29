@@ -16,7 +16,7 @@ import { accademico, mancanzeDiAccademico } from "../../core/genera/accademico";
 import { testoDelCodice, type Mancanza, type Riga } from "../../core/genera/forma";
 import type { LinguaDelCodice } from "../../core/genera/nomi";
 import { apri } from "../../core/progetto/formato";
-import { usaLeMatrici, usaLeTabelle, type Blocco, type Dato, type Progetto } from "../../core/progetto/modello";
+import { usaIRecord, usaLeMatrici, usaLeTabelle, type Blocco, type Dato, type Progetto } from "../../core/progetto/modello";
 import { conErroriStatici, conIlCodice, delCorpus, formeDiAccademico, formeDiAccademicoAttese, type Atteso } from "./attesi-di-accademico";
 
 const lingue: readonly LinguaDelCodice[] = ["it", "en"];
@@ -179,7 +179,7 @@ function secondoRilevatore(p: Progetto): Set<string> {
 const comeChiave = (m: Mancanza) => `${m.specie}|${m.operatore ?? ""}|${m.blocco ?? ""}|${m.dato ?? ""}|${m.funzione ?? ""}`;
 
 describe("l'esito di ogni file del corpus", () => {
-  test("173 file: 36 col codice, 18 con gli errori statici, 119 con le mancanze, nessuno fuori tappa, appaiati file per file", () => {
+  test("177 file: 36 col codice, 19 con gli errori statici, 122 con le mancanze, nessuno fuori tappa, appaiati file per file", () => {
     const esiti = new Map(corpus.map((f) => [f, accademico(leggi(f), tetti, "it")]));
     const di = (perche: string) => corpus.filter((f) => {
       const g = esiti.get(f)!;
@@ -192,7 +192,7 @@ describe("l'esito di ogni file del corpus", () => {
     const fuori = di("fuori-tappa");
     // nessun file ha due esiti, nessuno resta fuori
     expect(codice.length + statici.length + nonCiSta.length + fuori.length).toBe(corpus.length);
-    expect([corpus.length, codice.length, statici.length, nonCiSta.length, fuori.length]).toEqual([173, 36, 18, 119, 0]);
+    expect([corpus.length, codice.length, statici.length, nonCiSta.length, fuori.length]).toEqual([177, 36, 19, 122, 0]);
     // appaiati per elemento nei due versi: i file in più e quelli che mancano
     expect(codice.filter((f) => !conIlCodice.includes(f))).toEqual([]);
     expect(conIlCodice.filter((f) => !codice.includes(f))).toEqual([]);
@@ -214,10 +214,10 @@ describe("l'esito di ogni file del corpus", () => {
       voci += prima.length;
       if (prima.length > 0) conMancanze++;
     }
-    // il denominatore: i file con mancanze sono i 119 che non ci stanno (le 5 tabelle giuste comprese) e i 10 che hanno
-    // anche errori statici (4 delle tappe, 2 dei record: un dato record anche se il record non c'è o è sbagliato; 3 delle
+    // il denominatore: i file con mancanze sono i 122 che non ci stanno (le 5 tabelle giuste comprese) e gli 11 che hanno
+    // anche errori statici (4 delle tappe, 2 dei record: un dato record anche se il record non c'è o è sbagliato; 4 delle
     // matrici: la matrice c'è; 1 della tabella oltre il tetto)
-    expect(conMancanze).toBe(129);
+    expect(conMancanze).toBe(133);
     expect(voci).toBeGreaterThan(conMancanze);
     console.log(`mancanze: ${voci} voci in ${conMancanze} file su ${corpus.length}`);
   });
@@ -231,7 +231,7 @@ describe("l'esito di ogni file del corpus", () => {
   });
 
   test("ogni progetto giusto coi record non ci sta, e dice il record dove sta: il dato, la costante comune, il parametro, il risultato", () => {
-    const coiRecord = corpus.filter((f) => f.startsWith("tipi/") && !usaLeMatrici(leggi(f)) && !usaLeTabelle(leggi(f)));
+    const coiRecord = corpus.filter((f) => usaIRecord(leggi(f)) && !usaLeMatrici(leggi(f)) && !usaLeTabelle(leggi(f)));
     const esiti = coiRecord.map((f) => ({ f, g: accademico(leggi(f), tetti, "it") }));
     const giusti = esiti.filter(({ g }) => g.generato || g.perche !== "errori-statici");
     const senzaIlRecord = giusti.filter(({ g }) => g.generato || g.perche !== "non-ci-sta" || !g.mancanze.some((m) => m.specie === "record"));
@@ -253,7 +253,7 @@ describe("l'esito di ogni file del corpus", () => {
     const voci = giusti.flatMap(({ g }) => (!g.generato && g.perche === "non-ci-sta" ? g.mancanze.filter((m) => m.specie === "matrice") : []));
     const posti = { dati: voci.filter((m) => m.dato !== undefined && m.funzione === undefined).length, diFunzioni: voci.filter((m) => m.dato !== undefined && m.funzione !== undefined).length, risultati: voci.filter((m) => m.dato === undefined).length };
     console.log(`matrici in «Accademico»: ${giusti.length} progetti giusti su ${conLeMatrici.length}, ${voci.length} voci (${JSON.stringify(posti)})`);
-    expect([giusti.length, conLeMatrici.length]).toEqual([7, 10]);
+    expect([giusti.length, conLeMatrici.length]).toEqual([9, 13]);
     expect(Object.values(posti).every((n) => n > 0)).toBe(true);
     // Controllo positivo: una matrice di interi, che la sintassi leggerebbe come un `integer[]`, non passa; le sue sole
     // mancanze sono le matrici (il dato e la costante comune).

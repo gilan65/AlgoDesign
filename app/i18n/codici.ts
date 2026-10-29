@@ -1020,7 +1020,7 @@ export const testiDelleCause: Record<Lingua, Record<Causa, TestoDellaCausa>> = {
     },
     matrice_di_record: {
       breve: "Una matrice non può avere i record come elementi.",
-      suggerimento: "Usa una matrice per ogni campo, come voti, oppure togli le colonne.",
+      suggerimento: "Usa una matrice per ogni campo, come voti, oppure togli le colonne: un vettore di record è una tabella.",
     },
     colonne_senza_righe: {
       breve: "La matrice ha le colonne ma non le righe.",
@@ -1292,7 +1292,7 @@ export const testiDelleCause: Record<Lingua, Record<Causa, TestoDellaCausa>> = {
     },
     matrice_di_record: {
       breve: "A matrix cannot have records as its elements.",
-      suggerimento: "Use one matrix for each field, such as marks, or remove the columns.",
+      suggerimento: "Use one matrix for each field, such as marks, or remove the columns: an array of records is a table.",
     },
     colonne_senza_righe: {
       breve: "The matrix has the columns but not the rows.",
