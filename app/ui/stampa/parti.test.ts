@@ -3,7 +3,8 @@
 // codice), le sezioni nell'ordine con le intestazioni per più combinazioni di scelte, il codice in Python da solo e
 // affiancato (righe per funzione, coda, versi, fogli nuovi, «solo quella mostrata»), un linguaggio che non dà il codice
 // o un progetto con errori, le misure del codice, le regole dei fogli (una per sezione, i sei riquadri occupati, il piè di
-// pagina scelto), la nota dei flowchart ristretti. Gli attesi sono quelli scritti a mano prima del codice; i fogli del
+// pagina scelto), la nota dei flowchart ristretti; i record di un file dei tipi nuovi nella prima sezione dei dati. Gli
+// attesi sono quelli scritti a mano prima del codice; i fogli del
 // flowchart qui sono dati dalla prova (2 orizzontali per il programma principale, 1 verticale per le altre; sul mezzo
 // foglio degli affiancati 2 per il programma principale, 1 per le altre): quelli veri del nucleo li guarda la prova nel
 // motore. Il passo del carattere del codice è quello di Cascadia Mono (0,586 em), misurato nel motore.
@@ -291,4 +292,31 @@ test("la nota dei flowchart ristretti: singolare, plurale, nessuna con «Adatta 
   expect(notaDeiRistretti(due, 12, it, "it")).toBe("A 12 punti questi flowchart sono più larghi del foglio e si stampano più piccoli: Programma principale (10,6 punti), stelle (10,6 punti).");
   expect(flowchartRistretti(P.functions, { adatta: true, punti: 12 }, ristretto, geometriaPredefinita)).toEqual([]);
   expect(notaDeiRistretti([], 8, it, "it")).toBe("");
+});
+
+test("i record: la parte «Dati» piena anche coi soli record; la loro tabella nella prima sezione dei dati, una volta, anche con la sola funzione mostrata e con una funzione per foglio", () => {
+  const T = progetto("tipi/tabella-come-parametro.algo");
+  // Sei funzioni; `iniziali` non ha dati, e nella parte «Dati» non c'è.
+  expect(T.functions.map((f) => [f.name ?? "main", f.data.length])).toEqual([["main", 4], ["alza", 2], ["crea", 2], ["migliore", 3], ["alzata", 1], ["iniziali", 0]]);
+  const nomi = ["main", "alza", "crea", "migliore", "alzata"];
+  const PYT = codiceIn(T, "python");
+  const soloDati = { ...tutteLeParti, parti: { ...nessuna, dati: true } };
+  const conRecord = (s: readonly Sezione[]) => s.map((x) => [x.parte, x.testa, x.funzioni.map((f) => f.name ?? "main").join(","), x.record === true]);
+  const t = T.metadata.name;
+  // Di seguito: una sezione, coi record.
+  expect(conRecord(sezioniDellaStampa(T, T.functions, soloDati, fogliDi, it, PYT))).toEqual([["dati", `${t} · Dati`, nomi.join(","), true]]);
+  // Una funzione per foglio: i record con la prima.
+  expect(conRecord(sezioniDellaStampa(T, T.functions, { ...soloDati, foglioNuovo: true }, fogliDi, it, PYT))).toEqual(
+    nomi.map((n, i) => ["dati", `${t} · Dati · ${i === 0 ? "Programma principale" : n}`, n, i === 0]),
+  );
+  // La sola funzione mostrata: i record con lei.
+  const alza = T.functions[1]!;
+  expect(conRecord(sezioniDellaStampa(T, funzioniDellaStampa(T, alza.id, false), { ...soloDati, tutte: false }, fogliDi, it, PYT))).toEqual([["dati", `${t} · Dati`, "alza", true]]);
+  // I soli record, senza dati: la parte è piena e la sezione ha i soli record, anche con una funzione per foglio.
+  const soliRecord: Progetto = { ...T, shared_constants: [], functions: T.functions.map((f) => ({ ...f, data: [] })) };
+  expect(partiPiene(soliRecord, soliRecord.functions).dati).toBe(true);
+  expect(conRecord(sezioniDellaStampa(soliRecord, soliRecord.functions, { ...soloDati, foglioNuovo: true }, fogliDi, it, PYT))).toEqual([["dati", `${t} · Dati`, "", true]]);
+  // Controllo positivo: senza record e senza dati la parte è vuota; un progetto senza record non ha la tabella.
+  expect(partiPiene({ ...soliRecord, records: [] }, soliRecord.functions).dati).toBe(false);
+  expect(sezioniDellaStampa(P, P.functions, soloDati, fogliDi, it, PY).some((x) => x.record === true)).toBe(false);
 });

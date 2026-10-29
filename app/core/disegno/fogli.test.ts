@@ -4,19 +4,22 @@
 // stampa (22, 18 e 12 mm): il verso, il numero dei fogli e i tagli, ricavati a mano dagli intervalli liberi stampati
 // da uno script scritto a parte, PRIMA di questo codice.
 //
-// Il corpus intero (ogni funzione delle tappe 1–4, dei record e delle matrici, nelle due forme della copia, e degli attesi), con le tre misure del testo delle prove, ai punti 6, 8
+// Il corpus intero (ogni funzione delle tappe 1–4, dei record, delle matrici e delle tabelle, nelle due forme della
+// copia, e degli attesi), con le tre misure del testo delle prove, ai punti 6, 8
 // e 12 e con «Adatta al foglio», sull'A4 e sulla metà sinistra di un foglio orizzontale (il flowchart affiancato al
 // codice): con un rilevatore SCRITTO QUI, dagli oggetti del disegno e non dagli ostacoli di `fogli.ts`, nessun taglio
 // passa dentro un oggetto (forma, intestazione, etichetta, unione, punta di una freccia; i lati di un riquadro e i tratti
 // delle linee paralleli al taglio), ogni oggetto sta in un foglio solo, ogni foglio ha almeno un oggetto, i fogli coprono
 // il disegno e stanno nell'area alla scala, il testo non scende sotto i punti scelti se non è `ristretto`, e «Adatta»
-// dà un foglio solo. I conteggi si stampano.
+// dà un foglio solo. I conteggi si stampano; per i tipi nuovi, specie per specie, le loro forme nel corpus e i tagli
+// che passano dentro i loro riquadri (senza, la prova non direbbe nulla di loro).
 //
 // I tagli in colonne: nel corpus non ce n'è mai uno (misurato), e nemmeno negli alberi costruiti apposta (misurato: ogni
 // blocco sta su una linea verticale); si provano su un disegno COMPOSTO da due
 // disegni veri dell'impaginazione affiancati e uniti da una linea orizzontale.
 //
-// Controlli positivi: un taglio vero spostato dentro un blocco, e uno in colonne spostato dentro una forma, fanno rosso il
+// Controlli positivi: un taglio vero spostato dentro un blocco (anche dentro la copia espansa di una tabella), e uno in
+// colonne spostato dentro una forma, fanno rosso il
 // rilevatore; le mutazioni di `fogli.ts` (un ostacolo dimenticato, il corridoio stretto) fanno rosso il corpus, e si
 // stampa l'unione dei rilevatori accesi per nome.
 //
@@ -31,7 +34,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { cicliIt, funzioniIt } from "../esecuzione/testi-di-prova";
 import { apri } from "../progetto/formato";
-import type { Funzione } from "../progetto/modello";
+import { usaLeMatrici, usaLeTabelle, type Funzione } from "../progetto/modello";
 import { fogliDelDisegno, puntiDelTesto, puntiMassimi, puntiMinimi, type AreeDelFoglio, type FogliDelDisegno } from "./fogli";
 import { impagina, opzioniPredefinite, type Disegno, type MisuraDelTesto, type OpzioniDelDisegno, type TestiDelDisegno } from "./impaginazione";
 import { pallino, punta, RAGGIO_DEL_PALLINO, ripresa } from "./segni";
@@ -57,6 +60,8 @@ const leAree = [
   { nome: "metà orizzontale", aree: affiancato },
 ];
 
+/** I tipi nuovi di un file di `casi/tipi/`: tabella se ne usa una, poi matrice, poi record. */
+type Specie = "record" | "matrice" | "tabella";
 interface Albero {
   readonly nome: string;
   readonly funzione: Funzione;
@@ -64,6 +69,7 @@ interface Albero {
   readonly funzioni: readonly Funzione[];
   readonly records: Parameters<typeof impagina>[7];
   readonly copia: OpzioniDelDisegno["copia"];
+  readonly specie?: Specie;
 }
 const radice = join(import.meta.dir, "..", "..");
 const corpus: Albero[] = ["casi/tappa-1", "casi/tappa-2", "casi/tappa-3", "casi/tappa-4", "casi/tipi", "e2e/attesi"].flatMap((c) =>
@@ -73,8 +79,11 @@ const corpus: Albero[] = ["casi/tappa-1", "casi/tappa-2", "casi/tappa-3", "casi/
       const esito = apri(readFileSync(join(radice, c, f), "utf8"));
       if (!esito.ok) throw new Error(`${f} non si apre`);
       const p = esito.progetto;
-      // I record: anche nella copia espansa (il riquadro «copia campo per campo» con un'assegnazione per campo).
-      const forme = c === "casi/tipi" ? (["compatta", "espansa"] as const) : (["compatta"] as const);
+      // I tipi nuovi: anche nella copia espansa (il riquadro «copia campo per campo» con un'assegnazione per campo, il
+      // ciclo delle colonne di una matrice, il ciclo dei record di una tabella coi campi dentro).
+      const tipi = c === "casi/tipi";
+      const specie: Specie | undefined = !tipi ? undefined : usaLeTabelle(p) ? "tabella" : usaLeMatrici(p) ? "matrice" : "record";
+      const forme = tipi ? (["compatta", "espansa"] as const) : (["compatta"] as const);
       return forme.flatMap((copia) =>
         p.functions.map((fn) => ({
           nome: `${c}/${f} :: ${fn.name ?? "principale"}${copia === "espansa" ? " (copia espansa)" : ""}`,
@@ -83,6 +92,7 @@ const corpus: Albero[] = ["casi/tappa-1", "casi/tappa-2", "casi/tappa-3", "casi/
           funzioni: p.functions,
           records: p.records ?? [],
           copia,
+          ...(specie ? { specie } : {}),
         })),
       );
     }),
@@ -226,15 +236,28 @@ const leOpzioni = [
   { nome: "«Adatta»", adatta: true, punti: 8 },
 ];
 
-/** Tutte le divisioni del corpus con una funzione dei fogli data (quella vera o una mutata): i difettosi e i conti. */
+/** Le fasce verticali delle forme dei tipi nuovi in un disegno: il riquadro di una copia campo per campo (la compatta),
+ * quello di una copia espansa con un'assegnazione per campo o col ciclo delle colonne. */
+function fasceDeiTipi(d: Disegno): (readonly [number, number])[] {
+  const blocchi = new Set(d.elementi.filter((e) => e.campo !== undefined || e.interno === true).map((e) => e.id));
+  return d.riquadri.filter((r) => r.didascalia?.testo === cicliIt.copiaCampi || blocchi.has(r.blocco)).map((r) => [r.bordo.y, r.bordo.y + r.bordo.altezza] as const);
+}
+
+/** Tutte le divisioni del corpus con una funzione dei fogli data (quella vera o una mutata): i difettosi e i conti, e per
+ * i tipi nuovi le divisioni su più fogli e i tagli che passano dentro una delle loro forme. */
 function sulCorpus(dividi: typeof fogliDelDisegno) {
   const conti = { divisioni: 0, oggetti: 0, fogli: 0, suPiuFogli: 0, ristrette: 0, inColonne: 0, orizzontali: 0 };
+  const deiTipi: Record<Specie, { divisioni: number; suPiuFogli: number; tagliNelleForme: number }> = {
+    record: { divisioni: 0, suPiuFogli: 0, tagliNelleForme: 0 },
+    matrice: { divisioni: 0, suPiuFogli: 0, tagliNelleForme: 0 },
+    tabella: { divisioni: 0, suPiuFogli: 0, tagliNelleForme: 0 },
+  };
   const difettosi: string[] = [];
   for (const { nome: nm, misura } of leMisure) {
-    const disegni = corpus.map((a) => ({ nome: a.nome, d: disegna(a, misura) }));
+    const disegni = corpus.map((a) => ({ nome: a.nome, specie: a.specie, d: disegna(a, misura) }));
     for (const { nome: na, aree } of leAree)
       for (const o of leOpzioni)
-        for (const { nome, d } of disegni) {
+        for (const { nome, specie, d } of disegni) {
           const f = dividi(d, aree, o, tema);
           const e = esamina(d, f, aree, o);
           conti.divisioni++;
@@ -244,30 +267,48 @@ function sulCorpus(dividi: typeof fogliDelDisegno) {
           if (f.ristretto) conti.ristrette++;
           if (f.tagliX.length > 0) conti.inColonne++;
           if (f.orizzontale) conti.orizzontali++;
+          if (specie) {
+            const t = deiTipi[specie];
+            t.divisioni++;
+            if (f.fogli.length > 1) t.suPiuFogli++;
+            const fasce = fasceDeiTipi(d);
+            t.tagliNelleForme += f.tagliY.filter((c) => fasce.some(([a, b]) => a < c && c < b)).length;
+          }
           if (e.difetti.length > 0) difettosi.push(`${nome} (${nm}, ${na}, ${o.nome}): ${e.difetti[0]}${e.difetti.length > 1 ? ` (+${e.difetti.length - 1})` : ""}`);
         }
   }
-  return { conti, difettosi };
+  return { conti, deiTipi, difettosi };
 }
 
 describe("il corpus intero: nessun taglio dentro un oggetto, ogni oggetto in un foglio solo", () => {
   test(
     `${corpus.length} funzioni × ${leMisure.length} misure × ${leAree.length} aree × ${leOpzioni.length} opzioni`,
     () => {
-      const { conti, difettosi } = sulCorpus(fogliDelDisegno);
+      const { conti, deiTipi, difettosi } = sulCorpus(fogliDelDisegno);
       console.log(`fogli sul corpus: ${JSON.stringify(conti)}; difettosi ${difettosi.length}`);
       expect(difettosi).toEqual([]);
-      // Le premesse dei record: il riquadro della copia di un record c'è, nelle due forme (una scritta sul bordo nella
-      // compatta, un'assegnazione per campo nell'espansa).
-      const deiRecord = corpus.filter((a) => a.nome.startsWith("casi/tipi/")).map((a) => disegna(a));
-      const campi = deiRecord.flatMap((d) => d.elementi.filter((e) => e.campo !== undefined)).length;
-      const scritte = deiRecord.flatMap((d) => d.riquadri.filter((r) => r.didascalia?.testo === cicliIt.copiaCampi)).length;
-      // E delle matrici: il ciclo delle colonne della copia espansa (le parti con `interno`).
-      const colonne = deiRecord.flatMap((d) => d.elementi.filter((e) => e.interno === true)).length;
-      console.log(`fogli sul corpus: copie di un record, assegnazioni dei campi ${campi}, scritte della compatta ${scritte}; parti del ciclo delle colonne ${colonne}`);
-      expect(campi).toBeGreaterThan(0);
-      expect(scritte).toBeGreaterThan(0);
-      expect(colonne).toBeGreaterThan(0);
+      // Le premesse dei tipi nuovi, per specie: le loro forme ci sono (la scritta «copia campo per campo» sul bordo nella
+      // compatta, un'assegnazione per campo nell'espansa, il ciclo delle colonne di una matrice, il valore iniziale per
+      // righe o per record sotto «Inizio»), e i fogli le tagliano davvero (un taglio che passa dentro il loro riquadro,
+      // fra due forme).
+      const forme = (s: Specie) => {
+        const ds = corpus.filter((a) => a.specie === s).map((a) => disegna(a));
+        return {
+          campi: ds.flatMap((d) => d.elementi.filter((e) => e.campo !== undefined)).length,
+          scritte: ds.flatMap((d) => d.riquadri.filter((r) => r.didascalia?.testo === cicliIt.copiaCampi)).length,
+          colonne: ds.flatMap((d) => d.elementi.filter((e) => e.interno === true)).length,
+          annidati: ds.flatMap((d) => d.elementi.filter((e) => e.dato !== undefined && e.testo.includes("{{"))).length,
+        };
+      };
+      const misurate = { record: forme("record"), matrice: forme("matrice"), tabella: forme("tabella") };
+      console.log(`fogli sul corpus dei tipi: forme ${JSON.stringify(misurate)}; divisioni ${JSON.stringify(deiTipi)}`);
+      expect(misurate.record.campi * misurate.record.scritte).toBeGreaterThan(0);
+      expect(misurate.matrice.colonne * misurate.matrice.annidati).toBeGreaterThan(0);
+      expect(misurate.tabella.campi * misurate.tabella.scritte * misurate.tabella.annidati).toBeGreaterThan(0);
+      for (const s of ["record", "matrice", "tabella"] as const) {
+        expect(deiTipi[s].suPiuFogli, s).toBeGreaterThan(0);
+        expect(deiTipi[s].tagliNelleForme, s).toBeGreaterThan(0);
+      }
       // Le premesse: il corpus discrimina (molte funzioni su più fogli, qualcuna ristretta, i due versi).
       expect(conti.divisioni).toBe(corpus.length * 24);
       expect(conti.suPiuFogli).toBeGreaterThan(100);
@@ -292,6 +333,26 @@ describe("il corpus intero: nessun taglio dentro un oggetto, ogni oggetto in un 
     const fogli = f.fogli.map((g) => (g.y === c ? { ...g, y: spostato, altezza: g.altezza - (spostato - c) } : g.y + g.altezza === c ? { ...g, altezza: spostato - g.y } : g));
     const difetti = esamina(d, { ...f, tagliY, fogli }, a4, o).difetti;
     console.log(`controllo positivo dei tagli orizzontali: ${difetti.length} difetti, il primo «${difetti[0]}»`);
+    expect(difetti.some((x) => x.startsWith(`taglio orizzontale a ${spostato} dentro forma`))).toBe(true);
+  });
+
+  test("controllo positivo sui tipi nuovi: un taglio vero dentro la copia espansa di una tabella, spostato dentro l'assegnazione di un campo, fa rosso il rilevatore", () => {
+    // La prima divisione del corpus (A4, 6 punti, misura per codice) con un taglio dentro il riquadro della copia.
+    const o = { adatta: false, punti: 6 };
+    const trovata = corpus
+      .filter((a) => a.specie === "tabella" && a.copia === "espansa")
+      .map((a) => ({ a, d: disegna(a) }))
+      .map(({ a, d }) => ({ a, d, f: fogliDelDisegno(d, a4, o, tema), fasce: fasceDeiTipi(d) }))
+      .flatMap(({ a, d, f, fasce }) => f.tagliY.filter((c) => fasce.some(([x, y]) => x < c && c < y)).map((c) => ({ a, d, f, c })))[0];
+    expect(trovata).toBeDefined();
+    const { a, d, f, c } = trovata!;
+    expect(esamina(d, f, a4, o).difetti).toEqual([]);
+    const sotto = d.elementi.filter((e) => e.campo !== undefined && e.riquadro.y > c).sort((x, y) => x.riquadro.y - y.riquadro.y)[0]!;
+    const spostato = sotto.riquadro.y + sotto.riquadro.altezza / 2;
+    const tagliY = f.tagliY.map((t) => (t === c ? spostato : t));
+    const fogli = f.fogli.map((g) => (g.y === c ? { ...g, y: spostato, altezza: g.altezza - (spostato - c) } : g.y + g.altezza === c ? { ...g, altezza: spostato - g.y } : g));
+    const difetti = esamina(d, { ...f, tagliY, fogli }, a4, o).difetti;
+    console.log(`controllo positivo sui tipi nuovi (${a.nome}, taglio a ${c} spostato a ${spostato}): ${difetti.length} difetti, il primo «${difetti[0]}»`);
     expect(difetti.some((x) => x.startsWith(`taglio orizzontale a ${spostato} dentro forma`))).toBe(true);
   });
 });

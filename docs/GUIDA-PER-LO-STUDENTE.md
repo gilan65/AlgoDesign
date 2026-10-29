@@ -13,11 +13,11 @@ Le parole che la guida usa sono queste: un **dato** è una costante o una variab
 
 ## 2. La finestra
 
-- **La barra**, in alto, con i comandi in gruppi, in ordine di lavoro: **Progetto** (un menu con Nuovo, Apri, Salva, Salva con nome, Salva come libreria…, Proprietà, Nuova procedura o funzione…, Procedure e funzioni…, Importa procedure e funzioni…, Esporta il flowchart…, Esporta la tabella… e Stampa… (§12); fuori dal menu ci sono anche i pulsanti Funzione e Salva), **Modifica** (Annulla, Ripeti e i comandi del blocco scelto), **Esecuzione** (Esegui, Passo, Entra ed Esci quando il progetto ha procedure o funzioni, Animata, Ferma, Interruzione, Togli i punti), **Viste** (Dati, Tabella, Genera), e a destra **Impostazioni** e **Aiuto**. Col puntatore del mouse su un pulsante se ne leggono il nome e il tasto.
+- **La barra**, in alto, con i comandi in gruppi, in ordine di lavoro: **Progetto** (un menu con Nuovo, Apri, Salva, Salva con nome, Salva come libreria…, Proprietà, Aggiungi un record (§5), Nuova procedura o funzione…, Procedure e funzioni…, Importa procedure e funzioni…, Esporta il flowchart…, Esporta la tabella… e Stampa… (§13); fuori dal menu ci sono anche i pulsanti Funzione e Salva), **Modifica** (Annulla, Ripeti e i comandi del blocco scelto), **Esecuzione** (Esegui, Passo, Entra ed Esci quando il progetto ha procedure o funzioni, Animata, Ferma, Interruzione, Togli i punti), **Viste** (Dati, Tabella, Genera), e a destra **Impostazioni** e **Aiuto**. Col puntatore del mouse su un pulsante se ne leggono il nome e il tasto.
 - **La vista dei dati**, a sinistra, con due schede: «Dati» e «Casi d'uso». Il pulsante «Dati» la chiude e la riapre; il suo bordo destro si trascina per allargarla.
-- **Il flowchart**, a destra, con lo zoom nella riga in fondo (meno, la percentuale che con un clic torna al 100%, più, «Adatta alla finestra»). Quando il progetto ha procedure o funzioni, sopra il flowchart c'è una scheda per ciascuna (§8).
+- **Il flowchart**, a destra, con lo zoom nella riga in fondo (meno, la percentuale che con un clic torna al 100%, più, «Adatta alla finestra»). Quando il progetto ha procedure o funzioni, sopra il flowchart c'è una scheda per ciascuna (§9).
 - **La riga di stato**, in fondo: il nome del file, «modificato» se ci sono modifiche non salvate, gli errori e gli avvisi del progetto (un clic su «Mostra l'elenco» li elenca, e un clic su una voce porta al blocco o al dato), lo stato dell'esecuzione e, all'estrema destra, la lingua dell'interfaccia: «ITA» o «ENG», e un clic apre il menu con le due lingue (la stessa scelta delle Impostazioni).
-- **La guida per lo studente**: dal menu **Aiuto**, in una finestra a destra che resta aperta mentre si lavora (§11).
+- **La guida per lo studente**: dal menu **Aiuto**, in una finestra a destra che resta aperta mentre si lavora (§12).
 
 Ogni comando si dà anche da tastiera: Tab porta da un elemento all'altro, Invio apre e conferma, Esc rinuncia.
 
@@ -27,7 +27,7 @@ Come esempio, un programma che legge un numero intero e scrive se è pari o disp
 
 ### Il progetto
 
-Dal menu **Progetto** scegli **Nuovo** (Ctrl+N). Scrivi il nome del progetto, che è obbligatorio, e, se vuoi, l'autore, una descrizione e delle note; conferma con **Crea**. Le stesse informazioni si cambiano dopo con **Proprietà**, che ha anche tre opzioni che cambiano il risultato: quante cifre decimali ha un numero reale scritto (2 se non si dice altro), il carattere che riempie un vettore di caratteri e i posti della pila delle chiamate (§9).
+Dal menu **Progetto** scegli **Nuovo** (Ctrl+N). Scrivi il nome del progetto, che è obbligatorio, e, se vuoi, l'autore, una descrizione e delle note; conferma con **Crea**. Le stesse informazioni si cambiano dopo con **Proprietà**, che ha anche tre opzioni che cambiano il risultato: quante cifre decimali ha un numero reale scritto (2 se non si dice altro), il carattere che riempie un vettore di caratteri e i posti della pila delle chiamate (§10).
 
 Salva il progetto con **Salva con nome** (Ctrl+Maiusc+S): il file ha l'estensione `.algo`. Da lì in poi **Salva** (Ctrl+S) scrive lo stesso file. Il file prende il nome del progetto; se quel nome ha caratteri che un file non può avere, o è un nome che Windows riserva (come `CON` o `NUL`), prima della finestra di Windows AlgoDesign lo dice e propone un altro nome, che si può cambiare: **Quali nomi si possono usare?** dice le regole.
 
@@ -36,8 +36,8 @@ Salva il progetto con **Salva con nome** (Ctrl+Maiusc+S): il file ha l'estension
 Nella scheda «Dati» premi **Aggiungi un dato** e compila i campi:
 
 - **Nome**: lettere senza accento, cifre e trattino basso, cominciando con una lettera (`numero`, `eta`, non `età`), al massimo 63 caratteri; non può essere una parola riservata del C o di Python (`if`, `while`, `int`, `return`…) né il nome di un operatore scritto a parole (`mod`, `lunghezza`…): così il nome passa identico nel codice generato;
-- **Tipo**: intero, reale, carattere, stringa o booleano;
-- **Forma**: semplice, o vettore con il numero degli elementi (al più 1000);
+- **Tipo**: intero, reale, carattere, stringa o booleano, oppure un record del progetto (§5);
+- **Forma**: semplice, vettore con il numero degli elementi (al più 1000), oppure matrice con le righe e le colonne (§5);
 - **Natura**: variabile o costante (una costante ha sempre un valore);
 - **Valore iniziale**: facoltativo per una variabile; per un vettore, l'elenco dei valori fra graffe, `{7, 8, 6}` (scritto senza graffe va bene lo stesso);
 - **Ruolo**: input, output, input e output, oppure di lavoro, la scelta di partenza. Una costante non ha un ruolo.
@@ -77,7 +77,7 @@ Una Scrittura con più valori ha un campo per valore (**Aggiungi un valore** ne 
 
 Spesso una Scrittura subito prima di una Lettura è la sua domanda: `scrivi "Voto: "`, poi `leggi voto`. Nelle Impostazioni, scheda «Aspetto», la casella **Mostra la domanda nel blocco di Lettura** (spenta di partenza) disegna le due come un blocco solo, su due righe: sopra la domanda (`"Voto:"`; più valori separati da una virgola, e `↵` se va a capo), sotto `leggi voto`. Succede solo quando la console resta la stessa, cioè quando la Scrittura va a capo oppure finisce con uno spazio (in fondo all'ultimo testo, `"Voto: "`, o come valore a sé, `" "`). Le altre Scritture restano blocchi a sé. Nei campi della Lettura, sopra la Destinazione, ci sono allora un campo per ogni valore della domanda (**Domanda 1**, **Domanda 2**…, ognuno con la sua ×), **Aggiungi una domanda** e **Va a capo**. Senza «Va a capo» il valore si scrive sulla stessa riga, dopo uno spazio che AlgoDesign mette da sé. Il blocco si sposta, si copia, si elimina e si annulla tutto insieme, e fra la domanda e la lettura non c'è un «+»: per inserire un blocco fra le due si spegne la casella. Passo passo l'esecuzione si ferma prima sulla domanda e poi sulla lettura, sullo stesso blocco, con la riga corrente cerchiata. Il file e il codice generato non cambiano: è solo un altro modo di disegnare gli stessi due blocchi.
 
-Nel blocco «se» il ramo **Vero** è a destra e il **Falso** a sinistra. Nei cicli, Vero vuol dire «un altro giro». I cicli «per» e «per ogni» hanno il loro capitolo, il §4; le procedure e le funzioni il §8.
+Nel blocco «se» il ramo **Vero** è a destra e il **Falso** a sinistra. Nei cicli, Vero vuol dire «un altro giro». I cicli «per» e «per ogni» hanno il loro capitolo, il §4; le procedure e le funzioni il §9.
 
 Per l'esempio:
 
@@ -87,7 +87,7 @@ Per l'esempio:
 
 Un blocco si apre con il doppio clic o con Invio; **Invio** conferma, **Esc** annulla. Il **«?»** accanto a «Conferma» dice che cosa scrivere nei campi di quel blocco. Se ciò che scrivi ha un errore, sotto i campi compare l'errore in una frase, mentre scrivi: la frase dice la causa precisa quando AlgoDesign la riconosce, come «Una parentesi tonda è aperta e non è chiusa.» o «Nel nome c'è uno spazio.», e vale per le espressioni, i nomi, i dati, gli argomenti e i cicli; la stessa frase è nella riga di stato. **Spiegazione** apre il suggerimento per quella causa e, quando la causa non si sa, le cause possibili. In un blocco appena inserito, invece, l'errore compare quando confermi: i campi restano aperti per correggerlo, e una seconda conferma tiene il blocco così com'è, segnato nel flowchart. Un blocco si sposta trascinandolo su un altro «+» (o da tastiera con Spazio), si copia, si taglia e si incolla su un «+», si cancella con Canc. Il tasto destro su un blocco (o, da tastiera, il tasto Menu o Maiusc+F10) apre il suo menu: Taglia, Copia, Elimina. **Annulla** (Ctrl+Z) e **Ripeti** (Ctrl+Y) tornano indietro e avanti di una modifica.
 
-**Più blocchi insieme.** Maiusc+clic su un altro blocco sceglie anche i blocchi che stanno fra i due; da tastiera, Maiusc+↑ e Maiusc+↓ allargano la scelta di un blocco alla volta. Si scelgono blocchi vicini, nella stessa sequenza: un blocco dentro un ciclo o un «se» porta la scelta al ciclo o al «se» che lo contiene, con tutto il suo contenuto. Ogni blocco scelto ha il bordo, e un comando vale per tutti in un passo solo: si trascinano su un «+» (da tastiera Spazio, poi Tab fino a un «+» e Invio), si tagliano, si copiano, si eliminano con Canc, e Annulla li riporta tutti. Il tasto destro apre il menu dei blocchi scelti. Nelle Impostazioni (§13) la casella «Con un riquadro intorno» li racchiude anche in un riquadro tratteggiato.
+**Più blocchi insieme.** Maiusc+clic su un altro blocco sceglie anche i blocchi che stanno fra i due; da tastiera, Maiusc+↑ e Maiusc+↓ allargano la scelta di un blocco alla volta. Si scelgono blocchi vicini, nella stessa sequenza: un blocco dentro un ciclo o un «se» porta la scelta al ciclo o al «se» che lo contiene, con tutto il suo contenuto. Ogni blocco scelto ha il bordo, e un comando vale per tutti in un passo solo: si trascinano su un «+» (da tastiera Spazio, poi Tab fino a un «+» e Invio), si tagliano, si copiano, si eliminano con Canc, e Annulla li riporta tutti. Il tasto destro apre il menu dei blocchi scelti. Nelle Impostazioni (§14) la casella «Con un riquadro intorno» li racchiude anche in un riquadro tratteggiato.
 
 ### Come si scrivono le espressioni
 
@@ -154,7 +154,7 @@ Un vettore si copia in un altro col suo nome, con un'assegnazione: `altri ← vo
 3. la copia di un elemento, `altri[_indice] ← voti[_indice]`;
 4. l'aumento, `_indice ← _indice + 1`.
 
-In tutte e due le forme ogni parte è un'azione, passo passo, e il punto di interruzione ferma «Esegui» a ogni controllo, come in un ciclo. Nella tabella di traccia la colonna `_indice` c'è solo con la forma espansa, dove il disegno la mostra. Anche il vettore restituito da una funzione si assegna col nome (`doppi_voti ← doppi(voti)`, §8), ma lì il risultato arriva già pronto: è un'azione sola, senza riquadro.
+In tutte e due le forme ogni parte è un'azione, passo passo, e il punto di interruzione ferma «Esegui» a ogni controllo, come in un ciclo. Nella tabella di traccia la colonna `_indice` c'è solo con la forma espansa, dove il disegno la mostra. Anche il vettore restituito da una funzione si assegna col nome (`doppi_voti ← doppi(voti)`, §9), ma lì il risultato arriva già pronto: è un'azione sola, senza riquadro.
 
 ### Aperti o chiusi
 
@@ -171,22 +171,71 @@ Con Passo (F10) l'esecuzione si ferma su ogni parte del ciclo: la partenza, ogni
 
 ### Due esempi
 
-Fra gli esempi forniti (§11), nel gruppo «Cicli per e per ogni», due usano questi cicli:
+Fra gli esempi forniti (§12), nel gruppo «Cicli per e per ogni», due usano questi cicli:
 
 - **Parola al contrario** legge una parola, la scrive al contrario con un «per» che conta all'indietro (`per i da lunghezza parola - 1 a 0 passo -1`) e ne conta le vocali con un «per ogni» sui caratteri: con `ciao` scrive `oaic` e `Vocali: 3`;
 - **Media dei voti coi cicli per** è l'esempio «Media dei voti» con i due cicli che contano scritti come «per»: aprendo tutti e due gli esempi si confronta lo stesso algoritmo scritto nei due modi.
 
-## 5. Eseguire
+## 5. Record, matrici e tabelle
+
+Finora un dato era un valore solo, o un vettore di valori dello stesso tipo. Tre forme tengono insieme valori che vanno insieme: il **record** raccoglie sotto un nome valori di tipo diverso (un alunno ha un nome, una classe e un voto); la **matrice** dispone valori dello stesso tipo in righe e colonne (i voti di quattro alunni in tre materie); la **tabella** è un vettore di record (la classe intera, un alunno per elemento). Si usano come i vettori: un pezzo alla volta, col suo nome.
+
+### Il record
+
+Un record è un tipo nuovo, che si definisce una volta per tutto il progetto. Dal menu **Progetto** scegli **Aggiungi un record**: in cima alla vista dei dati compare la tabella «Record», con una riga per record; sotto la riga si apre la sua scheda. Lì si scrivono il **nome del record** (`alunno`) e i **campi**, uno per riga, ognuno col nome, il tipo e, per una stringa, la lunghezza massima. **Aggiungi un campo** ne aggiunge uno; ↑ e ↓ lo spostano, × lo elimina. Un campo ha uno dei cinque tipi del §3: non può essere un vettore né un altro record. **Elimina il record** lo toglie dal progetto. La riga di un record si riapre col doppio clic o con Invio; il suo menu lo duplica, lo sposta e lo elimina come quello di un dato. Nelle Impostazioni, scheda «Modifica», la casella del gruppo «Record» (spenta di partenza) mette **Aggiungi un record** anche nella vista dei dati di un progetto che non ne ha ancora.
+
+Definito il record, il suo nome è fra i tipi di un dato: un dato `a` di tipo `alunno` ha i tre campi; un campo si scrive col nome del dato, un punto e il nome del campo: `a.nome`, `a.voto`. Un campo va dovunque va un dato del suo tipo: in un'assegnazione (`a.voto ← a.voto + 1`), in una Lettura (`leggi a.nome`), in una Scrittura, in una condizione. Il valore iniziale di un record è l'elenco dei campi fra graffe, nel loro ordine: `{"Anna", "3A", 7}`.
+
+Il record intero si scrive col suo nome solo dove passa tutto insieme: in una copia (`b ← a`), come argomento di una procedura o di una funzione (per valore, *rif* o *out*) e come risultato di una funzione, che nella sua finestra può restituire un record. Un record non si legge né si scrive tutto insieme; due record non si confrontano con `==`: si legge, si scrive e si confronta un campo alla volta.
+
+La copia `b ← a` passa un campo alla volta, come la copia di un vettore passa un elemento alla volta (§4): nel flowchart l'assegnazione sta in un riquadro tratteggiato con la scritta «copia campo per campo». Nella forma espansa il riquadro contiene un'assegnazione per campo, `b.nome ← a.nome`, `b.classe ← a.classe`, `b.voto ← a.voto`; passo passo ognuna è un'azione. Un campo senza valore ferma la copia su quel campo.
+
+### La matrice
+
+Nei campi di un dato la **Forma** «matrice» chiede le **Righe** e le **Colonne**: `m`, matrice di 2 × 3 interi, ha 2 righe di 3 elementi. Un elemento si scrive con due indici, prima la riga e poi la colonna, tutti e due da 0: `m[1][2]` è l'ultimo. Il limite degli elementi vale sul totale: 40 righe per 26 colonne sono 1040 elementi, troppi.
+
+Il valore iniziale si scrive **per righe**, ogni riga fra graffe: `{{7, 8, 6}, {5, 9, 4}}` (con almeno due righe le graffe esterne si possono omettere); oppure è un valore solo, ripetuto in ogni elemento.
+
+Una riga, `m[1]`, è un vettore: va dovunque va un vettore della sua lunghezza. Si copia in un vettore (`v ← m[1]`) e il contrario (`m[0] ← v`), si passa a una procedura, si percorre con un «per ogni». Il «per ogni» percorre una riga, non la matrice intera: per tutti gli elementi servono due cicli, uno per le righe e dentro uno per le colonne. La matrice intera si copia col suo nome in un'altra delle stesse righe e delle stesse colonne, si passa come parametro (per valore, *rif* o *out*) e può essere il risultato di una funzione. Nella forma espansa la copia `b ← a` ha due cicli, uno dentro l'altro: quello delle righe con `_indice` e, dentro, quello delle colonne con `_indice2`, che copia `b[_indice][_indice2] ← a[_indice][_indice2]`.
+
+In una matrice di stringhe `m[1][0]` è una stringa; in un vettore di stringhe `v[1][0]` è il primo carattere della stringa `v[1]`.
+
+### La tabella
+
+Una tabella è un vettore di record: la **Forma** «vettore» con un record come tipo. `classe`, vettore di 3 `alunno`, tiene tre alunni: `classe[1]` è il secondo, un record; `classe[1].voto` è il suo voto (prima l'indice, poi il campo). Il limite vale sul totale dei valori, i record per i campi: 400 record di 3 campi sono 1200 valori, troppi.
+
+Il valore iniziale si scrive **per record**, ogni record fra graffe: `{{"Anna", "3A", 7}, {"Bruno", "3B", 5}, {"Carla", "3A", 8}}`; oppure è un record solo ripetuto in ogni elemento, `{"-", "0X", 0}`.
+
+Un record della tabella va dovunque va un record: si copia (`r ← classe[1]`, `classe[0] ← r`, `classe[0] ← classe[2]`, ognuna una copia campo per campo), si passa e si restituisce. La tabella intera si copia col suo nome in un'altra dello stesso record e della stessa misura, si passa come parametro (per valore, *rif* o *out*) e può essere il risultato di una funzione. Nella forma espansa la copia `u ← t` è il ciclo dei record con dentro un'assegnazione per campo: `u[_indice].nome ← t[_indice].nome`, poi la classe e il voto. Il «per ogni» su una tabella dà a ogni giro un record, preso in un'azione sola: `per ogni a in classe` copia il record in `a` prima del corpo: cambiare `a` non cambia la tabella.
+
+Un esempio: l'ordinamento di una classe per voto con l'algoritmo a bolle confronta `t[j].voto > t[j + 1].voto` e scambia i due record con un record di appoggio, `r ← t[j]`, `t[j] ← t[j + 1]`, `t[j + 1] ← r`.
+
+### Eseguire
+
+Nella **tabella di traccia** un record ha una colonna per campo, `a.nome`, `a.classe`, `a.voto`, raccolte sotto il nome del dato. Come si mostrano una matrice e una tabella si sceglie nelle Impostazioni, scheda «Tabella di traccia»:
+
+- **Come si mostra una matrice nella tabella**: una colonna per riga, coi valori in fila e l'elemento cambiato evidenziato (è la scelta iniziale); una colonna per elemento, come un vettore; oppure tutta la matrice in una colonna sola, con le righe separate da «‖»;
+- **Come si mostra una tabella nella tabella di traccia**: una colonna per record, coi campi in fila (è la scelta iniziale); una colonna per campo di ogni record, come un vettore; oppure una colonna per campo, coi record in fila.
+
+Col puntatore del mouse sul nome di una matrice o di una tabella, il riquadro del valore mostra una griglia: per una matrice una riga della griglia per riga e una colonna per colonna («matrice di 2 × 3 elementi»); per una tabella un record per riga, coi nomi dei campi in cima («alunno · tabella di 3 record»). Per un record, un campo per riga.
+
+Una procedura o una funzione eseguita da sola (§9) chiede un parametro record, matrice o tabella un pezzo alla volta, ognuno col suo nome: `a.nome`, `m[0][1]`, `t[0].nome`; per un record e per una tabella «A ogni elemento» non c'è. Il risultato si scrive allo stesso modo, una riga per pezzo: `→ .nome = Bruno` per un record, `→ [0][1] = 4` per una matrice, `→ [0].nome = Anna` per una tabella e `t[0].nome = Anna` per un parametro per riferimento o di uscita. Sono anche le righe dell'output atteso dei casi d'uso; un caso nuovo ha una voce per ogni pezzo che si chiede.
+
+### Il codice generato
+
+Nello pseudocodice i record si definiscono in testa, `RECORD alunno` … `FINE RECORD`, un campo per riga col suo tipo; i tipi dei dati si scrivono come nella vista dei dati: `classe: vettore di 3 alunno`, `m: matrice di 2 × 3 interi`. In Python un record è una classe di dati (`@dataclass`), coi campi senza valore a `None`; una matrice è una lista di liste, una tabella una lista di oggetti di quella classe. In C un record è una `struct` col nome del record (`typedef struct { … } alunno;`), una matrice ha due indici (`int m[2][3]`), una tabella è un vettore di `alunno`. Le copie sono scritte per intero, come nel flowchart espanso: una riga per campo, due cicli per una matrice. «Accademico» non ha record, matrici e tabelle: per un progetto che li usa dice che cosa manca e dove.
+
+## 6. Eseguire
 
 Quando il progetto non ha errori lo si esegue:
 
 - **Esegui** (F5) va fino alla fine, o fino al prossimo punto di interruzione;
 - **Passo** (F10) fa un'azione sola: ogni pressione, un'azione;
-- **Animata** avanza da sola, a una delle tre velocità scelte nel menu accanto, ed entra anche nelle procedure e nelle funzioni chiamate, come Entra (§8); un clic la mette in pausa;
+- **Animata** avanza da sola, a una delle tre velocità scelte nel menu accanto, ed entra anche nelle procedure e nelle funzioni chiamate, come Entra (§9); un clic la mette in pausa;
 - **Ferma** (Maiusc+F5) torna alla modifica;
 - **Interruzione** (F9) mette o toglie un punto di interruzione sul blocco scelto: un pallino rosso a sinistra del blocco. «Esegui» si ferma lì prima di eseguirlo. «Togli i punti» li toglie tutti.
 
-Con le procedure e le funzioni ci sono anche **Entra** (F11) ed **Esci** (Maiusc+F11), per entrare in una chiamata e uscirne: il §8.
+Con le procedure e le funzioni ci sono anche **Entra** (F11) ed **Esci** (Maiusc+F11), per entrare in una chiamata e uscirne: il §9.
 
 All'avvio, a destra del flowchart si apre una colonna con la **tabella di traccia** sopra e la **console** sotto, e il blocco corrente è evidenziato in giallo con il bordo arancione. Quando il programma legge un dato, in fondo alla console c'è la riga dove scrivere il valore: scrivilo e premi **Invio**. Un valore che non va bene (lettere al posto di un numero) lo dice, e la stessa lettura si ripete.
 
@@ -198,7 +247,7 @@ Col puntatore del mouse sul nome di un dato in un blocco, un riquadro ne dice ti
 
 Se il programma fa qualcosa che non si può fare (un intero che esce dal suo intervallo, una divisione per zero, un indice fuori dal vettore, un dato letto prima di avere un valore), l'esecuzione si ferma sul blocco, e la console dice in una frase che cosa è successo; **Spiegazione**, accanto, apre il resto con un **suggerimento** per correggerlo. Durante l'esecuzione flowchart e dati si possono solo guardare: per modificarli si preme Ferma, oppure si aspetta la fine.
 
-## 6. I casi d'uso: provare un algoritmo
+## 7. I casi d'uso: provare un algoritmo
 
 Un **caso d'uso** è una prova: i valori che l'utente scriverebbe nella console, in ordine, e l'**output atteso**, cioè il testo esatto che il programma deve scrivere. Si può scrivere prima delle regole, appena ci sono i dati: così si decide che cosa deve fare il programma prima di decidere come.
 
@@ -216,34 +265,34 @@ Sulla riga di un caso, **Esegui** lo esegue come F5, con la tabella e la console
 
 Il menu della riga di un caso, come quello di un dato, lo duplica, lo sposta e lo elimina. Annulla riporta anche la spunta di un caso eliminato o rinominato, com'era prima della modifica; gli altri casi tengono la spunta che hanno.
 
-Anche una procedura o una funzione ha i suoi casi d'uso, che la provano da sola: il §8.
+Anche una procedura o una funzione ha i suoi casi d'uso, che la provano da sola: il §9.
 
-## 7. Il codice generato
+## 8. Il codice generato
 
-Il pulsante **Genera**, nel gruppo delle viste, apre a destra del flowchart la colonna del **codice generato**, con le linguette dei linguaggi: di partenza **Pseudocodice** (nella lingua dell'interfaccia), **Python** e **C**, ma quali linguaggi hanno una linguetta, e in che ordine, si sceglie nelle Impostazioni (§13); all'avvio si vede la prima. Il codice segue ogni modifica del flowchart; con un progetto che ha errori, al posto del codice c'è l'invito a correggerli. «Genera» e «Tabella» si alternano nella stessa colonna. Fra i linguaggi che si accendono nelle Impostazioni c'è anche **Accademico**, lo pseudocodice delle Selezioni scolastiche delle Olimpiadi di Informatica: come si usa per allenarsi lo spiega la guida ad «Accademico», il file `GUIDA-AD-ACCADEMICO.md`, che nel pacchetto sta accanto al programma (e anche nel pacchetto dello strumento di «Accademico»), nel repository nella cartella `docs`.
+Il pulsante **Genera**, nel gruppo delle viste, apre a destra del flowchart la colonna del **codice generato**, con le linguette dei linguaggi: di partenza **Pseudocodice** (nella lingua dell'interfaccia), **Python** e **C**, ma quali linguaggi hanno una linguetta, e in che ordine, si sceglie nelle Impostazioni (§14); all'avvio si vede la prima. Il codice segue ogni modifica del flowchart; con un progetto che ha errori, al posto del codice c'è l'invito a correggerli. «Genera» e «Tabella» si alternano nella stessa colonna. Fra i linguaggi che si accendono nelle Impostazioni c'è anche **Accademico**, lo pseudocodice delle Selezioni scolastiche delle Olimpiadi di Informatica: come si usa per allenarsi lo spiega la guida ad «Accademico», il file `GUIDA-AD-ACCADEMICO.md`, che nel pacchetto sta accanto al programma (e anche nel pacchetto dello strumento di «Accademico»), nel repository nella cartella `docs`.
 
 Durante l'esecuzione con Passo o con l'Animata il codice evidenzia la riga (o le righe) del blocco corrente; con Esegui, la riga dove l'esecuzione si ferma su un punto di interruzione o su un errore. Così si vede, azione per azione, a che cosa corrisponde ogni blocco.
 
-I cicli «per» e «per ogni» diventano, nello pseudocodice, `PER i DA 1 A n` … `FINE PER` e `PER OGNI c IN parola` … `FINE PER OGNI`; in Python un `while`, col contatore aumentato in fondo al corpo; in C un `for`. Il «per ogni» percorre il vettore o la stringa con la sua posizione, `_indice`, come nel flowchart aperto. Durante l'esecuzione è evidenziata la riga della parte corrente del ciclo: la partenza, il controllo, l'elemento preso o l'aumento. Come diventano codice le procedure e le funzioni lo dice il §8.
+I cicli «per» e «per ogni» diventano, nello pseudocodice, `PER i DA 1 A n` … `FINE PER` e `PER OGNI c IN parola` … `FINE PER OGNI`; in Python un `while`, col contatore aumentato in fondo al corpo; in C un `for`. Il «per ogni» percorre il vettore o la stringa con la sua posizione, `_indice`, come nel flowchart aperto. Durante l'esecuzione è evidenziata la riga della parte corrente del ciclo: la partenza, il controllo, l'elemento preso o l'aumento. Come diventano codice le procedure e le funzioni lo dice il §9.
 
 **Copia** mette il codice negli appunti; **Salva…** lo scrive in un file (`.txt`, `.py` o `.c`). Il codice Python si esegue con Python 3.9 o successivo; il C si compila con un compilatore C11 (per esempio `gcc -std=c11 programma.c -lm`).
 
 Il codice generato è fatto per essere letto: non controlla i calcoli che il C lascia senza una regola (un intero che esce dal suo intervallo, una divisione intera per zero, un indice fuori dal vettore, un reale fuori dall'intervallo degli interi convertito in intero, un dato letto prima di avere un valore), né un reale che diventa infinito o non è un numero. Un commento in testa al programma Python e C lo dice. AlgoDesign invece li ferma sempre, e ferma anche un ciclo che non finisce, dopo un milione di azioni: per questo conviene provare l'algoritmo prima in AlgoDesign, con i suoi casi d'uso.
 
-## 8. Procedure e funzioni
+## 9. Procedure e funzioni
 
 Un algoritmo lungo si legge meglio diviso in pezzi, ognuno con un nome che dice che cosa fa: «leggi il numero dei voti», «il voto è valido?», «scrivi le stelle». In AlgoDesign i pezzi sono di due specie, e la differenza sta nel problema, non nel linguaggio di programmazione:
 
 - una **procedura compie un lavoro**: legge, scrive, cambia i dati che riceve. Non ha un risultato, e si chiama con un blocco del flowchart, il blocco «Procedura»;
 - una **funzione calcola un risultato** dai dati che riceve, e non fa altro: non legge, non scrive, non cambia i dati di chi la chiama. Il suo risultato (un intero, un reale, un carattere, un booleano, una stringa o un vettore) si usa dentro un'espressione, come `valido(voto)` nella condizione di un «se».
 
-Una funzione che legge o scrive è un errore, col suggerimento di farla diventare una procedura. Una procedura può chiamare altre procedure e funzioni; una funzione solo altre funzioni. Una procedura o una funzione che chiama sé stessa, direttamente o passando per altre (A chiama B e B chiama A), usa la **ricorsione**: il §9 la racconta.
+Una funzione che legge o scrive è un errore, col suggerimento di farla diventare una procedura. Una procedura può chiamare altre procedure e funzioni; una funzione solo altre funzioni. Una procedura o una funzione che chiama sé stessa, direttamente o passando per altre (A chiama B e B chiama A), usa la **ricorsione**: il §10 la racconta.
 
 Il programma che si è scritto finora è il **programma principale**: è quello che si esegue per primo, e chiama le procedure e le funzioni.
 
 ### Un esempio: la media dei voti con le funzioni
 
-Fra gli esempi forniti (§11), nel gruppo «Funzioni e procedure», **Media dei voti con le funzioni** è la «Media dei voti» divisa in tre pezzi:
+Fra gli esempi forniti (§12), nel gruppo «Funzioni e procedure», **Media dei voti con le funzioni** è la «Media dei voti» divisa in tre pezzi:
 
 - la procedura **leggi_numero**(*out* numero) chiede quanti voti leggere, finché il numero non è fra 1 e 30, e lo dà a chi la chiama;
 - la funzione **valido**(voto) restituisce un booleano: `voto >= 1 and voto <= 10`;
@@ -344,13 +393,13 @@ Il nome di un caso del programma può contenere «/» («voti 6/7»), ma non pu�
 
 Nel codice le procedure e le funzioni vengono dopo il programma principale. Nello pseudocodice sono `PROCEDURA leggi_numero(out numero: intero)` e `FUNZIONE booleano ← valido(voto: intero)`, che finisce con `RESTITUISCE …`, e la chiamata di una procedura è `CHIAMA leggi_numero(out n)`; un risultato stringa o vettore si scrive con le parole della vista dei dati, `FUNZIONE vettore di 3 interi ← doppi(…)`. Il Python non ha parametri per riferimento: una procedura restituisce i valori dei suoi parametri per riferimento e di uscita, e chi la chiama li riassegna; un parametro di uscita non si passa nemmeno (`n = leggi_numero()`). In C un parametro per riferimento o di uscita è un puntatore (`void leggi_numero(int *numero)`, chiamata con `leggi_numero(&n)`). Un vettore passato per valore si copia all'inizio della procedura chiamata, in Python e in C, perché la copia sia davvero una copia; una stringa solo in C, perché in Python una stringa non si può modificare. Per la stessa ragione una funzione che restituisce un vettore dà in Python una lista nuova (`return list(r)`); in C, che non sa restituire un vettore, la funzione restituisce una struttura che lo contiene, e chi la chiama ne prende il vettore (`doppi(voti).v`; una stringa allo stesso modo, `.s`). La copia `altri ← voti` è un ciclo vero, una riga per ogni sua parte, come nel flowchart espanso.
 
-## 9. La ricorsione
+## 10. La ricorsione
 
 Una procedura o una funzione può chiamare sé stessa. Il fattoriale di n è n per il fattoriale di n − 1, e il fattoriale di 1 è 1: la funzione «fatt» lo scrive proprio così, `n * fatt(n - 1)`, e quando `n <= 1` restituisce 1 senza chiamarsi più. Ogni ricorsione ha queste due parti: il caso in cui la funzione non chiama più sé stessa, e la chiamata con un dato più vicino a quel caso. Ogni chiamata in corso ha i suoi dati: mentre `fatt(3)` lavora, la `n` di `fatt(4)` vale ancora 4 e aspetta il risultato. La ricorsione può anche passare per altre procedure o funzioni: «pari» chiama «dispari», che chiama di nuovo «pari».
 
 ### Due esempi
 
-Fra gli esempi forniti (§11), nel gruppo «Funzioni e procedure»:
+Fra gli esempi forniti (§12), nel gruppo «Funzioni e procedure»:
 
 - **Fattoriale con la ricorsione**: il programma principale legge `n`, calcola `r ← fatt(n)` e scrive `r`; la funzione «fatt» ha un «se» con la condizione `n <= 1`, e nel ramo Vero `f ← 1`, nel Falso `f ← n * fatt(n - 1)`; poi restituisce `f`. Con 10 scrive 3628800;
 - **Sequenza di Fibonacci con la ricorsione** legge `n` e scrive i primi n numeri di Fibonacci, uno per riga: la funzione «fibonacci» chiama sé stessa due volte, `fibonacci(n - 1) + fibonacci(n - 2)`, fino a 0 e 1. Il suo caso d'uso «ventisei» si ferma: il lavoro cresce molto in fretta a ogni numero, e dopo 24 numeri supera il milione di azioni.
@@ -359,7 +408,7 @@ AlgoDesign riconosce la ricorsione da sé e la dice, nella riga di stato e nell'
 
 ### Eseguire passo passo
 
-Ogni chiamata in corso è un **livello**. Entra (F11) su `fatt(n - 1)` scende di un livello; Esci (Maiusc+F11) risale di uno, fermandosi a metà di `f ← n * fatt(n - 1)`, sulla ripresa (§8).
+Ogni chiamata in corso è un **livello**. Entra (F11) su `fatt(n - 1)` scende di un livello; Esci (Maiusc+F11) risale di uno, fermandosi a metà di `f ← n * fatt(n - 1)`, sulla ripresa (§9).
 
 - **Dove sei** dice tutte le chiamate in corso fino a sette livelli; con più livelli mostra i primi due, «… 496 chiamate …» e gli ultimi tre. Un clic su «…» apre l'elenco «Le altre chiamate», una voce per livello («Livello 37: fatt»), e una voce mostra quella chiamata.
 - Nella **tabella di traccia** il gruppo di «fatt» mostra i dati della chiamata dell'azione in corso, la più profonda.
@@ -371,9 +420,9 @@ Se manca il caso che ferma la ricorsione, o se la chiamata non gli si avvicina, 
 
 ### Il codice generato
 
-Nello pseudocodice e in Python la chiamata resta `fatt(n - 1)`; in C ha un primo argomento in più, la riga della chiamata: `fatt(__LINE__, n - 1)`. A differenza degli altri errori del §7, questi due limiti il codice generato li controlla: il Python e il C contano le chiamate in corso come AlgoDesign e si fermano nello stesso punto, con la stessa frase e la riga della chiamata.
+Nello pseudocodice e in Python la chiamata resta `fatt(n - 1)`; in C ha un primo argomento in più, la riga della chiamata: `fatt(__LINE__, n - 1)`. A differenza degli altri errori del §8, questi due limiti il codice generato li controlla: il Python e il C contano le chiamate in corso come AlgoDesign e si fermano nello stesso punto, con la stessa frase e la riga della chiamata.
 
-## 10. Le librerie: importare procedure e funzioni
+## 11. Le librerie: importare procedure e funzioni
 
 Una procedura o una funzione scritta bene serve in più programmi: `leggi_numero`, `valido`, un ordinamento. Invece di riscriverla, la si **importa**: AlgoDesign ne copia una parte da un altro progetto in quello aperto. Dopo, la copia è del progetto: se l'altro cambia, il progetto no.
 
@@ -385,7 +434,7 @@ Una **libreria** è un progetto come gli altri, un file `.algo`, che raccoglie p
 
 Dal menu Progetto, **Importa procedure e funzioni…** apre la finestra dell'importazione (lo stesso fa **Importa…** nella finestra «Procedure e funzioni…»). In alto si sceglie da dove:
 
-- dalla **cartella delle librerie**, divisa in gruppi come quella degli esempi (§11), con la ricerca in cima: **Scegli** accanto a una libreria;
+- dalla **cartella delle librerie**, divisa in gruppi come quella degli esempi (§12), con la ricerca in cima: **Scegli** accanto a una libreria;
 - oppure con **Da un altro file…** da qualunque progetto sul disco.
 
 Sotto, **Che cosa importare** elenca le procedure e le funzioni del progetto scelto, ognuna con la sua spunta (**Cambia** torna alla scelta del progetto). Se due hanno lo stesso nome, la seconda resta nell'elenco spenta, con sotto «Un'altra più sopra ha lo stesso nome: si importa solo quella.». Spuntandone una, **Che cosa entra nel progetto** dice che cosa entra e perché: con lei entrano anche le procedure e le funzioni che chiama, pure passando per altre («Entra: la chiama …»), e le costanti comuni che usano («Entra: la usa …»). Ciò che c'è già nel programma, identico, non entra di nuovo. Il programma principale del progetto scelto e i suoi casi d'uso non entrano mai.
@@ -406,9 +455,9 @@ Se il nome è già di un dato o di un'altra specie (una funzione importata che s
 
 ### La cartella delle librerie
 
-La cartella delle librerie si sceglie nelle Impostazioni, scheda «Percorsi» (§13): per esempio una cartella condivisa con la classe. Di partenza sta accanto a quella degli esempi, e non c'è finché non ci entra la prima libreria; AlgoDesign non ne fornisce. Un progetto segnato come libreria ci entra con **Aggiungi il progetto aperto**, in fondo alla finestra dell'importazione, nel gruppo scelto lì accanto («Le mie librerie», un altro gruppo che c'è, o uno nuovo con «Nuovo gruppo…»); se il nome del file è già usato, il file nuovo diventa «Nome (2).algo». Con un progetto non segnato il comando è spento, e la riga accanto dice di spuntare «È una libreria» nelle Proprietà. Le librerie non si eliminano dalla finestra: si eliminano dalla cartella, col sistema.
+La cartella delle librerie si sceglie nelle Impostazioni, scheda «Percorsi» (§14): per esempio una cartella condivisa con la classe. Di partenza sta accanto a quella degli esempi, e non c'è finché non ci entra la prima libreria; AlgoDesign non ne fornisce. Un progetto segnato come libreria ci entra con **Aggiungi il progetto aperto**, in fondo alla finestra dell'importazione, nel gruppo scelto lì accanto («Le mie librerie», un altro gruppo che c'è, o uno nuovo con «Nuovo gruppo…»); se il nome del file è già usato, il file nuovo diventa «Nome (2).algo». Con un progetto non segnato il comando è spento, e la riga accanto dice di spuntare «È una libreria» nelle Proprietà. Le librerie non si eliminano dalla finestra: si eliminano dalla cartella, col sistema.
 
-## 11. Gli esempi
+## 12. Gli esempi
 
 Dal menu **Aiuto**, **Esempi…** apre la finestra degli esempi: i progetti di una cartella, divisi in **gruppi**, uno per ogni sua sottocartella. Al primo avvio la cartella riceve dodici esempi forniti con AlgoDesign, in tre gruppi:
 
@@ -418,11 +467,11 @@ Dal menu **Aiuto**, **Esempi…** apre la finestra degli esempi: i progetti di u
 
 Un gruppo si apre e si chiude con un clic sul suo nome; la **ricerca** in cima trova un esempio dal nome o dalla descrizione. **Apri** ne apre una copia, che non è legata al file: per conservarla si usa «Salva con nome». **Aggiungi il progetto aperto** lo mette fra gli esempi, nel gruppo scelto lì accanto («I miei esempi», oppure uno nuovo con «Nuovo gruppo…»). **Elimina** cancella un esempio, ed **Elimina il gruppo** cancella un gruppo creato da te, coi suoi esempi (i gruppi degli esempi forniti no): tutti e due chiedono prima. **Ripristina gli esempi forniti** rimette quelli originali, ognuno nel suo gruppo.
 
-In una cartella usata da una versione precedente, gli esempi forniti si spostano da soli nei loro gruppi, i tuoi file restano dove sono, e gli esempi nuovi arrivano con «Ripristina gli esempi forniti». La cartella si sceglie nelle Impostazioni, scheda «Percorsi» (§13), accanto a quella delle librerie: per esempio una cartella condivisa con la classe.
+In una cartella usata da una versione precedente, gli esempi forniti si spostano da soli nei loro gruppi, i tuoi file restano dove sono, e gli esempi nuovi arrivano con «Ripristina gli esempi forniti». La cartella si sceglie nelle Impostazioni, scheda «Percorsi» (§14), accanto a quella delle librerie: per esempio una cartella condivisa con la classe.
 
 Dallo stesso menu, **Guida per lo studente** apre questa guida in una finestra a destra, nella lingua dell'interfaccia: a sinistra i capitoli (un clic porta al capitolo), a destra il testo, con sopra la ricerca (una parola, poi Invio per andare alla successiva). La finestra resta aperta mentre si lavora: l'app e i suoi tasti funzionano, e se la lingua cambia la guida cambia con lei, restando sullo stesso capitolo. Nelle Impostazioni, scheda «Aspetto», la si può anche spostare, trascinandone il titolo, e ridimensionare dall'angolo in basso. Si chiude con «Chiudi» o con Esc. Infine **Informazioni su AlgoDesign** dice la versione, la sua data e le licenze.
 
-## 12. Stampare ed esportare
+## 13. Stampare ed esportare
 
 Il progetto si stampa su carta o in un PDF, e il flowchart si esporta come immagine, da mettere in una relazione o in una presentazione. I due comandi sono nel menu **Progetto**; durante l'esecuzione ci sono in pausa, non mentre il programma avanza (né durante «Esegui tutti»).
 
@@ -431,9 +480,9 @@ Il progetto si stampa su carta o in un PDF, e il flowchart si esporta come immag
 **Stampa…** (Ctrl+P) apre la finestra «Stampa». In cima si sceglie **Di quali procedure e funzioni**: **Tutte**, oppure **Solo quella mostrata**, cioè quella della scheda aperta. Con «Tutte», la casella **Ogni procedura e funzione in un foglio nuovo** fa cominciare ognuna da un foglio suo. Sotto ci sono le parti da stampare, nell'ordine in cui escono, ognuna con la sua casella:
 
 - **Progetto**: il nome, l'autore, la descrizione e le note;
-- **Dati**: le tabelle della vista dei dati;
+- **Dati**: le tabelle della vista dei dati, con in cima una tabella per ogni record del progetto, coi suoi campi e il loro tipo;
 - **Flowchart**: con **Adatta al foglio** ogni flowchart sta in un foglio solo, anche se il testo diventa piccolo; altrimenti il **Testo minimo del flowchart (punti)**, da 6 a 12 (8 di partenza), decide quando un flowchart va su più fogli. Un flowchart più largo del foglio si stampa più piccolo, e la finestra lo dice. In pausa, **Con i segni dell'esecuzione** stampa anche il blocco corrente e i punti di interruzione;
-- **Codice in**, col menu accanto dei linguaggi accesi nelle Impostazioni (§13): il codice generato, su fogli verticali o orizzontali;
+- **Codice in**, col menu accanto dei linguaggi accesi nelle Impostazioni (§14): il codice generato, su fogli verticali o orizzontali;
 - **Flowchart e codice affiancati**: al posto del flowchart e del codice, su fogli orizzontali, il flowchart a sinistra e il codice a destra, nel linguaggio scelto accanto a «Codice in». Si sceglie solo insieme al flowchart e al codice. Il Python e il C finiscono con le **Funzioni di supporto**, in fondo, col solo codice;
 - **Casi d'uso**: per ogni caso il nome, la descrizione, i valori scritti nella console e l'output atteso.
 
@@ -447,19 +496,19 @@ Di partenza sono scelti il flowchart e il codice affiancati, nel linguaggio dell
 
 **Esporta il flowchart…** esporta il flowchart della scheda mostrata. La finestra dice di quale flowchart si tratta e fa scegliere il **Formato**, **PNG (immagine)** o **SVG (disegno)**, i **Colori** (a colori, a toni di grigio, in bianco e nero) e lo **Sfondo trasparente**; senza la casella lo sfondo è bianco. **Esporta…** apre la finestra di Windows per salvare, col nome del progetto e, per una procedura o una funzione, il suo nome fra parentesi: per esempio «media (leggi_numero).png». Il PNG è disegnato al doppio della misura, perché resti nitido; l'SVG si ingrandisce quanto si vuole senza perdere nitidezza. In pausa l'immagine ha i segni dell'esecuzione: il blocco corrente e i punti di interruzione. Le scelte restano fino alla chiusura di AlgoDesign.
 
-## 13. Le Impostazioni
+## 14. Le Impostazioni
 
 Il pulsante **Impostazioni** apre una finestra a sei schede; le scelte valgono dopo **Conferma** e restano dopo il riavvio:
 
-- **Aspetto**: la lingua (italiano o inglese; si cambia anche dalla riga di stato, §2), i colori del flowchart (Tenui, Contrasto forte, Bianco e nero) e i colori dei blocchi (più sotto), le condizioni lunghe su una o due righe, i valori iniziali mostrati nel flowchart sotto «Inizio» o nascosti, e il valore iniziale di un vettore in un elenco o con un valore solo, come si disegnano i cicli «per» e «per ogni» e il loro riquadro (§4), il riquadro intorno ai blocchi selezionati (§3), la copia di un vettore col suo nome, compatta o espansa (§4), la domanda nel blocco di Lettura (§3), l'aspetto dei pulsanti della barra, i comandi dell'esecuzione in una barretta sopra il flowchart, la ricerca nella guida e la sua finestra fissa o da spostare (§11);
-- **Modifica**: dove si scrivono i campi di un blocco (in un riquadro accanto al blocco o in un pannello a destra) e quelli di un dato (in una scheda sotto la riga o in ogni cella), quando chiedere conferma prima di eliminare un dato, se parentesi e virgolette si chiudono da sé mentre scrivi (§3), se offrire di salvare un'esecuzione come caso d'uso (§6);
-- **Limiti**: gli elementi di un vettore, i caratteri di una stringa e i caratteri di un vettore di stringhe (elementi × lunghezza massima), che si possono solo abbassare; e i posti della pila delle chiamate con cui nasce un progetto nuovo, da 5 a 500, che ogni progetto cambia poi nelle sue Proprietà (§9);
-- **Percorsi**: la cartella delle librerie (§10) e quella degli esempi (§11);
-- **Tabella di traccia**: come si mostra un vettore, che cosa ha il file CSV, le colonne che restano ferme, i separatori;
-- **Console**: che cosa fa una riga troppo lunga, e i **linguaggi del codice generato** (§7): una riga per linguaggio, con la casella che gli dà la linguetta e i pulsanti ▲ e ▼ che lo spostano su e giù nell'elenco, che è l'ordine delle linguette; almeno un linguaggio resta acceso.
+- **Aspetto**: la lingua (italiano o inglese; si cambia anche dalla riga di stato, §2), i colori del flowchart (Tenui, Contrasto forte, Bianco e nero) e i colori dei blocchi (più sotto), le condizioni lunghe su una o due righe, i valori iniziali mostrati nel flowchart sotto «Inizio» o nascosti, e il valore iniziale di un vettore in un elenco o con un valore solo, come si disegnano i cicli «per» e «per ogni» e il loro riquadro (§4), il riquadro intorno ai blocchi selezionati (§3), la copia di un vettore col suo nome, compatta o espansa (§4), la domanda nel blocco di Lettura (§3), l'aspetto dei pulsanti della barra, i comandi dell'esecuzione in una barretta sopra il flowchart, la ricerca nella guida e la sua finestra fissa o da spostare (§12);
+- **Modifica**: dove si scrivono i campi di un blocco (in un riquadro accanto al blocco o in un pannello a destra) e quelli di un dato (in una scheda sotto la riga o in ogni cella), se «Aggiungi un record» sta nella vista dei dati anche senza record (§5), quando chiedere conferma prima di eliminare un dato, se parentesi e virgolette si chiudono da sé mentre scrivi (§3), se offrire di salvare un'esecuzione come caso d'uso (§7);
+- **Limiti**: gli elementi di un vettore, i caratteri di una stringa e i caratteri di un vettore di stringhe (elementi × lunghezza massima), che si possono solo abbassare; e i posti della pila delle chiamate con cui nasce un progetto nuovo, da 5 a 500, che ogni progetto cambia poi nelle sue Proprietà (§10);
+- **Percorsi**: la cartella delle librerie (§11) e quella degli esempi (§12);
+- **Tabella di traccia**: come si mostrano un vettore, una matrice e una tabella (§5), che cosa ha il file CSV, le colonne che restano ferme, i separatori;
+- **Console**: che cosa fa una riga troppo lunga, e i **linguaggi del codice generato** (§8): una riga per linguaggio, con la casella che gli dà la linguetta e i pulsanti ▲ e ▼ che lo spostano su e giù nell'elenco, che è l'ordine delle linguette; almeno un linguaggio resta acceso.
 
 **I colori dei blocchi.** Nella scheda «Aspetto», sotto «Colori del flowchart», il riquadro **Colori dei blocchi** ha una riga per genere: Inizio e fine, Assegnazione, Procedura, Lettura, Scrittura, Se, Cicli (il rombo di ogni ciclo), Commento e Riquadro dei cicli. Ogni riga ha un blocco d'esempio, disegnato col colore che avrà, e le tinte da scegliere: la prima, **Come l'insieme**, lascia il colore dell'insieme scelto sopra; poi diciassette tinte per i blocchi (nove tenui e otto intense) e otto per la linea del riquadro dei cicli. Una tinta scelta vale con ogni insieme: cambiando insieme resta, e gli altri generi prendono i colori del nuovo. **Tutti come l'insieme** riporta ogni genere al colore dell'insieme. Di partenza, nei «Tenui», inizio e fine sono grigi, l'assegnazione malva, la procedura sabbia, la lettura verde, la scrittura azzurra, il «se» arancione, i cicli arancione intenso e il commento bianco; nel «Contrasto forte» gli stessi colori sono più carichi. Il giallo non c'è: è il colore del blocco corrente durante l'esecuzione.
 
-## 14. Licenza di questa guida
+## 15. Licenza di questa guida
 
 Questa guida è di Giuseppe Lancellotti ed è rilasciata con licenza Creative Commons Attribuzione 4.0 Internazionale (CC BY 4.0): si può copiare, distribuire e modificare, anche per scopi commerciali, citando l'autore e la licenza. Il testo completo della licenza è nel file `LICENSE-DOCS`.

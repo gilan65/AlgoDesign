@@ -1074,6 +1074,8 @@ export const it = {
   stampaProgetto: "Progetto",
   stampaNotaProgetto: "il nome, l'autore, la descrizione e le note",
   stampaDati: "Dati",
+  /** Il titolo della tabella di un record, in cima alla parte «Dati»: {nome} è il nome del record. */
+  stampaRecord: "Record {nome}",
   stampaFlowchart: "Flowchart",
   stampaCasi: "Casi d'uso",
   stampaAdatta: "Adatta al foglio",

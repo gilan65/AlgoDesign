@@ -5,7 +5,8 @@
 // dentro una stringa lunga, una parola senza punti a una larghezza stretta, il rientro profondo), ragionati carattere per
 // carattere; i fogli di poche righe.
 //
-// Il corpus (casi delle tappe 1–4), per ogni linguaggio letto dal registro che dà il codice: le parti coprono le righe,
+// Il corpus (casi delle tappe 1–4 e dei tipi nuovi: record, matrici, tabelle, con le specie contate), per ogni linguaggio
+// letto dal registro che dà il codice: le parti coprono le righe,
 // contigue e nell'ordine, unite ridanno `testoDelCodice`; ogni funzione al più in una parte, la coda solo in fondo; ogni
 // riga segnata dal generatore sta nella parte della sua funzione; ogni riga che viene da un blocco o dal dato di una
 // funzione sta nella parte di quella funzione (rilevatore scritto QUI, dall'albero del progetto); ogni funzione con una
@@ -30,7 +31,7 @@ import { testoDelCodice, type Riga } from "../../core/genera/forma";
 import { linguaggi } from "../../core/genera/linguaggi";
 import { aCapo, fogliDelCodice, partiDelCodice, rientroDelSeguito, type ParteDelCodice, type RigaStampata } from "../../core/genera/stampato";
 import { apri } from "../../core/progetto/formato";
-import type { Blocco, Progetto } from "../../core/progetto/modello";
+import { usaLeMatrici, usaLeTabelle, type Blocco, type Progetto } from "../../core/progetto/modello";
 import { paroleDelloPseudocodice } from "./parole";
 
 const radice = join(import.meta.dir, "..", "..");
@@ -159,11 +160,13 @@ describe("i fogli del codice (attesi a mano)", () => {
 
 // ------------------------------------------------------------------------------------------------- il corpus
 
-const file = ["casi/tappa-1", "casi/tappa-2", "casi/tappa-3", "casi/tappa-4"].flatMap((c) =>
+const file = ["casi/tappa-1", "casi/tappa-2", "casi/tappa-3", "casi/tappa-4", "casi/tipi"].flatMap((c) =>
   readdirSync(join(radice, c))
     .filter((f) => f.endsWith(".algo"))
     .map((f) => `${c}/${f}`),
 );
+/** I tipi nuovi di un file di `casi/tipi/`: tabella se ne usa una, poi matrice, poi record. */
+const specieDi = (f: string, p: Progetto) => (!f.startsWith("casi/tipi/") ? undefined : usaLeTabelle(p) ? "tabella" : usaLeMatrici(p) ? "matrice" : "record");
 const progetti = file.flatMap((f) => {
   const e = apri(readFileSync(join(radice, f), "utf8"));
   return e.ok ? [{ file: f, p: e.progetto }] : [];
@@ -313,6 +316,18 @@ describe("le parti sul corpus, per ogni linguaggio del registro", () => {
     expect(difetti.slice(0, 10)).toEqual([]);
     // Ogni linguaggio del registro dà codice sul corpus e ne segna le righe.
     for (const v of linguaggi) expect(conteggi[v.id]?.segnate ?? 0, v.id).toBeGreaterThan(0);
+    // I tipi nuovi: per specie, i linguaggi che ne danno il codice (quelli che non lo danno, come «Accademico», stampano
+    // ciò che manca). Ogni specie ha codice, e dagli stessi linguaggi.
+    const deiTipi: Record<string, string[]> = {};
+    for (const { linguaggio, file: f, p } of codici) {
+      const s = specieDi(f, p);
+      if (s !== undefined && !(deiTipi[s] ??= []).includes(linguaggio)) deiTipi[s].push(linguaggio);
+    }
+    console.log(`parti dei tipi nuovi, i linguaggi per specie: ${JSON.stringify(deiTipi)}`);
+    expect(Object.keys(deiTipi).sort()).toEqual(["matrice", "record", "tabella"]);
+    expect(deiTipi.record!.length).toBeGreaterThan(0);
+    expect(deiTipi.matrice).toEqual(deiTipi.record!);
+    expect(deiTipi.tabella).toEqual(deiTipi.record!);
   });
 
   test("controlli positivi: una riga tolta, i segni di una funzione tolti → rosso", () => {
@@ -333,17 +348,24 @@ describe("le parti sul corpus, per ogni linguaggio del registro", () => {
 describe("gli a capo sul corpus", () => {
   test("i pezzi ricompongono la riga, mai a metà parola dove c'è un punto, il seguito a + 4", () => {
     const conteggi: Record<string, number> = {};
+    // Le righe a capo dei tipi nuovi, per specie e linguaggio, alla larghezza del foglio verticale.
+    const deiTipi: Record<string, number> = {};
     const difetti: string[] = [];
     for (const colonne of [40, 77, 109])
-      for (const { linguaggio, file: f, righe } of codici)
+      for (const { linguaggio, file: f, p, righe } of codici)
         righe.forEach((r, i) => {
           const a = aCapo(r.testo, colonne);
           if (a.pezzi.length > 1) conteggi[`${linguaggio}@${colonne}`] = (conteggi[`${linguaggio}@${colonne}`] ?? 0) + 1;
+          const s = specieDi(f, p);
+          if (a.pezzi.length > 1 && s !== undefined && colonne === 77) deiTipi[`${s} ${linguaggio}`] = (deiTipi[`${s} ${linguaggio}`] ?? 0) + 1;
           difetti.push(...difettiDellACapo(r.testo, colonne, a).map((x) => `${linguaggio}@${colonne} ${f}:${i + 1}: ${x}`));
         });
     console.log(`righe a capo: ${JSON.stringify(conteggi)}`);
+    console.log(`righe a capo dei tipi nuovi a 77 colonne: ${JSON.stringify(deiTipi)}`);
     expect(difetti.slice(0, 10)).toEqual([]);
     expect(conteggi["python@77"]).toBeGreaterThan(0);
+    // Ogni specie ha righe lunghe che vanno a capo sul foglio verticale.
+    for (const s of ["record", "matrice", "tabella"]) expect(Object.entries(deiTipi).filter(([k]) => k.startsWith(`${s} `)).reduce((n, [, v]) => n + v, 0), s).toBeGreaterThan(0);
   });
 
   test("controllo positivo: un a capo che taglia alla larghezza → rosso", () => {
@@ -362,8 +384,11 @@ describe("gli a capo sul corpus", () => {
       return { ...a, pezzi };
     };
     const rossi = codici.flatMap(({ righe }) => righe.filter((r) => difettiDellACapo(r.testo, 77, allaLarghezza(r.testo, 77)).length > 0)).length;
-    console.log(`controllo positivo degli a capo: ${rossi} righe rosse`);
+    // E sulle sole righe dei tipi nuovi.
+    const rossiDeiTipi = codici.filter(({ file: f, p }) => specieDi(f, p) !== undefined).flatMap(({ righe }) => righe.filter((r) => difettiDellACapo(r.testo, 77, allaLarghezza(r.testo, 77)).length > 0)).length;
+    console.log(`controllo positivo degli a capo: ${rossi} righe rosse, dei tipi nuovi ${rossiDeiTipi}`);
     expect(rossi).toBeGreaterThan(0);
+    expect(rossiDeiTipi).toBeGreaterThan(0);
   });
 });
 

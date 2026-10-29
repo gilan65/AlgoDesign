@@ -286,7 +286,7 @@ Nel flowchart una Scrittura di un booleano scrive `true` o `false`; in «Accadem
 
 ## 6. Dal testo al flowchart: lo strumento `algodesign-accademico`
 
-Lo strumento fa il passaggio inverso: legge un testo in «Accademico» e ne fa una **libreria** di AlgoDesign (§10 della guida per lo studente), dove ogni `function` del testo diventa una procedura o una funzione. Così un esercizio delle Selezioni si apre in AlgoDesign e si esegue passo passo, con la tabella di traccia.
+Lo strumento fa il passaggio inverso: legge un testo in «Accademico» e ne fa una **libreria** di AlgoDesign (§11 della guida per lo studente), dove ogni `function` del testo diventa una procedura o una funzione. Così un esercizio delle Selezioni si apre in AlgoDesign e si esegue passo passo, con la tabella di traccia.
 
 Per Windows lo strumento è un programma a sé, `algodesign-accademico.exe`, in un pacchetto a parte, `AlgoDesign-Accademico-0.6.0-beta.2-windows.zip`, accanto a quello di AlgoDesign: si estrae dove si preferisce, nasce la cartella `AlgoDesign-Accademico-0.6.0-beta.2`, e non chiede di installare nulla. Nella cartella ci sono anche un `LEGGIMI.md` breve (in inglese `README.md`) e questa guida. Si usa da **PowerShell**: in Esplora file, nella cartella dello strumento, si scrive `powershell` nella barra dell'indirizzo e si preme Invio (su Windows 11 va bene anche il tasto destro nella cartella, «Apri nel Terminale»); poi si scrive `.\algodesign-accademico` al posto di `algodesign-accademico` negli esempi che seguono (PowerShell non avvia un programma della cartella senza `.\`); i testi si danno col loro percorso, o si copiano nella stessa cartella. Chi ha il codice di AlgoDesign e Bun scrive `bun run accademico` al posto di `algodesign-accademico`, dalla cartella `app`; le opzioni sono le stesse.
 
@@ -384,7 +384,7 @@ Gli esercizi sullo pseudocodice chiedono di solito che cosa scrive un programma,
 1. **Prima a mano.** Leggi il testo e prevedi la risposta su carta, con una tabella delle variabili riga per riga. È quello che farai alla prova.
 2. **Porta il testo in AlgoDesign.** Copia il testo in un file `.txt` (in UTF-8) e passalo allo strumento (§6). Leggi le trasformazioni: ognuna ti dice dove il programma usa qualcosa che va guardato con attenzione, come un `return` a metà di un ciclo.
 3. **Eseguilo passo passo.** Apri la libreria in AlgoDesign e scegli la scheda della procedura del codice fuori dalle funzioni, o della funzione che l'esercizio chiede: F5 la prova da sola (i parametri si chiedono nella console), Passo la segue azione per azione, e la **tabella di traccia** mostra i valori come la tua tabella su carta. Dove le due tabelle si separano c'è il passo che avevi sbagliato.
-4. **Fissa la risposta con un caso d'uso.** Un caso d'uso con gli argomenti dell'esercizio e la risposta come output atteso (§6 e §8 della guida per lo studente) ti dice subito se una modifica cambia il risultato.
+4. **Fissa la risposta con un caso d'uso.** Un caso d'uso con gli argomenti dell'esercizio e la risposta come output atteso (§7 e §9 della guida per lo studente) ti dice subito se una modifica cambia il risultato.
 5. **Al contrario.** Progetta tu un algoritmo col flowchart, accendi «Accademico» e guarda il testo che ne esce: è la forma in cui lo troverai alle Selezioni. Prova a prevedere il testo prima di aprire la linguetta.
 
 Ricorda le differenze del §5: con numeri molto grandi AlgoDesign si ferma dove l'esercizio continua, e un programma letto da un testo scrive un valore per riga.

@@ -934,6 +934,7 @@ export const en: Dizionario = {
   stampaProgetto: "Project",
   stampaNotaProgetto: "the name, the author, the description and the notes",
   stampaDati: "Data",
+  stampaRecord: "Record {nome}",
   stampaFlowchart: "Flowchart",
   stampaCasi: "Test cases",
   stampaAdatta: "Fit to the page",
