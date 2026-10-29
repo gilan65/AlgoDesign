@@ -93,7 +93,7 @@ import {
   type Tipo,
   type TipoDelDato,
 } from "../progetto/modello";
-import { genera, parametriDelCaso, segnate, type Generato, type Riga } from "./forma";
+import { controlliDegliElementi, genera, parametriDelCaso, posizioni, segnate, type Generato, type Riga } from "./forma";
 import { motiviCol } from "./motivi";
 import {
   contatoriDellaRicorsione,
@@ -281,9 +281,24 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
 
   // ------------------------------------------------------------------------------------------- i tipi
 
-  /** Un vettore intero: il nome di un vettore, o una funzione che lo restituisce. */
-  const vettore = (e: Espressione) =>
-    e.genere === "nome" ? dati.get(e.nome)!.size !== undefined : e.genere === "chiamata" && perNome.get(e.nome)!.return_size !== undefined;
+  /** Una matrice intera: il nome di una matrice, o una funzione che la restituisce. */
+  const matrice = (e: Espressione) =>
+    e.genere === "nome" ? dati.get(e.nome)!.columns !== undefined : e.genere === "chiamata" && perNome.get(e.nome)!.return_columns !== undefined;
+  /** Un vettore intero: il nome di un vettore (una matrice è un vettore di righe), una funzione che lo restituisce, o la
+   * riga di una matrice. */
+  const vettore = (e: Espressione): boolean =>
+    e.genere === "nome" ? dati.get(e.nome)!.size !== undefined
+    : e.genere === "chiamata" ? perNome.get(e.nome)!.return_size !== undefined
+    : e.genere === "indice" && matrice(e.base);
+  /** Le misure di un vettore intero come per un dato: la riga di una matrice ha la dimensione delle sue colonne. */
+  const misureDi = (e: Espressione): Pick<Dato, "type" | "size" | "columns" | "max_length"> => {
+    if (e.genere === "nome") return dati.get(e.nome)!;
+    if (e.genere === "indice") {
+      const m = misureDi(e.base);
+      return { type: m.type, size: m.columns!, ...(m.max_length !== undefined ? { max_length: m.max_length } : {}) };
+    }
+    return comeDato(perNome.get((e as { nome: string }).nome)!);
+  };
   /** Una funzione che restituisce un vettore o una stringa: il C li restituisce in una struttura, col campo `v` o `s`. */
   const conStruttura = (f: FunzioneDelProgetto) => f.kind === "function" && (f.return_size !== undefined || f.return_type === "string");
   const campo = (f: FunzioneDelProgetto) => (f.return_size !== undefined ? ".v" : ".s");
@@ -292,6 +307,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     name: "",
     type: f.return_type!,
     ...(f.return_size !== undefined ? { size: f.return_size } : {}),
+    ...(f.return_columns !== undefined ? { columns: f.return_columns } : {}),
     ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}),
   });
   /** Il record di un'espressione che ne dà uno intero: il nome di un dato record, o una funzione che lo restituisce. */
@@ -386,7 +402,9 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     prese.add(x.nome);
     return x.nome;
   };
-  const dichiarazioneDi = (x: { nome: string; tipo: string }) => `${rientro}${x.tipo}${x.tipo.endsWith("*") ? "" : " "}${x.nome};`;
+  /** La dichiarazione di un dato del generatore; un puntatore a una riga di stringhe col nome dentro le parentesi. */
+  const dichiarazioneDi = (x: { nome: string; tipo: string }) =>
+    x.tipo.includes("(*)") ? `${rientro}${x.tipo.replace("(*)", `(*${x.nome})`)};` : `${rientro}${x.tipo}${x.tipo.endsWith("*") ? "" : " "}${x.nome};`;
   /** Le strutture delle funzioni percorse dai `per ogni` della funzione che si scrive, una per ciclo: `_sorgente`,
    * `_sorgente2`. A differenza delle parti messe da parte non si riusano, perché il ciclo le legge fino alla fine. */
   let sorgenti: { nome: string; tipo: string }[] = [];
@@ -510,6 +528,8 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       }
       case "indice": {
         if (e.base.genere === "nome" && vettore(e.base)) return operando(`${e.base.nome}[${espressione(e.indice).t}]`);
+        // L'elemento di una riga di una matrice (`m[i][j]`).
+        if (e.base.genere === "indice" && e.base.base.genere === "nome" && vettore(e.base)) return operando(`${espressione(e.base).t}[${espressione(e.indice).t}]`);
         // Il carattere di una stringa, o l'elemento del vettore restituito da una funzione: prima la chiamata, poi
         // l'indice.
         const parti = [aSe(() => espressione(e.base)), aSe(() => espressione(e.indice))];
@@ -641,8 +661,10 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     if (d.type === "record") return d.record!;
     return { integer: "int", real: "double", character: "int", string: "char", boolean: "bool" }[d.type];
   };
-  /** Le dimensioni di un dato dopo il nome: quella del vettore e quella della stringa. */
-  const forma = (d: Pick<Dato, "type" | "size" | "max_length">) => `${d.size === undefined ? "" : `[${d.size}]`}${d.type === "string" ? `[4 * ${d.max_length ?? lunghezzaPredefinita} + 1]` : ""}`;
+  /** Le dimensioni di un dato dopo il nome: quella del vettore (le righe e le colonne di una matrice) e quella della
+   * stringa. */
+  const forma = (d: Pick<Dato, "type" | "size" | "columns" | "max_length">) =>
+    `${d.size === undefined ? "" : `[${d.size}]`}${d.columns === undefined ? "" : `[${d.columns}]`}${d.type === "string" ? `[4 * ${d.max_length ?? lunghezzaPredefinita} + 1]` : ""}`;
   /** Un valore che in tutti gli elementi è quello che il C mette da sé dopo il primo: `{0}` li dice tutti. */
   const zero = (e: Espressione) =>
     (e.genere === "intero" && e.valore === 0) || (e.genere === "reale" && Object.is(e.valore, 0)) || (e.genere === "booleano" && !e.valore) || (e.genere === "stringa" && e.codici.length === 0);
@@ -650,10 +672,14 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     const v = d.initial;
     if (v === undefined) return undefined;
     if (typeof v === "string") return espressione(albero(v)).t;
-    if (Array.isArray(v)) return `{${(v as readonly string[]).map((x) => espressione(albero(x)).t).join(", ")}}`;
+    // Una matrice per righe: un elenco di elenchi.
+    const elenco = (x: unknown): string => (Array.isArray(x) ? `{${x.map(elenco).join(", ")}}` : espressione(albero(x as string)).t);
+    if (Array.isArray(v)) return elenco(v);
     const ogni = albero((v as { readonly each: string }).each);
     const t = espressione(ogni).t;
-    return zero(ogni) ? `{${t}}` : `{${Array<string>(d.size!).fill(t).join(", ")}}`;
+    if (zero(ogni)) return `{${t}}`;
+    const riga = `{${Array<string>(d.columns ?? d.size!).fill(t).join(", ")}}`;
+    return d.columns === undefined ? riga : `{${Array<string>(d.size!).fill(riga).join(", ")}}`;
   };
 
   /** Le dichiarazioni, con la colonna dei commenti allineata sulle righe che ne hanno uno; `funzione`, quella che le
@@ -715,22 +741,56 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       corpo.push({ testo: `${r}${testo}`, blocco: id });
       return;
     }
-    const nome = (e as { base: { nome: string } }).base.nome;
-    let fermaLIndice = false;
-    let i = calcola(r, id, () => {
-      ferma = false;
-      const t = espressione((e as { indice: Espressione }).indice).t;
-      fermaLIndice = ferma;
-      return t;
+    // Un elemento di un vettore o di una matrice, o la riga di una matrice. Se un indice si può fermare, tutti quelli che
+    // non sono un numero si calcolano prima, nel loro ordine.
+    const { nome, indici: espressioni } = elementoDi(e);
+    const testi = espressioni.map((x) => {
+      let fermaLIndice = false;
+      const t = calcola(r, id, () => {
+        ferma = false;
+        const y = espressione(x).t;
+        fermaLIndice = ferma;
+        return y;
+      });
+      return { t, ferma: fermaLIndice, scritto: x.genere === "intero" };
     });
-    if (fermaLIndice) {
-      const primaDelValore = indice();
-      corpo.push({ testo: `${r}${primaDelValore} = ${i};`, blocco: id });
-      i = primaDelValore;
-    }
-    const testo = calcola(r, id, () => istruzione(`${nome}[${i}]`, dati.get(nome)!));
+    let calcolati = 0;
+    const usati = testi.some((x) => x.ferma)
+      ? testi.map((x) => {
+          if (x.scritto) return x.t;
+          const primaDelValore = indice(++calcolati);
+          corpo.push({ testo: `${r}${primaDelValore} = ${x.t};`, blocco: id });
+          return primaDelValore;
+        })
+      : testi.map((x) => x.t);
+    const d = dati.get(nome)!;
+    // La riga di una matrice riceve un vettore delle sue colonne.
+    const testo = calcola(r, id, () => istruzione(`${nome}${usati.map((i) => `[${i}]`).join("")}`, d.columns !== undefined && espressioni.length === 1 ? rigaDi(d) : d));
     corpo.push({ testo: `${r}${testo}`, blocco: id });
   }
+
+  /** Il dato e gli indici, dal primo, di un elemento di un vettore o di una matrice, o di una riga (`m[i][j]`: `m`, i, j). */
+  function elementoDi(e: Espressione): { nome: string; indici: Espressione[] } {
+    if (e.genere !== "indice") return { nome: (e as { nome: string }).nome, indici: [] };
+    const sotto = elementoDi(e.base);
+    return { nome: sotto.nome, indici: [...sotto.indici, e.indice] };
+  }
+  /** Il testo della riga di una matrice in una copia: con un indice che non è un numero né un nome, calcolato una volta
+   * prima, nella partenza della copia (`conFasi`), in un nome suo dopo quello della posizione. */
+  let righeScelte = 0;
+  const rigaScelta = (r: string, id: string, e: Extract<Espressione, { genere: "indice" }>, conFasi: boolean): string => {
+    const nome = (e.base as { nome: string }).nome;
+    const i = calcola(r, id, () => espressione(e.indice).t);
+    if (e.indice.genere === "intero" || e.indice.genere === "nome") return `${nome}[${i}]`;
+    const scelto = indice(2 + righeScelte++);
+    corpo.push({ testo: `${r}${scelto} = ${i};`, blocco: id, ...(conFasi ? { fasi: ["inizio"] as FaseDelCiclo[] } : {}) });
+    return `${nome}[${scelto}]`;
+  };
+  /** Una riga di una matrice come un vettore: la dimensione delle colonne. */
+  const rigaDi = (d: Dato): Dato => {
+    const { columns, ...resto } = d;
+    return { ...resto, size: columns! };
+  };
 
   const baseDi = (e: Espressione) => (e.genere === "nome" ? e.nome : e.genere === "indice" && e.base.genere === "nome" ? e.base.nome : undefined);
 
@@ -764,11 +824,11 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
   function vettoreIn(r: string, id: string, destinazione: string, grandezza: string, d: Dato, v: Espressione, conFasi: boolean) {
     intestazioni.add("string.h");
     const g = v.genere === "chiamata" ? perNome.get(v.nome)! : undefined;
-    const lunghezzaDellaSorgente = (g === undefined ? dati.get((v as { nome: string }).nome)!.max_length : g.return_max_length) ?? lunghezzaPredefinita;
+    const lunghezzaDellaSorgente = misureDi(v).max_length ?? lunghezzaPredefinita;
     const stessaMisura = d.type !== "string" || (d.max_length ?? lunghezzaPredefinita) === lunghezzaDellaSorgente;
     const fasi = (...f: FaseDelCiclo[]) => (conFasi ? { fasi: f } : {});
     let sorgente: string;
-    if (g === undefined) sorgente = (v as { nome: string }).nome;
+    if (g === undefined) sorgente = v.genere === "indice" ? rigaScelta(r, id, v, conFasi) : espressione(v).t;
     else {
       // La struttura restituita: intera nella destinazione, o messa da parte per il ciclo.
       let messa = "";
@@ -790,6 +850,15 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     }
     const i = indice();
     corpo.push({ testo: `${r}for (${i} = 0; ${i} < ${d.size}; ${i}++)`, blocco: id, ...fasi("inizio", "condizione", "passo") });
+    if (d.columns !== undefined) {
+      // Una matrice: il ciclo delle colonne dentro quello delle righe, le sue righe `interno`.
+      const j = indice(2);
+      corpo[corpo.length - 1] = { ...corpo.at(-1)!, ...(conFasi ? { interno: false } : {}) };
+      corpo.push({ testo: `${r}${rientro}for (${j} = 0; ${j} < ${d.columns}; ${j}++)`, blocco: id, ...fasi("inizio", "condizione", "passo"), ...(conFasi ? { interno: true } : {}) });
+      const copia = calcola(r, id, () => elementoInElemento(`${destinazione}[${i}][${j}]`, `${sorgente}[${i}][${j}]`, d, lunghezzaDellaSorgente, sorgente === destinazione));
+      corpo.push({ testo: `${r}${rientro.repeat(2)}${copia}`, blocco: id, ...fasi("elemento"), ...(conFasi ? { interno: true } : {}) });
+      return;
+    }
     const copia = calcola(r, id, () => elementoInElemento(`${destinazione}[${i}]`, `${sorgente}[${i}]`, d, lunghezzaDellaSorgente, sorgente === destinazione));
     corpo.push({ testo: `${r}${rientro}${copia}`, blocco: id, ...fasi("elemento") });
   }
@@ -904,7 +973,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     type Argomento =
       | { readonly genere: "valore"; readonly parte: Parte; readonly tipo: TipoDelDato; readonly record?: string }
       | { readonly genere: "nome"; readonly testo: string }
-      | { readonly genere: "elemento"; readonly vettore: string; readonly indice: Parte; readonly scritto: boolean; readonly indirizzo: boolean };
+      | { readonly genere: "elemento"; readonly vettore: string; readonly indici: readonly { readonly parte: Parte; readonly scritto: boolean }[]; readonly indirizzo: boolean };
     const argomenti: Argomento[] = b.arguments.map((testo, k) => {
       const d = parametri[k]!;
       const a = albero(testo);
@@ -916,20 +985,23 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       }
       // Un campo per riferimento come un dato: il suo indirizzo, una stringa così com'è.
       if (a.genere === "campo") return { genere: "nome", testo: campoDi(a).type === "string" ? espressione(a).t : `&${espressione(a).t}` };
-      const nome = (a as { base: { nome: string } }).base.nome;
-      const i = (a as { indice: Espressione }).indice;
-      return { genere: "elemento", vettore: nome, indice: aSe(() => espressione(i)), scritto: i.genere === "intero", indirizzo: dati.get(nome)!.type !== "string" };
+      // Un elemento di un vettore o di una matrice (il suo indirizzo, una stringa così com'è), o la riga di una matrice.
+      const { nome, indici } = elementoDi(a);
+      const suo = dati.get(nome)!;
+      const elemento = indici.length === (suo.columns === undefined ? 1 : 2);
+      return { genere: "elemento", vettore: nome, indici: indici.map((i) => ({ parte: aSe(() => espressione(i)), scritto: i.genere === "intero" })), indirizzo: elemento && suo.type !== "string" };
     });
-    // Due elementi dello stesso vettore, con un indice calcolato: il controllo dopo tutti gli argomenti.
+    // Due elementi o righe dello stesso dato, con un indice calcolato: i controlli dopo tutti gli argomenti.
+    const calcolato = (a: Argomento) => a.genere === "elemento" && a.indici.some((i) => !i.scritto);
     const perVettore = new Map<string, number[]>();
     argomenti.forEach((a, k) => a.genere === "elemento" && perVettore.set(a.vettore, [...(perVettore.get(a.vettore) ?? []), k]));
-    const controlli = [...perVettore.values()].filter((ks) => ks.length > 1 && ks.some((k) => !(argomenti[k] as { scritto: boolean }).scritto));
+    const gruppi = [...perVettore.values()].filter((ks) => ks.length > 1 && ks.some((k) => calcolato(argomenti[k]!)));
     // Ciò che si può fermare, in ordine: un argomento che si ferma si mette da parte se dopo di lui si ferma ancora
     // qualcosa (un altro argomento, un indice, il controllo).
-    const siFerma = argomenti.map((a) => (a.genere === "valore" ? a.parte.ferma : a.genere === "elemento" ? a.indice.ferma : false));
-    const ultima = controlli.length > 0 ? argomenti.length : siFerma.lastIndexOf(true);
+    const siFerma = argomenti.map((a) => (a.genere === "valore" ? a.parte.ferma : a.genere === "elemento" ? a.indici.some((i) => i.parte.ferma) : false));
+    const ultima = gruppi.length > 0 ? argomenti.length : siFerma.lastIndexOf(true);
     const passati: string[] = [];
-    const nomiDegliIndici: string[] = [];
+    const nomiDegliIndici: string[][] = [];
     let indiciDelSalto = 0;
     argomenti.forEach((a, k) => {
       if (a.genere === "nome") return passati.push(a.testo);
@@ -937,17 +1009,18 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         const { testi } = inOrdine([{ parte: a.parte, tipo: a.tipo, ...(a.record !== undefined ? { record: a.record } : {}), daParte: a.parte.ferma && k < ultima }]);
         return passati.push(testi[0]!.t);
       }
-      prima!.push(...a.indice.righe);
-      let i = a.indice.x.t;
-      if (!a.scritto) {
+      nomiDegliIndici[k] = a.indici.map((x) => {
+        prima!.push(...x.parte.righe);
+        if (x.scritto) return x.parte.x.t;
         const nome = indice(++indiciDelSalto);
-        prima!.push(`${nome} = ${i};`);
-        i = nome;
-      }
-      nomiDegliIndici[k] = i;
-      return passati.push(`${a.indirizzo ? "&" : ""}${a.vettore}[${i}]`);
+        prima!.push(`${nome} = ${x.parte.x.t};`);
+        return nome;
+      });
+      return passati.push(`${a.indirizzo ? "&" : ""}${a.vettore}${nomiDegliIndici[k]!.map((i) => `[${i}]`).join("")}`);
     });
-    for (const ks of controlli) prima!.push(`${usa("elementiDiversi")}(${ks.map((k) => nomiDegliIndici[k]!).join(", ")});`);
+    for (const ks of gruppi)
+      for (const confronto of controlliDegliElementi(ks.map((k) => nomiDegliIndici[k]!), dati.get((argomenti[ks[0]!] as { vettore: string }).vettore)!))
+        prima!.push(`${usa("elementiDiversi")}(${confronto.join(", ")});`);
     for (const t of prima!) corpo.push({ testo: `${r}${t}`, blocco: b.id });
     prima = null;
     if (fermano.get(b.callee) === true) fermaLaFunzione = true;
@@ -968,15 +1041,15 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     const riga = (testo: string) => corpo.push({ testo: r + testo, blocco: b.id });
     switch (b.kind) {
       case "assignment": {
+        righeScelte = 0;
         const v = albero(b.value);
-        if (v.genere === "unario" && v.operatore === "to_array") {
-          const d = dati.get((albero(b.target) as { nome: string }).nome)!;
-          return riga(calcola(r, b.id, () => `${conArresto("convertiAVettore", d.name, String(d.size), espressione(v.operando).t).t};`));
-        }
+        if (v.genere === "unario" && v.operatore === "to_array")
+          // Un vettore di caratteri, o la riga di una matrice di caratteri.
+          return assegna(r, b.id, b.target, (destinazione, d) => `${conArresto("convertiAVettore", destinazione, String(d.size), espressione(v.operando).t).t};`);
         if (v.genere === "unario" && v.operatore === "to_string") {
-          // Il nome di un vettore di caratteri, o la funzione che lo restituisce.
+          // Il nome di un vettore di caratteri, la riga di una matrice di caratteri, o la funzione che lo restituisce.
           const o = v.operando;
-          const dimensione = o.genere === "nome" ? dati.get(o.nome)!.size! : perNome.get((o as { nome: string }).nome)!.return_size!;
+          const dimensione = misureDi(o).size!;
           return assegna(r, b.id, b.target, (destinazione, d) => {
             const sorgente = espressione(o).t;
             return `${conArresto("convertiAStringa", destinazione, String(d.max_length ?? lunghezzaPredefinita), sorgente, String(dimensione)).t};`;
@@ -996,10 +1069,17 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
           return;
         }
         if (t.genere === "nome" && dati.get(t.nome)!.size !== undefined) {
-          // Un vettore intero: un parametro per riferimento o per uscita è un puntatore, che non sa la sua grandezza.
+          // Un vettore o una matrice intera: un parametro per riferimento o per uscita è un puntatore, che non sa la sua
+          // grandezza.
           const d = dati.get(t.nome)!;
           const grandezza = d.parameter === undefined || d.parameter === "value" ? `sizeof ${t.nome}` : `${d.size} * sizeof ${t.nome}[0]`;
-          return vettoreIn(r, b.id, t.nome, grandezza, d, v, v.genere === "nome");
+          return vettoreIn(r, b.id, t.nome, grandezza, d, v, v.genere === "nome" || (v.genere === "indice" && vettore(v)));
+        }
+        if (vettore(t)) {
+          // La riga di una matrice: un vettore delle sue colonne, col suo indice calcolato una volta.
+          const conFasi = v.genere === "nome" || (v.genere === "indice" && vettore(v));
+          const verso = rigaScelta(r, b.id, t as Extract<Espressione, { genere: "indice" }>, conFasi);
+          return vettoreIn(r, b.id, verso, `sizeof ${verso}`, rigaDi(dati.get(elementoDi(t).nome)!), v, conFasi);
         }
         return assegna(r, b.id, b.target, (destinazione, d) => valoreNelDato(v, destinazione, d));
       }
@@ -1054,6 +1134,17 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         if (s.genere === "nome") {
           sorgente = dati.get(s.nome)!;
           percorsa = s.nome;
+        } else if (s.genere === "indice") {
+          // La riga di una matrice, scelta alla partenza: con un indice che non è un numero, un puntatore alla riga in
+          // `_sorgente`, che il ciclo legge com'è a ogni giro.
+          const m = dati.get(elementoDi(s).nome)!;
+          sorgente = rigaDi(m);
+          const x = calcola(r, b.id, () => espressione(s).t);
+          if (s.indice.genere === "intero") percorsa = x;
+          else {
+            percorsa = sorgenteNuova(m.type === "string" ? `char (*)[4 * ${m.max_length ?? lunghezzaPredefinita} + 1]` : `${tipoDelDato(m)} *`);
+            corpo.push({ testo: `${r}${percorsa} = ${x};`, blocco: b.id, fasi: ["inizio"] });
+          }
         } else {
           const g = perNome.get((s as { nome: string }).nome)!;
           sorgente = comeDato(g);
@@ -1229,9 +1320,11 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         if (elementi[0] === "riga") righe.push({ testo: `${rientro}${leggi(d.name, d)}`, blocco: f.id });
         continue;
       }
-      elementi.forEach((x, i) => x === "riga" && righe.push({ testo: `${rientro}${leggi(`${d.name}[${i}]`, d)}`, blocco: f.id }));
+      // Un elemento per voce, riga dopo riga in una matrice; con `each` il primo, copiato negli altri.
+      const k = posizioni(d.size, d.columns);
+      elementi.forEach((x, i) => x === "riga" && righe.push({ testo: `${rientro}${leggi(`${d.name}${k[i]}`, d)}`, blocco: f.id }));
       if (ognuno && elementi[0] === "riga")
-        for (let i = 1; i < d.size; i++) scrittura(d.type === "string" ? `strcpy(${d.name}[${i}], ${d.name}[0]);` : `${d.name}[${i}] = ${d.name}[0];`);
+        for (const i of k.slice(1)) scrittura(d.type === "string" ? `strcpy(${d.name}${i}, ${d.name}${k[0]});` : `${d.name}${i} = ${d.name}${k[0]};`);
     }
     /** Un valore scritto come lo scrive l'esecuzione, dopo un testo fisso. */
     const scriviValore = (davanti: string, x: string, t: TipoDelDato) => {
@@ -1262,7 +1355,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         const nome = nomeDelRisultato[lingua];
         risultato.push({ testo: dichiarazioneDi({ nome, tipo: strutturaDelRisultato(lingua, f.name!) }) });
         scrittura(`${nome} = ${chiamataDiF};`);
-        for (let i = 0; i < f.return_size; i++) scriviValore(`→ [${i}] = `, `${nome}.v[${i}]`, t);
+        for (const i of posizioni(f.return_size, f.return_columns)) scriviValore(`→ ${i} = `, `${nome}.v${i}`, t);
       } else if (t === "string") scriviValore("→ ", `${chiamataDiF}.s`, t);
       else if (t === "character") {
         // Il risultato prima del testo: se la funzione si ferma, nulla è scritto.
@@ -1279,7 +1372,7 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
         const pezzi: [string, TipoDelDato][] =
           d.type === "record" ? campiDi(d.record).map((c) => [`${d.name}.${c.name}`, c.type])
           : d.size === undefined ? [[d.name, d.type]]
-          : [...Array(d.size).keys()].map((i) => [`${d.name}[${i}]`, d.type]);
+          : posizioni(d.size, d.columns).map((i) => [`${d.name}${i}`, d.type]);
         for (const [nome, t] of pezzi) scriviValore(`${nome} = `, nome, t);
       }
     }

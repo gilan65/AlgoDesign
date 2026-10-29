@@ -120,6 +120,8 @@ export const ancoraDelLivello = (lingua: LinguaDelCodice, n: number): string => 
 /** Nel Python, l'elemento di un vettore di stringhe che passa dal controllo della lunghezza in una lista nuova
  * (`[al_piu(_elemento, 5) for _elemento in nomi()]`). */
 export const nomeDellElemento: Readonly<Record<LinguaDelCodice, string>> = { it: "_elemento", en: "_element" };
+/** Nel Python, la riga di una matrice copiata riga per riga in una lista nuova (`[list(_riga) for _riga in x]`). */
+export const nomeDellaRigaCopiata: Readonly<Record<LinguaDelCodice, string>> = { it: "_riga", en: "_row" };
 /** Nel C, la struttura che porta il vettore (`.v`) o la stringa (`.s`) che una funzione restituisce: una per funzione. È
  * un nome di struttura, che nel C sta fra i nomi delle strutture e non si scontra coi nomi dei dati e delle funzioni. */
 export const strutturaDelRisultato = (lingua: LinguaDelCodice, funzione: string): string =>

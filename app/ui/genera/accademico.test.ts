@@ -26,23 +26,11 @@ const leggi = (percorso: string): Progetto => {
   if (!r.ok) throw new Error(`${percorso} non si apre`);
   return r.progetto;
 };
-// Le tappe e i tipi (`tipi/`: i record, che «Accademico» non ha e dice fra ciò che manca). I file con le matrici ne
-// restano fuori finché i generatori non le scrivono: `genera` li dice fuori tappa (la prova della guardia, qui sotto).
-const tutti = readdirSync(cartella, { withFileTypes: true })
+// Le tappe e i tipi (`tipi/`: i record e le matrici, che «Accademico» non ha e dice fra ciò che manca).
+const corpus = readdirSync(cartella, { withFileTypes: true })
   .filter((d) => d.isDirectory() && (d.name.startsWith("tappa-") || d.name === "tipi"))
   .flatMap((d) => readdirSync(join(cartella, d.name)).filter((f) => f.endsWith(".algo")).map((f) => `${d.name}/${f.slice(0, -".algo".length)}`))
   .sort();
-const conLeMatrici = tutti.filter((f) => usaLeMatrici(leggi(f)));
-const corpus = tutti.filter((f) => !conLeMatrici.includes(f));
-
-test("i file con le matrici: «Accademico», come gli altri linguaggi, li dice fuori tappa se sono giusti, con gli errori statici se sono sbagliati", () => {
-  const esiti = conLeMatrici.map((f) => {
-    const g = accademico(leggi(f), tetti, "it");
-    return g.generato ? "generato" : g.perche;
-  });
-  console.log(`«Accademico» sulle matrici: ${conLeMatrici.length} file, ${esiti.filter((e) => e === "fuori-tappa").length} fuori tappa`);
-  expect(esiti.sort()).toEqual(["errori-statici", "errori-statici", "errori-statici", "fuori-tappa", "fuori-tappa", "fuori-tappa", "fuori-tappa", "fuori-tappa"]);
-});
 
 function righe(p: Progetto, lingua: LinguaDelCodice): readonly Riga[] {
   const g = accademico(p, tetti, lingua);
@@ -125,6 +113,7 @@ function secondoRilevatore(p: Progetto): Set<string> {
     for (const d of dati) {
       const o = { dato: d.name, ...(funzione ? { funzione } : {}) };
       if (daTipo[d.type]) chiave(daTipo[d.type]!, o);
+      if (d.columns !== undefined) chiave("matrice", o);
       if (d.parameter === "reference") chiave("rif", o);
       if (d.parameter === "out") chiave("out", o);
       if (parole.has(d.name)) chiave("parola-del-linguaggio", o);
@@ -135,6 +124,7 @@ function secondoRilevatore(p: Progetto): Set<string> {
     const funzione = f.kind === "main" ? undefined : f.id;
     if (f.name && parole.has(f.name)) chiave("parola-del-linguaggio", { funzione: f.id });
     if (f.return_type && daTipo[f.return_type]) chiave(daTipo[f.return_type]!, { funzione: f.id });
+    if (f.return_columns !== undefined) chiave("matrice", { funzione: f.id });
     suiDati(f.data, funzione);
     const booleani = new Set([...(p.shared_constants ?? []), ...f.data].filter((d) => d.type === "boolean").map((d) => d.name));
     /** `permessa`: una condizione qui è ammessa (dopo `if`/`while`, tutto il valore che riceve un booleano o che si scrive). */
@@ -187,7 +177,7 @@ function secondoRilevatore(p: Progetto): Set<string> {
 const comeChiave = (m: Mancanza) => `${m.specie}|${m.operatore ?? ""}|${m.blocco ?? ""}|${m.dato ?? ""}|${m.funzione ?? ""}`;
 
 describe("l'esito di ogni file del corpus", () => {
-  test("158 file: 36 col codice, 15 con gli errori statici, 107 con le mancanze, appaiati file per file", () => {
+  test("168 file: 36 col codice, 18 con gli errori statici, 114 con le mancanze, appaiati file per file", () => {
     const esiti = new Map(corpus.map((f) => [f, accademico(leggi(f), tetti, "it")]));
     const di = (perche: string) => corpus.filter((f) => {
       const g = esiti.get(f)!;
@@ -198,7 +188,7 @@ describe("l'esito di ogni file del corpus", () => {
     const nonCiSta = di("non-ci-sta");
     // nessun file ha due esiti, nessuno resta fuori
     expect(codice.length + statici.length + nonCiSta.length).toBe(corpus.length);
-    expect([corpus.length, codice.length, statici.length, nonCiSta.length]).toEqual([158, 36, 15, 107]);
+    expect([corpus.length, codice.length, statici.length, nonCiSta.length]).toEqual([168, 36, 18, 114]);
     // appaiati per elemento nei due versi: i file in più e quelli che mancano
     expect(codice.filter((f) => !conIlCodice.includes(f))).toEqual([]);
     expect(conIlCodice.filter((f) => !codice.includes(f))).toEqual([]);
@@ -220,9 +210,9 @@ describe("l'esito di ogni file del corpus", () => {
       voci += prima.length;
       if (prima.length > 0) conMancanze++;
     }
-    // il denominatore: i file con mancanze sono i 107 che non ci stanno più i 7 che hanno anche errori statici (4 delle
-    // tappe, 3 dei record: un dato record anche se il record non c'è o è sbagliato)
-    expect(conMancanze).toBe(114);
+    // il denominatore: i file con mancanze sono i 114 che non ci stanno più i 10 che hanno anche errori statici (4 delle
+    // tappe, 3 dei record: un dato record anche se il record non c'è o è sbagliato; 3 delle matrici: la matrice c'è)
+    expect(conMancanze).toBe(124);
     expect(voci).toBeGreaterThan(conMancanze);
     console.log(`mancanze: ${voci} voci in ${conMancanze} file su ${corpus.length}`);
   });
@@ -231,10 +221,11 @@ describe("l'esito di ogni file del corpus", () => {
     expect(secondoRilevatore(leggi("tappa-4/fattoriale"))).toContain("lettura||b1||");
     expect([...secondoRilevatore(leggi("tappa-2/parola-al-contrario"))].some((k) => k.startsWith("stringa|"))).toBe(true);
     expect(secondoRilevatore(leggi("tipi/copia-di-un-record"))).toContain("record|||a|");
+    expect(secondoRilevatore(leggi("tipi/copia-di-una-matrice"))).toContain("matrice|||a|");
   });
 
   test("ogni progetto giusto coi record non ci sta, e dice il record dove sta: il dato, la costante comune, il parametro, il risultato", () => {
-    const coiRecord = corpus.filter((f) => f.startsWith("tipi/"));
+    const coiRecord = corpus.filter((f) => f.startsWith("tipi/") && !usaLeMatrici(leggi(f)));
     const esiti = coiRecord.map((f) => ({ f, g: accademico(leggi(f), tetti, "it") }));
     const giusti = esiti.filter(({ g }) => g.generato || g.perche !== "errori-statici");
     const senzaIlRecord = giusti.filter(({ g }) => g.generato || g.perche !== "non-ci-sta" || !g.mancanze.some((m) => m.specie === "record"));
@@ -245,6 +236,23 @@ describe("l'esito di ogni file del corpus", () => {
     expect([giusti.length, coiRecord.length]).toEqual([7, 12]);
     // Ogni posto ha la sua voce: un risultato record (la funzione), un parametro e un dato del programma principale.
     expect(Object.values(posti).every((n) => n > 0)).toBe(true);
+  });
+
+  test("ogni progetto giusto con le matrici non ci sta, e dice la matrice dove sta: il dato, la costante comune, il parametro, il risultato", () => {
+    const conLeMatrici = corpus.filter((f) => usaLeMatrici(leggi(f)));
+    const esiti = conLeMatrici.map((f) => ({ f, g: accademico(leggi(f), tetti, "it") }));
+    const giusti = esiti.filter(({ g }) => g.generato || g.perche !== "errori-statici");
+    const senzaLaMatrice = giusti.filter(({ g }) => g.generato || g.perche !== "non-ci-sta" || !g.mancanze.some((m) => m.specie === "matrice"));
+    expect(senzaLaMatrice.map((x) => x.f)).toEqual([]);
+    const voci = giusti.flatMap(({ g }) => (!g.generato && g.perche === "non-ci-sta" ? g.mancanze.filter((m) => m.specie === "matrice") : []));
+    const posti = { dati: voci.filter((m) => m.dato !== undefined && m.funzione === undefined).length, diFunzioni: voci.filter((m) => m.dato !== undefined && m.funzione !== undefined).length, risultati: voci.filter((m) => m.dato === undefined).length };
+    console.log(`matrici in «Accademico»: ${giusti.length} progetti giusti su ${conLeMatrici.length}, ${voci.length} voci (${JSON.stringify(posti)})`);
+    expect([giusti.length, conLeMatrici.length]).toEqual([7, 10]);
+    expect(Object.values(posti).every((n) => n > 0)).toBe(true);
+    // Controllo positivo: una matrice di interi, che la sintassi leggerebbe come un `integer[]`, non passa; le sue sole
+    // mancanze sono le matrici (il dato e la costante comune).
+    const g = accademico(leggi("tipi/matrice-in-un-programma"), tetti, "it");
+    expect(!g.generato && g.perche === "non-ci-sta" ? g.mancanze.map(comeChiave) : []).toEqual(["matrice|||K|", "matrice|||m|"]);
   });
 });
 

@@ -1,0 +1,267 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "righe-calcolate",
+    "description": "Una riga scelta con un indice calcolato, copiata nei due versi e percorsa col «per ogni» (la riga si sceglie una volta), un elemento letto, la copia di una matrice di stringhe più corte, una matrice per uscita."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "m",
+          "type": "integer",
+          "size": 2,
+          "columns": 3,
+          "initial": [
+            [
+              "1",
+              "2",
+              "3"
+            ],
+            [
+              "4",
+              "5",
+              "6"
+            ]
+          ]
+        },
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 3
+        },
+        {
+          "name": "k",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "x",
+          "type": "integer"
+        },
+        {
+          "name": "s",
+          "type": "string",
+          "size": 2,
+          "columns": 2,
+          "initial": {
+            "each": "\"ab\""
+          },
+          "max_length": 5
+        },
+        {
+          "name": "t",
+          "type": "string",
+          "size": 2,
+          "columns": 2,
+          "max_length": 3
+        },
+        {
+          "name": "u",
+          "type": "integer",
+          "size": 2,
+          "columns": 2
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "m[k][2]"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "m[0][2]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b3",
+          "kind": "assignment",
+          "target": "v",
+          "value": "m[k + 1]"
+        },
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "v[0]",
+          "value": "40"
+        },
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "m[k]",
+          "value": "v"
+        },
+        {
+          "id": "b6",
+          "kind": "for_each",
+          "item": "x",
+          "source": "m[k]",
+          "body": [
+            {
+              "id": "b7",
+              "kind": "write",
+              "values": [
+                "x",
+                "\" \""
+              ],
+              "newline": false
+            },
+            {
+              "id": "b8",
+              "kind": "assignment",
+              "target": "k",
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "id": "b9",
+          "kind": "write",
+          "values": [
+            "\"|\"",
+            "m[1][0]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b10",
+          "kind": "assignment",
+          "target": "t",
+          "value": "s"
+        },
+        {
+          "id": "b11",
+          "kind": "assignment",
+          "target": "t[0][0]",
+          "value": "\"xyz\""
+        },
+        {
+          "id": "b12",
+          "kind": "write",
+          "values": [
+            "s[0][0]",
+            "\" \"",
+            "t[0][0]",
+            "\" \"",
+            "t[1][1]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b13",
+          "kind": "call",
+          "callee": "riempi",
+          "arguments": [
+            "u"
+          ]
+        },
+        {
+          "id": "b14",
+          "kind": "write",
+          "values": [
+            "u[1][0]",
+            "\" \"",
+            "u[1][1]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "riempi",
+      "data": [
+        {
+          "name": "w",
+          "type": "integer",
+          "size": 2,
+          "columns": 2,
+          "parameter": "out"
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        },
+        {
+          "name": "j",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "c1",
+          "kind": "for",
+          "counter": "i",
+          "from": "0",
+          "to": "1",
+          "body": [
+            {
+              "id": "c2",
+              "kind": "for",
+              "counter": "j",
+              "from": "0",
+              "to": "1",
+              "body": [
+                {
+                  "id": "c3",
+                  "kind": "assignment",
+                  "target": "w[i][j]",
+                  "value": "i * 2 + j"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "end": {
+        "id": "c4"
+      },
+      "test_cases": [
+        {
+          "name": "tutta",
+          "inputs": [],
+          "expected": {
+            "output": "\nw[0][0] = 0\nw[0][1] = 1\nw[1][0] = 2\nw[1][1] = 3\n",
+            "warnings": [
+              {
+                "code": "maybe_uninitialized",
+                "block": "b14"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "righe-calcolate",
+      "inputs": [
+        {
+          "data": "m",
+          "text": "7"
+        }
+      ],
+      "expected": {
+        "output": "7\n40 5 6 |4\nab xyz ab\n2 3\n",
+        "warnings": [
+          {
+            "code": "maybe_uninitialized",
+            "block": "b14"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -302,10 +302,10 @@ test("un esempio coi record o con le matrici si apre: ogni file della cartella d
   const esempi = esempiDa(cartella(file), tetti).sciolti;
   expect(esempi.map((e) => [e.nome, e.progetto !== null, e.problema?.genere ?? null])).toEqual(Object.keys(file).map((n) => [n, true, null]));
   // Controllo positivo: il denominatore è la cartella intera (dei record sette file giusti e cinque sbagliati, delle
-  // matrici otto, tre con un errore statico, che si aprono lo stesso), e un esempio senza record accanto si apre come
+  // matrici dieci, tre con un errore statico, che si aprono lo stesso), e un esempio senza record accanto si apre come
   // loro.
-  expect(esempi.length).toBe(20);
-  expect(Object.values(file).filter(conLeMatrici).length).toBe(8);
+  expect(esempi.length).toBe(22);
+  expect(Object.values(file).filter(conLeMatrici).length).toBe(10);
   const [buono] = forniti(it);
   expect(esempiDa(cartella({ "a.algo": buono!.testo }), tetti).sciolti.map((e) => e.problema)).toEqual([null]);
 });

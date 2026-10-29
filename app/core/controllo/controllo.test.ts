@@ -1325,7 +1325,7 @@ describe("avvisi delle tappe 1 e 2", () => {
   });
 });
 
-test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l'errore dell'interprete, i 2 elementi letti dopo un per ogni, i 4 dei parametri per riferimento e per uscita, il record per riferimento e la matrice riempita in un ciclo, nessun altro", () => {
+test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l'errore dell'interprete, i 2 elementi letti dopo un per ogni, i 4 dei parametri per riferimento e per uscita, il record per riferimento e le due matrici riempite in un ciclo, nessun altro", () => {
   const cartella = fileURLToPath(new URL("../../casi", import.meta.url));
   const trovati: string[] = [];
   let [file, controllati] = [0, 0];
@@ -1357,10 +1357,12 @@ test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l
     // La matrice riempita solo dentro due «per», restituita: il controllo non guarda se un «per» fa giri.
     "tipi/matrice-come-parametro.algo g3 u",
     "tipi/riferimento-a-un-record-senza-valore.algo b4 c",
+    // La matrice per uscita riempita solo dentro due «per»: lo stesso.
+    "tipi/righe-calcolate.algo b14 u",
   ]);
   // Col corpus dei record e delle matrici: nessuno è fuori tappa; quello del riferimento senza valore ha l'avviso, i cinque
   // sbagliati no.
-  expect([file, controllati]).toEqual([166, 166]);
+  expect([file, controllati]).toEqual([168, 168]);
 });
 
 test("i limiti sono un parametro senza predefinito: chi chiama il controllo li passa sempre", () => {

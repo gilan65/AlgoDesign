@@ -19,7 +19,8 @@
 // o di un `mentre` sta sulla riga d'apertura, quella di un `ripeti` sulla riga in fondo); le righe di struttura
 // (`ALTRIMENTI`, le chiusure, `RIPETI`) non ne hanno; la dichiarazione di un dato ha il dato; la fine ha il
 // blocco di fine (anche la riga «RESTITUISCE»). La riga d'apertura di un `per` o di un `per ogni` mostra tutte le fasi
-// del ciclo, e così la riga della copia di un vettore col suo nome (`altri ← voti`); la copia di un record col suo nome
+// del ciclo, e così la riga della copia di un vettore col suo nome (`altri ← voti`), di una riga di una matrice e di una
+// matrice (le fasi dei suoi due cicli); la copia di un record col suo nome
 // (`b ← a`) è anche lei una riga, che vale per ogni campo copiato. Le intestazioni delle procedure e delle funzioni non hanno provenienza, come il nome del programma; la
 // dichiarazione di un dato di una procedura o di una funzione ha anche la funzione.
 //
@@ -27,7 +28,7 @@
 // Python e del C generati.
 
 import type { Tetti } from "../controllo/controllo";
-import { eUnaCopia, nomiDeiVettori } from "../progetto/copia";
+import { eUnaCopia, nomiDeiVettori, nomiDelleMatrici } from "../progetto/copia";
 import type { Blocco, Dato, Funzione, Progetto, Ruolo } from "../progetto/modello";
 import { genera, segnate, type Generato, type Riga } from "./forma";
 
@@ -94,7 +95,9 @@ function righeDelloPseudocodice(p: Progetto, w: ParoleDelloPseudocodice): Riga[]
     const v = d.initial;
     if (v === undefined) return undefined;
     if (typeof v === "string") return e(v);
-    if (Array.isArray(v)) return `{${(v as readonly string[]).map(e).join(", ")}}`;
+    // Una matrice per righe: un elenco di elenchi.
+    const elenco = (x: unknown): string => (Array.isArray(x) ? `{${x.map(elenco).join(", ")}}` : e(x as string));
+    if (Array.isArray(v)) return elenco(v);
     return w.ogniElemento.split("{valore}").join(e((v as { readonly each: string }).each));
   };
 
@@ -121,13 +124,14 @@ function righeDelloPseudocodice(p: Progetto, w: ParoleDelloPseudocodice): Riga[]
   };
   /** I vettori della funzione che si scrive: riconoscono la copia col nome. */
   let vettori: ReadonlySet<string> = new Set();
+  let matrici: ReadonlySet<string> = new Set();
   const blocco = (b: Blocco, livello: number) => {
     const r = rientro.repeat(livello);
     const riga = (testo: string) => righe.push({ testo: r + testo, blocco: b.id });
     switch (b.kind) {
       case "assignment":
         // La copia di un vettore col suo nome resta una riga, che mostra tutte le fasi della copia.
-        if (eUnaCopia(b, vettori)) righe.push({ testo: `${r}${e(b.target)} ← ${e(b.value)}`, blocco: b.id, fasi: ["inizio", "condizione", "elemento", "passo"] });
+        if (eUnaCopia(b, vettori, matrici)) righe.push({ testo: `${r}${e(b.target)} ← ${e(b.value)}`, blocco: b.id, fasi: ["inizio", "condizione", "elemento", "passo"] });
         else riga(`${e(b.target)} ← ${e(b.value)}`);
         return;
       case "read":
@@ -206,12 +210,14 @@ function righeDelloPseudocodice(p: Progetto, w: ParoleDelloPseudocodice): Riga[]
     const da = righe.length;
     const parametri = f.data.filter((d) => d.parameter !== undefined).map((d) => `${parolaDelModo(d)}${d.name}: ${w.tipo(d)}`);
     const firma = `${f.name}(${parametri.join(", ")})`;
-    // Il risultato come un dato: con la dimensione di un vettore, la lunghezza massima di una stringa, il nome di un record.
+    // Il risultato come un dato: con la dimensione di un vettore (e le colonne di una matrice), la lunghezza massima di una
+    // stringa, il nome di un record.
     const risultato = (): Dato => ({
       name: f.name!,
       type: f.return_type!,
       ...(f.return_record !== undefined ? { record: f.return_record } : {}),
       ...(f.return_size !== undefined ? { size: f.return_size } : {}),
+      ...(f.return_columns !== undefined ? { columns: f.return_columns } : {}),
       ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}),
     });
     struttura(f.kind === "function" ? `${w.funzione} ${w.tipo(risultato())} ← ${firma}` : `${w.procedura} ${firma}`);
@@ -232,6 +238,7 @@ function righeDelloPseudocodice(p: Progetto, w: ParoleDelloPseudocodice): Riga[]
     struttura("");
     struttura(w.regole);
     vettori = nomiDeiVettori([...comuni, ...f.data]);
+    matrici = nomiDelleMatrici([...comuni, ...f.data]);
     sequenza(f.body, 1);
     righe.push({ testo: f.kind === "function" ? `${w.restituisce} ${e(f.end.return_value!)}` : w.fine, blocco: f.end.id });
   }

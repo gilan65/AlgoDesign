@@ -103,6 +103,8 @@ export function mancanzeDiAccademico(p: Progetto): Mancanza[] {
     const posto = { dato: d.name, ...(funzione !== undefined ? { funzione } : {}) };
     const specie = specieDi(d.type);
     if (specie !== undefined) segna({ specie, ...posto });
+    // Una matrice di interi non è un `integer[]`: la sintassi ha i soli vettori.
+    if (d.columns !== undefined) segna({ specie: "matrice", ...posto });
     if (d.parameter === "reference") segna({ specie: "rif", ...posto });
     if (d.parameter === "out") segna({ specie: "out", ...posto });
     if (parola.has(d.name)) segna({ specie: "parola-del-linguaggio", ...posto });
@@ -114,6 +116,7 @@ export function mancanzeDiAccademico(p: Progetto): Mancanza[] {
     if (f.name !== undefined && parola.has(f.name)) segna({ specie: "parola-del-linguaggio", funzione: f.id });
     const r = f.kind === "function" ? specieDi(f.return_type!) : undefined;
     if (r !== undefined) segna({ specie: r, funzione: f.id });
+    if (f.return_columns !== undefined) segna({ specie: "matrice", funzione: f.id });
     f.data.forEach((d) => dato(d, funzione));
     const tipi = new Map([...comuni, ...f.data].map((d) => [d.name, d.type]));
 

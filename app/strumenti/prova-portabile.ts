@@ -56,8 +56,9 @@
 //      un'immagine, un carattere, un oggetto e un video incorporati, una richiesta altrove, un indirizzo di base, un
 //      modulo spedito altrove: `strumenti/sonde-della-politica.ts`) fermata con la sua violazione, cioè la politica è
 //      attiva nel prodotto per ogni direttiva; direttive e sonde appaiate nei due versi;
-//    - CODICE: col riferimento chiamato «con» (un nome che Windows riserva) dato come argomento, la colonna del codice
-//      sulla WebView2 vera mostra il Python; «Copia» lo mette negli appunti di Windows (letti da PowerShell, prima c'era
+//    - CODICE: con la copia di una matrice del corpus (`tipi/copia-di-una-matrice`) chiamata «con» (un nome che Windows
+//      riserva) dato come argomento, la colonna del codice sulla WebView2 vera mostra il Python, con la copia della
+//      matrice nei suoi due cicli; «Copia» lo mette negli appunti di Windows (letti da PowerShell, prima c'era
 //      una sentinella; quelli dell'utente si rimettono alla fine); «Salva…» apre prima l'avviso del nome col nome
 //      «con (2)», «Continua» apre la finestra vera del sistema, che propone «con (2).py» (letto dal campo prima di
 //      compilarlo), e il file scritto è il codice mostrato, byte per byte;
@@ -364,6 +365,8 @@ const pdfStampato = join(cartellaProva, "stampa di prova.pdf");
 // della stampa nei motori.
 const testoDellaStampa = readFileSync(join(radice, "casi", "tappa-3", "riferimento-media-voti-funzioni.algo"), "utf8");
 const testoDiPartenza = readFileSync(join(radice, "casi", "tappa-1", "riferimento-media-voti.algo"), "utf8");
+/** Il progetto della clausola CODICE: una matrice, copiata col suo nome coi due cicli. */
+const testoDellaMatrice = readFileSync(join(radice, "casi", "tipi", "copia-di-una-matrice.algo"), "utf8");
 const radiciTracce: Record<string, string> = { APPDATA: process.env.APPDATA!, LOCALAPPDATA: process.env.LOCALAPPDATA!, TEMP: process.env.TEMP! };
 // `GetTempPath` usa `TMP` prima di `TEMP`: se sono due cartelle diverse, si guardano tutte e due.
 const tmp = process.env.TMP;
@@ -1807,7 +1810,7 @@ function scriviAppunti(testo: string): void {
  * scritto è il codice mostrato. Gli appunti dell'utente si rimettono alla fine. */
 async function giroDelCodice(lingua: Lingua): Promise<void> {
   const testi = dizionari[lingua];
-  const progetto = JSON.parse(testoDiPartenza) as { metadata: { name: string } };
+  const progetto = JSON.parse(testoDellaMatrice) as { metadata: { name: string } };
   progetto.metadata.name = "con";
   writeFileSync(progettoFuori, JSON.stringify(progetto, null, 2));
   const nomeDelCodice = "codice di prova";
@@ -1866,6 +1869,10 @@ async function giroDelCodice(lingua: Lingua): Promise<void> {
     rmSync(salvato, { force: true });
   }
   if (esito.righe === 0) rosso("CODICE", "la colonna del codice non ha righe");
+  // La matrice: la copia col nome coi due cicli, il ciclo delle colonne dentro quello delle righe.
+  const dellaMatrice = ["    a: list[list[int]] = [[1, 2], [3, 4]]", "        while _indice2 < 2:", "            b[_indice][_indice2] = a[_indice][_indice2]"];
+  const mancanti = dellaMatrice.filter((r) => !esito.testo.split("\n").includes(r));
+  if (mancanti.length > 0) rosso("CODICE", `nel Python mostrato mancano le righe della matrice: ${JSON.stringify(mancanti)}`);
   if (esito.copiato === sentinella) rosso("CODICE", `«Copia» non ha cambiato gli appunti di Windows (c'è ancora la sentinella dopo ${esito.letture} letture in 5 s); avviso «${esito.avviso}»`);
   if ((esito.copiato ?? "").replaceAll("\r\n", "\n") !== esito.testo) rosso("CODICE", `negli appunti di Windows c'è ${visibile(esito.copiato ?? undefined)} invece del codice Python mostrato (${esito.letture} letture); avviso «${esito.avviso}»`);
   if (!esito.avviso.startsWith("visto")) rosso("CODICE", `«Salva…» col progetto «con» non ha aperto l'avviso del nome (${esito.avviso})`);
