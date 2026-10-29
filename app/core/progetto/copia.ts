@@ -86,8 +86,9 @@ export function livelliDellePosizioni(blocchi: readonly Blocco[], vettori: Reado
 }
 
 /** Quante posizioni nascoste tiene una funzione: il livello più alto dei suoi `per ogni` e delle sue copie col nome,
- * contando la colonna della copia di una matrice. */
-export function quantePosizioni(blocchi: readonly Blocco[], vettori: ReadonlySet<string>, matrici: ReadonlySet<string> = new Set()): number {
+ * contando la colonna della copia di una matrice. Con `contato`, solo fra i blocchi che lo soddisfano (la tabella di
+ * traccia mostra le posizioni dei soli blocchi disegnati con la posizione). */
+export function quantePosizioni(blocchi: readonly Blocco[], vettori: ReadonlySet<string>, matrici: ReadonlySet<string> = new Set(), contato: (b: Blocco) => boolean = () => true): number {
   const livelli = livelliDellePosizioni(blocchi, vettori, matrici);
   const perId = new Map<string, Blocco>();
   const visita = (bs: readonly Blocco[]): void => {
@@ -98,5 +99,5 @@ export function quantePosizioni(blocchi: readonly Blocco[], vettori: ReadonlySet
     }
   };
   visita(blocchi);
-  return Math.max(0, ...[...livelli].map(([id, l]) => l + Math.max(0, posizioniDellaCopia(perId.get(id)!, vettori, matrici) - 1)));
+  return Math.max(0, ...[...livelli].flatMap(([id, l]) => (contato(perId.get(id)!) ? [l + Math.max(0, posizioniDellaCopia(perId.get(id)!, vettori, matrici) - 1)] : [])));
 }

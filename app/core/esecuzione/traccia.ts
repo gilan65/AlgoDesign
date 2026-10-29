@@ -19,10 +19,15 @@
 // La tabella mostrata: una colonna per dato; un vettore nella forma scelta (le colonne dei primi dieci elementi
 // e una per gli altri, che dice quali cambiano; in fila in una colonna sola; una colonna per elemento); un record una
 // colonna per campo (`a.nome`), in ogni forma, nel gruppo del dato; la copia di un record col suo nome ha una riga per
-// campo, con la regola del campo (`b.nome ← a.nome`); con i `per ogni`
+// campo, con la regola del campo (`b.nome ← a.nome`). Una matrice nella sua forma, scelta a parte (una colonna per riga,
+// coi valori in fila e gli elementi cambiati segnati: le prime dieci righe e una colonna per le altre; un elemento per
+// colonna, `m[0][1]`, col tetto dei vettori se i vettori lo hanno; in fila in una colonna sola, le righe separate da
+// « ‖ »). Con i `per ogni` e le copie col nome
 // disegnati con la posizione, dopo i dati una colonna per livello con la posizione dell'elemento (`_indice`, `_indice2`),
-// come la dà l'interprete. Un evento di un ciclo aperto ha per regola il testo del blocco della sua fase (la partenza, il
-// controllo, l'elemento preso, l'aumento: la stessa funzione del disegno); di un ciclo chiuso, l'intestazione. Il CSV
+// come la dà l'interprete (la copia di una matrice ne ha due: la riga e, al livello dopo, la colonna). Un evento di un
+// ciclo aperto ha per regola il testo del blocco della sua fase (la partenza, il controllo, l'elemento preso, l'aumento:
+// la stessa funzione del disegno; nella copia di una matrice quelle del ciclo delle colonne con `_indice2`); di un ciclo
+// chiuso, l'intestazione. Il CSV
 // ha le stesse celle, o una colonna per elemento, col tipo accanto al nome; la regola è il testo del blocco come
 // nel disegno (per un valore iniziale, quello del suo blocco sotto «Inizio», col valore ripetuto mostrato nel modo
 // scelto; i valori delle celle non ne dipendono); nella riga del valore iniziale di un vettore la colonna degli
@@ -42,13 +47,14 @@ import {
   testoDelBlocco,
   testoDelValoreIniziale,
   type FormeDeiCicli,
+  type ParteDelTesto,
   type TestiDelDisegno,
   type ValoreRipetuto,
 } from "../disegno/impaginazione";
 import { funzioniDelGiro } from "../controllo/controllo";
 import { funzioniChiamabili, testoDelValore, type FaseDelCiclo, type Fotografia, type FotografiaDiUnaChiamata, type Origine, type Restituito, type Valore } from "../interprete/interprete";
-import { livelliDellePosizioni, nomiDeiVettori } from "../progetto/copia";
-import { opzioniPredefinite, usaLeMatrici, type Blocco, type Dato, type Funzione, type Progetto, type Tipo } from "../progetto/modello";
+import { livelliDellePosizioni, nomiDeiVettori, nomiDelleMatrici, quantePosizioni } from "../progetto/copia";
+import { opzioniPredefinite, type Blocco, type Dato, type Funzione, type Progetto, type Tipo } from "../progetto/modello";
 
 export interface Riga {
   /** L'azione: per una ripresa, quella che riprende. */
@@ -65,6 +71,8 @@ export interface Riga {
   readonly fase?: FaseDelCiclo;
   /** Nella copia di un record col suo nome, la posizione del campo copiato. */
   readonly campo?: number;
+  /** Nella copia di una matrice col suo nome, la fase è del ciclo delle colonne. */
+  readonly interno?: true;
   /** Le chiamate attive durante l'azione: 0 nella radice. */
   readonly livello: number;
   /** La funzione dell'azione, se non è il programma principale. */
@@ -89,7 +97,7 @@ export interface Riga {
 }
 
 /** Ciò che una riga ha dall'evento che la apre: una ripresa lo copia dall'azione che riprende. */
-type Azione = { numero: number; blocco: string; dato?: string; fase?: FaseDelCiclo; campo?: number; livello: number; funzione?: string };
+type Azione = { numero: number; blocco: string; dato?: string; fase?: FaseDelCiclo; campo?: number; interno?: true; livello: number; funzione?: string };
 type Aperta = Azione & { ripresa?: true; condizione?: boolean; scrive?: string; letto?: string; restituito?: Restituito };
 
 const uguali = (a: Valore | undefined, b: Valore | undefined): boolean => {
@@ -174,8 +182,9 @@ export class Traccia {
 
   /** Un evento: chiude la riga dell'azione precedente coi valori di adesso e apre quella di questa azione (il
    * valore iniziale di `dato`, se c'è; la parte del ciclo, in un ciclo; il livello; la funzione, se non è il programma
-   * principale; la posizione del campo, nella copia di un record). */
-  evento(blocco: string, dati: Fotografia, dato?: string, fase?: FaseDelCiclo, livello = 0, funzione?: string, campo?: number): void {
+   * principale; la posizione del campo, nella copia di un record; `interno`, nel ciclo delle colonne della copia di una
+   * matrice). */
+  evento(blocco: string, dati: Fotografia, dato?: string, fase?: FaseDelCiclo, livello = 0, funzione?: string, campo?: number, interno?: true): void {
     if (this.#iniziali === undefined) this.#iniziali = this.#ultimi = dati;
     else this.#chiudi(dati);
     const azione: Azione = {
@@ -184,6 +193,7 @@ export class Traccia {
       ...(dato !== undefined ? { dato } : {}),
       ...(fase !== undefined ? { fase } : {}),
       ...(campo !== undefined ? { campo } : {}),
+      ...(interno ? { interno } : {}),
       livello,
       ...(funzione !== undefined ? { funzione } : {}),
     };
@@ -294,6 +304,12 @@ export interface TestiDellaTraccia extends TestiDelDisegno {
     /** Un vettore oltre il tetto con le colonne dei primi elementi: `colonna` è il nome di quella degli altri. */
     readonly primiEAltri: (nome: string, elementi: number, primi: number, colonna: string) => string;
     readonly inFila: (nome: string, elementi: number) => string;
+    /** Una matrice una colonna per riga, fino al tetto delle righe. */
+    readonly perRiga: (nome: string, righe: number, colonne: number) => string;
+    /** Una matrice una colonna per riga oltre il tetto: `colonna` è il nome di quella delle altre righe. */
+    readonly primeEAltre: (nome: string, righe: number, colonne: number, prime: number, colonna: string) => string;
+    /** Una matrice in fila. */
+    readonly matriceInFila: (nome: string, righe: number, colonne: number) => string;
     readonly csvUguale: string;
     readonly csvPerElemento: string;
   };
@@ -314,11 +330,23 @@ export const tettoDelleColonne = 10;
  */
 export type FormaDeiVettori = "primi-e-altri" | "in-fila" | "per-elemento";
 
+/**
+ * Come si mostra una matrice (la stessa forma per tutte le matrici del progetto):
+ * - `per-riga`: una colonna per riga, i valori in fila e gli elementi cambiati segnati; oltre `tettoDelleColonne` righe,
+ *   le prime e una colonna per le altre, che dice quali elementi cambiano;
+ * - `per-elemento`: una colonna per elemento (`m[0][1]`), coi primi `tettoDelleColonne` e una colonna per gli altri se
+ *   i vettori sono nella forma coi primi elementi o in fila, tutti con una colonna per elemento;
+ * - `in-fila`: una colonna sola, le righe separate da « ‖ ».
+ */
+export type FormaDelleMatrici = "per-riga" | "per-elemento" | "in-fila";
+
 /** Il CSV: le stesse celle della tabella mostrata, o una colonna per elemento. */
 export type FormaDelCsv = "uguale" | "per-elemento";
 
 /** Fra due elementi in fila, e fra due elementi cambiati nella colonna degli altri. */
 const fraGliElementi = " · ";
+/** Fra due righe di una matrice in fila. */
+const fraLeRighe = " ‖ ";
 /** Un elemento senza valore, in fila: la parola intera ripetuta non si leggerebbe. */
 const senzaValore = "–";
 
@@ -353,6 +381,8 @@ export interface DatoNelWatch {
   readonly vettore: boolean;
   /** Un record: i valori sono i suoi campi, uno per riga. */
   readonly record?: true;
+  /** Una matrice: le sue colonne (gli elementi sono riga dopo riga). */
+  readonly colonne?: number;
   readonly elementi: readonly { readonly nome: string; readonly cella: CellaDiUnValore }[];
   readonly origine?: Origine;
   readonly livello?: { readonly di: number; readonly su: number };
@@ -367,6 +397,8 @@ export interface ChiamataNelWatch {
   readonly vettore: boolean;
   /** Un record restituito: i valori sono i suoi campi. */
   readonly record?: true;
+  /** Una matrice restituita: le sue colonne. */
+  readonly colonne?: number;
   readonly chiamate: readonly (readonly { readonly nome: string; readonly cella: CellaDiUnValore }[])[];
 }
 
@@ -401,8 +433,10 @@ interface DatoMostrato {
   readonly nome: string;
   /** Il tipo della vista dei dati; per un record, il suo nome. */
   readonly tipo: string;
-  /** Gli elementi, se è un vettore. */
+  /** Gli elementi, se è un vettore; le righe, se è una matrice. */
   readonly elementi?: number;
+  /** Le colonne, se è una matrice. */
+  readonly colonne?: number;
   /** I campi col loro tipo, se è un record. */
   readonly campi?: readonly { readonly nome: string; readonly tipo: string }[];
 }
@@ -452,10 +486,8 @@ export class TabellaMostrata {
     readonly radice?: string,
     /** La riga della ripresa dice il valore restituito dalla funzione chiamata. */
     readonly restituitoNellaRipresa = false,
+    readonly formaDelleMatrici: FormaDelleMatrici = "per-riga",
   ) {
-    // Le forme della matrice nella tabella non ci sono ancora: un progetto con le matrici non arriva qui (l'apertura
-    // nell'interfaccia lo rifiuta), e chi ce lo porta lo sa subito.
-    if (usaLeMatrici(p)) throw new Error("la tabella di traccia non mostra ancora le matrici");
     const main = p.functions.find((f) => f.kind === "main")!;
     const principale = radice === undefined ? main : p.functions.find((f) => f.id === radice)!;
     const comuni = p.shared_constants ?? [];
@@ -474,8 +506,9 @@ export class TabellaMostrata {
     const perId = new Map(p.functions.map((f) => [f.id, f]));
     /** I dati che le regole di una funzione vedono: le costanti comuni e i suoi. */
     const datiDi = (f: Funzione): readonly Dato[] => [...comuni, ...f.data];
-    /** I livelli delle posizioni nascoste di ogni funzione (i `per ogni` e le copie col nome), una volta per funzione. */
-    const livelli = new Map(p.functions.map((f) => [f.id, livelliDellePosizioni(f.body, nomiDeiVettori(datiDi(f)))]));
+    /** I livelli delle posizioni nascoste di ogni funzione (i `per ogni` e le copie col nome, anche di una riga di una
+     * matrice), una volta per funzione. */
+    const livelli = new Map(p.functions.map((f) => [f.id, livelliDellePosizioni(f.body, nomiDeiVettori(datiDi(f)), nomiDelleMatrici(datiDi(f)))]));
     this.#progetto = p;
     this.#testi = testi;
     this.#decimali = separatoreDeiDecimali;
@@ -497,7 +530,7 @@ export class TabellaMostrata {
       if (b.kind === "call") return partiDellaChiamata(b, funzioneChiamata(p.functions, b.callee), testi).map((q) => q.testo).join("");
       // Una fase di un'assegnazione è della copia di un vettore col suo nome.
       const ciclo = b.kind === "for" || b.kind === "for_each" || b.kind === "assignment";
-      const fase = r.fase !== undefined && ciclo ? partiDellaFase(b, r.fase, cicli, testi, livelli.get(f.id)!.get(b.id) ?? 1, datiDi(f)) : undefined;
+      const fase = r.fase !== undefined && ciclo ? partiDellaFase(b, r.fase, cicli, testi, livelli.get(f.id)!.get(b.id) ?? 1, datiDi(f), r.interno === true) : undefined;
       return fase === undefined ? testoDelBlocco(b, testi) : fase.map((q) => q.testo).join("");
     };
     // La ripresa dice anche il valore che la funzione ha restituito, se la tabella lo mostra: gli elementi di un vettore
@@ -510,9 +543,9 @@ export class TabellaMostrata {
     };
     this.#regola = (r) => (r.ripresa ? `${testi.ripresa}${regola(r)}${restituito(r)}` : regola(r));
     // Le colonne della posizione fino al livello più alto fra quelli disegnati con la posizione: i `per ogni` aperti con
-    // la posizione, le copie espanse.
-    const mostrata = (id: string) => (blocchi.get(id)!.blocco.kind === "for_each" ? cicli.perOgni === "posizione" : cicli.copia === "espansa");
-    const posizioniDi = (f: Funzione) => Math.max(0, ...[...livelli.get(f.id)!].flatMap(([id, l]) => (mostrata(id) ? [l] : [])));
+    // la posizione, le copie espanse (la copia di una matrice col livello dopo il suo, la colonna).
+    const mostrata = (b: Blocco) => (b.kind === "for_each" ? cicli.perOgni === "posizione" : cicli.copia === "espansa");
+    const posizioniDi = (f: Funzione) => quantePosizioni(f.body, nomiDeiVettori(datiDi(f)), nomiDelleMatrici(datiDi(f)), mostrata);
     this.#posizioni = posizioniDi(principale);
     this.#valore = (v) => {
       if (v === undefined) return testi.nonInizializzata;
@@ -522,7 +555,7 @@ export class TabellaMostrata {
     const mostrato = (d: Dato): DatoMostrato => {
       const campi = campiDelRecord(d, p);
       if (campi !== undefined) return { nome: d.name, tipo: d.record!, campi: campi.map((c) => ({ nome: c.name, tipo: testi.tipi[c.type] })) };
-      return { nome: d.name, tipo: testi.tipi[d.type as Tipo], ...(d.size !== undefined ? { elementi: d.size } : {}) };
+      return { nome: d.name, tipo: testi.tipi[d.type as Tipo], ...(d.size !== undefined ? { elementi: d.size } : {}), ...(d.columns !== undefined ? { colonne: d.columns } : {}) };
     };
     this.#dati = datiDi(principale).map(mostrato);
     this.#comuni = comuni.length;
@@ -536,6 +569,17 @@ export class TabellaMostrata {
       const gruppo = funzione === undefined ? d.nome : `${funzione} › ${d.nome}`;
       const colonna = (nome: string, tipo = d.tipo) => ({ nome, tipo, gruppo, ...(funzione !== undefined ? { funzione } : {}) });
       if (d.campi !== undefined) return d.campi.map((c) => colonna(`${d.nome}.${c.nome}`, c.tipo));
+      if (n !== undefined && d.colonne !== undefined) {
+        const c = d.colonne;
+        if (formaDelleMatrici === "in-fila") return [colonna(d.nome)];
+        if (formaDelleMatrici === "per-riga") {
+          const riga = (i: number) => colonna(`${d.nome}[${i}]`);
+          return n <= tettoDelleColonne ? Array.from({ length: n }, (_, i) => riga(i)) : [...Array.from({ length: tettoDelleColonne }, (_, i) => riga(i)), colonna(nomeDegliAltri(d.nome, n))];
+        }
+        const elemento = (k: number) => colonna(nomeDiUnElemento(d.nome, k, c));
+        if (forma === "per-elemento" || n * c <= tettoDelleColonne) return Array.from({ length: n * c }, (_, k) => elemento(k));
+        return [...Array.from({ length: tettoDelleColonne }, (_, k) => elemento(k)), colonna(nomeDegliAltriDellaMatrice(d.nome, n, c))];
+      }
       if (n === undefined || forma === "in-fila") return [colonna(d.nome)];
       const elemento = (i: number) => colonna(`${d.nome}[${i}]`);
       if (forma === "per-elemento" || n <= tettoDelleColonne) return Array.from({ length: n }, (_, i) => elemento(i));
@@ -571,15 +615,20 @@ export class TabellaMostrata {
     return this.#testi;
   }
 
-  /** Il valore che una funzione ha restituito, come lo scrive la riga della ripresa: gli elementi di un vettore in fila. */
+  /** Il valore che una funzione ha restituito, come lo scrive la riga della ripresa: gli elementi di un vettore in fila,
+   * quelli di una matrice con le righe separate. */
   valoreRestituito(r: Restituito): string {
     const v = r.valore;
-    return "elementi" in v ? v.elementi.map((x) => this.#valore(x)).join(fraGliElementi) : this.#valore(v);
+    if (!("elementi" in v)) return this.#valore(v);
+    const colonne = this.#progetto.functions.find((f) => f.id === r.funzione)?.return_columns;
+    return v.elementi.map((x, i) => `${i === 0 ? "" : colonne !== undefined && i % colonne === 0 ? fraLeRighe : fraGliElementi}${this.#valore(x)}`).join("");
   }
 
-  /** La stessa tabella in un'altra forma (il CSV con una colonna per elemento). */
-  conForma(forma: FormaDeiVettori): TabellaMostrata {
-    return forma === this.forma ? this : new TabellaMostrata(this.#progetto, this.#testi, this.#decimali, forma, this.ripetuto, this.cicli, this.radice, this.restituitoNellaRipresa);
+  /** La stessa tabella in un'altra forma (il CSV con una colonna per elemento: anche per le matrici). */
+  conForma(forma: FormaDeiVettori, formaDelleMatrici: FormaDelleMatrici = this.formaDelleMatrici): TabellaMostrata {
+    return forma === this.forma && formaDelleMatrici === this.formaDelleMatrici
+      ? this
+      : new TabellaMostrata(this.#progetto, this.#testi, this.#decimali, forma, this.ripetuto, this.cicli, this.radice, this.restituitoNellaRipresa, formaDelleMatrici);
   }
 
   /**
@@ -591,6 +640,12 @@ export class TabellaMostrata {
     const s = this.#testi.spiegazione;
     const frasi = this.#dati.flatMap((d) => {
       const n = d.elementi;
+      if (n !== undefined && d.colonne !== undefined) {
+        const c = d.colonne;
+        if (this.formaDelleMatrici === "in-fila") return [s.matriceInFila(d.nome, n, c)];
+        if (this.formaDelleMatrici === "per-riga") return [n > tettoDelleColonne ? s.primeEAltre(d.nome, n, c, tettoDelleColonne, nomeDegliAltri(d.nome, n)) : s.perRiga(d.nome, n, c)];
+        return this.forma === "per-elemento" || n * c <= tettoDelleColonne ? [] : [s.primiEAltri(d.nome, n * c, tettoDelleColonne, nomeDegliAltriDellaMatrice(d.nome, n, c))];
+      }
       if (n === undefined || this.forma === "per-elemento") return [];
       if (this.forma === "in-fila") return [s.inFila(d.nome, n)];
       return n > tettoDelleColonne ? [s.primiEAltri(d.nome, n, tettoDelleColonne, nomeDegliAltri(d.nome, n))] : [];
@@ -662,15 +717,23 @@ export class TabellaMostrata {
     const di = (r: Pick<Riga, "blocco" | "ripresa" | "restituito">) => r.ripresa === true && r.blocco === blocco && r.restituito?.funzione === f.id;
     const ultima = righe.findLast(di);
     const vettore = f.return_size !== undefined;
+    const colonne = f.return_columns;
     const campi = campiDelRecord({ type: f.return_type!, ...(f.return_record !== undefined ? { record: f.return_record } : {}) }, this.#progetto);
     const chiamate = righe
       .filter((r) => di(r) && r.numero === ultima?.numero)
       .map((r) => {
         const v = r.restituito!.valore;
         const elementi = "elementi" in v ? v.elementi : [v];
-        return elementi.map((x, i) => ({ nome: vettore ? `[${i}]` : campi !== undefined ? `.${campi[i]!.name}` : nome, cella: this.#cella(x, false) }));
+        return elementi.map((x, i) => ({ nome: colonne !== undefined ? nomeDiUnElemento("", i, colonne) : vettore ? `[${i}]` : campi !== undefined ? `.${campi[i]!.name}` : nome, cella: this.#cella(x, false) }));
       });
-    return { nome, tipo: campi !== undefined ? f.return_record! : this.#testi.tipi[f.return_type as Tipo], vettore, ...(campi !== undefined ? { record: true as const } : {}), chiamate };
+    return {
+      nome,
+      tipo: campi !== undefined ? f.return_record! : this.#testi.tipi[f.return_type as Tipo],
+      vettore,
+      ...(campi !== undefined ? { record: true as const } : {}),
+      ...(colonne !== undefined ? { colonne } : {}),
+      chiamate,
+    };
   }
 
   #nelWatch(d: DatoMostrato, valori: readonly (Valore | undefined)[], cambiati: readonly boolean[] | undefined): DatoNelWatch {
@@ -679,6 +742,7 @@ export class TabellaMostrata {
       tipo: d.tipo,
       vettore: d.elementi !== undefined,
       ...(d.campi !== undefined ? { record: true as const } : {}),
+      ...(d.colonne !== undefined ? { colonne: d.colonne } : {}),
       elementi: valori.map((v, i) => ({ nome: nomeDelValore(d, i), cella: this.#cella(v, cambiati?.[i] === true) })),
     };
   }
@@ -746,6 +810,12 @@ export class TabellaMostrata {
   #colonneDi(d: DatoMostrato): number {
     if (d.campi !== undefined) return d.campi.length;
     const n = d.elementi;
+    if (n !== undefined && d.colonne !== undefined) {
+      if (this.formaDelleMatrici === "in-fila") return 1;
+      if (this.formaDelleMatrici === "per-riga") return n <= tettoDelleColonne ? n : tettoDelleColonne + 1;
+      const tutti = n * d.colonne;
+      return this.forma === "per-elemento" || tutti <= tettoDelleColonne ? tutti : tettoDelleColonne + 1;
+    }
     if (n === undefined || this.forma === "in-fila") return 1;
     return this.forma === "per-elemento" || n <= tettoDelleColonne ? n : tettoDelleColonne + 1;
   }
@@ -766,38 +836,88 @@ export class TabellaMostrata {
       const rif = riferimenti?.[d];
       const di = (cella: CellaDiUnValore, i?: number): CellaDiUnValore => (rif === undefined ? cella : { ...cella, testo: `${cella.testo} (${i === undefined ? rif : nomeDelValore({ ...dato, nome: rif }, i)})` });
       if (dato.campi !== undefined) return elementi.map((v, i) => di(this.#cella(v, c?.[i] === true), i));
+      if (n !== undefined && dato.colonne !== undefined) return this.#valoriDellaMatrice(dato, n, dato.colonne, elementi, c, dato.nome === iniziale, rif);
       if (n !== undefined && this.forma === "in-fila") return [di(this.#inFila(elementi, c))];
       const tutti = n === undefined || this.forma === "per-elemento" || n <= tettoDelleColonne;
       const primi = (tutti ? elementi : elementi.slice(0, tettoDelleColonne)).map((v, i) => di(this.#cella(v, c?.[i] === true), n === undefined ? undefined : i));
       if (tutti) return primi;
-      return [...primi, dato.nome === iniziale ? this.#altriIniziali(dato.nome, elementi) : this.#altri(dato.nome, elementi, c)];
+      const altri = elementi.slice(tettoDelleColonne);
+      return [...primi, dato.nome === iniziale ? this.#altriIniziali(nomeDegliAltri(dato.nome, n), this.#elenco(altri)) : this.#altri(elementi, c, tettoDelleColonne, (i) => `${dato.nome}[${i}]`)];
     });
   }
 
-  /** La colonna degli altri nella riga del valore iniziale del vettore: tutti cambiati, in un elenco tagliato come nel
-   * blocco (la stessa funzione), coi valori come li scrive la tabella; non uno per uno, che in un vettore di mille
-   * elementi sarebbero 990. */
-  #altriIniziali(nome: string, elementi: readonly (Valore | undefined)[]): CellaDiUnValore {
-    const primi = elementi.slice(tettoDelleColonne, tettoDelleColonne + ELEMENTI_SCRITTI).map((v) => ({ testo: this.#valore(v), espressione: false }));
-    const elenco = partiDellElenco(primi, elementi.length - tettoDelleColonne, this.#testi)
-      .map((p) => p.testo)
-      .join("");
-    return { testo: `${nomeDegliAltri(nome, elementi.length)} ← ${elenco}`, nonInizializzata: false, cambiata: true };
+  /** Le celle di una matrice di `righe` × `colonne` nella sua forma: una per riga coi valori in fila (oltre il tetto, le
+   * prime righe e la colonna delle altre), una per elemento (col tetto dei vettori), o una sola in fila; `iniziale`, se
+   * la riga è il suo valore iniziale; `rif`, il dato di chi chiama per un parametro per riferimento. */
+  #valoriDellaMatrice(
+    dato: DatoMostrato,
+    righe: number,
+    colonne: number,
+    elementi: readonly (Valore | undefined)[],
+    c: readonly boolean[] | undefined,
+    iniziale: boolean,
+    rif: string | undefined,
+  ): CellaDiUnValore[] {
+    const di = (cella: CellaDiUnValore, nome: (rif: string) => string): CellaDiUnValore => (rif === undefined ? cella : { ...cella, testo: `${cella.testo} (${nome(rif)})` });
+    const elemento = (i: number) => (r: string) => nomeDiUnElemento(r, i, colonne);
+    if (this.formaDelleMatrici === "in-fila") return [di(this.#inFila(elementi, c, colonne), (r) => r)];
+    if (this.formaDelleMatrici === "per-riga") {
+      const prime = Array.from({ length: Math.min(righe, tettoDelleColonne) }, (_, i) =>
+        di(this.#inFila(elementi.slice(i * colonne, (i + 1) * colonne), c?.slice(i * colonne, (i + 1) * colonne)), (r) => `${r}[${i}]`),
+      );
+      if (righe <= tettoDelleColonne) return prime;
+      // Le altre righe: nel valore iniziale l'elenco delle righe, ognuna un elenco, tagliato come nel blocco.
+      const altre = Array.from({ length: Math.min(righe - tettoDelleColonne, ELEMENTI_SCRITTI) }, (_, k) => {
+        const da = (tettoDelleColonne + k) * colonne;
+        return this.#elenco(elementi.slice(da, da + colonne));
+      });
+      const altra = iniziale
+        ? this.#altriIniziali(nomeDegliAltri(dato.nome, righe), partiDellElenco(altre, righe - tettoDelleColonne, this.#testi))
+        : this.#altri(elementi, c, tettoDelleColonne * colonne, (i) => nomeDiUnElemento(dato.nome, i, colonne));
+      return [...prime, altra];
+    }
+    const tutti = this.forma === "per-elemento" || righe * colonne <= tettoDelleColonne;
+    const primi = (tutti ? elementi : elementi.slice(0, tettoDelleColonne)).map((v, i) => di(this.#cella(v, c?.[i] === true), elemento(i)));
+    if (tutti) return primi;
+    const altri = elementi.slice(tettoDelleColonne);
+    return [
+      ...primi,
+      iniziale
+        ? this.#altriIniziali(nomeDegliAltriDellaMatrice(dato.nome, righe, colonne), this.#elenco(altri))
+        : this.#altri(elementi, c, tettoDelleColonne, (i) => nomeDiUnElemento(dato.nome, i, colonne)),
+    ];
   }
 
-  /** La colonna degli altri: gli elementi oltre il tetto cambiati con l'azione, col nome e il nuovo valore. */
-  #altri(nome: string, elementi: readonly (Valore | undefined)[], cambiati?: readonly boolean[]): CellaDiUnValore {
+  /** I primi valori (al più `ELEMENTI_SCRITTI`) di un elenco come li scrive la tabella, fra graffe con quanti ne restano: la
+   * stessa funzione del blocco del valore iniziale. */
+  #elenco(valori: readonly (Valore | undefined)[]): ParteDelTesto[] {
+    return partiDellElenco(
+      valori.slice(0, ELEMENTI_SCRITTI).map((v) => ({ testo: this.#valore(v), espressione: false })),
+      valori.length,
+      this.#testi,
+    );
+  }
+
+  /** La colonna degli altri (`colonna` il suo nome) nella riga del valore iniziale: tutti cambiati, nell'elenco tagliato
+   * come nel blocco; non uno per uno, che in un vettore di mille elementi sarebbero 990. */
+  #altriIniziali(colonna: string, elenco: readonly ParteDelTesto[]): CellaDiUnValore {
+    return { testo: `${colonna} ← ${elenco.map((p) => p.testo).join("")}`, nonInizializzata: false, cambiata: true };
+  }
+
+  /** La colonna degli altri: gli elementi da `da` cambiati con l'azione, col nome (`nomeDi`) e il nuovo valore. */
+  #altri(elementi: readonly (Valore | undefined)[], cambiati: readonly boolean[] | undefined, da: number, nomeDi: (i: number) => string): CellaDiUnValore {
     const voci: string[] = [];
-    if (cambiati) for (let i = tettoDelleColonne; i < elementi.length; i++) if (cambiati[i]) voci.push(`${nome}[${i}] ${this.#valore(elementi[i])}`);
+    if (cambiati) for (let i = da; i < elementi.length; i++) if (cambiati[i]) voci.push(`${nomeDi(i)} ${this.#valore(elementi[i])}`);
     return { testo: voci.join(fraGliElementi), nonInizializzata: false, cambiata: voci.length > 0 };
   }
 
-  /** Il vettore in fila: gli elementi fermi fra due cambiati stanno in un pezzo solo, così ogni pezzo è segnato o no. */
-  #inFila(elementi: readonly (Valore | undefined)[], cambiati?: readonly boolean[]): CellaDiUnValore {
+  /** Il vettore in fila (con `colonne`, la matrice, le righe separate): gli elementi fermi fra due cambiati stanno in un
+   * pezzo solo, così ogni pezzo è segnato o no. */
+  #inFila(elementi: readonly (Valore | undefined)[], cambiati?: readonly boolean[], colonne?: number): CellaDiUnValore {
     const pezzi: { testo: string; cambiato: boolean }[] = [];
     let fermo = "";
     elementi.forEach((v, i) => {
-      if (i > 0) fermo += fraGliElementi;
+      if (i > 0) fermo += colonne !== undefined && i % colonne === 0 ? fraLeRighe : fraGliElementi;
       const testo = v === undefined ? senzaValore : this.#valore(v);
       if (cambiati?.[i] !== true) fermo += testo;
       else {
@@ -848,8 +968,23 @@ export class TabellaMostrata {
   }
 }
 
-/** Il nome di un valore di un dato: l'elemento di un vettore (`v[2]`), il campo di un record (`a.nome`), il dato. */
-const nomeDelValore = (d: DatoMostrato, i: number): string => (d.campi !== undefined ? `${d.nome}.${d.campi[i]!.nome}` : d.elementi !== undefined ? `${d.nome}[${i}]` : d.nome);
+/** Il nome di un valore di un dato: l'elemento di un vettore (`v[2]`) o di una matrice (`m[1][0]`), il campo di un record
+ * (`a.nome`), il dato. */
+const nomeDelValore = (d: DatoMostrato, i: number): string =>
+  d.campi !== undefined ? `${d.nome}.${d.campi[i]!.nome}` : d.colonne !== undefined ? nomeDiUnElemento(d.nome, i, d.colonne) : d.elementi !== undefined ? `${d.nome}[${i}]` : d.nome;
+
+/** Il nome dell'elemento `k` (riga dopo riga) di una matrice di `colonne` colonne: `m[1][0]`. */
+const nomeDiUnElemento = (nome: string, k: number, colonne: number) => `${nome}[${Math.floor(k / colonne)}][${k % colonne}]`;
+
+/** Il nome della colonna degli elementi di una matrice oltre il tetto: `m[2][2…3]` nella stessa riga, `m[1][2]…m[4][3]`
+ * fra righe diverse, `m[2][3]` se è uno solo. */
+const nomeDegliAltriDellaMatrice = (nome: string, righe: number, colonne: number): string => {
+  const primo = tettoDelleColonne;
+  const ultimo = righe * colonne - 1;
+  if (primo === ultimo) return nomeDiUnElemento(nome, primo, colonne);
+  const [r1, r2] = [Math.floor(primo / colonne), Math.floor(ultimo / colonne)];
+  return r1 === r2 ? `${nome}[${r1}][${primo % colonne}…${ultimo % colonne}]` : `${nomeDiUnElemento(nome, primo, colonne)}…${nomeDiUnElemento(nome, ultimo, colonne)}`;
+};
 
 /** I campi di un dato (o di un risultato) record del progetto; nessuno per un altro tipo. */
 const campiDelRecord = (d: Pick<Dato, "type" | "record">, p: Progetto): readonly { readonly name: string; readonly type: Tipo }[] | undefined =>
@@ -874,7 +1009,7 @@ const numeroNegativo = /^-\d+(?:[.,]\d+)?$/;
  * il README); senza l'apostrofo la calcolerebbero come formula.
  */
 export function csv(t: Traccia, tabella: TabellaMostrata, forma: FormaDelCsv, campo: string, ordine?: readonly number[]): string {
-  const fonte = forma === "uguale" ? tabella : tabella.conForma("per-elemento");
+  const fonte = forma === "uguale" ? tabella : tabella.conForma("per-elemento", "per-elemento");
   const testi = fonte.testi;
   const disposte = (celle: readonly string[]) => (forma === "uguale" && ordine ? ordine.map((i) => celle[i]!) : celle);
   const cella = (testo: string) => {
