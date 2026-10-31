@@ -178,9 +178,9 @@ describe("la provenienza delle righe", () => {
     for (const l of lingue) {
       const e = provaIlCorpusDeiCicli(tappa2, (p) => python(p, tetti, l, paroleDelloPseudocodice(l)));
       expect(e.difetti, l).toEqual([]);
-      // il denominatore, contato a parte: 15 file, 3 con l'errore statico atteso; 83 blocchi e 25 cicli negli altri
+      // il denominatore, contato a parte: 16 file, 3 con l'errore statico atteso; 87 blocchi e 26 cicli negli altri
       expect(e.rifiutati.sort(), l).toEqual([...rifiutatiDellaTappa2]);
-      expect([e.generati, e.blocchi, e.cicli], l).toEqual([12, 83, 25]);
+      expect([e.generati, e.blocchi, e.cicli], l).toEqual([13, 87, 26]);
     }
   });
 });

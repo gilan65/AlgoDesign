@@ -1,5 +1,6 @@
-// Il TypeScript generato contro gli attesi scritti a mano (`attesi-del-typescript.ts`), la provenienza delle righe, la
-// guardia del primo gruppo di costrutti sul corpus (i progetti che sa scrivere, per nome, e il costrutto che manca a ogni
+// Il TypeScript generato contro gli attesi scritti a mano (`attesi-del-typescript.ts`), la provenienza delle righe (con
+// le fasi dei cicli, anche sul corpus della tappa 2), la guardia dei gruppi di costrutti sul corpus (i progetti che sa
+// scrivere, per nome, e il costrutto che manca a ogni
 // altro), i nomi che il programma chiama. Che il programma generato dia l'output dell'interprete, e che `tsc` non vi trovi
 // errori, non si prova qui: lo provano il test differenziale (Node e Bun) e il suo controllo dei tipi.
 //
@@ -16,8 +17,12 @@ import { typescript } from "../../core/genera/typescript";
 import { apri } from "../../core/progetto/formato";
 import type { Progetto } from "../../core/progetto/modello";
 import type { Lingua } from "../../i18n/lingue";
-import { delCorpus, formeDellaTappa1, formeDellaTappa1Attese, formeDelloScheletro, formeDelloScheletroAttese, provenienzeDelloScheletro } from "./attesi-del-typescript";
+import {
+  delCorpus, fasiDellaTappa2, formeDellaTappa1, formeDellaTappa1Attese, formeDellaTappa2, formeDellaTappa2Attese, formeDelloScheletro, formeDelloScheletroAttese,
+  provenienzeDelloScheletro,
+} from "./attesi-del-typescript";
 import { paroleDelloPseudocodice } from "./parole";
+import { provaIlCorpusDeiCicli, rifiutatiDellaTappa2 } from "./provenienza-dei-cicli";
 
 const lingue: readonly Lingua[] = ["it", "en"];
 const cartella = join(import.meta.dir, "..", "..", "casi");
@@ -44,9 +49,9 @@ function uguale(generato: string, atteso: string, chi: string) {
   throw new Error(`${chi}, riga ${k + 1}: atteso «${a[k] ?? "(nessuna)"}», generato «${g[k] ?? "(nessuna)"}»`);
 }
 
-/** I file del corpus fuori dalla tappa 1 che il generatore sa scrivere (misurati: il programma principale coi costrutti
- * della tappa 1, senza `per`, `per ogni`, procedure, funzioni e tipi composti). Ogni file della tappa 1 si genera. */
-const fuoriDallaTappa1: readonly string[] = [];
+/** I file del corpus fuori dalle tappe 1 e 2 che il generatore sa scrivere (misurati: il programma principale coi
+ * costrutti delle tappe 1 e 2, senza procedure, funzioni e tipi composti). Ogni file delle tappe 1 e 2 si genera. */
+const fuoriDalleTappe: readonly string[] = [];
 
 const corpus = readdirSync(cartella, { withFileTypes: true })
   .filter((v) => v.isDirectory())
@@ -55,9 +60,10 @@ const corpus = readdirSync(cartella, { withFileTypes: true })
 
 describe("il TypeScript uguale all'atteso scritto a mano", () => {
   for (const l of lingue) {
-    for (const [nome, atteso] of Object.entries(delCorpus)) test(`${nome} (${l})`, () => uguale(codice(leggi(`tappa-1/${nome}.algo`), l), atteso[l], `${nome} (${l})`));
+    for (const [nome, atteso] of Object.entries(delCorpus)) test(`${nome} (${l})`, () => uguale(codice(leggi(`${nome}.algo`), l), atteso[l], `${nome} (${l})`));
     test(`forme-dello-scheletro (${l})`, () => uguale(codice(formeDelloScheletro, l), formeDelloScheletroAttese[l], `forme-dello-scheletro (${l})`));
     test(`forme-della-tappa-1 (${l})`, () => uguale(codice(formeDellaTappa1, l), formeDellaTappa1Attese[l], `forme-della-tappa-1 (${l})`));
+    test(`forme-della-tappa-2 (${l})`, () => uguale(codice(formeDellaTappa2, l), formeDellaTappa2Attese[l], `forme-della-tappa-2 (${l})`));
   }
 });
 
@@ -72,10 +78,37 @@ describe("la provenienza delle righe", () => {
       expect(r.filter((x) => x.nellaFunzione === "f1").length).toBe(fino - principale);
     }
   });
+
+  test("le righe dei cicli in «forme della tappa 2» hanno il loro blocco e una fase ciascuna, le graffe e gli indici dichiarati nessuno", () => {
+    for (const l of lingue) {
+      const r = righe(formeDellaTappa2, l);
+      expect(r.filter((x) => x.fasi !== undefined).map((x) => `${x.blocco} ${x.fasi!.join("+")}`)).toEqual([...fasiDellaTappa2]);
+      // Controllo positivo nel numero: le righe senza fase dei cicli sono quelle del corpo, coi loro blocchi.
+      const cicli = new Set(["b2", "b4", "b5", "b6", "b8"]);
+      expect(r.filter((x) => x.blocco !== undefined && cicli.has(x.blocco) && x.fasi === undefined)).toEqual([]);
+      const dichiarati = r.filter((x) => /^  let _(indice|index)2?: number;$/.test(x.testo));
+      expect(dichiarati.length).toBe(2);
+      expect(dichiarati.filter((x) => x.blocco !== undefined || x.dato !== undefined)).toEqual([]);
+      expect(r.filter((x) => /^ *\}$/.test(x.testo) && x.blocco !== undefined)).toEqual([]);
+    }
+  });
+
+  const tappa2 = readdirSync(join(cartella, "tappa-2"))
+    .filter((f) => f.endsWith(".algo"))
+    .map((f) => ({ f, p: leggi(`tappa-2/${f}`) }));
+  test("il corpus della tappa 2: ogni blocco nell'ordine dell'albero, ogni fase di un ciclo con le sue righe, nelle due lingue", () => {
+    for (const l of lingue) {
+      const e = provaIlCorpusDeiCicli(tappa2, (p) => typescript(p, tetti, l, paroleDelloPseudocodice(l)));
+      expect(e.difetti, l).toEqual([]);
+      // il denominatore, contato a parte: 16 file, 3 con l'errore statico atteso; 87 blocchi e 26 cicli negli altri
+      expect(e.rifiutati.sort(), l).toEqual([...rifiutatiDellaTappa2]);
+      expect([e.generati, e.blocchi, e.cicli], l).toEqual([13, 87, 26]);
+    }
+  });
 });
 
 describe("i costrutti che sa scrivere", () => {
-  test("si generano tutti e soli i progetti del corpus che sa scrivere (la tappa 1 intera); ogni altro dice il costrutto che manca", () => {
+  test("si generano tutti e soli i progetti del corpus che sa scrivere (le tappe 1 e 2 intere); ogni altro dice il costrutto che manca", () => {
     // Controllo positivo nel numero: il corpus c'è, e i progetti dello scheletro ne sono una parte.
     expect(corpus.length).toBeGreaterThan(100);
     const generati: string[] = [];
@@ -91,13 +124,15 @@ describe("i costrutti che sa scrivere", () => {
         else throw new Error(`${f}: ${g.perche}`);
       }
     }
-    // La tappa 1 del corpus: ogni suo file senza errori statici (controllo positivo nel numero: sono più di 50).
-    const tappa1 = corpus.filter((f) => f.startsWith("tappa-1/") && (() => {
+    // Le tappe 1 e 2 del corpus: ogni loro file senza errori statici (controllo positivo nel numero: sono più di 50 e
+    // più di 10).
+    const tappe = corpus.filter((f) => (f.startsWith("tappa-1/") || f.startsWith("tappa-2/")) && (() => {
       const c = controlla(leggi(`${f}.algo`), tetti);
       return !c.fuoriTappa && c.errori.length === 0;
     })());
-    expect(tappa1.length).toBeGreaterThan(50);
-    expect(generati.sort()).toEqual([...tappa1, ...fuoriDallaTappa1].flatMap((f) => lingue.map((l) => `${f} ${l}`)).sort());
+    expect(tappe.filter((f) => f.startsWith("tappa-1/")).length).toBeGreaterThan(50);
+    expect(tappe.filter((f) => f.startsWith("tappa-2/")).length).toBeGreaterThan(10);
+    expect(generati.sort()).toEqual([...tappe, ...fuoriDalleTappe].flatMap((f) => lingue.map((l) => `${f} ${l}`)).sort());
     expect(nonAncora.size).toBeGreaterThan(100);
     for (const [chi, costrutto] of nonAncora) expect({ chi, costrutto: costrutto.length > 0 }).toEqual({ chi, costrutto: true });
     // Le due lingue dicono lo stesso costrutto.
@@ -123,7 +158,7 @@ describe("i nomi", () => {
   test("il programma chiama solo le funzioni di supporto che definisce e i nomi di JavaScript che riserva", () => {
     const riservati = new Set(voceDel("typescript").riservati);
     for (const l of lingue)
-      for (const p of [formeDelloScheletro, formeDellaTappa1, ...Object.keys(delCorpus).map((n) => leggi(`tappa-1/${n}.algo`))]) {
+      for (const p of [formeDelloScheletro, formeDellaTappa1, formeDellaTappa2, ...Object.keys(delCorpus).map((n) => leggi(`${n}.algo`))]) {
         const t = codice(p, l);
         // Le funzioni a livello del file, che devono essere riservate, e quelle dentro una funzione di supporto (la
         // potenza), che non lo devono.

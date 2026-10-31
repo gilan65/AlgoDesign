@@ -1,13 +1,13 @@
 {
   "fatti": {
-    "impronta": "8d8cfcd12592a5094724a538bb37f56db172fcc28f97b910c0c00cc48412b593",
+    "impronta": "1862cef97248eceb2fdff2cbbc83adf41ff85a77b3bb94129e408b1ea33ed058",
     "file": {
       "tappa-1": 60,
-      "tappa-2": 15,
+      "tappa-2": 16,
       "tappa-3": 53,
       "tappa-4": 22,
       "tipi": 31,
-      "totale": 181
+      "totale": 182
     },
     "tipi": {
       "record": 17,

@@ -1,0 +1,77 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "per-ogni-fuori-dal-piano-base",
+    "description": "Il per ogni su una stringa con un carattere fuori dal piano di base: tre caratteri, uno per giro, e la lunghezza 3."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "initial": "\"a😀b\""
+        },
+        {
+          "name": "c",
+          "type": "character"
+        },
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "0"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for_each",
+          "item": "c",
+          "source": "s",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "write",
+              "values": [
+                "c",
+                "\".\""
+              ],
+              "newline": false
+            },
+            {
+              "id": "b3",
+              "kind": "assignment",
+              "target": "n",
+              "value": "n + 1"
+            }
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "n",
+            "\" \"",
+            "length s"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b5"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-ogni-fuori-dal-piano-base",
+      "inputs": [],
+      "expected": {
+        "output": "a.😀.b.3 3\n"
+      }
+    }
+  ]
+}
