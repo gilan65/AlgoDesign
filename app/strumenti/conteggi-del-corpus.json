@@ -1,13 +1,13 @@
 {
   "fatti": {
-    "impronta": "365b5a1ac7ab65b739fd9842d33a11364ef49e3207a316c19fc3bbd31720a771",
+    "impronta": "10180dd78355adad9efcaa1ed643e9422263998c50addf49c29ead62ffb0acf6",
     "file": {
       "tappa-1": 60,
       "tappa-2": 16,
       "tappa-3": 54,
-      "tappa-4": 22,
+      "tappa-4": 23,
       "tipi": 31,
-      "totale": 183
+      "totale": 184
     },
     "tipi": {
       "record": 17,
@@ -62,12 +62,12 @@
   },
   "denominatori": {
     "accademico - esiti sul corpus": [
-      183,
+      184,
       36,
       19,
-      128
+      129
     ],
-    "accademico - file con le mancanze": 139,
+    "accademico - file con le mancanze": 140,
     "accademico - matrici, giuste e tutte": [
       9,
       13
@@ -93,14 +93,14 @@
       "conIntestazione": 108
     },
     "bozza - dati del corpus": 114,
-    "campi - file del corpus": 152,
+    "campi - file del corpus": 153,
     "casi - file delle tappe 2 e 3": 70,
-    "casi dalla esecuzione - riga del totale": "totale 192: uguali 179, esclusi errore statico 10, riga non valida 2, voci finite 1",
-    "controllo - file controllati del corpus": 183,
+    "casi dalla esecuzione - riga del totale": "totale 194: uguali 181, esclusi errore statico 10, riga non valida 2, voci finite 1",
+    "controllo - file controllati del corpus": 184,
     "controllo dato per dato - file della tappa 1": 60,
     "disegno e2e - copie col nome nella tappa 3": 2,
     "disegno e2e - funzioni delle tappe 3 e 4, dei progetti coi salti": [
-      185,
+      189,
       45
     ],
     "disegno e2e - letture con la domanda nel corpus": 11,
@@ -114,8 +114,8 @@
       16
     ],
     "esegui tutti - file e casi della tappa 4": {
-      "file": 22,
-      "casi": 30
+      "file": 23,
+      "casi": 32
     },
     "esempi - file dei tipi, con le matrici": [
       31,
@@ -123,7 +123,7 @@
     ],
     "esempi - file delle tappe 3 e 4, con un risultato": [
       54,
-      22,
+      23,
       16
     ],
     "finestra - file delle tappe 1 e 2, quelli che non partono": {
@@ -131,8 +131,8 @@
       "nonPartono": 3
     },
     "genera c - file della tappa 1": 60,
-    "genera c - file della tappa 4": 22,
-    "genera c - programmi della tappa 4 col giro, nelle due lingue": 44,
+    "genera c - file della tappa 4": 23,
+    "genera c - programmi della tappa 4 col giro, nelle due lingue": 46,
     "genera c - programmi di prova dei casi delle funzioni": 26,
     "genera c - tappa 1 (blocchi, dati)": [
       164,
@@ -149,7 +149,7 @@
       336
     ],
     "genera pseudocodice - file della tappa 1": 60,
-    "genera pseudocodice - file della tappa 4": 22,
+    "genera pseudocodice - file della tappa 4": 23,
     "genera pseudocodice - tappa 1 (blocchi, dati)": [
       164,
       114
@@ -165,8 +165,8 @@
       336
     ],
     "genera python - file della tappa 1": 60,
-    "genera python - file della tappa 4": 22,
-    "genera python - programmi della tappa 4 col giro, nelle due lingue": 44,
+    "genera python - file della tappa 4": 23,
+    "genera python - programmi della tappa 4 col giro, nelle due lingue": 46,
     "genera python - programmi di prova dei casi delle funzioni": 26,
     "genera python - tappa 1 (blocchi, dati)": [
       164,
@@ -181,9 +181,10 @@
       54,
       47
     ],
-    "genera typescript - generati fuori dalle tappe 1, 2 e 3": [
+    "genera typescript - generati fuori dalle tappe 1, 2, 3 e 4": [
       "tipi/carattere-di-un-risultato"
     ],
+    "genera typescript - programmi col giro, nelle due lingue": 46,
     "genera typescript - tappa 2 (generati, blocchi, cicli)": [
       13,
       87,
@@ -192,8 +193,8 @@
     "impaginazione - file delle tappe 1 e 2": 76,
     "impaginazione - progetti delle tappe 3 e 4, funzioni, coi salti": [
       54,
-      22,
-      185,
+      23,
+      189,
       296
     ],
     "interprete - errori statici attesi del corpus": 19,
@@ -216,7 +217,7 @@
       1
     ],
     "voci - radici, letture altrove coi parametri": [
-      261,
+      265,
       4
     ]
   }

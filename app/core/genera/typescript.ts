@@ -5,12 +5,12 @@
 // che il C non definisce non si controllano, e il commento in testa lo dice. Solo sintassi che si cancella togliendo i
 // tipi (niente `enum` né `namespace`): il programma resta JavaScript a meno delle annotazioni.
 //
-// Il generatore cresce un gruppo di costrutti per volta. Oggi sa scrivere le tappe 1, 2 e 3: i dati e le costanti dei
+// Il generatore cresce un gruppo di costrutti per volta. Oggi sa scrivere le tappe 1, 2, 3 e 4: i dati e le costanti dei
 // cinque tipi semplici e i vettori, l'assegnazione (anche a un elemento, e la copia di un vettore col nome), la lettura,
 // la scrittura, il commento, `se`, `mentre`, `ripeti`, `per`, `per ogni`, ogni espressione della tappa 1, le procedure e
-// le funzioni senza ricorsione coi loro programmi di prova; per ogni altro costrutto il progetto non si genera, e
-// `nonAncora` dice il primo che trova («la ricorsione», «il record», «la tabella», «la matrice»), dopo gli errori statici
-// come un generatore che si ferma.
+// le funzioni coi loro programmi di prova, la ricorsione; per ogni altro costrutto il progetto non si genera, e
+// `nonAncora` dice il primo che trova («il record», «la tabella», «la matrice»), dopo gli errori statici come un
+// generatore che si ferma.
 //
 // La forma: il nome del progetto e la testa, gli import da Node (`execSync` per `prepara_console`, e da `node:fs` le sole
 // funzioni che leggono e scrivono, isolate in `leggi_riga`, `scrivi` e `fermati`: una pagina nel browser le può
@@ -58,7 +58,15 @@
 // col tipo i nomi del generatore: in testa alla funzione, dopo i dati, come nel C (`_indice` uno per livello, `_valore`
 // uno per tipo libero nell'istruzione, `_sorgente` uno per `per ogni` su una funzione). Il valore restituito che è la
 // chiamata di una funzione che si può fermare si calcola prima in `_valore`: restituito così sarebbe una chiamata in
-// coda, e JavaScriptCore (Bun), che le fa in ogni modulo, toglierebbe la cornice della funzione dalla pila.
+// coda, e JavaScriptCore (Bun), che le fa in ogni modulo, toglierebbe la cornice della funzione dalla pila; così anche la
+// chiamata di una funzione del giro, che al tetto si ferma sulla riga di chi la chiama.
+//
+// La ricorsione come nel Python: la prima riga delle sole funzioni del giro (`funzioniDelGiro`) conta la chiamata col suo
+// spazio (`entra_nella_ricorsione`, lo spazio di `spazioDiUnaChiamata`) e si ferma oltre un tetto; l'ultima la toglie
+// (`esci_dalla_ricorsione`), dopo il valore restituito, calcolato prima in `_valore` se può far partire chiamate del giro
+// (`funzioniVersoIlGiro`). I due contatori stanno a livello del modulo. La riga dell'arresto è quella della chiamata:
+// `fermati(motivo, 1)` salta la cornice della funzione del giro che si ferma e prende quella di chi la chiama (le cornici
+// del programma, non le righe della pila, che in Bun perde quelle delle chiamate in coda).
 //
 // Un arresto scrive «Errore alla riga N: motivo» sullo standard error ed esce con 1: `fermati` trova la riga nella pila
 // delle chiamate (`new Error().stack`), alla prima chiamata dentro `main` o dentro un'altra funzione del programma, come
@@ -75,15 +83,15 @@
 // dall'intervallo degli interi convertito in intero, il dato senza valore, il reale non finito; le ultime cifre di
 // `elevato_a` con un esponente non intero o oltre 1100 sono quelle di `Math.pow`, non quelle dell'interprete.
 
-import { chiamateDellaFunzione, funzioniDelGiro, lunghezzaPredefinita, type Tetti } from "../controllo/controllo";
+import { chiamateDellaFunzione, chiamateIn, funzioniDelGiro, funzioniVersoIlGiro, lunghezzaPredefinita, type Tetti } from "../controllo/controllo";
 import { lunghezzaMassima as lunghezzaMassimaNelNucleo } from "../controllo/lunghezza";
-import { tettoDelleChiamate } from "../controllo/spazio";
+import { spazioDellaPila, spazioDiUnaChiamata, tettoDelleChiamate } from "../controllo/spazio";
 import { analizza, type Espressione } from "../espressioni/analizzatore";
 import { opzioniPredefinite, tipoSemplice, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto, type Tipo, type TipoDelDato } from "../progetto/modello";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import { controlliDegliElementi, genera, parametriDelCaso, posizioni, segnate, type Generato, type Riga } from "./forma";
 import { motiviCol } from "./motivi";
-import { indiceDelLivello, nomeDelRisultato, nomeDellaSorgente, nomeDellElemento, nomeDelValore, nomiDelSupporto, nomiDelSupportoDelTypeScript, type LinguaDelCodice } from "./nomi";
+import { contatoriDellaRicorsione, indiceDelLivello, nomeDelRisultato, nomeDellaSorgente, nomeDellElemento, nomeDelValore, nomiDelSupporto, nomiDelSupportoDelTypeScript, type LinguaDelCodice } from "./nomi";
 import type { NoteDeiDati, Prova } from "./python";
 
 export function typescript(p: Progetto, limiti: Tetti, lingua: LinguaDelCodice, note: NoteDeiDati, prova?: Prova): Generato {
@@ -122,6 +130,7 @@ const supportoInOrdine = [
   "preparaConsole", "fermati", "leggiRiga", "leggiIntero", "leggiReale", "leggiCarattere", "leggiStringa", "leggiBooleano", "dividi",
   "convertiAReale", "elevatoA", "arrotonda", "convertiACarattere", "convertiAVettore", "convertiAStringa", "carattereDi",
   "lunghezza", "confronta", "nellaStringa", "concatenazione", "alPiu", "elementiDiversi", "reale", "booleano", "scrivi",
+  "entraNellaRicorsione", "esciDallaRicorsione",
 ] as const;
 type Supporto = (typeof supportoInOrdine)[number];
 
@@ -147,6 +156,7 @@ const chiama: Partial<Record<Supporto, readonly Supporto[]>> = {
   concatenazione: ["fermati"],
   alPiu: ["lunghezza", "fermati"],
   elementiDiversi: ["fermati"],
+  entraNellaRicorsione: ["fermati"],
 };
 
 /** Gli a capo di una riga di testo: quelli di una fine riga, e i due separatori di Unicode che in JavaScript chiudono un
@@ -222,11 +232,9 @@ function nonAncoraNellEspressione(e: Espressione): string | undefined {
   }
 }
 
-/** Il primo costrutto del progetto che il generatore non sa ancora scrivere, o niente: la ricorsione (le funzioni del
- * giro), il record, la tabella e la matrice, cercati in ogni funzione (il programma di prova di una funzione è quello del
- * suo progetto). */
+/** Il primo costrutto del progetto che il generatore non sa ancora scrivere, o niente: il record, la tabella e la
+ * matrice, cercati in ogni funzione (il programma di prova di una funzione è quello del suo progetto). */
 function nonAncora(p: Progetto): string | undefined {
-  if (funzioniDelGiro(p).size > 0) return "la ricorsione";
   if ((p.records ?? []).length > 0) return "il record";
   for (const f of p.functions) {
     if (f.return_type === "record") return f.return_size === undefined ? "il record" : "la tabella";
@@ -284,7 +292,10 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   /** I dati della funzione che si scrive, con le costanti comuni. */
   let dati = new Map<string, Dato>();
   /** Le funzioni del progetto che possono fermare il programma, per nome: si scrivono prima quelle chiamate. */
-  const fermano = new Map<string, boolean>();
+  // Quelle del giro possono sempre (i tetti della ricorsione), e si sa prima di scriverle: in un giro non si può scrivere
+  // prima chi è chiamato.
+  const delGiro = funzioniDelGiro(p);
+  const fermano = new Map<string, boolean>([...delGiro].map((f) => [f.name!, true]));
   /** Se la funzione che si scrive può fermare il programma. */
   let fermaLaFunzione = false;
 
@@ -416,7 +427,8 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
           ferma = true;
           fermaLaFunzione = true;
         }
-        return chiamata(e.nome, ...argomenti);
+        // Una funzione del giro si ferma al tetto sulla riga di chi la chiama: restituita così, sarebbe in coda.
+        return delGiro.has(perNome.get(e.nome)!) ? { ...chiamata(e.nome, ...argomenti), coda: true } : chiamata(e.nome, ...argomenti);
       }
       case "unario":
         return unario(e.operatore, e.operando);
@@ -867,7 +879,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     livelli = 0;
     temporanee = [];
     sorgenti = [];
-    fermaLaFunzione = false;
+    fermaLaFunzione = delGiro.has(f);
     const parametri = f.data.filter((d) => d.parameter !== undefined);
     // Quelli che la procedura restituisce: per riferimento e per uscita, nell'ordine dei parametri.
     const riferimenti = parametri.filter((d) => d.parameter === "reference" || d.parameter === "out");
@@ -884,27 +896,47 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     const propri = f.data.filter((d) => d.parameter === undefined || d.parameter === "out");
     const dichiarazioni = dichiara(propri, rientro, true, f.kind === "main" ? undefined : f.id);
     for (const b of f.body) blocco(b, 1);
+    // Una funzione del giro conta la chiamata col suo spazio nella prima riga (e si ferma oltre un tetto, sulla riga della
+    // chiamata) e la toglie nell'ultima, dopo il calcolo del valore restituito: se il valore può far partire chiamate del
+    // giro, si calcola prima in `_valore`. Lo spazio è quello del nucleo, mai ricalcolato.
+    const giro = delGiro.has(f);
+    const entrata = giro ? [{ testo: `${rientro}${usa("entraNellaRicorsione")}(${spazioDiUnaChiamata(f, p)});` }] : [];
+    const uscita = () => giro && struttura(`${rientro}${usa("esciDallaRicorsione")}(${spazioDiUnaChiamata(f, p)});`);
     if (f.kind === "function") {
       // Un vettore torna come lista nuova; una stringa col controllo della lunghezza massima del risultato.
       prese.clear();
       const e = albero(f.end.return_value!);
       const verso = { type: f.return_type!, ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}) };
       const x = f.return_size !== undefined ? listaNuova(e, verso) : nelDatoTesto(e, verso);
-      if (x.coda === true) {
+      if (giro && chiamaIlGiro(e)) {
+        const v = temporanea(annotazioneDelRisultato(f));
+        corpo.push({ testo: `${rientro}${v} = ${x.t};`, blocco: f.end.id });
+        uscita();
+        corpo.push({ testo: `${rientro}return ${v};`, blocco: f.end.id });
+      } else if (x.coda === true) {
+        uscita();
         const v = temporanea(annotazioneDelRisultato(f));
         corpo.push({ testo: `${rientro}${v} = ${x.t};`, blocco: f.end.id }, { testo: `${rientro}return ${v};`, blocco: f.end.id });
-      } else corpo.push({ testo: `${rientro}return ${x.t};`, blocco: f.end.id });
+      } else {
+        uscita();
+        corpo.push({ testo: `${rientro}return ${x.t};`, blocco: f.end.id });
+      }
     } else if (riferimenti.length > 0) {
+      uscita();
       const nomiDeiRiferimenti = riferimenti.map((d) => d.name);
       corpo.push({ testo: `${rientro}return ${nomiDeiRiferimenti.length === 1 ? nomiDeiRiferimenti[0] : `[${nomiDeiRiferimenti.join(", ")}]`};`, blocco: f.end.id });
-    }
+    } else uscita();
     const delGeneratore: Riga[] = [
       ...Array.from({ length: livelli }, (_, k) => ({ testo: `${rientro}let ${indiceDelLivello(lingua, k + 1)}: number;` })),
       ...[...temporanee, ...sorgenti].map((x) => ({ testo: `${rientro}let ${x.nome}: ${x.tipo};` })),
     ];
     if (f.name !== undefined) fermano.set(f.name, fermaLaFunzione);
-    return [{ testo: intestazione }, ...copie, ...dichiarazioni, ...delGeneratore, ...corpo, { testo: "}" }];
+    return [{ testo: intestazione }, ...entrata, ...copie, ...dichiarazioni, ...delGeneratore, ...corpo, { testo: "}" }];
   }
+
+  /** Se un'espressione può far partire chiamate del giro: chiama una funzione del giro, o una da cui ci si arriva. */
+  const versoIlGiro = funzioniVersoIlGiro(p);
+  const chiamaIlGiro = (e: Espressione) => chiamateIn(e).some((nome) => versoIlGiro.has(perNome.get(nome)!));
 
   /** Il programma principale del programma di prova, come nel Python: legge i parametri (con la provenienza della
    * funzione), chiama, scrive ciò che scrive l'esecuzione. Un parametro per uscita non si legge né si passa: è dichiarato
@@ -932,17 +964,20 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     const parametri = f.data.filter((d) => d.parameter !== undefined);
     const riferimenti = parametri.filter((d) => d.parameter === "reference" || d.parameter === "out");
     const chiamataDiF = `${f.name}(${parametri.filter((d) => d.parameter !== "out").map((d) => d.name).join(", ")})`;
-    const scrivi = (testo: string) => righe.push({ testo: `${rientro}${usa("scrivi")}(\`${testo}\\n\`);` });
+    // La prima chiamata di una funzione del giro si può fermare per lo spazio: la riga che la chiama ha la provenienza
+    // della funzione, come le letture dei parametri (l'esecuzione si ferma lì).
+    const delCaso = delGiro.has(f) ? { blocco: f.id } : {};
+    const scrivi = (testo: string, conLaChiamata = false) => righe.push({ testo: `${rientro}${usa("scrivi")}(\`${testo}\\n\`);`, ...(conLaChiamata ? delCaso : {}) });
     if (f.kind === "function" && f.return_size !== undefined) {
       // La funzione si chiama una volta, poi una riga per elemento: se si ferma, nulla è scritto.
       const nome = nomeDelRisultato[lingua];
-      righe.push({ testo: `${rientro}let ${nome}: ${annotazioneDelRisultato(f)} = ${chiamataDiF};` });
+      righe.push({ testo: `${rientro}let ${nome}: ${annotazioneDelRisultato(f)} = ${chiamataDiF};`, ...delCaso });
       for (const k of posizioni(f.return_size, undefined)) scrivi(`→ ${k} = ${comeScritto(`${nome}${k}`, tipoSemplice(f.return_type!))}`);
-    } else if (f.kind === "function") scrivi(`→ ${comeScritto(chiamataDiF, tipoSemplice(f.return_type!))}`);
-    else if (riferimenti.length === 0) righe.push({ testo: `${rientro}${chiamataDiF};` });
+    } else if (f.kind === "function") scrivi(`→ ${comeScritto(chiamataDiF, tipoSemplice(f.return_type!))}`, true);
+    else if (riferimenti.length === 0) righe.push({ testo: `${rientro}${chiamataDiF};`, ...delCaso });
     else {
       const nomiDeiRiferimenti = riferimenti.map((d) => d.name);
-      righe.push({ testo: `${rientro}${nomiDeiRiferimenti.length === 1 ? nomiDeiRiferimenti[0] : `[${nomiDeiRiferimenti.join(", ")}]`} = ${chiamataDiF};` });
+      righe.push({ testo: `${rientro}${nomiDeiRiferimenti.length === 1 ? nomiDeiRiferimenti[0] : `[${nomiDeiRiferimenti.join(", ")}]`} = ${chiamataDiF};`, ...delCaso });
       scrivi("");
       for (const d of riferimenti) {
         const pezzi: [string, TipoDelDato][] = d.size === undefined ? [[d.name, d.type]] : posizioni(d.size, undefined).map((k) => [`${d.name}${k}`, d.type]);
@@ -954,8 +989,8 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   }
 
   // Le funzioni del programma: tutte, anche quelle che nessuno chiama ancora (si vedono nel codice come nello
-  // pseudocodice), o nel programma di prova quella eseguita da sola con quelle che chiama. Si scrivono prima le chiamate
-  // (la ricorsione è fuori tappa), per sapere quali possono fermare il programma.
+  // pseudocodice), o nel programma di prova quella eseguita da sola con quelle che chiama. Si scrivono prima le chiamate,
+  // per sapere quali possono fermare il programma (in un giro no: quelle del giro si sa già che possono).
   const radice = prova === undefined ? main : p.functions.find((f) => f.id === prova.funzione)!;
   const chiamate = (f: Funzione) => [...new Set(chiamateDellaFunzione(f).flatMap((c) => c.nomi))].map((x) => perNome.get(x)!);
   const inOrdine: Funzione[] = [];
@@ -1010,7 +1045,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   const funzioni = supportoInOrdine.filter((f) => usate.has(f));
   if (funzioni.length > 0) {
     righe.push({ testo: "" }, { testo: "" }, { testo: `// ${w.supporto}` });
-    for (const f of funzioni) righe.push({ testo: "" }, { testo: "" }, ...funzione(f, lingua, nomi, decimali, riempimento, tetto, risale).map((testo) => ({ testo })));
+    for (const f of funzioni) righe.push({ testo: "" }, { testo: "" }, ...funzione(f, lingua, nomi, decimali, riempimento, tetto, risale, usate.has("entraNellaRicorsione")).map((testo) => ({ testo })));
   }
   righe.push({ testo: "" }, { testo: "" }, { testo: "main();" });
   return righe;
@@ -1044,6 +1079,8 @@ const spiegazioni: Readonly<Record<LinguaDelCodice, Readonly<Record<Exclude<Supp
     elementiDiversi: "Gli elementi di un vettore passati per riferimento nella stessa chiamata devono essere diversi.",
     booleano: "Un booleano come lo scrive il flowchart: true o false.",
     scrivi: "Scrive il testo sullo standard output.",
+    entraNellaRicorsione: "Una chiamata in più di una funzione che richiama sé stessa, con i suoi dati: oltre {tetto} chiamate in corso, o oltre {spazio} byte, si ferma sulla riga della chiamata.",
+    esciDallaRicorsione: "La chiamata è finita: i suoi dati lasciano la pila.",
   },
   en: {
     preparaConsole: "The Windows console in UTF-8 for input and output, as C does (Node leaves it in the code page of the system).",
@@ -1069,6 +1106,8 @@ const spiegazioni: Readonly<Record<LinguaDelCodice, Readonly<Record<Exclude<Supp
     elementiDiversi: "The elements of an array passed by reference in the same call must be different.",
     booleano: "A boolean as the flowchart writes it: true or false.",
     scrivi: "Writes the text to the standard output.",
+    entraNellaRicorsione: "One more call of a function that calls itself, with its data: beyond {tetto} calls in progress, or beyond {spazio} bytes, stops at the line of the call.",
+    esciDallaRicorsione: "The call has ended: its data leave the stack.",
   },
 };
 
@@ -1078,7 +1117,7 @@ const interni = {
     motivo: "motivo", riga: "riga", chiamata: "chiamata", trovata: "trovata", errore: "Errore alla riga", letti: "letti",
     cifre: "cifre", testo: "testo", bit: "bit", alto: "alto", esponente: "esponente", numeratore: "numeratore",
     denominatore: "denominatore", resto: "resto", bitDi: "bit_di", dueAlla: "due_alla", arrotondato: "arrotondato",
-    ultimo: "ultimo", meta: "meta", indici: "indici",
+    ultimo: "ultimo", meta: "meta", indici: "indici", spazio: "spazio", cornice: "cornice",
     nonBloccante: "Un input non bloccante senza dati si riprova; la fine di un tubo di Windows è la fine dell'input.",
     quantiBit: "Quanti bit ha l'intero.",
     dueAllaE: "2^e, per e fra -1074 e 1023, costruito dai bit.",
@@ -1091,7 +1130,7 @@ const interni = {
     motivo: "reason", riga: "line", chiamata: "call", trovata: "found", errore: "Error at line", letti: "bytes",
     cifre: "digits", testo: "text", bit: "bits", alto: "high", esponente: "exponent", numeratore: "numerator",
     denominatore: "denominator", resto: "rest", bitDi: "bit_count", dueAlla: "two_to", arrotondato: "rounded",
-    ultimo: "last", meta: "half", indici: "indices",
+    ultimo: "last", meta: "half", indici: "indices", spazio: "space", cornice: "frame",
     nonBloccante: "A non-blocking input without data is retried; the end of a Windows pipe is the end of the input.",
     quantiBit: "How many bits the integer has.",
     dueAllaE: "2^e, for e between -1074 and 1023, built from the bits.",
@@ -1103,12 +1142,15 @@ const interni = {
 } as const;
 
 /** Il testo di una funzione di supporto: la spiegazione, la firma, il corpo. `risale`, le funzioni del programma fino a
- * cui `fermati` cerca la riga (senza procedure né funzioni, il solo `main`). */
-function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Supporto, string>>, decimali: number, riempimento: number, tetto: number, risale: readonly string[] | undefined): string[] {
+ * cui `fermati` cerca la riga (senza procedure né funzioni, il solo `main`); `ricorsione`, se il programma ha funzioni del
+ * giro: allora `fermati` sa saltare un numero dato di cornici del programma. */
+function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Supporto, string>>, decimali: number, riempimento: number, tetto: number, risale: readonly string[] | undefined, ricorsione: boolean): string[] {
   const k = interni[lingua];
   const m = motiviCol(tetto)[lingua];
   const ferma = (motivo: string) => `${n.fermati}("${motivo}")`;
-  const s = (x: Exclude<Supporto, "reale" | "convertiAVettore">) => `/** ${spiegazioni[lingua][x]} */`;
+  // Il tetto e lo spazio si riempiono qui, non dove i testi nascono: il modulo si carica dentro un ciclo d'import, come
+  // il Python.
+  const s = (x: Exclude<Supporto, "reale" | "convertiAVettore">) => `/** ${spiegazioni[lingua][x].split("{tetto}").join(String(tetto)).split("{spazio}").join(String(spazioDellaPila))} */`;
   /** Una lettura: la riga, la condizione che la rifiuta, il valore. */
   const lettura = (x: "leggiIntero" | "leggiReale" | "leggiCarattere" | "leggiStringa" | "leggiBooleano", firma: string, rifiuta: string, valore: string) => [
     s(x),
@@ -1132,14 +1174,18 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
       // La cornice di una funzione del programma: `at nome (percorso:riga:colonna)` in Node e in Bun (misurato); una
       // cornice nativa di Bun (`at map (native:1:11)`, dentro il `map` di un vettore coi controlli) non lo è mai, anche se
       // una funzione del programma ha quel nome.
+      // Con la ricorsione, `cornice` dice quante cornici del programma saltare (0 per difetto): `entra_nella_ricorsione`
+      // salta quella della funzione del giro e prende quella di chi la chiama, come `fermati(motivo, 3)` del Python. Si
+      // contano le cornici del programma, non le righe della pila: Bun perde quelle delle chiamate in coda.
       const cornice = risale === undefined ? "at main \\(" : `at (?:${risale.join("|")}) \\((?!native:)`;
       return [
         s(f),
-        `function ${n.fermati}(${k.motivo}: string): never {`,
+        `function ${n.fermati}(${k.motivo}: string${ricorsione ? `, ${k.cornice}: number = 0` : ""}): never {`,
         `  let ${k.riga} = "?";`,
         `  for (const ${k.chiamata} of (new Error().stack ?? "").split("\\n")) {`,
         `    const ${k.trovata} = /^\\s*${cornice}.*:(\\d+):\\d+\\)$/.exec(${k.chiamata});`,
         `    if (${k.trovata} !== null) {`,
+        ...(ricorsione ? [`      if (${k.cornice} > 0) {`, `        ${k.cornice}--;`, "        continue;", "      }"] : []),
         `      ${k.riga} = ${k.trovata}[1];`,
         "      break;",
         "    }",
@@ -1354,5 +1400,27 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
       return [s(f), `function ${n.booleano}(b: boolean): string {`, '  return b ? "true" : "false";', "}"];
     case "scrivi":
       return [s(f), `function ${n.scrivi}(${k.testo}: string): void {`, `  writeSync(1, ${k.testo});`, "}"];
+    case "entraNellaRicorsione": {
+      // I contatori stanno sopra, a livello del modulo; `fermati` scrive la riga di chi ha chiamato la funzione del giro
+      // (salta una cornice del programma: quella della funzione del giro).
+      const c = contatoriDellaRicorsione[lingua];
+      return [
+        `let ${c.chiamate} = 0;`,
+        `let ${c.spazio} = 0;`,
+        "",
+        "",
+        s(f),
+        `function ${n.entraNellaRicorsione}(${k.spazio}: number): void {`,
+        `  ${c.chiamate} += 1;`,
+        `  ${c.spazio} += ${k.spazio};`,
+        `  if (${c.chiamate} > ${tetto}) ${n.fermati}("${m.recursion_too_deep}", 1);`,
+        `  if (${c.spazio} > ${spazioDellaPila}) ${n.fermati}("${m.recursion_data_too_large}", 1);`,
+        "}",
+      ];
+    }
+    case "esciDallaRicorsione": {
+      const c = contatoriDellaRicorsione[lingua];
+      return [s(f), `function ${n.esciDallaRicorsione}(${k.spazio}: number): void {`, `  ${c.chiamate} -= 1;`, `  ${c.spazio} -= ${k.spazio};`, "}"];
+    }
   }
 }
