@@ -42,7 +42,7 @@ const titoloDelSupporto: Record<Lingua, string> = {
 
 /** Le funzioni di supporto, nell'ordine in cui il programma le scrive. */
 export const ordineDelSupporto = [
-  "fermati", "leggiRiga", "leggiIntero", "leggiReale", "leggiCarattere", "leggiStringa", "leggiBooleano", "dividi",
+  "preparaConsole", "fermati", "leggiRiga", "leggiIntero", "leggiReale", "leggiCarattere", "leggiStringa", "leggiBooleano", "dividi",
   "convertiAReale", "elevatoA", "arrotonda", "convertiACarattere", "convertiAVettore", "convertiAStringa", "carattereDi",
   "lunghezza", "confronta", "nellaStringa", "concatenazione", "alPiu", "reale", "booleano", "scrivi",
 ] as const;
@@ -51,7 +51,7 @@ export type Supporto = (typeof ordineDelSupporto)[number];
 /** I nomi delle funzioni di supporto nelle due lingue: `{chiave}` in una riga attesa diventa il nome. */
 const nomi: Record<Lingua, Record<Supporto, string>> = {
   it: {
-    fermati: "fermati", leggiRiga: "leggi_riga", leggiIntero: "leggi_intero", leggiReale: "leggi_reale",
+    preparaConsole: "prepara_console", fermati: "fermati", leggiRiga: "leggi_riga", leggiIntero: "leggi_intero", leggiReale: "leggi_reale",
     leggiCarattere: "leggi_carattere", leggiStringa: "leggi_stringa", leggiBooleano: "leggi_booleano", dividi: "dividi",
     convertiAReale: "converti_a_reale", elevatoA: "elevato_a", arrotonda: "arrotonda", convertiACarattere: "converti_a_carattere",
     convertiAVettore: "converti_a_vettore", convertiAStringa: "converti_a_stringa", carattereDi: "carattere_di",
@@ -59,7 +59,7 @@ const nomi: Record<Lingua, Record<Supporto, string>> = {
     reale: "reale", booleano: "booleano", scrivi: "scrivi",
   },
   en: {
-    fermati: "halt", leggiRiga: "read_line", leggiIntero: "read_integer", leggiReale: "read_real",
+    preparaConsole: "prepare_console", fermati: "halt", leggiRiga: "read_line", leggiIntero: "read_integer", leggiReale: "read_real",
     leggiCarattere: "read_character", leggiStringa: "read_string", leggiBooleano: "read_boolean", dividi: "divide",
     convertiAReale: "to_real", elevatoA: "raised_to", arrotonda: "round", convertiACarattere: "to_character",
     convertiAVettore: "to_array", convertiAStringa: "to_string", carattereDi: "character_at", lunghezza: "length",
@@ -74,6 +74,12 @@ const riempi = (l: Lingua, riga: string) => riga.replace(/\{(\w+)\}/g, (tutto, k
 
 const supporto: Record<Lingua, Record<Supporto, readonly string[]>> = {
   it: {
+    preparaConsole: [
+      "/** La console di Windows in UTF-8 in entrata e in uscita, come fa il C (Node la lascia nella code page del sistema). */",
+      "function prepara_console(): void {",
+      '  if (process.platform === "win32" && (process.stdin.isTTY || process.stdout.isTTY || process.stderr.isTTY)) execSync("chcp 65001", { stdio: "ignore" });',
+      "}",
+    ],
     fermati: [
       "/** Scrive il motivo e la riga del programma che lo ha incontrato, poi si ferma. */",
       "function fermati(motivo: string): never {",
@@ -341,6 +347,12 @@ const supporto: Record<Lingua, Record<Supporto, readonly string[]>> = {
     ],
   },
   en: {
+    preparaConsole: [
+      "/** The Windows console in UTF-8 for input and output, as C does (Node leaves it in the code page of the system). */",
+      "function prepare_console(): void {",
+      '  if (process.platform === "win32" && (process.stdin.isTTY || process.stdout.isTTY || process.stderr.isTTY)) execSync("chcp 65001", { stdio: "ignore" });',
+      "}",
+    ],
     fermati: [
       "/** Writes the reason and the line of the program that met it, then stops. */",
       "function halt(reason: string): never {",
@@ -626,23 +638,30 @@ const chiama: Partial<Record<Supporto, readonly Supporto[]>> = {
   alPiu: ["lunghezza", "fermati"],
 };
 
-/** Un programma intero: la testa col nome, l'import di ciò che legge e scrive, le costanti comuni, il programma
- * principale (le righe con `{chiave}` per i nomi delle funzioni di supporto), le funzioni di supporto usate con quelle
- * che chiamano, nell'ordine fisso, e la chiamata di `main`. */
+/** Un programma intero: la testa col nome, gli import di ciò che legge e scrive, le costanti comuni, il programma
+ * principale (le righe con `{chiave}` per i nomi delle funzioni di supporto; un programma che legge, scrive o si ferma
+ * prepara la console nella prima riga di `main`), le funzioni di supporto usate con quelle che chiamano, nell'ordine
+ * fisso, e la chiamata di `main`. */
 export function programma(l: Lingua, nome: string, principale: readonly string[], usate: readonly Supporto[], costanti: readonly string[] = []): string {
   const tutte = new Set<Supporto>(usate);
   for (const f of [...tutte]) for (const g of chiama[f] ?? []) tutte.add(g);
+  const conLaConsole = tutte.has("leggiRiga") || tutte.has("scrivi") || tutte.has("fermati");
+  if (conLaConsole) tutte.add("preparaConsole");
   const inOrdine = ordineDelSupporto.filter((f) => tutte.has(f));
   const funzioni = inOrdine.flatMap((s, i) => [...(i === 0 ? [] : ["", ""]), ...supporto[l][s]]);
   const letti = [...(tutte.has("leggiRiga") ? ["readSync"] : []), ...(tutte.has("scrivi") || tutte.has("fermati") ? ["writeSync"] : [])];
+  const [prima, ...resto] = principale;
   return testo(
     `// ${nome}`,
     ...testa[l],
+    ...(conLaConsole ? ['import { execSync } from "node:child_process";'] : []),
     ...(letti.length === 0 ? [] : [`import { ${letti.join(", ")} } from "node:fs";`]),
     ...(costanti.length === 0 ? [] : ["", l === "it" ? "// Costanti comuni" : "// Shared constants", ...costanti]),
     "",
     "",
-    ...principale.map((r) => riempi(l, r)),
+    prima!,
+    ...(conLaConsole ? [`  ${nomi[l].preparaConsole}();`] : []),
+    ...resto.map((r) => riempi(l, r)),
     ...(inOrdine.length === 0 ? [] : ["", "", titoloDelSupporto[l], "", "", ...funzioni]),
     "",
     "",
@@ -825,13 +844,14 @@ export const formeDelloScheletroAttese: Atteso = inDueLingue(formeDelloScheletro
 /** Le provenienze delle righe di «forme dello scheletro» fino alla fine di `main`: il blocco, `=dato` per una
  * dichiarazione, vuoto per una riga di struttura. Le righe dopo `main` non ne hanno. */
 export const provenienzeDelloScheletro: readonly string[] = [
-  ...Array(testa.it.length + 2).fill(""), // il nome, la testa, l'import
+  ...Array(testa.it.length + 3).fill(""), // il nome, la testa, i due import
   "", // la riga vuota
   "", // «Costanti comuni»
   "=MASSIMO",
   "",
   "",
   "", // function main
+  "", // la console preparata
   "=a",
   "=b",
   "=N",

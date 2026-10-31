@@ -269,14 +269,15 @@ export const paroleDiPython = (
 // Il TypeScript ha in più la funzione che scrive sullo standard output (con `leggi_riga` e `fermati`, le sole che leggono
 // `node:fs`, che una pagina nel browser può sostituire), l'intero che diventa reale (lo zero intero di JavaScript può avere
 // il segno), la lunghezza e il confronto d'ordine per codici dei caratteri (`length` e `<` di JavaScript contano le unità
-// UTF-16). La lunghezza ha il nome di quella del C.
+// UTF-16), e la console di Windows messa in UTF-8 all'avvio (Node la lascia nella code page del sistema). La lunghezza e
+// la console hanno i nomi del C.
 
-export const funzioniDelTypeScript = ["convertiAReale", "lunghezza", "confronta", "scrivi"] as const;
+export const funzioniDelTypeScript = ["preparaConsole", "convertiAReale", "lunghezza", "confronta", "scrivi"] as const;
 export type FunzioneDelTypeScript = (typeof funzioniDelTypeScript)[number];
 
 export const nomiDelSupportoDelTypeScript: Readonly<Record<LinguaDelCodice, Readonly<Record<FunzioneDelTypeScript, string>>>> = {
-  it: { convertiAReale: "converti_a_reale", lunghezza: "lunghezza", confronta: "confronta", scrivi: "scrivi" },
-  en: { convertiAReale: "to_real", lunghezza: "length", confronta: "compare", scrivi: "write" },
+  it: { preparaConsole: "prepara_console", convertiAReale: "converti_a_reale", lunghezza: "lunghezza", confronta: "confronta", scrivi: "scrivi" },
+  en: { preparaConsole: "prepare_console", convertiAReale: "to_real", lunghezza: "length", confronta: "compare", scrivi: "write" },
 };
 
 /** Le parole riservate di JavaScript in un modulo, che è sempre in modo stretto (misurate con Node 24 e `tsc` 7: un dato
@@ -291,7 +292,7 @@ export const paroleDiTypeScript = (
 /** I nomi che il TypeScript generato legge: `main`, i globali e ciò che importa da `node:fs`. */
 export const nomiDiTypeScript = [
   "main", "String", "Math", "Number", "Array", "Uint8Array", "DataView", "ArrayBuffer", "BigInt", "TextDecoder", "Error",
-  "Infinity", "process", "readSync", "writeSync",
+  "Infinity", "process", "readSync", "writeSync", "execSync",
 ] as const;
 
 /** I nomi comuni al Python e al C generati, in ogni lingua: le funzioni di supporto e i contatori della ricorsione. */
