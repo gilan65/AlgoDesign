@@ -9,7 +9,8 @@
 // vettori, le conversioni, gli arrotondamenti e la potenza, le cinque letture, il `ripeti`, il ramo e il ciclo vuoti, la
 // scrittura spezzata, la concatenazione col carattere 0 dopo il lato destro); della tappa 2 il `per` del corpus, il `per
 // ogni` su una stringa, la parola al contrario, e un programma con le forme della tappa 2 (il passo negativo, il `per`
-// senza giri, il `per ogni` dentro un altro, l'elemento stringa da `al_piu`, gli indici nascosti dichiarati). Le funzioni di supporto sono scritte qui
+// senza giri, il `per ogni` dentro un altro, l'elemento stringa da `al_piu`, gli indici nascosti dichiarati); della tappa
+// 4 la torre di Hanoi e il giro attraverso una funzione (il valore del giro e la chiamata in coda in `_valore`). Le funzioni di supporto sono scritte qui
 // una volta per lingua e messe in coda a ogni programma che le usa, nell'ordine fisso. Le righe allineate dicono a mano
 // quanti spazi vanno prima del commento.
 import type { Progetto } from "../../core/progetto/modello";
@@ -47,6 +48,7 @@ export const ordineDelSupporto = [
   "preparaConsole", "fermati", "leggiRiga", "leggiIntero", "leggiReale", "leggiCarattere", "leggiStringa", "leggiBooleano", "dividi",
   "convertiAReale", "elevatoA", "arrotonda", "convertiACarattere", "convertiAVettore", "convertiAStringa", "carattereDi",
   "lunghezza", "confronta", "nellaStringa", "concatenazione", "alPiu", "elementiDiversi", "reale", "booleano", "scrivi",
+  "entraNellaRicorsione", "esciDallaRicorsione",
 ] as const;
 export type Supporto = (typeof ordineDelSupporto)[number];
 
@@ -59,6 +61,7 @@ const nomi: Record<Lingua, Record<Supporto, string>> = {
     convertiAVettore: "converti_a_vettore", convertiAStringa: "converti_a_stringa", carattereDi: "carattere_di",
     lunghezza: "lunghezza", confronta: "confronta", nellaStringa: "nella_stringa", concatenazione: "concatena", alPiu: "al_piu",
     elementiDiversi: "elementi_diversi", reale: "reale", booleano: "booleano", scrivi: "scrivi",
+    entraNellaRicorsione: "entra_nella_ricorsione", esciDallaRicorsione: "esci_dalla_ricorsione",
   },
   en: {
     preparaConsole: "prepare_console", fermati: "halt", leggiRiga: "read_line", leggiIntero: "read_integer", leggiReale: "read_real",
@@ -67,6 +70,7 @@ const nomi: Record<Lingua, Record<Supporto, string>> = {
     convertiAVettore: "to_array", convertiAStringa: "to_string", carattereDi: "character_at", lunghezza: "length",
     confronta: "compare", nellaStringa: "into_string", concatenazione: "concatenate", alPiu: "at_most",
     elementiDiversi: "distinct_elements", reale: "real", booleano: "boolean", scrivi: "write",
+    entraNellaRicorsione: "enter_recursion", esciDallaRicorsione: "leave_recursion",
   },
 };
 
@@ -353,6 +357,26 @@ const supporto: Record<Lingua, Record<Supporto, readonly string[]>> = {
       "  writeSync(1, testo);",
       "}",
     ],
+    entraNellaRicorsione: [
+      "let chiamate_in_corso = 0;",
+      "let spazio_in_uso = 0;",
+      "",
+      "",
+      "/** Una chiamata in più di una funzione che richiama sé stessa, con i suoi dati: oltre 500 chiamate in corso, o oltre 262144 byte, si ferma sulla riga della chiamata. */",
+      "function entra_nella_ricorsione(spazio: number): void {",
+      "  chiamate_in_corso += 1;",
+      "  spazio_in_uso += spazio;",
+      '  if (chiamate_in_corso > 500) fermati("La procedura o la funzione è stata richiamata 500 volte, e nessuna è finita.", 1);',
+      '  if (spazio_in_uso > 262144) fermati("I dati delle chiamate in corso non stanno più nella pila.", 1);',
+      "}",
+    ],
+    esciDallaRicorsione: [
+      "/** La chiamata è finita: i suoi dati lasciano la pila. */",
+      "function esci_dalla_ricorsione(spazio: number): void {",
+      "  chiamate_in_corso -= 1;",
+      "  spazio_in_uso -= spazio;",
+      "}",
+    ],
   },
   en: {
     preparaConsole: [
@@ -632,6 +656,26 @@ const supporto: Record<Lingua, Record<Supporto, readonly string[]>> = {
       "  writeSync(1, text);",
       "}",
     ],
+    entraNellaRicorsione: [
+      "let calls_in_progress = 0;",
+      "let space_in_use = 0;",
+      "",
+      "",
+      "/** One more call of a function that calls itself, with its data: beyond 500 calls in progress, or beyond 262144 bytes, stops at the line of the call. */",
+      "function enter_recursion(space: number): void {",
+      "  calls_in_progress += 1;",
+      "  space_in_use += space;",
+      '  if (calls_in_progress > 500) halt("The procedure or function has been called 500 times without any call ending.", 1);',
+      '  if (space_in_use > 262144) halt("The data of the calls in progress no longer fit on the stack.", 1);',
+      "}",
+    ],
+    esciDallaRicorsione: [
+      "/** The call has ended: its data leave the stack. */",
+      "function leave_recursion(space: number): void {",
+      "  calls_in_progress -= 1;",
+      "  space_in_use -= space;",
+      "}",
+    ],
   },
 };
 
@@ -651,6 +695,7 @@ const chiama: Partial<Record<Supporto, readonly Supporto[]>> = {
   concatenazione: ["fermati"],
   alPiu: ["lunghezza", "fermati"],
   elementiDiversi: ["fermati"],
+  entraNellaRicorsione: ["fermati"],
 };
 
 /** `fermati` di un programma con procedure o funzioni: la riga è quella della prima cornice di una funzione del programma
@@ -658,6 +703,17 @@ const chiama: Partial<Record<Supporto, readonly Supporto[]>> = {
  * (`at map (native:1:11)`) non lo è mai. */
 const fermatiCheRisale = (l: Lingua, delProgramma: readonly string[]): readonly string[] =>
   supporto[l].fermati.map((r) => r.replace("at main \\(", `at (?:${["main", ...delProgramma].join("|")}) \\((?!native:)`));
+
+/** `fermati` di un programma con la ricorsione: salta le prime `cornice` cornici del programma (0 per difetto), come
+ * `fermati(motivo, 3)` del Python che parte da una cornice data. */
+const fermatiDelGiro = (l: Lingua, delProgramma: readonly string[]): readonly string[] => {
+  const [cornice, riga, trovata] = l === "it" ? ["cornice", "riga", "trovata"] : ["frame", "line", "found"];
+  return fermatiCheRisale(l, delProgramma).flatMap((r) =>
+    r.endsWith("(motivo: string): never {") || r.endsWith("(reason: string): never {") ? [r.replace("): never {", `, ${cornice}: number = 0): never {`)]
+    : r === `      ${riga} = ${trovata}[1];` ? [`      if (${cornice} > 0) {`, `        ${cornice}--;`, "        continue;", "      }", r]
+    : [r],
+  );
+};
 
 /** Un programma intero: la testa col nome, gli import di ciò che legge e scrive, le costanti comuni, il programma
  * principale (le righe con `{chiave}` per i nomi delle funzioni di supporto; un programma che legge, scrive o si ferma
@@ -677,7 +733,10 @@ export function programma(
   const conLaConsole = tutte.has("leggiRiga") || tutte.has("scrivi") || tutte.has("fermati");
   if (conLaConsole) tutte.add("preparaConsole");
   const inOrdine = ordineDelSupporto.filter((f) => tutte.has(f));
-  const testoDi = (s: Supporto) => (s === "fermati" && delProgramma.length > 0 ? fermatiCheRisale(l, delProgramma.map((f) => f.nome)) : supporto[l][s]);
+  const testoDi = (s: Supporto) =>
+    s !== "fermati" || delProgramma.length === 0 ? supporto[l][s]
+    : tutte.has("entraNellaRicorsione") ? fermatiDelGiro(l, delProgramma.map((f) => f.nome))
+    : fermatiCheRisale(l, delProgramma.map((f) => f.nome));
   const funzioni = inOrdine.flatMap((s, i) => [...(i === 0 ? [] : ["", ""]), ...testoDi(s)]);
   const letti = [...(tutte.has("leggiRiga") ? ["readSync"] : []), ...(tutte.has("scrivi") || tutte.has("fermati") ? ["writeSync"] : [])];
   const [prima, ...resto] = principale;
@@ -1186,6 +1245,85 @@ export const delleProve: Readonly<Record<string, { readonly funzione: string; re
   },
 };
 
+// La tappa 4: la ricorsione come il Python, dal suo generato letto prima.
+const ricorsione: readonly Supporto[] = ["entraNellaRicorsione", "esciDallaRicorsione"];
+
+/** La torre di Hanoi: una procedura del giro, la prima riga che entra e l'ultima che esce. */
+const hanoi = (l: Lingua) =>
+  programma(
+    l,
+    "hanoi",
+    ["function main(): void {", "  let n!: number;", "  n = {leggiIntero}();", "  sposta(n, 'A', 'C', 'B');", "}"],
+    ["leggiIntero", "scrivi", ...ricorsione],
+    [],
+    [
+      {
+        nome: "sposta",
+        righe: [
+          "function sposta(n: number, origine: string, destinazione: string, appoggio: string): void {",
+          "  {entraNellaRicorsione}(16);",
+          "  if (n > 0) {",
+          "    sposta(n - 1, origine, appoggio, destinazione);",
+          "    {scrivi}(`disco ${n} da ${origine} a ${destinazione}\\n`);",
+          "    sposta(n - 1, appoggio, destinazione, origine);",
+          "  }",
+          "  {esciDallaRicorsione}(16);",
+          "}",
+        ],
+      },
+    ],
+  );
+
+/** Il valore restituito che fa partire chiamate del giro, in `_valore` prima dell'uscita; e la funzione fuori dal giro che
+ * restituisce una funzione del giro, in `_valore` (in coda, Bun ne toglierebbe la cornice). */
+const giroAttraversoUnaFunzione = (l: Lingua) => {
+  const V = valore(l);
+  return programma(
+    l,
+    "giro-attraverso-una-funzione",
+    ["function main(): void {", "  let k!: number;", "  let r!: number;", "  k = {leggiIntero}();", "  r = esterna(k);", "  {scrivi}(`${r}\\n`);", "}"],
+    ["leggiIntero", "scrivi", ...ricorsione],
+    [],
+    [
+      {
+        nome: "esterna",
+        righe: [
+          "function esterna(n: number): number {",
+          "  {entraNellaRicorsione}(8);",
+          "  let x!: number;",
+          `  let ${V}: number;`,
+          "  if (n < 0) {",
+          "    x = esterna(n + 1);",
+          "  } else {",
+          "    x = n;",
+          "  }",
+          `  ${V} = aiuto(x);`,
+          "  {esciDallaRicorsione}(8);",
+          `  return ${V};`,
+          "}",
+        ],
+      },
+      { nome: "aiuto", righe: ["function aiuto(m: number): number {", `  let ${V}: number;`, `  ${V} = scendi(m);`, `  return ${V};`, "}"] },
+      {
+        nome: "scendi",
+        righe: [
+          "function scendi(q: number): number {",
+          "  {entraNellaRicorsione}(8);",
+          "  let t!: number;",
+          "  if (q > 0) {",
+          "    t = scendi(q - 1);",
+          "  } else {",
+          "    t = 0;",
+          "  }",
+          "  {esciDallaRicorsione}(8);",
+          "  return t + 1;",
+          "}",
+        ],
+      },
+    ],
+  );
+};
+
 /** I programmi del corpus, per percorso del file (senza `.algo`), nelle due lingue. */
 export const delCorpus: Readonly<Record<string, Atteso>> = {
   "tappa-1/assegnazione-intero": inDueLingue(assegnazioneIntero),
@@ -1203,6 +1341,8 @@ export const delCorpus: Readonly<Record<string, Atteso>> = {
   "tappa-3/ogni-tipo-per-uscita": inDueLingue(ogniTipoPerUscita),
   "tappa-3/risultato-stringa": inDueLingue(risultatoStringa),
   "tappa-3/risultato-vettore-assegnato": inDueLingue(risultatoVettoreAssegnato),
+  "tappa-4/hanoi": inDueLingue(hanoi),
+  "tappa-4/giro-attraverso-una-funzione": inDueLingue(giroAttraversoUnaFunzione),
 };
 
 /** Le forme del primo gruppo di costrutti, in un programma scritto qui. */

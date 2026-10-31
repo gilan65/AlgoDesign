@@ -1,7 +1,7 @@
 // Il TypeScript generato contro gli attesi scritti a mano (`attesi-del-typescript.ts`), la provenienza delle righe (con
 // le fasi dei cicli, anche sul corpus della tappa 2), la guardia dei gruppi di costrutti sul corpus (i progetti che sa
 // scrivere, per nome, e il costrutto che manca a ogni
-// altro), i nomi che il programma chiama. Che il programma generato dia l'output dell'interprete, e che `tsc` non vi trovi
+// altro), il contatore della ricorsione nelle sole funzioni del giro, i nomi che il programma chiama. Che il programma generato dia l'output dell'interprete, e che `tsc` non vi trovi
 // errori, non si prova qui: lo provano il test differenziale (Node e Bun) e il suo controllo dei tipi.
 //
 // Che cosa queste prove NON guardano:
@@ -11,7 +11,10 @@ import { describe, expect, test } from "bun:test";
 import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { controlla, tetti } from "../../core/controllo/controllo";
+import { controlla, funzioniDelGiro, tetti } from "../../core/controllo/controllo";
+import { spazioDiUnaChiamata, tettoDelleChiamate } from "../../core/controllo/spazio";
+import { motiviCol } from "../../core/genera/motivi";
+import { nomiDelSupporto } from "../../core/genera/nomi";
 import { testoDelCodice, type Riga } from "../../core/genera/forma";
 import { voceDel } from "../../core/genera/linguaggi";
 import { typescript } from "../../core/genera/typescript";
@@ -117,7 +120,7 @@ describe("la provenienza delle righe", () => {
 });
 
 describe("i costrutti che sa scrivere", () => {
-  test("si generano tutti e soli i progetti del corpus che sa scrivere (le tappe 1, 2 e 3 intere); ogni altro dice il costrutto che manca", () => {
+  test("si generano tutti e soli i progetti del corpus che sa scrivere (le tappe 1, 2, 3 e 4 intere); ogni altro dice il costrutto che manca", () => {
     // Controllo positivo nel numero: il corpus c'è, e i progetti dello scheletro ne sono una parte.
     expect(corpus.length).toBeGreaterThan(100);
     const generati: string[] = [];
@@ -133,18 +136,19 @@ describe("i costrutti che sa scrivere", () => {
         else throw new Error(`${f}: ${g.perche}`);
       }
     }
-    // Le tappe 1, 2 e 3 del corpus: ogni loro file senza errori statici (controllo positivo nel numero: sono più di 50,
-    // di 10 e di 40).
-    const tappe = corpus.filter((f) => (f.startsWith("tappa-1/") || f.startsWith("tappa-2/") || f.startsWith("tappa-3/")) && (() => {
+    // Le tappe 1, 2, 3 e 4 del corpus: ogni loro file senza errori statici (controllo positivo nel numero: sono più di 50,
+    // di 10, di 40 e di 15).
+    const tappe = corpus.filter((f) => /^tappa-[1-4]\//.test(f) && (() => {
       const c = controlla(leggi(`${f}.algo`), tetti);
       return !c.fuoriTappa && c.errori.length === 0;
     })());
     expect(tappe.filter((f) => f.startsWith("tappa-1/")).length).toBeGreaterThan(50);
     expect(tappe.filter((f) => f.startsWith("tappa-2/")).length).toBeGreaterThan(10);
     expect(tappe.filter((f) => f.startsWith("tappa-3/")).length).toBeGreaterThan(40);
-    // I file fuori dalle tappe 1, 2 e 3 che il generatore sa scrivere (procedure e funzioni senza ricorsione e senza tipi
-    // composti), confermati; ogni file delle tappe 1, 2 e 3 si genera.
-    const fuoriDalleTappe = confermato("genera typescript - generati fuori dalle tappe 1, 2 e 3", [...new Set(generati.map((g) => g.slice(0, g.lastIndexOf(" "))))].filter((f) => !tappe.includes(f)).sort());
+    expect(tappe.filter((f) => f.startsWith("tappa-4/")).length).toBeGreaterThan(15);
+    // I file fuori dalle tappe che il generatore sa scrivere (senza tipi composti), confermati; ogni file delle tappe si
+    // genera.
+    const fuoriDalleTappe = confermato("genera typescript - generati fuori dalle tappe 1, 2, 3 e 4", [...new Set(generati.map((g) => g.slice(0, g.lastIndexOf(" "))))].filter((f) => !tappe.includes(f)).sort());
     expect(generati.sort()).toEqual([...tappe, ...fuoriDalleTappe].flatMap((f) => lingue.map((l) => `${f} ${l}`)).sort());
     expect(nonAncora.size).toBeGreaterThan(40);
     for (const [chi, costrutto] of nonAncora) expect({ chi, costrutto: costrutto.length > 0 }).toEqual({ chi, costrutto: true });
@@ -165,9 +169,9 @@ describe("i costrutti che sa scrivere", () => {
     expect(g.generato ? "generato" : g.perche).toBe("non-ancora");
   });
 
-  test("ogni programma di prova dei casi delle funzioni della tappa 3 si genera, nelle due lingue", () => {
+  test("ogni programma di prova dei casi delle funzioni delle tappe 3 e 4 si genera, nelle due lingue", () => {
     let prove = 0;
-    for (const f of corpus.filter((x) => x.startsWith("tappa-3/"))) {
+    for (const f of corpus.filter((x) => x.startsWith("tappa-3/") || x.startsWith("tappa-4/"))) {
       const p = leggi(`${f}.algo`);
       const c = controlla(p, tetti);
       if (c.fuoriTappa || c.errori.length > 0) continue;
@@ -181,6 +185,46 @@ describe("i costrutti che sa scrivere", () => {
     }
     // Controllo positivo nel numero: la tappa 3 ha casi di funzioni.
     expect(prove).toBeGreaterThan(20);
+  });
+});
+
+describe("la ricorsione", () => {
+  const tappa4 = corpus.filter((f) => f.startsWith("tappa-4/")).map((f) => leggi(`${f}.algo`));
+  test("il contatore solo nelle funzioni del giro, con lo spazio del nucleo, in testa e prima del ritorno", () => {
+    let conGiro = 0;
+    let senzaGiro = 0;
+    for (const p of [...corpus.map((f) => leggi(`${f}.algo`)).filter((q) => typescript(q, tetti, "it", paroleDelloPseudocodice("it")).generato), formeDellaTappa3])
+      for (const l of lingue) {
+        const t = codice(p, l);
+        const n = nomiDelSupporto[l];
+        const delGiro = [...funzioniDelGiro(p)];
+        const spazi = delGiro.map((f) => spazioDiUnaChiamata(f, p)).sort();
+        const righe = (nome: string) => [...t.matchAll(new RegExp(`^  ${nome}\\((\\d+)\\);$`, "gm"))].map((m) => Number(m[1])).sort();
+        expect(righe(n.entraNellaRicorsione), `${p.metadata.name} (${l})`).toEqual(spazi);
+        expect(righe(n.esciDallaRicorsione), `${p.metadata.name} (${l})`).toEqual(spazi);
+        // La prima riga del corpo di ogni funzione del giro.
+        for (const f of delGiro) expect(t, `${p.metadata.name} (${l})`).toMatch(new RegExp(`^function ${f.name}\\(.*\\n  ${n.entraNellaRicorsione}\\(`, "m"));
+        if (delGiro.length > 0) conGiro++;
+        else senzaGiro++;
+      }
+    expect(conGiro).toBe(confermato("genera typescript - programmi col giro, nelle due lingue", conGiro));
+    expect(senzaGiro).toBeGreaterThan(100);
+  });
+
+  test("al tetto, `fermati` salta la cornice della funzione del giro; senza ricorsione non ha il parametro", () => {
+    for (const l of lingue) {
+      const n = nomiDelSupporto[l];
+      const p = leggi("tappa-4/fattoriale.algo");
+      const conGiro = codice(p, l);
+      expect(conGiro).toContain(`${n.fermati}(${l === "it" ? "motivo: string, cornice" : "reason: string, frame"}: number = 0): never {`);
+      const m = motiviCol(tettoDelleChiamate(p))[l];
+      for (const motivo of [m.recursion_too_deep, m.recursion_data_too_large]) expect(conGiro).toContain(`${n.fermati}("${motivo}", 1);`);
+      // Controllo positivo: senza ricorsione, la forma di prima.
+      expect(codice(leggi("tappa-3/riferimento-media-voti-funzioni.algo"), l)).toContain(`${n.fermati}(${l === "it" ? "motivo" : "reason"}: string): never {`);
+    }
+    // Il corpus della tappa 4 c'è, e ogni suo programma ha le due funzioni.
+    expect(tappa4.length).toBeGreaterThan(15);
+    for (const p of tappa4) expect(codice(p, "it"), p.metadata.name).toContain("function esci_dalla_ricorsione(spazio: number): void {");
   });
 });
 
