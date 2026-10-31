@@ -11,6 +11,7 @@
 // - che le funzioni di supporto facciano ciò che dicono, e che il C compili: lo prova la loro esecuzione;
 // - i nomi delle intestazioni del C che il programma non legge (le funzioni della libreria che nessuna regola chiama).
 import { describe, expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { eseguiCaso } from "../../core/casi/esecutore";
@@ -164,9 +165,8 @@ describe("la provenienza delle righe", () => {
       dati += nomi.length;
     }
     // il denominatore: i blocchi e i dati del corpus della tappa 1, contati a parte
-    expect(corpus.length).toBe(60);
-    expect(blocchi).toBe(164);
-    expect(dati).toBe(114);
+    expect(corpus.length).toBe(confermato("genera c - file della tappa 1", corpus.length));
+    expect([blocchi, dati]).toEqual(confermato("genera c - tappa 1 (blocchi, dati)", [blocchi, dati]));
   });
 
   test("riga per riga nel programma principale di «forme dei cicli», con le fasi, uguale nelle due lingue; dopo, nessuna", () => {
@@ -188,9 +188,9 @@ describe("la provenienza delle righe", () => {
     for (const l of lingue) {
       const e = provaIlCorpusDeiCicli(tappa2, (p) => c(p, tetti, l, paroleDelloPseudocodice(l)));
       expect(e.difetti, l).toEqual([]);
-      // il denominatore, contato a parte: 16 file, 3 con l'errore statico atteso; 87 blocchi e 26 cicli negli altri
-      expect(e.rifiutati.sort(), l).toEqual([...rifiutatiDellaTappa2]);
-      expect([e.generati, e.blocchi, e.cicli], l).toEqual([13, 87, 26]);
+      // il denominatore, contato a parte: i file della tappa 2, quelli con l'errore statico atteso, i blocchi e i cicli degli altri
+      expect(e.rifiutati.sort(), l).toEqual(rifiutatiDellaTappa2(tappa2));
+      expect([e.generati, e.blocchi, e.cicli], l).toEqual(confermato("genera c - tappa 2 (generati, blocchi, cicli)", [e.generati, e.blocchi, e.cicli]));
     }
   });
 });
@@ -207,7 +207,7 @@ describe("il progetto che non si genera", () => {
 
 describe("la ricorsione", () => {
   test("ogni file della tappa 4 si genera nelle due lingue", () => {
-    expect(tappa4.length).toBe(22);
+    expect(tappa4.length).toBe(confermato("genera c - file della tappa 4", tappa4.length));
     for (const { f, p } of tappa4) for (const l of lingue) expect(c(p, tetti, l, paroleDelloPseudocodice(l)).generato, `${f} (${l})`).toBe(true);
   });
 
@@ -231,7 +231,7 @@ describe("la ricorsione", () => {
         else senzaGiro++;
       }
     // Il controllo positivo: le due specie ci sono.
-    expect(conGiro).toBe(2 * 22);
+    expect(conGiro).toBe(confermato("genera c - programmi della tappa 4 col giro, nelle due lingue", conGiro));
     expect(senzaGiro).toBeGreaterThan(100);
   });
 
@@ -357,9 +357,8 @@ describe("procedure e funzioni", () => {
       expect([...new Set(righe(p, "it").flatMap((x) => (x.blocco === undefined ? [] : [x.blocco])))].sort(), f).toEqual(attesi.sort());
       blocchi += attesi.length;
     }
-    // il denominatore, contato a parte: 53 file, 7 col solo errore statico atteso; i blocchi e le fini degli altri (65
-    // negli 11 con una stringa o un vettore restituiti)
-    expect([tappa3.length, generati, blocchi]).toEqual([54, 47, 336]);
+    // il denominatore, contato a parte: i file, quelli senza il solo errore statico atteso, i blocchi e le fini degli altri
+    expect([tappa3.length, generati, blocchi]).toEqual(confermato("genera c - tappa 3 (file, generati, blocchi)", [tappa3.length, generati, blocchi]));
   });
 
   test("una funzione che nessuno chiama ancora c'è nel codice, col prototipo e con le righe della sua fine", () => {
@@ -418,8 +417,7 @@ describe("procedure e funzioni", () => {
           for (const l of lingue) expect(c(p, tetti, l, paroleDelloPseudocodice(l), { funzione: f.id, caso: k }).generato, `${file} ${f.name}/${k.name}`).toBe(true);
           prove++;
         }
-    // Undici restituiscono una stringa o un vettore.
-    expect(prove).toBe(26);
+    expect(prove).toBe(confermato("genera c - programmi di prova dei casi delle funzioni", prove));
   });
 });
 

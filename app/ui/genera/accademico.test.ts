@@ -8,6 +8,7 @@
 //   col lettore, di un'altra consegna);
 // - i testi per chi legge le mancanze, che sono dell'interfaccia.
 import { describe, expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tetti } from "../../core/controllo/controllo";
@@ -192,7 +193,9 @@ describe("l'esito di ogni file del corpus", () => {
     const fuori = di("fuori-tappa");
     // nessun file ha due esiti, nessuno resta fuori
     expect(codice.length + statici.length + nonCiSta.length + fuori.length).toBe(corpus.length);
-    expect([corpus.length, codice.length, statici.length, nonCiSta.length, fuori.length]).toEqual([183, 36, 19, 128, 0]);
+    expect(fuori).toEqual([]);
+    const perEsito = [corpus.length, codice.length, statici.length, nonCiSta.length];
+    expect(perEsito).toEqual(confermato("accademico - esiti sul corpus", perEsito));
     // appaiati per elemento nei due versi: i file in più e quelli che mancano
     expect(codice.filter((f) => !conIlCodice.includes(f))).toEqual([]);
     expect(conIlCodice.filter((f) => !codice.includes(f))).toEqual([]);
@@ -217,7 +220,7 @@ describe("l'esito di ogni file del corpus", () => {
     // il denominatore: i file con mancanze sono i 127 che non ci stanno (le 5 tabelle giuste comprese) e gli 11 che hanno
     // anche errori statici (4 delle tappe, 2 dei record: un dato record anche se il record non c'è o è sbagliato; 4 delle
     // matrici: la matrice c'è; 1 della tabella oltre il tetto)
-    expect(conMancanze).toBe(139);
+    expect(conMancanze).toBe(confermato("accademico - file con le mancanze", conMancanze));
     expect(voci).toBeGreaterThan(conMancanze);
     console.log(`mancanze: ${voci} voci in ${conMancanze} file su ${corpus.length}`);
   });
@@ -239,7 +242,7 @@ describe("l'esito di ogni file del corpus", () => {
     const voci = giusti.flatMap(({ g }) => (!g.generato && g.perche === "non-ci-sta" ? g.mancanze.filter((m) => m.specie === "record") : []));
     const posti = { dati: voci.filter((m) => m.dato !== undefined && m.funzione === undefined).length, diFunzioni: voci.filter((m) => m.dato !== undefined && m.funzione !== undefined).length, risultati: voci.filter((m) => m.dato === undefined).length };
     console.log(`record in «Accademico»: ${giusti.length} progetti giusti su ${coiRecord.length}, ${voci.length} voci (${JSON.stringify(posti)})`);
-    expect([giusti.length, coiRecord.length]).toEqual([7, 11]);
+    expect([giusti.length, coiRecord.length]).toEqual(confermato("accademico - record, giusti e tutti", [giusti.length, coiRecord.length]));
     // Ogni posto ha la sua voce: un risultato record (la funzione), un parametro e un dato del programma principale.
     expect(Object.values(posti).every((n) => n > 0)).toBe(true);
   });
@@ -253,7 +256,7 @@ describe("l'esito di ogni file del corpus", () => {
     const voci = giusti.flatMap(({ g }) => (!g.generato && g.perche === "non-ci-sta" ? g.mancanze.filter((m) => m.specie === "matrice") : []));
     const posti = { dati: voci.filter((m) => m.dato !== undefined && m.funzione === undefined).length, diFunzioni: voci.filter((m) => m.dato !== undefined && m.funzione !== undefined).length, risultati: voci.filter((m) => m.dato === undefined).length };
     console.log(`matrici in «Accademico»: ${giusti.length} progetti giusti su ${conLeMatrici.length}, ${voci.length} voci (${JSON.stringify(posti)})`);
-    expect([giusti.length, conLeMatrici.length]).toEqual([9, 13]);
+    expect([giusti.length, conLeMatrici.length]).toEqual(confermato("accademico - matrici, giuste e tutte", [giusti.length, conLeMatrici.length]));
     expect(Object.values(posti).every((n) => n > 0)).toBe(true);
     // Controllo positivo: una matrice di interi, che la sintassi leggerebbe come un `integer[]`, non passa; le sue sole
     // mancanze sono le matrici (il dato e la costante comune).
@@ -274,7 +277,7 @@ describe("l'esito di ogni file del corpus", () => {
       risultati: voci.filter((m) => m.dato === undefined).length,
     };
     console.log(`tabelle in «Accademico»: ${giusti.length} progetti giusti su ${conLeTabelle.length}, ${voci.length} voci (${JSON.stringify(posti)})`);
-    expect([giusti.length, conLeTabelle.length]).toEqual([5, 6]);
+    expect([giusti.length, conLeTabelle.length]).toEqual(confermato("accademico - tabelle, giuste e tutte", [giusti.length, conLeTabelle.length]));
     expect(Object.values(posti).every((n) => n > 0)).toBe(true);
     // Controllo positivo: la tabella dice «tabella», non «record»; il record da solo resta «record» (`a`, il record del
     // «per ogni»), e la costante comune ha la sua voce.

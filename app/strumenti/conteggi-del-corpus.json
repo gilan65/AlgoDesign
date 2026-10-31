@@ -59,5 +59,165 @@
       "e2e/flowchart-in-svg.e2e.ts",
       "e2e/progetto-file.e2e.ts"
     ]
+  },
+  "denominatori": {
+    "accademico - esiti sul corpus": [
+      183,
+      36,
+      19,
+      128
+    ],
+    "accademico - file con le mancanze": 139,
+    "accademico - matrici, giuste e tutte": [
+      9,
+      13
+    ],
+    "accademico - record, giusti e tutti": [
+      7,
+      11
+    ],
+    "accademico - tabelle, giuste e tutte": [
+      5,
+      6
+    ],
+    "accessibile - file coi cicli": 16,
+    "accessibile - file della tappa 1": 60,
+    "accessibile - file e voci coi valori iniziali": [
+      34,
+      60
+    ],
+    "bersaglio - alberi, con le funzioni, coi salti, con la intestazione": {
+      "alberi": 771,
+      "conLeFunzioni": 177,
+      "coiSalti": 66,
+      "conIntestazione": 108
+    },
+    "bozza - dati del corpus": 114,
+    "campi - file del corpus": 152,
+    "casi - file delle tappe 2 e 3": 70,
+    "casi dalla esecuzione - riga del totale": "totale 192: uguali 179, esclusi errore statico 10, riga non valida 2, voci finite 1",
+    "controllo - file controllati del corpus": 183,
+    "controllo dato per dato - file della tappa 1": 60,
+    "disegno e2e - copie col nome nella tappa 3": 2,
+    "disegno e2e - funzioni delle tappe 3 e 4, dei progetti coi salti": [
+      185,
+      45
+    ],
+    "disegno e2e - letture con la domanda nel corpus": 11,
+    "esecuzione - casi del corpus a un esecutore": 63,
+    "esecuzione - file e casi della tappa 1": {
+      "file": 60,
+      "casi": 63
+    },
+    "esecuzione - progetti della tappa 3, con una stringa o un vettore restituiti": [
+      54,
+      16
+    ],
+    "esegui tutti - file e casi della tappa 4": {
+      "file": 22,
+      "casi": 30
+    },
+    "esempi - file dei tipi, con le matrici": [
+      31,
+      13
+    ],
+    "esempi - file delle tappe 3 e 4, con un risultato": [
+      54,
+      22,
+      16
+    ],
+    "finestra - file delle tappe 1 e 2, quelli che non partono": {
+      "file": 76,
+      "nonPartono": 3
+    },
+    "genera c - file della tappa 1": 60,
+    "genera c - file della tappa 4": 22,
+    "genera c - programmi della tappa 4 col giro, nelle due lingue": 44,
+    "genera c - programmi di prova dei casi delle funzioni": 26,
+    "genera c - tappa 1 (blocchi, dati)": [
+      164,
+      114
+    ],
+    "genera c - tappa 2 (generati, blocchi, cicli)": [
+      13,
+      87,
+      26
+    ],
+    "genera c - tappa 3 (file, generati, blocchi)": [
+      54,
+      47,
+      336
+    ],
+    "genera pseudocodice - file della tappa 1": 60,
+    "genera pseudocodice - file della tappa 4": 22,
+    "genera pseudocodice - tappa 1 (blocchi, dati)": [
+      164,
+      114
+    ],
+    "genera pseudocodice - tappa 2 (generati, blocchi, cicli)": [
+      13,
+      87,
+      26
+    ],
+    "genera pseudocodice - tappa 3 (file, generati, blocchi)": [
+      54,
+      47,
+      336
+    ],
+    "genera python - file della tappa 1": 60,
+    "genera python - file della tappa 4": 22,
+    "genera python - programmi della tappa 4 col giro, nelle due lingue": 44,
+    "genera python - programmi di prova dei casi delle funzioni": 26,
+    "genera python - tappa 1 (blocchi, dati)": [
+      164,
+      114
+    ],
+    "genera python - tappa 2 (generati, blocchi, cicli)": [
+      13,
+      87,
+      26
+    ],
+    "genera python - tappa 3 (file, generati)": [
+      54,
+      47
+    ],
+    "genera typescript - generati fuori dalle tappe 1, 2 e 3": [
+      "tipi/carattere-di-un-risultato"
+    ],
+    "genera typescript - tappa 2 (generati, blocchi, cicli)": [
+      13,
+      87,
+      26
+    ],
+    "impaginazione - file delle tappe 1 e 2": 76,
+    "impaginazione - progetti delle tappe 3 e 4, funzioni, coi salti": [
+      54,
+      22,
+      185,
+      296
+    ],
+    "interprete - errori statici attesi del corpus": 19,
+    "matrici - casi delle funzioni della cartella": 5,
+    "matrici - file giusti e sbagliati": [
+      9,
+      4
+    ],
+    "nomi - blocchi col valore iniziale nella tappa 1": 120,
+    "nomi - copie espanse coi campi": 15,
+    "progetto corpus - errori statici attesi": 19,
+    "record - casi delle funzioni della cartella": 3,
+    "record - file giusti e sbagliati": [
+      7,
+      4
+    ],
+    "tabelle - casi delle funzioni della cartella": 3,
+    "tabelle - file giusti e sbagliati": [
+      5,
+      1
+    ],
+    "voci - radici, letture altrove coi parametri": [
+      261,
+      4
+    ]
   }
 }

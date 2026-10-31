@@ -17,12 +17,9 @@ const fasiDegliEventi: Readonly<Record<"for" | "for_each", readonly FaseDelCiclo
 };
 const tutteLeFasi: readonly FaseDelCiclo[] = ["inizio", "condizione", "passo", "elemento"];
 
-/** I file della tappa 2 che non si generano: hanno solo l'errore statico atteso. */
-export const rifiutatiDellaTappa2: readonly string[] = [
-  "per-contatore-annidato.algo: errori-statici",
-  "per-contatore-assegnato.algo: errori-statici",
-  "per-passo-zero.algo: errori-statici",
-];
+/** I file della tappa 2 che non si generano, ricavati dal corpus: quelli il cui caso attende un errore statico. */
+export const rifiutatiDellaTappa2 = (tappa2: readonly { f: string; p: Progetto }[]): string[] =>
+  tappa2.filter(({ p }) => (p.test_cases ?? []).some((k) => k.expected.static_error !== undefined)).map(({ f }) => `${f}: errori-statici`).sort();
 
 export interface EsitoDelCorpus {
   readonly difetti: string[];

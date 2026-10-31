@@ -11,6 +11,7 @@
 //   «casi» del collaudo trova raggiunti.
 
 import { expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tetti } from "../controllo/controllo";
@@ -83,8 +84,8 @@ test("ogni caso del corpus rifatto come esecuzione libera compone il caso del fi
   const riga = `totale ${totale}: uguali ${conta.get("uguale") ?? 0}, esclusi errore statico ${conta.get("errore statico") ?? 0}, riga non valida ${conta.get("riga non valida") ?? 0}, voci finite ${conta.get("voci finite") ?? 0}`;
   console.log(riga);
   expect(diversi).toEqual([]);
-  // Il conteggio del corpus di oggi, scritto prima: un caso nuovo lo cambia, e il numero va riscritto guardandolo.
-  expect(riga).toBe("totale 192: uguali 179, esclusi errore statico 10, riga non valida 2, voci finite 1");
+  // Il conteggio del corpus, confermato: un caso nuovo lo cambia, e `bun run conferma-corpus` lo registra.
+  expect(riga).toBe(confermato("casi dalla esecuzione - riga del totale", riga));
 }, 30_000);
 
 type Json = any;

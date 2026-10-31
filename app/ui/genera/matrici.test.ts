@@ -7,6 +7,7 @@
 // alias (lo prova il differenziale, che esegue i programmi); «Accademico», che ha la sua prova (`accademico.test.ts`).
 
 import { describe, expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { controlla, tetti } from "../../core/controllo/controllo";
@@ -54,7 +55,9 @@ test("ogni linguaggio scrive le matrici: generato il progetto giusto, con gli er
   });
   expect(esiti.filter((e) => !e.giusto)).toEqual([]);
   // Controllo positivo dei denominatori: nove file giusti e quattro sbagliati, ognuno per ogni linguaggio.
-  expect([esiti.filter((e) => e.atteso === "generato").length, esiti.filter((e) => e.atteso === "errori-statici").length, linguaggi.length]).toEqual([9, 4, 5]);
+  const giustiESbagliati = [esiti.filter((e) => e.atteso === "generato").length, esiti.filter((e) => e.atteso === "errori-statici").length];
+  expect(giustiESbagliati).toEqual(confermato("matrici - file giusti e sbagliati", giustiESbagliati));
+  expect(linguaggi.length).toBe(5);
 });
 
 test("il programma di prova di ogni caso di una funzione con le matrici si genera in ogni linguaggio da eseguire", () => {
@@ -70,7 +73,8 @@ test("il programma di prova di ogni caso di una funzione con le matrici si gener
   expect(rifiutati).toEqual(casi.map(({ nome }) => `${nome} typescript`));
   // Controllo positivo: i casi delle funzioni della cartella sono cinque (totale, azzera_riga, trasposta, raddoppia,
   // riempi), ognuno per due linguaggi.
-  expect([casi.length, daEseguire.length]).toEqual([5, 3]);
+  expect(casi.length).toBe(confermato("matrici - casi delle funzioni della cartella", casi.length));
+  expect(daEseguire.length).toBe(3);
 });
 
 /** Il confronto col messaggio che nomina la prima riga diversa, con le due forme. */

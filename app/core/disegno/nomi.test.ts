@@ -23,6 +23,7 @@
 // - i blocchi fuori tappa: l'impaginazione non li disegna.
 
 import { expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parole } from "../espressioni/analizzatore";
@@ -479,8 +480,8 @@ test("sul corpus: ogni blocco del valore iniziale ha il nome del suo dato, sulle
     }
   console.log(`valori iniziali nel watch: ${blocchiValore} blocchi (due forme del valore ripetuto), difetti ${difetti.length}`);
   expect(difetti).toEqual([]);
-  // La premessa: i 53 valori iniziali dei 32 file della tappa 1, nelle due forme.
-  expect(blocchiValore).toBe(120);
+  // La premessa: i valori iniziali dei file della tappa 1, nelle due forme.
+  expect(blocchiValore).toBe(confermato("nomi - blocchi col valore iniziale nella tappa 1", blocchiValore));
 });
 
 // La copia espansa di un record (`b ← a`) e di una tabella (`u ← t`, coi campi nel ciclo dei record; `r ← t[1]`,
@@ -522,6 +523,6 @@ test("la copia espansa di un record e di una tabella: i nomi sulle loro lettere 
   console.log(`la copia espansa coi campi: ${conti.blocchi} blocchi, ${conti.nomi} nomi; senza i record ${conti.sbagliatiSenzaRecord} fuori posto`);
   expect(difetti).toEqual([]);
   // Le premesse: i 3 campi di `b ← a`, poi i 3 di `u ← t` e i 3 di ognuna delle tre copie di un record della tabella.
-  expect(conti.blocchi).toBe(15);
+  expect(conti.blocchi).toBe(confermato("nomi - copie espanse coi campi", conti.blocchi));
   expect(conti.sbagliatiSenzaRecord).toBeGreaterThan(0);
 });

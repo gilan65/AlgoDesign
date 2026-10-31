@@ -12,20 +12,30 @@
 // prova `strumenti/corpus.test.ts` confrontano il file col disco: un corpus cambiato e non confermato è rosso prima
 // della corsa lunga.
 //
+// I DENOMINATORI delle prove (i conti che cambiano se il corpus cresce: file, casi, alberi, blocchi, esiti) non si
+// scrivono a mano: `expect(x).toEqual(confermato("nome", x))`. Fuori dalla conferma `confermato` restituisce il valore
+// registrato nel file dei conteggi (`denominatori`); durante la conferma restituisce l'ottenuto e lo registra, un file
+// per nome sotto `.collaudo/denominatori/` (Playwright ha più processi). La conferma, solo se le prove sono verdi,
+// scrive i registrati nel file e stampa i nomi aggiunti, tolti e cambiati. I numeri che restano scritti nelle prove
+// del censimento sono valori precisi, dichiarati in `strumenti/valori-precisi.ts` e tenuti dalla prova-guardia
+// (`strumenti/corpus.test.ts`, col rilevatore di `strumenti/denominatori.ts`).
+//
 // Uso, da `app/`:
 //   bun ./strumenti/corpus.ts              il confronto dei conteggi dichiarati col disco (exit 0 uguali, 1 diversi)
-//   bun ./strumenti/corpus.ts --conferma   le prove del censimento, poi, se verdi, i conteggi riscritti
+//   bun ./strumenti/corpus.ts --conferma   le prove del censimento, poi, se verdi, i conteggi e i denominatori riscritti
 //
 // Che cosa NON guarda:
-// - gli attesi che le prove scrivono a mano (li esegue la conferma, non li legge);
+// - un denominatore registrato sbagliato perché la prova legge male il corpus: la conferma registra ciò che la prova
+//   ottiene (il file riscritto si rilegge nel diff, e i fatti misurati qui dal disco restano un secondo rilevatore);
 // - una prova che legge il corpus senza `readdirSync` (un file per nome): non conta le cartelle, e un file nuovo non
 //   la sposta;
 // - gli strumenti (`casi.ts`, `differenziale.ts`, il collaudo), che contano dal disco e confrontano con `elenco.json`.
 
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 import { apri } from "../core/progetto/formato";
 import { usaIRecord, usaLeMatrici, usaLeTabelle, type Progetto } from "../core/progetto/modello";
 
@@ -52,6 +62,82 @@ export interface ConteggiDichiarati {
   readonly fatti: FattiDelCorpus;
   /** Le prove eseguite verdi dalla conferma, nel censimento di allora. */
   readonly confermati: { readonly bun: readonly string[]; readonly playwright: readonly string[] };
+  /** I denominatori delle prove, per nome, come la conferma li ha registrati. */
+  readonly denominatori?: Readonly<Record<string, unknown>>;
+}
+
+/** La variabile d'ambiente che la conferma mette ai processi delle prove: la cartella dove `confermato` registra. */
+export const variabileDellaConferma = "ALGODESIGN_CONFERMA_DENOMINATORI";
+
+/** Il nome di un denominatore è anche il nome del suo file: minuscole, cifre, spazi, `,.()+-`, e niente spazio o punto
+ * in fondo (Windows li toglie). */
+export const nomeDiUnDenominatore = /^[a-z0-9][a-z0-9 ,.()+-]{0,118}[a-z0-9)]$/;
+
+let denominatoriDichiarati: Readonly<Record<string, unknown>> | undefined;
+
+/** Il denominatore `nome`: fuori dalla conferma il valore registrato, durante la conferma l'ottenuto, registrato.
+ * Uso: `expect(x).toEqual(confermato("nome", x))`. */
+export function confermato<T>(nome: string, ottenuto: T): T {
+  if (!nomeDiUnDenominatore.test(nome)) throw new Error(`il nome del denominatore «${nome}» non è un nome di file sicuro (${nomeDiUnDenominatore})`);
+  const cartella = process.env[variabileDellaConferma];
+  if (cartella !== undefined && cartella !== "") {
+    registra(cartella, nome, ottenuto);
+    return ottenuto;
+  }
+  denominatoriDichiarati ??= leggiIConteggi().denominatori ?? {};
+  if (!Object.hasOwn(denominatoriDichiarati, nome)) throw new Error(`il denominatore «${nome}» non è confermato: bun run conferma-corpus`);
+  return denominatoriDichiarati[nome] as T;
+}
+
+/** Un file per nome, creato in un colpo solo (`linkSync` di un file già scritto): un secondo processo che registra lo
+ * stesso nome trova il file intero, e un valore diverso è rosso. */
+function registra(cartella: string, nome: string, ottenuto: unknown): void {
+  const testo = JSON.stringify(ottenuto);
+  if (testo === undefined || !isDeepStrictEqual(JSON.parse(testo), ottenuto)) throw new Error(`il denominatore «${nome}» non si scrive in JSON senza perdite: ${String(ottenuto)}`);
+  mkdirSync(cartella, { recursive: true });
+  const finale = join(cartella, `${nome}.json`);
+  const provvisorio = join(cartella, `${nome}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`);
+  writeFileSync(provvisorio, testo);
+  try {
+    linkSync(provvisorio, finale);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
+    const prima = readFileSync(finale, "utf8");
+    if (prima !== testo) throw new Error(`il denominatore «${nome}» ha due valori nella stessa conferma: ${prima} e ${testo}`);
+  } finally {
+    unlinkSync(provvisorio);
+  }
+}
+
+/** I denominatori registrati in una cartella della conferma. */
+export function registrati(cartella: string): Record<string, unknown> {
+  const fuori: Record<string, unknown> = {};
+  if (!existsSync(cartella)) return fuori;
+  for (const f of readdirSync(cartella).sort())
+    if (f.endsWith(".json")) fuori[f.slice(0, -".json".length)] = JSON.parse(readFileSync(join(cartella, f), "utf8"));
+  return fuori;
+}
+
+/** I nomi dei denominatori scritti nelle prove (il primo argomento di `confermato`, una stringa fra virgolette doppie),
+ * e le chiamate il cui primo argomento non lo è. */
+export function nomiNelleProve(testo: string): { readonly nomi: string[]; readonly senzaNome: number } {
+  const nomi: string[] = [];
+  let senzaNome = 0;
+  for (const m of testo.matchAll(/\bconfermato\(\s*("([^"\\\n]*)")?/g)) {
+    if (m[2] === undefined) senzaNome++;
+    else nomi.push(m[2]);
+  }
+  return { nomi, senzaNome };
+}
+
+/** Le differenze fra i denominatori di prima e quelli registrati, per la stampa della conferma. */
+export function cambiDeiDenominatori(prima: Readonly<Record<string, unknown>>, dopo: Readonly<Record<string, unknown>>): string[] {
+  const righe: string[] = [];
+  for (const k of Object.keys(dopo).sort())
+    if (!Object.hasOwn(prima, k)) righe.push(`aggiunto  «${k}»: ${JSON.stringify(dopo[k])}`);
+    else if (!isDeepStrictEqual(prima[k], dopo[k])) righe.push(`cambiato  «${k}»: ${JSON.stringify(prima[k])} → ${JSON.stringify(dopo[k])}`);
+  for (const k of Object.keys(prima).sort()) if (!Object.hasOwn(dopo, k)) righe.push(`tolto     «${k}»: era ${JSON.stringify(prima[k])}`);
+  return righe;
 }
 
 /** Il primo caso del programma si esegue fino alla fine senza letture e senza un errore statico atteso: le prove
@@ -104,11 +190,10 @@ export function misuraIlCorpus(): FattiDelCorpus {
  * o una tappa. */
 export const leggeIlCorpus = (testo: string): boolean => testo.includes("readdirSync(") && /["/]casi["/]|"tipi"|tappa-\d/.test(testo);
 
-/** Le prove che leggono il corpus, coi file guardati: percorsi relativi ad `app/`, con le barre. */
-export function censimento(): { readonly bun: string[]; readonly playwright: string[]; readonly guardati: number } {
-  const bun: string[] = [];
-  const playwright: string[] = [];
-  let guardati = 0;
+/** I file di prova (`*.test.ts`, `*.test.tsx`) e gli spec di Playwright (`e2e/*.e2e.ts`): percorsi relativi ad `app/`,
+ * con le barre, in ordine. */
+export function fileDiProva(): { readonly nome: string; readonly spec: boolean }[] {
+  const fuori: { nome: string; spec: boolean }[] = [];
   const visita = (cartella: string): void => {
     for (const v of readdirSync(cartella, { withFileTypes: true })) {
       const percorso = join(cartella, v.name);
@@ -117,15 +202,47 @@ export function censimento(): { readonly bun: string[]; readonly playwright: str
         continue;
       }
       const nome = relative(radiceDellApp, percorso).replaceAll("\\", "/");
-      const diProva = /\.test\.tsx?$/.test(v.name);
       const spec = nome.startsWith("e2e/") && v.name.endsWith(".e2e.ts");
-      if (!diProva && !spec) continue;
-      guardati++;
-      if (leggeIlCorpus(readFileSync(percorso, "utf8"))) (spec ? playwright : bun).push(nome);
+      if (/\.test\.tsx?$/.test(v.name) || spec) fuori.push({ nome, spec });
     }
   };
   visita(radiceDellApp);
-  return { bun: bun.sort(), playwright: playwright.sort(), guardati };
+  return fuori.sort((a, b) => (a.nome < b.nome ? -1 : 1));
+}
+
+/** Le prove che leggono il corpus, coi file guardati: percorsi relativi ad `app/`, con le barre. */
+export function censimento(): { readonly bun: string[]; readonly playwright: string[]; readonly guardati: number } {
+  const bun: string[] = [];
+  const playwright: string[] = [];
+  const tutti = fileDiProva();
+  for (const { nome, spec } of tutti) if (leggeIlCorpus(readFileSync(join(radiceDellApp, nome), "utf8"))) (spec ? playwright : bun).push(nome);
+  return { bun, playwright, guardati: tutti.length };
+}
+
+/** I denominatori scritti nelle prove e quelli dichiarati nel file dei conteggi, nei due versi; e le prove fuori dal
+ * censimento che chiamano `confermato` (la conferma non le esegue). */
+export function denominatoriDaConfermare(): { readonly scritti: number; readonly nonDichiarati: string[]; readonly dichiaratiSenzaProva: string[]; readonly fuoriDalCensimento: string[]; readonly senzaNome: string[]; readonly nomiNonValidi: string[] } {
+  const c = censimento();
+  const delCensimento = new Set([...c.bun, ...c.playwright]);
+  const scritti = new Set<string>();
+  const fuoriDalCensimento: string[] = [];
+  const senzaNome: string[] = [];
+  for (const { nome } of fileDiProva()) {
+    const n = nomiNelleProve(readFileSync(join(radiceDellApp, nome), "utf8"));
+    if (n.nomi.length + n.senzaNome === 0) continue;
+    if (!delCensimento.has(nome)) fuoriDalCensimento.push(nome);
+    if (n.senzaNome > 0) senzaNome.push(nome);
+    for (const x of n.nomi) scritti.add(x);
+  }
+  const dichiarati = leggiIConteggi().denominatori ?? {};
+  return {
+    scritti: scritti.size,
+    nonDichiarati: [...scritti].filter((n) => !Object.hasOwn(dichiarati, n)).sort(),
+    dichiaratiSenzaProva: Object.keys(dichiarati).filter((n) => !scritti.has(n)),
+    fuoriDalCensimento,
+    senzaNome,
+    nomiNonValidi: [...scritti].filter((n) => !nomeDiUnDenominatore.test(n)),
+  };
 }
 
 export const leggiIConteggi = (): ConteggiDichiarati => JSON.parse(readFileSync(fileDeiConteggi, "utf8")) as ConteggiDichiarati;
@@ -141,9 +258,9 @@ export function differenze(dichiarati: FattiDelCorpus, misurati: FattiDelCorpus)
   return fuori;
 }
 
-async function esegui(cmd: string[]): Promise<number> {
+async function esegui(cmd: string[], env: Record<string, string | undefined>): Promise<number> {
   console.log(`$ ${cmd.join(" ")}`);
-  const p = Bun.spawn({ cmd, cwd: radiceDellApp, stdout: "inherit", stderr: "inherit" });
+  const p = Bun.spawn({ cmd, cwd: radiceDellApp, stdout: "inherit", stderr: "inherit", env });
   return await p.exited;
 }
 
@@ -165,14 +282,46 @@ if (import.meta.main) {
     console.log("CONFERMA: ROSSA — il censimento non trova prove del corpus: il rilevatore non ha visto nulla");
     process.exit(1);
   }
-  const delBun = await esegui([process.execPath, "test", ...c.bun.map((f) => `./${f}`)]);
-  const diPlaywright = delBun === 0 ? await esegui([process.execPath, "--bun", "playwright", "test", ...c.playwright, "--project", "chromium-sviluppo"]) : -1;
+  // I nomi dei denominatori scritti nelle prove del censimento: ognuno deve essere registrato dalla corsa.
+  const scritti = new Set<string>();
+  for (const f of [...c.bun, ...c.playwright]) {
+    const n = nomiNelleProve(readFileSync(join(radiceDellApp, f), "utf8"));
+    if (n.senzaNome > 0) {
+      console.log(`CONFERMA: ROSSA — ${f}: ${n.senzaNome} chiamate di confermato senza un nome fra virgolette doppie`);
+      process.exit(1);
+    }
+    for (const x of n.nomi) scritti.add(x);
+  }
+  const cartella = join(radiceDellApp, ".collaudo", "denominatori");
+  rmSync(cartella, { recursive: true, force: true });
+  mkdirSync(cartella, { recursive: true });
+  const env = { ...process.env, [variabileDellaConferma]: cartella };
+  const delBun = await esegui([process.execPath, "test", ...c.bun.map((f) => `./${f}`)], env);
+  const diPlaywright = delBun === 0 ? await esegui([process.execPath, "--bun", "playwright", "test", ...c.playwright, "--project", "chromium-sviluppo"], env) : -1;
   const dopo = misuraIlCorpus();
   if (delBun !== 0 || diPlaywright !== 0 || dopo.impronta !== prima.impronta) {
     console.log(`CONFERMA: ROSSA — bun test exit ${delBun}, Playwright ${diPlaywright === -1 ? "non eseguito" : `exit ${diPlaywright}`}${dopo.impronta !== prima.impronta ? ", il corpus è cambiato durante la conferma" : ""}: conteggi NON riscritti`);
     process.exit(1);
   }
-  const conteggi: ConteggiDichiarati = { fatti: prima, confermati: { bun: c.bun, playwright: c.playwright } };
+  const nuovi = registrati(cartella);
+  const nonRegistrati = [...scritti].filter((n) => !Object.hasOwn(nuovi, n)).sort();
+  const senzaProva = Object.keys(nuovi).filter((n) => !scritti.has(n));
+  console.log(`CONFERMA: denominatori scritti nelle prove ${scritti.size}, registrati ${Object.keys(nuovi).length}`);
+  if (nonRegistrati.length > 0 || senzaProva.length > 0 || scritti.size === 0) {
+    console.log(
+      `CONFERMA: ROSSA — ${scritti.size === 0 ? "nessun denominatore nelle prove: il rilevatore non ha visto nulla; " : ""}` +
+        `${nonRegistrati.length > 0 ? `scritti e non registrati (la prova che li chiama non è corsa): ${nonRegistrati.join(" | ")}; ` : ""}` +
+        `${senzaProva.length > 0 ? `registrati e non scritti in una prova del censimento: ${senzaProva.join(" | ")}; ` : ""}conteggi NON riscritti`,
+    );
+    process.exit(1);
+  }
+  const vecchi = leggiIConteggi().denominatori ?? {};
+  const cambi = cambiDeiDenominatori(vecchi, nuovi);
+  for (const r of cambi) console.log(`  ${r}`);
+  const conteggi: ConteggiDichiarati = { fatti: prima, confermati: { bun: c.bun, playwright: c.playwright }, denominatori: nuovi };
   writeFileSync(fileDeiConteggi, `${JSON.stringify(conteggi, null, 2)}\n`);
-  console.log(`CONFERMA: VERDE | ${relative(radiceDellApp, fileDeiConteggi).replaceAll("\\", "/")} riscritto: ${JSON.stringify(prima.file)}, tipi ${JSON.stringify(prima.tipi)}`);
+  console.log(
+    `CONFERMA: VERDE | ${relative(radiceDellApp, fileDeiConteggi).replaceAll("\\", "/")} riscritto: ${JSON.stringify(prima.file)}, tipi ${JSON.stringify(prima.tipi)}; ` +
+      `denominatori ${Object.keys(nuovi).length} (${cambi.length === 0 ? "nessuno cambiato" : `${cambi.length} aggiunti, tolti o cambiati`})`,
+  );
 }

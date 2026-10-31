@@ -8,6 +8,7 @@
 // - la larghezza della colonna dei commenti con caratteri larghi (si contano i codici, non le colonne dello
 //   schermo).
 import { describe, expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tetti } from "../../core/controllo/controllo";
@@ -84,7 +85,7 @@ describe("la provenienza delle righe", () => {
   });
 
   const file = readdirSync(join(cartella, "tappa-1")).filter((f) => f.endsWith(".algo"));
-  test("il corpus della tappa 1 ha 60 file", () => expect(file.length).toBe(60));
+  test("il corpus della tappa 1 ha i file confermati", () => expect(file.length).toBe(confermato("genera pseudocodice - file della tappa 1", file.length)));
 
   test("ogni blocco del corpus ha le sue righe, nell'ordine dell'albero; ogni dato la sua; una provenienza al più per riga", () => {
     let blocchi = 0;
@@ -123,8 +124,7 @@ describe("la provenienza delle righe", () => {
       dati += nomi.length;
     }
     // il denominatore: i blocchi e i dati del corpus della tappa 1, contati a parte
-    expect(blocchi).toBe(164);
-    expect(dati).toBe(114);
+    expect([blocchi, dati]).toEqual(confermato("genera pseudocodice - tappa 1 (blocchi, dati)", [blocchi, dati]));
   });
 
   test("riga per riga nelle regole di «forme dei cicli», con le fasi, uguale nelle due lingue", () => {
@@ -143,9 +143,9 @@ describe("la provenienza delle righe", () => {
     for (const l of lingue) {
       const e = provaIlCorpusDeiCicli(tappa2, (p) => pseudocodice(p, tetti, paroleDelloPseudocodice(l)));
       expect(e.difetti, l).toEqual([]);
-      // il denominatore, contato a parte: 16 file, 3 con l'errore statico atteso; 87 blocchi e 26 cicli negli altri
-      expect(e.rifiutati.sort(), l).toEqual([...rifiutatiDellaTappa2]);
-      expect([e.generati, e.blocchi, e.cicli], l).toEqual([13, 87, 26]);
+      // il denominatore, contato a parte: i file della tappa 2, quelli con l'errore statico atteso, i blocchi e i cicli degli altri
+      expect(e.rifiutati.sort(), l).toEqual(rifiutatiDellaTappa2(tappa2));
+      expect([e.generati, e.blocchi, e.cicli], l).toEqual(confermato("genera pseudocodice - tappa 2 (generati, blocchi, cicli)", [e.generati, e.blocchi, e.cicli]));
     }
   });
 });
@@ -188,9 +188,8 @@ describe("procedure e funzioni", () => {
       expect([...new Set(a!.map((x) => x.split("|")[0]).filter((x) => x !== ""))].sort(), f).toEqual([...attesi].sort());
       blocchi += attesi.length;
     }
-    // il denominatore, contato a parte: 53 file, 7 col solo errore statico atteso; i blocchi degli altri, fini comprese
-    // (65 negli 11 con una stringa o un vettore restituiti)
-    expect([file.length, generati, blocchi]).toEqual([54, 47, 336]);
+    // il denominatore, contato a parte: i file, quelli senza il solo errore statico atteso, i blocchi degli altri, fini comprese
+    expect([file.length, generati, blocchi]).toEqual(confermato("genera pseudocodice - tappa 3 (file, generati, blocchi)", [file.length, generati, blocchi]));
   });
 });
 
@@ -207,7 +206,7 @@ describe("il progetto che non si genera", () => {
 describe("la ricorsione", () => {
   test("ogni file della tappa 4 si genera, e la chiamata ricorsiva si scrive come ogni chiamata", () => {
     const tappa4 = readdirSync(join(cartella, "tappa-4")).filter((f) => f.endsWith(".algo"));
-    expect(tappa4.length).toBe(22);
+    expect(tappa4.length).toBe(confermato("genera pseudocodice - file della tappa 4", tappa4.length));
     for (const f of tappa4) for (const l of lingue) expect(pseudocodice(leggi(`tappa-4/${f}`), tetti, paroleDelloPseudocodice(l)).generato, `${f} (${l})`).toBe(true);
     const r = pseudocodice(leggi("tappa-4/fattoriale.algo"), tetti, paroleDelloPseudocodice("it"));
     expect(r.generato && testoDelCodice(r.righe)).toContain("        f ← n * fatt(n - 1)");

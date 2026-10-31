@@ -9,6 +9,7 @@
 // in `core/esecuzione/esecuzione.test.ts`. I limiti delle impostazioni li provano quelle stesse prove.
 
 import { describe, expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -167,8 +168,8 @@ test("il corpus: i casi delle tappe dalla 1 alla 4 e dei record danno output, co
   expect(esito.senzaCasi).toEqual([]);
   expect(esito.file).toBe(tappeEseguite.reduce((n, t) => n + fileDellElenco(t).length, 0));
   expect(esito.nonPartiti + esito.file).toBe(suDisco.length);
-  // Dieci delle tappe, cinque dei record e quattro delle matrici (una è il nome `range`).
-  expect(esito.statici).toBe(19);
+  // Delle tappe, dei record e delle matrici (una è il nome `range`).
+  expect(esito.statici).toBe(confermato("interprete - errori statici attesi del corpus", esito.statici));
 }, tempoDelCorpus);
 
 test("il corpus: un file della tappa 1 senza casi d'uso lo fa rosso (controllo positivo su una copia)", () => {

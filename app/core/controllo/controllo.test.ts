@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -1363,7 +1364,8 @@ test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l
   ]);
   // Col corpus dei record, delle matrici e delle tabelle: nessuno è fuori tappa; quello del riferimento senza valore ha
   // l'avviso, i sei sbagliati no (le tabelle nuove non ne hanno: `crea` le dà un valore record per record fuori dai cicli).
-  expect([file, controllati]).toEqual([183, 183]);
+  expect(controllati).toBe(file);
+  expect(file).toBe(confermato("controllo - file controllati del corpus", file));
 });
 
 test("i limiti sono un parametro senza predefinito: chi chiama il controllo li passa sempre", () => {
@@ -1518,7 +1520,7 @@ test("dato per dato, sul corpus: gli errori dei dati sono quelli della funzione 
     if (r.dati.length > 0) conDati++;
   }
   console.log(`dato per dato: progetti ${progetti} (corpus ${corpus.length}), con segnalazioni dei dati ${conDati}`);
-  expect(corpus.length).toBe(60);
+  expect(corpus.length).toBe(confermato("controllo dato per dato - file della tappa 1", corpus.length));
   // Nel corpus della tappa 1 un solo programma ne ha: il vettore che riceve una stringa e non si legge più.
   expect(conDati).toBe(conSegnalazioni.length + 1);
 });
