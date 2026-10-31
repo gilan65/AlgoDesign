@@ -179,7 +179,7 @@ test("il puntatore sul centro di ogni «+», o vicino al bordo della sua area, s
     `scelta del bersaglio: alberi ${alberi.length} (di procedure e funzioni ${conLeFunzioni.length}: coi salti ${coiSalti}, con l'intestazione ${conIntestazione}), scale ${scale.length}, «+» ${premesse.punti}, vicino al bordo ${premesse.vicinoAlBordo}, centri dei blocchi ${premesse.blocchi}, difetti ${difetti.length}`,
   );
   expect(difetti.slice(0, 10)).toEqual([]);
-  expect({ alberi: alberi.length, conLeFunzioni: conLeFunzioni.length, coiSalti, conIntestazione }).toEqual({ alberi: 763, conLeFunzioni: 175, coiSalti: 66, conIntestazione: 107 });
+  expect({ alberi: alberi.length, conLeFunzioni: conLeFunzioni.length, coiSalti, conIntestazione }).toEqual({ alberi: 767, conLeFunzioni: 175, coiSalti: 66, conIntestazione: 107 });
   expect(premesse.punti).toBeGreaterThan(582 * scale.length * 2);
   // La premessa: i cicli ci sono, col loro riquadro.
   expect(alberi.filter((a) => a.disegno.riquadri.length > 0).length).toBeGreaterThan(100);

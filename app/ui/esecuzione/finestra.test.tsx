@@ -286,7 +286,7 @@ test("il denominatore: ogni file del corpus provato, le pause viste sono quelle 
   expect(conti.pause).toBeGreaterThan(sequenzaAttesa.length);
   expect(conti.conLaFase).toBeGreaterThan(100);
   expect(conti.errori).toBeGreaterThan(0);
-  expect({ file: corpus.length, nonPartono: conti.nonPartono }).toEqual({ file: 71, nonPartono: 3 });
+  expect({ file: corpus.length, nonPartono: conti.nonPartono }).toEqual({ file: 75, nonPartono: 3 });
 });
 
 test("coi cicli chiusi nelle Impostazioni la pausa in un ciclo evidenzia l'intestazione; aperti, il blocco della fase", async () => {

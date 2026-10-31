@@ -1,0 +1,88 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "intero-meno-zero-in-un-reale",
+    "description": "Un intero calcolato che vale zero (-1 / 2, -4 mod 2) dato a un reale, convertito, in un calcolo misto, nella radice e nella potenza: è lo zero, senza segno."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "q",
+          "type": "integer"
+        },
+        {
+          "name": "r",
+          "type": "real"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "q",
+          "value": "-1 / 2"
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "r",
+          "value": "q"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "r",
+            "\" \"",
+            "to_real q",
+            "\" \"",
+            "q * 0.5",
+            "\" \"",
+            "square_root q",
+            "\" \"",
+            "q raised_to 3"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "q",
+          "value": "-4 mod 2"
+        },
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "r",
+          "value": "q"
+        },
+        {
+          "id": "b6",
+          "kind": "write",
+          "values": [
+            "q",
+            "\" \"",
+            "r"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b7"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "intero-meno-zero-in-un-reale",
+      "inputs": [],
+      "expected": {
+        "output": "0.00 0.00 0.00 0.00 0.00\n0 0.00\n"
+      }
+    }
+  ]
+}

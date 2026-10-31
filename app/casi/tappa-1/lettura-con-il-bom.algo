@@ -1,0 +1,55 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "lettura-con-il-bom",
+    "description": "Una riga letta che comincia col carattere U+FEFF: è un carattere della stringa, non si toglie."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "role": "input"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "s"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "length s",
+            "\" \"",
+            "to_integer s[0]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "lettura-con-il-bom",
+      "inputs": [
+        {
+          "data": "s",
+          "text": "﻿ciao"
+        }
+      ],
+      "expected": {
+        "output": "5 65279\n"
+      }
+    }
+  ]
+}

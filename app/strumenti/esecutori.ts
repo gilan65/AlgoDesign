@@ -154,7 +154,9 @@ export const esecutori: readonly Esecutore[] = [
     // `tsc` 7 nativo con i tipi di Node (`@types/node`): il modo stretto, solo sintassi che si cancella, e i sorgenti
     // come moduli (`preserve`: con `nodenext` e nessun package.json sarebbero CommonJS, e `tsc` non vedrebbe le parole
     // riservate del modo stretto, che Node rifiuta). Un errore di sintassi in un sorgente nasconde gli errori di tipo di
-    // tutti: il controllo è rosso comunque.
+    // tutti: il controllo è rosso comunque. Ogni sorgente è un modulo anche senza `import` (`moduleDetection: "force"`):
+    // un programma che non legge e non scrive non ne ha, e per `tsc` sarebbe uno script, coi nomi nello spazio globale
+    // di tutti gli altri (misurato: `main` definita due volte, TS2393); Node e Bun lo eseguono da solo.
     controllaITipi: {
       configurazione: (sorgenti) => ({
         compilerOptions: {
@@ -163,6 +165,7 @@ export const esecutori: readonly Esecutore[] = [
           erasableSyntaxOnly: true,
           target: "es2022",
           module: "preserve",
+          moduleDetection: "force",
           types: ["node"],
           typeRoots: [join(radice, "node_modules", "@types")],
           pretty: false,

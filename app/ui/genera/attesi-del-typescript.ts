@@ -1,10 +1,15 @@
 // Il TypeScript atteso, scritto a mano prima del generatore (un atteso ricavato dal generatore darebbe ragione al
-// generatore): tre programmi del corpus della tappa 1 che il primo gruppo di costrutti sa scrivere, e un programma
-// scritto qui con le forme di quel gruppo (le costanti comuni, i ruoli e la costante nella colonna dei commenti, il dato
-// senza valore iniziale, le precedenze di JavaScript, il meno davanti a un meno, i confronti fra parentesi dentro un
-// confronto, `not` davanti a una parentesi, il confronto fra un booleano e un letterale col tipo allargato da `as`, i
-// caratteri di una stringa che il testo composto protegge, la scrittura senza a capo). Le funzioni di supporto sono scritte qui una volta per lingua e messe in coda a ogni programma che le usa. Le
-// righe allineate dicono a mano quanti spazi vanno prima del commento.
+// generatore): programmi del corpus della tappa 1 (lo scheletro, il programma di riferimento con le letture, il
+// `ripeti`, il `se` e il `mentre`, la scrittura che si ferma, il vettore senza valore, la lettura di un carattere), un
+// programma scritto qui con le forme dello scheletro (le costanti comuni, i ruoli e la costante nella colonna dei
+// commenti, il dato senza valore iniziale, le precedenze di JavaScript, il meno davanti a un meno, i confronti fra
+// parentesi dentro un confronto, `not` davanti a una parentesi, il confronto fra un booleano e un letterale col tipo
+// allargato da `as`, i caratteri di una stringa che il testo composto protegge, la scrittura senza a capo) e uno con le
+// forme del resto della tappa 1 (i reali e l'intero che diventa reale, i caratteri e le stringhe per codici, i tre
+// vettori, le conversioni, gli arrotondamenti e la potenza, le cinque letture, il `ripeti`, il ramo e il ciclo vuoti, la
+// scrittura spezzata, la concatenazione col carattere 0 dopo il lato destro). Le funzioni di supporto sono scritte qui
+// una volta per lingua e messe in coda a ogni programma che le usa, nell'ordine fisso. Le righe allineate dicono a mano
+// quanti spazi vanno prima del commento.
 import type { Progetto } from "../../core/progetto/modello";
 import type { Atteso } from "./attesi-dello-pseudocodice";
 
@@ -35,14 +40,291 @@ const titoloDelSupporto: Record<Lingua, string> = {
   en: "// Support functions: they do what C does.",
 };
 
-export type Supporto = "dividi" | "booleano" | "scrivi";
+/** Le funzioni di supporto, nell'ordine in cui il programma le scrive. */
+export const ordineDelSupporto = [
+  "fermati", "leggiRiga", "leggiIntero", "leggiReale", "leggiCarattere", "leggiStringa", "leggiBooleano", "dividi",
+  "convertiAReale", "elevatoA", "arrotonda", "convertiACarattere", "convertiAVettore", "convertiAStringa", "carattereDi",
+  "lunghezza", "confronta", "nellaStringa", "concatenazione", "alPiu", "reale", "booleano", "scrivi",
+] as const;
+export type Supporto = (typeof ordineDelSupporto)[number];
+
+/** I nomi delle funzioni di supporto nelle due lingue: `{chiave}` in una riga attesa diventa il nome. */
+const nomi: Record<Lingua, Record<Supporto, string>> = {
+  it: {
+    fermati: "fermati", leggiRiga: "leggi_riga", leggiIntero: "leggi_intero", leggiReale: "leggi_reale",
+    leggiCarattere: "leggi_carattere", leggiStringa: "leggi_stringa", leggiBooleano: "leggi_booleano", dividi: "dividi",
+    convertiAReale: "converti_a_reale", elevatoA: "elevato_a", arrotonda: "arrotonda", convertiACarattere: "converti_a_carattere",
+    convertiAVettore: "converti_a_vettore", convertiAStringa: "converti_a_stringa", carattereDi: "carattere_di",
+    lunghezza: "lunghezza", confronta: "confronta", nellaStringa: "nella_stringa", concatenazione: "concatena", alPiu: "al_piu",
+    reale: "reale", booleano: "booleano", scrivi: "scrivi",
+  },
+  en: {
+    fermati: "halt", leggiRiga: "read_line", leggiIntero: "read_integer", leggiReale: "read_real",
+    leggiCarattere: "read_character", leggiStringa: "read_string", leggiBooleano: "read_boolean", dividi: "divide",
+    convertiAReale: "to_real", elevatoA: "raised_to", arrotonda: "round", convertiACarattere: "to_character",
+    convertiAVettore: "to_array", convertiAStringa: "to_string", carattereDi: "character_at", lunghezza: "length",
+    confronta: "compare", nellaStringa: "into_string", concatenazione: "concatenate", alPiu: "at_most", reale: "real",
+    booleano: "boolean", scrivi: "write",
+  },
+};
+
+/** Una riga attesa nella lingua: `{chiave}` diventa il nome della funzione di supporto (un `{nome}` che non è una chiave,
+ * come quello di `${q}`, resta com'è). */
+const riempi = (l: Lingua, riga: string) => riga.replace(/\{(\w+)\}/g, (tutto, k: string) => (Object.hasOwn(nomi[l], k) ? nomi[l][k as Supporto] : tutto));
 
 const supporto: Record<Lingua, Record<Supporto, readonly string[]>> = {
   it: {
+    fermati: [
+      "/** Scrive il motivo e la riga del programma che lo ha incontrato, poi si ferma. */",
+      "function fermati(motivo: string): never {",
+      '  let riga = "?";',
+      '  for (const chiamata of (new Error().stack ?? "").split("\\n")) {',
+      "    const trovata = /^\\s*at main \\(.*:(\\d+):\\d+\\)$/.exec(chiamata);",
+      "    if (trovata !== null) {",
+      "      riga = trovata[1];",
+      "      break;",
+      "    }",
+      "  }",
+      "  writeSync(2, `Errore alla riga ${riga}: ${motivo}\\n`);",
+      "  process.exit(1);",
+      "}",
+    ],
+    leggiRiga: [
+      "/** Una riga dell'input, senza il suo a capo; si ferma se l'input è finito o non è testo UTF-8. */",
+      "function leggi_riga(): string {",
+      "  const byte = new Uint8Array(1);",
+      "  const letti: number[] = [];",
+      "  for (;;) {",
+      "    let n = 0;",
+      "    try {",
+      "      n = readSync(0, byte, 0, 1, null);",
+      "    } catch (e) {",
+      "      // Un input non bloccante senza dati si riprova; la fine di un tubo di Windows è la fine dell'input.",
+      '      if ((e as { code?: string }).code === "EAGAIN") continue;',
+      '      if ((e as { code?: string }).code !== "EOF") throw e;',
+      "    }",
+      "    if (n === 0) break;",
+      "    letti.push(byte[0]);",
+      "    if (byte[0] === 10) break;",
+      "  }",
+      '  if (letti.length === 0) fermati("input finito");',
+      "  if (letti.at(-1) === 10) {",
+      "    letti.pop();",
+      "    if (letti.at(-1) === 13) letti.pop();",
+      "  }",
+      "  try {",
+      '    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(new Uint8Array(letti));',
+      "  } catch {",
+      '    fermati("input non valido");',
+      "  }",
+      "}",
+    ],
+    leggiIntero: [
+      "/** Una riga con un intero a 32 bit: spazi, segno, cifre e spazi, come la lettura del flowchart. */",
+      "function leggi_intero(): number {",
+      "  const riga = leggi_riga();",
+      "  const cifre = /^ *([+-]?)0*([0-9]{1,10}) *$/.exec(riga);",
+      '  if (cifre === null || !(-2147483648 <= Number(cifre[1] + cifre[2]) && Number(cifre[1] + cifre[2]) <= 2147483647)) fermati("input non valido");',
+      "  return Number(cifre[1] + cifre[2]);",
+      "}",
+    ],
+    leggiReale: [
+      "/** Una riga con un reale finito, scritto come nel flowchart (2.5, -3, 1.5e3), con spazi intorno. */",
+      "function leggi_reale(): number {",
+      "  const riga = leggi_riga();",
+      '  if (!/^ *[+-]?[0-9]{1,}(\\.[0-9]+([eE][+-]?[0-9]+)?)? *$/.test(riga) || !Number.isFinite(Number(riga))) fermati("input non valido");',
+      "  return Number(riga);",
+      "}",
+    ],
+    leggiCarattere: [
+      "/** Una riga con esattamente un carattere. */",
+      "function leggi_carattere(): string {",
+      "  const riga = leggi_riga();",
+      '  if (lunghezza(riga) !== 1) fermati("input non valido");',
+      "  return riga;",
+      "}",
+    ],
+    leggiStringa: [
+      "/** Una riga con al più n caratteri, senza il carattere di codice 0. */",
+      "function leggi_stringa(n: number): string {",
+      "  const riga = leggi_riga();",
+      '  if (lunghezza(riga) > n || riga.includes("\\0")) fermati("input non valido");',
+      "  return riga;",
+      "}",
+    ],
+    leggiBooleano: [
+      "/** Una riga con true o false. */",
+      "function leggi_booleano(): boolean {",
+      "  const riga = leggi_riga();",
+      '  if (riga !== "true" && riga !== "false") fermati("input non valido");',
+      '  return riga === "true";',
+      "}",
+    ],
     dividi: [
       "/** La divisione fra interi del C: il quoziente troncato verso lo zero. */",
       "function dividi(a: number, b: number): number {",
       "  return Math.trunc(a / b);",
+      "}",
+    ],
+    convertiAReale: [
+      "/** Un intero che diventa reale: lo zero intero non ha segno, come nel C. */",
+      "function converti_a_reale(n: number): number {",
+      "  return n + 0;",
+      "}",
+    ],
+    elevatoA: [
+      "/** La potenza: con un esponente intero fino a 1100 è esatta, arrotondata una volta. */",
+      "function elevato_a(x: number, y: number): number {",
+      "  /** Quanti bit ha l'intero. */",
+      "  function bit_di(b: bigint): number {",
+      "    return b.toString(2).length;",
+      "  }",
+      "",
+      "  /** 2^e, per e fra -1074 e 1023, costruito dai bit. */",
+      "  function due_alla(e: number): number {",
+      "    const b = new DataView(new ArrayBuffer(8));",
+      "    if (e >= -1022) b.setInt32(0, (e + 1023) << 20);",
+      "    else if (e + 1074 >= 32) b.setInt32(0, 1 << (e + 1042));",
+      "    else b.setUint32(4, (1 << (e + 1074)) >>> 0);",
+      "    return b.getFloat64(0);",
+      "  }",
+      "",
+      "  /** Il reale più vicino a num / den · 2^p, la metà alla pari; Infinity oltre il massimo. */",
+      "  function arrotondato(num: bigint, den: bigint, p: number): number {",
+      "    const s = 55 - (bit_di(num) - bit_di(den));",
+      "    const n = s >= 0 ? num << BigInt(s) : num;",
+      "    const d = s >= 0 ? den : den << BigInt(-s);",
+      "    const q0 = n / d;",
+      "    // Il valore è (q0 + resto) · 2^(p - s); l'ultimo bit tenuto: 53 di mantissa, mai sotto 2^-1074.",
+      "    let ultimo = Math.max(p - s + bit_di(q0) - 53, -1074);",
+      "    const t = BigInt(ultimo - (p - s));",
+      "    let q = q0 >> t;",
+      "    const resto = q0 & ((1n << t) - 1n);",
+      "    const meta = 1n << (t - 1n);",
+      "    if (resto > meta || (resto === meta && (n % d !== 0n || (q & 1n) === 1n))) q += 1n;",
+      "    if (q === 0n) return 0;",
+      "    if (bit_di(q) > 53) {",
+      "      q >>= 1n;",
+      "      ultimo++;",
+      "    }",
+      "    if (ultimo + bit_di(q) - 1 > 1023) return Infinity;",
+      "    return Number(q) * due_alla(ultimo);",
+      "  }",
+      "",
+      "  if (!(Number.isFinite(x) && x !== 0 && Number.isInteger(y) && Math.abs(y) <= 1100)) return Math.pow(x, y);",
+      "  // |x| = m · 2^e con m intero dispari, dai bit del numero: la potenza m^k · 2^(e·k) è esatta.",
+      "  const bit = new DataView(new ArrayBuffer(8));",
+      "  bit.setFloat64(0, Math.abs(x));",
+      "  const alto = bit.getUint32(0);",
+      "  let m = (BigInt(alto & 0xfffff) << 32n) | BigInt(bit.getUint32(4)) | (alto >>> 20 > 0 ? 1n << 52n : 0n);",
+      "  let e = Math.max(alto >>> 20, 1) - 1075;",
+      "  while ((m & 1n) === 0n) {",
+      "    m >>= 1n;",
+      "    e++;",
+      "  }",
+      "  const k = Math.abs(y);",
+      "  const mk = m ** BigInt(k);",
+      "  const v = y >= 0 ? arrotondato(mk, 1n, e * k) : arrotondato(1n, mk, -e * k);",
+      "  return x < 0 && k % 2 === 1 ? -v : v;",
+      "}",
+    ],
+    arrotonda: [
+      "/** La metà lontano dallo zero, come round del C (Math.round la porta verso più infinito). */",
+      "function arrotonda(x: number): number {",
+      "  const t = Math.trunc(x);",
+      "  return Math.abs(x - t) >= 0.5 ? t + (x < 0 ? -1 : 1) : t;",
+      "}",
+    ],
+    convertiACarattere: [
+      "/** Il carattere con quel codice Unicode; si ferma se il codice non è valido. */",
+      "function converti_a_carattere(n: number): string {",
+      '  if (!(0 <= n && n <= 0x10FFFF) || (0xD800 <= n && n <= 0xDFFF)) fermati("codice di carattere non valido");',
+      "  return String.fromCodePoint(n);",
+      "}",
+    ],
+    convertiAVettore: [
+      "/** I caratteri della stringa, poi lo spazio di riempimento fino a n elementi. */",
+      "function converti_a_vettore(s: string, n: number): string[] {",
+      "  const c = Array.from(s);",
+      '  if (c.length > n) fermati("stringa più lunga del vettore");',
+      '  return c.concat(new Array<string>(n - c.length).fill(" "));',
+      "}",
+    ],
+    convertiAStringa: [
+      "/** Tutti gli elementi del vettore, in ordine; un carattere di codice 0 non entra in una stringa. */",
+      "function converti_a_stringa(v: string[]): string {",
+      '  if (v.includes("\\0")) fermati("carattere di codice 0 in una stringa");',
+      '  return v.join("");',
+      "}",
+    ],
+    carattereDi: [
+      "/** Il carattere in posizione i della stringa, da 0; si ferma se la posizione è fuori. */",
+      "function carattere_di(s: string, i: number): string {",
+      "  const c = Array.from(s);",
+      '  if (!(0 <= i && i < c.length)) fermati("indice fuori dalla stringa");',
+      "  return c[i];",
+      "}",
+    ],
+    lunghezza: [
+      "/** Quanti caratteri ha la stringa (length di JavaScript conta le unità UTF-16). */",
+      "function lunghezza(s: string): number {",
+      "  return Array.from(s).length;",
+      "}",
+    ],
+    confronta: [
+      "/** Due testi confrontati per codici dei caratteri, come nel C: negativo, zero o positivo (il < di JavaScript confronta le unità UTF-16). */",
+      "function confronta(a: string, b: string): number {",
+      "  const x = Array.from(a);",
+      "  const y = Array.from(b);",
+      "  for (let i = 0; i < x.length && i < y.length; i++) {",
+      "    if (x[i] !== y[i]) return x[i].codePointAt(0)! - y[i].codePointAt(0)!;",
+      "  }",
+      "  return x.length - y.length;",
+      "}",
+    ],
+    nellaStringa: [
+      "/** Un carattere che entra in una stringa: quello di codice 0 non può. */",
+      "function nella_stringa(c: string): string {",
+      '  if (c === "\\0") fermati("carattere di codice 0 in una stringa");',
+      "  return c;",
+      "}",
+    ],
+    concatenazione: [
+      "/** Due testi già calcolati, uno dopo l'altro: un carattere di codice 0 non entra in una stringa. */",
+      "function concatena(a: string, b: string): string {",
+      '  if (a === "\\0" || b === "\\0") fermati("carattere di codice 0 in una stringa");',
+      "  return a + b;",
+      "}",
+    ],
+    alPiu: [
+      "/** La stringa, se non ha più di n caratteri; altrimenti si ferma. */",
+      "function al_piu(s: string, n: number): string {",
+      '  if (lunghezza(s) > n) fermati("stringa troppo lunga");',
+      "  return s;",
+      "}",
+    ],
+    reale: [
+      "/** Un reale con 2 decimali, come nel C: sul valore esatto del numero, la metà alla cifra pari. */",
+      "function reale(x: number): string {",
+      "  // |x| = mantissa · 2^e, dai bit del numero.",
+      "  const bit = new DataView(new ArrayBuffer(8));",
+      "  bit.setFloat64(0, x);",
+      "  const alto = bit.getUint32(0);",
+      "  const esponente = (alto >>> 20) & 0x7ff;",
+      "  const mantissa = (BigInt(alto & 0xfffff) << 32n) | BigInt(bit.getUint32(4)) | (esponente > 0 ? 1n << 52n : 0n);",
+      "  const e = Math.max(esponente, 1) - 1075;",
+      "  let q: bigint;",
+      "  if (e >= 0) {",
+      "    q = (mantissa << BigInt(e)) * 100n;",
+      "  } else {",
+      "    const numeratore = mantissa * 100n;",
+      "    const denominatore = 1n << BigInt(-e);",
+      "    q = numeratore / denominatore;",
+      "    const resto = 2n * (numeratore % denominatore);",
+      "    if (resto > denominatore || (resto === denominatore && q % 2n === 1n)) q += 1n;",
+      "  }",
+      '  const cifre = q.toString().padStart(3, "0");',
+      '  return `${alto >>> 31 === 1 ? "-" : ""}${cifre.slice(0, -2)}.${cifre.slice(-2)}`;',
       "}",
     ],
     booleano: [
@@ -59,10 +341,257 @@ const supporto: Record<Lingua, Record<Supporto, readonly string[]>> = {
     ],
   },
   en: {
+    fermati: [
+      "/** Writes the reason and the line of the program that met it, then stops. */",
+      "function halt(reason: string): never {",
+      '  let line = "?";',
+      '  for (const call of (new Error().stack ?? "").split("\\n")) {',
+      "    const found = /^\\s*at main \\(.*:(\\d+):\\d+\\)$/.exec(call);",
+      "    if (found !== null) {",
+      "      line = found[1];",
+      "      break;",
+      "    }",
+      "  }",
+      "  writeSync(2, `Error at line ${line}: ${reason}\\n`);",
+      "  process.exit(1);",
+      "}",
+    ],
+    leggiRiga: [
+      "/** A line of the input, without its line break; stops if the input is exhausted or is not UTF-8 text. */",
+      "function read_line(): string {",
+      "  const byte = new Uint8Array(1);",
+      "  const bytes: number[] = [];",
+      "  for (;;) {",
+      "    let n = 0;",
+      "    try {",
+      "      n = readSync(0, byte, 0, 1, null);",
+      "    } catch (e) {",
+      "      // A non-blocking input without data is retried; the end of a Windows pipe is the end of the input.",
+      '      if ((e as { code?: string }).code === "EAGAIN") continue;',
+      '      if ((e as { code?: string }).code !== "EOF") throw e;',
+      "    }",
+      "    if (n === 0) break;",
+      "    bytes.push(byte[0]);",
+      "    if (byte[0] === 10) break;",
+      "  }",
+      '  if (bytes.length === 0) halt("input exhausted");',
+      "  if (bytes.at(-1) === 10) {",
+      "    bytes.pop();",
+      "    if (bytes.at(-1) === 13) bytes.pop();",
+      "  }",
+      "  try {",
+      '    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(new Uint8Array(bytes));',
+      "  } catch {",
+      '    halt("invalid input");',
+      "  }",
+      "}",
+    ],
+    leggiIntero: [
+      "/** A line with a 32-bit integer: spaces, sign, digits and spaces, as the flowchart reads it. */",
+      "function read_integer(): number {",
+      "  const line = read_line();",
+      "  const digits = /^ *([+-]?)0*([0-9]{1,10}) *$/.exec(line);",
+      '  if (digits === null || !(-2147483648 <= Number(digits[1] + digits[2]) && Number(digits[1] + digits[2]) <= 2147483647)) halt("invalid input");',
+      "  return Number(digits[1] + digits[2]);",
+      "}",
+    ],
+    leggiReale: [
+      "/** A line with a finite real, written as in the flowchart (2.5, -3, 1.5e3), with spaces around. */",
+      "function read_real(): number {",
+      "  const line = read_line();",
+      '  if (!/^ *[+-]?[0-9]{1,}(\\.[0-9]+([eE][+-]?[0-9]+)?)? *$/.test(line) || !Number.isFinite(Number(line))) halt("invalid input");',
+      "  return Number(line);",
+      "}",
+    ],
+    leggiCarattere: [
+      "/** A line with exactly one character. */",
+      "function read_character(): string {",
+      "  const line = read_line();",
+      '  if (length(line) !== 1) halt("invalid input");',
+      "  return line;",
+      "}",
+    ],
+    leggiStringa: [
+      "/** A line with at most n characters, without the character with code 0. */",
+      "function read_string(n: number): string {",
+      "  const line = read_line();",
+      '  if (length(line) > n || line.includes("\\0")) halt("invalid input");',
+      "  return line;",
+      "}",
+    ],
+    leggiBooleano: [
+      "/** A line with true or false. */",
+      "function read_boolean(): boolean {",
+      "  const line = read_line();",
+      '  if (line !== "true" && line !== "false") halt("invalid input");',
+      '  return line === "true";',
+      "}",
+    ],
     dividi: [
       "/** Integer division as in C: the quotient truncated towards zero. */",
       "function divide(a: number, b: number): number {",
       "  return Math.trunc(a / b);",
+      "}",
+    ],
+    convertiAReale: [
+      "/** An integer that becomes a real: the integer zero has no sign, as in C. */",
+      "function to_real(n: number): number {",
+      "  return n + 0;",
+      "}",
+    ],
+    elevatoA: [
+      "/** The power: with an integer exponent up to 1100 it is exact, rounded once. */",
+      "function raised_to(x: number, y: number): number {",
+      "  /** How many bits the integer has. */",
+      "  function bit_count(b: bigint): number {",
+      "    return b.toString(2).length;",
+      "  }",
+      "",
+      "  /** 2^e, for e between -1074 and 1023, built from the bits. */",
+      "  function two_to(e: number): number {",
+      "    const b = new DataView(new ArrayBuffer(8));",
+      "    if (e >= -1022) b.setInt32(0, (e + 1023) << 20);",
+      "    else if (e + 1074 >= 32) b.setInt32(0, 1 << (e + 1042));",
+      "    else b.setUint32(4, (1 << (e + 1074)) >>> 0);",
+      "    return b.getFloat64(0);",
+      "  }",
+      "",
+      "  /** The real nearest to num / den · 2^p, halves to even; Infinity beyond the maximum. */",
+      "  function rounded(num: bigint, den: bigint, p: number): number {",
+      "    const s = 55 - (bit_count(num) - bit_count(den));",
+      "    const n = s >= 0 ? num << BigInt(s) : num;",
+      "    const d = s >= 0 ? den : den << BigInt(-s);",
+      "    const q0 = n / d;",
+      "    // The value is (q0 + rest) · 2^(p - s); the last bit kept: 53 of mantissa, never below 2^-1074.",
+      "    let last = Math.max(p - s + bit_count(q0) - 53, -1074);",
+      "    const t = BigInt(last - (p - s));",
+      "    let q = q0 >> t;",
+      "    const rest = q0 & ((1n << t) - 1n);",
+      "    const half = 1n << (t - 1n);",
+      "    if (rest > half || (rest === half && (n % d !== 0n || (q & 1n) === 1n))) q += 1n;",
+      "    if (q === 0n) return 0;",
+      "    if (bit_count(q) > 53) {",
+      "      q >>= 1n;",
+      "      last++;",
+      "    }",
+      "    if (last + bit_count(q) - 1 > 1023) return Infinity;",
+      "    return Number(q) * two_to(last);",
+      "  }",
+      "",
+      "  if (!(Number.isFinite(x) && x !== 0 && Number.isInteger(y) && Math.abs(y) <= 1100)) return Math.pow(x, y);",
+      "  // |x| = m · 2^e with m an odd integer, from the bits of the number: the power m^k · 2^(e·k) is exact.",
+      "  const bits = new DataView(new ArrayBuffer(8));",
+      "  bits.setFloat64(0, Math.abs(x));",
+      "  const high = bits.getUint32(0);",
+      "  let m = (BigInt(high & 0xfffff) << 32n) | BigInt(bits.getUint32(4)) | (high >>> 20 > 0 ? 1n << 52n : 0n);",
+      "  let e = Math.max(high >>> 20, 1) - 1075;",
+      "  while ((m & 1n) === 0n) {",
+      "    m >>= 1n;",
+      "    e++;",
+      "  }",
+      "  const k = Math.abs(y);",
+      "  const mk = m ** BigInt(k);",
+      "  const v = y >= 0 ? rounded(mk, 1n, e * k) : rounded(1n, mk, -e * k);",
+      "  return x < 0 && k % 2 === 1 ? -v : v;",
+      "}",
+    ],
+    arrotonda: [
+      "/** Halves away from zero, like round in C (Math.round takes them towards plus infinity). */",
+      "function round(x: number): number {",
+      "  const t = Math.trunc(x);",
+      "  return Math.abs(x - t) >= 0.5 ? t + (x < 0 ? -1 : 1) : t;",
+      "}",
+    ],
+    convertiACarattere: [
+      "/** The character with that Unicode code; stops if the code is not valid. */",
+      "function to_character(n: number): string {",
+      '  if (!(0 <= n && n <= 0x10FFFF) || (0xD800 <= n && n <= 0xDFFF)) halt("invalid character code");',
+      "  return String.fromCodePoint(n);",
+      "}",
+    ],
+    convertiAVettore: [
+      "/** The characters of the string, then the padding space up to n elements. */",
+      "function to_array(s: string, n: number): string[] {",
+      "  const c = Array.from(s);",
+      '  if (c.length > n) halt("string longer than the array");',
+      '  return c.concat(new Array<string>(n - c.length).fill(" "));',
+      "}",
+    ],
+    convertiAStringa: [
+      "/** All the elements of the array, in order; the character with code 0 cannot enter a string. */",
+      "function to_string(v: string[]): string {",
+      '  if (v.includes("\\0")) halt("character with code 0 in a string");',
+      '  return v.join("");',
+      "}",
+    ],
+    carattereDi: [
+      "/** The character at position i of the string, from 0; stops if the position is outside. */",
+      "function character_at(s: string, i: number): string {",
+      "  const c = Array.from(s);",
+      '  if (!(0 <= i && i < c.length)) halt("index outside the string");',
+      "  return c[i];",
+      "}",
+    ],
+    lunghezza: [
+      "/** How many characters the string has (the length of JavaScript counts UTF-16 units). */",
+      "function length(s: string): number {",
+      "  return Array.from(s).length;",
+      "}",
+    ],
+    confronta: [
+      "/** Two texts compared by the codes of their characters, as in C: negative, zero or positive (the < of JavaScript compares UTF-16 units). */",
+      "function compare(a: string, b: string): number {",
+      "  const x = Array.from(a);",
+      "  const y = Array.from(b);",
+      "  for (let i = 0; i < x.length && i < y.length; i++) {",
+      "    if (x[i] !== y[i]) return x[i].codePointAt(0)! - y[i].codePointAt(0)!;",
+      "  }",
+      "  return x.length - y.length;",
+      "}",
+    ],
+    nellaStringa: [
+      "/** A character entering a string: the one with code 0 cannot. */",
+      "function into_string(c: string): string {",
+      '  if (c === "\\0") halt("character with code 0 in a string");',
+      "  return c;",
+      "}",
+    ],
+    concatenazione: [
+      "/** Two texts already calculated, one after the other: the character with code 0 cannot enter a string. */",
+      "function concatenate(a: string, b: string): string {",
+      '  if (a === "\\0" || b === "\\0") halt("character with code 0 in a string");',
+      "  return a + b;",
+      "}",
+    ],
+    alPiu: [
+      "/** The string, if it has at most n characters; otherwise stops. */",
+      "function at_most(s: string, n: number): string {",
+      '  if (length(s) > n) halt("string too long");',
+      "  return s;",
+      "}",
+    ],
+    reale: [
+      "/** A real with 2 decimals, as in C: on the exact value of the number, halves to the even digit. */",
+      "function real(x: number): string {",
+      "  // |x| = mantissa · 2^e, from the bits of the number.",
+      "  const bits = new DataView(new ArrayBuffer(8));",
+      "  bits.setFloat64(0, x);",
+      "  const high = bits.getUint32(0);",
+      "  const exponent = (high >>> 20) & 0x7ff;",
+      "  const mantissa = (BigInt(high & 0xfffff) << 32n) | BigInt(bits.getUint32(4)) | (exponent > 0 ? 1n << 52n : 0n);",
+      "  const e = Math.max(exponent, 1) - 1075;",
+      "  let q: bigint;",
+      "  if (e >= 0) {",
+      "    q = (mantissa << BigInt(e)) * 100n;",
+      "  } else {",
+      "    const numerator = mantissa * 100n;",
+      "    const denominator = 1n << BigInt(-e);",
+      "    q = numerator / denominator;",
+      "    const rest = 2n * (numerator % denominator);",
+      "    if (rest > denominator || (rest === denominator && q % 2n === 1n)) q += 1n;",
+      "  }",
+      '  const digits = q.toString().padStart(3, "0");',
+      '  return `${high >>> 31 === 1 ? "-" : ""}${digits.slice(0, -2)}.${digits.slice(-2)}`;',
       "}",
     ],
     booleano: [
@@ -80,71 +609,162 @@ const supporto: Record<Lingua, Record<Supporto, readonly string[]>> = {
   },
 };
 
-/** Un programma intero: la testa col nome, l'import di ciò che scrive, le costanti comuni, il programma principale, le
- * funzioni di supporto usate (in quest'ordine: `scrivi` per ultima) e la chiamata di `main`. */
+/** Le funzioni che una funzione di supporto chiama: il programma scrive anche quelle. */
+const chiama: Partial<Record<Supporto, readonly Supporto[]>> = {
+  leggiRiga: ["fermati"],
+  leggiIntero: ["leggiRiga", "fermati"],
+  leggiReale: ["leggiRiga", "fermati"],
+  leggiCarattere: ["leggiRiga", "lunghezza", "fermati"],
+  leggiStringa: ["leggiRiga", "lunghezza", "fermati"],
+  leggiBooleano: ["leggiRiga", "fermati"],
+  convertiACarattere: ["fermati"],
+  convertiAVettore: ["fermati"],
+  convertiAStringa: ["fermati"],
+  carattereDi: ["fermati"],
+  nellaStringa: ["fermati"],
+  concatenazione: ["fermati"],
+  alPiu: ["lunghezza", "fermati"],
+};
+
+/** Un programma intero: la testa col nome, l'import di ciò che legge e scrive, le costanti comuni, il programma
+ * principale (le righe con `{chiave}` per i nomi delle funzioni di supporto), le funzioni di supporto usate con quelle
+ * che chiamano, nell'ordine fisso, e la chiamata di `main`. */
 export function programma(l: Lingua, nome: string, principale: readonly string[], usate: readonly Supporto[], costanti: readonly string[] = []): string {
-  const funzioni = usate.flatMap((s, i) => [...(i === 0 ? [] : ["", ""]), ...supporto[l][s]]);
+  const tutte = new Set<Supporto>(usate);
+  for (const f of [...tutte]) for (const g of chiama[f] ?? []) tutte.add(g);
+  const inOrdine = ordineDelSupporto.filter((f) => tutte.has(f));
+  const funzioni = inOrdine.flatMap((s, i) => [...(i === 0 ? [] : ["", ""]), ...supporto[l][s]]);
+  const letti = [...(tutte.has("leggiRiga") ? ["readSync"] : []), ...(tutte.has("scrivi") || tutte.has("fermati") ? ["writeSync"] : [])];
   return testo(
     `// ${nome}`,
     ...testa[l],
-    ...(usate.includes("scrivi") ? ['import { writeSync } from "node:fs";'] : []),
+    ...(letti.length === 0 ? [] : [`import { ${letti.join(", ")} } from "node:fs";`]),
     ...(costanti.length === 0 ? [] : ["", l === "it" ? "// Costanti comuni" : "// Shared constants", ...costanti]),
     "",
     "",
-    ...principale,
-    ...(usate.length === 0 ? [] : ["", "", titoloDelSupporto[l], "", "", ...funzioni]),
+    ...principale.map((r) => riempi(l, r)),
+    ...(inOrdine.length === 0 ? [] : ["", "", titoloDelSupporto[l], "", "", ...funzioni]),
     "",
     "",
     "main();",
   );
 }
 
-const n = (l: Lingua) => (it: string, en: string) => (l === "it" ? it : en);
+/** Le due lingue di un programma. */
+const inDueLingue = (f: (l: Lingua) => string): Atteso => ({ it: f("it"), en: f("en") });
 
 const assegnazioneIntero = (l: Lingua) =>
   programma(
     l,
     "assegnazione-intero",
-    [
-      "function main(): void {",
-      "  let a: number = -7;",
-      "  let q!: number;",
-      "  let r!: number;",
-      n(l)("  q = dividi(a, 2);", "  q = divide(a, 2);"),
-      "  r = a % 2;",
-      n(l)("  scrivi(`${q} ${r}\\n`);", "  write(`${q} ${r}\\n`);"),
-      "}",
-    ],
+    ["function main(): void {", "  let a: number = -7;", "  let q!: number;", "  let r!: number;", "  q = {dividi}(a, 2);", "  r = a % 2;", "  {scrivi}(`${q} ${r}\\n`);", "}"],
     ["dividi", "scrivi"],
   );
 
 const assegnazioneBooleano = (l: Lingua) =>
-  programma(
+  programma(l, "assegnazione-booleano", ["function main(): void {", "  let p!: boolean;", "  p = 3 < 5 && !((2 as number) === 3);", "  {scrivi}(`${{booleano}(p)}\\n`);", "}"], ["booleano", "scrivi"]);
+
+const scritturaStringa = (l: Lingua) => programma(l, "scrittura-stringa", ["function main(): void {", "  {scrivi}(`riga\\n`);", "  {scrivi}(`fine`);", "}"], ["scrivi"]);
+
+/** Il programma di riferimento: le letture, il `ripeti`, il `se` e il `mentre`, il reale e la sua scrittura. */
+const riferimento = (l: Lingua) => {
+  // Le parole dei ruoli sono le stesse nelle due lingue.
+  const ruolo = { i: "input", o: "output" };
+  const al = (t: string, nota: string) => t + sp(32 - t.length + 2) + `// ${nota}`;
+  return programma(
     l,
-    "assegnazione-booleano",
+    "riferimento-media-voti",
     [
       "function main(): void {",
-      "  let p!: boolean;",
-      "  p = 3 < 5 && !((2 as number) === 3);",
-      n(l)("  scrivi(`${booleano(p)}\\n`);", "  write(`${boolean(p)}\\n`);"),
+      al("  let n!: number;", ruolo.i),
+      al("  let voto!: number;", ruolo.i),
+      al("  let media!: number;", ruolo.o),
+      al("  let contati: number = 0;", ruolo.o),
+      al("  let insufficienti: number = 0;", ruolo.o),
+      "  let somma: number = 0;",
+      "  let i: number = 0;",
+      "  let j: number = 0;",
+      "  // Prima si chiede quanti voti leggere, finché il numero non è fra 1 e 30",
+      "  do {",
+      "    n = {leggiIntero}();",
+      "    if (n < 1 || n > 30) {",
+      "      {scrivi}(`Numero non valido: da 1 a 30\\n`);",
+      "    }",
+      "  } while (n < 1 || n > 30);",
+      "  i = 0;",
+      "  while (i < n) {",
+      "    voto = {leggiIntero}();",
+      "    if (voto >= 1 && voto <= 10) {",
+      "      somma = somma + voto;",
+      "      contati = contati + 1;",
+      "      if (voto < 6) {",
+      "        insufficienti = insufficienti + 1;",
+      "      }",
+      "    } else {",
+      "      {scrivi}(`Voto ignorato: ${voto}\\n`);",
+      "    }",
+      "    i = i + 1;",
+      "  }",
+      "  if (contati > 0) {",
+      "    media = {convertiAReale}(somma) / {convertiAReale}(contati);",
+      "    {scrivi}(`Media: ${{reale}(media)} su ${contati} voti, insufficienti: ${insufficienti}\\n`);",
+      "    while (j < {dividi}(somma, contati)) {",
+      "      {scrivi}(`*`);",
+      "      j = j + 1;",
+      "    }",
+      "    {scrivi}(`\\n`);",
+      "  } else {",
+      "    {scrivi}(`Nessun voto valido\\n`);",
+      "  }",
       "}",
     ],
-    ["booleano", "scrivi"],
+    ["leggiIntero", "dividi", "convertiAReale", "reale", "scrivi"],
   );
+};
 
-const scritturaStringa = (l: Lingua) =>
+/** Il secondo valore si ferma: i valori prima di lui sono in una scrittura loro. */
+const scritturaCheSiFerma = (l: Lingua) =>
   programma(
     l,
-    "scrittura-stringa",
-    ["function main(): void {", n(l)("  scrivi(`riga\\n`);", "  write(`riga\\n`);"), n(l)("  scrivi(`fine`);", "  write(`fine`);"), "}"],
-    ["scrivi"],
+    "scrittura-che-si-ferma",
+    ["function main(): void {", "  let n: number = 0;", "  let c!: string;", "  c = {convertiACarattere}(n);", "  {scrivi}(`prima `);", '  {scrivi}(`${"x" + {nellaStringa}(c)}\\n`);', "}"],
+    ["convertiACarattere", "nellaStringa", "scrivi"],
+  );
+
+/** Il vettore di caratteri senza valore, riempito dalla conversione. */
+const convertiAVettore = (l: Lingua) =>
+  programma(
+    l,
+    "converti-a-vettore",
+    [
+      "function main(): void {",
+      '  let s: string = "ciao";',
+      "  let v: string[] = new Array<string>(6);",
+      "  v = {convertiAVettore}(s, 6);",
+      "  {scrivi}(`[${v[0]}][${v[1]}][${v[2]}][${v[3]}][${v[4]}][${v[5]}]\\n`);",
+      "}",
+    ],
+    ["convertiAVettore", "scrivi"],
+  );
+
+/** La lettura di un carattere e il suo codice. */
+const letturaCarattere = (l: Lingua) =>
+  programma(
+    l,
+    "lettura-carattere",
+    ["function main(): void {", "  let c!: string;  // input", "  c = {leggiCarattere}();", "  {scrivi}(`${c} ${c.codePointAt(0)!}\\n`);", "}"],
+    ["leggiCarattere", "scrivi"],
   );
 
 /** I programmi del corpus della tappa 1, per nome del file, nelle due lingue. */
 export const delCorpus: Readonly<Record<string, Atteso>> = {
-  "assegnazione-intero": { it: assegnazioneIntero("it"), en: assegnazioneIntero("en") },
-  "assegnazione-booleano": { it: assegnazioneBooleano("it"), en: assegnazioneBooleano("en") },
-  "scrittura-stringa": { it: scritturaStringa("it"), en: scritturaStringa("en") },
+  "assegnazione-intero": inDueLingue(assegnazioneIntero),
+  "assegnazione-booleano": inDueLingue(assegnazioneBooleano),
+  "scrittura-stringa": inDueLingue(scritturaStringa),
+  "riferimento-media-voti": inDueLingue(riferimento),
+  "scrittura-che-si-ferma": inDueLingue(scritturaCheSiFerma),
+  "converti-a-vettore": inDueLingue(convertiAVettore),
+  "lettura-carattere": inDueLingue(letturaCarattere),
 };
 
 /** Le forme del primo gruppo di costrutti, in un programma scritto qui. */
@@ -185,22 +805,22 @@ const formeDelloScheletroIn = (l: Lingua): string =>
       "function main(): void {",
       "  let a: number = -5;" + sp(3) + "// input",
       "  let b!: number;" + sp(7) + "// output",
-      "  const N: number = 3;" + sp(2) + n(l)("// costante", "// constant"),
+      "  const N: number = 3;" + sp(2) + (l === "it" ? "// costante" : "// constant"),
       "  let p!: boolean;",
       "  // Le forme dello scheletro",
-      n(l)("  b = dividi(-a * (MASSIMO - 2), N) % 4;", "  b = divide(-a * (MASSIMO - 2), N) % 4;"),
+      "  b = {dividi}(-a * (MASSIMO - 2), N) % 4;",
       "  b = b - -3;",
       "  b = -(-b);",
       "  p = (a < b) === (b >= 0) && !(N !== 3) || false;",
-      n(l)('  scrivi(`a = ${a} \\`x\\` \\${y} "q"\\t${b}\\n`);', '  write(`a = ${a} \\`x\\` \\${y} "q"\\t${b}\\n`);'),
-      n(l)("  scrivi(`${booleano((p as boolean) === false)} ${booleano(a > 0 && true)}`);", "  write(`${boolean((p as boolean) === false)} ${boolean(a > 0 && true)}`);"),
+      '  {scrivi}(`a = ${a} \\`x\\` \\${y} "q"\\t${b}\\n`);',
+      "  {scrivi}(`${{booleano}((p as boolean) === false)} ${{booleano}(a > 0 && true)}`);",
       "}",
     ],
     ["dividi", "booleano", "scrivi"],
     ["const MASSIMO: number = 10;"],
   );
 
-export const formeDelloScheletroAttese: Atteso = { it: formeDelloScheletroIn("it"), en: formeDelloScheletroIn("en") };
+export const formeDelloScheletroAttese: Atteso = inDueLingue(formeDelloScheletroIn);
 
 /** Le provenienze delle righe di «forme dello scheletro» fino alla fine di `main`: il blocco, `=dato` per una
  * dichiarazione, vuoto per una riga di struttura. Le righe dopo `main` non ne hanno. */
@@ -225,3 +845,119 @@ export const provenienzeDelloScheletro: readonly string[] = [
   "b7",
   "", // la graffa di main
 ];
+
+/** Le forme del resto della tappa 1, in un programma scritto qui (non si esegue: le forme si guardano). */
+export const formeDellaTappa1: Progetto = {
+  format: "algodesign",
+  schema_version: 2,
+  metadata: { name: "forme-della-tappa-1" },
+  shared_constants: [{ name: "TASSO", type: "real", initial: "2.5", constant: true }],
+  functions: [
+    {
+      id: "f1",
+      kind: "main",
+      data: [
+        { name: "r", type: "real", initial: "-0", role: "input" },
+        { name: "q", type: "integer", initial: "7" },
+        { name: "c", type: "character", initial: "'è'" },
+        { name: "s", type: "string", max_length: 5, initial: '"ab"' },
+        { name: "t", type: "string" },
+        { name: "v", type: "integer", size: 3, initial: ["1", "-2", "3"] },
+        { name: "w", type: "character", size: 4 },
+        { name: "z", type: "real", size: 2, initial: { each: "1" } },
+        { name: "p", type: "boolean" },
+      ],
+      body: [
+        { id: "b1", kind: "comment", text: "Le forme della tappa 1" },
+        { id: "b2", kind: "assignment", target: "r", value: "q * 0.5 + TASSO" },
+        { id: "b3", kind: "assignment", target: "r", value: "q raised_to 2" },
+        { id: "b4", kind: "assignment", target: "q", value: "to_integer (r - 0.5)" },
+        { id: "b5", kind: "assignment", target: "q", value: "to_integer c" },
+        { id: "b6", kind: "assignment", target: "c", value: "to_character (q + 1)" },
+        { id: "b7", kind: "assignment", target: "t", value: "s + c" },
+        { id: "b8", kind: "assignment", target: "s", value: 't + "x"' },
+        { id: "b9", kind: "assignment", target: "w", value: "to_array s" },
+        { id: "b10", kind: "assignment", target: "t", value: "to_string w" },
+        { id: "b11", kind: "assignment", target: "v[q mod 3]", value: "length t" },
+        { id: "b12", kind: "assignment", target: "p", value: "s < t or c >= 'a' or 'a' == 'b' or 1.5 != 2.5" },
+        { id: "b13", kind: "assignment", target: "r", value: "(round r) + (round_down r) + (round_up r) + (integer_part r)" },
+        { id: "b14", kind: "assignment", target: "r", value: "square_root (absolute_value r) + pi" },
+        { id: "b15", kind: "repeat", body: [{ id: "b16", kind: "assignment", target: "q", value: "q - 1" }], condition: "q > 0" },
+        { id: "b17", kind: "while", condition: "p and false", body: [] },
+        {
+          id: "b18",
+          kind: "if",
+          condition: 't == ""',
+          then: [],
+          else: [{ id: "b19", kind: "write", values: ["r", '" "', "c", "s[1]", "z[0]"], newline: true }],
+        },
+        { id: "b20", kind: "read", target: "v[2]" },
+        { id: "b21", kind: "read", target: "t" },
+        { id: "b22", kind: "read", target: "r" },
+        { id: "b23", kind: "read", target: "p" },
+        { id: "b24", kind: "read", target: "c" },
+        { id: "b25", kind: "assignment", target: "t", value: 'c + ("y" + s[0])' },
+        { id: "b26", kind: "write", values: ["q", '" "', "p == true", "v[0] / 2"], newline: false },
+      ],
+      end: { id: "b27" },
+    },
+  ],
+};
+
+const formeDellaTappa1In = (l: Lingua): string =>
+  programma(
+    l,
+    "forme-della-tappa-1",
+    [
+      "function main(): void {",
+      "  let r: number = 0.0;  // input",
+      "  let q: number = 7;",
+      "  let c: string = 'è';",
+      '  let s: string = "ab";',
+      "  let t!: string;",
+      "  let v: number[] = [1, -2, 3];",
+      "  let w: string[] = new Array<string>(4);",
+      "  let z: number[] = new Array<number>(2).fill(1.0);",
+      "  let p!: boolean;",
+      "  // Le forme della tappa 1",
+      "  r = {convertiAReale}(q) * 0.5 + TASSO;",
+      "  r = {elevatoA}({convertiAReale}(q), 2.0);",
+      "  q = Math.trunc(r - 0.5);",
+      "  q = c.codePointAt(0)!;",
+      "  c = {convertiACarattere}(q + 1);",
+      "  t = s + {nellaStringa}(c);",
+      '  s = {alPiu}(t + "x", 5);',
+      "  w = {convertiAVettore}(s, 4);",
+      "  t = {convertiAStringa}(w);",
+      "  v[q % 3] = {lunghezza}(t);",
+      "  p = {confronta}(s, t) < 0 || {confronta}(c, 'a') >= 0 || ('a' as string) === 'b' || (1.5 as number) !== 2.5;",
+      "  r = {arrotonda}(r) + Math.floor(r) + Math.ceil(r) + Math.trunc(r);",
+      "  r = Math.sqrt(Math.abs(r)) + Math.PI;",
+      "  do {",
+      "    q = q - 1;",
+      "  } while (q > 0);",
+      "  while (p && false) {",
+      "  }",
+      '  if (t === "") {',
+      "  } else {",
+      "    {scrivi}(`${{reale}(r)} ${c}`);",
+      "    {scrivi}(`${{carattereDi}(s, 1)}${{reale}(z[0])}\\n`);",
+      "  }",
+      "  v[2] = {leggiIntero}();",
+      "  t = {leggiStringa}(255);",
+      "  r = {leggiReale}();",
+      "  p = {leggiBooleano}();",
+      "  c = {leggiCarattere}();",
+      '  t = {concatenazione}(c, "y" + {carattereDi}(s, 0));',
+      "  {scrivi}(`${q} ${{booleano}((p as boolean) === true)}${{dividi}(v[0], 2)}`);",
+      "}",
+    ],
+    [
+      "leggiIntero", "leggiReale", "leggiCarattere", "leggiStringa", "leggiBooleano", "dividi", "convertiAReale", "elevatoA",
+      "arrotonda", "convertiACarattere", "convertiAVettore", "convertiAStringa", "carattereDi", "lunghezza", "confronta",
+      "nellaStringa", "concatenazione", "alPiu", "reale", "booleano", "scrivi",
+    ],
+    ["const TASSO: number = 2.5;"],
+  );
+
+export const formeDellaTappa1Attese: Atteso = inDueLingue(formeDellaTappa1In);

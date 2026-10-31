@@ -164,9 +164,9 @@ describe("la provenienza delle righe", () => {
       dati += nomi.length;
     }
     // il denominatore: i blocchi e i dati del corpus della tappa 1, contati a parte
-    expect(corpus.length).toBe(56);
-    expect(blocchi).toBe(153);
-    expect(dati).toBe(104);
+    expect(corpus.length).toBe(60);
+    expect(blocchi).toBe(164);
+    expect(dati).toBe(114);
   });
 
   test("riga per riga nel programma principale di «forme dei cicli», con le fasi, uguale nelle due lingue; dopo, nessuna", () => {

@@ -1,0 +1,66 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "indice-prima-del-valore",
+    "description": "L'indice dell'elemento si calcola prima del valore: si ferma l'indice (fuori dalla stringa), non il valore (codice non valido)."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "v",
+          "type": "integer",
+          "size": 2,
+          "initial": {
+            "each": "0"
+          }
+        },
+        {
+          "name": "s",
+          "type": "string",
+          "initial": "\"ab\""
+        },
+        {
+          "name": "n",
+          "type": "integer",
+          "initial": "-1"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "v[to_integer s[5]]",
+          "value": "to_integer to_character n"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "v[0]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b3"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "indice-prima-del-valore",
+      "inputs": [],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "index_out_of_range",
+          "block": "b1"
+        }
+      }
+    }
+  ]
+}

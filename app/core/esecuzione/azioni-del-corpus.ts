@@ -30,12 +30,18 @@ export const azioniSenzaIValoriIniziali: Readonly<Record<string, number>> = {
   "domanda-prima-della-lettura#con i debiti": 12,
   "domanda-prima-della-lettura#promosso": 10,
   "indice-fuori#indice-fuori": 1,
+  // I quattro casi nati dopo i valori iniziali come azioni non hanno un «prima»: il numero è quello di adesso meno i
+  // valori iniziali, contato dai blocchi (l'assegnazione che si ferma; sei azioni e la fine; due e la fine; la scrittura
+  // e la fine).
+  "indice-prima-del-valore#indice-prima-del-valore": 1,
   "input-finito#input-finito": 2,
   "input-non-valido#input-non-valido": 1,
+  "intero-meno-zero-in-un-reale#intero-meno-zero-in-un-reale": 7,
   "intero-minimo-diviso-meno-uno#intero-minimo-diviso-meno-uno": 3,
   "intero-troppo-lungo#intero-troppo-lungo": 1,
   "lettura-booleano#lettura-booleano": 4,
   "lettura-carattere#lettura-carattere": 3,
+  "lettura-con-il-bom#lettura-con-il-bom": 3,
   "lettura-intero#lettura-intero": 3,
   // Il secondo caso del file, aggiunto dopo: lettura-intero non ha valori iniziali, e le azioni sono quelle del primo.
   "lettura-intero#negativo": 3,
@@ -43,6 +49,7 @@ export const azioniSenzaIValoriIniziali: Readonly<Record<string, number>> = {
   "lettura-stringa#lettura-stringa": 3,
   "meno-zero-in-un-reale#meno-zero-in-un-reale": 3,
   "opposto-intero-minimo#opposto-intero-minimo": 3,
+  "ordine-fuori-dal-piano-base#ordine-fuori-dal-piano-base": 2,
   "overflow-fattoriale#overflow-fattoriale": 38,
   "potenza-esatta#potenza-esatta": 2,
   "radice-quadrata#radice-quadrata": 2,

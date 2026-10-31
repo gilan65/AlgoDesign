@@ -480,7 +480,7 @@ test("sul corpus: ogni blocco del valore iniziale ha il nome del suo dato, sulle
   console.log(`valori iniziali nel watch: ${blocchiValore} blocchi (due forme del valore ripetuto), difetti ${difetti.length}`);
   expect(difetti).toEqual([]);
   // La premessa: i 53 valori iniziali dei 32 file della tappa 1, nelle due forme.
-  expect(blocchiValore).toBe(106);
+  expect(blocchiValore).toBe(120);
 });
 
 // La copia espansa di un record (`b ← a`) e di una tabella (`u ← t`, coi campi nel ciclo dei record; `r ← t[1]`,
