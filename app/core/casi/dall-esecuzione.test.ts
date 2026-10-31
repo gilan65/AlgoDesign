@@ -84,7 +84,7 @@ test("ogni caso del corpus rifatto come esecuzione libera compone il caso del fi
   console.log(riga);
   expect(diversi).toEqual([]);
   // Il conteggio del corpus di oggi, scritto prima: un caso nuovo lo cambia, e il numero va riscritto guardandolo.
-  expect(riga).toBe("totale 191: uguali 178, esclusi errore statico 10, riga non valida 2, voci finite 1");
+  expect(riga).toBe("totale 192: uguali 179, esclusi errore statico 10, riga non valida 2, voci finite 1");
 }, 30_000);
 
 type Json = any;

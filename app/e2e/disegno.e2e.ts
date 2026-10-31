@@ -262,7 +262,7 @@ for (const { lingua, condizioni, cicliPer, cicliPerOgni, copiaDeiVettori, domand
     const fatti = misuraIlCorpus().file;
     expect(corpus.length).toBe(fatti["tappa-1"]! + fatti["tappa-2"]!);
     expect(corpus.length).toBeGreaterThan(0);
-    expect([corpusTappa3.length, coiSalti.length]).toEqual([183, 45]);
+    expect([corpusTappa3.length, coiSalti.length]).toEqual([185, 45]);
     // Le forme di procedure e funzioni: due righe ai lati per salto, i nomi in grassetto, *rif* e i tipi in corsivo.
     expect(salti).toBeGreaterThan(30);
     expect(lati).toBe(2 * salti);

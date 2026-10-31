@@ -418,7 +418,7 @@ describe("procedure e funzioni", () => {
       expect(b, f).toEqual(a!);
     }
     // il denominatore, contato a parte: 53 file, 7 col solo errore statico atteso
-    expect([tappa3.length, generati]).toEqual([53, 46]);
+    expect([tappa3.length, generati]).toEqual([54, 47]);
   });
 
   test("una funzione che nessuno chiama ancora c'è nel codice, con le righe della sua fine", () => {

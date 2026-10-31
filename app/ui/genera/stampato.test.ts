@@ -31,7 +31,7 @@ import { testoDelCodice, type Riga } from "../../core/genera/forma";
 import { linguaggi } from "../../core/genera/linguaggi";
 import { aCapo, fogliDelCodice, partiDelCodice, rientroDelSeguito, type ParteDelCodice, type RigaStampata } from "../../core/genera/stampato";
 import { apri } from "../../core/progetto/formato";
-import { usaLeMatrici, usaLeTabelle, type Blocco, type Progetto } from "../../core/progetto/modello";
+import { usaIRecord, usaLeMatrici, usaLeTabelle, type Blocco, type Progetto } from "../../core/progetto/modello";
 import { paroleDelloPseudocodice } from "./parole";
 
 const radice = join(import.meta.dir, "..", "..");
@@ -166,7 +166,7 @@ const file = ["casi/tappa-1", "casi/tappa-2", "casi/tappa-3", "casi/tappa-4", "c
     .map((f) => `${c}/${f}`),
 );
 /** I tipi nuovi di un file di `casi/tipi/`: tabella se ne usa una, poi matrice, poi record. */
-const specieDi = (f: string, p: Progetto) => (!f.startsWith("casi/tipi/") ? undefined : usaLeTabelle(p) ? "tabella" : usaLeMatrici(p) ? "matrice" : "record");
+const specieDi = (f: string, p: Progetto) => (!f.startsWith("casi/tipi/") ? undefined : usaLeTabelle(p) ? "tabella" : usaLeMatrici(p) ? "matrice" : usaIRecord(p) ? "record" : undefined);
 const progetti = file.flatMap((f) => {
   const e = apri(readFileSync(join(radice, f), "utf8"));
   return e.ok ? [{ file: f, p: e.progetto }] : [];

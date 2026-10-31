@@ -46,7 +46,7 @@ const titoloDelSupporto: Record<Lingua, string> = {
 export const ordineDelSupporto = [
   "preparaConsole", "fermati", "leggiRiga", "leggiIntero", "leggiReale", "leggiCarattere", "leggiStringa", "leggiBooleano", "dividi",
   "convertiAReale", "elevatoA", "arrotonda", "convertiACarattere", "convertiAVettore", "convertiAStringa", "carattereDi",
-  "lunghezza", "confronta", "nellaStringa", "concatenazione", "alPiu", "reale", "booleano", "scrivi",
+  "lunghezza", "confronta", "nellaStringa", "concatenazione", "alPiu", "elementiDiversi", "reale", "booleano", "scrivi",
 ] as const;
 export type Supporto = (typeof ordineDelSupporto)[number];
 
@@ -58,15 +58,15 @@ const nomi: Record<Lingua, Record<Supporto, string>> = {
     convertiAReale: "converti_a_reale", elevatoA: "elevato_a", arrotonda: "arrotonda", convertiACarattere: "converti_a_carattere",
     convertiAVettore: "converti_a_vettore", convertiAStringa: "converti_a_stringa", carattereDi: "carattere_di",
     lunghezza: "lunghezza", confronta: "confronta", nellaStringa: "nella_stringa", concatenazione: "concatena", alPiu: "al_piu",
-    reale: "reale", booleano: "booleano", scrivi: "scrivi",
+    elementiDiversi: "elementi_diversi", reale: "reale", booleano: "booleano", scrivi: "scrivi",
   },
   en: {
     preparaConsole: "prepare_console", fermati: "halt", leggiRiga: "read_line", leggiIntero: "read_integer", leggiReale: "read_real",
     leggiCarattere: "read_character", leggiStringa: "read_string", leggiBooleano: "read_boolean", dividi: "divide",
     convertiAReale: "to_real", elevatoA: "raised_to", arrotonda: "round", convertiACarattere: "to_character",
     convertiAVettore: "to_array", convertiAStringa: "to_string", carattereDi: "character_at", lunghezza: "length",
-    confronta: "compare", nellaStringa: "into_string", concatenazione: "concatenate", alPiu: "at_most", reale: "real",
-    booleano: "boolean", scrivi: "write",
+    confronta: "compare", nellaStringa: "into_string", concatenazione: "concatenate", alPiu: "at_most",
+    elementiDiversi: "distinct_elements", reale: "real", booleano: "boolean", scrivi: "write",
   },
 };
 
@@ -309,6 +309,12 @@ const supporto: Record<Lingua, Record<Supporto, readonly string[]>> = {
       "function al_piu(s: string, n: number): string {",
       '  if (lunghezza(s) > n) fermati("stringa troppo lunga");',
       "  return s;",
+      "}",
+    ],
+    elementiDiversi: [
+      "/** Gli elementi di un vettore passati per riferimento nella stessa chiamata devono essere diversi. */",
+      "function elementi_diversi(...indici: number[]): void {",
+      '  if (new Set(indici).size < indici.length) fermati("lo stesso elemento passato due volte per riferimento");',
       "}",
     ],
     reale: [
@@ -584,6 +590,12 @@ const supporto: Record<Lingua, Record<Supporto, readonly string[]>> = {
       "  return s;",
       "}",
     ],
+    elementiDiversi: [
+      "/** The elements of an array passed by reference in the same call must be different. */",
+      "function distinct_elements(...indices: number[]): void {",
+      '  if (new Set(indices).size < indices.length) halt("the same element passed twice by reference");',
+      "}",
+    ],
     reale: [
       "/** A real with 2 decimals, as in C: on the exact value of the number, halves to the even digit. */",
       "function real(x: number): string {",
@@ -638,19 +650,35 @@ const chiama: Partial<Record<Supporto, readonly Supporto[]>> = {
   nellaStringa: ["fermati"],
   concatenazione: ["fermati"],
   alPiu: ["lunghezza", "fermati"],
+  elementiDiversi: ["fermati"],
 };
+
+/** `fermati` di un programma con procedure o funzioni: la riga è quella della prima cornice di una funzione del programma
+ * (`main` e le altre, nell'ordine del progetto), come il Python che risale le cornici; una cornice nativa di Bun
+ * (`at map (native:1:11)`) non lo è mai. */
+const fermatiCheRisale = (l: Lingua, delProgramma: readonly string[]): readonly string[] =>
+  supporto[l].fermati.map((r) => r.replace("at main \\(", `at (?:${["main", ...delProgramma].join("|")}) \\((?!native:)`));
 
 /** Un programma intero: la testa col nome, gli import di ciò che legge e scrive, le costanti comuni, il programma
  * principale (le righe con `{chiave}` per i nomi delle funzioni di supporto; un programma che legge, scrive o si ferma
- * prepara la console nella prima riga di `main`), le funzioni di supporto usate con quelle che chiamano, nell'ordine
- * fisso, e la chiamata di `main`. */
-export function programma(l: Lingua, nome: string, principale: readonly string[], usate: readonly Supporto[], costanti: readonly string[] = []): string {
+ * prepara la console nella prima riga di `main`), le procedure e le funzioni del progetto (`delProgramma`, ognuna coi suoi
+ * nomi e con le sue righe, con `{chiave}` come quelle di `main`), le funzioni di supporto usate con quelle che chiamano,
+ * nell'ordine fisso, e la chiamata di `main`. */
+export function programma(
+  l: Lingua,
+  nome: string,
+  principale: readonly string[],
+  usate: readonly Supporto[],
+  costanti: readonly string[] = [],
+  delProgramma: readonly { readonly nome: string; readonly righe: readonly string[] }[] = [],
+): string {
   const tutte = new Set<Supporto>(usate);
   for (const f of [...tutte]) for (const g of chiama[f] ?? []) tutte.add(g);
   const conLaConsole = tutte.has("leggiRiga") || tutte.has("scrivi") || tutte.has("fermati");
   if (conLaConsole) tutte.add("preparaConsole");
   const inOrdine = ordineDelSupporto.filter((f) => tutte.has(f));
-  const funzioni = inOrdine.flatMap((s, i) => [...(i === 0 ? [] : ["", ""]), ...supporto[l][s]]);
+  const testoDi = (s: Supporto) => (s === "fermati" && delProgramma.length > 0 ? fermatiCheRisale(l, delProgramma.map((f) => f.nome)) : supporto[l][s]);
+  const funzioni = inOrdine.flatMap((s, i) => [...(i === 0 ? [] : ["", ""]), ...testoDi(s)]);
   const letti = [...(tutte.has("leggiRiga") ? ["readSync"] : []), ...(tutte.has("scrivi") || tutte.has("fermati") ? ["writeSync"] : [])];
   const [prima, ...resto] = principale;
   return testo(
@@ -664,6 +692,7 @@ export function programma(l: Lingua, nome: string, principale: readonly string[]
     prima!,
     ...(conLaConsole ? [`  ${nomi[l].preparaConsole}();`] : []),
     ...resto.map((r) => riempi(l, r)),
+    ...delProgramma.flatMap((f) => ["", "", ...f.righe.map((r) => riempi(l, r))]),
     ...(inOrdine.length === 0 ? [] : ["", "", titoloDelSupporto[l], "", "", ...funzioni]),
     "",
     "",
@@ -860,6 +889,303 @@ const parolaAlContrario = (l: Lingua) =>
     ["leggiStringa", "carattereDi", "lunghezza", "scrivi"],
   );
 
+/** I nomi del generatore nella lingua: l'argomento o il valore restituito messo da parte, la sorgente di un `per ogni` su
+ * una funzione, l'elemento coi controlli, il risultato del programma di prova. */
+const valore = (l: Lingua) => (l === "it" ? "_valore" : "_value");
+const sorgente = (l: Lingua, n = 1) => `${l === "it" ? "_sorgente" : "_source"}${n === 1 ? "" : n}`;
+const elemento = (l: Lingua) => (l === "it" ? "_elemento" : "_element");
+const risultato = (l: Lingua) => (l === "it" ? "_risultato" : "_result");
+
+/** Il programma di riferimento della tappa 3: una procedura con un parametro per uscita, una funzione booleana dentro una
+ * condizione, una procedura senza riferimenti chiamata con un argomento calcolato. */
+const leggiNumero: readonly string[] = [
+  "function leggi_numero(): number {",
+  "  let numero!: number;",
+  "  // Si chiede quanti voti leggere, finché il numero non è fra 1 e 30",
+  "  do {",
+  "    numero = {leggiIntero}();",
+  "    if (numero < 1 || numero > 30) {",
+  "      {scrivi}(`Numero non valido: da 1 a 30\\n`);",
+  "    }",
+  "  } while (numero < 1 || numero > 30);",
+  "  return numero;",
+  "}",
+];
+const valido: readonly string[] = ["function valido(voto: number): boolean {", "  return voto >= 1 && voto <= 10;", "}"];
+const stelle: readonly string[] = [
+  "function stelle(quante: number): void {",
+  "  let k: number = 0;",
+  "  while (k < quante) {",
+  "    {scrivi}(`*`);",
+  "    k = k + 1;",
+  "  }",
+  "  {scrivi}(`\\n`);",
+  "}",
+];
+const riferimentoFunzioni = (l: Lingua) => {
+  const al = (t: string, nota: string) => t + sp(32 - t.length + 2) + `// ${nota}`;
+  return programma(
+    l,
+    "riferimento-media-voti-funzioni",
+    [
+      "function main(): void {",
+      al("  let n!: number;", "input"),
+      al("  let voto!: number;", "input"),
+      al("  let media!: number;", "output"),
+      al("  let contati: number = 0;", "output"),
+      al("  let insufficienti: number = 0;", "output"),
+      "  let somma: number = 0;",
+      "  let i!: number;",
+      "  n = leggi_numero();",
+      "  i = 1;",
+      "  while (i <= n) {",
+      "    voto = {leggiIntero}();",
+      "    if (valido(voto)) {",
+      "      somma = somma + voto;",
+      "      contati = contati + 1;",
+      "      if (voto < 6) {",
+      "        insufficienti = insufficienti + 1;",
+      "      }",
+      "    } else {",
+      "      {scrivi}(`Voto ignorato: ${voto}\\n`);",
+      "    }",
+      "    i = i + 1;",
+      "  }",
+      "  if (contati > 0) {",
+      "    media = {convertiAReale}(somma) / {convertiAReale}(contati);",
+      "    {scrivi}(`Media: ${{reale}(media)} su ${contati} voti, insufficienti: ${insufficienti}\\n`);",
+      "    stelle({dividi}(somma, contati));",
+      "  } else {",
+      "    {scrivi}(`Nessun voto valido\\n`);",
+      "  }",
+      "}",
+    ],
+    ["leggiIntero", "dividi", "convertiAReale", "reale", "scrivi"],
+    [],
+    [
+      { nome: "leggi_numero", righe: leggiNumero },
+      { nome: "valido", righe: valido },
+      { nome: "stelle", righe: stelle },
+    ],
+  );
+};
+
+/** L'indice di un elemento per riferimento calcolato prima della chiamata, e due riferimenti restituiti in una tupla. */
+const metti: readonly string[] = ["function metti(a: number, b: number): [number, number] {", "  a = 2;", "  b = 9;", "  return [a, b];", "}"];
+const indiceDelRiferimento = (l: Lingua) =>
+  programma(
+    l,
+    "indice-del-riferimento",
+    [
+      "function main(): void {",
+      "  let i: number = 0;",
+      "  let v: number[] = [1, 2, 3];",
+      `  let ${indice(l)}: number;`,
+      `  ${indice(l)} = i;`,
+      `  [i, v[${indice(l)}]] = metti(i, v[${indice(l)}]);`,
+      "  {scrivi}(`${v[0]} ${v[1]} ${v[2]} ${i}\\n`);",
+      "}",
+    ],
+    ["scrivi"],
+    [],
+    [{ nome: "metti", righe: metti }],
+  );
+
+/** Un parametro per uscita di ogni tipo, un vettore e un elemento per uscita: la tupla coi sette tipi, gli *out* dichiarati
+ * nella procedura e mai passati. */
+const laProceduraRiempi: readonly string[] = [
+  "function riempi(): [number, number, string, string, boolean, number[], number] {",
+  "  let i!: number;",
+  "  let r!: number;",
+  "  let c!: string;",
+  "  let s!: string;",
+  "  let b!: boolean;",
+  "  let v: number[] = new Array<number>(3);",
+  "  let e!: number;",
+  "  i = 7;",
+  "  r = 2.5;",
+  "  c = 'z';",
+  '  s = "ciao";',
+  "  b = true;",
+  "  v[0] = 1;",
+  "  v[1] = 2;",
+  "  v[2] = 3;",
+  "  e = 9;",
+  "  return [i, r, c, s, b, v, e];",
+  "}",
+];
+const ogniTipoPerUscita = (l: Lingua) =>
+  programma(
+    l,
+    "ogni-tipo-per-uscita",
+    [
+      "function main(): void {",
+      "  let i: number = 4;",
+      "  let r!: number;",
+      "  let c!: string;",
+      "  let s!: string;",
+      "  let b!: boolean;",
+      "  let v: number[] = new Array<number>(3);",
+      "  let w: number[] = [0, 0, 0];",
+      "  [i, r, c, s, b, v, w[1]] = riempi();",
+      "  {scrivi}(`${i} ${{reale}(r)} ${c} ${s} ${{booleano}(b)}\\n`);",
+      "  {scrivi}(`${v[0]} ${v[1]} ${v[2]} ${w[0]} ${w[1]} ${w[2]}\\n`);",
+      "}",
+    ],
+    ["reale", "booleano", "scrivi"],
+    [],
+    [{ nome: "riempi", righe: laProceduraRiempi }],
+  );
+
+/** Il risultato stringa: il controllo della lunghezza sulla fine, messo da parte perché è la chiamata restituita (Bun
+ * toglierebbe la cornice della funzione), e la funzione dentro `carattere_di`. */
+const saluto = (l: Lingua): readonly string[] => [
+  "function saluto(nome: string): string {",
+  `  let ${valore(l)}: string;`,
+  `  ${valore(l)} = {alPiu}("Ciao " + nome, 20);`,
+  `  return ${valore(l)};`,
+  "}",
+];
+const risultatoStringa = (l: Lingua) =>
+  programma(
+    l,
+    "risultato-stringa",
+    ["function main(): void {", "  let s!: string;", '  s = saluto("Anna");', "  {scrivi}(`${s} `);", '  {scrivi}(`${{carattereDi}(saluto("Bo"), 5)}\\n`);', "}"],
+    ["carattereDi", "alPiu", "scrivi"],
+    [],
+    [{ nome: "saluto", righe: saluto(l) }],
+  );
+
+/** Il risultato vettore: la copia del vettore per valore per prima cosa, la lista nuova dal nome nel ritorno. */
+const doppi: readonly string[] = [
+  "function doppi(w: number[]): number[] {",
+  "  w = Array.from(w);",
+  "  let r: number[] = new Array<number>(3).fill(0);",
+  "  let i!: number;",
+  "  i = 0;",
+  "  while (i <= 2) {",
+  "    r[i] = w[i] * 2;",
+  "    i = i + 1;",
+  "  }",
+  "  return Array.from(r);",
+  "}",
+];
+const risultatoVettoreAssegnato = (l: Lingua) =>
+  programma(
+    l,
+    "risultato-vettore-assegnato",
+    [
+      "function main(): void {",
+      "  let voti: number[] = [7, 4, 9];",
+      "  let doppi_voti: number[] = new Array<number>(3);",
+      "  doppi_voti = doppi(voti);",
+      "  {scrivi}(`${doppi_voti[0]} ${doppi_voti[1]} ${doppi_voti[2]}\\n`);",
+      "}",
+    ],
+    ["scrivi"],
+    [],
+    [{ nome: "doppi", righe: doppi }],
+  );
+
+/** I programmi di prova: le letture dei parametri, la chiamata, ciò che scrive l'esecuzione. Per file del corpus, la
+ * funzione e il caso, nelle due lingue. */
+export const delleProve: Readonly<Record<string, { readonly funzione: string; readonly caso: string; readonly atteso: Atteso }>> = {
+  "tappa-3/riferimento-media-voti-funzioni": {
+    funzione: "valido",
+    caso: "voto valido",
+    atteso: inDueLingue((l) =>
+      programma(l, "riferimento-media-voti-funzioni", ["function main(): void {", "  let voto: number = {leggiIntero}();", "  {scrivi}(`→ ${{booleano}(valido(voto))}\\n`);", "}"], ["leggiIntero", "booleano", "scrivi"], [], [{ nome: "valido", righe: valido }]),
+    ),
+  },
+  "tappa-3/indice-del-riferimento": {
+    funzione: "metti",
+    caso: "con valore",
+    atteso: inDueLingue((l) =>
+      programma(
+        l,
+        "indice-del-riferimento",
+        [
+          "function main(): void {",
+          "  let a: number = {leggiIntero}();",
+          "  let b: number = {leggiIntero}();",
+          "  [a, b] = metti(a, b);",
+          "  {scrivi}(`\\n`);",
+          "  {scrivi}(`a = ${a}\\n`);",
+          "  {scrivi}(`b = ${b}\\n`);",
+          "}",
+        ],
+        ["leggiIntero", "scrivi"],
+        [],
+        [{ nome: "metti", righe: metti }],
+      ),
+    ),
+  },
+  "tappa-3/ogni-tipo-per-uscita": {
+    funzione: "riempi",
+    caso: "da sola",
+    atteso: inDueLingue((l) =>
+      programma(
+        l,
+        "ogni-tipo-per-uscita",
+        [
+          "function main(): void {",
+          "  let i!: number;",
+          "  let r!: number;",
+          "  let c!: string;",
+          "  let s!: string;",
+          "  let b!: boolean;",
+          "  let v!: number[];",
+          "  let e!: number;",
+          "  [i, r, c, s, b, v, e] = riempi();",
+          "  {scrivi}(`\\n`);",
+          "  {scrivi}(`i = ${i}\\n`);",
+          "  {scrivi}(`r = ${{reale}(r)}\\n`);",
+          "  {scrivi}(`c = ${c}\\n`);",
+          "  {scrivi}(`s = ${s}\\n`);",
+          "  {scrivi}(`b = ${{booleano}(b)}\\n`);",
+          "  {scrivi}(`v[0] = ${v[0]}\\n`);",
+          "  {scrivi}(`v[1] = ${v[1]}\\n`);",
+          "  {scrivi}(`v[2] = ${v[2]}\\n`);",
+          "  {scrivi}(`e = ${e}\\n`);",
+          "}",
+        ],
+        ["reale", "booleano", "scrivi"],
+        [],
+        [{ nome: "riempi", righe: laProceduraRiempi }],
+      ),
+    ),
+  },
+  "tappa-3/risultato-stringa": {
+    funzione: "saluto",
+    caso: "un nome",
+    atteso: inDueLingue((l) =>
+      programma(l, "risultato-stringa", ["function main(): void {", "  let nome: string = {leggiStringa}(255);", "  {scrivi}(`→ ${saluto(nome)}\\n`);", "}"], ["leggiStringa", "alPiu", "scrivi"], [], [{ nome: "saluto", righe: saluto(l) }]),
+    ),
+  },
+  "tappa-3/risultato-vettore-assegnato": {
+    funzione: "doppi",
+    caso: "tre numeri",
+    atteso: inDueLingue((l) =>
+      programma(
+        l,
+        "risultato-vettore-assegnato",
+        [
+          "function main(): void {",
+          "  let w: number[] = [{leggiIntero}(), {leggiIntero}(), {leggiIntero}()];",
+          `  let ${risultato(l)}: number[] = doppi(w);`,
+          `  {scrivi}(\`→ [0] = \${${risultato(l)}[0]}\\n\`);`,
+          `  {scrivi}(\`→ [1] = \${${risultato(l)}[1]}\\n\`);`,
+          `  {scrivi}(\`→ [2] = \${${risultato(l)}[2]}\\n\`);`,
+          "}",
+        ],
+        ["leggiIntero", "scrivi"],
+        [],
+        [{ nome: "doppi", righe: doppi }],
+      ),
+    ),
+  },
+};
+
 /** I programmi del corpus, per percorso del file (senza `.algo`), nelle due lingue. */
 export const delCorpus: Readonly<Record<string, Atteso>> = {
   "tappa-1/assegnazione-intero": inDueLingue(assegnazioneIntero),
@@ -872,6 +1198,11 @@ export const delCorpus: Readonly<Record<string, Atteso>> = {
   "tappa-2/per": inDueLingue(per),
   "tappa-2/per-ogni-stringa": inDueLingue(perOgniStringa),
   "tappa-2/parola-al-contrario": inDueLingue(parolaAlContrario),
+  "tappa-3/riferimento-media-voti-funzioni": inDueLingue(riferimentoFunzioni),
+  "tappa-3/indice-del-riferimento": inDueLingue(indiceDelRiferimento),
+  "tappa-3/ogni-tipo-per-uscita": inDueLingue(ogniTipoPerUscita),
+  "tappa-3/risultato-stringa": inDueLingue(risultatoStringa),
+  "tappa-3/risultato-vettore-assegnato": inDueLingue(risultatoVettoreAssegnato),
 };
 
 /** Le forme del primo gruppo di costrutti, in un programma scritto qui. */
@@ -1168,3 +1499,246 @@ export const fasiDellaTappa2: readonly string[] = [
   "b5 passo",
   "b8 inizio", "b8 condizione", "b8 elemento", "b8 passo",
 ];
+
+/** Le forme della tappa 3, in un programma scritto qui: un elemento per riferimento (un riferimento solo, restituito nudo),
+ * due elementi dello stesso vettore col controllo, un vettore per riferimento e un parametro per uscita nella stessa
+ * procedura (la tupla), la copia col nome, il risultato vettore di stringhe più lunghe nel dato che lo riceve, un intero
+ * che diventa il reale restituito, il «per ogni» su una funzione vettore e su una funzione stringa, l'argomento che si
+ * ferma prima dell'indice che si ferma, il risultato carattere e quello vettore coi controlli messi da parte, la funzione
+ * che si ferma che comincia una scrittura nuova, la procedura senza riferimenti. */
+export const formeDellaTappa3: Progetto = {
+  format: "algodesign",
+  schema_version: 2,
+  metadata: { name: "forme-della-tappa-3" },
+  functions: [
+    {
+      id: "f1",
+      kind: "main",
+      data: [
+        { name: "v", type: "integer", size: 3, initial: ["1", "2", "3"] },
+        { name: "w", type: "integer", size: 3 },
+        { name: "nomi", type: "string", size: 2, max_length: 8, initial: ['"abcdefgh"', '"ab"'] },
+        { name: "corti", type: "string", size: 2, max_length: 3 },
+        { name: "i", type: "integer", initial: "0" },
+        { name: "j", type: "integer", initial: "2" },
+        { name: "n", type: "integer" },
+        { name: "x", type: "real" },
+        { name: "k", type: "integer", initial: "1" },
+        { name: "c", type: "character" },
+        { name: "s", type: "string", initial: '"abc"' },
+      ],
+      body: [
+        { id: "b1", kind: "comment", text: "Le forme della tappa 3" },
+        { id: "b2", kind: "call", callee: "raddoppia", arguments: ["v[i]"] },
+        { id: "b3", kind: "call", callee: "scambia", arguments: ["v[i]", "v[j]"] },
+        { id: "b4", kind: "call", callee: "conta", arguments: ["v", "n"] },
+        { id: "b5", kind: "assignment", target: "w", value: "v" },
+        { id: "b6", kind: "assignment", target: "corti", value: "lunghi()" },
+        { id: "b7", kind: "assignment", target: "x", value: "reale_di(n)" },
+        { id: "b8", kind: "for_each", item: "k", source: "doppi(v)", body: [{ id: "b9", kind: "write", values: ["k"], newline: false }] },
+        { id: "b10", kind: "for_each", item: "c", source: "parola()", body: [{ id: "b11", kind: "write", values: ["c"], newline: false }] },
+        { id: "b12", kind: "call", callee: "metti", arguments: ["to_integer lettera(k)", "v[to_integer s[k]]"] },
+        { id: "b13", kind: "write", values: ["doppi(v)[1]", "x", "corti_di(nomi)[0]"], newline: true },
+        { id: "b14", kind: "call", callee: "stampa", arguments: ["s"] },
+      ],
+      end: { id: "b15" },
+    },
+    {
+      id: "f2",
+      kind: "procedure",
+      name: "raddoppia",
+      data: [{ name: "a", type: "integer", parameter: "reference" }],
+      body: [{ id: "b16", kind: "assignment", target: "a", value: "a * 2" }],
+      end: { id: "b17" },
+    },
+    {
+      id: "f3",
+      kind: "procedure",
+      name: "scambia",
+      data: [
+        { name: "a", type: "integer", parameter: "reference" },
+        { name: "b", type: "integer", parameter: "reference" },
+        { name: "t", type: "integer" },
+      ],
+      body: [
+        { id: "b18", kind: "assignment", target: "t", value: "a" },
+        { id: "b19", kind: "assignment", target: "a", value: "b" },
+        { id: "b20", kind: "assignment", target: "b", value: "t" },
+      ],
+      end: { id: "b21" },
+    },
+    {
+      id: "f4",
+      kind: "procedure",
+      name: "conta",
+      data: [
+        { name: "t", type: "integer", size: 3, parameter: "reference" },
+        { name: "m", type: "integer", parameter: "out" },
+      ],
+      body: [
+        { id: "b22", kind: "assignment", target: "t[0]", value: "0" },
+        { id: "b23", kind: "assignment", target: "m", value: "t[1] + t[2]" },
+      ],
+      end: { id: "b24" },
+    },
+    {
+      id: "f5",
+      kind: "function",
+      name: "lunghi",
+      return_type: "string",
+      return_size: 2,
+      return_max_length: 8,
+      data: [{ name: "r", type: "string", size: 2, max_length: 8, initial: ['"abcdefgh"', '"ab"'] }],
+      body: [],
+      end: { id: "b25", return_value: "r" },
+    },
+    {
+      id: "f6",
+      kind: "function",
+      name: "reale_di",
+      return_type: "real",
+      data: [{ name: "a", type: "integer", parameter: "value" }],
+      body: [],
+      end: { id: "b26", return_value: "a" },
+    },
+    {
+      id: "f7",
+      kind: "function",
+      name: "doppi",
+      return_type: "integer",
+      return_size: 3,
+      data: [
+        { name: "t", type: "integer", size: 3, parameter: "value" },
+        { name: "i", type: "integer" },
+      ],
+      body: [{ id: "b27", kind: "for", counter: "i", from: "0", to: "2", body: [{ id: "b28", kind: "assignment", target: "t[i]", value: "t[i] * 2" }] }],
+      end: { id: "b29", return_value: "t" },
+    },
+    { id: "f8", kind: "function", name: "parola", return_type: "string", data: [], body: [], end: { id: "b30", return_value: '"ciao"' } },
+    {
+      id: "f9",
+      kind: "procedure",
+      name: "metti",
+      data: [
+        { name: "b", type: "integer", parameter: "value" },
+        { name: "a", type: "integer", parameter: "reference" },
+      ],
+      body: [{ id: "b31", kind: "assignment", target: "a", value: "b" }],
+      end: { id: "b32" },
+    },
+    {
+      id: "f10",
+      kind: "function",
+      name: "lettera",
+      return_type: "character",
+      data: [{ name: "k", type: "integer", parameter: "value" }],
+      body: [],
+      end: { id: "b33", return_value: "to_character k" },
+    },
+    {
+      id: "f11",
+      kind: "function",
+      name: "corti_di",
+      return_type: "string",
+      return_size: 2,
+      return_max_length: 3,
+      data: [{ name: "t", type: "string", size: 2, max_length: 8, parameter: "value" }],
+      body: [],
+      end: { id: "b34", return_value: "t" },
+    },
+    {
+      id: "f12",
+      kind: "procedure",
+      name: "stampa",
+      data: [{ name: "t", type: "string", parameter: "value" }],
+      body: [{ id: "b35", kind: "write", values: ["t"], newline: true }],
+      end: { id: "b36" },
+    },
+  ],
+};
+
+const formeDellaTappa3In = (l: Lingua): string => {
+  const [I, I2, V, S, S2, E] = [indice(l), indice(l, 2), valore(l), sorgente(l), sorgente(l, 2), elemento(l)];
+  return programma(
+    l,
+    "forme-della-tappa-3",
+    [
+      "function main(): void {",
+      "  let v: number[] = [1, 2, 3];",
+      "  let w: number[] = new Array<number>(3);",
+      '  let nomi: string[] = ["abcdefgh", "ab"];',
+      "  let corti: string[] = new Array<string>(2);",
+      "  let i: number = 0;",
+      "  let j: number = 2;",
+      "  let n!: number;",
+      "  let x!: number;",
+      "  let k: number = 1;",
+      "  let c!: string;",
+      '  let s: string = "abc";',
+      `  let ${I}: number;`,
+      `  let ${I2}: number;`,
+      `  let ${V}: number;`,
+      `  let ${S}: number[];`,
+      `  let ${S2}: string;`,
+      "  // Le forme della tappa 3",
+      `  ${I} = i;`,
+      `  v[${I}] = raddoppia(v[${I}]);`,
+      `  ${I} = i;`,
+      `  ${I2} = j;`,
+      `  {elementiDiversi}(${I}, ${I2});`,
+      `  [v[${I}], v[${I2}]] = scambia(v[${I}], v[${I2}]);`,
+      "  [v, n] = conta(v);",
+      `  ${I} = 0;`,
+      `  while (${I} < 3) {`,
+      `    w[${I}] = v[${I}];`,
+      `    ${I} = ${I} + 1;`,
+      "  }",
+      `  corti = lunghi().map((${E}) => {alPiu}(${E}, 3));`,
+      "  x = reale_di(n);",
+      `  ${S} = doppi(v);`,
+      `  ${I} = 0;`,
+      `  while (${I} < ${S}.length) {`,
+      `    k = ${S}[${I}];`,
+      "    {scrivi}(`${k}`);",
+      `    ${I} = ${I} + 1;`,
+      "  }",
+      `  ${S2} = parola();`,
+      `  ${I} = 0;`,
+      `  while (${I} < {lunghezza}(${S2})) {`,
+      `    c = {carattereDi}(${S2}, ${I});`,
+      "    {scrivi}(`${c}`);",
+      `    ${I} = ${I} + 1;`,
+      "  }",
+      `  ${V} = lettera(k).codePointAt(0)!;`,
+      `  ${I} = {carattereDi}(s, k).codePointAt(0)!;`,
+      `  v[${I}] = metti(${V}, v[${I}]);`,
+      "  {scrivi}(`${doppi(v)[1]}${{reale}(x)}`);",
+      "  {scrivi}(`${corti_di(nomi)[0]}\\n`);",
+      "  stampa(s);",
+      "}",
+    ],
+    ["convertiAReale", "convertiACarattere", "carattereDi", "lunghezza", "alPiu", "elementiDiversi", "reale", "scrivi"],
+    [],
+    [
+      { nome: "raddoppia", righe: ["function raddoppia(a: number): number {", "  a = a * 2;", "  return a;", "}"] },
+      { nome: "scambia", righe: ["function scambia(a: number, b: number): [number, number] {", "  let t!: number;", "  t = a;", "  a = b;", "  b = t;", "  return [a, b];", "}"] },
+      { nome: "conta", righe: ["function conta(t: number[]): [number[], number] {", "  let m!: number;", "  t[0] = 0;", "  m = t[1] + t[2];", "  return [t, m];", "}"] },
+      { nome: "lunghi", righe: ["function lunghi(): string[] {", '  let r: string[] = ["abcdefgh", "ab"];', "  return Array.from(r);", "}"] },
+      { nome: "reale_di", righe: ["function reale_di(a: number): number {", "  return {convertiAReale}(a);", "}"] },
+      {
+        nome: "doppi",
+        righe: ["function doppi(t: number[]): number[] {", "  t = Array.from(t);", "  let i!: number;", "  i = 0;", "  while (i <= 2) {", "    t[i] = t[i] * 2;", "    i = i + 1;", "  }", "  return Array.from(t);", "}"],
+      },
+      { nome: "parola", righe: ["function parola(): string {", '  return "ciao";', "}"] },
+      { nome: "metti", righe: ["function metti(b: number, a: number): number {", "  a = b;", "  return a;", "}"] },
+      { nome: "lettera", righe: ["function lettera(k: number): string {", `  let ${V}: string;`, `  ${V} = {convertiACarattere}(k);`, `  return ${V};`, "}"] },
+      {
+        nome: "corti_di",
+        righe: ["function corti_di(t: string[]): string[] {", "  t = Array.from(t);", `  let ${V}: string[];`, `  ${V} = t.map((${E}) => {alPiu}(${E}, 3));`, `  return ${V};`, "}"],
+      },
+      { nome: "stampa", righe: ["function stampa(t: string): void {", "  {scrivi}(`${t}\\n`);", "}"] },
+    ],
+  );
+};
+
+export const formeDellaTappa3Attese: Atteso = inDueLingue(formeDellaTappa3In);

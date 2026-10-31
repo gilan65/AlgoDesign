@@ -1479,7 +1479,7 @@ describe("il modo caso: le letture prendono le voci del caso, e alla fine c'è l
       if (p.functions.some((f) => f.kind === "function" && (f.return_type === "string" || f.return_size !== undefined))) conRisultato++;
     }
     console.log(`la tappa 3: ${tre.length} progetti, ${conRisultato} con una stringa o un vettore restituiti`);
-    expect([tre.length, conRisultato]).toEqual([53, 15]);
+    expect([tre.length, conRisultato]).toEqual([54, 16]);
   });
 
   test("un progetto che non parte e uno fuori tappa: l'esito c'è subito", () => {
