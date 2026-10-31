@@ -88,7 +88,12 @@ const generatiDellaTappa3 = tappa3.filter(({ p }) => !(p.test_cases ?? []).some(
 const tappa4 = readdirSync(join(cartella, "tappa-4"))
   .filter((f) => f.endsWith(".algo"))
   .map((f) => ({ f, p: leggi(`tappa-4/${f}`) }));
-const programmi = [...corpus.map((x) => x.p), tutteLeForme, altreForme, formeDelC, formeDeiCicli, ...generatiDellaTappa3, formeDelleFunzioni, formeDelRisultato, ...tappa4.map((x) => x.p)];
+/** I programmi dei tipi (record, matrici, tabelle) senza errori statici: quelli che il C genera. */
+const generatiDeiTipi = readdirSync(join(cartella, "tipi"))
+  .filter((f) => f.endsWith(".algo"))
+  .map((f) => leggi(`tipi/${f}`))
+  .filter((p) => !(p.test_cases ?? []).some((k) => k.expected.static_error !== undefined));
+const programmi = [...corpus.map((x) => x.p), tutteLeForme, altreForme, formeDelC, formeDeiCicli, ...generatiDellaTappa3, formeDelleFunzioni, formeDelRisultato, ...tappa4.map((x) => x.p), ...generatiDeiTipi];
 
 describe("il C uguale all'atteso scritto a mano", () => {
   for (const l of lingue) {

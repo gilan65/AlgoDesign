@@ -27,7 +27,8 @@
 // del parametro (un intero in un reale avvisa, `implicit_conversion`, o `integer_division_to_real` se viene da una
 // divisione intera); un vettore vuole un vettore della stessa dimensione, un dato stringa la stessa lunghezza massima,
 // e un'altra espressione stringa vale come un'assegnazione. Per riferimento e per uscita l'argomento è un dato scritto
-// per nome (una variabile o un elemento di un vettore, mai fra parentesi), dello stesso tipo e della stessa misura; lo
+// per nome (una variabile, un elemento, una riga di una matrice, un campo o un record di una tabella, mai fra parentesi),
+// dello stesso tipo e della stessa misura; lo
 // stesso dato due volte nella stessa chiamata è `same_reference`. Un riferimento vuole il valore (il dato entra ed
 // esce): un dato che su nessuna strada ha un valore prima del salto è `reference_without_value`, solo senza altri
 // errori statici, come gli avvisi che seguono i percorsi; dove non è certo lo ferma l'interprete al legame. Un

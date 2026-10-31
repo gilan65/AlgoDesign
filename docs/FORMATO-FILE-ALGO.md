@@ -1,6 +1,6 @@
 # Il formato del file `.algo`
 
-Un progetto di AlgoDesign è **un solo file**, con l'estensione `.algo`: un testo JSON in UTF-8 che contiene i metadati, le opzioni, le costanti comuni, il programma principale con le sue procedure e funzioni (ciascuna coi suoi dati e i suoi blocchi) e i casi d'uso. Questo documento spiega il file campo per campo. La stessa forma è scritta come **JSON Schema** (draft 2020-12) nel file [`algo.schema.json`](algo.schema.json), accanto a questo.
+Un progetto di AlgoDesign è **un solo file**, con l'estensione `.algo`: un testo JSON in UTF-8 che contiene i metadati, le opzioni, i record, le costanti comuni, il programma principale con le sue procedure e funzioni (ciascuna coi suoi dati e i suoi blocchi) e i casi d'uso. Questo documento spiega il file campo per campo. La stessa forma è scritta come **JSON Schema** (draft 2020-12) nel file [`algo.schema.json`](algo.schema.json), accanto a questo.
 
 ## 1. A che cosa serve lo schema
 

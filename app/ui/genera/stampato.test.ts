@@ -317,17 +317,16 @@ describe("le parti sul corpus, per ogni linguaggio del registro", () => {
     // Ogni linguaggio del registro dà codice sul corpus e ne segna le righe.
     for (const v of linguaggi) expect(conteggi[v.id]?.segnate ?? 0, v.id).toBeGreaterThan(0);
     // I tipi nuovi: per specie, i linguaggi che ne danno il codice (quelli che non lo danno, come «Accademico», stampano
-    // ciò che manca). Ogni specie ha codice, e dagli stessi linguaggi.
+    // ciò che manca). Ogni specie ha codice dai linguaggi attesi, scritti qui: un linguaggio nuovo del registro che scrive
+    // codice entra in questo elenco.
     const deiTipi: Record<string, string[]> = {};
     for (const { linguaggio, file: f, p } of codici) {
       const s = specieDi(f, p);
       if (s !== undefined && !(deiTipi[s] ??= []).includes(linguaggio)) deiTipi[s].push(linguaggio);
     }
     console.log(`parti dei tipi nuovi, i linguaggi per specie: ${JSON.stringify(deiTipi)}`);
-    expect(Object.keys(deiTipi).sort()).toEqual(["matrice", "record", "tabella"]);
-    expect(deiTipi.record!.length).toBeGreaterThan(0);
-    expect(deiTipi.matrice).toEqual(deiTipi.record!);
-    expect(deiTipi.tabella).toEqual(deiTipi.record!);
+    const attesi = ["c", "pseudocodice", "python"];
+    expect(Object.fromEntries(Object.entries(deiTipi).map(([s, l]) => [s, [...l].sort()]))).toEqual({ matrice: attesi, record: attesi, tabella: attesi });
   });
 
   test("controlli positivi: una riga tolta, i segni di una funzione tolti → rosso", () => {

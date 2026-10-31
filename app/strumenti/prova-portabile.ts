@@ -2133,7 +2133,7 @@ async function giroDellEsportazione(lingua: Lingua): Promise<DallaPagina> {
 
     // L'atteso dal nucleo, col disegno impaginato con la misura del canvas della WebView2.
     const carattere = await a.pagina.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--carattere").trim());
-    const disegno = await disegnoNelMotore(a.pagina, p.functions[0]!, p.shared_constants ?? [], p.functions, opzioniPredefinite, lingua);
+    const disegno = await disegnoNelMotore(a.pagina, p.functions[0]!, p.shared_constants ?? [], p.functions, opzioniPredefinite, lingua, p.records ?? []);
     const opzioni = { geometria: geometriaPredefinita, tavolozza: CARTA, carattere, fondoDeiCicli: false };
     const svgAtteso = svgDelDisegno(disegno, opzioni);
     // Controllo positivo del confronto: con un altro colore delle linee l'SVG del nucleo esce diverso.

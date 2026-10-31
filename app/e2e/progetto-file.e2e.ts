@@ -69,6 +69,7 @@ import { en } from "../i18n/en";
 import { it, type Dizionario } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
 import { testiDeiMotivi } from "../i18n/motivi";
+import { misuraIlCorpus } from "../strumenti/corpus";
 import { eventoDiChiusura } from "../ui/file";
 import type { Finzione } from "./finzione-tauri";
 import { apriEsempio, apriVuota, costruisciFinzione, esempiDelCorpus, voceDelMenu, voceDellAiuto } from "./pagina";
@@ -166,7 +167,11 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
   const ricorsione = delleTappe.filter((c) => c.tappa === "tappa-4").length;
   console.log(`apri e salva: corpus ${delleTappe.length} file, della ricorsione ${ricorsione}: identici ${identici.length}, diversi ${diversi.length}`);
   expect(diversi).toEqual([]);
-  expect({ ricorsione, identici: identici.length, corpus: delleTappe.length }).toEqual({ ricorsione: 22, identici: 146, corpus: 146 });
+  // I file delle tappe e della ricorsione, misurati dal disco da `strumenti/corpus.ts` (i conteggi confermati del corpus).
+  const fatti = misuraIlCorpus();
+  const delleTappeSulDisco = Object.entries(fatti.file).reduce((s, [k, n]) => (k.startsWith("tappa-") ? s + n : s), 0);
+  expect(delleTappeSulDisco).toBeGreaterThan(0);
+  expect({ ricorsione, identici: identici.length, corpus: delleTappe.length }).toEqual({ ricorsione: fatti.file["tappa-4"], identici: delleTappeSulDisco, corpus: delleTappeSulDisco });
   // I tipi, i record, le matrici e le tabelle: ogni file si apre, anche con un errore statico (lo dice il controllo nella
   // finestra), con una riga per record nella tabella «Record» della vista dei dati; quelli giusti che non leggono niente si
   // eseguono (F5 fino alla fine, l'output del caso del programma nella console) e, eseguiti, salvati restano identici.
@@ -207,10 +212,18 @@ test("ogni file del corpus, aperto e salvato con nome dall'interfaccia, resta id
   const tabelle = deiRecord.filter((c) => conLeTabelle(c.testo)).length;
   const tabelleEseguite = deiRecord.filter((c) => eseguiti.includes(c.percorso) && conLeTabelle(c.testo)).length;
   console.log(`apri e salva: i tipi, ${deiRecord.length} file (delle matrici ${matrici}, delle tabelle ${tabelle}), ${righe} righe nella tabella «Record», eseguiti ${eseguiti.length} (delle tabelle ${tabelleEseguite}), identici ${identiciDeiRecord.length}`);
-  // Dei record cinque giusti senza letture (uno si ferma col suo errore), quattro con un errore statico, due che leggono;
-  // delle matrici cinque giuste senza letture (una si ferma col suo errore), tre con un errore statico, due che leggono;
-  // delle tabelle tre giuste senza letture, una con un errore statico, due che leggono.
-  expect({ identici: identiciDeiRecord.length, eseguiti: eseguiti.length, tabelleEseguite, corpus: deiRecord.length, matrici, tabelle }).toEqual({ identici: 27, eseguiti: 13, tabelleEseguite: 3, corpus: 27, matrici: 10, tabelle: 6 });
+  // I file dei tipi, le matrici, le tabelle e quelli che si eseguono senza letture, misurati dal disco da
+  // `strumenti/corpus.ts` con le sue regole (i conteggi confermati del corpus); ogni file salvato resta identico.
+  const t = misuraIlCorpus();
+  expect([t.file.tipi, t.tipi.matrici, t.tipi.tabelle, t.tipi.senzaLetture].every((n) => n !== undefined && n > 0)).toBe(true);
+  expect({ identici: identiciDeiRecord.length, eseguiti: eseguiti.length, tabelleEseguite, corpus: deiRecord.length, matrici, tabelle }).toEqual({
+    identici: t.file.tipi,
+    eseguiti: t.tipi.senzaLetture,
+    tabelleEseguite: t.tipi.tabelleSenzaLetture,
+    corpus: t.file.tipi,
+    matrici: t.tipi.matrici,
+    tabelle: t.tipi.tabelle,
+  });
   expect(righe).toBeGreaterThanOrEqual(11);
 });
 

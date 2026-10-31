@@ -128,7 +128,7 @@ test("testi dei codici: quelli sul risultato di una funzione, distinti da quelli
   expect(testoDelMessaggio("it", "string_too_long", false)).toBe(testiDeiCodici.it.string_too_long);
   // «Restituisce» di una funzione vettore senza un vettore intero: il testo suo, che non propone una copia `altri ← voti`.
   expect([testoDelMessaggio("it", "array_assignment", true).breve, testoDelMessaggio("it", "array_assignment", false).suggerimento.includes("altri ← voti")]).toEqual([
-    "Restituisce vuole un vettore intero.",
+    "Restituisce vuole un vettore, una matrice o un record intero.",
     true,
   ]);
   expect(testoDelMessaggio("en", "uninitialized", true)).toBe(testiDeiCodici.en.uninitialized);

@@ -101,7 +101,7 @@ async function fogliDelNucleo(page: Page, punti = 8, adatta = false, testo: unkn
   if (!p.ok) throw new Error("il progetto della prova non si apre");
   const fuori = [];
   for (const f of p.progetto.functions) {
-    const d = await disegnoNelMotore(page, f, f.kind === "main" ? (p.progetto.shared_constants ?? []) : [], p.progetto.functions);
+    const d = await disegnoNelMotore(page, f, f.kind === "main" ? (p.progetto.shared_constants ?? []) : [], p.progetto.functions, undefined, undefined, p.progetto.records ?? []);
     fuori.push({ f, d, g: fogliDelDisegno(d, aree, { adatta, punti }, tema) });
   }
   return fuori;

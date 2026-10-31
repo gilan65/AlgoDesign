@@ -5,11 +5,20 @@
 import type { Page } from "@playwright/test";
 import { impagina, opzioniPredefinite, type Disegno, type MisuraDelTesto, type OpzioniDelDisegno, type StileDelTesto } from "../core/disegno/impaginazione";
 import { geometriaPredefinita as tema } from "../core/disegno/tema";
-import type { Dato, Funzione } from "../core/progetto/modello";
+import type { Dato, DefinizioneDelRecord, Funzione } from "../core/progetto/modello";
 import type { Lingua } from "../i18n/lingue";
 import { testiDelDisegno } from "../ui/disegno/testi";
 
-export async function disegnoNelMotore(page: Page, funzione: Funzione, comuni: readonly Dato[], funzioni: readonly Funzione[], opzioni: OpzioniDelDisegno = opzioniPredefinite, lingua: Lingua = "it"): Promise<Disegno> {
+/** `records`, i record del progetto: senza, la copia di un record o di una tabella si disegna come un'assegnazione. */
+export async function disegnoNelMotore(
+  page: Page,
+  funzione: Funzione,
+  comuni: readonly Dato[],
+  funzioni: readonly Funzione[],
+  opzioni: OpzioniDelDisegno = opzioniPredefinite,
+  lingua: Lingua = "it",
+  records: readonly DefinizioneDelRecord[] = [],
+): Promise<Disegno> {
   const note = new Map<string, number>();
   for (let passata = 0; passata < 10; passata++) {
     const mancanti = new Map<string, readonly [string, StileDelTesto | undefined]>();
@@ -19,7 +28,7 @@ export async function disegnoNelMotore(page: Page, funzione: Funzione, comuni: r
       if (w === undefined) mancanti.set(k, [t, s]);
       return w ?? 0;
     };
-    const d = impagina(funzione, tema, misura, testiDelDisegno(lingua), opzioni, comuni, funzioni);
+    const d = impagina(funzione, tema, misura, testiDelDisegno(lingua), opzioni, comuni, funzioni, records);
     if (mancanti.size === 0) return d;
     const larghezze = await page.evaluate(
       ({ richieste, dimensione }) => {

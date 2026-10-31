@@ -2,7 +2,7 @@
 // `window.__disegniDiProva__` con uno script iniettato prima del caricamento, e la finestra li disegna
 // tutti al 100% invece del riferimento, ognuno con la sua vista dei dati. Nessun comando dell'app la apre,
 // e nessun utente la vede: senza quella variabile la finestra è quella di sempre.
-import type { Dato, Funzione } from "../../core/progetto/modello";
+import type { Dato, DefinizioneDelRecord, Funzione } from "../../core/progetto/modello";
 
 export interface DisegnoDiProva {
   readonly nome: string;
@@ -10,6 +10,8 @@ export interface DisegnoDiProva {
   readonly costantiComuni?: readonly Dato[];
   /** Le funzioni del progetto, per i salti: dicono quali argomenti vanno per riferimento. */
   readonly funzioni?: readonly Funzione[];
+  /** I record del progetto, per la copia di un record o di una tabella. */
+  readonly records?: readonly DefinizioneDelRecord[];
 }
 
 declare global {

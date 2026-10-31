@@ -275,7 +275,7 @@ Durante l'esecuzione con Passo o con l'Animata il codice evidenzia la riga (o le
 
 I cicli «per» e «per ogni» diventano, nello pseudocodice, `PER i DA 1 A n` … `FINE PER` e `PER OGNI c IN parola` … `FINE PER OGNI`; in Python un `while`, col contatore aumentato in fondo al corpo; in C un `for`. Il «per ogni» percorre il vettore o la stringa con la sua posizione, `_indice`, come nel flowchart aperto. Durante l'esecuzione è evidenziata la riga della parte corrente del ciclo: la partenza, il controllo, l'elemento preso o l'aumento. Come diventano codice le procedure e le funzioni lo dice il §9.
 
-**Copia** mette il codice negli appunti; **Salva…** lo scrive in un file (`.txt`, `.py` o `.c`). Il codice Python si esegue con Python 3.9 o successivo; il C si compila con un compilatore C11 (per esempio `gcc -std=c11 programma.c -lm`).
+**Copia** mette il codice negli appunti; **Salva…** lo scrive in un file (`.txt`, `.py` o `.c`). Il codice Python si esegue con Python 3.11 o successivo; il C si compila con un compilatore C11 (per esempio `gcc -std=c11 programma.c -lm`).
 
 Il codice generato è fatto per essere letto: non controlla i calcoli che il C lascia senza una regola (un intero che esce dal suo intervallo, una divisione intera per zero, un indice fuori dal vettore, un reale fuori dall'intervallo degli interi convertito in intero, un dato letto prima di avere un valore), né un reale che diventa infinito o non è un numero. Un commento in testa al programma Python e C lo dice. AlgoDesign invece li ferma sempre, e ferma anche un ciclo che non finisce, dopo un milione di azioni: per questo conviene provare l'algoritmo prima in AlgoDesign, con i suoi casi d'uso.
 

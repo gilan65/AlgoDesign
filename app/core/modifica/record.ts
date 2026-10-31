@@ -3,12 +3,15 @@
 // corregge (il controllo lo dice).
 //
 // Il nome di un record non compare mai nel testo delle regole: rinominarlo cambia il tipo dei dati, delle costanti comuni e
-// dei risultati che lo nominano. Il nome di un CAMPO sì (`a.voto`): si cambia per PAROLE dell'analizzatore, dove la parola
-// è il campo dopo un punto e prima del punto c'è il nome di un dato di quel record che la funzione vede (suo, o una
-// costante comune che nessun suo dato copre); `voto` da solo, `voti.voto` di un altro record o `"a.voto"` restano.
+// dei risultati che lo nominano. Il nome di un CAMPO sì (`a.voto`, `t[i].voto`, `promosso(a).voto`): si cambia per PAROLE
+// dell'analizzatore, dove la parola è il campo dopo un punto e prima del punto (sopra gli indici di una tabella) c'è il
+// nome di un dato di quel record che la funzione vede (suo, o una costante comune che nessun suo dato copre) o la chiamata
+// di una funzione che lo restituisce; `voto` da solo, `voti.voto` di un altro record o `"a.voto"` restano. I valori che
+// seguono l'ordine dei campi (il valore iniziale di un record o di una tabella, le voci dei casi di un parametro) seguono
+// i campi spostati, aggiunti (senza valore) e tolti.
 //
-// Che cosa NON guarda: il campo del valore restituito da una chiamata (`promosso(a).voto`), che resta com'è e mostra
-// l'errore del campo; le regole di validità dei record (nome, campi doppi, lunghezze), che sono del controllo statico.
+// Che cosa NON guarda: i nomi dei campi nell'output atteso di un caso (`→ .voto = 7`), che mostrano l'esito diverso; le
+// regole di validità dei record (nome, campi doppi, lunghezze), che sono del controllo statico.
 
 import { paroleTolleranti, type Parola } from "../espressioni/analizzatore";
 import type { Dato, DefinizioneDelRecord, Funzione, Progetto } from "../progetto/modello";
@@ -41,9 +44,29 @@ export const aggiungiRecord =
   (p, prossimo) =>
     valida(conRecord(p, [...recordDi(p), pulito(r)]), prossimo);
 
-/** Le parole del testo dopo cui, con un punto in mezzo, sta un campo: `a` in `a.voto`. */
-const baseDelCampo = (ps: readonly Parola[], k: number): string | undefined =>
-  ps[k - 1]?.genere === "segno" && ps[k - 1]!.testo === "." && ps[k - 2]?.genere === "nome" && !(ps[k - 3]?.genere === "segno" && ps[k - 3]!.testo === ".") ? ps[k - 2]!.testo : undefined;
+const segno = (p: Parola | undefined, testo: string) => p?.genere === "segno" && p.testo === testo;
+
+/** La posizione della parentesi che apre quella chiusa in `j` (`]` con `[`, `)` con `(`), anche con altre annidate. */
+function apertaDa(ps: readonly Parola[], j: number, chiusa: string, aperta: string): number {
+  let profondita = 0;
+  for (; j >= 0; j--) {
+    if (segno(ps[j], chiusa)) profondita++;
+    else if (segno(ps[j], aperta) && --profondita === 0) return j;
+  }
+  return -1;
+}
+
+/** Ciò di cui la parola in posizione `k` è il campo: il nome del dato (`a` in `a.voto`, `t` in `t[i].voto`, sopra gli
+ * indici fra parentesi quadre), o `f()` per il risultato della funzione `f` (`f(a).voto`, `f(x)[i].voto`); nessuno per il
+ * campo di un campo. */
+const baseDelCampo = (ps: readonly Parola[], k: number): string | undefined => {
+  if (!segno(ps[k - 1], ".")) return undefined;
+  let j = k - 2;
+  while (j >= 0 && segno(ps[j], "]")) j = apertaDa(ps, j, "]", "[") - 1;
+  const chiamata = j >= 0 && segno(ps[j], ")");
+  if (chiamata) j = apertaDa(ps, j, ")", "(") - 1;
+  return j >= 0 && ps[j]!.genere === "nome" && !segno(ps[j - 1], ".") ? (chiamata ? `${ps[j]!.testo}()` : ps[j]!.testo) : undefined;
+};
 
 /** Il testo con ogni campo di un dato di `basi` rinominato secondo `nomi` (vecchio → nuovo), in un passo solo: due campi
  * scambiati di nome si scambiano davvero. */
@@ -97,15 +120,61 @@ export const cambiaRecord =
       if (vecchio !== undefined && vecchio !== c.name && eUnaParolaSola(c.name) && unico) nomi.set(vecchio, c.name);
     });
 
-    const comuni = (p.shared_constants ?? []).map(tipo);
+    // I valori nell'ordine dei campi: il campo `k` prende il valore del campo da cui viene; uno nuovo nessuno. Un elenco
+    // che non ha un valore per campo di prima resta com'è (il controllo dice già la lunghezza).
+    const stessoOrdine = r.fields.length === prima.fields.length && origini.every((j, k) => j === k);
+    const riordina = <T>(xs: readonly T[], vuoto: T): readonly T[] => (xs.length === prima.fields.length ? r.fields.map((_, k) => (origini[k] === undefined ? vuoto : xs[origini[k]!]!)) : xs);
+    const conIValori = <D extends Dato>(d: D): D => {
+      if (stessoOrdine || d.type !== "record" || d.record !== daNome || d.initial === undefined) return d;
+      const v = d.initial;
+      const elenco = (x: unknown): x is readonly string[] => Array.isArray(x) && x.every((y) => typeof y === "string");
+      if (d.size === undefined) return elenco(v) ? { ...d, initial: riordina(v, "") } : d;
+      if (Array.isArray(v)) return v.every(elenco) ? { ...d, initial: v.map((x) => riordina(x, "")) } : d;
+      const each = (v as { each: unknown }).each;
+      return elenco(each) ? { ...d, initial: { each: riordina(each, "") } } : d;
+    };
+    /** Le voci dei casi della funzione: quelle di un parametro del record (un gruppo di voci per campo, record dopo record)
+     * riordinate al loro posto; un gruppo che non ha una voce per campo, o con le voci non una dopo l'altra (un caso
+     * scritto apposta col dato sbagliato), resta com'è. */
+    const conLeVoci = (f: Funzione): Funzione => {
+      const parametri = f.data.filter((d) => d.type === "record" && d.record === daNome && d.parameter !== undefined && d.parameter !== "out");
+      if (stessoOrdine || parametri.length === 0 || f.test_cases === undefined) return f;
+      const test_cases = f.test_cases.map((c) => {
+        const gruppi = new Map(
+          parametri.flatMap((d) => {
+            const posti = c.inputs.flatMap((v, i) => (v.data === d.name ? [i] : []));
+            const n = d.size ?? 1;
+            const contigue = posti.length > 0 && posti.at(-1)! - posti[0]! + 1 === posti.length;
+            if (posti.length !== n * prima.fields.length || !contigue) return [];
+            const suoi = posti.map((i) => c.inputs[i]!);
+            const nuove = Array.from({ length: n }, (_, i) => riordina(suoi.slice(i * prima.fields.length, (i + 1) * prima.fields.length), { data: d.name })).flat();
+            return [[d.name, nuove] as const];
+          }),
+        );
+        const scritti = new Set<string>();
+        const inputs = c.inputs.flatMap((v) => {
+          const g = gruppi.get(v.data);
+          if (g === undefined) return [v];
+          if (scritti.has(v.data)) return [];
+          scritti.add(v.data);
+          return g;
+        });
+        return { ...c, inputs };
+      });
+      return { ...f, test_cases };
+    };
+
+    // Le funzioni che restituiscono il record (o una sua tabella): il campo del loro risultato, `f(a).voto`.
+    const restituiscono = p.functions.filter((f) => f.return_type === "record" && f.return_record === prima.name && f.name !== undefined).map((f) => `${f.name}()`);
+    const comuni = (p.shared_constants ?? []).map(tipo).map(conIValori);
     const functions = p.functions.map((f) => {
-      const g: Funzione = {
+      const g: Funzione = conLeVoci({
         ...f,
-        data: f.data.map(tipo),
+        data: f.data.map(tipo).map(conIValori),
         ...(rinominato && f.return_type === "record" && f.return_record === prima.name ? { return_record: r.name } : {}),
-      };
+      });
       if (nomi.size === 0) return g;
-      const basi = datiDelRecordIn(g, comuni, daNome);
+      const basi = new Set([...datiDelRecordIn(g, comuni, daNome), ...restituiscono]);
       if (basi.size === 0) return g;
       const nelTesto = (t: string) => rinominaICampiNelTesto(t, basi, nomi);
       return {

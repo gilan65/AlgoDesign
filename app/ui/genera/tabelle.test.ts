@@ -108,6 +108,20 @@ describe("il codice delle tabelle uguale all'atteso scritto a mano", () => {
     uguale(testoDi(python(p, tetti, "it", parole, prova), "prova python"), provaDiAlzataPython, "prova python");
     uguale(testoDi(c(p, tetti, "it", parole, prova), "prova c"), provaDiAlzataC, "prova c");
   });
+  for (const l of ["it", "en"] as const satisfies readonly Lingua[])
+    test(`il record ripetuto in ogni record di una tabella, nello pseudocodice (${l}): l'elenco dei campi fra graffe`, () => {
+      const w = paroleDelloPseudocodice(l);
+      const ripetuto: Progetto = {
+        ...copia,
+        functions: copia.functions.map((f) => ({ ...f, data: f.data.map((d) => (d.name === "t" ? { ...d, initial: { each: ['"x"', '"3A"', "0"] } } : d)) })),
+      };
+      const dichiarazione = righe(pseudocodice(ripetuto, tetti, w), "pseudocodice").find((r) => r.testo.trim().startsWith("t:"))!.testo.trim();
+      expect(dichiarazione.endsWith(`← ${w.ogniElemento.split("{valore}").join('{"x", "3A", 0}')}`)).toBe(true);
+      // Controllo positivo: il valore iniziale per record, lo stesso elenco di elenchi.
+      const perRecord = righe(pseudocodice(copia, tetti, w), "pseudocodice").find((r) => r.testo.trim().startsWith("t:"))!.testo.trim();
+      expect(perRecord.endsWith('← {{"Anna", "3A", 7}, {"Bruno", "3B", 5}}')).toBe(true);
+    });
+
   test("le copie: il ciclo dei record con una riga per campo, un record della tabella una riga per campo; la riga corrente di ogni pausa", () => {
     const delPython = righe(python(copia, tetti, "it", parole), "python");
     const delC = righe(c(copia, tetti, "it", parole), "c");

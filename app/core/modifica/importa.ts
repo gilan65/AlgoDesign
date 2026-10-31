@@ -94,15 +94,17 @@ export interface Importazione {
 const contenuto = (x: unknown): string => JSON.stringify(x, (k, v) => (k === "id" || k === "breakpoint" || k === "test_cases" ? undefined : v));
 
 /** Ciò che chi chiama vede di una procedura o funzione: genere, risultato, parametri (senza i nomi); le colonne di una
- * matrice comprese. */
-const firma = (f: Funzione): string =>
+ * matrice comprese, e il record di un parametro o del risultato per intero (`record`: la sua definizione nel progetto
+ * della funzione), perché due record con lo stesso nome e altri campi sono due tipi. */
+const firma = (f: Funzione, record: (nome: string | undefined) => string | undefined): string =>
   JSON.stringify([
     f.kind,
     f.return_type,
+    f.return_type === "record" ? record(f.return_record) : undefined,
     f.return_size,
     f.return_columns,
     f.return_max_length,
-    f.data.filter((d) => d.parameter !== undefined).map((d) => [d.type, d.size, d.columns, d.max_length, d.parameter]),
+    f.data.filter((d) => d.parameter !== undefined).map((d) => [d.type, d.type === "record" ? record(d.record) : undefined, d.size, d.columns, d.max_length, d.parameter]),
   ]);
 
 /** I blocchi in ordine di lettura, coi blocchi che contengono. */
@@ -178,6 +180,10 @@ function analizza(p: Progetto, s: Progetto, spuntate: readonly string[], scelte:
   const delDato = (d: Dato): string[] => (d.type === "record" && d.record !== undefined && recordDellaSorgente.has(d.record) ? [d.record] : []);
   const recordDi = (f: Funzione): string[] => [...f.data.flatMap(delDato), ...(f.return_type === "record" && f.return_record !== undefined && recordDellaSorgente.has(f.return_record) ? [f.return_record] : [])];
   const recordIdentico = (nome: string) => recordDelProgramma.has(nome) && contenuto(recordDelProgramma.get(nome)) === contenuto(recordDellaSorgente.get(nome));
+  // Il record per la firma: la definizione, o il solo nome di un record che il progetto non ha.
+  const recordIn = (m: ReadonlyMap<string, DefinizioneDelRecord>) => (nome: string | undefined) => (nome === undefined ? undefined : m.has(nome) ? contenuto(m.get(nome)) : nome);
+  const recordDelProgrammaIntero = recordIn(recordDelProgramma);
+  const recordDellaSorgenteIntero = recordIn(recordDellaSorgente);
 
   // Identiche come punto fisso: si parte da quelle uguali per contenuto e si toglie chi chiama o usa una non identica.
   const costantiIdentiche = new Set(comuni.filter((c) => comuniDelProgramma.has(c.name) && contenuto(comuniDelProgramma.get(c.name)) === contenuto(c) && delDato(c).every(recordIdentico)));
@@ -247,7 +253,7 @@ function analizza(p: Progetto, s: Progetto, spuntate: readonly string[], scelte:
       specie: st.specie,
       proposto,
       scelta: sceltaPer(chiave, st.specie, proposto),
-      ...(g !== undefined ? { firmaDiversa: firma(g) !== firma(f), casiEliminati: g.test_cases?.length ?? 0 } : {}),
+      ...(g !== undefined ? { firmaDiversa: firma(g, recordDelProgrammaIntero) !== firma(f, recordDellaSorgenteIntero), casiEliminati: g.test_cases?.length ?? 0 } : {}),
     };
     return { f, voce };
   });
@@ -453,7 +459,8 @@ export const importa =
     const costanti = (p.shared_constants ?? []).map((c) => {
       const nuova = costantiAlPosto.get(c.name);
       costantiAlPosto.delete(c.name);
-      return nuova ?? c;
+      // La costante che prende il posto segue il record rinominato, come quelle che entrano in fondo.
+      return nuova === undefined ? c : conIlRecord(nuova);
     });
     costanti.push(...a.costanti.filter((x) => x.voce.scelta?.come !== "sostituisci").map((x) => conIlRecord({ ...x.c, name: finale(x.voce) })));
     const records = [...(p.records ?? []), ...a.records.map((x) => ({ ...x.r, name: x.nome }))];

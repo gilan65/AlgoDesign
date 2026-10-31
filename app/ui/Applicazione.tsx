@@ -761,7 +761,14 @@ export function Applicazione({
       const ultima = esecuzione?.traccia.righe.at(-1);
       const fase = ultima?.blocco === erroreFinale.block ? ultima.fase : undefined;
       const interno = ultima?.blocco === erroreFinale.block && ultima.interno === true;
-      return { righe: righeDi(codice.righe, { blocco: erroreFinale.block, ...(fase !== undefined ? { fase } : {}), ...(interno ? { interno: true as const } : {}) }), genere: "errore", passo: passi, chiamate };
+      // L'errore dentro la copia di un record accende la riga del campo, come la pausa.
+      const campo = ultima?.blocco === erroreFinale.block ? ultima.campo : undefined;
+      return {
+        righe: righeDi(codice.righe, { blocco: erroreFinale.block, ...(fase !== undefined ? { fase } : {}), ...(campo !== undefined ? { campo } : {}), ...(interno ? { interno: true as const } : {}) }),
+        genere: "errore",
+        passo: passi,
+        chiamate,
+      };
     }
     return null;
   }, [codice, pausa, erroreFinale, passi, pila, esecuzione]);
@@ -1790,7 +1797,7 @@ export function Applicazione({
       );
       // L'animata arrivata su un punto di interruzione si ferma lì, con la regola del passo (un valore iniziale non ne
       // ha, e in un ciclo il punto ferma solo il controllo); sulla ripresa no: il punto ha fermato l'azione, prima.
-      if (animataOra.current && r === undefined && fermatoDaUnPunto(es.puntiDiInterruzione, { evento: s.blocco, dato: s.dato, fase: s.fase })) setAnimata(false);
+      if (animataOra.current && r === undefined && fermatoDaUnPunto(es.puntiDiInterruzione, { evento: s.blocco, dato: s.dato, fase: s.fase, campo: s.campo })) setAnimata(false);
       // Il blocco corrente in vista (lo scorrimento è morbido tranne con «riduci il movimento»: lo dice il CSS): sul
       // valore iniziale, il suo blocco o, se è nascosto, «Inizio». Con la scheda appena cambiata, al giro dopo il suo
       // disegno.
@@ -1799,7 +1806,9 @@ export function Applicazione({
       const selettore = s.dato !== undefined && valoriIniziali === "mostrati" ? `[data-valore-iniziale="${s.dato}"]` : `[data-blocco="${id}"], [data-fine="${id}"]`;
       // In un ciclo aperto la parte della fase, che può stare lontana dall'intestazione (l'aumento in fondo al corpo).
       const parte =
-        s.dato === undefined && s.fase !== undefined ? `g[data-id="${id}"][data-fase="${s.fase}"]${s.interno ? "[data-interno]" : ":not([data-interno])"}`
+        // Nella copia di una tabella la fase e il campo insieme: la riga del campo, non la prima del ciclo.
+        s.dato === undefined && s.fase !== undefined
+          ? `g[data-id="${id}"][data-fase="${s.fase}"]${s.interno ? "[data-interno]" : ":not([data-interno])"}${s.campo !== undefined ? `[data-campo-della-copia="${s.campo}"]` : ""}`
         : s.dato === undefined && s.campo !== undefined ? `g[data-id="${id}"][data-campo-della-copia="${s.campo}"]`
         : undefined;
       const inVista = () => ((parte ? tela.current?.querySelector(parte) : null) ?? tela.current?.querySelector(selettore))?.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -3577,7 +3586,7 @@ export function Applicazione({
           {diProva.map((d) => (
             <div key={d.nome} className={stili.affiancate}>
               <VistaDati nome={d.nome} dati={d.funzione.data} costantiComuni={d.costantiComuni} testi={testi} valori={valoriMostrati} />
-              <Flowchart disegno={disegna(d.funzione, d.costantiComuni, d.funzioni)} nome={nomeDelFlowchart(d.nome)} fondoDeiCicli={scelte.fondoDeiCicli} />
+              <Flowchart disegno={disegna(d.funzione, d.costantiComuni, d.funzioni, d.records)} nome={nomeDelFlowchart(d.nome)} fondoDeiCicli={scelte.fondoDeiCicli} />
             </div>
           ))}
         </main>

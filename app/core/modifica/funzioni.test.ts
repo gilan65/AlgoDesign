@@ -298,6 +298,17 @@ describe("le proprietà e il genere", () => {
     expect(r.ok && r.progetto).toBe(conVettore);
   });
 
+  test("il record restituito: cambiarlo, e solo lui, è un passo; lo stesso no", () => {
+    const conRecord = delCorpus("tipi/funzione-con-un-record.algo");
+    const p: Progetto = { ...conRecord, records: [...conRecord.records!, { ...conRecord.records![0]!, name: "studente" }] };
+    const id = p.functions.find((f) => f.name === "migliore")!.id;
+    const r = proprietaDellaFunzione(id, { genere: "function", tipo: "record", record: "studente" })(p, primoLibero(p));
+    expect(r.ok && funzione(r.progetto, id).return_record).toBe("studente");
+    // Controllo positivo: lo stesso record non cambia il progetto.
+    const stesso = proprietaDellaFunzione(id, { genere: "function", tipo: "record", record: "alunno" })(p, primoLibero(p));
+    expect(stesso.ok && stesso.progetto).toBe(p);
+  });
+
   test("le colonne di una matrice restituita: date, tolte, lasciate come sono, e via con la dimensione o il genere", () => {
     const matrice = dopo(proprietaDellaFunzione("f3", { genere: "function", tipo: "integer", dimensione: 2, colonne: 3 }));
     expect(funzione(matrice, "f3")).toMatchObject({ return_type: "integer", return_size: 2, return_columns: 3 });

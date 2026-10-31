@@ -37,7 +37,7 @@ Una versione beta serve a provare il programma a fondo in aula e a raccogliere o
 - **I progetti delle versioni precedenti** si aprono con questa senza cambiamenti. **Non vale il contrario**: un progetto creato con questa versione, o di cui si sono confermate le Proprietà, porta nel file la pila delle chiamate, e le versioni precedenti non lo aprono.
 - **Il codice generato è semplice, da leggere**: non controlla i calcoli che il C lascia senza una regola (un intero che esce dal suo intervallo, una divisione intera per zero, un indice fuori dal vettore, un reale fuori dall'intervallo degli interi convertito in intero, un dato letto prima di avere un valore), né un reale che diventa infinito o non è un numero. Un commento in testa al programma Python e C lo dice; AlgoDesign, invece, ferma l'esecuzione su ognuno di questi errori e indica il blocco. Su questi calcoli il Python e il C generati possono dare risultati diversi fra loro.
 - **Un ciclo che non finisce**: AlgoDesign ferma l'esecuzione dopo un milione di azioni; il Python e il C generati non hanno questo limite, e il programma va fermato a mano.
-- **Il Python generato** vuole Python 3.9 o successivo; il C generato si compila con un compilatore C11.
+- **Il Python generato** vuole Python 3.11 o successivo; il C generato si compila con un compilatore C11.
 - **Lo strumento di «Accademico»** scrive solo i file che gli si dicono, e i suoi messaggi sono in italiano.
 - **L'avviso di Windows al primo avvio**: AlgoDesign e lo strumento di «Accademico» non sono firmati digitalmente; come procedere è nel `LEGGIMI.md`.
 - **WebView2**: senza il componente di Windows che disegna la finestra, AlgoDesign non si apre; come controllare se c'è e dove scaricarlo è nel `LEGGIMI.md`.

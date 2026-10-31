@@ -1,0 +1,62 @@
+{
+  "fatti": {
+    "impronta": "523e540e0b6b97a364b22ee194a1ac719e214122f3e0af7e9d0d332e9d332956",
+    "file": {
+      "tappa-1": 56,
+      "tappa-2": 15,
+      "tappa-3": 53,
+      "tappa-4": 22,
+      "tipi": 31,
+      "totale": 177
+    },
+    "tipi": {
+      "record": 17,
+      "matrici": 13,
+      "tabelle": 6,
+      "conErroreStatico": 9,
+      "senzaLetture": 16,
+      "tabelleSenzaLetture": 3
+    }
+  },
+  "confermati": {
+    "bun": [
+      "core/casi/dall-esecuzione.test.ts",
+      "core/casi/voci.test.ts",
+      "core/controllo/controllo.test.ts",
+      "core/disegno/domanda.test.ts",
+      "core/disegno/fogli.test.ts",
+      "core/disegno/impaginazione.test.ts",
+      "core/disegno/nomi.test.ts",
+      "core/esecuzione/esecuzione.test.ts",
+      "core/interprete/interprete.test.ts",
+      "core/modifica/funzioni.test.ts",
+      "core/modifica/operazioni.test.ts",
+      "core/modifica/record.test.ts",
+      "core/progetto/corpus.test.ts",
+      "core/progetto/schema.test.ts",
+      "ui/casi/casi.test.tsx",
+      "ui/casi/tutti.test.ts",
+      "ui/dati/bozza.test.ts",
+      "ui/disegno/accessibile.test.tsx",
+      "ui/disegno/bersaglio.test.ts",
+      "ui/disegno/campi.test.ts",
+      "ui/disegno/segni.test.ts",
+      "ui/esecuzione/finestra.test.tsx",
+      "ui/esempi.test.ts",
+      "ui/genera/accademico.test.ts",
+      "ui/genera/c.test.ts",
+      "ui/genera/matrici.test.ts",
+      "ui/genera/pseudocodice.test.ts",
+      "ui/genera/python.test.ts",
+      "ui/genera/record.test.ts",
+      "ui/genera/stampato.test.ts",
+      "ui/genera/tabelle.test.ts"
+    ],
+    "playwright": [
+      "e2e/dati.e2e.ts",
+      "e2e/disegno.e2e.ts",
+      "e2e/flowchart-in-svg.e2e.ts",
+      "e2e/progetto-file.e2e.ts"
+    ]
+  }
+}

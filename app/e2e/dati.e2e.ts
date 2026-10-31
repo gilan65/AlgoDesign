@@ -22,6 +22,7 @@ import type { Dato, Funzione } from "../core/progetto/modello";
 import { tipi } from "../core/progetto/modello";
 import { en } from "../i18n/en";
 import { it, type Dizionario } from "../i18n/it";
+import { misuraIlCorpus } from "../strumenti/corpus";
 import { rigaDelDato, type RigaDelDato } from "../ui/dati/righe";
 import { testiDelDisegno } from "../ui/disegno/testi";
 import { apri, costruisciFinzione, scegliLingua } from "./pagina";
@@ -186,7 +187,9 @@ test("ogni dato del modello ha la sua riga e ogni riga il suo dato, in italiano 
     expect(difetti.slice(0, 10)).toEqual([]);
     expect(parole).toEqual([]);
     // Le premesse: tutte le tabelle, tutti i dati appaiati, le costanti e la tabella delle costanti comuni.
-    expect(corpus.length).toBe(56);
+    // I file della tappa 1, misurati dal disco da `strumenti/corpus.ts` (i conteggi confermati del corpus).
+    expect(corpus.length).toBe(misuraIlCorpus().file["tappa-1"]!);
+    expect(corpus.length).toBeGreaterThan(0);
     expect(premesse.lette).toBe(premesse.tabelle);
     expect(premesse.tabelle).toBe(progetti.length + 1);
     expect(premesse.appaiati).toBe(premesse.dati);
