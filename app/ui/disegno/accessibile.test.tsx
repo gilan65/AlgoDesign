@@ -101,7 +101,7 @@ test("su ogni albero (corpus e generati) i punti della struttura sono i posti de
   }
   console.log(`struttura accessibile: alberi ${alberi} (corpus ${corpus.length}, generati ${generati.length}), posti ${posti}, difetti ${difetti.length}`);
   expect(difetti).toEqual([]);
-  expect(corpus.length).toBe(56);
+  expect(corpus.length).toBe(60);
   expect(posti).toBeGreaterThan(alberi * 2);
 
   // Controllo positivo: un posto tolto dalla struttura, e il rilevatore lo dice.
@@ -254,7 +254,7 @@ test("i valori iniziali nella struttura: prima del primo punto, nell'ordine del 
   console.log(`valori iniziali nella struttura: file ${conValori.length}, voci ${valori}, difetti ${difetti.length}`);
   expect(difetti).toEqual([]);
   // La premessa: i 32 file della tappa 1 con 53 valori iniziali.
-  expect([conValori.length, valori]).toEqual([32, 53]);
+  expect([conValori.length, valori]).toEqual([34, 60]);
 });
 
 test("nello strato ogni valore iniziale è un pulsante sul suo blocco, col nome del testo disegnato; si sceglie e si apre, e non si trascina", async () => {

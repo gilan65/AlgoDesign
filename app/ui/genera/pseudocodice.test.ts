@@ -84,7 +84,7 @@ describe("la provenienza delle righe", () => {
   });
 
   const file = readdirSync(join(cartella, "tappa-1")).filter((f) => f.endsWith(".algo"));
-  test("il corpus della tappa 1 ha 56 file", () => expect(file.length).toBe(56));
+  test("il corpus della tappa 1 ha 60 file", () => expect(file.length).toBe(60));
 
   test("ogni blocco del corpus ha le sue righe, nell'ordine dell'albero; ogni dato la sua; una provenienza al più per riga", () => {
     let blocchi = 0;
@@ -123,8 +123,8 @@ describe("la provenienza delle righe", () => {
       dati += nomi.length;
     }
     // il denominatore: i blocchi e i dati del corpus della tappa 1, contati a parte
-    expect(blocchi).toBe(153);
-    expect(dati).toBe(104);
+    expect(blocchi).toBe(164);
+    expect(dati).toBe(114);
   });
 
   test("riga per riga nelle regole di «forme dei cicli», con le fasi, uguale nelle due lingue", () => {

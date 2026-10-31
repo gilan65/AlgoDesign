@@ -1,13 +1,13 @@
 {
   "fatti": {
-    "impronta": "523e540e0b6b97a364b22ee194a1ac719e214122f3e0af7e9d0d332e9d332956",
+    "impronta": "8d8cfcd12592a5094724a538bb37f56db172fcc28f97b910c0c00cc48412b593",
     "file": {
-      "tappa-1": 56,
+      "tappa-1": 60,
       "tappa-2": 15,
       "tappa-3": 53,
       "tappa-4": 22,
       "tipi": 31,
-      "totale": 177
+      "totale": 181
     },
     "tipi": {
       "record": 17,
@@ -50,7 +50,8 @@
       "ui/genera/python.test.ts",
       "ui/genera/record.test.ts",
       "ui/genera/stampato.test.ts",
-      "ui/genera/tabelle.test.ts"
+      "ui/genera/tabelle.test.ts",
+      "ui/genera/typescript.test.ts"
     ],
     "playwright": [
       "e2e/dati.e2e.ts",

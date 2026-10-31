@@ -32,7 +32,7 @@ test("andata e ritorno: ogni dato del corpus e di ogni forma torna uguale dalla 
   const diversi = [...corpus, ...ogniForma].filter((d) => !stessoDato(datoDaBozza(bozzaDi(d, "elenco")), d) || !stessoDato(datoDaBozza(bozzaDi(d, "un-valore")), d)).map((d) => d.name);
   console.log(`bozza dei dati: corpus ${corpus.length} dati, di ogni forma ${ogniForma.length}; diversi al ritorno ${diversi.length}`);
   expect(diversi).toEqual([]);
-  expect(corpus.length).toBe(104);
+  expect(corpus.length).toBe(114);
   // Controllo positivo: il confronto vede un attributo cambiato.
   expect(stessoDato({ ...ogniForma[0]!, role: "output" }, ogniForma[0]!)).toBe(false);
 });

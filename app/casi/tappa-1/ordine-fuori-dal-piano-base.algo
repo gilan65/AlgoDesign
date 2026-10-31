@@ -1,0 +1,62 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "ordine-fuori-dal-piano-base",
+    "description": "L'ordine di due caratteri e di due stringhe è quello dei codici: un carattere fuori dal piano di base viene dopo uno fra U+E000 e U+FFFF."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "c",
+          "type": "character",
+          "initial": "'😀'"
+        },
+        {
+          "name": "d",
+          "type": "character",
+          "initial": "'～'"
+        },
+        {
+          "name": "s",
+          "type": "string",
+          "initial": "\"a😀\""
+        },
+        {
+          "name": "t",
+          "type": "string",
+          "initial": "\"a～\""
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "c < d",
+            "\" \"",
+            "s < t",
+            "\" \"",
+            "c > d"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b2"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "ordine-fuori-dal-piano-base",
+      "inputs": [],
+      "expected": {
+        "output": "false false true\n"
+      }
+    }
+  ]
+}

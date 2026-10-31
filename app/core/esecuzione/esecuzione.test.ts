@@ -865,11 +865,11 @@ test("il corpus: ogni caso della tappa 1 eseguito un comando alla volta, con gli
     `esecuzione sul corpus: file ${file.length}, casi eseguiti ${casi}, dell'esecutore dei casi ${saltati}, file con valori iniziali ${conValoriIniziali.size}, azioni dei valori iniziali ${iniziali}, sbagliati ${sbagliati.length}`,
   );
   expect(sbagliati).toEqual([]);
-  // Controllo positivo: le misure di prima coprono ogni caso (56 file, tre con due casi), e il corpus ha casi coi
+  // Controllo positivo: le misure di prima coprono ogni caso (60 file, tre con due casi), e il corpus ha casi coi
   // valori iniziali.
-  expect(Object.keys(azioniSenzaIValoriIniziali).length).toBe(59);
+  expect(Object.keys(azioniSenzaIValoriIniziali).length).toBe(63);
   expect(conValoriIniziali.size).toBeGreaterThan(20);
-  expect({ file: file.length, casi: casi + saltati }).toEqual({ file: 56, casi: 59 });
+  expect({ file: file.length, casi: casi + saltati }).toEqual({ file: 60, casi: 63 });
   // Oggi nessun caso del corpus ha quegli esiti: li provano i progetti sintetici di `esecutore.test.ts`.
   expect(saltati).toBe(0);
 });
@@ -1542,7 +1542,7 @@ describe("il modo caso: le letture prendono le voci del caso, e alla fine c'è l
     }
     console.log(`un esecutore sul corpus: casi ${casi}, esiti ${JSON.stringify(Object.fromEntries(esiti))}, diversi ${diversi.length}`);
     expect(diversi).toEqual([]);
-    expect({ casi, raggiunti: esiti.get("raggiunto") }).toEqual({ casi: 59, raggiunti: 59 });
+    expect({ casi, raggiunti: esiti.get("raggiunto") }).toEqual({ casi: 63, raggiunti: 63 });
     // Il limite esplicito, quattro volte la durata più lunga misurata, arrotondato ai 30 s: 5,35 s misurati nella corsa
     // intera, oltre i 5 predefiniti; da sola meno.
   }, 30_000);
