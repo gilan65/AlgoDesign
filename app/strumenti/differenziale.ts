@@ -53,10 +53,19 @@
 // famiglia che manca (il C senza clang) la dice la riga della toolchain, e il caso corre con le macchine che ci sono
 // (il collaudo le richiede tutte). I processi partono con la cartella del loro eseguibile in testa al PATH.
 //
+// Un generatore che cresce un gruppo di costrutti per volta (oggi il TypeScript) dice di un progetto il primo costrutto
+// che non sa ancora scrivere: la riga `NON ANCORA <linguaggio> <file>: <costrutto>`, e gli esecutori di quel linguaggio
+// non corrono i casi di quel file (né i programmi di prova delle sue funzioni); la riga `non ancora: …` li conta per
+// linguaggio, e il conto dei casi corsi da ogni esecutore li toglie.
+//
+// Il controllo dei tipi di un linguaggio che l'ha (il TypeScript: `tsc`), una volta su tutti i suoi programmi scritti
+// (anche i programmi di prova), dopo la loro scrittura: ogni errore è un PROBLEMA, e la riga `controllo dei tipi: …` dice
+// per ogni linguaggio i programmi e gli errori.
+//
 // Righe: per ogni caso ed esecutore quelle di `righe-dei-casi.ts` precedute dall'esecutore (`VERDE gcc it
 // tappa-1/x#x`), o `ROSSO … senza esito: …`; `ESCLUSO <caso>: <ragione>`; `ERRORE STATICO <caso>: <codice> <blocco>,
-// nessun programma generato`; `FUORI TAPPA <file> (casi: <n>)`; `PROBLEMA …`;
-// in fondo la riga `toolchain: …`, quella dei casi per tipo (`per tipo: …`, i casi nel confronto che usano i record, fra
+// nessun programma generato`; `FUORI TAPPA <file> (casi: <n>)`; `NON ANCORA …`; `PROBLEMA …`;
+// in fondo la riga `toolchain: …`, quella del controllo dei tipi, quella dei «non ancora», quella dei casi per tipo (`per tipo: …`, i casi nel confronto che usano i record, fra
 // loro quelli che usano le tabelle, quelli che usano le matrici e gli altri) e quella del riepilogo `differenziale: …`. Un caso con gli avvisi diversi è rosso:
 // qui ogni differenza lo è. Esce con 1 se c'è un rosso o un problema.
 //
@@ -140,8 +149,8 @@ const daEseguire: DaEseguire[] = linguaggi.flatMap((voce) => {
 type Fine = { uscita: number | null; out: Uint8Array; err: Uint8Array; scaduto: boolean };
 
 /** `cmd` con la cartella di `nelPath` in testa al PATH: un programma compilato vuole quella del suo compilatore. */
-async function lancia(cmd: string[], stdin: Uint8Array, secondi: number, nelPath = cmd[0]!): Promise<Fine> {
-  const proc = Bun.spawn({ cmd, env: ambienteDi(nelPath), stdin, stdout: "pipe", stderr: "pipe" });
+async function lancia(cmd: string[], stdin: Uint8Array, secondi: number, nelPath = cmd[0]!, ambiente: Readonly<Record<string, string>> = {}, cwd?: string): Promise<Fine> {
+  const proc = Bun.spawn({ cmd, env: { ...ambienteDi(nelPath), ...ambiente }, stdin, stdout: "pipe", stderr: "pipe", ...(cwd !== undefined ? { cwd } : {}) });
   let scaduto = false;
   const orologio = setTimeout(() => {
     scaduto = true;
@@ -319,13 +328,22 @@ if (corpus) for (const n of Object.keys(esclusi).filter((n) => !nomiTrovati.has(
 
 // Il codice generato di ogni file della tappa, scritto in una cartella temporanea.
 const tmp = mkdtempSync(join(tmpdir(), "differenziale-"));
-type Codice = { righe: readonly Riga[]; sorgente: string; file: number; linguaggio: Linguaggio; lingua: LinguaDelCodice } | { statico: true };
+type Codice = { righe: readonly Riga[]; sorgente: string; file: number; linguaggio: Linguaggio; lingua: LinguaDelCodice } | { statico: true } | { nonAncora: string };
 const generati = new Map<string, Codice>();
 const chiave = (k: number, linguaggio: string, l: LinguaDelCodice) => `${k} ${linguaggio} ${l}`;
+/** I file che un linguaggio non sa ancora scrivere, per linguaggio: l'indice del file e il costrutto. */
+const nonAncora = new Map<string, Map<number, string>>(daEseguire.map(({ voce }) => [voce.id, new Map()]));
 for (const [k, { progetto: p, statico }] of daGenerare) {
   for (const l of lingue)
     for (const { voce } of daEseguire) {
       const g: Generato = voce.genera(p, tetti, l, paroleDelloPseudocodice(l));
+      if (!g.generato && g.perche === "non-ancora") {
+        const prima = nonAncora.get(voce.id)!.get(k);
+        if (prima !== undefined && prima !== g.costrutto) throw new Error(`${file[k]!.nome}: il generatore ${voce.id} dice due costrutti diversi nelle due lingue`);
+        nonAncora.get(voce.id)!.set(k, g.costrutto);
+        generati.set(chiave(k, voce.id, l), { nonAncora: g.costrutto });
+        continue;
+      }
       if (!g.generato) {
         if (g.perche !== "errori-statici" || !statico) throw new Error(`${file[k]!.nome}: il generatore ${voce.id} lo dice ${g.perche} e il controllo no`);
         generati.set(chiave(k, voce.id, l), { statico: true });
@@ -343,6 +361,12 @@ daConfrontare.forEach((d, n) => {
   if (d.funzione === undefined || d.controllo.errori.length > 0) return;
   for (const l of lingue)
     for (const { voce } of daEseguire) {
+      // Il programma di prova di un file che il linguaggio non sa ancora scrivere non si genera.
+      const delFile = nonAncora.get(voce.id)!.get(d.file);
+      if (delFile !== undefined) {
+        prove.set(`${d.id} ${voce.id} ${l}`, { nonAncora: delFile });
+        continue;
+      }
       const g = voce.genera(d.progetto, tetti, l, paroleDelloPseudocodice(l), { funzione: d.funzione.id, caso: d.caso });
       if (!g.generato) throw new Error(`${d.id}: il programma di prova non si genera (${g.perche})`);
       const sorgente = join(tmp, `${d.file}-prova-${n}-${l}${voce.estensione}`);
@@ -350,6 +374,31 @@ daConfrontare.forEach((d, n) => {
       prove.set(`${d.id} ${voce.id} ${l}`, { righe: g.righe, sorgente, file: d.file, linguaggio: voce.id, lingua: l });
     }
 });
+
+// Il controllo dei tipi di ogni linguaggio che l'ha, una volta su tutti i suoi programmi scritti, dalla cartella dei
+// sorgenti (la configurazione li elenca per nome: la riga di comando non li terrebbe tutti).
+const tipiPer: string[] = [];
+for (const { voce, esecutore } of daEseguire) {
+  const c = esecutore.controllaITipi;
+  if (c === undefined) continue;
+  const sorgenti = [...generati.values(), ...prove.values()].flatMap((x) => ("righe" in x && x.linguaggio === voce.id ? [basename(x.sorgente)] : []));
+  let errori = 0;
+  if (sorgenti.length > 0) {
+    const configurazione = `tipi-${voce.id}.json`;
+    writeFileSync(join(tmp, configurazione), JSON.stringify(c.configurazione(sorgenti), null, 2));
+    const f = await lancia(c.comando(configurazione), new Uint8Array(), 300, undefined, {}, tmp);
+    const testo = testoDelCompilatore.decode(f.out) + testoDelCompilatore.decode(f.err);
+    const trovati = c.errori(testo);
+    errori = trovati.length;
+    for (const e of trovati) problemi.push(`tipi ${voce.id}: ${e.riga}`);
+    if (f.uscita !== 0 && trovati.length === 0) {
+      errori = 1;
+      problemi.push(`tipi ${voce.id}: il controllo esce con ${f.scaduto ? "il tempo scaduto" : f.uscita} senza un errore riconosciuto: ${JSON.stringify(testo.slice(0, 500))}`);
+    }
+    if (f.uscita === 0 && trovati.length > 0) problemi.push(`tipi ${voce.id}: il controllo esce con 0 e ha ${trovati.length} errori`);
+  }
+  tipiPer.push(`${voce.id} programmi ${sorgenti.length}, errori ${errori}`);
+}
 
 // Le compilazioni, una per programma, lingua e macchina di un linguaggio che si compila. Gli avvisi di ognuna si
 // contano: un programma fra gli avvisi attesi del suo esecutore avvisa con la sua opzione e solo con quella, ogni altro
@@ -410,19 +459,23 @@ for (const d of daConfrontare) {
   for (const { nome, voce, esecutore, macchina, lingua: l } of generatiDa) {
     const chi = `${nome} ${d.id}`;
     const delFile = generati.get(chiave(d.file, voce.id, l))!;
+    // Un file che il linguaggio non sa ancora scrivere: i suoi esecutori non corrono il caso.
+    if ("nonAncora" in delFile) continue;
     if ("statico" in delFile) {
       risultati.set(chi, confronta(d.caso.expected, { output: "", static_error: d.controllo.errori[0]!, warnings: d.controllo.avvisi }, false, chi));
       continue;
     }
     const chiaveDelCodice = d.funzione === undefined ? chiave(d.file, voce.id, l) : `${d.id} ${voce.id} ${l}`;
-    const codice = (d.funzione === undefined ? delFile : prove.get(chiaveDelCodice)!) as Extract<Codice, { righe: readonly Riga[] }>;
+    const scritto = d.funzione === undefined ? delFile : prove.get(chiaveDelCodice)!;
+    if ("nonAncora" in scritto) continue;
+    const codice = scritto as Extract<Codice, { righe: readonly Riga[] }>;
     const daLanciare = esecutore.compila === undefined ? codice.sorgente : eseguibili.get(`${chiaveDelCodice} ${macchina.nome}`);
     if (daLanciare === undefined) {
       risultati.set(chi, { genere: "rosso", righe: [`ROSSO ${chi} senza esito: il programma non è stato compilato`] });
       continue;
     }
     esecuzioni.push(async () => {
-      const f = await lancia(esecutore.esegui(macchina, daLanciare), input, secondiDiUnProgramma, macchina.percorso);
+      const f = await lancia(esecutore.esegui(macchina, daLanciare), input, secondiDiUnProgramma, macchina.percorso, esecutore.ambiente?.(macchina));
       const o = ottenuto(f, voce, codice.righe, l, d.caso.expected, d.controllo, tettoDelleChiamate(d.progetto));
       risultati.set(chi, "senzaEsito" in o ? { genere: "rosso", righe: [`ROSSO ${chi} senza esito: ${o.senzaEsito}`] } : confronta(d.caso.expected, o.atteso, o.tagliato, chi));
     });
@@ -435,6 +488,7 @@ rmSync(tmp, { recursive: true, force: true });
 
 // Le righe, nell'ordine dei casi e degli esecutori; per esecutore i verdi sui casi che ha corso.
 for (const r of righeDiPrima) console.log(r);
+for (const [linguaggio, perFile] of nonAncora) for (const [k, costrutto] of perFile) console.log(`NON ANCORA ${linguaggio} ${file[k]!.nome}: ${costrutto}`);
 const verdiPer = new Map(esecutori.map((e) => [e, 0]));
 const corsiPer = new Map(esecutori.map((e) => [e, 0]));
 let rossi = 0;
@@ -458,6 +512,11 @@ const conLeMatrici = daConfrontare.filter((d) => usaLeMatrici(d.progetto));
 for (const p of problemi) console.log(`PROBLEMA ${p}`);
 console.log(
   `toolchain: ${toolchain.map(({ esecutore, da, macchine, mancanti }) => `${esecutore.nome} da ${da}: ${macchine.map((k) => `${k.nome} ${k.versione} (${k.percorso})`).join(", ") || "nessuno"}${mancanti.length > 0 ? ` (manca: ${mancanti.join(", ")})` : ""}`).join("; ")}`,
+);
+console.log(`controllo dei tipi: ${tipiPer.join("; ") || "nessun linguaggio lo ha"}`);
+// I casi che gli esecutori di un linguaggio non corrono, perché il linguaggio non sa ancora scrivere il loro file.
+console.log(
+  `non ancora: ${[...nonAncora].map(([linguaggio, perFile]) => `${linguaggio} file ${perFile.size}, casi ${daConfrontare.filter((d) => perFile.has(d.file)).length}`).join("; ")}`,
 );
 const avvisiAttesi = daEseguire.flatMap(({ voce, esecutore }) => Object.entries(esecutore.avvisiAttesi).map(([f, o]) => `${voce.id} ${f} ${o}`));
 console.log(

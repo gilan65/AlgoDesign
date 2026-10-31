@@ -50,12 +50,13 @@ test("ogni linguaggio scrive le tabelle: generato il progetto giusto, con gli er
       return g.generato ? "generato" : g.perche;
     });
     // «Accademico» non ha le tabelle: per lui il progetto giusto non ci sta.
-    const giusto = linguaggi.every((v, i) => ottenuti[i] === (atteso === "generato" && v.id === "accademico" ? "non-ci-sta" : atteso));
+    // Il TypeScript non li sa ancora scrivere: per lui il progetto giusto è «non ancora».
+    const giusto = linguaggi.every((v, i) => ottenuti[i] === (atteso === "generato" && v.id === "accademico" ? "non-ci-sta" : atteso === "generato" && v.id === "typescript" ? "non-ancora" : atteso));
     return { nome, giusto, atteso, ottenuti };
   });
   expect(esiti.filter((e) => !e.giusto)).toEqual([]);
   // Controllo positivo dei denominatori: cinque file giusti e uno sbagliato (il tetto superato), ognuno per ogni linguaggio.
-  expect([esiti.filter((e) => e.atteso === "generato").length, esiti.filter((e) => e.atteso === "errori-statici").length, linguaggi.length]).toEqual([5, 1, 4]);
+  expect([esiti.filter((e) => e.atteso === "generato").length, esiti.filter((e) => e.atteso === "errori-statici").length, linguaggi.length]).toEqual([5, 1, 5]);
 });
 
 test("il programma di prova di ogni caso di una funzione con le tabelle si genera in ogni linguaggio da eseguire", () => {
@@ -67,9 +68,10 @@ test("il programma di prova di ogni caso di una funzione con le tabelle si gener
   });
   const daEseguire = linguaggi.filter((v) => v.genere === "da-eseguire");
   const rifiutati = casi.flatMap(({ nome, p, f, caso }) => daEseguire.flatMap((v) => (v.genera(p, tetti, "it", paroleDelloPseudocodice("it"), { funzione: f.id, caso }).generato ? [] : [`${nome} ${v.id}`])));
-  expect(rifiutati).toEqual([]);
+  // Il TypeScript li rifiuta tutti: non sa ancora scrivere il programma di prova.
+  expect(rifiutati).toEqual(casi.map(({ nome }) => `${nome} typescript`));
   // Controllo positivo: i casi delle funzioni della cartella sono tre (crea, migliore, alzata), ognuno per due linguaggi.
-  expect([casi.length, daEseguire.length]).toEqual([3, 2]);
+  expect([casi.length, daEseguire.length]).toEqual([3, 3]);
 });
 
 /** Il confronto col messaggio che nomina la prima riga diversa, con le due forme. */

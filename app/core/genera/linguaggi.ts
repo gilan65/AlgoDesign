@@ -19,9 +19,10 @@ import { accademico } from "./accademico";
 import { c } from "./c";
 import type { Generato } from "./forma";
 import { motiviCol, type TabellaDeiMotivi } from "./motivi";
-import { nomiDelleIntestazioni, riservatiDelC, riservatiDelPython, type LinguaDelCodice } from "./nomi";
+import { nomiDelleIntestazioni, riservatiDelC, riservatiDelPython, riservatiDelTypeScript, type LinguaDelCodice } from "./nomi";
 import { pseudocodice, type ParoleDelloPseudocodice } from "./pseudocodice";
 import { python, type Prova } from "./python";
+import { typescript } from "./typescript";
 
 /** Un linguaggio da eseguire ha l'esecutore del test differenziale; uno da leggere si prova sul testo atteso. */
 export type GenereDelLinguaggio = "da-eseguire" | "da-leggere";
@@ -54,7 +55,7 @@ export type VoceDelLinguaggio =
       readonly rigaDErrore: RegExp;
     });
 
-/** La riga d'errore del Python e del C generati: «Errore alla riga N: motivo», o «Error at line N: …». */
+/** La riga d'errore del Python, del C e del TypeScript generati: «Errore alla riga N: motivo», o «Error at line N: …». */
 const rigaDErrore = /^(?:Errore alla riga|Error at line) (\d+): (.+)\n$/;
 
 export const linguaggi = [
@@ -98,6 +99,18 @@ export const linguaggi = [
     riservati: [],
     riservatiNelFile: [],
     diPartenza: false,
+  },
+  {
+    // Aggiunto dopo i linguaggi di partenza: nasce spento, in fondo al menu.
+    id: "typescript",
+    estensione: ".ts",
+    genere: "da-eseguire",
+    genera: (p, limiti, lingua, parole, prova) => typescript(p, limiti, lingua, parole, prova),
+    riservati: riservatiDelTypeScript,
+    riservatiNelFile: [],
+    diPartenza: false,
+    motivi: motiviCol,
+    rigaDErrore,
   },
 ] as const satisfies readonly VoceDelLinguaggio[];
 

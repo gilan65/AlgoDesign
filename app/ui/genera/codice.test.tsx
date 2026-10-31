@@ -598,33 +598,35 @@ test("il menu dei linguaggi nelle Impostazioni: ▲ ▼ col fuoco sul pulsante, 
 
   await apriIlMenu();
   expect(menu()?.querySelector("legend")?.textContent).toBe(it.linguaggiDelCodice);
-  expect(righeDelMenu()).toEqual(["pseudocodice", "python", "c", "accademico (spento)"]);
+  expect(righeDelMenu()).toEqual(["pseudocodice", "python", "c", "accademico (spento)", "typescript (spento)"]);
   // Il primo non sale e l'ultimo non scende; i nomi dei pulsanti dicono il linguaggio.
-  expect([pulsante("pseudocodice", -1)?.getAttribute("aria-disabled"), pulsante("accademico", 1)?.getAttribute("aria-disabled"), pulsante("python", -1)?.getAttribute("aria-disabled")]).toEqual(["true", "true", "false"]);
+  expect([pulsante("pseudocodice", -1)?.getAttribute("aria-disabled"), pulsante("typescript", 1)?.getAttribute("aria-disabled"), pulsante("python", -1)?.getAttribute("aria-disabled")]).toEqual(["true", "true", "false"]);
   expect(pulsante("python", 1)?.getAttribute("aria-label")).toBe(riempi(it.linguaggioGiu, { linguaggio: it.linguaggioPython }));
-  // ▼ tre volte sullo pseudocodice: la riga scende, e il fuoco resta sul suo ▼ anche in fondo, dove non fa nulla.
+  // ▼ quattro volte sullo pseudocodice: la riga scende, e il fuoco resta sul suo ▼ anche in fondo, dove non fa nulla.
   await clic(pulsante("pseudocodice", 1), "▼ dello pseudocodice");
   await aspetta("il fuoco sul ▼ dello pseudocodice", () => document.activeElement === pulsante("pseudocodice", 1));
-  expect(righeDelMenu()).toEqual(["python", "pseudocodice", "c", "accademico (spento)"]);
+  expect(righeDelMenu()).toEqual(["python", "pseudocodice", "c", "accademico (spento)", "typescript (spento)"]);
   await clic(pulsante("pseudocodice", 1), "▼ dello pseudocodice");
-  await aspetta("il fuoco sul ▼ dello pseudocodice, sopra «Accademico»", () => document.activeElement === pulsante("pseudocodice", 1) && righeDelMenu().at(-2) === "pseudocodice");
+  await aspetta("il fuoco sul ▼ dello pseudocodice, sopra «Accademico»", () => document.activeElement === pulsante("pseudocodice", 1) && righeDelMenu().at(-3) === "pseudocodice");
+  await clic(pulsante("pseudocodice", 1), "▼ dello pseudocodice");
+  await aspetta("il fuoco sul ▼ dello pseudocodice, sopra TypeScript", () => document.activeElement === pulsante("pseudocodice", 1) && righeDelMenu().at(-2) === "pseudocodice");
   await clic(pulsante("pseudocodice", 1), "▼ dello pseudocodice");
   await aspetta("il fuoco sul ▼ dello pseudocodice, in fondo", () => document.activeElement === pulsante("pseudocodice", 1) && righeDelMenu().at(-1) === "pseudocodice");
-  expect({ righe: righeDelMenu(), fermo: pulsante("pseudocodice", 1)?.getAttribute("aria-disabled") }).toEqual({ righe: ["python", "c", "accademico (spento)", "pseudocodice"], fermo: "true" });
+  expect({ righe: righeDelMenu(), fermo: pulsante("pseudocodice", 1)?.getAttribute("aria-disabled") }).toEqual({ righe: ["python", "c", "accademico (spento)", "typescript (spento)", "pseudocodice"], fermo: "true" });
   await clic(pulsante("pseudocodice", 1), "▼ dello pseudocodice, in fondo");
-  expect(righeDelMenu()).toEqual(["python", "c", "accademico (spento)", "pseudocodice"]);
+  expect(righeDelMenu()).toEqual(["python", "c", "accademico (spento)", "typescript (spento)", "pseudocodice"]);
   // Spenti il Python e lo pseudocodice, il C resta: la sua casella non si spegne, e la riga sotto lo dice.
   await clic(casella("python"), "la casella del Python");
   await clic(casella("pseudocodice"), "la casella dello pseudocodice");
-  expect({ righe: righeDelMenu(), bloccata: casella("c")?.disabled, detto: menu()?.textContent?.includes(it.almenoUnLinguaggio) }).toEqual({ righe: ["python (spento)", "c", "accademico (spento)", "pseudocodice (spento)"], bloccata: true, detto: true });
+  expect({ righe: righeDelMenu(), bloccata: casella("c")?.disabled, detto: menu()?.textContent?.includes(it.almenoUnLinguaggio) }).toEqual({ righe: ["python (spento)", "c", "accademico (spento)", "typescript (spento)", "pseudocodice (spento)"], bloccata: true, detto: true });
   await clic(casella("c"), "la casella del C, bloccata");
-  expect(righeDelMenu()).toEqual(["python (spento)", "c", "accademico (spento)", "pseudocodice (spento)"]);
+  expect(righeDelMenu()).toEqual(["python (spento)", "c", "accademico (spento)", "typescript (spento)", "pseudocodice (spento)"]);
   await conferma();
   // La linguetta guardata (Python) è spenta: si mostra la prima del menu.
   expect({ linguette: linguette(), scelta: scelta(), scritte: preferenzeScritte.map((p) => p.linguaggiDelCodice) }).toEqual({ linguette: [it.linguaggioC], scelta: it.linguaggioC, scritte: [["c"]] });
   // Riaperta: gli accesi in cima, gli spenti nell'ordine del registro; riacceso lo pseudocodice, va dopo il C.
   await apriIlMenu();
-  expect(righeDelMenu()).toEqual(["c", "pseudocodice (spento)", "python (spento)", "accademico (spento)"]);
+  expect(righeDelMenu()).toEqual(["c", "pseudocodice (spento)", "python (spento)", "accademico (spento)", "typescript (spento)"]);
   expect(menu()?.textContent?.includes(it.almenoUnLinguaggio)).toBe(true);
   await clic(casella("pseudocodice"), "la casella dello pseudocodice");
   expect({ bloccata: casella("c")?.disabled, detto: menu()?.textContent?.includes(it.almenoUnLinguaggio) }).toEqual({ bloccata: false, detto: false });

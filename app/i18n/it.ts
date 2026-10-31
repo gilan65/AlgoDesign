@@ -1123,6 +1123,7 @@ export const it = {
   linguaggioPython: "Python",
   linguaggioC: "C",
   linguaggioAccademico: "Accademico",
+  linguaggioTypeScript: "TypeScript",
   codiceCopia: "Copia",
   codiceSalva: "Salva…",
   codiceConErrori: "Il codice si genera da un progetto senza errori: l'elenco degli errori è nella riga di stato.",
@@ -1133,6 +1134,7 @@ export const it = {
   filtroPython: "Python",
   filtroC: "C",
   filtroAccademico: "Testo",
+  filtroTypeScript: "TypeScript",
   // Un progetto che non si scrive nel linguaggio scelto: al posto del codice l'elenco di ciò che manca, ognuno col suo
   // posto. {quante} è «una cosa» o «{n} cose»; {blocco} il nome del blocco; {dove} il programma principale, una
   // procedura o una funzione.

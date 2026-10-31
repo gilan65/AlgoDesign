@@ -277,8 +277,8 @@ test("i linguaggi del codice generato: i tre di partenza e in un file senza il c
   // Uno che l'app non conosce (un linguaggio di una versione dopo, aperto da questa) si ignora; uno ripetuto vale una volta.
   expect(preferenzeDa({ linguaggiDelCodice: ["linguaggio-finto", "c", "c", 3, "python"] }).scelte.linguaggiDelCodice).toEqual(["c", "python"]);
   // Le righe del menu: gli accesi nel loro ordine, poi gli spenti in quello del registro.
-  expect(righeDelMenu(["c"])).toEqual(["c", "pseudocodice", "python", "accademico"]);
-  expect(righeDelMenu(["python", "c"])).toEqual(["python", "c", "pseudocodice", "accademico"]);
+  expect(righeDelMenu(["c"])).toEqual(["c", "pseudocodice", "python", "accademico", "typescript"]);
+  expect(righeDelMenu(["python", "c"])).toEqual(["python", "c", "pseudocodice", "accademico", "typescript"]);
   expect(righeDelMenu(delRegistro)).toEqual(delRegistro);
 });
 
@@ -288,13 +288,29 @@ test("«Accademico» nasce spento e in fondo al menu: con le preferenze senza il
   const coiTre = preferenzeDa({ linguaggiDelCodice: ["pseudocodice", "python", "c"] }).scelte.linguaggiDelCodice;
   for (const accesi of [scelteIniziali.linguaggiDelCodice, senzaIlCampo, coiTre]) {
     expect(accesi).not.toContain("accademico");
-    expect(righeDelMenu(accesi).at(-1)).toBe("accademico");
+    expect(righeDelMenu(accesi).slice(-2)).toEqual(["accademico", "typescript"]);
   }
   // Acceso dall'utente, torna acceso, nel suo posto.
   expect(fileDa("it", preferenzeDa({ linguaggiDelCodice: ["accademico", "c"] }).scelte).linguaggiDelCodice).toEqual(["accademico", "c"]);
   // Controllo positivo: lo stesso registro con «Accademico» di partenza lo accende per chi non ha scelto.
   const diPartenza = linguaggi.map((v) => ({ id: v.id as string, diPartenza: v.diPartenza || v.id === "accademico" }));
   expect(accesiDiPartenza(diPartenza)).toContain("accademico");
+});
+
+test("TypeScript nasce spento e in fondo al menu: con le preferenze senza il campo e coi quattro linguaggi di prima", () => {
+  // Le due strade: chi non ha mai scelto (il file senza il campo, o nessun file) e chi ha acceso i quattro di prima.
+  const senzaIlCampo = preferenzeDa({ lingua: "it" }).scelte.linguaggiDelCodice;
+  const coiQuattro = preferenzeDa({ linguaggiDelCodice: ["pseudocodice", "python", "c", "accademico"] }).scelte.linguaggiDelCodice;
+  expect(coiQuattro).toEqual(["pseudocodice", "python", "c", "accademico"]);
+  for (const accesi of [scelteIniziali.linguaggiDelCodice, senzaIlCampo, coiQuattro]) {
+    expect(accesi).not.toContain("typescript");
+    expect(righeDelMenu(accesi).at(-1)).toBe("typescript");
+  }
+  // Acceso dall'utente, torna acceso, nel suo posto.
+  expect(fileDa("it", preferenzeDa({ linguaggiDelCodice: ["typescript", "python"] }).scelte).linguaggiDelCodice).toEqual(["typescript", "python"]);
+  // Controllo positivo: lo stesso registro con TypeScript di partenza lo accende per chi non ha scelto.
+  const diPartenza = linguaggi.map((v) => ({ id: v.id as string, diPartenza: v.diPartenza || v.id === "typescript" }));
+  expect(accesiDiPartenza(diPartenza)).toContain("typescript");
 });
 
 test("la guida: la ricerca accesa e la finestra fissa di partenza, anche in un file scritto prima che le scelte esistessero; ogni valore torna uguale", () => {

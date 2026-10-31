@@ -18,6 +18,7 @@ export const paroleDeiLinguaggi = {
   python: { nome: "linguaggioPython", filtro: "filtroPython" },
   c: { nome: "linguaggioC", filtro: "filtroC" },
   accademico: { nome: "linguaggioAccademico", filtro: "filtroAccademico" },
+  typescript: { nome: "linguaggioTypeScript", filtro: "filtroTypeScript" },
 } as const satisfies Record<Linguaggio, { readonly nome: keyof Dizionario; readonly filtro: keyof Dizionario }>;
 
 /** Il nome del file che «Salva…» propone per il codice, senza l'estensione: quello del progetto (`base`) e, per un

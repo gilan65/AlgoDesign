@@ -69,12 +69,13 @@ test("ogni linguaggio scrive i record: generato il progetto giusto, con gli erro
       return g.generato ? "generato" : g.perche;
     });
     // «Accademico» non ha i record: per lui il progetto giusto non ci sta.
-    const giusto = linguaggi.every((v, i) => ottenuti[i] === (atteso === "generato" && v.id === "accademico" ? "non-ci-sta" : atteso));
+    // Il TypeScript non li sa ancora scrivere: per lui il progetto giusto è «non ancora».
+    const giusto = linguaggi.every((v, i) => ottenuti[i] === (atteso === "generato" && v.id === "accademico" ? "non-ci-sta" : atteso === "generato" && v.id === "typescript" ? "non-ancora" : atteso));
     return { nome, giusto, atteso, ottenuti };
   });
   expect(esiti.filter((e) => !e.giusto)).toEqual([]);
   // Controllo positivo dei denominatori: sette file giusti e quattro sbagliati, ognuno per ogni linguaggio.
-  expect([esiti.filter((e) => e.atteso === "generato").length, esiti.filter((e) => e.atteso === "errori-statici").length, linguaggi.length]).toEqual([7, 4, 4]);
+  expect([esiti.filter((e) => e.atteso === "generato").length, esiti.filter((e) => e.atteso === "errori-statici").length, linguaggi.length]).toEqual([7, 4, 5]);
 });
 
 test("il programma di prova di ogni caso di una funzione coi record si genera in ogni linguaggio da eseguire", () => {
@@ -86,9 +87,10 @@ test("il programma di prova di ogni caso di una funzione coi record si genera in
   });
   const daEseguire = linguaggi.filter((v) => v.genere === "da-eseguire");
   const rifiutati = casi.flatMap(({ nome, p, f, caso }) => daEseguire.flatMap((v) => (v.genera(p, tetti, "it", paroleDelloPseudocodice("it"), { funzione: f.id, caso }).generato ? [] : [`${nome} ${v.id}`])));
-  expect(rifiutati).toEqual([]);
+  // Il TypeScript li rifiuta tutti: non sa ancora scrivere il programma di prova.
+  expect(rifiutati).toEqual(casi.map(({ nome }) => `${nome} typescript`));
   // Controllo positivo: i casi delle funzioni della cartella sono tre (migliore, promuovi, crea), ognuno per due linguaggi.
-  expect([casi.length, daEseguire.length]).toEqual([3, 2]);
+  expect([casi.length, daEseguire.length]).toEqual([3, 3]);
 });
 
 describe("il codice dei record uguale all'atteso scritto a mano", () => {

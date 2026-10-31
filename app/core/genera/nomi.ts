@@ -1,7 +1,7 @@
 // I nomi che il codice generato usa per sé, nelle lingue del codice: le funzioni di supporto (quelle che fanno ciò
 // che fa il C, nella lingua dell'interfaccia), i nomi di Python che il programma generato legge (le funzioni
-// predefinite, i moduli, `main`) e quelli del C (la libreria, le macro delle intestazioni), con le parole riservate dei
-// due linguaggi. Nessun dato può chiamarsi così: ogni linguaggio del registro (`linguaggi.ts`) dichiara i suoi, e il
+// predefinite, i moduli, `main`), quelli del C (la libreria, le macro delle intestazioni) e quelli del TypeScript (i
+// globali che legge, `node:fs`), con le parole riservate dei tre linguaggi. Nessun dato può chiamarsi così: ogni linguaggio del registro (`linguaggi.ts`) dichiara i suoi, e il
 // controllo statico riserva l'unione di tutti, in tutte le lingue insieme, perché un progetto non cambi validità cambiando
 // la lingua.
 //
@@ -266,6 +266,29 @@ export const paroleDiPython = (
   "global if import in is lambda nonlocal not or pass raise return try while with yield"
 ).split(" ");
 
+// Il TypeScript ha in più la funzione che scrive sullo standard output: la sola che legge `node:fs`, che una pagina nel
+// browser può sostituire.
+
+export const funzioniDelTypeScript = ["scrivi"] as const;
+export type FunzioneDelTypeScript = (typeof funzioniDelTypeScript)[number];
+
+export const nomiDelSupportoDelTypeScript: Readonly<Record<LinguaDelCodice, Readonly<Record<FunzioneDelTypeScript, string>>>> = {
+  it: { scrivi: "scrivi" },
+  en: { scrivi: "write" },
+};
+
+/** Le parole riservate di JavaScript in un modulo, che è sempre in modo stretto (misurate con Node 24 e `tsc` 7: un dato
+ * o una funzione con uno di questi nomi rompe il programma), e i due nomi che il modo stretto non lascia dichiarare. Le
+ * parole del solo TypeScript (`type`, `number`, `any`…) restano nomi validi per un dato e per una funzione. */
+export const paroleDiTypeScript = (
+  "break case catch class const continue debugger default delete do else enum export extends false finally for " +
+  "function if import in instanceof new null return super switch this throw true try typeof var void while with " +
+  "yield let static implements interface package private protected public await arguments eval"
+).split(" ");
+
+/** I nomi che il TypeScript generato legge: `main`, i globali e ciò che importa da `node:fs`. */
+export const nomiDiTypeScript = ["main", "String", "Math", "writeSync"] as const;
+
 /** I nomi comuni al Python e al C generati, in ogni lingua: le funzioni di supporto e i contatori della ricorsione. */
 const nomiComuniDelGenerato = [
   ...Object.values(nomiDelSupporto).flatMap((n) => Object.values(n)),
@@ -280,3 +303,9 @@ export const riservatiDelPython: readonly string[] = [...new Set([...paroleDiPyt
  * per sé, la libreria che legge e le macro delle intestazioni. I nomi che le intestazioni dichiarano a livello di file
  * sono a parte (`nomiDelleIntestazioni`): valgono solo per ciò che sta a livello di file. */
 export const riservatiDelC: readonly string[] = [...new Set([...paroleDelC11, ...nomiComuniDelGenerato, ...nomiDelCGenerato, ...nomiDelC, ...macroDelleIntestazioni])];
+
+/** I nomi che nessun dato può avere per il TypeScript generato, in ogni lingua: le parole del linguaggio, i nomi che il
+ * codice usa per sé (le funzioni di supporto comuni e la sua) e quelli che legge. */
+export const riservatiDelTypeScript: readonly string[] = [
+  ...new Set([...paroleDiTypeScript, ...nomiComuniDelGenerato, ...Object.values(nomiDelSupportoDelTypeScript).flatMap((x) => Object.values(x)), ...nomiDiTypeScript]),
+];

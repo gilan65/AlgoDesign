@@ -73,8 +73,19 @@
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync, appendFileSync, cpSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, relative } from "node:path";
-import { linguaggi } from "../core/genera/linguaggi";
-import { compila, esecutori as delContratto, esecutoriRichiesti as richiestiDal, programmiConAvvisiAttesi as avvisiAttesiDal } from "./esecutori";
+import { tetti } from "../core/controllo/controllo";
+import { linguaggi, voceDel } from "../core/genera/linguaggi";
+import { apri } from "../core/progetto/formato";
+import { paroleDelloPseudocodice } from "../ui/genera/parole";
+import {
+  compila,
+  compilazioniConAvvisiAttese,
+  esecutori as delContratto,
+  esecutoreDellEseguito,
+  esecutoriRichiesti as richiestiDal,
+  eseguitiDel,
+  programmiConAvvisiAttesi as avvisiAttesiDal,
+} from "./esecutori";
 import { differenze, leggiIConteggi, misuraIlCorpus } from "./corpus";
 import { chiamate, senzaExact } from "./selettori";
 
@@ -592,8 +603,11 @@ async function portaCasi(): Promise<void> {
 // (`esclusiDalDifferenziale`); i casi con l'errore statico tanti quanti i casi che lo attendono, contati qui; i fuori
 // tappa tanti quanti i casi e i file delle tappe fuori (oggi nessuna), contati qui; gli esecutori eseguiti uguali,
 // nei due versi, a quelli richiesti dal contratto (`strumenti/esecutori.ts`): l'interprete, e ogni famiglia della
-// toolchain di ogni linguaggio da eseguire del registro nelle due lingue (oggi il Python, e il C con un gcc e con un
-// clang: la toolchain che manca fa rossa la porta, non la salta). La durata nella riga.
+// toolchain di ogni linguaggio da eseguire del registro nelle due lingue (oggi il Python, il C con un gcc e con un
+// clang, il TypeScript con Node e con Bun: la toolchain che manca fa rossa la porta, non la salta). Gli esecutori di un
+// linguaggio che non sa ancora scrivere un file non ne corrono i casi: ognuno è verde sui casi del confronto meno quelli
+// che la riga `non ancora` conta per il suo linguaggio (le righe NON ANCORA tante quanti i file che conta). Il controllo
+// dei tipi di ogni linguaggio che l'ha: dei programmi, nessun errore. La durata nella riga.
 // Controlli positivi, ciascuno in una corsa a parte:
 // - PER CAMPO, coi file dati: copie di casi del corpus con l'atteso alterato (l'output con un carattere in meno, cioè
 //   l'ottenuto con uno in più; l'errore atteso su un altro blocco; un carattere dell'output cambiato, anche in un caso
@@ -601,15 +615,18 @@ async function portaCasi(): Promise<void> {
 //   quel campo per OGNI esecutore; una voce col ritorno carrello finale fa del suo caso un problema, e l'altro caso
 //   dello stesso file resta verde per ogni esecutore; il caso di una funzione con l'atteso alterato dà la riga ROSSO
 //   per ogni esecutore (col programma di prova), e gli altri casi dello stesso file verdi;
-// - SENZA TOOLCHAIN: le due variabili su un eseguibile che non c'è (vincono sull'impostazione e sul PATH) danno i
-//   problemi della toolchain ed exit 1;
+// - SENZA TOOLCHAIN: le variabili di tutti gli esecutori su un eseguibile che non c'è (vincono sull'impostazione e
+//   sul PATH) danno un problema della toolchain per esecutore ed exit 1;
 // - AVVISI DEL C: una copia di un caso del corpus con un dato mai usato fa avvisare ogni compilatore in ogni lingua
 //   (`-Wunused-variable`), un PROBLEMA per ciascuno, e il caso resta verde per ogni esecutore;
 // - gli esecutori richiesti: il confronto, senza UNO qualunque di loro, dice esattamente quello mancante; col registro
-//   senza il C gli esecutori richiesti sono meno, e la corsa vera ha in più esattamente quelli che compilano.
+//   senza un linguaggio, per ogni linguaggio da eseguire, gli esecutori richiesti sono meno, e la corsa vera ha in più
+//   esattamente quelli di quel linguaggio.
+// Le sonde attese solo per gli esecutori che le corrono: un linguaggio che non sa ancora scrivere il file di una sonda ha
+// la sua riga NON ANCORA, col costrutto che il suo generatore dice.
 // La riga `avvisi della compilazione` della corsa vera: nessun avviso non atteso né mancante, i programmi attesi tanti
-// quanti ne dichiarano gli esecutori del contratto, e le compilazioni con gli avvisi attesi tante quante quei programmi
-// per i compilatori e le lingue.
+// quanti ne dichiarano gli esecutori del contratto, e le compilazioni con gli avvisi attesi tante quante, per ogni
+// esecutore eseguito che compila, i programmi attesi del suo esecutore.
 // Che cosa la porta NON guarda: i casi d'uso nel container Linux (alla chiusura del blocco); la console di Windows.
 
 /** Gli esclusi dalle decisioni dei blocchi (il codice generato non controlla ciò che il C non definisce, né il tetto dei
@@ -731,12 +748,38 @@ async function portaDifferenziale(): Promise<void> {
   if (vera.codice !== 0 || !riepilogo || riepilogo[9] !== "0" || riepilogo[10] !== "0")
     rosso("differenziale", `exit ${vera.codice}; ${[...vera.uscita.matchAll(/^(ROSSO|PROBLEMA) .*$/gm)].map((m) => m[0]).slice(0, 12).join(" · ") || riepilogo?.[0] || "nessun riepilogo"} | ${toolchain}`);
   const n = Number(riepilogo[2]);
+  // I casi che gli esecutori di ogni linguaggio non corrono, perché il linguaggio non sa ancora scrivere il loro file.
+  const rigaNonAncora = vera.uscita.match(/^non ancora: (.*)$/m)?.[1] ?? "";
+  const nonAncora = new Map(
+    rigaNonAncora
+      .split("; ")
+      .map((x) => x.match(/^(\S+) file (\d+), casi (\d+)$/))
+      .flatMap((m) => (m === null ? [] : [[m[1]!, { file: Number(m[2]), casi: Number(m[3]) }] as const])),
+  );
+  const daEseguire = linguaggi.filter((v) => v.genere === "da-eseguire").map((v) => v.id as string);
+  const righeNonAncora = [...vera.uscita.matchAll(/^NON ANCORA (\S+) /gm)].map((m) => m[1]!);
+  const senzaConto = daEseguire.filter((id) => !nonAncora.has(id) || righeNonAncora.filter((x) => x === id).length !== nonAncora.get(id)!.file);
+  if (nonAncora.size !== daEseguire.length || senzaConto.length > 0)
+    rosso("differenziale", `riga «non ancora» ${JSON.stringify(rigaNonAncora)}: linguaggi da eseguire ${JSON.stringify(daEseguire)}, senza conto o con le righe NON ANCORA diverse dal conto ${JSON.stringify(senzaConto)}`);
   const perEsecutore = riepilogo[8]!.split(", ").map((x) => x.match(/^(.+) (\d+)\/(\d+)$/));
   const esecutori = perEsecutore.map((m) => m?.[1] ?? "?");
-  const nonTutti = perEsecutore.filter((m) => !m || m[2] !== String(n) || m[3] !== String(n));
+  /** I casi che un esecutore deve correre: quelli del confronto, meno quelli che il suo linguaggio non sa ancora scrivere. */
+  const daCorrere = (eseguito: string) => {
+    const e = esecutoreDellEseguito(eseguito, linguaggi, delContratto);
+    return e === undefined ? n : n - nonAncora.get(e.linguaggio)!.casi;
+  };
+  const nonTutti = perEsecutore.filter((m) => !m || m[2] !== String(daCorrere(m[1]!)) || m[3] !== String(daCorrere(m[1]!)));
+  // Il controllo dei tipi di ogni linguaggio che l'ha: dei programmi, nessun errore.
+  const rigaDeiTipi = vera.uscita.match(/^controllo dei tipi: (.*)$/m)?.[1] ?? "";
+  const conITipi = delContratto.filter((e) => e.controllaITipi !== undefined && daEseguire.includes(e.linguaggio)).map((e) => e.linguaggio);
+  const tipiNonVerdi = conITipi.filter((id) => {
+    const m = rigaDeiTipi.match(new RegExp(`(?:^|; )${id} programmi (\\d+), errori (\\d+)(?:;|$)`));
+    return m === null || Number(m[1]) === 0 || m[2] !== "0";
+  });
+  if (conITipi.length === 0 || tipiNonVerdi.length > 0) rosso("differenziale", `controllo dei tipi: ${JSON.stringify(rigaDeiTipi)}; linguaggi che l'hanno ${JSON.stringify(conITipi)}, senza programmi o con errori ${JSON.stringify(tipiNonVerdi)}`);
   const { mancanti, inPiu: eseguitiInPiu } = confrontoDegliEsecutori(esecutoriRichiesti, esecutori);
   if (n === 0 || nonTutti.length > 0 || mancanti.length > 0 || eseguitiInPiu.length > 0)
-    rosso("differenziale", `casi nel confronto ${n}; esecutori non verdi su tutti: ${JSON.stringify(nonTutti.map((m) => m?.[0]))}; richiesti ${esecutoriRichiesti.length} dal contratto, mancanti: ${JSON.stringify(mancanti)}, eseguiti in più: ${JSON.stringify(eseguitiInPiu)} | ${toolchain}`);
+    rosso("differenziale", `casi nel confronto ${n}; esecutori non verdi su tutti i loro (non ancora: ${rigaNonAncora}): ${JSON.stringify(nonTutti.map((m) => m?.[0]))}; richiesti ${esecutoriRichiesti.length} dal contratto, mancanti: ${JSON.stringify(mancanti)}, eseguiti in più: ${JSON.stringify(eseguitiInPiu)} | ${toolchain}`);
   const cartellaDeiCasi = join(radice, "casi");
   // I casi dei tipi non semplici entrano nel confronto come quelli delle tappe.
   const deiTipi = casiDeiTipi(cartellaDeiCasi);
@@ -776,27 +819,41 @@ async function portaDifferenziale(): Promise<void> {
   // Gli avvisi della compilazione nella corsa vera: nessuno non atteso né mancante, e gli attesi su ogni macchina che
   // compila e lingua.
   const avvisi = vera.uscita.match(/^avvisi della compilazione: compilazioni (\d+), con gli avvisi attesi (\d+) \((.*)\), non attesi (\d+), attesi e mancanti (\d+)$/m);
-  const compilatoriELingue = esecutori.filter((e) => compila(e, linguaggi, delContratto)).length;
+  const compilazioniAttese = compilazioniConAvvisiAttese(esecutori, linguaggi, delContratto);
   const programmiAttesi = avvisi === null || avvisi[3] === "" ? 0 : avvisi[3]!.split(", ").length;
-  if (!avvisi || avvisi[4] !== "0" || avvisi[5] !== "0" || Number(avvisi[2]) !== programmiAttesi * compilatoriELingue || programmiAttesi !== programmiConAvvisiAttesi)
-    rosso("differenziale", `avvisi della compilazione: ${avvisi?.[0] ?? "nessuna riga"} (attesi dal contratto ${programmiConAvvisiAttesi} programmi per ${compilatoriELingue} compilatori e lingue)`);
+  if (!avvisi || avvisi[4] !== "0" || avvisi[5] !== "0" || Number(avvisi[2]) !== compilazioniAttese || programmiAttesi !== programmiConAvvisiAttesi)
+    rosso("differenziale", `avvisi della compilazione: ${avvisi?.[0] ?? "nessuna riga"} (attesi dal contratto ${programmiConAvvisiAttesi} programmi, ${compilazioniAttese} compilazioni sugli esecutori che compilano)`);
 
   // Controlli positivi degli esecutori richiesti: senza UNO qualunque di loro, quello e solo quello mancante; e il
   // registro senza il C chiede meno esecutori di quelli eseguiti, e la corsa vera risulta con quelli in più.
   const membri = esecutoriRichiesti.map((x) => ({ x, mancanti: confrontoDegliEsecutori(esecutoriRichiesti, esecutoriRichiesti.filter((e) => e !== x)).mancanti }));
   const spenti = membri.filter(({ x, mancanti }) => JSON.stringify(mancanti) !== JSON.stringify([x]));
-  const senzaIlC = richiestiDal(linguaggi.filter((v) => v.id !== "c"), delContratto);
-  const inPiuSenzaIlC = confrontoDegliEsecutori(senzaIlC, esecutori).inPiu;
-  const delC = esecutori.filter((e) => compila(e, linguaggi, delContratto));
-  if (esecutoriRichiesti.length < 2 || spenti.length > 0 || senzaIlC.length >= esecutoriRichiesti.length || delC.length === 0 || JSON.stringify(inPiuSenzaIlC) !== JSON.stringify(delC))
-    rosso("differenziale", `controllo positivo degli esecutori richiesti SPENTO: richiesti ${esecutoriRichiesti.length}, senza uno ${JSON.stringify(spenti)}; col registro senza il C richiesti ${senzaIlC.length}, in più ${JSON.stringify(inPiuSenzaIlC)} (attesi ${JSON.stringify(delC)})`);
+  // Per ogni linguaggio da eseguire, il registro senza di lui: richiesti meno, e in più nella corsa vera i suoi.
+  const senzaUno = daEseguire.map((id) => {
+    const richiesti = richiestiDal(linguaggi.filter((v) => v.id !== id), delContratto);
+    return { id, richiesti: richiesti.length, inPiu: confrontoDegliEsecutori(richiesti, esecutori).inPiu, suoi: eseguitiDel(id, esecutori, linguaggi, delContratto) };
+  });
+  const senzaUnoSpenti = senzaUno.filter((s) => s.richiesti >= esecutoriRichiesti.length || s.suoi.length === 0 || JSON.stringify(s.inPiu) !== JSON.stringify(s.suoi));
+  if (esecutoriRichiesti.length < 2 || spenti.length > 0 || daEseguire.length === 0 || senzaUnoSpenti.length > 0)
+    rosso("differenziale", `controllo positivo degli esecutori richiesti SPENTO: richiesti ${esecutoriRichiesti.length}, senza uno ${JSON.stringify(spenti)}; col registro senza un linguaggio, spenti ${JSON.stringify(senzaUnoSpenti)}`);
 
   // Controllo positivo per campo, in una corsa a parte coi soli file sonda.
   const percorsi = sondeDifferenziale.map((s) => `.collaudo/__sonda__diff-${s.nome}.algo`);
+  /** Per ogni sonda, i linguaggi che non sanno ancora scriverne il file, col costrutto che il loro generatore dice. */
+  const nonAncoraNelleSonde: Map<string, string>[] = [];
   sondeDifferenziale.forEach((s, i) => {
     const p = JSON.parse(readFileSync(join(radice, "casi", `tappa-${s.tappa ?? 1}`, `${s.da}.algo`), "utf8"));
     s.altera(p);
-    writeFileSync(join(radice, percorsi[i]!), JSON.stringify(p, null, 2));
+    const testo = JSON.stringify(p, null, 2);
+    writeFileSync(join(radice, percorsi[i]!), testo);
+    const aperto = apri(testo);
+    const quali = new Map<string, string>();
+    if (aperto.ok)
+      for (const v of linguaggi.filter((x) => x.genere === "da-eseguire")) {
+        const g = voceDel(v.id).genera(aperto.progetto, tetti, "it", paroleDelloPseudocodice("it"));
+        if (!g.generato && g.perche === "non-ancora") quali.set(v.id, g.costrutto);
+      }
+    nonAncoraNelleSonde.push(quali);
   });
   let sonda: Esito;
   try {
@@ -804,8 +861,12 @@ async function portaDifferenziale(): Promise<void> {
   } finally {
     for (const percorso of percorsi) rmSync(join(radice, percorso), { force: true });
   }
-  const righe = sonda.uscita.split(/\r?\n/).filter((r) => /^(VERDE|ROSSO|PROBLEMA|ESCLUSO|ERRORE STATICO|FUORI TAPPA) /.test(r));
-  const attese = sondeDifferenziale.flatMap((s, i) => s.righe(percorsi[i]!, esecutori));
+  const righe = sonda.uscita.split(/\r?\n/).filter((r) => /^(VERDE|ROSSO|PROBLEMA|ESCLUSO|ERRORE STATICO|FUORI TAPPA|NON ANCORA) /.test(r));
+  const attese = sondeDifferenziale.flatMap((s, i) => {
+    const quali = nonAncoraNelleSonde[i]!;
+    const corrono = esecutori.filter((e) => !quali.has(esecutoreDellEseguito(e, linguaggi, delContratto)?.linguaggio ?? ""));
+    return [...s.righe(percorsi[i]!, corrono), ...[...quali].map(([id, costrutto]) => `NON ANCORA ${id} ${percorsi[i]!}: ${costrutto}`)];
+  });
   const mancantiSonda = attese.filter((a) => !righe.includes(a));
   const inPiu = righe.filter((r) => !attese.includes(r));
   if (sonda.codice !== 1 || mancantiSonda.length > 0 || inPiu.length > 0)
@@ -813,14 +874,15 @@ async function portaDifferenziale(): Promise<void> {
 
   // Senza toolchain: le variabili su un eseguibile che non c'è, un file solo.
   const nessuno = join(radice, ".collaudo", "__sonda__non-esiste.exe");
-  const senza = await esegui(comandoDifferenziale("casi/tappa-1/scrittura-intero.algo"), { ALGODESIGN_CC: nessuno, ALGODESIGN_PYTHON: nessuno });
+  const senza = await esegui(comandoDifferenziale("casi/tappa-1/scrittura-intero.algo"), Object.fromEntries(delContratto.map((e) => [e.variabile, nessuno])));
   const problemiSenza = senza.uscita.split(/\r?\n/).filter((r) => r.startsWith("PROBLEMA toolchain:"));
   const soloInterprete = /; per esecutore: interprete 1\/1; /.test(senza.uscita);
-  if (senza.codice !== 1 || problemiSenza.length < 2 || !soloInterprete)
+  // Per ogni esecutore il suo eseguibile che non risponde, e la toolchain senza nessuno: due problemi per esecutore.
+  if (senza.codice !== 1 || problemiSenza.length < 2 * delContratto.length || !soloInterprete)
     rosso("differenziale", `controllo positivo «senza toolchain» SPENTO (exit ${senza.codice}; problemi della toolchain ${problemiSenza.length}; solo l'interprete: ${soloInterprete})`);
 
   riga(
-    `PORTA differenziale: VERDE | ${secondi.toFixed(1)} s | exit 0, ${n} casi nel confronto (di funzioni ${riepilogo[3]}, contati nei file: ${diFunzioni}; con l'errore statico ${riepilogo[4]}, contati nei file: ${conStatico}; con gli esclusi ${riepilogo[5]}, per nome, contati nei file: ${contati}, contati nei file delle tappe ${tappeDelDifferenziale.join(", ")}), fuori tappa ${riepilogo[6]} in ${riepilogo[7]} file (contati nelle tappe ${tappeFuoriDalDifferenziale.join(", ")}) | per esecutore: ${riepilogo[8]} | ${toolchain} | avvisi della compilazione: ${avvisi[1]} compilazioni, ${avvisi[2]} con gli avvisi attesi, nessun altro | controllo positivo acceso (corsa a parte: exit ${sonda.codice}; ${sondeDifferenziale.map((s) => s.nome).join(", ")}: ${attese.length} righe attese, tutte, nessuna in più) | controllo positivo «senza toolchain» acceso (exit ${senza.codice}, ${problemiSenza.length} problemi) | esecutori dal contratto: richiesti ${esecutoriRichiesti.length}, eseguiti ${esecutori.length}, mancanti 0, in più 0; programmi con gli avvisi attesi ${programmiConAvvisiAttesi} | controllo positivo degli esecutori richiesti acceso (senza uno: ${membri.length} su ${membri.length}; registro senza il C: richiesti ${senzaIlC.length} invece di ${esecutoriRichiesti.length}, ROSSO con ${inPiuSenzaIlC.length} in più)`,
+    `PORTA differenziale: VERDE | ${secondi.toFixed(1)} s | exit 0, ${n} casi nel confronto (di funzioni ${riepilogo[3]}, contati nei file: ${diFunzioni}; con l'errore statico ${riepilogo[4]}, contati nei file: ${conStatico}; con gli esclusi ${riepilogo[5]}, per nome, contati nei file: ${contati}, contati nei file delle tappe ${tappeDelDifferenziale.join(", ")}), fuori tappa ${riepilogo[6]} in ${riepilogo[7]} file (contati nelle tappe ${tappeFuoriDalDifferenziale.join(", ")}) | per esecutore: ${riepilogo[8]} | non ancora: ${rigaNonAncora} | controllo dei tipi: ${rigaDeiTipi} | ${toolchain} | avvisi della compilazione: ${avvisi[1]} compilazioni, ${avvisi[2]} con gli avvisi attesi, nessun altro | controllo positivo acceso (corsa a parte: exit ${sonda.codice}; ${sondeDifferenziale.map((s) => s.nome).join(", ")}: ${attese.length} righe attese, tutte, nessuna in più) | controllo positivo «senza toolchain» acceso (exit ${senza.codice}, ${problemiSenza.length} problemi) | esecutori dal contratto: richiesti ${esecutoriRichiesti.length}, eseguiti ${esecutori.length}, mancanti 0, in più 0; programmi con gli avvisi attesi ${programmiConAvvisiAttesi} | controllo positivo degli esecutori richiesti acceso (senza uno: ${membri.length} su ${membri.length}; registro senza un linguaggio: ${senzaUno.map((s) => `senza ${s.id} richiesti ${s.richiesti} invece di ${esecutoriRichiesti.length}, ROSSO con ${s.inPiu.length} in più`).join("; ")})`,
   );
 }
 
