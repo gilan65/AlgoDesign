@@ -11,8 +11,10 @@
 // e `nonAncora` dice il primo che trova («le procedure e le funzioni», «il per», «la copia di un vettore»…), dopo gli
 // errori statici come un generatore che si ferma.
 //
-// La forma: il nome del progetto e la testa, l'import da `node:fs` delle sole funzioni che leggono e scrivono (isolate
-// in `leggi_riga`, `scrivi` e `fermati`, che una pagina nel browser può sostituire), le costanti comuni, `main` coi dati
+// La forma: il nome del progetto e la testa, gli import da Node (`execSync` per `prepara_console`, e da `node:fs` le sole
+// funzioni che leggono e scrivono, isolate in `leggi_riga`, `scrivi` e `fermati`: una pagina nel browser le può
+// sostituire), le costanti comuni, `main` (che per prima cosa, se il programma legge, scrive o si ferma, mette la console
+// di Windows in UTF-8 come il C: Node la lascia nella code page del sistema) coi dati
 // annotati dalla vista dei dati (`let`, o `const` per una costante; un dato senza valore iniziale `let x!: number;`,
 // perché `tsc` non lo dica usato prima di avere un valore in un programma valido; il ruolo o «costante» in una colonna
 // allineata di commenti), le regole, poi le sole funzioni di supporto che il programma usa (con quelle che chiamano), in
@@ -46,7 +48,7 @@
 //
 // La provenienza delle righe è quella del Python: la riga di un blocco ha quel blocco (la condizione del `ripeti` sulla
 // riga del `while` in fondo), la dichiarazione di un dato ha il dato, le righe di struttura (`function main(): void {`,
-// `} else {`, `do {`, le graffe, la testa) e le funzioni di supporto nessuna; le righe di `main` sono segnate come sue.
+// la chiamata di `prepara_console`, `} else {`, `do {`, le graffe, la testa) e le funzioni di supporto nessuna; le righe di `main` sono segnate come sue.
 //
 // Che cosa NON fa: controllare un intero oltre i 32 bit, la divisione per zero, l'indice di un vettore, il reale fuori
 // dall'intervallo degli interi convertito in intero, il dato senza valore, il reale non finito; le ultime cifre di
@@ -95,7 +97,7 @@ const testi = {
 
 /** Le funzioni di supporto del TypeScript, nell'ordine in cui il programma le scrive. */
 const supportoInOrdine = [
-  "fermati", "leggiRiga", "leggiIntero", "leggiReale", "leggiCarattere", "leggiStringa", "leggiBooleano", "dividi",
+  "preparaConsole", "fermati", "leggiRiga", "leggiIntero", "leggiReale", "leggiCarattere", "leggiStringa", "leggiBooleano", "dividi",
   "convertiAReale", "elevatoA", "arrotonda", "convertiACarattere", "convertiAVettore", "convertiAStringa", "carattereDi",
   "lunghezza", "confronta", "nellaStringa", "concatenazione", "alPiu", "reale", "booleano", "scrivi",
 ] as const;
@@ -625,7 +627,6 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
 
   const dichiarazioni = dichiara(main.data, rientro, true);
   for (const b of main.body) blocco(b, 1);
-  const principale = segnate([{ testo: "function main(): void {" }, ...dichiarazioni, ...corpo, { testo: "}" }], main.id);
   const costanti = dichiara(comuni, "", false);
 
   // --------------------------------------------------------------------------------------- l'insieme
@@ -640,12 +641,21 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
           cresce = true;
         }
   }
+  // Un programma che legge, scrive o si ferma mette la console di Windows in UTF-8 per prima cosa, come il C: Node la
+  // lascia nella code page del sistema (misurato: «è» letto come un byte della 850, «città» scritta male).
+  const conLaConsole = usate.has("leggiRiga") || usate.has("scrivi") || usate.has("fermati");
+  if (conLaConsole) usate.add("preparaConsole");
+  const principale = segnate(
+    [{ testo: "function main(): void {" }, ...(conLaConsole ? [{ testo: `${rientro}${nomi.preparaConsole}();` }] : []), ...dichiarazioni, ...corpo, { testo: "}" }],
+    main.id,
+  );
   const letti = [...(usate.has("leggiRiga") ? ["readSync"] : []), ...(usate.has("scrivi") || usate.has("fermati") ? ["writeSync"] : [])];
   const nome = p.metadata.name.split(aCapo).join(" ");
   const righe: Riga[] = [
     { testo: `// ${nome}` },
     { testo: `// ${w.generato}` },
     ...w.nonControllati.map((t) => ({ testo: `// ${t}` })),
+    ...(conLaConsole ? [{ testo: 'import { execSync } from "node:child_process";' }] : []),
     ...(letti.length > 0 ? [{ testo: `import { ${letti.join(", ")} } from "node:fs";` }] : []),
   ];
   if (costanti.length > 0) righe.push({ testo: "" }, { testo: `// ${w.costantiComuni}` }, ...costanti);
@@ -664,6 +674,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
 /** Le spiegazioni delle funzioni di supporto (il commento `/** … *\/` di ognuna), per lingua. */
 const spiegazioni: Readonly<Record<LinguaDelCodice, Readonly<Record<Exclude<Supporto, "reale" | "convertiAVettore">, string>>>> = {
   it: {
+    preparaConsole: "La console di Windows in UTF-8 in entrata e in uscita, come fa il C (Node la lascia nella code page del sistema).",
     fermati: "Scrive il motivo e la riga del programma che lo ha incontrato, poi si ferma.",
     leggiRiga: "Una riga dell'input, senza il suo a capo; si ferma se l'input è finito o non è testo UTF-8.",
     leggiIntero: "Una riga con un intero a 32 bit: spazi, segno, cifre e spazi, come la lettura del flowchart.",
@@ -687,6 +698,7 @@ const spiegazioni: Readonly<Record<LinguaDelCodice, Readonly<Record<Exclude<Supp
     scrivi: "Scrive il testo sullo standard output.",
   },
   en: {
+    preparaConsole: "The Windows console in UTF-8 for input and output, as C does (Node leaves it in the code page of the system).",
     fermati: "Writes the reason and the line of the program that met it, then stops.",
     leggiRiga: "A line of the input, without its line break; stops if the input is exhausted or is not UTF-8 text.",
     leggiIntero: "A line with a 32-bit integer: spaces, sign, digits and spaces, as the flowchart reads it.",
@@ -757,6 +769,15 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
     "}",
   ];
   switch (f) {
+    case "preparaConsole":
+      // Node non ha SetConsoleCP: `chcp` cambia la console a cui il programma è attaccato (32 ms, misurato); coi tubi
+      // nessuno dei tre flussi è una console, e non parte.
+      return [
+        s(f),
+        `function ${n.preparaConsole}(): void {`,
+        '  if (process.platform === "win32" && (process.stdin.isTTY || process.stdout.isTTY || process.stderr.isTTY)) execSync("chcp 65001", { stdio: "ignore" });',
+        "}",
+      ];
     case "fermati":
       return [
         s(f),
