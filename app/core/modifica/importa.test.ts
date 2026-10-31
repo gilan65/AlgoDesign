@@ -600,6 +600,32 @@ describe("i record di ciò che entra", () => {
       ["f:f2", "identica"],
     ]);
   });
+
+  test("la firma conta il record di un parametro: lo stesso nome con altri campi è una firma diversa", () => {
+    const suo: Json = { name: "alunno", fields: [{ name: "voto", type: "integer" }] };
+    const conIlSuo = conIRecord([suo], { funzioni: [{ ...votoDi(), id: "f9", end: { id: "b9", return_value: "a.voto" } }] });
+    expect(riepilogoDellImportazione(conIlSuo, conRecord, ["f2"]).voci.find((v) => v.chiave === "f:f2")).toMatchObject({ stato: "conflitto", firmaDiversa: true });
+    // Controllo positivo: col record identico e un altro corpo è un conflitto con la stessa firma.
+    const conLoStesso = conIRecord([alunno], { funzioni: [{ ...votoDi(), id: "f9", end: { id: "b9", return_value: "a.voto + 1" } }] });
+    expect(riepilogoDellImportazione(conLoStesso, conRecord, ["f2"]).voci.find((v) => v.chiave === "f:f2")).toMatchObject({ stato: "conflitto", firmaDiversa: false });
+  });
+
+  test("il campo di un record non è l'uso della costante comune omonima", () => {
+    const conVoto = progetto({ ...JSON.parse(salva(conRecord)), shared_constants: [{ name: "voto", type: "integer", constant: true, initial: "5" }] });
+    expect(riepilogoDellImportazione(programma(), conVoto, ["f2"]).voci.map((v) => v.chiave)).toEqual(["f:f2", "r:alunno"]);
+    // Controllo positivo: la stessa funzione che usa la costante la porta con sé.
+    const usaVoto = progetto({ ...JSON.parse(salva(conVoto)), functions: JSON.parse(salva(conVoto)).functions.map((f: Json) => (f.id === "f2" ? { ...f, end: { id: "b2", return_value: "a.voto + voto" } } : f)) });
+    expect(riepilogoDellImportazione(programma(), usaVoto, ["f2"]).voci.map((v) => v.chiave)).toEqual(["f:f2", "c:voto", "r:alunno"]);
+  });
+
+  test("una costante comune di tipo record che sostituisce quella del programma segue il record rinominato", () => {
+    const suo: Json = { name: "alunno", fields: [{ name: "voto", type: "integer" }] };
+    const p = progetto({ ...JSON.parse(salva(conIRecord([suo]))), shared_constants: [{ name: "PRIMO", type: "record", record: "alunno", constant: true, initial: ["8"] }] });
+    const r = importa(conRecord, ["f3"], { conCasi: false, scelte: new Map([["c:PRIMO", { come: "sostituisci" }]]) })(p, primoLibero(p));
+    if (!r.ok) throw new Error(JSON.stringify(r.rifiuto));
+    expect(r.progetto.records!.map((x) => x.name)).toEqual(["alunno", "alunno_2"]);
+    expect(r.progetto.shared_constants).toEqual([{ name: "PRIMO", type: "record", record: "alunno_2", constant: true, initial: ['"Anna"', "7"] }]);
+  });
 });
 
 test("la firma conta le colonne di una matrice: un parametro o un risultato con le colonne diverse è una firma diversa", () => {

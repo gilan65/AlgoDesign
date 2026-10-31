@@ -206,10 +206,10 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
       suggerimento: "Per cambiare un carattere costruisci una stringa nuova, oppure lavora su un vettore di caratteri; il contatore e l'elemento li cambia solo il loro ciclo: per un altro conto usa un altro dato, anche in un ciclo dentro l'altro.",
     },
     array_assignment: {
-      breve: "Il vettore si assegna solo da un vettore dello stesso tipo e dimensione.",
+      breve: "Il dato si assegna solo da un valore dello stesso tipo e delle stesse misure.",
       accaduto:
-        "Un vettore riceve un valore tutto insieme solo da un altro vettore dello stesso tipo e della stessa dimensione (il suo nome, o una funzione che lo restituisce), oppure da converti_a_vettore su una stringa; mai da un valore solo né da una lettura.",
-      suggerimento: "Assegna un elemento alla volta, come voti[0] ← 7, oppure copia un vettore dello stesso tipo e della stessa dimensione, come altri ← voti.",
+        "Un vettore, una matrice, una tabella o un record riceve un valore tutto insieme solo da uno dello stesso tipo e delle stesse misure (il suo nome, una riga di una matrice, un record di una tabella, o una funzione che lo restituisce), oppure un vettore da converti_a_vettore su una stringa; mai da un valore solo né da una lettura.",
+      suggerimento: "Assegna un pezzo alla volta, come voti[0] ← 7 o a.voto ← 7, oppure copia un dato dello stesso tipo e delle stesse misure, come altri ← voti o b ← a.",
     },
     literal_out_of_range: {
       breve: "Il numero scritto è fuori dall'intervallo del suo tipo.",
@@ -233,7 +233,7 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
     },
     type_mismatch: {
       breve: "Il valore non è del tipo che qui serve.",
-      accaduto: "Un valore non è del tipo che qui serve: per esempio un testo dove serve un numero, un reale in un dato intero, un vettore intero dove serve un suo elemento, oppure, nell'intestazione di un ciclo, qualcosa che non è il nome di un dato (il contatore, l'elemento) né il vettore o la stringa da percorrere (il suo nome, o una funzione che lo restituisce).",
+      accaduto: "Un valore non è del tipo che qui serve: per esempio un testo dove serve un numero, un reale in un dato intero, un vettore intero dove serve un suo elemento, un record intero dove serve un suo campo, oppure, nell'intestazione di un ciclo, qualcosa che non è il nome di un dato (il contatore, l'elemento) né il vettore o la stringa da percorrere (il suo nome, o una funzione che lo restituisce).",
       suggerimento: "Guarda nella vista dei dati il tipo di ogni dato coinvolto. Un valore iniziale si scrive già nel tipo del dato (per esempio 7, 2.5, 'a' o \"ciao\"); in un blocco, per cambiare il tipo di un valore usa una conversione, come converti_a_intero o converti_a_reale. Nell'intestazione di un ciclo scrivi il nome di un dato; ciò che un «per ogni» percorre può essere anche una funzione che restituisce un vettore o una stringa, come ordina(voti).",
     },
     condition_not_boolean: {
@@ -273,8 +273,8 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
     },
     reference_not_assignable: {
       breve: "Il parametro per riferimento o di uscita non riceve un dato che si può cambiare.",
-      accaduto: "Un parametro per riferimento o di uscita riceve un dato che la procedura può cambiare: una variabile o un elemento di un vettore. Non vanno un calcolo, un valore scritto, una costante, un carattere di una stringa, un dato fra parentesi, né il contatore o l'elemento di un ciclo dentro il suo ciclo.",
-      suggerimento: "Passa una variabile o un elemento di vettore, scritti senza parentesi; per passare il risultato di un calcolo, mettilo prima in un dato.",
+      accaduto: "Un parametro per riferimento o di uscita riceve un dato che la procedura può cambiare: una variabile, un elemento di un vettore o di una matrice, una riga di una matrice, un campo di un record o un record di una tabella. Non vanno un calcolo, un valore scritto, una costante, un carattere di una stringa, un dato fra parentesi, né il contatore o l'elemento di un ciclo dentro il suo ciclo.",
+      suggerimento: "Passa una variabile, un elemento come v[i] o un campo come a.voto, scritti senza parentesi; per passare il risultato di un calcolo, mettilo prima in un dato.",
     },
     function_as_statement: {
       breve: "Il valore restituito dalla funzione andrebbe perso.",
@@ -517,10 +517,10 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
       suggerimento: "To change a character build a new string, or work on an array of characters; the counter and the element are changed only by their loop: for another count use another data item, also in a loop inside the other.",
     },
     array_assignment: {
-      breve: "An array is assigned only from an array of the same type and size.",
+      breve: "The data item is assigned only from a value of the same type and the same sizes.",
       accaduto:
-        "An array receives a value all at once only from another array of the same type and the same size (its name, or a function that returns it), or from to_array on a string; never from a single value or from a read.",
-      suggerimento: "Assign one element at a time, as in marks[0] ← 7, or copy an array of the same type and the same size, as in others ← marks.",
+        "An array, a matrix, a table or a record receives a value all at once only from one of the same type and the same sizes (its name, a row of a matrix, a record of a table, or a function that returns it), or an array from to_array on a string; never from a single value or from a read.",
+      suggerimento: "Assign one part at a time, as in marks[0] ← 7 or s.mark ← 7, or copy a data item of the same type and the same sizes, as in others ← marks or b ← s.",
     },
     literal_out_of_range: {
       breve: "The number written is outside the range of its type.",
@@ -544,7 +544,7 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
     },
     type_mismatch: {
       breve: "The value is not of the type needed here.",
-      accaduto: "A value is not of the type needed here: for example a text where a number is needed, a real in an integer data item, a whole array where one of its elements is needed, or, in the heading of a loop, something that is not the name of a data item (the counter, the element) nor the array or the string to go through (its name, or a function that returns it).",
+      accaduto: "A value is not of the type needed here: for example a text where a number is needed, a real in an integer data item, a whole array where one of its elements is needed, a whole record where one of its fields is needed, or, in the heading of a loop, something that is not the name of a data item (the counter, the element) nor the array or the string to go through (its name, or a function that returns it).",
       suggerimento: "Look up in the data view the type of each data item involved. An initial value is already written in the type of the data item (for example 7, 2.5, 'a' or \"hello\"); in a block, to change the type of a value use a conversion, such as to_integer or to_real. In the heading of a loop write the name of a data item; what a For each loop goes through can also be a function that returns an array or a string, such as sort(marks).",
     },
     condition_not_boolean: {
@@ -584,8 +584,8 @@ export const testiDeiCodici: Record<Lingua, Record<Codice, TestoDelCodice>> = {
     },
     reference_not_assignable: {
       breve: "The parameter by reference or output does not get a data item that can change.",
-      accaduto: "A parameter by reference or output receives a data item the procedure can change: a variable or an element of an array. A calculation, a written value, a constant, a character of a string, a data item in parentheses, or the counter or element of a loop inside its own loop will not do.",
-      suggerimento: "Pass a variable or an array element, written without parentheses; to pass the result of a calculation, put it in a data item first.",
+      accaduto: "A parameter by reference or output receives a data item the procedure can change: a variable, an element of an array or of a matrix, a row of a matrix, a field of a record or a record of a table. A calculation, a written value, a constant, a character of a string, a data item in parentheses, or the counter or element of a loop inside its own loop will not do.",
+      suggerimento: "Pass a variable, an element such as v[i] or a field such as s.mark, written without parentheses; to pass the result of a calculation, put it in a data item first.",
     },
     function_as_statement: {
       breve: "The value returned by the function would be lost.",
@@ -736,10 +736,10 @@ export const testiSulRisultato: Record<Lingua, Record<CodiceSulRisultato, TestoD
       suggerimento: "Riduci gli elementi o la lunghezza massima nelle proprietà della funzione, oppure alza il limite nelle impostazioni.",
     },
     array_assignment: {
-      breve: "Restituisce vuole un vettore intero.",
+      breve: "Restituisce vuole un vettore, una matrice o un record intero.",
       accaduto:
-        "Una funzione che restituisce un vettore lo restituisce tutto insieme: dopo Restituisce va il nome di un vettore dello stesso tipo e della stessa dimensione, o una funzione che lo restituisce; non un valore solo né converti_a_vettore.",
-      suggerimento: 'Metti prima il valore in un vettore della funzione, come parole ← converti_a_vettore("abc"), e scrivi Restituisce parole.',
+        "Una funzione che restituisce un vettore, una matrice, una tabella o un record lo restituisce tutto insieme: dopo Restituisce va il nome di un dato dello stesso tipo e delle stesse misure, o una funzione che lo restituisce; non un valore solo né converti_a_vettore.",
+      suggerimento: 'Metti prima il valore in un dato della funzione, come parole ← converti_a_vettore("abc") o a.voto ← 7, e scrivi Restituisce parole o Restituisce a.',
     },
   },
   en: {
@@ -764,10 +764,10 @@ export const testiSulRisultato: Record<Lingua, Record<CodiceSulRisultato, TestoD
       suggerimento: "Reduce the elements or the maximum length in the properties of the function, or raise the limit in the settings.",
     },
     array_assignment: {
-      breve: "Returns needs a whole array.",
+      breve: "Returns needs a whole array, matrix or record.",
       accaduto:
-        "A function that returns an array returns it all at once: after Returns goes the name of an array of the same type and the same size, or a function that returns one; not a single value nor to_array.",
-      suggerimento: 'First put the value in an array of the function, as in words ← to_array("abc"), and write Returns words.',
+        "A function that returns an array, a matrix, a table or a record returns it all at once: after Returns goes the name of a data item of the same type and the same sizes, or a function that returns one; not a single value nor to_array.",
+      suggerimento: 'First put the value in a data item of the function, as in words ← to_array("abc") or s.mark ← 7, and write Returns words or Returns s.',
     },
   },
 };

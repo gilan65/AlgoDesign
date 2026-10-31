@@ -98,7 +98,9 @@ function righeDelloPseudocodice(p: Progetto, w: ParoleDelloPseudocodice): Riga[]
     // Una matrice per righe: un elenco di elenchi.
     const elenco = (x: unknown): string => (Array.isArray(x) ? `{${x.map(elenco).join(", ")}}` : e(x as string));
     if (Array.isArray(v)) return elenco(v);
-    return w.ogniElemento.split("{valore}").join(e((v as { readonly each: string }).each));
+    // Il valore ripetuto: un letterale, o il record ripetuto in ogni record di una tabella (un letterale per campo).
+    const ogni = (v as { readonly each: string | readonly string[] }).each;
+    return w.ogniElemento.split("{valore}").join(typeof ogni === "string" ? e(ogni) : elenco(ogni));
   };
 
   const perNome = new Map(p.functions.flatMap((f) => (f.name === undefined ? [] : [[f.name, f] as const])));

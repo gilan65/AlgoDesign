@@ -6,7 +6,10 @@
 // passi, il menu e la conferma (`e2e/costruzione.e2e.ts`, che costruisce un programma coi record solo coi clic).
 import { afterEach, expect, test } from "bun:test";
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { useState, type ReactElement } from "react";
+import { risultatoDi } from "../../core/disegno/impaginazione";
+import { apri } from "../../core/progetto/formato";
 import type { Dato, DefinizioneDelRecord } from "../../core/progetto/modello";
 import { it as testi } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
@@ -53,6 +56,14 @@ test("un dato di tipo record: la bozza tiene il nome del record e il valore fra 
   expect(tipoDelDato(a, testi)).toBe("alunno");
   // Controllo positivo: un intero resta un letterale solo.
   expect(datoDaBozza({ ...bozzaDi({ name: "n", type: "integer" }, "elenco"), iniziale: "1, 2" }).initial).toBe("1, 2");
+});
+
+test("il risultato di una funzione che restituisce un record o una tabella dice il record, come un dato di quel tipo", () => {
+  const p = apri(readFileSync(new URL("../../casi/tipi/tabella-come-parametro.algo", import.meta.url), "utf8"));
+  if (!p.ok) throw new Error("tabella-come-parametro non si apre");
+  const di = (nome: string) => tipoDelDato(risultatoDi(p.progetto.functions.find((f) => f.name === nome)!), testi);
+  expect([di("migliore"), di("alzata")]).toEqual([tipoDelDato({ name: "x", type: "record", record: "alunno" }, testi), tipoDelDato({ name: "x", type: "record", record: "alunno", size: 3 }, testi)]);
+  expect(di("migliore")).toBe("alunno");
 });
 
 function Scheda({ dato, records }: { dato: Dato; records: readonly string[] }): ReactElement {

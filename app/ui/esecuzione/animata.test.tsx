@@ -208,6 +208,22 @@ test("un punto di interruzione ferma l'animata in pausa lì", async () => {
   });
 }, 60_000);
 
+test("un punto sulla copia di un record ferma l'animata una volta sola, prima del primo campo", async () => {
+  const conIlPunto = JSON.parse(readFileSync(new URL("../../casi/tipi/copia-di-un-record.algo", import.meta.url), "utf8"));
+  conIlPunto.functions[0].body[0].breakpoint = true;
+  datoAllAvvio = { percorso: "C:\\corpus\\copia-di-un-record.algo", testo: JSON.stringify(conIlPunto) };
+  await act(async () => {
+    render(<Applicazione linguaIniziale="it" misura={misura} scelteIniziali={veloce} />);
+  });
+  await aspetta("il progetto aperto", () => avviso() === riempi(it.apertoIl, { file: "copia-di-un-record.algo" }));
+  // `b ← a` (b1) copia tre campi: la prima animata si ferma sul punto, la seconda va fino alla fine.
+  await clic(animata(), "«Animata»");
+  await aspetta("la pausa sul punto", () => corrente() === "b1" && animata()!.getAttribute("aria-pressed") === "false");
+  await clic(animata(), "«Animata»");
+  await aspetta("la fine o un'altra fermata", () => statoMostrato() === it.statoFinita || animata()!.getAttribute("aria-pressed") === "false");
+  expect({ stato: statoMostrato(), corrente: corrente() }).toEqual({ stato: it.statoFinita, corrente: null });
+}, 60_000);
+
 test("F10, F5, «Ferma» e un secondo clic su «Animata» fermano l'animata", async () => {
   await apriLaFinestra(veloce);
   for (const [come, ferma] of [

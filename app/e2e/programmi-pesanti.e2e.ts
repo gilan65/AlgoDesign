@@ -5,7 +5,8 @@
 // in un elenco, nelle due forme della tabella; una stringa di 1000 caratteri cambiata a ogni giro; un
 // vettore di stringhe al limite dei caratteri (10 stringhe da 1000, 100 da 100), nelle due forme della tabella; un ciclo
 // `per` fino al tetto dei passi col watch fermo sul contatore e il codice aperto (che non si ridisegnano a ogni fetta);
-// una matrice di 1000 valori (10 righe per 100 colonne) riempita da due cicli, nelle tre forme della tabella.
+// una matrice di 1000 valori (10 righe per 100 colonne) riempita da due cicli, nelle tre forme della tabella; una
+// tabella di 1000 valori (250 record da 4 campi) riempita da un ciclo, nelle sue tre forme.
 // Per ciascuno, due secondi dopo F5, durante la corsa per il ciclo che non finisce (un campione ogni 2 s, il
 // peggiore) e alla fine (a corsa finita; per il ciclo che non finisce al tetto dei passi o dopo 30 s, il primo dei
 // due): la risposta della pagina (un giro di andata e ritorno) e il fotogramma più lungo; il fotogramma più lungo di
@@ -102,6 +103,38 @@ const matriceRiempita = progetto(
 
 /** La frase della riga sopra la tabella per la matrice in ciascuna forma. */
 const fraseDellaMatrice = { "per-riga": "una colonna per riga", "per-elemento": "le colonne dei primi 10", "in-fila": "in una colonna sola" } as const;
+
+/** Una tabella di 250 record da 4 campi interi (1000 valori, il tetto) riempita da un ciclo `per`, un campo per azione. */
+const tabellaRiempita = JSON.stringify({
+  format: "algodesign",
+  schema_version: 2,
+  metadata: { name: "pesante" },
+  records: [{ name: "riga", fields: ["a", "b", "c", "d"].map((name) => ({ name, type: "integer" })) }],
+  functions: [
+    {
+      id: "f1",
+      kind: "main",
+      data: [
+        { name: "t", type: "record", record: "riga", size: 250 },
+        { name: "i", type: "integer" },
+      ],
+      body: [
+        {
+          id: "b1",
+          kind: "for",
+          counter: "i",
+          from: "0",
+          to: "249",
+          body: ["a", "b", "c", "d"].map((campo, k) => ({ id: `b${k + 2}`, kind: "assignment", target: `t[i].${campo}`, value: `i * 4 + ${k}` })),
+        },
+      ],
+      end: { id: "bz" },
+    },
+  ],
+});
+
+/** La frase della riga sopra la tabella per la tabella di record in ciascuna forma. */
+const fraseDellaTabella = { "per-record": "i campi degli altri", "per-elemento": "valori in tutto", "per-campo": "una colonna per campo" } as const;
 
 const programmi = [
   { nome: "un vettore di 1000 elementi riempito da un ciclo, con le colonne dei primi dieci", testo: riempito, forma: "primi-e-altri", finisce: true, oltre: true },
@@ -210,6 +243,14 @@ const programmi = [
     finisce: true,
     oltre: true,
   })),
+  ...(["per-record", "per-elemento", "per-campo"] as const).map((tabelle) => ({
+    nome: `una tabella di 250 record da 4 campi riempita da un ciclo, ${tabelle === "per-record" ? "una colonna per record" : tabelle === "per-elemento" ? "una colonna per elemento" : "una colonna per campo"}`,
+    testo: tabellaRiempita,
+    forma: "primi-e-altri" as const,
+    tabelle,
+    finisce: true,
+    oltre: true,
+  })),
 ] as const;
 
 const statoDi = (page: Page) => page.getByRole("region", { name: it.rigaDiStato, exact: true }).locator("[data-stato-esecuzione]");
@@ -217,7 +258,11 @@ const statoDi = (page: Page) => page.getByRole("region", { name: it.rigaDiStato,
 for (const p of programmi)
   test(`la finestra risponde entro la soglia: ${p.nome}`, async ({ page }, info) => {
     test.setTimeout(240_000);
-    await apriVuota(page, { lingua: "it", formaDeiVettori: p.forma, ...("matrici" in p ? { formaDelleMatrici: p.matrici } : {}) }, { esempi: { "1 pesante.algo": p.testo } });
+    await apriVuota(
+      page,
+      { lingua: "it", formaDeiVettori: p.forma, ...("matrici" in p ? { formaDelleMatrici: p.matrici } : {}), ...("tabelle" in p ? { formaDelleTabelle: p.tabelle } : {}) },
+      { esempi: { "1 pesante.algo": p.testo } },
+    );
     await apriEsempio(page, 0);
     await page.getByRole("region", { name: it.vistaFlowchart, exact: true }).click({ position: { x: 5, y: 5 } });
     const misure: { cosa: string; ms: number }[] = [];
@@ -254,6 +299,7 @@ for (const p of programmi)
     // il decimo elemento.
     const spiega = (await page.locator("[data-spiega]").allTextContents()).join(" ");
     if ("matrici" in p) expect(spiega, "la riga sopra la tabella").toContain(fraseDellaMatrice[p.matrici]);
+    else if ("tabelle" in p) expect(spiega, "la riga sopra la tabella").toContain(fraseDellaTabella[p.tabelle]);
     else if (p.forma === "in-fila") expect(spiega, "la riga sopra la tabella").toContain("in una colonna sola");
     else if (p.oltre) expect(spiega, "la riga sopra la tabella").toContain("le colonne dei primi 10");
     else expect(spiega, "la riga sopra la tabella").toBe("");

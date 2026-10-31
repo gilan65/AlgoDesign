@@ -11,6 +11,7 @@
     "accademico": "bun ./strumenti/accademico.ts",
     "differenziale": "bun ./strumenti/differenziale.ts",
     "collaudo": "bun ./strumenti/collaudo.ts",
+    "conferma-corpus": "bun ./strumenti/corpus.ts --conferma",
     "prova-portabile": "bun ./strumenti/prova-portabile.ts",
     "pacchetto": "bun ./strumenti/pacchetto.ts",
     "prova-linux": "bun ./strumenti/linux/prova.ts"

@@ -21,8 +21,9 @@
 //    scritto lì).
 // 5. CARTELLA: `dist/<versione>/` alla radice del repository (`dist/prova/<versione>/` con `--prova`), con le voci di `elencoDelPacchetto`; i testi per l'utente
 //    dalla cartella di `--testi`, tracciati dal repository (una cartella fuori, come le note di una versione di prima
-//    rimaste fra i documenti di lavoro, è rossa), con `{{versione}}` e `{{data}}` sostituiti (un `{{` rimasto è rosso); le guide per lo
-//    studente e la guida ad «Accademico» da `docs/` del repository, così come sono (valgono per la versione del prodotto; un `{{` è rosso); `README.md` e
+//    rimaste fra i documenti di lavoro, è rossa), con `{{versione}}` e `{{data}}` sostituiti (un segnaposto rimasto, un nome
+//    fra due graffe doppie, è rosso; il valore di una matrice come `{{1, 2}, {3, 4}}` no, con le sue sonde); le guide per lo
+//    studente e la guida ad «Accademico» da `docs/` del repository, così come sono (valgono per la versione del prodotto; un segnaposto è rosso); `README.md` e
 //    `LEGGIMI.md` dalla radice, così come sono, rossi se non dicono la cartella della versione (`AlgoDesign-<versione>`);
 //    `CHANGELOG.md`
 //    dalla radice del repository, così com'è: senza la voce della versione («## <versione>, »), o con un
@@ -37,7 +38,9 @@
 //    una cartella temporanea nuova, con la lettura di `.env` e di `bunfig.toml` della cartella di avvio spenta (Bun la fa
 //    per predefinito) e le proprietà: il nome «AlgoDesign Accademico», la versione coi tre numeri e uno zero (Bun non
 //    accetta il suffisso: esce 1 e lascia lo stesso un eseguibile con le proprietà sue, quindi conta l'exit code), la
-//    versione intera nella descrizione, la società e il copyright di `tauri.conf.json`. I moduli del metafile del build
+//    versione intera nella descrizione, la società e il copyright di `tauri.conf.json`. L'icona di AlgoDesign
+//    (`shell/icons/icon.ico`, `--windows-icon`): ogni immagine dell'`.ico` dentro l'eseguibile, byte per byte; controllo
+//    positivo, Bun non ne ha nessuna e l'eseguibile dell'app, se c'è, le ha tutte. I moduli del metafile del build
 //    tutti del repository, fuori da `node_modules` (una libreria di altri vorrebbe la sua licenza); nei byte nessuno dei
 //    percorsi della macchina di 3, con lo stesso rilevatore e lo stesso controllo positivo.
 // 8. CARTELLA DELLO STRUMENTO: `dist/<versione>-accademico/` (`dist/prova/…` con `--prova`) con le voci di
@@ -206,6 +209,26 @@ async function proprieta(file: string, nomiDelleProprieta: readonly string[]): P
   return p.codice === 0 ? p.out.replace(/\r/g, "").split("\n").slice(0, nomiDelleProprieta.length) : null;
 }
 
+/** L'icona di AlgoDesign, la stessa dell'app (`tauri.conf.json`, `bundle.icon`). */
+const icona = join(radice, "shell", "icons", "icon.ico");
+
+/** Le immagini dell'`.ico` (la directory in testa, poi un blocco per misura) e, per ogni eseguibile, quante ne contiene
+ * byte per byte: un'icona incorporata è fatta degli stessi blocchi. (I pixel dell'icona che Windows estrae da un
+ * eseguibile non coincidono con quelli dell'`.ico` riletto da `System.Drawing`, anche con l'icona giusta: misurato.) */
+function immaginiDellIcona(eseguibili: readonly string[]): { readonly misure: string[]; readonly dentro: number[] } {
+  const ico = readFileSync(icona);
+  const blocchi = Array.from({ length: ico.readUInt16LE(4) }, (_, i) => {
+    const e = 6 + 16 * i;
+    const da = ico.readUInt32LE(e + 12);
+    return { misura: `${ico[e] || 256}x${ico[e + 1] || 256}`, byte: ico.subarray(da, da + ico.readUInt32LE(e + 8)) };
+  });
+  const dentro = eseguibili.map((f) => {
+    const b = readFileSync(f);
+    return blocchi.filter((x) => b.indexOf(x.byte) >= 0).length;
+  });
+  return { misure: blocchi.map((b) => b.misura), dentro };
+}
+
 /** 2. L'eseguibile e le sue proprietà. */
 async function eseguibile(): Promise<string> {
   const rilascio = join(radice, "shell", "target", "release", "algodesign.exe");
@@ -267,22 +290,35 @@ function percorsi(eseguibileDaLeggere: string, clausola = "PERCORSI", quale = "n
 /** Le voci al primo livello di una cartella, con la barra in coda per le cartelle. */
 const voci = (dir: string) => readdirSync(dir, { withFileTypes: true }).map((v) => (v.isDirectory() ? `${v.name}/` : v.name)).sort();
 
-/** Un testo per l'utente dalla cartella di `--testi`, con `{{versione}}` e `{{data}}` sostituiti: un `{{` rimasto è rosso. */
+/** Un segnaposto: un nome fra due graffe doppie (`{{versione}}`). Il valore iniziale di una matrice o di una tabella
+ * scritto in una guida (`{{1, 2}, {3, 4}}`, `{{"Anna", 7}}`) non lo è. */
+const segnaposto = /\{\{\s*[A-Za-z_]\w*\s*\}\}/;
+/** Il rilevatore dei segnaposto nei due versi: rosso se non vede un segnaposto o se vede il valore di una matrice. */
+function sondaDeiSegnaposto(clausola: string): void {
+  const visti = ["{{versione}}", "{{ data }}", "{{1, 2}, {3, 4}}", '{{"Anna", 7}, {"Bruno", 8}}'].map((t) => segnaposto.test(t));
+  if (JSON.stringify(visti) !== JSON.stringify([true, true, false, false])) rosso(clausola, `il rilevatore dei segnaposto sbaglia sulle sue sonde: ${JSON.stringify(visti)}`);
+}
+
+/** Un testo per l'utente dalla cartella di `--testi`, con `{{versione}}` e `{{data}}` sostituiti: un segnaposto rimasto
+ * è rosso. */
 function testoConISegnaposto(clausola: string, t: string): string {
   const sorgente = join(cartellaTesti!, t);
   if (!existsSync(sorgente)) rosso(clausola, `manca il testo ${sorgente}`);
   const testo = readFileSync(sorgente, "utf8").replaceAll("{{versione}}", nomi.versione).replaceAll("{{data}}", data);
-  const rimasto = /\{\{[^}]*\}\}?/.exec(testo);
+  sondaDeiSegnaposto(clausola);
+  const rimasto = segnaposto.exec(testo);
   if (rimasto) rosso(clausola, `${t}: «${rimasto[0]}» non sostituito (si sostituiscono solo {{versione}} e {{data}})`);
   return testo;
 }
 
-/** Un documento di `docs/` così com'è: un `{{` è rosso. */
+/** Un documento di `docs/` così com'è: un segnaposto è rosso. */
 function documento(clausola: string, d: string): string {
   const sorgente = join(repository, "docs", d);
   if (!existsSync(sorgente)) rosso(clausola, `manca il documento ${sorgente}`);
   const testo = readFileSync(sorgente, "utf8");
-  if (testo.includes("{{")) rosso(clausola, `${relative(repository, sorgente)}: un «{{» nel documento, che si copia così com'è`);
+  sondaDeiSegnaposto(clausola);
+  const rimasto = segnaposto.exec(testo);
+  if (rimasto) rosso(clausola, `${relative(repository, sorgente)}: «${rimasto[0]}», un segnaposto nel documento, che si copia così com'è`);
   return testo;
 }
 
@@ -328,7 +364,8 @@ async function componi(rilascio: string): Promise<void> {
   for (const d of [...documentiDelPacchetto, guidaAdAccademico]) writeFileSync(join(cartella, d), documento("CARTELLA", d));
   for (const d of documentiDellaRadice) {
     const testo = readFileSync(join(repository, d), "utf8");
-    if (testo.includes("{{")) rosso("CARTELLA", `${d}: un «{{» nel documento, che si copia così com'è`);
+    const rimasto = segnaposto.exec(testo);
+    if (rimasto) rosso("CARTELLA", `${d}: «${rimasto[0]}», un segnaposto nel documento, che si copia così com'è`);
     if (!testo.includes(`AlgoDesign-${nomi.versione}`)) rosso("CARTELLA", `${d} non dice la cartella della versione, «AlgoDesign-${nomi.versione}»`);
     writeFileSync(join(cartella, d), testo);
   }
@@ -423,6 +460,7 @@ async function eseguibileDelloStrumento(): Promise<{ exe: string; moduli: string
     `--windows-version=${nomiS.versioneDellEseguibile}`,
     `--windows-description=${descrizione}`,
     `--windows-copyright=${copyright}`,
+    `--windows-icon=${icona}`,
   ]);
   // Senza le proprietà Bun esce 1 e l'eseguibile c'è lo stesso, con le sue: decide l'exit code, non il file.
   if (b.codice !== 0 || !existsSync(exe)) rosso("STRUMENTO", `bun build --compile esce ${b.codice}${existsSync(exe) ? " (l'eseguibile c'è, ma non vale)" : ""} (dettaglio nel log)`);
@@ -430,6 +468,18 @@ async function eseguibileDelloStrumento(): Promise<{ exe: string; moduli: string
   const lette = await proprieta(exe, nomiDelleProprieta);
   const attese = ["AlgoDesign Accademico", nomiS.versioneDellEseguibile, publisher, copyright, descrizione];
   if (lette === null || attese.some((a, i) => a !== lette[i])) rosso("STRUMENTO", `le proprietà dell'eseguibile ${JSON.stringify(lette)} invece di ${JSON.stringify(attese)}`);
+  // L'icona: quella di AlgoDesign, non quella di Bun. Controllo positivo: lo stesso confronto su Bun dà un'icona diversa
+  // (il rilevatore sa dire «diversa»), e sull'eseguibile dell'app, se c'è, la stessa (sa dire «uguale»).
+  const dellApp = join(radice, "shell", "target", "release", "algodesign.exe");
+  const daLeggere = [exe, process.execPath, ...(existsSync(dellApp) ? [dellApp] : [])];
+  const { misure, dentro } = immaginiDellIcona(daLeggere);
+  const [delloStrumento, diBun, diAlgoDesign] = dentro;
+  const tutte = misure.length;
+  if (tutte === 0) rosso("STRUMENTO: ICONA", `${relative(radice, icona)} non ha immagini: il rilevatore non ha nulla da cercare`);
+  if (diBun !== 0) rosso("STRUMENTO: ICONA", `Bun contiene ${diBun} immagini su ${tutte} dell'icona di AlgoDesign: il rilevatore non distingue, controllo positivo spento`);
+  if (diAlgoDesign !== undefined && diAlgoDesign !== tutte) rosso("STRUMENTO: ICONA", `l'eseguibile dell'app contiene ${diAlgoDesign} immagini su ${tutte} della sua icona: il rilevatore non sa dire «uguale»`);
+  if (delloStrumento !== tutte) rosso("STRUMENTO: ICONA", `${eseguibileS} contiene ${delloStrumento} immagini su ${tutte} dell'icona di AlgoDesign`);
+  riga(`STRUMENTO: ICONA: VERDE | ${eseguibileS} contiene tutte le ${tutte} immagini di ${relative(radice, icona)} (${misure.join(", ")}) | controllo positivo: Bun 0 su ${tutte}${diAlgoDesign === undefined ? "" : `, l'app ${diAlgoDesign} su ${tutte}`}`);
   // I moduli dentro l'eseguibile: tutti del repository, nessuno da `node_modules`.
   const ingressi = Object.keys((JSON.parse(readFileSync(metafile, "utf8")) as { inputs: Record<string, unknown> }).inputs);
   const altrui = ingressi.filter((m) => {

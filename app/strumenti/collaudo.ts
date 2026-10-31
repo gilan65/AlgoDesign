@@ -8,8 +8,9 @@
 // La porta confronta i progetti ESEGUITI (letti dalle prove del report, non dalla configurazione, che li elenca
 // tutti e quattro anche quando se ne chiedono due: misurato) con quelli del modo, nei due versi, e dice nella
 // sua riga quali motori ha provato e quali no. La prima porta è l'elenco delle prove del modo (pochi secondi, senza
-// server), poi i selettori delle prove (un controllo del sorgente, meno di un secondo); con `--solo-elenco` il collaudo
-// si ferma lì.
+// server), poi i selettori delle prove (un controllo del sorgente, meno di un secondo), poi i conteggi del corpus
+// (`strumenti/corpus.ts`: un corpus cambiato dopo l'ultima `bun run conferma-corpus` è rosso prima della corsa lunga);
+// con `--solo-elenco` il collaudo si ferma lì.
 //
 // Ogni porta ha il proprio CONTROLLO POSITIVO nello stesso giro: una sonda (file `__sonda__*`) scritta
 // dentro la configurazione vera, che deve far fallire la porta con l'errore atteso e nessun altro; poi
@@ -74,6 +75,7 @@ import { tmpdir } from "node:os";
 import { basename, join, relative } from "node:path";
 import { linguaggi } from "../core/genera/linguaggi";
 import { compila, esecutori as delContratto, esecutoriRichiesti as richiestiDal, programmiConAvvisiAttesi as avvisiAttesiDal } from "./esecutori";
+import { differenze, leggiIConteggi, misuraIlCorpus } from "./corpus";
 import { chiamate, senzaExact } from "./selettori";
 
 const argomenti = process.argv.slice(2);
@@ -1136,7 +1138,7 @@ const proveAttesePerSpec: Record<string, number> = {
   "modifica.e2e.ts": 7,
   "parametri.e2e.ts": 3,
   "pila-lunga.e2e.ts": 2,
-  "programmi-pesanti.e2e.ts": 17,
+  "programmi-pesanti.e2e.ts": 20,
   "scelta.e2e.ts": 3,
   "scorrimento.e2e.ts": 1,
   "stampa.e2e.ts": 8,
@@ -1248,6 +1250,24 @@ async function portaSelettori(): Promise<void> {
   riga(`PORTA selettori: VERDE | nessun selettore per sottostringa | controllo positivo acceso (la sonda: ${viste.length} su ${attese.length}, nel suo file) | file guardati: ${vero.file}, chiamate dei metodi di ricerca: ${vero.chiamate}`);
 }
 
+/** I conteggi del corpus dichiarati uguali a quelli del disco (`strumenti/corpus.ts`): un corpus cambiato dopo l'ultima
+ * conferma sposta gli attesi delle prove che lo percorrono, anche in Playwright, che corre per ultima. Prima della corsa
+ * lunga, in pochi secondi. Controllo positivo: i fatti dichiarati con l'impronta cambiata danno una differenza. */
+function portaCorpus(): void {
+  const misurati = misuraIlCorpus();
+  const d = differenze(leggiIConteggi().fatti, misurati);
+  if (d.length > 0)
+    rosso(
+      "corpus",
+      `il corpus è cambiato dopo l'ultima conferma dei suoi conteggi (${d.join("; ")}): prima della corsa lunga \`bun run conferma-corpus\`, che esegue le prove che lo leggono e, se verdi, riscrive i conteggi`,
+    );
+  const altra = `${misurati.impronta.startsWith("0") ? "1" : "0"}${misurati.impronta.slice(1)}`;
+  const sonda = differenze({ ...misurati, impronta: altra }, misurati);
+  if (sonda.length !== 1) rosso("corpus", `controllo positivo SPENTO: l'impronta cambiata dà ${sonda.length} differenze invece di una`);
+  if (misurati.file.totale === 0) rosso("corpus", "denominatore a zero: nessun file nel corpus");
+  riga(`PORTA corpus: VERDE | i conteggi confermati sono quelli del disco: ${JSON.stringify(misurati.file)}, tipi ${JSON.stringify(misurati.tipi)} | controllo positivo acceso (l'impronta cambiata: 1 differenza)`);
+}
+
 // -------------------------------------------------------------------------------------------- giro
 
 log(`=== INIZIO COLLAUDO ${new Date().toISOString()} · bun ${Bun.version} · modo ${modo} ===`);
@@ -1258,9 +1278,10 @@ if (rimaste.length > 0) riga(`sonde rimaste da un giro interrotto, tolte: ${rima
 try {
   await portaElenco();
   await portaSelettori();
+  portaCorpus();
   if (soloElenco) {
     // Un esito suo, non quello del collaudo: chi legge «ESITO: VERDE» crede che le prove siano passate.
-    riga(`ESITO: SOLO ELENCO, VERDE — controllato l'elenco delle prove del modo ${modo} (progetti e spec) e i selettori, non il collaudo: nessuna prova eseguita`);
+    riga(`ESITO: SOLO ELENCO, VERDE — controllato l'elenco delle prove del modo ${modo} (progetti e spec), i selettori e i conteggi del corpus, non il collaudo: nessuna prova eseguita`);
     log("=== FINE COLLAUDO ===");
     process.exit(0);
   }
@@ -1271,7 +1292,7 @@ try {
   await portaBuild();
   await portaCargo();
   await portaPlaywright();
-  riga(`ESITO: VERDE (porte: elenco, selettori, 3 tsc, bun test, casi, differenziale, build, cargo test, playwright nel modo ${modo}: ${progettiEseguitiAttesi.join(", ")})`);
+  riga(`ESITO: VERDE (porte: elenco, selettori, corpus, 3 tsc, bun test, casi, differenziale, build, cargo test, playwright nel modo ${modo}: ${progettiEseguitiAttesi.join(", ")})`);
   log("=== FINE COLLAUDO ===");
 } catch (e) {
   riga(e instanceof PortaRossa ? e.message : `ERRORE DEL COLLAUDO: ${e instanceof Error ? e.stack : String(e)}`);

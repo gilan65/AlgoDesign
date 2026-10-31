@@ -44,6 +44,7 @@ import { apri as apriProgetto } from "../core/progetto/formato";
 import type { Blocco, Funzione } from "../core/progetto/modello";
 import { en } from "../i18n/en";
 import { it } from "../i18n/it";
+import { misuraIlCorpus } from "../strumenti/corpus";
 import { contrasto, coppie, coppieSulFondo, sotto } from "./contrasto";
 import { aggiungiStile, apri, apriEsempio, apriVuota, costruisciFinzione, scegliLingua } from "./pagina";
 
@@ -256,7 +257,11 @@ for (const { lingua, condizioni, cicliPer, cicliPerOgni, copiaDeiVettori, domand
     expect(combinazioni.length).toBe(4);
     await expect(page.locator("html")).toHaveAttribute("lang", lingua);
     expect(premesse.flowchart).toBe(tuttiGliAlberi.length);
-    expect(corpus.length).toBe(71);
+    // I file delle tappe 1 e 2, misurati dal disco da `strumenti/corpus.ts`; le funzioni delle tappe 3 e 4 (e quelle coi
+    // salti) sono un fatto del contenuto, scritto qui: un corpus cambiato lo porta a `bun run conferma-corpus`.
+    const fatti = misuraIlCorpus().file;
+    expect(corpus.length).toBe(fatti["tappa-1"]! + fatti["tappa-2"]!);
+    expect(corpus.length).toBeGreaterThan(0);
     expect([corpusTappa3.length, coiSalti.length]).toEqual([183, 45]);
     // Le forme di procedure e funzioni: due righe ai lati per salto, i nomi in grassetto, *rif* e i tipi in corsivo.
     expect(salti).toBeGreaterThan(30);

@@ -312,6 +312,7 @@ export const proprietaDellaFunzione =
     const stesse =
       nuova.kind === f.kind &&
       nuova.return_type === f.return_type &&
+      nuova.return_record === f.return_record &&
       nuova.return_size === f.return_size &&
       nuova.return_columns === f.return_columns &&
       nuova.return_max_length === f.return_max_length &&

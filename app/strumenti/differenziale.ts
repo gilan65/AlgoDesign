@@ -1,6 +1,6 @@
 // Il test differenziale: ogni caso d'uso delle tappe che il controllo statico non dice fuori tappa (oggi 1, 2, 3 e 4,
 // anche i casi che si fermano ai tetti della ricorsione, uguali nei tre esecutori, e i tipi non semplici della cartella
-// `tipi/`, i record e le matrici; le tabelle fuori tappa se il progetto è giusto, finché i generatori non le scrivono),
+// `tipi/`: i record, le matrici e le tabelle),
 // quelli del programma e quelli di ogni
 // procedura o funzione eseguita da sola (`file#funzione/
 // caso`, come in `bun run casi`), eseguito dall'interprete, dal Python generato e dal C generato
@@ -461,7 +461,7 @@ console.log(
 );
 const avvisiAttesi = daEseguire.flatMap(({ voce, esecutore }) => Object.entries(esecutore.avvisiAttesi).map(([f, o]) => `${voce.id} ${f} ${o}`));
 console.log(
-  `per tipo: con i record ${coiRecord.length} casi nel confronto (verdi con ogni esecutore ${verdiConOgni(coiRecord)}; con le tabelle ${conLeTabelle.length}, verdi con ogni esecutore ${verdiConOgni(conLeTabelle)}), con le matrici ${conLeMatrici.length} (verdi con ogni esecutore ${verdiConOgni(conLeMatrici)}), senza ${n - coiRecord.length - conLeMatrici.length}`,
+  `per tipo: con i record ${coiRecord.length} casi nel confronto (verdi con ogni esecutore ${verdiConOgni(coiRecord)}; con le tabelle ${conLeTabelle.length}, verdi con ogni esecutore ${verdiConOgni(conLeTabelle)}), con le matrici ${conLeMatrici.length} (verdi con ogni esecutore ${verdiConOgni(conLeMatrici)}), senza ${daConfrontare.filter((d) => !coiRecord.includes(d) && !conLeMatrici.includes(d)).length}`,
 );
 console.log(
   `avvisi della compilazione: compilazioni ${compilazioni.length}, con gli avvisi attesi ${compilazioniConAvvisiAttesi} (${avvisiAttesi.join(", ")}), non attesi ${avvisiNonAttesi}, attesi e mancanti ${avvisiMancanti}`,

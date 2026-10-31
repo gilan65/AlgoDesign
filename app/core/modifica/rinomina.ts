@@ -1,7 +1,8 @@
 // I nomi dei dati nel testo delle regole, PAROLA per parola con l'analizzatore: un letterale (`"voto"`), un
 // nome più lungo che contiene quello cercato (`voto2`), una parola chiave e il nome di una funzione chiamata (`voto(1)`)
 // non sono il nome di un dato. Le parole si leggono anche nei testi che non si lasciano leggere (`x = 5`, `x % 2`): lì
-// il controllo mostra l'errore, e il nome cambia lo stesso.
+// il controllo mostra l'errore, e il nome cambia lo stesso. Il nome dopo un punto è il campo di un record (`a.voto`,
+// `t[i].voto`), non un dato: un dato `voto` rinominato lascia il campo com'è.
 //
 // Che cosa NON guarda: il testo di un commento, che non è una regola; dentro un apice non chiuso, il resto del testo è il
 // letterale.
@@ -12,17 +13,22 @@ import type { Blocco } from "../progetto/modello";
 /** Vero se la parola in posizione `k` è seguita da «(»: un nome così è una chiamata. */
 export const seguitaDaParentesi = (ps: readonly Parola[], k: number): boolean => ps[k + 1]?.genere === "segno" && ps[k + 1]!.testo === "(";
 
-/** Le posizioni (nelle parole) del nome `nome` come dato: non seguito da «(», che lo fa una chiamata. */
-const comeDato = (ps: readonly Parola[], nome: string): number[] => ps.flatMap((p, k) => (p.genere === "nome" && p.testo === nome && !seguitaDaParentesi(ps, k) ? [k] : []));
+/** Vero se la parola in posizione `k` viene dopo un punto: un nome così è il campo di un record. */
+const dopoUnPunto = (ps: readonly Parola[], k: number): boolean => ps[k - 1]?.genere === "segno" && ps[k - 1]!.testo === ".";
 
-/** I nomi di un testo letto una volta: quelli chiamati (seguiti da «(») e quelli come dato. `nomina(t, n)` è
- * `nomiDelTesto(t).dati.has(n)`, e una chiamata di `n` (`chiamaNelTesto`) è `chiamati.has(n)`. */
+/** Le posizioni (nelle parole) del nome `nome` come dato: non seguito da «(», che lo fa una chiamata, né dopo un punto,
+ * che lo fa un campo. */
+const comeDato = (ps: readonly Parola[], nome: string): number[] =>
+  ps.flatMap((p, k) => (p.genere === "nome" && p.testo === nome && !seguitaDaParentesi(ps, k) && !dopoUnPunto(ps, k) ? [k] : []));
+
+/** I nomi di un testo letto una volta: quelli chiamati (seguiti da «(») e quelli come dato (non un campo, dopo un punto).
+ * `nomina(t, n)` è `nomiDelTesto(t).dati.has(n)`, e una chiamata di `n` (`chiamaNelTesto`) è `chiamati.has(n)`. */
 export function nomiDelTesto(testo: string): { readonly chiamati: ReadonlySet<string>; readonly dati: ReadonlySet<string> } {
   const ps = paroleTolleranti(testo);
   const chiamati = new Set<string>();
   const dati = new Set<string>();
   ps.forEach((p, k) => {
-    if (p.genere === "nome") (seguitaDaParentesi(ps, k) ? chiamati : dati).add(p.testo);
+    if (p.genere === "nome" && !dopoUnPunto(ps, k)) (seguitaDaParentesi(ps, k) ? chiamati : dati).add(p.testo);
   });
   return { chiamati, dati };
 }

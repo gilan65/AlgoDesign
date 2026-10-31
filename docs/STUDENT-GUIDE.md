@@ -275,7 +275,7 @@ During the run with Step or with Animate the code highlights the line (or the li
 
 The “For” and “For each” loops become, in the pseudocode, `FOR i FROM 1 TO n` … `END FOR` and `FOR EACH c IN word` … `END FOR EACH`; in Python a `while`, with the counter increased at the end of the body; in C a `for`. The “For each” goes through the array or the string with its position, `_index`, as in the open flowchart. During the run the line of the current part of the loop is highlighted: the start, the check, the element taken or the increase. How procedures and functions become code is told in §9.
 
-**Copy** puts the code on the clipboard; **Save…** writes it to a file (`.txt`, `.py` or `.c`). The Python code runs with Python 3.9 or later; the C compiles with a C11 compiler (for example `gcc -std=c11 program.c -lm`).
+**Copy** puts the code on the clipboard; **Save…** writes it to a file (`.txt`, `.py` or `.c`). The Python code runs with Python 3.11 or later; the C compiles with a C11 compiler (for example `gcc -std=c11 program.c -lm`).
 
 The generated code is made to be read: it does not check the calculations C leaves without a rule (an integer leaving its range, an integer division by zero, an index outside the array, a real outside the range of the integers converted to an integer, a data item read before it has a value), nor a real that becomes infinite or is not a number. A comment at the top of the Python and C program says so. AlgoDesign instead always stops them, and also stops a loop that does not end, after a million actions: that is why it is worth testing the algorithm in AlgoDesign first, with its test cases.
 

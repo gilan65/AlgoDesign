@@ -439,11 +439,12 @@ function elencoConRif(voci: readonly { readonly parte: ParteDelTesto; readonly m
   });
 }
 
-/** Ciò che una funzione restituisce come un dato: il tipo, la dimensione di un vettore e la lunghezza massima di una
- * stringa. */
+/** Ciò che una funzione restituisce come un dato: il tipo (col record), la dimensione di un vettore e la lunghezza
+ * massima di una stringa. */
 export const risultatoDi = (f: Funzione): Dato => ({
   name: f.name ?? "",
   type: f.return_type ?? "integer",
+  ...(f.return_record !== undefined ? { record: f.return_record } : {}),
   ...(f.return_size !== undefined ? { size: f.return_size } : {}),
   ...(f.return_columns !== undefined ? { columns: f.return_columns } : {}),
   ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}),

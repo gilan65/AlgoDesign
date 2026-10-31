@@ -4,7 +4,7 @@
 // dove la prova guarda.
 
 import { expect, test } from "bun:test";
-import { eUnaParolaSola, nomina, rinominaNelTesto } from "./rinomina";
+import { eUnaParolaSola, nomiDelTesto, nomina, rinominaNelTesto } from "./rinomina";
 
 const casi: readonly (readonly [testo: string, vecchio: string, nuovo: string, atteso: string])[] = [
   ["voto + 1", "voto", "punti", "punti + 1"],
@@ -28,6 +28,11 @@ const casi: readonly (readonly [testo: string, vecchio: string, nuovo: string, a
   ["3. + voto", "voto", "punti", "3. + punti"],
   // Un nome seguito da «(» è la chiamata di una funzione, non il dato.
   ["voto(voto)", "voto", "punti", "voto(punti)"],
+  // Un nome dopo un punto è il campo di un record, non il dato: cambia solo la base.
+  ["voto ← a.voto", "voto", "punti", "punti ← a.voto"],
+  ["a.nome ← nome", "nome", "n", "a.nome ← n"],
+  ["t[voto].voto + voto", "voto", "punti", "t[punti].voto + punti"],
+  ["a.voto", "a", "b", "b.voto"],
 ];
 
 /** Il rilevatore: i casi in cui la rinomina data non dà l'atteso. */
@@ -49,12 +54,18 @@ test("la rinomina cambia solo le parole che sono il nome, mai un letterale né u
     "not voto",
     '"voto',
     "voto(voto)",
+    "voto ← a.voto",
+    "a.nome ← nome",
+    "t[voto].voto + voto",
   ]);
 });
 
 test("nomina: il nome come parola, anche in un testo che non si legge, mai la chiamata; una parola sola: solo un nome che si legge così", () => {
   expect([nomina("voto2 + 1", "voto"), nomina('"voto"', "voto"), nomina("v[voto]", "voto")]).toEqual([false, false, true]);
   expect([nomina("voto = 5", "voto"), nomina("voto % 2", "voto"), nomina("voto(1)", "voto"), nomina("valido(voto)", "voto")]).toEqual([true, true, false, true]);
+  // Il campo di un record non è un uso del dato omonimo; la base sì.
+  expect([nomina("a.voto", "voto"), nomina("t[i].voto", "voto"), nomina("a.voto", "a")]).toEqual([false, false, true]);
+  expect([...nomiDelTesto("a.voto + t[i].nome").dati].sort()).toEqual(["a", "i", "t"]);
   expect(["voto", "v2", "a_b"].map(eUnaParolaSola)).toEqual([true, true, true]);
   expect(["", "età", "voto bis", "1voto", "not", "length", "(a)", "_a"].map(eUnaParolaSola)).toEqual([false, false, false, false, false, false, false, false]);
 });
