@@ -184,7 +184,7 @@ test("i cicli per e per ogni: una voce col suo corpo, coi punti dell'albero e de
   }
   console.log(`struttura accessibile coi cicli: alberi ${alberi} (corpus ${deiCicli.length}, generati ${generatiConICicli.length}), posti ${posti}, cicli ${cicli}, difetti ${difetti.length}`);
   expect(difetti).toEqual([]);
-  expect(deiCicli.length).toBe(15);
+  expect(deiCicli.length).toBe(16);
   expect(cicli).toBeGreaterThan(40);
 });
 

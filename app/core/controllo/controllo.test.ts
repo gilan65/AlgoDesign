@@ -1363,7 +1363,7 @@ test("il dato letto prima di avere un valore, sul corpus: i 5 casi scritti per l
   ]);
   // Col corpus dei record, delle matrici e delle tabelle: nessuno è fuori tappa; quello del riferimento senza valore ha
   // l'avviso, i sei sbagliati no (le tabelle nuove non ne hanno: `crea` le dà un valore record per record fuori dai cicli).
-  expect([file, controllati]).toEqual([181, 181]);
+  expect([file, controllati]).toEqual([182, 182]);
 });
 
 test("i limiti sono un parametro senza predefinito: chi chiama il controllo li passa sempre", () => {

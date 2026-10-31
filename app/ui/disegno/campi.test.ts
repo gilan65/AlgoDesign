@@ -56,7 +56,7 @@ test("i campi di ogni blocco del corpus vanno nella lingua dell'interfaccia e to
   expect(diversi).toEqual([]);
   // Le premesse: il corpus intero, ogni blocco ha i suoi campi (anche i due cicli, col passo e senza, e i salti, che
   // ci sono), e blocchi in cui la lingua cambia davvero il testo.
-  expect(file).toBe(150);
+  expect(file).toBe(151);
   expect([modificabili, chiamate > 0]).toEqual([blocchi.length, true]);
   expect([cicli.per > cicli.conPasso, cicli.conPasso > 0, cicli.perOgni > 0]).toEqual([true, true, true]);
   expect(tradotti).toBeGreaterThan(10);

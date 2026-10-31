@@ -7,7 +7,9 @@
 // allargato da `as`, i caratteri di una stringa che il testo composto protegge, la scrittura senza a capo) e uno con le
 // forme del resto della tappa 1 (i reali e l'intero che diventa reale, i caratteri e le stringhe per codici, i tre
 // vettori, le conversioni, gli arrotondamenti e la potenza, le cinque letture, il `ripeti`, il ramo e il ciclo vuoti, la
-// scrittura spezzata, la concatenazione col carattere 0 dopo il lato destro). Le funzioni di supporto sono scritte qui
+// scrittura spezzata, la concatenazione col carattere 0 dopo il lato destro); della tappa 2 il `per` del corpus, il `per
+// ogni` su una stringa, la parola al contrario, e un programma con le forme della tappa 2 (il passo negativo, il `per`
+// senza giri, il `per ogni` dentro un altro, l'elemento stringa da `al_piu`, gli indici nascosti dichiarati). Le funzioni di supporto sono scritte qui
 // una volta per lingua e messe in coda a ogni programma che le usa, nell'ordine fisso. Le righe allineate dicono a mano
 // quanti spazi vanno prima del commento.
 import type { Progetto } from "../../core/progetto/modello";
@@ -775,15 +777,101 @@ const letturaCarattere = (l: Lingua) =>
     ["leggiCarattere", "scrivi"],
   );
 
-/** I programmi del corpus della tappa 1, per nome del file, nelle due lingue. */
+/** L'indice nascosto di un `per ogni` nella lingua: `_indice`, `_indice2`… */
+const indice = (l: Lingua, n = 1) => `${l === "it" ? "_indice" : "_index"}${n === 1 ? "" : n}`;
+
+/** Il `per` col passo positivo e col negativo, e il contatore dopo il ciclo. */
+const per = (l: Lingua) =>
+  programma(
+    l,
+    "per",
+    [
+      "function main(): void {",
+      "  let i!: number;",
+      "  i = 1;",
+      "  while (i <= 5) {",
+      "    {scrivi}(`${i} `);",
+      "    i = i + 2;",
+      "  }",
+      "  {scrivi}(`| ${i} | `);",
+      "  i = 3;",
+      "  while (i >= 1) {",
+      "    {scrivi}(`${i}`);",
+      "    i = i - 1;",
+      "  }",
+      "  {scrivi}(`.\\n`);",
+      "}",
+    ],
+    ["scrivi"],
+  );
+
+/** Il `per ogni` su una stringa: la lunghezza e il carattere per codici. */
+const perOgniStringa = (l: Lingua) =>
+  programma(
+    l,
+    "per-ogni-stringa",
+    [
+      "function main(): void {",
+      '  let s: string = "perché";',
+      "  let c!: string;",
+      `  let ${indice(l)}: number;`,
+      `  ${indice(l)} = 0;`,
+      `  while (${indice(l)} < {lunghezza}(s)) {`,
+      `    c = {carattereDi}(s, ${indice(l)});`,
+      "    {scrivi}(`${c}.`);",
+      `    ${indice(l)} = ${indice(l)} + 1;`,
+      "  }",
+      "  {scrivi}(`${{lunghezza}(s)}\\n`);",
+      "}",
+    ],
+    ["carattereDi", "lunghezza", "scrivi"],
+  );
+
+/** La parola al contrario (il `per` che scende da una lunghezza) e le vocali (il `per ogni` sulla stringa letta). */
+const parolaAlContrario = (l: Lingua) =>
+  programma(
+    l,
+    "parola-al-contrario",
+    [
+      "function main(): void {",
+      "  let parola!: string;" + sp(5) + "// input",
+      "  let vocali: number = 0;  // output",
+      "  let i!: number;",
+      "  let c!: string;",
+      `  let ${indice(l)}: number;`,
+      "  parola = {leggiStringa}(255);",
+      "  i = {lunghezza}(parola) - 1;",
+      "  while (i >= 0) {",
+      "    {scrivi}(`${{carattereDi}(parola, i)}`);",
+      "    i = i - 1;",
+      "  }",
+      "  {scrivi}(`\\n`);",
+      `  ${indice(l)} = 0;`,
+      `  while (${indice(l)} < {lunghezza}(parola)) {`,
+      `    c = {carattereDi}(parola, ${indice(l)});`,
+      "    if (c === 'a' || c === 'e' || c === 'i' || c === 'o' || c === 'u') {",
+      "      vocali = vocali + 1;",
+      "    }",
+      `    ${indice(l)} = ${indice(l)} + 1;`,
+      "  }",
+      "  {scrivi}(`Vocali: ${vocali}\\n`);",
+      "}",
+    ],
+    ["leggiStringa", "carattereDi", "lunghezza", "scrivi"],
+  );
+
+/** I programmi del corpus, per percorso del file (senza `.algo`), nelle due lingue. */
 export const delCorpus: Readonly<Record<string, Atteso>> = {
-  "assegnazione-intero": inDueLingue(assegnazioneIntero),
-  "assegnazione-booleano": inDueLingue(assegnazioneBooleano),
-  "scrittura-stringa": inDueLingue(scritturaStringa),
-  "riferimento-media-voti": inDueLingue(riferimento),
-  "scrittura-che-si-ferma": inDueLingue(scritturaCheSiFerma),
-  "converti-a-vettore": inDueLingue(convertiAVettore),
-  "lettura-carattere": inDueLingue(letturaCarattere),
+  "tappa-1/assegnazione-intero": inDueLingue(assegnazioneIntero),
+  "tappa-1/assegnazione-booleano": inDueLingue(assegnazioneBooleano),
+  "tappa-1/scrittura-stringa": inDueLingue(scritturaStringa),
+  "tappa-1/riferimento-media-voti": inDueLingue(riferimento),
+  "tappa-1/scrittura-che-si-ferma": inDueLingue(scritturaCheSiFerma),
+  "tappa-1/converti-a-vettore": inDueLingue(convertiAVettore),
+  "tappa-1/lettura-carattere": inDueLingue(letturaCarattere),
+  "tappa-2/per": inDueLingue(per),
+  "tappa-2/per-ogni-stringa": inDueLingue(perOgniStringa),
+  "tappa-2/parola-al-contrario": inDueLingue(parolaAlContrario),
 };
 
 /** Le forme del primo gruppo di costrutti, in un programma scritto qui. */
@@ -981,3 +1069,102 @@ const formeDellaTappa1In = (l: Lingua): string =>
   );
 
 export const formeDellaTappa1Attese: Atteso = inDueLingue(formeDellaTappa1In);
+
+/** Le forme della tappa 2, in un programma scritto qui (non si esegue: le forme si guardano): il `per` col passo negativo
+ * e la fine calcolata, il `per` senza giri e col corpo vuoto, il `per ogni` su un vettore di stringhe più lunghe del dato
+ * che le riceve, con dentro il `per ogni` su una stringa, e un secondo `per ogni` allo stesso livello del primo. */
+export const formeDellaTappa2: Progetto = {
+  format: "algodesign",
+  schema_version: 2,
+  metadata: { name: "forme-della-tappa-2" },
+  functions: [
+    {
+      id: "f1",
+      kind: "main",
+      data: [
+        { name: "n", type: "integer", initial: "3" },
+        { name: "i", type: "integer" },
+        { name: "k", type: "integer" },
+        { name: "v", type: "string", size: 2, max_length: 4, initial: ['"abcd"', '"e"'] },
+        { name: "t", type: "string", max_length: 2 },
+        { name: "s", type: "string", initial: '"ab"' },
+        { name: "c", type: "character" },
+        { name: "w", type: "integer", size: 3, initial: { each: "0" } },
+      ],
+      body: [
+        { id: "b1", kind: "comment", text: "Le forme della tappa 2" },
+        { id: "b2", kind: "for", counter: "i", from: "n * 2", to: "n + 1", step: -2, body: [{ id: "b3", kind: "assignment", target: "w[i mod 3]", value: "i" }] },
+        { id: "b4", kind: "for", counter: "i", from: "1", to: "0", body: [] },
+        {
+          id: "b5",
+          kind: "for_each",
+          item: "t",
+          source: "v",
+          body: [{ id: "b6", kind: "for_each", item: "c", source: "s", body: [{ id: "b7", kind: "write", values: ["c", "t"], newline: false }] }],
+        },
+        { id: "b8", kind: "for_each", item: "k", source: "w", body: [{ id: "b9", kind: "write", values: ["k"], newline: true }] },
+      ],
+      end: { id: "b10" },
+    },
+  ],
+};
+
+const formeDellaTappa2In = (l: Lingua): string =>
+  programma(
+    l,
+    "forme-della-tappa-2",
+    [
+      "function main(): void {",
+      "  let n: number = 3;",
+      "  let i!: number;",
+      "  let k!: number;",
+      '  let v: string[] = ["abcd", "e"];',
+      "  let t!: string;",
+      '  let s: string = "ab";',
+      "  let c!: string;",
+      "  let w: number[] = new Array<number>(3).fill(0);",
+      `  let ${indice(l)}: number;`,
+      `  let ${indice(l, 2)}: number;`,
+      "  // Le forme della tappa 2",
+      "  i = n * 2;",
+      "  while (i >= n + 1) {",
+      "    w[i % 3] = i;",
+      "    i = i - 2;",
+      "  }",
+      "  i = 1;",
+      "  while (i <= 0) {",
+      "    i = i + 1;",
+      "  }",
+      `  ${indice(l)} = 0;`,
+      `  while (${indice(l)} < v.length) {`,
+      `    t = {alPiu}(v[${indice(l)}], 2);`,
+      `    ${indice(l, 2)} = 0;`,
+      `    while (${indice(l, 2)} < {lunghezza}(s)) {`,
+      `      c = {carattereDi}(s, ${indice(l, 2)});`,
+      "      {scrivi}(`${c}${t}`);",
+      `      ${indice(l, 2)} = ${indice(l, 2)} + 1;`,
+      "    }",
+      `    ${indice(l)} = ${indice(l)} + 1;`,
+      "  }",
+      `  ${indice(l)} = 0;`,
+      `  while (${indice(l)} < w.length) {`,
+      `    k = w[${indice(l)}];`,
+      "    {scrivi}(`${k}\\n`);",
+      `    ${indice(l)} = ${indice(l)} + 1;`,
+      "  }",
+      "}",
+    ],
+    ["carattereDi", "lunghezza", "alPiu", "scrivi"],
+  );
+
+export const formeDellaTappa2Attese: Atteso = inDueLingue(formeDellaTappa2In);
+
+/** Le righe dei cicli di «forme della tappa 2», in ordine: il blocco e le sue fasi. Le altre righe non ne hanno. */
+export const fasiDellaTappa2: readonly string[] = [
+  "b2 inizio", "b2 condizione", "b2 passo",
+  "b4 inizio", "b4 condizione", "b4 passo",
+  "b5 inizio", "b5 condizione", "b5 elemento",
+  "b6 inizio", "b6 condizione", "b6 elemento", "b6 passo",
+  "b5 passo",
+  "b8 inizio", "b8 condizione", "b8 elemento", "b8 passo",
+];

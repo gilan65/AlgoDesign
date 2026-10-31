@@ -1,4 +1,4 @@
-// La provenienza delle righe coi cicli `per` e `per ogni`, per le prove dei tre generatori sul corpus della tappa 2:
+// La provenienza delle righe coi cicli `per` e `per ogni`, per le prove dei generatori sul corpus della tappa 2:
 // ogni blocco ha le sue righe nell'ordine dell'albero, le righe di un ciclo (e solo quelle) hanno le fasi, e ogni fase
 // degli eventi di un ciclo ha almeno una riga che la mostra (quelle che il ciclo non ha, nessuna). Le prove dicono i
 // difetti; qui non si asserisce nulla.

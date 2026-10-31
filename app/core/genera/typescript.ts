@@ -5,11 +5,11 @@
 // che il C non definisce non si controllano, e il commento in testa lo dice. Solo sintassi che si cancella togliendo i
 // tipi (niente `enum` né `namespace`): il programma resta JavaScript a meno delle annotazioni.
 //
-// Il generatore cresce un gruppo di costrutti per volta. Oggi sa scrivere il programma principale della tappa 1: i dati
-// e le costanti dei cinque tipi semplici e i vettori, l'assegnazione (anche a un elemento), la lettura, la scrittura, il
-// commento, `se`, `mentre`, `ripeti` e ogni espressione della tappa 1; per ogni altro costrutto il progetto non si genera,
-// e `nonAncora` dice il primo che trova («le procedure e le funzioni», «il per», «la copia di un vettore»…), dopo gli
-// errori statici come un generatore che si ferma.
+// Il generatore cresce un gruppo di costrutti per volta. Oggi sa scrivere il programma principale delle tappe 1 e 2: i
+// dati e le costanti dei cinque tipi semplici e i vettori, l'assegnazione (anche a un elemento), la lettura, la
+// scrittura, il commento, `se`, `mentre`, `ripeti`, `per`, `per ogni` e ogni espressione della tappa 1; per ogni altro
+// costrutto il progetto non si genera, e `nonAncora` dice il primo che trova («le procedure e le funzioni», «la copia di
+// un vettore»…), dopo gli errori statici come un generatore che si ferma.
 //
 // La forma: il nome del progetto e la testa, gli import da Node (`execSync` per `prepara_console`, e da `node:fs` le sole
 // funzioni che leggono e scrivono, isolate in `leggi_riga`, `scrivi` e `fermati`: una pagina nel browser le può
@@ -23,6 +23,10 @@
 // elementi no). Il carattere è una stringa di un carattere, come nel Python; la posizione, la lunghezza e il confronto
 // d'ordine di carattere e stringa passano dalle funzioni di supporto, che contano i codici (`length` e `<` di JavaScript
 // contano le unità UTF-16). Il `ripeti` è `do { … } while (condizione);`, che rivaluta la condizione dopo il corpo.
+// Il `per` e il `per ogni` sono il `mentre` equivalente, come nel Python: la fine del `per` e la lunghezza della sorgente
+// del `per ogni` si ricalcolano a ogni controllo; il `per ogni` ha l'indice nascosto `_indice` (`_indice2` dentro un
+// altro), dichiarato dopo i dati come nel C, e su una stringa prende lunghezza e carattere per codici (`lunghezza`,
+// `carattere_di`).
 //
 // Una scrittura è un testo composto (`` scrivi(`${q} ${r}\n`) ``): un intero, un carattere e una stringa come sono, un
 // reale da `reale` (i decimali del progetto sul valore esatto, la metà alla cifra pari, come `printf` del C), un booleano
@@ -47,8 +51,10 @@
 // delle chiamate (`new Error().stack`), alla prima chiamata dentro `main`, come il Python che risale le cornici.
 //
 // La provenienza delle righe è quella del Python: la riga di un blocco ha quel blocco (la condizione del `ripeti` sulla
-// riga del `while` in fondo), la dichiarazione di un dato ha il dato, le righe di struttura (`function main(): void {`,
-// la chiamata di `prepara_console`, `} else {`, `do {`, le graffe, la testa) e le funzioni di supporto nessuna; le righe di `main` sono segnate come sue.
+// riga del `while` in fondo; le righe di un `per` e di un `per ogni` anche la loro fase), la dichiarazione di un dato
+// ha il dato, le righe di struttura (`function main(): void {`, la chiamata di `prepara_console`, gli indici nascosti
+// dichiarati, `} else {`, `do {`, le graffe, la testa) e le funzioni di supporto nessuna; le righe di `main` sono segnate
+// come sue.
 //
 // Che cosa NON fa: controllare un intero oltre i 32 bit, la divisione per zero, l'indice di un vettore, il reale fuori
 // dall'intervallo degli interi convertito in intero, il dato senza valore, il reale non finito; le ultime cifre di
@@ -59,9 +65,10 @@ import { lunghezzaMassima as lunghezzaMassimaNelNucleo } from "../controllo/lung
 import { tettoDelleChiamate } from "../controllo/spazio";
 import { analizza, type Espressione } from "../espressioni/analizzatore";
 import { opzioniPredefinite, tipoSemplice, type Blocco, type Dato, type Progetto, type Tipo, type TipoDelDato } from "../progetto/modello";
+import type { FaseDelCiclo } from "../interprete/interprete";
 import { genera, segnate, type Generato, type Riga } from "./forma";
 import { motiviCol } from "./motivi";
-import { nomiDelSupporto, nomiDelSupportoDelTypeScript, type LinguaDelCodice } from "./nomi";
+import { indiceDelLivello, nomiDelSupporto, nomiDelSupportoDelTypeScript, type LinguaDelCodice } from "./nomi";
 import type { NoteDeiDati, Prova } from "./python";
 
 export function typescript(p: Progetto, limiti: Tetti, lingua: LinguaDelCodice, note: NoteDeiDati, prova?: Prova): Generato {
@@ -207,8 +214,8 @@ const nomeDelBlocco: Readonly<Record<Blocco["kind"], string | undefined>> = {
   if: undefined,
   while: undefined,
   repeat: undefined,
-  for: "il per",
-  for_each: "il per ogni",
+  for: undefined,
+  for_each: undefined,
   call: "la chiamata di una procedura",
 };
 
@@ -237,6 +244,8 @@ function nonAncora(p: Progetto, prova: Prova | undefined): string | undefined {
       : b.kind === "read" ? [b.target]
       : b.kind === "write" ? b.values
       : b.kind === "if" || b.kind === "while" || b.kind === "repeat" ? [b.condition]
+      : b.kind === "for" ? [b.from, b.to]
+      : b.kind === "for_each" ? [b.source]
       : [];
     for (const x of espressioni) {
       const nellEspressione = nonAncoraNellEspressione(albero(x));
@@ -617,16 +626,59 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
         b.body.forEach((x) => blocco(x, livello + 1));
         riga(`} while (${espressione(albero(b.condition)).t});`);
         return;
+      case "for": {
+        // Il `mentre` equivalente: la fine si ricalcola a ogni controllo (mai un `for` che la copi una volta).
+        const fase = (testo: string, ...fasi: FaseDelCiclo[]) => corpo.push({ testo, blocco: b.id, fasi });
+        const contatore = (albero(b.counter) as { nome: string }).nome;
+        const passo = b.step ?? 1;
+        fase(`${r}${contatore} = ${espressione(albero(b.from)).t};`, "inizio");
+        fase(`${r}while (${contatore} ${passo > 0 ? "<=" : ">="} ${fra(espressione(albero(b.to)), 11)}) {`, "condizione");
+        b.body.forEach((x) => blocco(x, livello + 1));
+        fase(`${r}${rientro}${contatore} = ${contatore} ${passo > 0 ? "+" : "-"} ${Math.abs(passo)};`, "passo");
+        struttura(`${r}}`);
+        return;
+      }
+      case "for_each": {
+        // Un indice nascosto, e la lunghezza della sorgente ricalcolata a ogni controllo (mai `for … of`, che la prende
+        // una volta). Una stringa per codici: `length` e `s[i]` di JavaScript contano le unità UTF-16.
+        const fase = (testo: string, ...fasi: FaseDelCiclo[]) => corpo.push({ testo, blocco: b.id, fasi });
+        const elemento = dati.get((albero(b.item) as { nome: string }).nome)!;
+        const sorgente = dati.get((albero(b.source) as { nome: string }).nome)!;
+        const indice = indiceDelLivello(lingua, ++cicliPerOgni);
+        livelli = Math.max(livelli, cicliPerOgni);
+        const fine = sorgente.size !== undefined ? `${sorgente.name}.length` : `${usa("lunghezza")}(${sorgente.name})`;
+        // Un elemento stringa che può essere più lungo del dato che lo riceve passa dal controllo.
+        const massima = elemento.max_length ?? lunghezzaPredefinita;
+        const lungo = elemento.type === "string" && (sorgente.max_length ?? lunghezzaPredefinita) > massima;
+        const preso =
+          sorgente.size === undefined ? conArresto("carattereDi", sorgente.name, indice).t
+          : lungo ? conArresto("alPiu", `${sorgente.name}[${indice}]`, String(massima)).t
+          : `${sorgente.name}[${indice}]`;
+        fase(`${r}${indice} = 0;`, "inizio");
+        fase(`${r}while (${indice} < ${fine}) {`, "condizione");
+        fase(`${r}${rientro}${elemento.name} = ${preso};`, "elemento");
+        b.body.forEach((x) => blocco(x, livello + 1));
+        fase(`${r}${rientro}${indice} = ${indice} + 1;`, "passo");
+        struttura(`${r}}`);
+        cicliPerOgni--;
+        return;
+      }
       case "comment":
         for (const t of b.text.split(aCapo)) riga(t === "" ? "//" : `// ${t}`);
         return;
       default:
-        throw new Error(`blocco fuori dalla tappa 1: ${b.kind}`);
+        throw new Error(`blocco fuori dalle tappe 1 e 2: ${b.kind}`);
     }
   }
 
+  /** Quanti cicli `per ogni` contengono la regola che si scrive, e il massimo: gli indici nascosti da dichiarare. */
+  let cicliPerOgni = 0;
+  let livelli = 0;
+
   const dichiarazioni = dichiara(main.data, rientro, true);
   for (const b of main.body) blocco(b, 1);
+  // Gli indici nascosti, dichiarati dopo i dati come nel C: JavaScript vuole il nome dichiarato.
+  const indici: Riga[] = Array.from({ length: livelli }, (_, k) => ({ testo: `${rientro}let ${indiceDelLivello(lingua, k + 1)}: number;` }));
   const costanti = dichiara(comuni, "", false);
 
   // --------------------------------------------------------------------------------------- l'insieme
@@ -646,7 +698,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   const conLaConsole = usate.has("leggiRiga") || usate.has("scrivi") || usate.has("fermati");
   if (conLaConsole) usate.add("preparaConsole");
   const principale = segnate(
-    [{ testo: "function main(): void {" }, ...(conLaConsole ? [{ testo: `${rientro}${nomi.preparaConsole}();` }] : []), ...dichiarazioni, ...corpo, { testo: "}" }],
+    [{ testo: "function main(): void {" }, ...(conLaConsole ? [{ testo: `${rientro}${nomi.preparaConsole}();` }] : []), ...dichiarazioni, ...indici, ...corpo, { testo: "}" }],
     main.id,
   );
   const letti = [...(usate.has("leggiRiga") ? ["readSync"] : []), ...(usate.has("scrivi") || usate.has("fermati") ? ["writeSync"] : [])];

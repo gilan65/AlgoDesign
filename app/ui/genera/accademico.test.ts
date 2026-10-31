@@ -192,7 +192,7 @@ describe("l'esito di ogni file del corpus", () => {
     const fuori = di("fuori-tappa");
     // nessun file ha due esiti, nessuno resta fuori
     expect(codice.length + statici.length + nonCiSta.length + fuori.length).toBe(corpus.length);
-    expect([corpus.length, codice.length, statici.length, nonCiSta.length, fuori.length]).toEqual([181, 36, 19, 126, 0]);
+    expect([corpus.length, codice.length, statici.length, nonCiSta.length, fuori.length]).toEqual([182, 36, 19, 127, 0]);
     // appaiati per elemento nei due versi: i file in più e quelli che mancano
     expect(codice.filter((f) => !conIlCodice.includes(f))).toEqual([]);
     expect(conIlCodice.filter((f) => !codice.includes(f))).toEqual([]);
@@ -214,10 +214,10 @@ describe("l'esito di ogni file del corpus", () => {
       voci += prima.length;
       if (prima.length > 0) conMancanze++;
     }
-    // il denominatore: i file con mancanze sono i 122 che non ci stanno (le 5 tabelle giuste comprese) e gli 11 che hanno
+    // il denominatore: i file con mancanze sono i 127 che non ci stanno (le 5 tabelle giuste comprese) e gli 11 che hanno
     // anche errori statici (4 delle tappe, 2 dei record: un dato record anche se il record non c'è o è sbagliato; 4 delle
     // matrici: la matrice c'è; 1 della tabella oltre il tetto)
-    expect(conMancanze).toBe(137);
+    expect(conMancanze).toBe(138);
     expect(voci).toBeGreaterThan(conMancanze);
     console.log(`mancanze: ${voci} voci in ${conMancanze} file su ${corpus.length}`);
   });
