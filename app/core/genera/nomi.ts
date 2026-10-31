@@ -289,10 +289,10 @@ export const paroleDiTypeScript = (
   "yield let static implements interface package private protected public await arguments eval"
 ).split(" ");
 
-/** I nomi che il TypeScript generato legge: `main`, i globali e ciò che importa da `node:fs`. */
+/** I nomi che il TypeScript generato legge: `main`, i globali (`Set` in `elementi_diversi`) e ciò che importa da `node:fs`. */
 export const nomiDiTypeScript = [
   "main", "String", "Math", "Number", "Array", "Uint8Array", "DataView", "ArrayBuffer", "BigInt", "TextDecoder", "Error",
-  "Infinity", "process", "readSync", "writeSync", "execSync",
+  "Infinity", "process", "readSync", "writeSync", "execSync", "Set",
 ] as const;
 
 /** I nomi comuni al Python e al C generati, in ogni lingua: le funzioni di supporto e i contatori della ricorsione. */

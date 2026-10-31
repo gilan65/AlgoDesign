@@ -737,7 +737,7 @@ describe("geometria", () => {
         expect(sbagliati).toEqual([]);
         expect(corpus.length).toBe(76);
         // La tappa 3: 53 progetti, 130 funzioni; la tappa 4: 22 progetti, 53 funzioni; i progetti generati coi salti, 296.
-        expect([progettiDellaTappa3.length, progettiDellaTappa4.length, corpusTappa3.length, coiSalti.length]).toEqual([53, 22, 183, 296]);
+        expect([progettiDellaTappa3.length, progettiDellaTappa4.length, corpusTappa3.length, coiSalti.length]).toEqual([54, 22, 185, 296]);
         expect(premesse.alberi).toBe(corpus.length + corpusTappa3.length + NUMERO_GENERATI + coiSalti.length + costruiti.length);
         // Le premesse delle forme nuove: salti disegnati (uno per blocco dell'albero: lo guarda l'esame) e testi con uno
         // stile.

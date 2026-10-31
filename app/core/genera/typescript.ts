@@ -5,11 +5,12 @@
 // che il C non definisce non si controllano, e il commento in testa lo dice. Solo sintassi che si cancella togliendo i
 // tipi (niente `enum` né `namespace`): il programma resta JavaScript a meno delle annotazioni.
 //
-// Il generatore cresce un gruppo di costrutti per volta. Oggi sa scrivere il programma principale delle tappe 1 e 2: i
-// dati e le costanti dei cinque tipi semplici e i vettori, l'assegnazione (anche a un elemento), la lettura, la
-// scrittura, il commento, `se`, `mentre`, `ripeti`, `per`, `per ogni` e ogni espressione della tappa 1; per ogni altro
-// costrutto il progetto non si genera, e `nonAncora` dice il primo che trova («le procedure e le funzioni», «la copia di
-// un vettore»…), dopo gli errori statici come un generatore che si ferma.
+// Il generatore cresce un gruppo di costrutti per volta. Oggi sa scrivere le tappe 1, 2 e 3: i dati e le costanti dei
+// cinque tipi semplici e i vettori, l'assegnazione (anche a un elemento, e la copia di un vettore col nome), la lettura,
+// la scrittura, il commento, `se`, `mentre`, `ripeti`, `per`, `per ogni`, ogni espressione della tappa 1, le procedure e
+// le funzioni senza ricorsione coi loro programmi di prova; per ogni altro costrutto il progetto non si genera, e
+// `nonAncora` dice il primo che trova («la ricorsione», «il record», «la tabella», «la matrice»), dopo gli errori statici
+// come un generatore che si ferma.
 //
 // La forma: il nome del progetto e la testa, gli import da Node (`execSync` per `prepara_console`, e da `node:fs` le sole
 // funzioni che leggono e scrivono, isolate in `leggi_riga`, `scrivi` e `fermati`: una pagina nel browser le può
@@ -47,32 +48,46 @@
 // della concatenazione, e se quel lato si può fermare la concatenazione passa da `concatena`. In `v[i] = valore`
 // JavaScript calcola l'indice prima del valore, come il flowchart.
 //
+// Procedure e funzioni come nel Python: la firma coi tipi; una funzione restituisce il suo valore, una procedura coi
+// parametri per riferimento o per uscita li restituisce (uno solo com'è, più d'uno in una tupla, `: [number, string]`) e
+// la chiamata li riassegna (`a = p(a);`, `[a, n] = p(a);`); un parametro per uscita non si passa, e la procedura lo
+// dichiara coi suoi dati. Prima della chiamata le righe del Python: l'indice di un elemento per riferimento in
+// `_indice`, il controllo `elementi_diversi`, l'argomento che si ferma prima di una di quelle righe in `_valore`. Un
+// vettore per valore la funzione chiamata lo copia per prima cosa (`w = Array.from(w);`); il risultato vettore è una
+// lista nuova (`Array.from(r)`, coi controlli `r.map((_elemento) => al_piu(_elemento, 6))`). JavaScript vuole dichiarati
+// col tipo i nomi del generatore: in testa alla funzione, dopo i dati, come nel C (`_indice` uno per livello, `_valore`
+// uno per tipo libero nell'istruzione, `_sorgente` uno per `per ogni` su una funzione). Il valore restituito che è la
+// chiamata di una funzione che si può fermare si calcola prima in `_valore`: restituito così sarebbe una chiamata in
+// coda, e JavaScriptCore (Bun), che le fa in ogni modulo, toglierebbe la cornice della funzione dalla pila.
+//
 // Un arresto scrive «Errore alla riga N: motivo» sullo standard error ed esce con 1: `fermati` trova la riga nella pila
-// delle chiamate (`new Error().stack`), alla prima chiamata dentro `main`, come il Python che risale le cornici.
+// delle chiamate (`new Error().stack`), alla prima chiamata dentro `main` o dentro un'altra funzione del programma, come
+// il Python che risale le cornici; una cornice nativa di Bun (`at map (native:1:11)`) non è mai del programma.
 //
 // La provenienza delle righe è quella del Python: la riga di un blocco ha quel blocco (la condizione del `ripeti` sulla
 // riga del `while` in fondo; le righe di un `per` e di un `per ogni` anche la loro fase), la dichiarazione di un dato
 // ha il dato, le righe di struttura (`function main(): void {`, la chiamata di `prepara_console`, gli indici nascosti
-// dichiarati, `} else {`, `do {`, le graffe, la testa) e le funzioni di supporto nessuna; le righe di `main` sono segnate
-// come sue.
+// dichiarati, `} else {`, `do {`, le graffe, la testa) e le funzioni di supporto nessuna; le righe di ogni funzione del
+// programma sono segnate come sue, e la dichiarazione di un suo dato ha anche la funzione. Il `return` ha il blocco della
+// fine. Il programma di prova legge i parametri con la provenienza della funzione, come il Python.
 //
 // Che cosa NON fa: controllare un intero oltre i 32 bit, la divisione per zero, l'indice di un vettore, il reale fuori
 // dall'intervallo degli interi convertito in intero, il dato senza valore, il reale non finito; le ultime cifre di
 // `elevato_a` con un esponente non intero o oltre 1100 sono quelle di `Math.pow`, non quelle dell'interprete.
 
-import { lunghezzaPredefinita, type Tetti } from "../controllo/controllo";
+import { chiamateDellaFunzione, funzioniDelGiro, lunghezzaPredefinita, type Tetti } from "../controllo/controllo";
 import { lunghezzaMassima as lunghezzaMassimaNelNucleo } from "../controllo/lunghezza";
 import { tettoDelleChiamate } from "../controllo/spazio";
 import { analizza, type Espressione } from "../espressioni/analizzatore";
-import { opzioniPredefinite, tipoSemplice, type Blocco, type Dato, type Progetto, type Tipo, type TipoDelDato } from "../progetto/modello";
+import { opzioniPredefinite, tipoSemplice, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto, type Tipo, type TipoDelDato } from "../progetto/modello";
 import type { FaseDelCiclo } from "../interprete/interprete";
-import { genera, segnate, type Generato, type Riga } from "./forma";
+import { controlliDegliElementi, genera, parametriDelCaso, posizioni, segnate, type Generato, type Riga } from "./forma";
 import { motiviCol } from "./motivi";
-import { indiceDelLivello, nomiDelSupporto, nomiDelSupportoDelTypeScript, type LinguaDelCodice } from "./nomi";
+import { indiceDelLivello, nomeDelRisultato, nomeDellaSorgente, nomeDellElemento, nomeDelValore, nomiDelSupporto, nomiDelSupportoDelTypeScript, type LinguaDelCodice } from "./nomi";
 import type { NoteDeiDati, Prova } from "./python";
 
 export function typescript(p: Progetto, limiti: Tetti, lingua: LinguaDelCodice, note: NoteDeiDati, prova?: Prova): Generato {
-  return genera(p, limiti, (q) => righeDelTypeScript(q, lingua, note), undefined, (q) => nonAncora(q, prova));
+  return genera(p, limiti, (q) => righeDelTypeScript(q, lingua, note, prova), undefined, nonAncora);
 }
 
 const rientro = "  ";
@@ -106,7 +121,7 @@ const testi = {
 const supportoInOrdine = [
   "preparaConsole", "fermati", "leggiRiga", "leggiIntero", "leggiReale", "leggiCarattere", "leggiStringa", "leggiBooleano", "dividi",
   "convertiAReale", "elevatoA", "arrotonda", "convertiACarattere", "convertiAVettore", "convertiAStringa", "carattereDi",
-  "lunghezza", "confronta", "nellaStringa", "concatenazione", "alPiu", "reale", "booleano", "scrivi",
+  "lunghezza", "confronta", "nellaStringa", "concatenazione", "alPiu", "elementiDiversi", "reale", "booleano", "scrivi",
 ] as const;
 type Supporto = (typeof supportoInOrdine)[number];
 
@@ -131,6 +146,7 @@ const chiama: Partial<Record<Supporto, readonly Supporto[]>> = {
   nellaStringa: ["fermati"],
   concatenazione: ["fermati"],
   alPiu: ["lunghezza", "fermati"],
+  elementiDiversi: ["fermati"],
 };
 
 /** Gli a capo di una riga di testo: quelli di una fine riga, e i due separatori di Unicode che in JavaScript chiudono un
@@ -194,7 +210,7 @@ function nonAncoraNellEspressione(e: Espressione): string | undefined {
     case "campo":
       return "il campo di un record";
     case "chiamata":
-      return "la chiamata di una funzione";
+      return e.argomenti.map(nonAncoraNellEspressione).find((x) => x !== undefined);
     case "indice":
       return nonAncoraNellEspressione(e.base) ?? nonAncoraNellEspressione(e.indice);
     case "unario":
@@ -206,27 +222,17 @@ function nonAncoraNellEspressione(e: Espressione): string | undefined {
   }
 }
 
-const nomeDelBlocco: Readonly<Record<Blocco["kind"], string | undefined>> = {
-  assignment: undefined,
-  write: undefined,
-  comment: undefined,
-  read: undefined,
-  if: undefined,
-  while: undefined,
-  repeat: undefined,
-  for: undefined,
-  for_each: undefined,
-  call: "la chiamata di una procedura",
-};
-
-/** Il primo costrutto del progetto che il generatore non sa ancora scrivere, o niente. */
-function nonAncora(p: Progetto, prova: Prova | undefined): string | undefined {
-  if (prova !== undefined) return "il programma di prova di una procedura o di una funzione";
-  if (p.functions.length > 1) return "le procedure e le funzioni";
+/** Il primo costrutto del progetto che il generatore non sa ancora scrivere, o niente: la ricorsione (le funzioni del
+ * giro), il record, la tabella e la matrice, cercati in ogni funzione (il programma di prova di una funzione è quello del
+ * suo progetto). */
+function nonAncora(p: Progetto): string | undefined {
+  if (funzioniDelGiro(p).size > 0) return "la ricorsione";
   if ((p.records ?? []).length > 0) return "il record";
-  const main = p.functions[0]!;
-  const dati = [...(p.shared_constants ?? []), ...main.data];
-  for (const d of dati) {
+  for (const f of p.functions) {
+    if (f.return_type === "record") return f.return_size === undefined ? "il record" : "la tabella";
+    if (f.return_columns !== undefined) return "la matrice";
+  }
+  for (const d of [...(p.shared_constants ?? []), ...p.functions.flatMap((f) => f.data)]) {
     if (d.type === "record") return d.size === undefined ? "il record" : "la tabella";
     if (d.columns !== undefined) return "la matrice";
     const valori = d.initial === undefined ? [] : typeof d.initial === "string" ? [d.initial] : Array.isArray(d.initial) ? (d.initial as readonly string[]) : [(d.initial as { readonly each: string }).each];
@@ -235,26 +241,23 @@ function nonAncora(p: Progetto, prova: Prova | undefined): string | undefined {
       if (nelValore !== undefined) return nelValore;
     }
   }
-  const vettori = new Set(dati.filter((d) => d.size !== undefined).map((d) => d.name));
-  for (const b of tuttiIBlocchi(main.body)) {
-    const blocco = nomeDelBlocco[b.kind];
-    if (blocco !== undefined) return blocco;
-    const espressioni =
-      b.kind === "assignment" ? [b.target, b.value]
-      : b.kind === "read" ? [b.target]
-      : b.kind === "write" ? b.values
-      : b.kind === "if" || b.kind === "while" || b.kind === "repeat" ? [b.condition]
-      : b.kind === "for" ? [b.from, b.to]
-      : b.kind === "for_each" ? [b.source]
-      : [];
+  for (const f of p.functions) {
+    const espressioni = [
+      ...tuttiIBlocchi(f.body).flatMap((b) =>
+        b.kind === "assignment" ? [b.target, b.value]
+        : b.kind === "read" ? [b.target]
+        : b.kind === "write" ? b.values
+        : b.kind === "if" || b.kind === "while" || b.kind === "repeat" ? [b.condition]
+        : b.kind === "for" ? [b.from, b.to]
+        : b.kind === "for_each" ? [b.source]
+        : b.kind === "call" ? b.arguments
+        : [],
+      ),
+      ...(f.end.return_value !== undefined ? [f.end.return_value] : []),
+    ];
     for (const x of espressioni) {
       const nellEspressione = nonAncoraNellEspressione(albero(x));
       if (nellEspressione !== undefined) return nellEspressione;
-    }
-    if (b.kind === "assignment") {
-      const t = albero(b.target);
-      const v = albero(b.value);
-      if (t.genere === "nome" && vettori.has(t.nome) && !(v.genere === "unario" && v.operatore === "to_array")) return "la copia di un vettore";
     }
   }
   return undefined;
@@ -262,12 +265,12 @@ function nonAncora(p: Progetto, prova: Prova | undefined): string | undefined {
 
 // ------------------------------------------------------------------------------------------- il programma
 
-function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati): Riga[] {
+function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prova: Prova | undefined): Riga[] {
   const w = testi[lingua];
   const nomi = nomiIn(lingua);
   const main = p.functions.find((f) => f.kind === "main")!;
   const comuni = p.shared_constants ?? [];
-  const dati = new Map<string, Dato>([...comuni, ...main.data].map((d) => [d.name, d]));
+  const perNome = new Map(p.functions.flatMap((f) => (f.name === undefined ? [] : [[f.name, f] as const])));
   const decimali = p.options?.real_decimals ?? opzioniPredefinite.real_decimals;
   const riempimento = (p.options?.fill_character ?? opzioniPredefinite.fill_character).codePointAt(0)!;
   const tetto = tettoDelleChiamate(p);
@@ -278,10 +281,24 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     return nomi[f];
   };
 
+  /** I dati della funzione che si scrive, con le costanti comuni. */
+  let dati = new Map<string, Dato>();
+  /** Le funzioni del progetto che possono fermare il programma, per nome: si scrivono prima quelle chiamate. */
+  const fermano = new Map<string, boolean>();
+  /** Se la funzione che si scrive può fermare il programma. */
+  let fermaLaFunzione = false;
+
   // ------------------------------------------------------------------------------------------- i tipi
 
-  /** Un vettore intero: il nome di un vettore. */
-  const vettore = (e: Espressione): boolean => e.genere === "nome" && dati.get(e.nome)!.size !== undefined;
+  /** Un vettore intero: il nome di un vettore, o una funzione che lo restituisce. */
+  const vettore = (e: Espressione): boolean =>
+    e.genere === "nome" ? dati.get(e.nome)!.size !== undefined : e.genere === "chiamata" && perNome.get(e.nome)?.return_size !== undefined;
+  /** La dimensione e la lunghezza massima degli elementi di un vettore intero, o di una stringa, come per un dato. */
+  const misureDi = (e: Espressione): Pick<Dato, "size" | "max_length"> => {
+    if (e.genere === "nome") return dati.get(e.nome)!;
+    const f = perNome.get((e as { nome: string }).nome)!;
+    return { ...(f.return_size !== undefined ? { size: f.return_size } : {}), ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}) };
+  };
 
   function tipo(e: Espressione): TipoDelDato {
     switch (e.genere) {
@@ -300,6 +317,8 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
         return dati.get(e.nome)!.type;
       case "indice":
         return vettore(e.base) ? tipo(e.base) : "character";
+      case "chiamata":
+        return perNome.get(e.nome)!.return_type!;
       case "unario":
         switch (e.operatore) {
           case "-":
@@ -324,17 +343,18 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
         return s === "integer" && d === "integer" ? "integer" : "real";
       }
       default:
-        throw new Error(`espressione fuori dalla tappa 1: ${e.genere}`);
+        throw new Error(`espressione fuori dalla tappa 3: ${e.genere}`);
     }
   }
 
   /** La lunghezza massima che una stringa può avere. */
-  const lunghezzaMassima = (e: Espressione): number => lunghezzaMassimaNelNucleo(e, (n) => dati.get(n), () => undefined);
+  const lunghezzaMassima = (e: Espressione): number => lunghezzaMassimaNelNucleo(e, (n) => dati.get(n), (n) => perNome.get(n), () => undefined);
 
-  /** Un carattere che può essere quello di codice 0: un dato, un elemento di un vettore, una conversione da intero. Un
-   * letterale non lo è (sarebbe un errore statico), e nemmeno un carattere preso da una stringa. */
+  /** Un carattere che può essere quello di codice 0: un dato, un elemento di un vettore, una conversione da intero, ciò
+   * che una funzione restituisce. Un letterale non lo è (sarebbe un errore statico), e nemmeno un carattere preso da una
+   * stringa. */
   function puoEssereZero(e: Espressione): boolean {
-    if (e.genere === "nome") return true;
+    if (e.genere === "nome" || e.genere === "chiamata") return true;
     if (e.genere === "indice") return vettore(e.base);
     if (e.genere === "unario" && e.operatore === "to_character") return tipo(e.operando) === "integer" || puoEssereZero(e.operando);
     return false;
@@ -344,16 +364,19 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
 
   /** Il testo di TypeScript e la forza con cui tiene il suo operatore (più alta, più stretta), come le precedenze di
    * JavaScript: 20 un operando, una chiamata o un elemento; 15 il meno e `!`; 12 `*`, `/` e `%`; 11 `+` e `-`; 10 i
-   * confronti d'ordine; 9 `===` e `!==`; 5 `&&`; 4 `||`. */
-  type Testo = { readonly t: string; readonly forza: number };
+   * confronti d'ordine; 9 `===` e `!==`; 5 `&&`; 4 `||`. Con `coda`, il testo è la chiamata di una funzione che si può
+   * fermare: restituita così, sarebbe una chiamata in coda (Bun toglie la cornice di chi la restituisce). */
+  type Testo = { readonly t: string; readonly forza: number; readonly coda?: true };
   const operando = (t: string): Testo => ({ t, forza: 20 });
   const chiamata = (f: string, ...argomenti: string[]): Testo => operando(`${f}(${argomenti.join(", ")})`);
   const fra = (x: Testo, forza: number) => (x.forza < forza ? `(${x.t})` : x.t);
-  /** Dice se il calcolo può fermare il programma per una regola del linguaggio (una funzione di supporto che si ferma). */
+  /** Dice se il calcolo può fermare il programma per una regola del linguaggio (una funzione di supporto, o una funzione
+   * del progetto che può). */
   let ferma = false;
   const conArresto = (f: Supporto, ...argomenti: string[]): Testo => {
     ferma = true;
-    return chiamata(usa(f), ...argomenti);
+    fermaLaFunzione = true;
+    return { ...chiamata(usa(f), ...argomenti), coda: true };
   };
 
   /** Un lato che `tsc` può vedere col tipo letterale: un letterale (col meno davanti) o un dato booleano (un numero e una
@@ -381,15 +404,26 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       case "nome":
         return operando(e.nome);
       case "indice":
-        // L'elemento di un vettore (non controllato, come nel C); il carattere di una stringa, controllato.
+        // L'elemento di un vettore, anche di quello restituito da una funzione (prima la chiamata, poi l'indice: non
+        // controllato, come nel C); il carattere di una stringa, controllato.
         if (vettore(e.base)) return operando(`${espressione(e.base).t}[${espressione(e.indice).t}]`);
         return conArresto("carattereDi", espressione(e.base).t, espressione(e.indice).t);
+      case "chiamata": {
+        // Gli argomenti di una funzione sono per valore: ognuno come un valore dato al suo parametro.
+        const parametri = perNome.get(e.nome)!.data.filter((d) => d.parameter !== undefined);
+        const argomenti = e.argomenti.map((a, k) => nelDato(a, parametri[k]!));
+        if (fermano.get(e.nome) === true) {
+          ferma = true;
+          fermaLaFunzione = true;
+        }
+        return chiamata(e.nome, ...argomenti);
+      }
       case "unario":
         return unario(e.operatore, e.operando);
       case "binario":
         return binario(e);
       default:
-        throw new Error(`espressione fuori dalla tappa 1: ${e.genere}`);
+        throw new Error(`espressione fuori dalla tappa 3: ${e.genere}`);
     }
   }
 
@@ -497,18 +531,34 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
 
   /** Un valore che va in un dato del tipo `verso`: un intero in un reale diventa reale; una stringa che può superare la
    * lunghezza massima del dato passa dal controllo. */
-  function nelDato(e: Espressione, verso: Pick<Dato, "type" | "size" | "max_length">): string {
-    if (verso.type === "real") return nelReale(e).t;
-    const x = espressione(e).t;
+  function nelDatoTesto(e: Espressione, verso: Pick<Dato, "type" | "size" | "max_length">): Testo {
+    if (verso.type === "real") return nelReale(e);
+    const x = espressione(e);
     const massima = verso.max_length ?? lunghezzaPredefinita;
-    if (verso.type === "string" && !(verso.size !== undefined && vettore(e)) && lunghezzaMassima(e) > massima) return conArresto("alPiu", x, String(massima)).t;
+    if (verso.type === "string" && !(verso.size !== undefined && vettore(e)) && lunghezzaMassima(e) > massima) return conArresto("alPiu", x.t, String(massima));
     return x;
+  }
+  const nelDato = (e: Espressione, verso: Pick<Dato, "type" | "size" | "max_length">): string => nelDatoTesto(e, verso).t;
+
+  /** Un vettore intero che va in un dato o nel risultato di una funzione (`verso`): una lista nuova. Dal nome di un
+   * vettore la copia (`Array.from`, il `list` del Python); con gli elementi stringa che possono essere più lunghi di quelli
+   * di `verso`, ognuno dal controllo (`map`, la comprensione del Python); da una funzione è già nuovo. */
+  function listaNuova(e: Espressione, verso: Pick<Dato, "type" | "max_length">): Testo {
+    const x = espressione(e);
+    const massima = verso.max_length ?? lunghezzaPredefinita;
+    const lungo = verso.type === "string" && (misureDi(e).max_length ?? lunghezzaPredefinita) > massima;
+    if (lungo) {
+      const elemento = nomeDellElemento[lingua];
+      return { t: `${fra(x, 20)}.map((${elemento}) => ${conArresto("alPiu", elemento, String(massima)).t})`, forza: 20, coda: true };
+    }
+    return e.genere === "nome" ? operando(`Array.from(${x.t})`) : x;
   }
 
   // ---------------------------------------------------------------------------------------- le dichiarazioni
 
   const annotazioneDelTipo = (t: Tipo) => ({ integer: "number", real: "number", character: "string", string: "string", boolean: "boolean" })[t];
   const annotazione = (d: Dato) => `${annotazioneDelTipo(tipoSemplice(d.type))}${d.size === undefined ? "" : "[]"}`;
+  const annotazioneDelRisultato = (f: Funzione) => `${annotazioneDelTipo(tipoSemplice(f.return_type!))}${f.return_size === undefined ? "" : "[]"}`;
   const valoreIniziale = (d: Dato): string | undefined => {
     const v = d.initial;
     const elemento = annotazioneDelTipo(tipoSemplice(d.type));
@@ -518,8 +568,9 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     return `new Array<${elemento}>(${d.size}).fill(${nelDato(albero((v as { readonly each: string }).each), d)})`;
   };
 
-  /** Le dichiarazioni, con la colonna dei commenti allineata sulle righe che ne hanno uno. */
-  const dichiara = (elenco: readonly Dato[], prima: string, conNota: boolean): Riga[] => {
+  /** Le dichiarazioni, con la colonna dei commenti allineata sulle righe che ne hanno uno; `funzione`, quella che le
+   * possiede fuori dal programma principale. */
+  const dichiara = (elenco: readonly Dato[], prima: string, conNota: boolean, funzione?: string): Riga[] => {
     const voci = elenco.map((d) => {
       const v = valoreIniziale(d);
       const parola = d.constant === true || prima === "" ? "const" : "let";
@@ -528,12 +579,48 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     });
     const larghezza = (t: string) => Array.from(t).length;
     const colonna = Math.max(0, ...voci.filter((x) => x.nota !== "").map((x) => larghezza(x.testo)));
-    return voci.map(({ d, testo, nota }) => ({ testo: nota === "" ? testo : `${testo}${" ".repeat(colonna - larghezza(testo))}  // ${nota}`, dato: d.name }));
+    return voci.map(({ d, testo, nota }) => ({
+      testo: nota === "" ? testo : `${testo}${" ".repeat(colonna - larghezza(testo))}  // ${nota}`,
+      dato: d.name,
+      ...(funzione !== undefined ? { funzione } : {}),
+    }));
+  };
+
+  // ------------------------------------------------------------------------- i nomi del generatore
+
+  // JavaScript vuole i nomi dichiarati col tipo, e il Python no: in testa alla funzione, dopo i dati, come nel C. Gli
+  // indici, uno per livello usato; le parti messe da parte (`_valore`, `_valore2`) come le temporanee del C, una per tipo
+  // libera nell'istruzione che si scrive; le sorgenti di un `per ogni` su una funzione, una per ciclo.
+  /** Quanti cicli `per ogni` contengono la regola che si scrive, e il livello più alto degli indici usati. */
+  let cicliPerOgni = 0;
+  let livelli = 0;
+  const indiceAl = (n: number): string => {
+    livelli = Math.max(livelli, n);
+    return indiceDelLivello(lingua, n);
+  };
+  let temporanee: { nome: string; tipo: string }[] = [];
+  const prese = new Set<string>();
+  const temporanea = (t: string): string => {
+    let x = temporanee.find((v) => v.tipo === t && !prese.has(v.nome));
+    if (x === undefined) {
+      const k = temporanee.length + 1;
+      x = { nome: k === 1 ? nomeDelValore[lingua] : `${nomeDelValore[lingua]}${k}`, tipo: t };
+      temporanee.push(x);
+    }
+    prese.add(x.nome);
+    return x.nome;
+  };
+  let sorgenti: { nome: string; tipo: string }[] = [];
+  const sorgenteNuova = (t: string): string => {
+    const k = sorgenti.length + 1;
+    const nome = k === 1 ? nomeDellaSorgente[lingua] : `${nomeDellaSorgente[lingua]}${k}`;
+    sorgenti.push({ nome, tipo: t });
+    return nome;
   };
 
   // --------------------------------------------------------------------------------------------- le regole
 
-  const corpo: Riga[] = [];
+  let corpo: Riga[] = [];
   const struttura = (testo: string) => corpo.push({ testo });
 
   /** Una destinazione e il valore che riceve: un dato, o l'elemento di un vettore (JavaScript calcola l'indice prima del
@@ -550,7 +637,85 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     corpo.push({ testo: `${r}${posto} = ${valore(dati.get(nome)!)};`, blocco: id });
   }
 
-  const leggi = (d: Dato): string => {
+  /** La copia col nome (`altri ← voti`), elemento per elemento: il `mentre` equivalente, una riga per fase, come il Python
+   * (mai `altri = voti`, che farebbe dei due nomi lo stesso vettore). Un elemento stringa che può essere più lungo di
+   * quelli che lo ricevono passa dal controllo. */
+  function copia(r: string, id: string, t: Extract<Espressione, { genere: "nome" }>, v: Extract<Espressione, { genere: "nome" }>) {
+    const fase = (testo: string, ...fasi: FaseDelCiclo[]) => corpo.push({ testo, blocco: id, fasi });
+    const misure = misureDi(t);
+    const massima = misure.max_length ?? lunghezzaPredefinita;
+    const lungo = tipo(t) === "string" && (misureDi(v).max_length ?? lunghezzaPredefinita) > massima;
+    const i = indiceAl(cicliPerOgni + 1);
+    const preso = lungo ? conArresto("alPiu", `${v.nome}[${i}]`, String(massima)).t : `${v.nome}[${i}]`;
+    fase(`${r}${i} = 0;`, "inizio");
+    fase(`${r}while (${i} < ${misure.size}) {`, "condizione");
+    fase(`${r}${rientro}${t.nome}[${i}] = ${preso};`, "elemento");
+    fase(`${r}${rientro}${i} = ${i} + 1;`, "passo");
+    struttura(`${r}}`);
+  }
+
+  /** Il dato e gli indici, dal primo, di un elemento di un vettore. */
+  function elementoDi(e: Espressione): { nome: string; indici: Espressione[] } {
+    if (e.genere !== "indice") return { nome: (e as { nome: string }).nome, indici: [] };
+    const sotto = elementoDi(e.base);
+    return { nome: sotto.nome, indici: [...sotto.indici, e.indice] };
+  }
+
+  /** Il salto a una procedura, come nel Python: le righe prima della chiamata (gli indici degli elementi per riferimento
+   * e per uscita, il controllo degli elementi dello stesso vettore, gli argomenti che si possono fermare prima di una di
+   * quelle righe che si può fermare anche lei), poi la chiamata, che riassegna i parametri per riferimento e per uscita:
+   * uno solo com'è, più d'uno dalla tupla (`[a, n] = p(a);`). Un argomento per uscita non si passa. */
+  function salto(r: string, b: Extract<Blocco, { kind: "call" }>) {
+    prese.clear();
+    const parametri = perNome.get(b.callee)!.data.filter((d) => d.parameter !== undefined);
+    type Argomento =
+      | { readonly genere: "valore"; readonly testo: string; readonly ferma: boolean }
+      | { readonly genere: "nome"; readonly testo: string }
+      | { readonly genere: "elemento"; readonly vettore: string; readonly indici: readonly { readonly t: string; readonly scritto: boolean }[]; readonly ferma: boolean };
+    const argomenti: Argomento[] = b.arguments.map((testo, k) => {
+      const d = parametri[k]!;
+      const a = albero(testo);
+      ferma = false;
+      if (d.parameter === "value") return { genere: "valore", testo: nelDato(a, d), ferma };
+      if (a.genere === "nome") return { genere: "nome", testo: a.nome };
+      const { nome, indici } = elementoDi(a);
+      return { genere: "elemento", vettore: nome, indici: indici.map((i) => ({ t: espressione(i).t, scritto: i.genere === "intero" })), ferma };
+    });
+    const calcolato = (a: Argomento) => a.genere === "elemento" && a.indici.some((i) => !i.scritto);
+    const usati: string[][] = [];
+    const perVettore = new Map<string, number[]>();
+    argomenti.forEach((a, k) => a.genere === "elemento" && perVettore.set(a.vettore, [...(perVettore.get(a.vettore) ?? []), k]));
+    const gruppi = [...perVettore.values()].filter((ks) => ks.length > 1 && ks.some((k) => calcolato(argomenti[k]!)));
+    // Le righe prima della chiamata che si possono fermare: da quella più a destra, un argomento a sinistra che si può
+    // fermare anche lui si calcola prima, nel suo ordine.
+    const ultimaCheFerma = gruppi.length > 0 ? argomenti.length : argomenti.findLastIndex((a) => calcolato(a) && a.genere === "elemento" && a.ferma);
+    const passati: string[] = [];
+    let indici = 0;
+    const riga = (testo: string) => corpo.push({ testo: r + testo, blocco: b.id });
+    argomenti.forEach((a, k) => {
+      if (a.genere === "elemento") {
+        usati[k] = a.indici.map((i) => {
+          if (i.scritto) return i.t;
+          const nome = indiceAl(cicliPerOgni + ++indici);
+          riga(`${nome} = ${i.t};`);
+          return nome;
+        });
+        passati.push(`${a.vettore}${usati[k]!.map((i) => `[${i}]`).join("")}`);
+      } else if (a.genere === "valore" && a.ferma && k < ultimaCheFerma) {
+        const nome = temporanea(annotazione(parametri[k]!));
+        riga(`${nome} = ${a.testo};`);
+        passati.push(nome);
+      } else passati.push(a.testo);
+    });
+    for (const ks of gruppi)
+      for (const confronto of controlliDegliElementi(ks.map((k) => usati[k]!), dati.get((argomenti[ks[0]!] as { vettore: string }).vettore)!))
+        riga(`${usa("elementiDiversi")}(${confronto.join(", ")});`);
+    const chiamataDelSalto = `${b.callee}(${passati.filter((_, k) => parametri[k]!.parameter !== "out").join(", ")})`;
+    const riassegnati = argomenti.flatMap((a, k) => (a.genere === "valore" ? [] : [passati[k]!]));
+    riga(riassegnati.length === 0 ? `${chiamataDelSalto};` : riassegnati.length === 1 ? `${riassegnati[0]} = ${chiamataDelSalto};` : `[${riassegnati.join(", ")}] = ${chiamataDelSalto};`);
+  }
+
+  const leggi = (d: Pick<Dato, "type" | "max_length">): string => {
     switch (tipoSemplice(d.type)) {
       case "integer":
         return `${usa("leggiIntero")}()`;
@@ -565,15 +730,16 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     }
   };
 
-  /** Un valore di una scrittura dentro il testo composto: un letterale stringa o carattere coi suoi caratteri, un reale da
-   * `reale`, un booleano da `booleano`, ogni altro valore com'è. */
+  /** Un valore di quel tipo dentro il testo composto: un reale da `reale`, un booleano da `booleano`, ogni altro com'è. */
+  const comeScritto = (x: string, t: TipoDelDato): string => (t === "real" ? `\${${usa("reale")}(${x})}` : t === "boolean" ? `\${${usa("booleano")}(${x})}` : `\${${x}}`);
+
+  /** Un valore di una scrittura dentro il testo composto: un letterale stringa o carattere coi suoi caratteri, ogni altro
+   * valore come lo scrive `comeScritto`. */
   function nellaScrittura(v: string): string {
     const e = albero(v);
     if (e.genere === "stringa") return e.codici.map(nelTesto).join("");
     if (e.genere === "carattere") return nelTesto(e.codice);
-    const x = espressione(e).t;
-    const t = tipo(e);
-    return t === "real" ? `\${${usa("reale")}(${x})}` : t === "boolean" ? `\${${usa("booleano")}(${x})}` : `\${${x}}`;
+    return comeScritto(espressione(e).t, tipo(e));
   }
 
   function blocco(b: Blocco, livello: number) {
@@ -584,12 +750,21 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
         const v = albero(b.value);
         if (v.genere === "unario" && v.operatore === "to_array")
           return assegna(r, b.id, b.target, (d) => conArresto("convertiAVettore", espressione(v.operando).t, String(d.size)).t);
-        if (v.genere === "unario" && v.operatore === "to_string")
+        if (v.genere === "unario" && v.operatore === "to_string") {
+          // Il nome di un vettore di caratteri, o la funzione che lo restituisce.
+          const o = v.operando;
           return assegna(r, b.id, b.target, (d) => {
-            const s = conArresto("convertiAStringa", espressione(v.operando).t).t;
+            const s = conArresto("convertiAStringa", espressione(o).t).t;
             const massima = d.max_length ?? lunghezzaPredefinita;
-            return dati.get((v.operando as { nome: string }).nome)!.size! > massima ? conArresto("alPiu", s, String(massima)).t : s;
+            return misureDi(o).size! > massima ? conArresto("alPiu", s, String(massima)).t : s;
           });
+        }
+        const t = albero(b.target);
+        if (vettore(t)) {
+          // Un vettore intero: da una funzione una lista nuova, dal nome di un altro vettore la copia elemento per elemento.
+          if (v.genere !== "nome") return assegna(r, b.id, b.target, (d) => listaNuova(v, d).t);
+          return copia(r, b.id, t as Extract<Espressione, { genere: "nome" }>, v);
+        }
         return assegna(r, b.id, b.target, (d) => nelDato(v, d));
       }
       case "read":
@@ -640,20 +815,27 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       }
       case "for_each": {
         // Un indice nascosto, e la lunghezza della sorgente ricalcolata a ogni controllo (mai `for … of`, che la prende
-        // una volta). Una stringa per codici: `length` e `s[i]` di JavaScript contano le unità UTF-16.
+        // una volta). Una stringa per codici: `length` e `s[i]` di JavaScript contano le unità UTF-16. Una funzione si
+        // chiama una volta, alla partenza, e il suo risultato sta in `_sorgente`.
         const fase = (testo: string, ...fasi: FaseDelCiclo[]) => corpo.push({ testo, blocco: b.id, fasi });
         const elemento = dati.get((albero(b.item) as { nome: string }).nome)!;
-        const sorgente = dati.get((albero(b.source) as { nome: string }).nome)!;
-        const indice = indiceDelLivello(lingua, ++cicliPerOgni);
-        livelli = Math.max(livelli, cicliPerOgni);
-        const fine = sorgente.size !== undefined ? `${sorgente.name}.length` : `${usa("lunghezza")}(${sorgente.name})`;
+        const s = albero(b.source);
+        let sorgente: string;
+        if (s.genere === "nome") sorgente = s.nome;
+        else {
+          sorgente = sorgenteNuova(annotazioneDelRisultato(perNome.get((s as { nome: string }).nome)!));
+          fase(`${r}${sorgente} = ${espressione(s).t};`, "inizio");
+        }
+        const { size: dimensione, max_length: lunghezzaDellaSorgente } = misureDi(s);
+        const indice = indiceAl(++cicliPerOgni);
+        const fine = dimensione !== undefined ? `${sorgente}.length` : `${usa("lunghezza")}(${sorgente})`;
         // Un elemento stringa che può essere più lungo del dato che lo riceve passa dal controllo.
         const massima = elemento.max_length ?? lunghezzaPredefinita;
-        const lungo = elemento.type === "string" && (sorgente.max_length ?? lunghezzaPredefinita) > massima;
+        const lungo = elemento.type === "string" && (lunghezzaDellaSorgente ?? lunghezzaPredefinita) > massima;
         const preso =
-          sorgente.size === undefined ? conArresto("carattereDi", sorgente.name, indice).t
-          : lungo ? conArresto("alPiu", `${sorgente.name}[${indice}]`, String(massima)).t
-          : `${sorgente.name}[${indice}]`;
+          dimensione === undefined ? conArresto("carattereDi", sorgente, indice).t
+          : lungo ? conArresto("alPiu", `${sorgente}[${indice}]`, String(massima)).t
+          : `${sorgente}[${indice}]`;
         fase(`${r}${indice} = 0;`, "inizio");
         fase(`${r}while (${indice} < ${fine}) {`, "condizione");
         fase(`${r}${rientro}${elemento.name} = ${preso};`, "elemento");
@@ -663,23 +845,134 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
         cicliPerOgni--;
         return;
       }
+      case "call":
+        return salto(r, b);
       case "comment":
         for (const t of b.text.split(aCapo)) riga(t === "" ? "//" : `// ${t}`);
         return;
-      default:
-        throw new Error(`blocco fuori dalle tappe 1 e 2: ${b.kind}`);
     }
   }
 
-  /** Quanti cicli `per ogni` contengono la regola che si scrive, e il massimo: gli indici nascosti da dichiarare. */
-  let cicliPerOgni = 0;
-  let livelli = 0;
+  // ---------------------------------------------------------------------------------------- le funzioni
 
-  const dichiarazioni = dichiara(main.data, rientro, true);
-  for (const b of main.body) blocco(b, 1);
-  // Gli indici nascosti, dichiarati dopo i dati come nel C: JavaScript vuole il nome dichiarato.
-  const indici: Riga[] = Array.from({ length: livelli }, (_, k) => ({ testo: `${rientro}let ${indiceDelLivello(lingua, k + 1)}: number;` }));
+  /** Le righe di una funzione del progetto (o del programma principale): l'intestazione coi tipi, la copia dei vettori
+   * senza *rif*, le dichiarazioni (i parametri per uscita fra i dati della procedura), i nomi del generatore, le regole e
+   * il ritorno, che ha il blocco della fine. Il valore restituito che è la chiamata di una funzione che si può fermare si
+   * calcola prima in `_valore`: restituito così, sarebbe una chiamata in coda, e Bun toglierebbe la cornice della funzione
+   * (`fermati` troverebbe la riga di chi la chiama). La riga che chiama `prepara_console` la mette l'insieme. */
+  function scriviFunzione(f: Funzione): Riga[] {
+    dati = new Map<string, Dato>([...comuni, ...f.data].map((d) => [d.name, d]));
+    corpo = [];
+    cicliPerOgni = 0;
+    livelli = 0;
+    temporanee = [];
+    sorgenti = [];
+    fermaLaFunzione = false;
+    const parametri = f.data.filter((d) => d.parameter !== undefined);
+    // Quelli che la procedura restituisce: per riferimento e per uscita, nell'ordine dei parametri.
+    const riferimenti = parametri.filter((d) => d.parameter === "reference" || d.parameter === "out");
+    const ritorno =
+      f.kind === "main" ? "void"
+      : f.kind === "function" ? annotazioneDelRisultato(f)
+      : riferimenti.length === 0 ? "void"
+      : riferimenti.length === 1 ? annotazione(riferimenti[0]!)
+      : `[${riferimenti.map(annotazione).join(", ")}]`;
+    // Un parametro per uscita non si riceve: è un dato senza valore della procedura, dichiarato coi suoi dati.
+    const ricevuti = parametri.filter((d) => d.parameter !== "out");
+    const intestazione = `function ${f.kind === "main" ? "main" : f.name}(${ricevuti.map((d) => `${d.name}: ${annotazione(d)}`).join(", ")}): ${ritorno} {`;
+    const copie = parametri.filter((d) => d.parameter === "value" && d.size !== undefined).map((d) => ({ testo: `${rientro}${d.name} = Array.from(${d.name});` }));
+    const propri = f.data.filter((d) => d.parameter === undefined || d.parameter === "out");
+    const dichiarazioni = dichiara(propri, rientro, true, f.kind === "main" ? undefined : f.id);
+    for (const b of f.body) blocco(b, 1);
+    if (f.kind === "function") {
+      // Un vettore torna come lista nuova; una stringa col controllo della lunghezza massima del risultato.
+      prese.clear();
+      const e = albero(f.end.return_value!);
+      const verso = { type: f.return_type!, ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}) };
+      const x = f.return_size !== undefined ? listaNuova(e, verso) : nelDatoTesto(e, verso);
+      if (x.coda === true) {
+        const v = temporanea(annotazioneDelRisultato(f));
+        corpo.push({ testo: `${rientro}${v} = ${x.t};`, blocco: f.end.id }, { testo: `${rientro}return ${v};`, blocco: f.end.id });
+      } else corpo.push({ testo: `${rientro}return ${x.t};`, blocco: f.end.id });
+    } else if (riferimenti.length > 0) {
+      const nomiDeiRiferimenti = riferimenti.map((d) => d.name);
+      corpo.push({ testo: `${rientro}return ${nomiDeiRiferimenti.length === 1 ? nomiDeiRiferimenti[0] : `[${nomiDeiRiferimenti.join(", ")}]`};`, blocco: f.end.id });
+    }
+    const delGeneratore: Riga[] = [
+      ...Array.from({ length: livelli }, (_, k) => ({ testo: `${rientro}let ${indiceDelLivello(lingua, k + 1)}: number;` })),
+      ...[...temporanee, ...sorgenti].map((x) => ({ testo: `${rientro}let ${x.nome}: ${x.tipo};` })),
+    ];
+    if (f.name !== undefined) fermano.set(f.name, fermaLaFunzione);
+    return [{ testo: intestazione }, ...copie, ...dichiarazioni, ...delGeneratore, ...corpo, { testo: "}" }];
+  }
+
+  /** Il programma principale del programma di prova, come nel Python: legge i parametri (con la provenienza della
+   * funzione), chiama, scrive ciò che scrive l'esecuzione. Un parametro per uscita non si legge né si passa: è dichiarato
+   * prima della chiamata, che gli dà il valore. */
+  function scriviLaProva(f: Funzione, caso: CasoDiUnaFunzione): Riga[] {
+    const letti = parametriDelCaso(f, caso, p.records);
+    if ("problema" in letti) throw new Error(`il caso ${caso.name} non ha un programma di prova: ${letti.problema}`);
+    dati = new Map<string, Dato>([...comuni, ...f.data].map((d) => [d.name, d]));
+    const righe: Riga[] = [{ testo: "function main(): void {" }];
+    for (const { dato: d, elementi, ognuno } of letti.parametri) {
+      if (d.parameter === "out") {
+        righe.push({ testo: `${rientro}let ${d.name}!: ${annotazione(d)};` });
+        continue;
+      }
+      const uno = (x: "riga" | "nessuno") => {
+        if (x !== "riga") throw new Error(`il parametro ${d.name} senza valore nel caso ${caso.name}`);
+        return leggi(d);
+      };
+      const valore =
+        d.size === undefined ? uno(elementi[0]!)
+        : ognuno ? `new Array<${annotazioneDelTipo(tipoSemplice(d.type))}>(${d.size}).fill(${uno(elementi[0]!)})`
+        : `[${elementi.map(uno).join(", ")}]`;
+      righe.push({ testo: `${rientro}let ${d.name}: ${annotazione(d)} = ${valore};`, blocco: f.id });
+    }
+    const parametri = f.data.filter((d) => d.parameter !== undefined);
+    const riferimenti = parametri.filter((d) => d.parameter === "reference" || d.parameter === "out");
+    const chiamataDiF = `${f.name}(${parametri.filter((d) => d.parameter !== "out").map((d) => d.name).join(", ")})`;
+    const scrivi = (testo: string) => righe.push({ testo: `${rientro}${usa("scrivi")}(\`${testo}\\n\`);` });
+    if (f.kind === "function" && f.return_size !== undefined) {
+      // La funzione si chiama una volta, poi una riga per elemento: se si ferma, nulla è scritto.
+      const nome = nomeDelRisultato[lingua];
+      righe.push({ testo: `${rientro}let ${nome}: ${annotazioneDelRisultato(f)} = ${chiamataDiF};` });
+      for (const k of posizioni(f.return_size, undefined)) scrivi(`→ ${k} = ${comeScritto(`${nome}${k}`, tipoSemplice(f.return_type!))}`);
+    } else if (f.kind === "function") scrivi(`→ ${comeScritto(chiamataDiF, tipoSemplice(f.return_type!))}`);
+    else if (riferimenti.length === 0) righe.push({ testo: `${rientro}${chiamataDiF};` });
+    else {
+      const nomiDeiRiferimenti = riferimenti.map((d) => d.name);
+      righe.push({ testo: `${rientro}${nomiDeiRiferimenti.length === 1 ? nomiDeiRiferimenti[0] : `[${nomiDeiRiferimenti.join(", ")}]`} = ${chiamataDiF};` });
+      scrivi("");
+      for (const d of riferimenti) {
+        const pezzi: [string, TipoDelDato][] = d.size === undefined ? [[d.name, d.type]] : posizioni(d.size, undefined).map((k) => [`${d.name}${k}`, d.type]);
+        for (const [nome, t] of pezzi) scrivi(`${nome} = ${comeScritto(nome, t)}`);
+      }
+    }
+    righe.push({ testo: "}" });
+    return righe;
+  }
+
+  // Le funzioni del programma: tutte, anche quelle che nessuno chiama ancora (si vedono nel codice come nello
+  // pseudocodice), o nel programma di prova quella eseguita da sola con quelle che chiama. Si scrivono prima le chiamate
+  // (la ricorsione è fuori tappa), per sapere quali possono fermare il programma.
+  const radice = prova === undefined ? main : p.functions.find((f) => f.id === prova.funzione)!;
+  const chiamate = (f: Funzione) => [...new Set(chiamateDellaFunzione(f).flatMap((c) => c.nomi))].map((x) => perNome.get(x)!);
+  const inOrdine: Funzione[] = [];
+  const viste = new Set<Funzione>();
+  const visita = (f: Funzione) => {
+    if (viste.has(f)) return;
+    viste.add(f);
+    chiamate(f).forEach(visita);
+    inOrdine.push(f);
+  };
+  visita(radice);
+  if (prova === undefined) p.functions.forEach(visita);
+  const scritte = new Map<Funzione, Riga[]>();
+  for (const f of inOrdine) if (prova === undefined || f !== main) scritte.set(f, scriviFunzione(f));
+  const delProgramma = p.functions.filter((f) => f.kind !== "main" && scritte.has(f));
   const costanti = dichiara(comuni, "", false);
+  const principale = prova === undefined ? segnate(scritte.get(main)!, main.id) : scriviLaProva(radice, prova.caso);
 
   // --------------------------------------------------------------------------------------- l'insieme
 
@@ -696,11 +989,10 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   // Un programma che legge, scrive o si ferma mette la console di Windows in UTF-8 per prima cosa, come il C: Node la
   // lascia nella code page del sistema (misurato: «è» letto come un byte della 850, «città» scritta male).
   const conLaConsole = usate.has("leggiRiga") || usate.has("scrivi") || usate.has("fermati");
-  if (conLaConsole) usate.add("preparaConsole");
-  const principale = segnate(
-    [{ testo: "function main(): void {" }, ...(conLaConsole ? [{ testo: `${rientro}${nomi.preparaConsole}();` }] : []), ...dichiarazioni, ...indici, ...corpo, { testo: "}" }],
-    main.id,
-  );
+  if (conLaConsole) {
+    usate.add("preparaConsole");
+    principale.splice(1, 0, { testo: `${rientro}${nomi.preparaConsole}();`, ...(prova === undefined ? { nellaFunzione: main.id } : {}) });
+  }
   const letti = [...(usate.has("leggiRiga") ? ["readSync"] : []), ...(usate.has("scrivi") || usate.has("fermati") ? ["writeSync"] : [])];
   const nome = p.metadata.name.split(aCapo).join(" ");
   const righe: Riga[] = [
@@ -712,10 +1004,13 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   ];
   if (costanti.length > 0) righe.push({ testo: "" }, { testo: `// ${w.costantiComuni}` }, ...costanti);
   righe.push({ testo: "" }, { testo: "" }, ...principale);
+  for (const f of delProgramma) righe.push({ testo: "" }, { testo: "" }, ...segnate(scritte.get(f)!, f.id));
+  // `fermati` risale fino alla prima funzione del programma, come il Python (senza procedure né funzioni, il solo `main`).
+  const risale = delProgramma.length === 0 ? undefined : ["main", ...delProgramma.map((f) => f.name!)];
   const funzioni = supportoInOrdine.filter((f) => usate.has(f));
   if (funzioni.length > 0) {
     righe.push({ testo: "" }, { testo: "" }, { testo: `// ${w.supporto}` });
-    for (const f of funzioni) righe.push({ testo: "" }, { testo: "" }, ...funzione(f, lingua, nomi, decimali, riempimento, tetto).map((testo) => ({ testo })));
+    for (const f of funzioni) righe.push({ testo: "" }, { testo: "" }, ...funzione(f, lingua, nomi, decimali, riempimento, tetto, risale).map((testo) => ({ testo })));
   }
   righe.push({ testo: "" }, { testo: "" }, { testo: "main();" });
   return righe;
@@ -746,6 +1041,7 @@ const spiegazioni: Readonly<Record<LinguaDelCodice, Readonly<Record<Exclude<Supp
     nellaStringa: "Un carattere che entra in una stringa: quello di codice 0 non può.",
     concatenazione: "Due testi già calcolati, uno dopo l'altro: un carattere di codice 0 non entra in una stringa.",
     alPiu: "La stringa, se non ha più di n caratteri; altrimenti si ferma.",
+    elementiDiversi: "Gli elementi di un vettore passati per riferimento nella stessa chiamata devono essere diversi.",
     booleano: "Un booleano come lo scrive il flowchart: true o false.",
     scrivi: "Scrive il testo sullo standard output.",
   },
@@ -770,6 +1066,7 @@ const spiegazioni: Readonly<Record<LinguaDelCodice, Readonly<Record<Exclude<Supp
     nellaStringa: "A character entering a string: the one with code 0 cannot.",
     concatenazione: "Two texts already calculated, one after the other: the character with code 0 cannot enter a string.",
     alPiu: "The string, if it has at most n characters; otherwise stops.",
+    elementiDiversi: "The elements of an array passed by reference in the same call must be different.",
     booleano: "A boolean as the flowchart writes it: true or false.",
     scrivi: "Writes the text to the standard output.",
   },
@@ -781,7 +1078,7 @@ const interni = {
     motivo: "motivo", riga: "riga", chiamata: "chiamata", trovata: "trovata", errore: "Errore alla riga", letti: "letti",
     cifre: "cifre", testo: "testo", bit: "bit", alto: "alto", esponente: "esponente", numeratore: "numeratore",
     denominatore: "denominatore", resto: "resto", bitDi: "bit_di", dueAlla: "due_alla", arrotondato: "arrotondato",
-    ultimo: "ultimo", meta: "meta",
+    ultimo: "ultimo", meta: "meta", indici: "indici",
     nonBloccante: "Un input non bloccante senza dati si riprova; la fine di un tubo di Windows è la fine dell'input.",
     quantiBit: "Quanti bit ha l'intero.",
     dueAllaE: "2^e, per e fra -1074 e 1023, costruito dai bit.",
@@ -794,7 +1091,7 @@ const interni = {
     motivo: "reason", riga: "line", chiamata: "call", trovata: "found", errore: "Error at line", letti: "bytes",
     cifre: "digits", testo: "text", bit: "bits", alto: "high", esponente: "exponent", numeratore: "numerator",
     denominatore: "denominator", resto: "rest", bitDi: "bit_count", dueAlla: "two_to", arrotondato: "rounded",
-    ultimo: "last", meta: "half",
+    ultimo: "last", meta: "half", indici: "indices",
     nonBloccante: "A non-blocking input without data is retried; the end of a Windows pipe is the end of the input.",
     quantiBit: "How many bits the integer has.",
     dueAllaE: "2^e, for e between -1074 and 1023, built from the bits.",
@@ -805,8 +1102,9 @@ const interni = {
   },
 } as const;
 
-/** Il testo di una funzione di supporto: la spiegazione, la firma, il corpo. */
-function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Supporto, string>>, decimali: number, riempimento: number, tetto: number): string[] {
+/** Il testo di una funzione di supporto: la spiegazione, la firma, il corpo. `risale`, le funzioni del programma fino a
+ * cui `fermati` cerca la riga (senza procedure né funzioni, il solo `main`). */
+function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Supporto, string>>, decimali: number, riempimento: number, tetto: number, risale: readonly string[] | undefined): string[] {
   const k = interni[lingua];
   const m = motiviCol(tetto)[lingua];
   const ferma = (motivo: string) => `${n.fermati}("${motivo}")`;
@@ -830,13 +1128,17 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
         '  if (process.platform === "win32" && (process.stdin.isTTY || process.stdout.isTTY || process.stderr.isTTY)) execSync("chcp 65001", { stdio: "ignore" });',
         "}",
       ];
-    case "fermati":
+    case "fermati": {
+      // La cornice di una funzione del programma: `at nome (percorso:riga:colonna)` in Node e in Bun (misurato); una
+      // cornice nativa di Bun (`at map (native:1:11)`, dentro il `map` di un vettore coi controlli) non lo è mai, anche se
+      // una funzione del programma ha quel nome.
+      const cornice = risale === undefined ? "at main \\(" : `at (?:${risale.join("|")}) \\((?!native:)`;
       return [
         s(f),
         `function ${n.fermati}(${k.motivo}: string): never {`,
         `  let ${k.riga} = "?";`,
         `  for (const ${k.chiamata} of (new Error().stack ?? "").split("\\n")) {`,
-        `    const ${k.trovata} = /^\\s*at main \\(.*:(\\d+):\\d+\\)$/.exec(${k.chiamata});`,
+        `    const ${k.trovata} = /^\\s*${cornice}.*:(\\d+):\\d+\\)$/.exec(${k.chiamata});`,
         `    if (${k.trovata} !== null) {`,
         `      ${k.riga} = ${k.trovata}[1];`,
         "      break;",
@@ -846,6 +1148,7 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
         "  process.exit(1);",
         "}",
       ];
+    }
     case "leggiRiga":
       return [
         s(f),
@@ -1015,6 +1318,9 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
       return [s(f), `function ${n.concatenazione}(a: string, b: string): string {`, `  if (a === "\\0" || b === "\\0") ${ferma(m.null_character_in_string)};`, "  return a + b;", "}"];
     case "alPiu":
       return [s(f), `function ${n.alPiu}(s: string, n: number): string {`, `  if (${n.lunghezza}(s) > n) ${ferma(m.string_too_long)};`, "  return s;", "}"];
+    case "elementiDiversi":
+      // Il `set` del Python: due indici uguali lo fanno più corto dell'elenco.
+      return [s(f), `function ${n.elementiDiversi}(...${k.indici}: number[]): void {`, `  if (new Set(${k.indici}).size < ${k.indici}.length) ${ferma(m.same_reference)};`, "}"];
     case "reale": {
       const scala = `1${"0".repeat(decimali)}n`;
       const cifre = k.cifre;

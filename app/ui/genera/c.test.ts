@@ -359,7 +359,7 @@ describe("procedure e funzioni", () => {
     }
     // il denominatore, contato a parte: 53 file, 7 col solo errore statico atteso; i blocchi e le fini degli altri (65
     // negli 11 con una stringa o un vettore restituiti)
-    expect([tappa3.length, generati, blocchi]).toEqual([53, 46, 331]);
+    expect([tappa3.length, generati, blocchi]).toEqual([54, 47, 336]);
   });
 
   test("una funzione che nessuno chiama ancora c'è nel codice, col prototipo e con le righe della sua fine", () => {

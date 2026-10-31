@@ -410,7 +410,7 @@ test("i casi delle tappe 2 e 3, del programma e di ogni procedura o funzione, co
   const diUnaFunzione = (k: string) => k.includes("/", k.indexOf("#"));
   const altrove = [...attesi.keys()].filter((k) => !delleTappe.has(k) && diUnaFunzione(k)).length;
   const funzioni = Number(/casi di funzioni (\d+)/.exec(uscita)?.[1] ?? -1) - altrove;
-  expect({ casi: delleTappe.size, funzioni: diFunzioni, file: dopo.length }).toEqual({ casi: dichiarati(2) + dichiarati(3), funzioni, file: 69 });
+  expect({ casi: delleTappe.size, funzioni: diFunzioni, file: dopo.length }).toEqual({ casi: dichiarati(2) + dichiarati(3), funzioni, file: 70 });
 }, 600_000);
 
 test("controllo positivo: l'atteso alterato di un caso di una funzione dà lo stesso rosso nella finestra e nella riga di comando", async () => {

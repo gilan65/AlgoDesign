@@ -102,6 +102,7 @@ test("un esempio con procedure o funzioni si apre, su ogni file della tappa 3 (a
   const conRisultato = new Set([
     "copia-di-stringhe-piu-lunghe.algo",
     "copia-di-un-vettore.algo",
+    "funzione-chiamata-map.algo",
     "risultato-stringa-messo-da-parte.algo",
     "risultato-stringa-oltre-la-lunghezza.algo",
     "risultato-stringa-troppo-lunga.algo",
@@ -126,10 +127,10 @@ test("un esempio con procedure o funzioni si apre, su ogni file della tappa 3 (a
   expect(esempi("tappa-4").filter((e) => e.progetto !== null).length).toBe(22);
   // Controllo positivo: i denominatori sono le tappe intere (la tappa 3 con le sue procedure e funzioni), e i file con
   // un risultato nuovo ci sono tutti, e si aprono.
-  expect([Object.keys(file("tappa-3")).length, Object.keys(file("tappa-4")).length]).toEqual([53, 22]);
-  expect(Object.keys(file("tappa-3")).filter((n) => conRisultato.has(n)).length).toBe(12);
-  expect(esempi("tappa-3").filter((e) => conRisultato.has(e.nome) && e.progetto !== null).length).toBe(12);
-  expect(esempi("tappa-3").filter((e) => (e.progetto?.functions.length ?? 0) > 1).length).toBe(53);
+  expect([Object.keys(file("tappa-3")).length, Object.keys(file("tappa-4")).length]).toEqual([54, 22]);
+  expect(Object.keys(file("tappa-3")).filter((n) => conRisultato.has(n)).length).toBe(13);
+  expect(esempi("tappa-3").filter((e) => conRisultato.has(e.nome) && e.progetto !== null).length).toBe(13);
+  expect(esempi("tappa-3").filter((e) => (e.progetto?.functions.length ?? 0) > 1).length).toBe(54);
 });
 
 test("mancano i forniti che il loro gruppo non ha in nessuna lingua, e vanno nel gruppo che c'è già col suo nome; in un gruppo riempito quando i forniti erano meno mancano i nuovi", () => {

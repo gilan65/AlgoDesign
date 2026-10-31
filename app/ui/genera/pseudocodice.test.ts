@@ -190,7 +190,7 @@ describe("procedure e funzioni", () => {
     }
     // il denominatore, contato a parte: 53 file, 7 col solo errore statico atteso; i blocchi degli altri, fini comprese
     // (65 negli 11 con una stringa o un vettore restituiti)
-    expect([file.length, generati, blocchi]).toEqual([53, 46, 331]);
+    expect([file.length, generati, blocchi]).toEqual([54, 47, 336]);
   });
 });
 

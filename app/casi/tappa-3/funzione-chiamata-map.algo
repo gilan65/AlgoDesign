@@ -1,0 +1,94 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "funzione-chiamata-map",
+    "description": "Una funzione che si chiama map restituisce un vettore di stringhe con un elemento più lungo della lunghezza massima del risultato: si ferma sulla fine della funzione, prima che chi chiama riceva il risultato."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "nomi",
+          "type": "string",
+          "size": 2,
+          "initial": [
+            "\"abcdefgh\"",
+            "\"ab\""
+          ],
+          "max_length": 8
+        },
+        {
+          "name": "corti",
+          "type": "string",
+          "size": 2,
+          "max_length": 3
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "write",
+          "values": [
+            "\"inizio\""
+          ],
+          "newline": true
+        },
+        {
+          "id": "b2",
+          "kind": "assignment",
+          "target": "corti",
+          "value": "map(nomi)"
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "corti[0]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "b4"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "function",
+      "name": "map",
+      "return_type": "string",
+      "return_size": 2,
+      "return_max_length": 3,
+      "data": [
+        {
+          "name": "t",
+          "type": "string",
+          "size": 2,
+          "max_length": 8,
+          "parameter": "value"
+        }
+      ],
+      "body": [],
+      "end": {
+        "id": "b5",
+        "return_value": "t"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "funzione-chiamata-map",
+      "inputs": [],
+      "expected": {
+        "output": "inizio\n",
+        "error": {
+          "code": "string_too_long",
+          "block": "b5"
+        }
+      }
+    }
+  ]
+}
