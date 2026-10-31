@@ -9,6 +9,7 @@
 //   e i motivi;
 // - che le funzioni di supporto facciano ciò che dicono: lo prova la loro esecuzione contro i casi d'uso.
 import { describe, expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { controlla, funzioniDelGiro, tetti } from "../../core/controllo/controllo";
@@ -121,7 +122,7 @@ describe("la provenienza delle righe", () => {
     }
   });
 
-  test("il corpus della tappa 1 ha 60 file", () => expect(file.length).toBe(60));
+  test("il corpus della tappa 1 ha i file confermati", () => expect(file.length).toBe(confermato("genera python - file della tappa 1", file.length)));
 
   test("ogni blocco del corpus ha le sue righe, nell'ordine dell'albero; ogni dato la sua; una provenienza al più per riga; nessuna per la fine", () => {
     let blocchi = 0;
@@ -156,8 +157,7 @@ describe("la provenienza delle righe", () => {
       dati += nomi.length;
     }
     // il denominatore: i blocchi e i dati del corpus della tappa 1, contati a parte
-    expect(blocchi).toBe(164);
-    expect(dati).toBe(114);
+    expect([blocchi, dati]).toEqual(confermato("genera python - tappa 1 (blocchi, dati)", [blocchi, dati]));
   });
 
   test("riga per riga nel programma principale di «forme dei cicli», con le fasi, uguale nelle due lingue; dopo, nessuna", () => {
@@ -178,9 +178,9 @@ describe("la provenienza delle righe", () => {
     for (const l of lingue) {
       const e = provaIlCorpusDeiCicli(tappa2, (p) => python(p, tetti, l, paroleDelloPseudocodice(l)));
       expect(e.difetti, l).toEqual([]);
-      // il denominatore, contato a parte: 16 file, 3 con l'errore statico atteso; 87 blocchi e 26 cicli negli altri
-      expect(e.rifiutati.sort(), l).toEqual([...rifiutatiDellaTappa2]);
-      expect([e.generati, e.blocchi, e.cicli], l).toEqual([13, 87, 26]);
+      // il denominatore, contato a parte: i file della tappa 2, quelli con l'errore statico atteso, i blocchi e i cicli degli altri
+      expect(e.rifiutati.sort(), l).toEqual(rifiutatiDellaTappa2(tappa2));
+      expect([e.generati, e.blocchi, e.cicli], l).toEqual(confermato("genera python - tappa 2 (generati, blocchi, cicli)", [e.generati, e.blocchi, e.cicli]));
     }
   });
 });
@@ -242,7 +242,7 @@ describe("la ricorsione", () => {
     .map((f) => ({ f, p: leggi(`tappa-4/${f}`) }));
 
   test("ogni file della tappa 4 si genera nelle due lingue, e la chiamata resta come nel flowchart", () => {
-    expect(tappa4.length).toBe(22);
+    expect(tappa4.length).toBe(confermato("genera python - file della tappa 4", tappa4.length));
     for (const { f, p } of tappa4)
       for (const l of lingue) {
         expect(python(p, tetti, l, paroleDelloPseudocodice(l)).generato, `${f} (${l})`).toBe(true);
@@ -268,7 +268,7 @@ describe("la ricorsione", () => {
         if (delGiro.length > 0) conGiro++;
         else senzaGiro++;
       }
-    expect(conGiro).toBe(2 * 22);
+    expect(conGiro).toBe(confermato("genera python - programmi della tappa 4 col giro, nelle due lingue", conGiro));
     expect(senzaGiro).toBeGreaterThan(100);
   });
 
@@ -417,8 +417,8 @@ describe("procedure e funzioni", () => {
       const [a, b] = lingue.map((l) => righe(p, l).map((x) => `${x.blocco ?? ""}|${x.dato ?? ""}|${x.funzione ?? ""}`));
       expect(b, f).toEqual(a!);
     }
-    // il denominatore, contato a parte: 53 file, 7 col solo errore statico atteso
-    expect([tappa3.length, generati]).toEqual([54, 47]);
+    // il denominatore, contato a parte: i file, quelli senza il solo errore statico atteso
+    expect([tappa3.length, generati]).toEqual(confermato("genera python - tappa 3 (file, generati)", [tappa3.length, generati]));
   });
 
   test("una funzione che nessuno chiama ancora c'è nel codice, con le righe della sua fine", () => {
@@ -473,8 +473,7 @@ describe("procedure e funzioni", () => {
           for (const l of lingue) expect(python(p, tetti, l, paroleDelloPseudocodice(l), { funzione: f.id, caso: k }).generato, `${file} ${f.name}/${k.name}`).toBe(true);
           prove++;
         }
-    // Undici restituiscono una stringa o un vettore.
-    expect(prove).toBe(26);
+    expect(prove).toBe(confermato("genera python - programmi di prova dei casi delle funzioni", prove));
     const { p, f } = delCaso("riferimento-media-voti-funzioni#valido/voto valido");
     expect(() => python(p, tetti, "it", paroleDelloPseudocodice("it"), { funzione: f.id, caso: caso("senza testo", [{ data: "voto" }]) })).toThrow("lo vuole");
   });

@@ -9,6 +9,7 @@
 // è di `bun run casi`).
 
 import { expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { controlla, tetti } from "../controllo/controllo";
@@ -151,8 +152,8 @@ test("il controllo statico del corpus: tappe dalla 1 alla 4 con l'errore statico
   expect(controllati + fuoriTappa).toBe(suDisco.length);
   // Controllo positivo del confronto degli avvisi e degli errori: il corpus ne attende.
   expect(avvisiAttesi).toBeGreaterThan(0);
-  // Dieci delle tappe, cinque dei record e quattro delle matrici (una è il nome `range`).
-  expect(erroriAttesi).toBe(19);
+  // Delle tappe, dei record e delle matrici (una è il nome `range`).
+  expect(erroriAttesi).toBe(confermato("progetto corpus - errori statici attesi", erroriAttesi));
 });
 
 test("controllo positivo: un file fuori forma canonica si salva diverso dal sorgente, e poi resta fermo", () => {

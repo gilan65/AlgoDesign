@@ -29,6 +29,7 @@
 //   le copie saltate si contano).
 
 import { expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { alberoGenerato, progettoGenerato } from "../../core/disegno/alberi-di-prova";
@@ -179,7 +180,8 @@ test("il puntatore sul centro di ogni «+», o vicino al bordo della sua area, s
     `scelta del bersaglio: alberi ${alberi.length} (di procedure e funzioni ${conLeFunzioni.length}: coi salti ${coiSalti}, con l'intestazione ${conIntestazione}), scale ${scale.length}, «+» ${premesse.punti}, vicino al bordo ${premesse.vicinoAlBordo}, centri dei blocchi ${premesse.blocchi}, difetti ${difetti.length}`,
   );
   expect(difetti.slice(0, 10)).toEqual([]);
-  expect({ alberi: alberi.length, conLeFunzioni: conLeFunzioni.length, coiSalti, conIntestazione }).toEqual({ alberi: 771, conLeFunzioni: 177, coiSalti: 66, conIntestazione: 108 });
+  const alberiDelCorpus = { alberi: alberi.length, conLeFunzioni: conLeFunzioni.length, coiSalti, conIntestazione };
+  expect(alberiDelCorpus).toEqual(confermato("bersaglio - alberi, con le funzioni, coi salti, con la intestazione", alberiDelCorpus));
   expect(premesse.punti).toBeGreaterThan(582 * scale.length * 2);
   // La premessa: i cicli ci sono, col loro riquadro.
   expect(alberi.filter((a) => a.disegno.riquadri.length > 0).length).toBeGreaterThan(100);

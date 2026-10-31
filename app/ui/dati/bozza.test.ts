@@ -2,6 +2,7 @@
 // un insieme scritto qui con ogni forma (il corpus non ha costanti, vettori con valore iniziale né
 // lunghezze); l'elenco di un vettore separato fuori dai letterali; i campi che il ritorno non giudica.
 import { expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { apri } from "../../core/progetto/formato";
@@ -32,7 +33,7 @@ test("andata e ritorno: ogni dato del corpus e di ogni forma torna uguale dalla 
   const diversi = [...corpus, ...ogniForma].filter((d) => !stessoDato(datoDaBozza(bozzaDi(d, "elenco")), d) || !stessoDato(datoDaBozza(bozzaDi(d, "un-valore")), d)).map((d) => d.name);
   console.log(`bozza dei dati: corpus ${corpus.length} dati, di ogni forma ${ogniForma.length}; diversi al ritorno ${diversi.length}`);
   expect(diversi).toEqual([]);
-  expect(corpus.length).toBe(114);
+  expect(corpus.length).toBe(confermato("bozza - dati del corpus", corpus.length));
   // Controllo positivo: il confronto vede un attributo cambiato.
   expect(stessoDato({ ...ogniForma[0]!, role: "output" }, ogniForma[0]!)).toBe(false);
 });

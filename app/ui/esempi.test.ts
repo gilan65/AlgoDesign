@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { confermato } from "../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { eseguiCaso } from "../core/casi/esecutore";
@@ -97,23 +98,6 @@ test("gli esempi ricorsivi: nel gruppo delle funzioni, il fattoriale e la sequen
 });
 
 test("un esempio con procedure o funzioni si apre, su ogni file della tappa 3 (anche quelli con una stringa o un vettore restituiti) e della tappa 4 (la ricorsione)", () => {
-  // I file della tappa 3 con una funzione che restituisce una stringa o un vettore, scritti per nome: si aprono come gli
-  // altri, e la prova lo dice di ognuno.
-  const conRisultato = new Set([
-    "copia-di-stringhe-piu-lunghe.algo",
-    "copia-di-un-vettore.algo",
-    "funzione-chiamata-map.algo",
-    "risultato-stringa-messo-da-parte.algo",
-    "risultato-stringa-oltre-la-lunghezza.algo",
-    "risultato-stringa-troppo-lunga.algo",
-    "risultato-stringa.algo",
-    "risultato-vettore-argomento.algo",
-    "risultato-vettore-assegnato.algo",
-    "risultato-vettore-con-indice.algo",
-    "risultato-vettore-di-stringhe-oltre-la-lunghezza.algo",
-    "risultato-vettore-per-ogni.algo",
-    "vettore-di-dimensione-diversa.algo",
-  ]);
   const radice = (tappa: string) => join(import.meta.dir, "..", "casi", tappa);
   const file = (tappa: string) =>
     Object.fromEntries(
@@ -122,15 +106,26 @@ test("un esempio con procedure o funzioni si apre, su ogni file della tappa 3 (a
         .map((nome) => [nome, readFileSync(join(radice(tappa), nome), "utf8")]),
     );
   const esempi = (tappa: string) => esempiDa(cartella(file(tappa)), tetti).sciolti;
+  // I file della tappa 3 con una funzione che restituisce una stringa o un vettore, ricavati dal corpus: si aprono come
+  // gli altri, e la prova lo dice di ognuno.
+  const conRisultato = new Set(
+    Object.entries(file("tappa-3"))
+      .filter(([, testo]) => {
+        const a = apri(testo);
+        return a.ok && a.progetto.functions.some((f) => f.kind === "function" && (f.return_type === "string" || f.return_size !== undefined));
+      })
+      .map(([nome]) => nome),
+  );
   expect(esempi("tappa-3").map((e) => [e.nome, e.problema?.genere ?? null])).toEqual(Object.keys(file("tappa-3")).map((n) => [n, null]));
   expect(esempi("tappa-4").map((e) => [e.nome, e.problema?.genere ?? null])).toEqual(Object.keys(file("tappa-4")).map((n) => [n, null]));
-  expect(esempi("tappa-4").filter((e) => e.progetto !== null).length).toBe(22);
+  expect(esempi("tappa-4").filter((e) => e.progetto !== null).length).toBe(Object.keys(file("tappa-4")).length);
   // Controllo positivo: i denominatori sono le tappe intere (la tappa 3 con le sue procedure e funzioni), e i file con
   // un risultato nuovo ci sono tutti, e si aprono.
-  expect([Object.keys(file("tappa-3")).length, Object.keys(file("tappa-4")).length]).toEqual([54, 22]);
-  expect(Object.keys(file("tappa-3")).filter((n) => conRisultato.has(n)).length).toBe(13);
-  expect(esempi("tappa-3").filter((e) => conRisultato.has(e.nome) && e.progetto !== null).length).toBe(13);
-  expect(esempi("tappa-3").filter((e) => (e.progetto?.functions.length ?? 0) > 1).length).toBe(54);
+  const delleTappe3e4 = [Object.keys(file("tappa-3")).length, Object.keys(file("tappa-4")).length, conRisultato.size];
+  expect(delleTappe3e4).toEqual(confermato("esempi - file delle tappe 3 e 4, con un risultato", delleTappe3e4));
+  expect(conRisultato.size).toBeGreaterThan(0);
+  expect(esempi("tappa-3").filter((e) => conRisultato.has(e.nome) && e.progetto !== null).length).toBe(conRisultato.size);
+  expect(esempi("tappa-3").filter((e) => (e.progetto?.functions.length ?? 0) > 1).length).toBe(Object.keys(file("tappa-3")).length);
 });
 
 test("mancano i forniti che il loro gruppo non ha in nessuna lingua, e vanno nel gruppo che c'è già col suo nome; in un gruppo riempito quando i forniti erano meno mancano i nuovi", () => {
@@ -306,8 +301,8 @@ test("un esempio coi record o con le matrici si apre: ogni file della cartella d
   // matrici tredici, quattro con un errore statico, delle tabelle sei, una con un errore statico, che si aprono lo stesso,
   // e uno senza tipi composti, il carattere del vettore di stringhe restituito), e un esempio senza record accanto si apre
   // come loro.
-  expect(esempi.length).toBe(31);
-  expect(Object.values(file).filter(conLeMatrici).length).toBe(13);
+  const deiTipi = [esempi.length, Object.values(file).filter(conLeMatrici).length];
+  expect(deiTipi).toEqual(confermato("esempi - file dei tipi, con le matrici", deiTipi));
   const [buono] = forniti(it);
   expect(esempiDa(cartella({ "a.algo": buono!.testo }), tetti).sciolti.map((e) => e.problema)).toEqual([null]);
 });

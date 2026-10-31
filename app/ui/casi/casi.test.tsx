@@ -41,6 +41,7 @@
 // - un lettore di schermo vero: i nomi si leggono dagli attributi.
 
 import { afterAll, afterEach, beforeAll, expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -404,13 +405,13 @@ test("i casi delle tappe 2 e 3, del programma e di ogni procedura o funzione, co
   expect(confronta(delleTappe, tutti)).toEqual([]);
   expect(confrontaIPallini(delleTappe, pallini)).toEqual([]);
   // Il denominatore: i casi che la riga di comando dichiara per le due tappe, e i casi delle funzioni a parte; i file sono
-  // tutti quelli delle due tappe, anche i 15 con una funzione che restituisce una stringa o un vettore.
+  // tutti quelli delle due tappe, anche quelli con una funzione che restituisce una stringa o un vettore.
   const dichiarati = (t: number) => Number(new RegExp(`tappa ${t}: casi dichiarati (\\d+), eseguiti \\1`).exec(uscita)?.[1] ?? -1);
   // La riga di comando conta i casi delle funzioni di tutte le tappe: quelli delle altre tappe si tolgono.
   const diUnaFunzione = (k: string) => k.includes("/", k.indexOf("#"));
   const altrove = [...attesi.keys()].filter((k) => !delleTappe.has(k) && diUnaFunzione(k)).length;
   const funzioni = Number(/casi di funzioni (\d+)/.exec(uscita)?.[1] ?? -1) - altrove;
-  expect({ casi: delleTappe.size, funzioni: diFunzioni, file: dopo.length }).toEqual({ casi: dichiarati(2) + dichiarati(3), funzioni, file: 70 });
+  expect({ casi: delleTappe.size, funzioni: diFunzioni, file: dopo.length }).toEqual({ casi: dichiarati(2) + dichiarati(3), funzioni, file: confermato("casi - file delle tappe 2 e 3", dopo.length) });
 }, 600_000);
 
 test("controllo positivo: l'atteso alterato di un caso di una funzione dà lo stesso rosso nella finestra e nella riga di comando", async () => {

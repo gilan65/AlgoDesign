@@ -37,6 +37,7 @@
 // - un lettore di schermo vero: le regioni si contano dagli elementi e dai ruoli.
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { act, cleanup, fireEvent } from "@testing-library/react";
 import { render } from "@testing-library/react";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
@@ -286,7 +287,7 @@ test("il denominatore: ogni file del corpus provato, le pause viste sono quelle 
   expect(conti.pause).toBeGreaterThan(sequenzaAttesa.length);
   expect(conti.conLaFase).toBeGreaterThan(100);
   expect(conti.errori).toBeGreaterThan(0);
-  expect({ file: corpus.length, nonPartono: conti.nonPartono }).toEqual({ file: 76, nonPartono: 3 });
+  expect({ file: corpus.length, nonPartono: conti.nonPartono }).toEqual(confermato("finestra - file delle tappe 1 e 2, quelli che non partono", { file: corpus.length, nonPartono: conti.nonPartono }));
 });
 
 test("coi cicli chiusi nelle Impostazioni la pausa in un ciclo evidenzia l'intestazione; aperti, il blocco della fase", async () => {

@@ -10,6 +10,7 @@
 // Che cosa NON guarda: l'editor dei casi (lo guarda `ui/casi/casi.test.tsx`); la rinomina (`modifica/operazioni.test.ts`).
 
 import { expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tetti } from "../controllo/controllo";
@@ -111,6 +112,5 @@ test("sul corpus nessuna radice ha dati letti altrove; controllo positivo: le le
     }
   console.log(`dati letti altrove sul corpus: radici ${radici.length}, con dati ${conDati.length}; coi parametri come dati di lavoro ${letture}`);
   expect(conDati).toEqual([]);
-  expect(letture).toBe(4);
-  expect(radici.length).toBe(261);
+  expect([radici.length, letture]).toEqual(confermato("voci - radici, letture altrove coi parametri", [radici.length, letture]));
 });

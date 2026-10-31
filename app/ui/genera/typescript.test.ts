@@ -8,6 +8,7 @@
 // - i programmi del corpus senza atteso scritto, se non per la guardia, la stessa forma nelle due lingue e i nomi;
 // - che le funzioni di supporto facciano ciò che dicono: lo prova la loro esecuzione contro i casi d'uso.
 import { describe, expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { controlla, tetti } from "../../core/controllo/controllo";
@@ -54,10 +55,6 @@ function uguale(generato: string, atteso: string, chi: string) {
   const k = n < 0 ? g.length : n;
   throw new Error(`${chi}, riga ${k + 1}: atteso «${a[k] ?? "(nessuna)"}», generato «${g[k] ?? "(nessuna)"}»`);
 }
-
-/** I file del corpus fuori dalle tappe 1, 2 e 3 che il generatore sa scrivere (misurati: procedure e funzioni senza
- * ricorsione e senza tipi composti). Ogni file delle tappe 1, 2 e 3 si genera. */
-const fuoriDalleTappe: readonly string[] = ["tipi/carattere-di-un-risultato"];
 
 const corpus = readdirSync(cartella, { withFileTypes: true })
   .filter((v) => v.isDirectory())
@@ -112,9 +109,9 @@ describe("la provenienza delle righe", () => {
     for (const l of lingue) {
       const e = provaIlCorpusDeiCicli(tappa2, (p) => typescript(p, tetti, l, paroleDelloPseudocodice(l)));
       expect(e.difetti, l).toEqual([]);
-      // il denominatore, contato a parte: 16 file, 3 con l'errore statico atteso; 87 blocchi e 26 cicli negli altri
-      expect(e.rifiutati.sort(), l).toEqual([...rifiutatiDellaTappa2]);
-      expect([e.generati, e.blocchi, e.cicli], l).toEqual([13, 87, 26]);
+      // il denominatore, contato a parte: i file della tappa 2, quelli con l'errore statico atteso, i blocchi e i cicli degli altri
+      expect(e.rifiutati.sort(), l).toEqual(rifiutatiDellaTappa2(tappa2));
+      expect([e.generati, e.blocchi, e.cicli], l).toEqual(confermato("genera typescript - tappa 2 (generati, blocchi, cicli)", [e.generati, e.blocchi, e.cicli]));
     }
   });
 });
@@ -145,6 +142,9 @@ describe("i costrutti che sa scrivere", () => {
     expect(tappe.filter((f) => f.startsWith("tappa-1/")).length).toBeGreaterThan(50);
     expect(tappe.filter((f) => f.startsWith("tappa-2/")).length).toBeGreaterThan(10);
     expect(tappe.filter((f) => f.startsWith("tappa-3/")).length).toBeGreaterThan(40);
+    // I file fuori dalle tappe 1, 2 e 3 che il generatore sa scrivere (procedure e funzioni senza ricorsione e senza tipi
+    // composti), confermati; ogni file delle tappe 1, 2 e 3 si genera.
+    const fuoriDalleTappe = confermato("genera typescript - generati fuori dalle tappe 1, 2 e 3", [...new Set(generati.map((g) => g.slice(0, g.lastIndexOf(" "))))].filter((f) => !tappe.includes(f)).sort());
     expect(generati.sort()).toEqual([...tappe, ...fuoriDalleTappe].flatMap((f) => lingue.map((l) => `${f} ${l}`)).sort());
     expect(nonAncora.size).toBeGreaterThan(40);
     for (const [chi, costrutto] of nonAncora) expect({ chi, costrutto: costrutto.length > 0 }).toEqual({ chi, costrutto: true });

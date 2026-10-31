@@ -7,6 +7,7 @@
 // che esegue i programmi); le matrici e le tabelle, che hanno la loro prova (`matrici.test.ts`, `tabelle.test.ts`).
 
 import { describe, expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { controlla, tetti } from "../../core/controllo/controllo";
@@ -75,7 +76,9 @@ test("ogni linguaggio scrive i record: generato il progetto giusto, con gli erro
   });
   expect(esiti.filter((e) => !e.giusto)).toEqual([]);
   // Controllo positivo dei denominatori: sette file giusti e quattro sbagliati, ognuno per ogni linguaggio.
-  expect([esiti.filter((e) => e.atteso === "generato").length, esiti.filter((e) => e.atteso === "errori-statici").length, linguaggi.length]).toEqual([7, 4, 5]);
+  const giustiESbagliati = [esiti.filter((e) => e.atteso === "generato").length, esiti.filter((e) => e.atteso === "errori-statici").length];
+  expect(giustiESbagliati).toEqual(confermato("record - file giusti e sbagliati", giustiESbagliati));
+  expect(linguaggi.length).toBe(5);
 });
 
 test("il programma di prova di ogni caso di una funzione coi record si genera in ogni linguaggio da eseguire", () => {
@@ -90,7 +93,8 @@ test("il programma di prova di ogni caso di una funzione coi record si genera in
   // Il TypeScript li rifiuta tutti: non sa ancora scrivere il programma di prova.
   expect(rifiutati).toEqual(casi.map(({ nome }) => `${nome} typescript`));
   // Controllo positivo: i casi delle funzioni della cartella sono tre (migliore, promuovi, crea), ognuno per due linguaggi.
-  expect([casi.length, daEseguire.length]).toEqual([3, 3]);
+  expect(casi.length).toBe(confermato("record - casi delle funzioni della cartella", casi.length));
+  expect(daEseguire.length).toBe(3);
 });
 
 describe("il codice dei record uguale all'atteso scritto a mano", () => {

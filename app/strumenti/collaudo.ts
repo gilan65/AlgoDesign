@@ -86,7 +86,7 @@ import {
   eseguitiDel,
   programmiConAvvisiAttesi as avvisiAttesiDal,
 } from "./esecutori";
-import { differenze, leggiIConteggi, misuraIlCorpus } from "./corpus";
+import { denominatoriDaConfermare, differenze, leggiIConteggi, misuraIlCorpus } from "./corpus";
 import { chiamate, senzaExact } from "./selettori";
 
 const argomenti = process.argv.slice(2);
@@ -1327,7 +1327,20 @@ function portaCorpus(): void {
   const sonda = differenze({ ...misurati, impronta: altra }, misurati);
   if (sonda.length !== 1) rosso("corpus", `controllo positivo SPENTO: l'impronta cambiata dà ${sonda.length} differenze invece di una`);
   if (misurati.file.totale === 0) rosso("corpus", "denominatore a zero: nessun file nel corpus");
-  riga(`PORTA corpus: VERDE | i conteggi confermati sono quelli del disco: ${JSON.stringify(misurati.file)}, tipi ${JSON.stringify(misurati.tipi)} | controllo positivo acceso (l'impronta cambiata: 1 differenza)`);
+  // I denominatori delle prove: ogni nome scritto in una prova del censimento è confermato, e nessuno di troppo.
+  const n = denominatoriDaConfermare();
+  const fuori = [
+    ...n.nonDichiarati.map((x) => `scritto e non confermato «${x}»`),
+    ...n.dichiaratiSenzaProva.map((x) => `confermato e non più scritto «${x}»`),
+    ...n.fuoriDalCensimento.map((x) => `${x} chiama confermato ma non legge il corpus`),
+    ...n.senzaNome.map((x) => `${x}: confermato senza un nome fra virgolette doppie`),
+    ...n.nomiNonValidi.map((x) => `nome non sicuro «${x}»`),
+  ];
+  if (fuori.length > 0) rosso("corpus", `i denominatori delle prove non sono quelli confermati (${fuori.join("; ")}): prima della corsa lunga \`bun run conferma-corpus\``);
+  if (n.scritti === 0) rosso("corpus", "denominatore a zero: nessun denominatore confermato scritto nelle prove");
+  riga(
+    `PORTA corpus: VERDE | i conteggi confermati sono quelli del disco: ${JSON.stringify(misurati.file)}, tipi ${JSON.stringify(misurati.tipi)} | denominatori delle prove confermati: ${n.scritti} | controllo positivo acceso (l'impronta cambiata: 1 differenza)`,
+  );
 }
 
 // -------------------------------------------------------------------------------------------- giro

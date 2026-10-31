@@ -44,7 +44,7 @@ import { apri as apriProgetto } from "../core/progetto/formato";
 import type { Blocco, Funzione } from "../core/progetto/modello";
 import { en } from "../i18n/en";
 import { it } from "../i18n/it";
-import { misuraIlCorpus } from "../strumenti/corpus";
+import { confermato, misuraIlCorpus } from "../strumenti/corpus";
 import { contrasto, coppie, coppieSulFondo, sotto } from "./contrasto";
 import { aggiungiStile, apri, apriEsempio, apriVuota, costruisciFinzione, scegliLingua } from "./pagina";
 
@@ -258,11 +258,11 @@ for (const { lingua, condizioni, cicliPer, cicliPerOgni, copiaDeiVettori, domand
     await expect(page.locator("html")).toHaveAttribute("lang", lingua);
     expect(premesse.flowchart).toBe(tuttiGliAlberi.length);
     // I file delle tappe 1 e 2, misurati dal disco da `strumenti/corpus.ts`; le funzioni delle tappe 3 e 4 (e quelle coi
-    // salti) sono un fatto del contenuto, scritto qui: un corpus cambiato lo porta a `bun run conferma-corpus`.
+    // salti) sono un fatto del contenuto, confermato da `bun run conferma-corpus`.
     const fatti = misuraIlCorpus().file;
     expect(corpus.length).toBe(fatti["tappa-1"]! + fatti["tappa-2"]!);
     expect(corpus.length).toBeGreaterThan(0);
-    expect([corpusTappa3.length, coiSalti.length]).toEqual([185, 45]);
+    expect([corpusTappa3.length, coiSalti.length]).toEqual(confermato("disegno e2e - funzioni delle tappe 3 e 4, dei progetti coi salti", [corpusTappa3.length, coiSalti.length]));
     // Le forme di procedure e funzioni: due righe ai lati per salto, i nomi in grassetto, *rif* e i tipi in corsivo.
     expect(salti).toBeGreaterThan(30);
     expect(lati).toBe(2 * salti);
@@ -272,19 +272,23 @@ for (const { lingua, condizioni, cicliPer, cicliPerOgni, copiaDeiVettori, domand
     // aperto), e le intestazioni sono forme col testo come le altre.
     expect(riquadri).toBeGreaterThan(40);
     expect(intestazioni).toBe(riquadri);
-    // La copia col nome (due blocchi nel corpus della tappa 3): compatta, la scritta sul bordo è una forma col testo e non
+    // La copia col nome (blocchi del corpus della tappa 3): compatta, la scritta sul bordo è una forma col testo e non
     // un blocco; espansa, l'intestazione è il blocco.
-    expect(scritte).toBe(copiaDeiVettori === "compatta" ? 2 : 0);
+    if (copiaDeiVettori === "compatta") {
+      expect(scritte).toBeGreaterThan(0);
+      expect(scritte).toBe(confermato("disegno e2e - copie col nome nella tappa 3", scritte));
+    } else expect(scritte).toBe(0);
     expect(aggiunti).toBeGreaterThan(0);
     expect(letti.some((f) => f.nome.endsWith("riferimento-media-voti"))).toBe(true);
     expect(premesse.testi).toBe(premesse.forme);
     if (condizioni === "su-due-righe") expect(aCapo).toBeGreaterThan(0);
     else expect(aCapo).toBe(0);
-    // La Lettura con la domanda su due righe, solo con l'opzione accesa: le tre del file del corpus che le ha, undici in
-    // tutto (misurato: anche altri alberi hanno una Scrittura subito prima di una Lettura).
+    // La Lettura con la domanda su due righe, solo con l'opzione accesa: le tre del file del corpus che le ha, e quelle di
+    // tutto il corpus, confermate (anche altri alberi hanno una Scrittura subito prima di una Lettura).
     expect(combinazioni.filter((c) => c.domandaNellaLettura).map((c) => c.lingua)).toEqual(["it", "en"]);
     const nelFile = letti.find((f) => f.nome.endsWith("domanda-prima-della-lettura"))!.forme.filter((f) => f.forma === "lettura" && f.righe === 2).length;
-    expect([nelFile, conLaDomanda]).toEqual(domandaNellaLettura ? [3, 11] : [0, 0]);
+    if (domandaNellaLettura) expect([nelFile, conLaDomanda]).toEqual([3, confermato("disegno e2e - letture con la domanda nel corpus", conLaDomanda)]);
+    else expect([nelFile, conLaDomanda]).toEqual([0, 0]);
 
     // Controllo positivo del testo con uno stile: i soli pezzi in grassetto allargati (come un grassetto misurato come
     // normale) escono dalla forma, e la prova lo vede su forme che hanno un grassetto.

@@ -10,6 +10,7 @@
 // Che cosa NON guarda: la finestra (le prove sotto happy-dom e nei motori), i limiti delle Impostazioni nella finestra.
 
 import { expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { eseguiCaso } from "../../core/casi/esecutore";
 import { tetti } from "../../core/controllo/controllo";
@@ -93,6 +94,6 @@ test("la ricorsione: ogni caso della tappa 4 ha l'esito della riga di comando", 
     casi += t.totale;
   }
   console.log(`la tappa 4 con «Esegui tutti»: file ${file.length}, casi ${casi}`);
-  expect({ file: file.length, casi }).toEqual({ file: 22, casi: 30 });
+  expect({ file: file.length, casi }).toEqual(confermato("esegui tutti - file e casi della tappa 4", { file: file.length, casi }));
   // Due volte ciascuno dei due casi al milione di passi (qui e con la riga di comando).
 }, 60_000);

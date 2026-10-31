@@ -27,6 +27,7 @@
 //   abbassandolo), e il controllo che li accetta come parametro lo prova `controllo.test.ts`.
 
 import { describe, expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { eseguiCaso } from "../casi/esecutore";
@@ -865,14 +866,15 @@ test("il corpus: ogni caso della tappa 1 eseguito un comando alla volta, con gli
     `esecuzione sul corpus: file ${file.length}, casi eseguiti ${casi}, dell'esecutore dei casi ${saltati}, file con valori iniziali ${conValoriIniziali.size}, azioni dei valori iniziali ${iniziali}, sbagliati ${sbagliati.length}`,
   );
   expect(sbagliati).toEqual([]);
-  // Controllo positivo: le misure di prima coprono ogni caso (60 file, tre con due casi), e il corpus ha casi coi
-  // valori iniziali.
-  expect(Object.keys(azioniSenzaIValoriIniziali).length).toBe(63);
+  // Controllo positivo: le misure di prima coprono ogni caso, e il corpus ha casi coi valori iniziali.
+  expect(Object.keys(azioniSenzaIValoriIniziali).length).toBe(casi + saltati);
   expect(conValoriIniziali.size).toBeGreaterThan(20);
-  expect({ file: file.length, casi: casi + saltati }).toEqual({ file: 60, casi: 63 });
+  expect({ file: file.length, casi: casi + saltati }).toEqual(confermato("esecuzione - file e casi della tappa 1", { file: file.length, casi: casi + saltati }));
   // Oggi nessun caso del corpus ha quegli esiti: li provano i progetti sintetici di `esecutore.test.ts`.
   expect(saltati).toBe(0);
-});
+  // Il tempo massimo dichiarato: 1,6 s a macchina libera, 5,1 e 5,3 s sotto carico (i 5 s predefiniti la facevano
+  // fallire senza un difetto); cresce col corpus della tappa 1.
+}, 20_000);
 
 // ---------------------------------------------------------------- le ultime righe della tabella
 
@@ -1479,7 +1481,7 @@ describe("il modo caso: le letture prendono le voci del caso, e alla fine c'è l
       if (p.functions.some((f) => f.kind === "function" && (f.return_type === "string" || f.return_size !== undefined))) conRisultato++;
     }
     console.log(`la tappa 3: ${tre.length} progetti, ${conRisultato} con una stringa o un vettore restituiti`);
-    expect([tre.length, conRisultato]).toEqual([54, 16]);
+    expect([tre.length, conRisultato]).toEqual(confermato("esecuzione - progetti della tappa 3, con una stringa o un vettore restituiti", [tre.length, conRisultato]));
   });
 
   test("un progetto che non parte e uno fuori tappa: l'esito c'è subito", () => {
@@ -1542,7 +1544,8 @@ describe("il modo caso: le letture prendono le voci del caso, e alla fine c'è l
     }
     console.log(`un esecutore sul corpus: casi ${casi}, esiti ${JSON.stringify(Object.fromEntries(esiti))}, diversi ${diversi.length}`);
     expect(diversi).toEqual([]);
-    expect({ casi, raggiunti: esiti.get("raggiunto") }).toEqual({ casi: 63, raggiunti: 63 });
+    expect(esiti.get("raggiunto")).toBe(casi);
+    expect(casi).toBe(confermato("esecuzione - casi del corpus a un esecutore", casi));
     // Il limite esplicito, quattro volte la durata più lunga misurata, arrotondato ai 30 s: 5,35 s misurati nella corsa
     // intera, oltre i 5 predefiniti; da sola meno.
   }, 30_000);

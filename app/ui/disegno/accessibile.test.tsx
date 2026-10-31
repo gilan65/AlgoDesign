@@ -20,6 +20,7 @@
 // - gli operatori a parola tradotti nei nomi: qui l'espressione resta com'è nel file.
 
 import { expect, test } from "bun:test";
+import { confermato } from "../../strumenti/corpus";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -101,7 +102,7 @@ test("su ogni albero (corpus e generati) i punti della struttura sono i posti de
   }
   console.log(`struttura accessibile: alberi ${alberi} (corpus ${corpus.length}, generati ${generati.length}), posti ${posti}, difetti ${difetti.length}`);
   expect(difetti).toEqual([]);
-  expect(corpus.length).toBe(60);
+  expect(corpus.length).toBe(confermato("accessibile - file della tappa 1", corpus.length));
   expect(posti).toBeGreaterThan(alberi * 2);
 
   // Controllo positivo: un posto tolto dalla struttura, e il rilevatore lo dice.
@@ -184,7 +185,7 @@ test("i cicli per e per ogni: una voce col suo corpo, coi punti dell'albero e de
   }
   console.log(`struttura accessibile coi cicli: alberi ${alberi} (corpus ${deiCicli.length}, generati ${generatiConICicli.length}), posti ${posti}, cicli ${cicli}, difetti ${difetti.length}`);
   expect(difetti).toEqual([]);
-  expect(deiCicli.length).toBe(16);
+  expect(deiCicli.length).toBe(confermato("accessibile - file coi cicli", deiCicli.length));
   expect(cicli).toBeGreaterThan(40);
 });
 
@@ -253,8 +254,8 @@ test("i valori iniziali nella struttura: prima del primo punto, nell'ordine del 
   }
   console.log(`valori iniziali nella struttura: file ${conValori.length}, voci ${valori}, difetti ${difetti.length}`);
   expect(difetti).toEqual([]);
-  // La premessa: i 32 file della tappa 1 con 53 valori iniziali.
-  expect([conValori.length, valori]).toEqual([34, 60]);
+  // La premessa: i file della tappa 1 coi valori iniziali, e le loro voci.
+  expect([conValori.length, valori]).toEqual(confermato("accessibile - file e voci coi valori iniziali", [conValori.length, valori]));
 });
 
 test("nello strato ogni valore iniziale è un pulsante sul suo blocco, col nome del testo disegnato; si sceglie e si apre, e non si trascina", async () => {

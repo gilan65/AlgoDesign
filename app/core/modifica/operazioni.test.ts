@@ -326,9 +326,9 @@ test("ogni operazione, su ogni progetto delle tappe 1, 2 e 3 e su alberi generat
   console.log(`modello leggibile: esportati ${esportati.length}, costruiti qui ${costruite.size}, dichiarati fuori ${Object.keys(fuoriDallaProva).length}`);
   expect(rifiutateAtteso).toBeGreaterThan(0);
   expect(applicate).toBeGreaterThan(posti * generiDellaTappa.length);
-  // Il limite di tempo dichiarato: circa 2,5 s da sola, oltre 7 s nella corsa intera dopo le prove del disegno
-  // (misurato anche sul codice di prima dei punti di inserimento): i 5 s predefiniti la facevano fallire.
-}, 60_000);
+  // Il limite di tempo dichiarato: 20,1 s a macchina libera, da 62,8 a 65,3 s sotto carico (i 60 s di prima la facevano
+  // fallire senza un difetto); cresce col corpus delle tappe 1, 2 e 3.
+}, 180_000);
 
 test("modello leggibile, controllo positivo: il rilevatore vede un campo a undefined, un riempimento vuoto e un -0", () => {
   const p = riferimento;
