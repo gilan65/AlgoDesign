@@ -51,12 +51,13 @@ test("l'appaiamento vede un'estensione in più da ognuna delle due parti, e non 
   expect(codiceDelGuscio('pub const CODICE: [&str; 2] = [".txt", ".py"];')).toEqual({ dichiarate: 2, estensioni: [".txt", ".py"] });
 });
 
-test("il registro ha i quattro linguaggi di oggi, nell'ordine delle linguette, ognuno col suo genere; «Accademico» non è di partenza", () => {
+test("il registro ha i cinque linguaggi di oggi, nell'ordine delle linguette, ognuno col suo genere; «Accademico» e TypeScript non sono di partenza", () => {
   expect(linguaggi.map((v) => [v.id, v.estensione, v.genere, v.diPartenza])).toEqual([
     ["pseudocodice", ".txt", "da-leggere", true],
     ["python", ".py", "da-eseguire", true],
     ["c", ".c", "da-eseguire", true],
     ["accademico", ".txt", "da-leggere", false],
+    ["typescript", ".ts", "da-eseguire", false],
   ]);
   // Le parole di «Accademico» non sono nomi riservati: un nome uguale è una cosa che manca, e il progetto resta valido.
   expect([voceDel("accademico").riservati, voceDel("accademico").riservatiNelFile]).toEqual([[], []]);
@@ -65,10 +66,11 @@ test("il registro ha i quattro linguaggi di oggi, nell'ordine delle linguette, o
 });
 
 test("il controllo statico rifiuta ogni nome riservato di ogni linguaggio, e quelli del file solo a livello di file", () => {
-  // Controllo positivo nel numero: il Python e il C dichiarano nomi, e il C quelli delle intestazioni.
+  // Controllo positivo nel numero: il Python, il C e il TypeScript dichiarano nomi, e il C quelli delle intestazioni.
   expect(voceDel("python").riservati.length).toBeGreaterThan(50);
   expect(voceDel("c").riservati.length).toBeGreaterThan(200);
   expect(voceDel("c").riservatiNelFile.length).toBeGreaterThan(500);
+  expect(voceDel("typescript").riservati.length).toBeGreaterThan(70);
   for (const n of nomiRiservati()) expect({ n, causa: causaDelNome(n, false)?.causa }).toEqual({ n, causa: "nome_riservato" });
   const soloNelFile = [...nomiRiservatiNelFile()].filter((n) => !nomiRiservati().has(n));
   expect(soloNelFile.length).toBeGreaterThan(0);
@@ -87,7 +89,7 @@ test("nessun nome riservato ha la forma della copia di un dato (finisce con _<nu
 test("ogni linguaggio da eseguire ha i motivi di tutti i codici, diversi fra loro, e la riga d'errore delle due lingue", () => {
   const codici: CodiceDiUnMotivo[] = ["invalid_input", "input_exhausted", "invalid_character_code", "string_too_long", "string_longer_than_array", "null_character_in_string", "index_out_of_range", "same_reference", "recursion_too_deep", "recursion_data_too_large"];
   const daEseguire = linguaggi.filter((v) => v.genere === "da-eseguire");
-  expect(daEseguire.map((v) => v.id)).toEqual(["python", "c"]);
+  expect(daEseguire.map((v) => v.id)).toEqual(["python", "c", "typescript"]);
   for (const v of daEseguire)
     for (const lingua of ["it", "en"] as const) {
       expect(Object.keys(v.motivi(10)[lingua]).sort()).toEqual([...codici].sort());

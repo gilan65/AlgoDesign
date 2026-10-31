@@ -64,18 +64,31 @@ export interface Mancanza {
   readonly funzione?: string;
 }
 
+/** Con `non-ancora`, un generatore che cresce un gruppo di costrutti per volta (oggi il TypeScript) non sa ancora
+ * scrivere `costrutto`, il primo che trova: lo dice chi conta i programmi generati, l'interfaccia mostra il testo del
+ * fuori tappa. */
 export type Generato =
   | { readonly generato: true; readonly righe: readonly Riga[] }
   | { readonly generato: false; readonly perche: "fuori-tappa" | "errori-statici" }
+  | { readonly generato: false; readonly perche: "non-ancora"; readonly costrutto: string }
   | { readonly generato: false; readonly perche: "non-ci-sta"; readonly mancanze: readonly Mancanza[] };
 
 /** Il codice di un progetto, se il controllo statico lo lascia eseguire. `limiti` sono i tetti delle impostazioni,
  * come per il controllo. Un linguaggio con meno costrutti dà con `manca` ciò che non sa scrivere: dopo gli errori
- * statici, e tutto insieme. */
-export function genera(p: Progetto, limiti: Tetti, scrivi: (p: Progetto) => readonly Riga[], manca?: (p: Progetto) => readonly Mancanza[]): Generato {
+ * statici, e tutto insieme. Un generatore che cresce dà con `nonAncora` il primo costrutto che non sa ancora scrivere,
+ * dopo gli errori statici. */
+export function genera(
+  p: Progetto,
+  limiti: Tetti,
+  scrivi: (p: Progetto) => readonly Riga[],
+  manca?: (p: Progetto) => readonly Mancanza[],
+  nonAncora?: (p: Progetto) => string | undefined,
+): Generato {
   const c = controlla(p, limiti);
   if (c.fuoriTappa) return { generato: false, perche: "fuori-tappa" };
   if (c.errori.length > 0) return { generato: false, perche: "errori-statici" };
+  const costrutto = nonAncora?.(p);
+  if (costrutto !== undefined) return { generato: false, perche: "non-ancora", costrutto };
   const mancanze = manca?.(p) ?? [];
   if (mancanze.length > 0) return { generato: false, perche: "non-ci-sta", mancanze };
   return { generato: true, righe: scrivi(p) };

@@ -110,8 +110,8 @@ pub struct FileDaSalvare {
 /// L'estensione del progetto, e quella della tabella di traccia esportata.
 pub const ALGO: &str = ".algo";
 pub const CSV: &str = ".csv";
-/// Le estensioni del codice generato: pseudocodice, Python, C.
-pub const CODICE: [&str; 3] = [".txt", ".py", ".c"];
+/// Le estensioni del codice generato: pseudocodice, Python, C, TypeScript.
+pub const CODICE: [&str; 4] = [".txt", ".py", ".c", ".ts"];
 /// Le estensioni del flowchart esportato.
 pub const IMMAGINE: [&str; 2] = [".png", ".svg"];
 

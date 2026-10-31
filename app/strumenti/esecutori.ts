@@ -3,11 +3,15 @@
 // toolchain, come si compila (se serve) e si esegue il programma generato, quali avvisi del compilatore sono attesi e per
 // quali programmi. Lo leggono il differenziale (che fa girare i programmi) e il collaudo (che ne ricava gli esecutori
 // richiesti e i programmi con gli avvisi attesi): nessuno dei due elenca i linguaggi a mano.
-// Tre controlli del collaudo sono però scritti per i linguaggi di oggi, un solo linguaggio che si compila (il C) più il
-// Python: il conto delle compilazioni con gli avvisi attesi (i programmi attesi per le macchine che compilano, non la
-// somma per esecutore), la corsa «senza toolchain» (le due variabili d'ambiente per nome) e il controllo «registro senza
-// il C» (l'identificatore per nome). Con un secondo linguaggio che si compila diventano rossi: si derivano allora per
-// esecutore (`strumenti/collaudo.ts`, la porta del differenziale).
+// Il collaudo ne ricava per esecutore anche i suoi controlli (`strumenti/collaudo.ts`, la porta del differenziale): il
+// conto delle compilazioni con gli avvisi attesi (somma, sugli esecutori che compilano, dei programmi attesi per le
+// macchine e le lingue), la corsa «senza toolchain» (le variabili di tutti gli esecutori) e il controllo «registro senza»
+// un linguaggio (per ogni linguaggio da eseguire): nessuno nomina un linguaggio o una variabile.
+//
+// Un linguaggio può avere il controllo dei tipi del sorgente (il TypeScript: `tsc`), una volta su tutti i suoi programmi
+// e non per macchina, perché non produce l'eseguibile che si lancia: il differenziale lo fa dopo aver scritto i sorgenti,
+// e ogni errore è un PROBLEMA. Un esecutore può volere variabili d'ambiente sue nei processi (Bun: nessuna cache dei
+// programmi trasformati nel profilo dell'utente).
 //
 // Un esecutore ha una o più FAMIGLIE della sua toolchain (il C: gcc e clang), tutte richieste: il collaudo è rosso se ne
 // manca una, il differenziale lo dice nella riga della toolchain e corre con quelle che trova. Ogni eseguibile trovato
@@ -16,11 +20,12 @@
 //
 // La toolchain di un esecutore, nell'ordine:
 // 1. la sua variabile d'ambiente (`ALGODESIGN_CC`: gli eseguibili dei compilatori, separati come nel PATH;
-//    `ALGODESIGN_PYTHON`: l'eseguibile di Python);
+//    `ALGODESIGN_PYTHON`: l'eseguibile di Python; `ALGODESIGN_TS`: gli eseguibili di Node e di Bun);
 // 2. l'impostazione locale `.collaudo/toolchain.json` (non versionata), alla chiave del linguaggio:
-//    `{ "c": [ … ], "python": "…" }`, coi percorsi assoluti o relativi alla cartella dell'app;
+//    `{ "c": [ … ], "python": "…", "typescript": [ … ] }`, coi percorsi assoluti o relativi alla cartella dell'app;
 // 3. il PATH, coi nomi dell'esecutore.
-// Un eseguibile si riconosce da ciò che stampa con `--version`, mai dal nome del file (un `gcc.exe` può essere clang).
+// Un eseguibile si riconosce da ciò che stampa con `--version`, mai dal nome del file (un `gcc.exe` può essere clang;
+// Node stampa `v24.19.0`, Bun il solo numero `1.4.2`).
 //
 // Questo modulo non esegue nulla quando lo si carica.
 
@@ -61,9 +66,21 @@ export interface Esecutore {
   /** I programmi del corpus che avvisano compilati, per nome del file, con l'opzione dell'avviso. Ogni altro programma
    * della tappa compila senza avvisi. */
   readonly avvisiAttesi: Readonly<Record<string, string>>;
+  /** Le variabili d'ambiente in più nei processi che la macchina lancia. */
+  readonly ambiente?: (m: Macchina) => Readonly<Record<string, string>>;
+  /** Il controllo dei tipi dei sorgenti, una volta per linguaggio su tutti i suoi programmi (non per macchina): la
+   * configurazione che li elenca (scritta nella cartella dei sorgenti), il comando che la legge da quella cartella, e
+   * gli errori nel suo testo, ognuno col sorgente (il nome del file, relativo alla cartella). Manca per un linguaggio
+   * senza. */
+  readonly controllaITipi?: {
+    readonly configurazione: (sorgenti: readonly string[]) => object;
+    readonly comando: (configurazione: string) => string[];
+    readonly errori: (testo: string) => { sorgente: string; riga: string }[];
+  };
 }
 
 const suWindows = process.platform === "win32";
+const radice = join(import.meta.dir, "..");
 
 export const esecutori: readonly Esecutore[] = [
   {
@@ -115,6 +132,47 @@ export const esecutori: readonly Esecutore[] = [
       "ricorsione-senza-uscita": "-Winfinite-recursion",
     },
   },
+  {
+    linguaggio: "typescript",
+    nome: "TypeScript",
+    chi: "il motore TypeScript",
+    nessuno: "nessun motore TypeScript (né Node né Bun)",
+    variabile: "ALGODESIGN_TS",
+    nelPath: () => ["node", "bun"],
+    molti: true,
+    famiglie: ["node", "bun"],
+    riconosci: (riga) => {
+      const node = riga.match(/^v(\d+\.\d+\.\d+)$/);
+      if (node !== null) return { famiglia: "node", versione: node[1]! };
+      const bun = riga.match(/^(\d+\.\d+\.\d+)$/);
+      return bun === null ? undefined : { famiglia: "bun", versione: bun[1]! };
+    },
+    esegui: (m, file) => [m.percorso, file],
+    // Bun tiene nel profilo dell'utente una cache dei programmi oltre 50 KB che trasforma: mai (misurato).
+    ambiente: (m): Readonly<Record<string, string>> => (m.famiglia === "bun" ? { BUN_RUNTIME_TRANSPILER_CACHE_PATH: "0" } : {}),
+    avvisiAttesi: {},
+    // `tsc` 7 nativo con i tipi di Node (`@types/node`): il modo stretto, solo sintassi che si cancella, e i sorgenti
+    // come moduli (`preserve`: con `nodenext` e nessun package.json sarebbero CommonJS, e `tsc` non vedrebbe le parole
+    // riservate del modo stretto, che Node rifiuta). Un errore di sintassi in un sorgente nasconde gli errori di tipo di
+    // tutti: il controllo è rosso comunque.
+    controllaITipi: {
+      configurazione: (sorgenti) => ({
+        compilerOptions: {
+          strict: true,
+          noEmit: true,
+          erasableSyntaxOnly: true,
+          target: "es2022",
+          module: "preserve",
+          types: ["node"],
+          typeRoots: [join(radice, "node_modules", "@types")],
+          pretty: false,
+        },
+        files: sorgenti,
+      }),
+      comando: (configurazione) => [join(radice, "node_modules", ".bin", suWindows ? "tsc.exe" : "tsc"), "-p", configurazione],
+      errori: (testo) => [...testo.matchAll(/^(.+?)\(\d+,\d+\): error TS\d+: .*$/gm)].map((m) => ({ sorgente: m[1]!, riga: m[0] })),
+    },
+  },
 ];
 
 // ------------------------------------------------------------------------------------ il contratto, nei due versi
@@ -151,18 +209,36 @@ export function programmiConAvvisiAttesi(registro: readonly VoceDelRegistro[], t
   return daEseguire(registro).reduce((n, v) => n + Object.keys(esecutoreDel(v.id, tutti)?.avvisiAttesi ?? {}).length, 0);
 }
 
+/** L'esecutore di un esecutore del differenziale (`gcc it`, `gcc-2 en`, `node it`): quello di un linguaggio da eseguire
+ * del registro che ha la sua famiglia; niente per l'interprete. */
+export function esecutoreDellEseguito(eseguito: string, registro: readonly VoceDelRegistro[], tutti: readonly Esecutore[]): Esecutore | undefined {
+  const famiglia = eseguito.replace(/(-\d+)? \S+$/, "");
+  return daEseguire(registro)
+    .map((v) => esecutoreDel(v.id, tutti))
+    .find((e) => e?.famiglie.includes(famiglia));
+}
+
 /** Se un esecutore del differenziale (`gcc it`, `gcc-2 en`) è di una toolchain che compila. */
 export function compila(eseguito: string, registro: readonly VoceDelRegistro[], tutti: readonly Esecutore[]): boolean {
-  const famiglia = eseguito.replace(/(-\d+)? \S+$/, "");
-  return daEseguire(registro).some((v) => {
-    const e = esecutoreDel(v.id, tutti);
-    return e?.compila !== undefined && e.famiglie.includes(famiglia);
-  });
+  return esecutoreDellEseguito(eseguito, registro, tutti)?.compila !== undefined;
+}
+
+/** Gli esecutori del differenziale che sono di un linguaggio. */
+export function eseguitiDel(id: string, eseguiti: readonly string[], registro: readonly VoceDelRegistro[], tutti: readonly Esecutore[]): string[] {
+  return eseguiti.filter((x) => esecutoreDellEseguito(x, registro, tutti)?.linguaggio === id);
+}
+
+/** Le compilazioni che devono avvisare: per ogni esecutore del differenziale che compila (una macchina in una lingua),
+ * i programmi con gli avvisi attesi del suo esecutore. Con due linguaggi che si compilano, ognuno coi suoi. */
+export function compilazioniConAvvisiAttese(eseguiti: readonly string[], registro: readonly VoceDelRegistro[], tutti: readonly Esecutore[]): number {
+  return eseguiti.reduce((n, x) => {
+    const e = esecutoreDellEseguito(x, registro, tutti);
+    return n + (e?.compila === undefined ? 0 : Object.keys(e.avvisiAttesi).length);
+  }, 0);
 }
 
 // ------------------------------------------------------------------------------------------------ la toolchain
 
-const radice = join(import.meta.dir, "..");
 const chiaveDelPath = Object.keys(process.env).find((k) => k.toUpperCase() === "PATH") ?? "PATH";
 
 /** L'ambiente di un processo: la cartella dell'eseguibile in testa al PATH (il gcc di MSYS e i suoi programmi vogliono
