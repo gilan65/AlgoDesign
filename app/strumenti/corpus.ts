@@ -38,6 +38,8 @@ import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { apri } from "../core/progetto/formato";
 import { usaIRecord, usaLeMatrici, usaLeTabelle, type Progetto } from "../core/progetto/modello";
+import { numeriNelleAsserzioni } from "./denominatori";
+import { valoriPrecisi } from "./valori-precisi";
 
 export const radiceDellApp = fileURLToPath(new URL("..", import.meta.url));
 const cartellaDeiCasi = join(radiceDellApp, "casi");
@@ -218,6 +220,33 @@ export function censimento(): { readonly bun: string[]; readonly playwright: str
   for (const { nome, spec } of tutti) if (leggeIlCorpus(readFileSync(join(radiceDellApp, nome), "utf8"))) (spec ? playwright : bun).push(nome);
   return { bun, playwright, guardati: tutti.length };
 }
+
+/** Il separatore delle chiavi: un carattere che il testo di una riga non ha. */
+const SEP = String.fromCharCode(0);
+
+/** I numeri scritti nei testi dati che non sono valori precisi dichiarati, e le voci dichiarate che non trovano più la
+ * loro asserzione. */
+export function numeriNonDichiarati(testi: ReadonlyMap<string, string>): { readonly trovati: number; readonly nonDichiarati: string[]; readonly senzaAsserzione: string[] } {
+  const voci = new Map<string, number>();
+  for (const v of valoriPrecisi) for (const [n, t] of v.righe) voci.set(`${v.file}${SEP}${n}${SEP}${t}`, 0);
+  const nonDichiarati: string[] = [];
+  let trovati = 0;
+  for (const [file, testo] of testi)
+    for (const a of numeriNelleAsserzioni(testo)) {
+      trovati++;
+      const k = `${file}${SEP}${a.numeri.join(" ")}${SEP}${a.testo}`;
+      const visti = voci.get(k);
+      if (visti === undefined) nonDichiarati.push(`${file}:${a.riga}: [${a.numeri.join(" ")}] ${a.testo}`);
+      else voci.set(k, visti + 1);
+    }
+  const senzaAsserzione = [...voci].filter(([k, n]) => n === 0 && testi.has(k.split(SEP)[0]!)).map(([k]) => k.replaceAll(SEP, " | "));
+  return { trovati, nonDichiarati, senzaAsserzione };
+}
+
+export const testiDelCensimento = (): Map<string, string> => {
+  const c = censimento();
+  return new Map([...c.bun, ...c.playwright].map((f) => [f, readFileSync(join(radiceDellApp, f), "utf8")]));
+};
 
 /** I denominatori scritti nelle prove e quelli dichiarati nel file dei conteggi, nei due versi; e le prove fuori dal
  * censimento che chiamano `confermato` (la conferma non le esegue). */

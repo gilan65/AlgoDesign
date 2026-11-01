@@ -40,7 +40,7 @@ The test versions are downloaded from the project page.
 2. Extract the zip wherever you like (the Desktop, a documents folder, a USB stick): the folder `AlgoDesign-0.6.0-beta.2` is created.
 3. Open the folder and double-click `AlgoDesign.exe`.
 
-**The “Academic” tool.** Next to the AlgoDesign zip there is a separate package, `AlgoDesign-Accademico-0.6.0-beta.2-windows.zip`, with its fingerprint: `algodesign-accademico.exe` reads a text written in “Academic” and turns it into an AlgoDesign library, to open and run step by step. It is used from the Windows Terminal; how is told by the `README.md` of the package and by chapter 6 of the guide to “Academic”, which the package carries.
+**The “Academic” tool.** Next to the AlgoDesign zip there is a separate package, `AlgoDesign-Tools-0.6.0-beta.2-windows.zip`, with its fingerprint: `algodesign-tools.exe` reads a text written in “Academic” and turns it into an AlgoDesign library, to open and run step by step. It is used from the Windows Terminal; how is told by the `README.md` of the package and by chapter 6 of the guide to “Academic”, which the package carries.
 
 **The Windows warning at the first start.** AlgoDesign is not digitally signed, and Windows warns when a program downloaded from the internet without a signature is started. If the window “Windows protected your PC” appears, choose “More info” and then “Run anyway”. To avoid it, before extracting the zip open its Properties (right-click on the zip), tick “Unblock” at the bottom of the “General” tab and confirm with “OK”.
 

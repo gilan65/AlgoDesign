@@ -89,7 +89,7 @@ import {
   eseguitiDel,
   programmiConAvvisiAttesi as avvisiAttesiDal,
 } from "./esecutori";
-import { denominatoriDaConfermare, differenze, leggiIConteggi, misuraIlCorpus } from "./corpus";
+import { denominatoriDaConfermare, differenze, leggiIConteggi, misuraIlCorpus, numeriNonDichiarati, testiDelCensimento } from "./corpus";
 import { fileDellInterprete, improntaDi, leggiLaConferma } from "./mutazioni";
 import { chiamate, senzaExact } from "./selettori";
 
@@ -1212,6 +1212,7 @@ const proveAttesePerSpec: Record<string, number> = {
   "mac.e2e.ts": 3,
   "modifica-dati.e2e.ts": 10,
   "modifica.e2e.ts": 7,
+  "pagina-affiancata.e2e.ts": 4,
   "parametri.e2e.ts": 3,
   "pila-lunga.e2e.ts": 2,
   "programmi-pesanti.e2e.ts": 20,
@@ -1352,6 +1353,10 @@ function portaCorpus(): void {
   ];
   if (fuori.length > 0) rosso("corpus", `i denominatori delle prove non sono quelli confermati (${fuori.join("; ")}): prima della corsa lunga \`bun run conferma-corpus\``);
   if (n.scritti === 0) rosso("corpus", "denominatore a zero: nessun denominatore confermato scritto nelle prove");
+  // Gli stessi numeri scritti a mano della prova-guardia (`corpus.test.ts`, coi suoi controlli positivi): lì si scoprirebbero minuti dopo.
+  const aMano = numeriNonDichiarati(testiDelCensimento());
+  const daDichiarare = [...aMano.nonDichiarati, ...aMano.senzaAsserzione.map((x) => `dichiarato e senza asserzione: ${x}`)];
+  if (daDichiarare.length > 0) rosso("corpus", `${daDichiarare.length} numeri scritti nelle prove del corpus fuori da \`strumenti/valori-precisi.ts\`: ${daDichiarare.slice(0, 5).join("; ")}`);
   riga(
     `PORTA corpus: VERDE | i conteggi confermati sono quelli del disco: ${JSON.stringify(misurati.file)}, tipi ${JSON.stringify(misurati.tipi)} | denominatori delle prove confermati: ${n.scritti} | controllo positivo acceso (l'impronta cambiata: 1 differenza)`,
   );

@@ -217,7 +217,7 @@ export async function licenzeDiTerzeParti(
   return { testo: parti.join("\n"), js: js.length, rust: rust.length, testi: testi.length };
 }
 
-/** Il file delle licenze di terze parti del pacchetto dello strumento di «Accademico» (`pacchetto.ts`): l'eseguibile è il
+/** Il file delle licenze di terze parti del pacchetto dello strumento a riga di comando (`pacchetto.ts`): l'eseguibile è il
  * codice del repository (i moduli dati, letti dal metafile del build: chi chiama controlla che siano tutti nostri)
  * dentro Bun, che lo esegue. Di Bun la pagina della sua licenza così come la porta il pacchetto `bun-types` installato
  * dal lockfile (Bun non ha un testo MIT a parte: la pagina dice la sua licenza e quelle delle librerie che collega), rossa
@@ -235,12 +235,12 @@ export function licenzeDelloStrumento(versione: string, moduli: readonly string[
   const testoDellaPagina = readFileSync(pagina, "utf8").replace(/\r\n/g, "\n").replace(/^---\n[\s\S]*?\n---\n/, "").trim();
   if (!testoDellaPagina.startsWith("Bun itself is MIT-licensed.")) rosso("LICENZE DELLO STRUMENTO", `la pagina della licenza di Bun non comincia come atteso: «${testoDellaPagina.slice(0, 60)}…»`);
   const aggiunte = join(import.meta.dir, "licenze-aggiunte");
-  const titolo = `Lo strumento di «Accademico» di AlgoDesign ${versione}: licenze di terze parti`;
+  const titolo = `Gli strumenti di AlgoDesign ${versione}: licenze di terze parti`;
   const parti = [
     titolo,
     "=".repeat(titolo.length),
     "",
-    `algodesign-accademico.exe è il codice di AlgoDesign (${moduli.length} moduli, licenza MIT nel file LICENSE) dentro`,
+    `algodesign-tools.exe è il codice di AlgoDesign (${moduli.length} moduli, licenza MIT nel file LICENSE) dentro`,
     `Bun ${Bun.version}, il programma che lo esegue. Bun è distribuito con licenza MIT e porta con sé librerie di altri,`,
     "ognuna con la sua licenza: sono elencate nella pagina della licenza di Bun, che segue così come Bun la pubblica, in",
     "inglese. Dopo la pagina ci sono i testi interi delle due licenze LGPL che nomina.",

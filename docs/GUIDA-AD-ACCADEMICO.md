@@ -287,14 +287,14 @@ Scrivi nel testo una funzione `minimo` (o `massimo`) e usa quella. Nel verso opp
 
 Nel flowchart una Scrittura di un booleano scrive `true` o `false`; in «Accademico» il booleano è un intero, e si scrive 1 o 0. Dal testo al flowchart ogni dato diventa un intero.
 
-## 6. Dal testo al flowchart: lo strumento `algodesign-accademico`
+## 6. Dal testo al flowchart: lo strumento `algodesign-tools accademico`
 
 Lo strumento fa il passaggio inverso: legge un testo in «Accademico» e ne fa una **libreria** di AlgoDesign (§11 della guida per lo studente), dove ogni `function` del testo diventa una procedura o una funzione. Così un esercizio delle Selezioni si apre in AlgoDesign e si esegue passo passo, con la tabella di traccia.
 
-Per Windows lo strumento è un programma a sé, `algodesign-accademico.exe`, in un pacchetto a parte, `AlgoDesign-Accademico-0.6.0-beta.2-windows.zip`, accanto a quello di AlgoDesign: si estrae dove si preferisce, nasce la cartella `AlgoDesign-Accademico-0.6.0-beta.2`, e non chiede di installare nulla. Nella cartella ci sono anche un `LEGGIMI.md` breve (in inglese `README.md`) e questa guida. Si usa da **PowerShell**: in Esplora file, nella cartella dello strumento, si scrive `powershell` nella barra dell'indirizzo e si preme Invio (su Windows 11 va bene anche il tasto destro nella cartella, «Apri nel Terminale»); poi si scrive `.\algodesign-accademico` al posto di `algodesign-accademico` negli esempi che seguono (PowerShell non avvia un programma della cartella senza `.\`); i testi si danno col loro percorso, o si copiano nella stessa cartella. Chi ha il codice di AlgoDesign e Bun scrive `bun run accademico` al posto di `algodesign-accademico`, dalla cartella `app`; le opzioni sono le stesse.
+Per Windows lo strumento è un programma a sé, `algodesign-tools.exe`, in un pacchetto a parte, `AlgoDesign-Tools-0.6.0-beta.2-windows.zip`, accanto a quello di AlgoDesign: si estrae dove si preferisce, nasce la cartella `AlgoDesign-Tools-0.6.0-beta.2`, e non chiede di installare nulla. Nella cartella ci sono anche un `LEGGIMI.md` breve (in inglese `README.md`) e questa guida. Si usa da **PowerShell**: in Esplora file, nella cartella dello strumento, si scrive `powershell` nella barra dell'indirizzo e si preme Invio (su Windows 11 va bene anche il tasto destro nella cartella, «Apri nel Terminale»); poi si scrive `.\algodesign-tools accademico` al posto di `algodesign-tools accademico` negli esempi che seguono (PowerShell non avvia un programma della cartella senza `.\`); i testi si danno col loro percorso, o si copiano nella stessa cartella. Chi ha il codice di AlgoDesign e Bun scrive `bun run accademico` al posto di `algodesign-tools accademico`, dalla cartella `app`; le opzioni sono le stesse.
 
 ```sh
-algodesign-accademico <testo.txt> [-l libreria.algo] [-o uscita.algo] [-n nome] [-d dimensione] [-r] [-s]
+algodesign-tools accademico <testo.txt> [-l libreria.algo] [-o uscita.algo] [-n nome] [-d dimensione] [-r] [-s]
 ```
 
 | Opzione | Che cosa fa |
@@ -325,7 +325,7 @@ Le note dicono che un nome mai dichiarato è diventato un parametro, la lunghezz
 Un esempio. Il testo `conta-pari.txt` ha due funzioni, `conta_pari` e `primo_negativo` (che ha un `return` dentro un ciclo), e quattro righe fuori dalle funzioni che le provano. Il nome del file darebbe alla procedura il nome `conta_pari`, che è già della prima funzione: lo strumento si ferma, e con `-n` le si dà un altro nome.
 
 ```sh
-algodesign-accademico conta-pari.txt -o esercizi.algo -n prova_conta
+algodesign-tools accademico conta-pari.txt -o esercizi.algo -n prova_conta
 ```
 
 ```text
@@ -340,7 +340,7 @@ SCRITTO esercizi.algo
 Un secondo testo, `ordina-due.txt`, scambia due numeri che non dichiara; con `-l` entra nella stessa libreria:
 
 ```sh
-algodesign-accademico ordina-due.txt -l esercizi.algo
+algodesign-tools accademico ordina-due.txt -l esercizi.algo
 ```
 
 ```text

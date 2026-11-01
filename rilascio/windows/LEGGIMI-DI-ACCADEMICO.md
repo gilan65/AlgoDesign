@@ -2,16 +2,16 @@
 
 Versione del {{data}}, per Windows 10 e 11 a 64 bit.
 
-`algodesign-accademico.exe` legge un testo scritto in «Accademico», lo pseudocodice delle Selezioni scolastiche delle Olimpiadi di Informatica, e ne fa una **libreria** di AlgoDesign: ogni `function` del testo diventa una procedura o una funzione, che si apre in AlgoDesign e si esegue passo passo, con la tabella di traccia. È un programma a sé: non serve installarlo, e non serve AlgoDesign per usarlo (serve per aprire la libreria che scrive). AlgoDesign si scarica a parte, nel suo pacchetto, `AlgoDesign-{{versione}}-windows-x64.zip`.
+`algodesign-tools.exe` legge un testo scritto in «Accademico», lo pseudocodice delle Selezioni scolastiche delle Olimpiadi di Informatica, e ne fa una **libreria** di AlgoDesign: ogni `function` del testo diventa una procedura o una funzione, che si apre in AlgoDesign e si esegue passo passo, con la tabella di traccia. È un programma a sé: non serve installarlo, e non serve AlgoDesign per usarlo (serve per aprire la libreria che scrive). AlgoDesign si scarica a parte, nel suo pacchetto, `AlgoDesign-{{versione}}-windows-x64.zip`.
 
 ## Come si usa
 
-1. Estrai lo zip dove preferisci: nasce la cartella `AlgoDesign-Accademico-{{versione}}`.
+1. Estrai lo zip dove preferisci: nasce la cartella `AlgoDesign-Tools-{{versione}}`.
 2. In Esplora file, nella cartella dello strumento, scrivi `powershell` nella barra dell'indirizzo e premi Invio: si apre PowerShell in quella cartella (su Windows 11 va bene anche il tasto destro nella cartella, «Apri nel Terminale»).
-3. Scrivi `.\algodesign-accademico -h` per l'aiuto, oppure, per un testo, per esempio:
+3. Scrivi `.\algodesign-tools accademico -h` per l'aiuto, oppure, per un testo, per esempio:
 
 ```sh
-.\algodesign-accademico esercizio.txt -o esercizi.algo
+.\algodesign-tools accademico esercizio.txt -o esercizi.algo
 ```
 
 Il testo si dà col suo percorso, o si copia nella stessa cartella. Le opzioni, gli esempi e ciò che lo strumento stampa sono nel capitolo 6 della guida ad «Accademico», `GUIDA-AD-ACCADEMICO.md`, in questa cartella. Lo strumento scrive solo i file che gli si dicono, e i suoi messaggi sono in italiano.
