@@ -1,21 +1,21 @@
 {
   "fatti": {
-    "impronta": "48a93fdddd9dd70f10e74bc7623d631beb4ad43acfe10f98450ac4143d886495",
+    "impronta": "d119b3b72c3f8b4b230ac3e110aa57c186ddef611f8207fba55c00a7fa328e84",
     "file": {
       "tappa-1": 60,
       "tappa-2": 16,
       "tappa-3": 54,
       "tappa-4": 23,
-      "tipi": 32,
-      "totale": 185
+      "tipi": 39,
+      "totale": 192
     },
     "tipi": {
-      "record": 17,
-      "matrici": 14,
-      "tabelle": 6,
+      "record": 20,
+      "matrici": 18,
+      "tabelle": 9,
       "conErroreStatico": 9,
-      "senzaLetture": 17,
-      "tabelleSenzaLetture": 3
+      "senzaLetture": 23,
+      "tabelleSenzaLetture": 5
     }
   },
   "confermati": {
@@ -62,23 +62,23 @@
   },
   "denominatori": {
     "accademico - esiti sul corpus": [
-      185,
+      192,
       36,
       19,
-      130
+      137
     ],
-    "accademico - file con le mancanze": 141,
+    "accademico - file con le mancanze": 148,
     "accademico - matrici, giuste e tutte": [
-      10,
-      14
+      14,
+      18
     ],
     "accademico - record, giusti e tutti": [
       7,
       11
     ],
     "accademico - tabelle, giuste e tutte": [
-      5,
-      6
+      8,
+      9
     ],
     "accessibile - file coi cicli": 16,
     "accessibile - file della tappa 1": 60,
@@ -96,7 +96,7 @@
     "campi - file del corpus": 153,
     "casi - file delle tappe 2 e 3": 70,
     "casi dalla esecuzione - riga del totale": "totale 194: uguali 181, esclusi errore statico 10, riga non valida 2, voci finite 1",
-    "controllo - file controllati del corpus": 185,
+    "controllo - file controllati del corpus": 192,
     "controllo dato per dato - file della tappa 1": 60,
     "disegno e2e - copie col nome nella tappa 3": 2,
     "disegno e2e - funzioni delle tappe 3 e 4, dei progetti coi salti": [
@@ -118,8 +118,8 @@
       "casi": 32
     },
     "esempi - file dei tipi, con le matrici": [
-      32,
-      14
+      39,
+      18
     ],
     "esempi - file delle tappe 3 e 4, con un risultato": [
       54,
@@ -182,10 +182,12 @@
       47
     ],
     "genera typescript - generati fuori dalle tappe 1, 2, 3 e 4": [
+      "tipi/booleani-assegnati-e-confrontati",
       "tipi/carattere-di-un-risultato",
       "tipi/copia-con-un-campo-senza-valore",
       "tipi/copia-di-un-record",
       "tipi/copia-di-una-matrice",
+      "tipi/copia-di-una-tabella",
       "tipi/copie-di-un-record",
       "tipi/diagonale-di-stringhe",
       "tipi/funzione-con-un-record",
@@ -193,13 +195,23 @@
       "tipi/matrice-come-parametro",
       "tipi/matrice-di-stringhe",
       "tipi/matrice-in-un-programma",
+      "tipi/per-ogni-annidati-su-due-righe",
+      "tipi/per-ogni-con-indice-che-cambia",
+      "tipi/per-ogni-su-riga-da-una-funzione",
+      "tipi/per-ogni-su-riga-di-stringhe-lunghe",
       "tipi/record-in-un-programma",
       "tipi/record-per-riferimento",
       "tipi/riferimento-a-un-record-senza-valore",
       "tipi/riga-di-un-risultato-in-stringa",
       "tipi/riga-sostituita-nel-per-ogni",
       "tipi/righe-calcolate",
-      "tipi/stessa-cella-della-matrice"
+      "tipi/scambio-e-ordinamento",
+      "tipi/stessa-cella-della-matrice",
+      "tipi/stesso-record-della-tabella",
+      "tipi/stringa-per-valore-da-un-campo",
+      "tipi/tabella-col-record-ripetuto",
+      "tipi/tabella-come-parametro",
+      "tipi/vettore-di-record"
     ],
     "genera typescript - programmi col giro, nelle due lingue": 46,
     "genera typescript - tappa 2 (generati, blocchi, cicli)": [
@@ -217,7 +229,7 @@
     "interprete - errori statici attesi del corpus": 19,
     "matrici - casi delle funzioni della cartella": 5,
     "matrici - file giusti e sbagliati": [
-      10,
+      14,
       4
     ],
     "nomi - blocchi col valore iniziale nella tappa 1": 120,
@@ -230,7 +242,7 @@
     ],
     "tabelle - casi delle funzioni della cartella": 3,
     "tabelle - file giusti e sbagliati": [
-      5,
+      8,
       1
     ],
     "voci - radici, letture altrove coi parametri": [

@@ -5,11 +5,10 @@
 // che il C non definisce non si controllano, e il commento in testa lo dice. Solo sintassi che si cancella togliendo i
 // tipi (niente `enum` né `namespace`): il programma resta JavaScript a meno delle annotazioni.
 //
-// Il generatore cresce un gruppo di costrutti per volta. Oggi sa scrivere le tappe 1, 2, 3 e 4: i dati e le costanti dei
+// Il generatore sa scrivere le tappe 1, 2, 3 e 4: i dati e le costanti dei
 // cinque tipi semplici e i vettori, l'assegnazione (anche a un elemento, e la copia di un vettore col nome), la lettura,
 // la scrittura, il commento, `se`, `mentre`, `ripeti`, `per`, `per ogni`, ogni espressione della tappa 1, le procedure e
-// le funzioni coi loro programmi di prova, la ricorsione, i record, le matrici; per la tabella il progetto non si genera,
-// e `nonAncora` lo dice («la tabella»), dopo gli errori statici come un generatore che si ferma.
+// le funzioni coi loro programmi di prova, la ricorsione, i record, le matrici, le tabelle.
 //
 // La forma: il nome del progetto e la testa, gli import da Node (`execSync` per `prepara_console`, e da `node:fs` le sole
 // funzioni che leggono e scrivono, isolate in `leggi_riga`, `scrivi` e `fermati`: una pagina nel browser le può
@@ -41,8 +40,10 @@
 // Le espressioni si riscrivono dall'albero, non dal testo, con le precedenze di JavaScript (un confronto dentro un
 // confronto sta fra parentesi da tutti e due i lati, come nel Python, anche dove JavaScript non le vorrebbe; un meno
 // davanti a un meno sta fra parentesi, perché `--` è un altro operatore). Un `===` o `!==` fra due letterali, o fra un
-// dato booleano e un letterale o un altro booleano, allarga il tipo del lato sinistro (`(p as boolean) === false`):
-// `tsc` rifiuta l'uguaglianza fra due tipi letterali diversi, e un booleano assegnato con un letterale ne ha uno.
+// booleano che `tsc` può aver ristretto e un letterale o un altro booleano così, allarga il tipo del lato sinistro
+// (`(p as boolean) === false`, `((p && q) as boolean) === true`): `tsc` rifiuta l'uguaglianza fra due tipi letterali diversi,
+// e un booleano assegnato con un letterale ne ha uno, che sia un dato, un campo o un elemento; `!`, `&&` e `||` lo portano con
+// sé. Una chiamata e un confronto non si restringono mai.
 // L'ordine degli arresti è quello del Python: un carattere che entra in una stringa si controlla dopo il lato destro
 // della concatenazione, e se quel lato si può fermare la concatenazione passa da `concatena`. In `v[i] = valore`
 // JavaScript calcola l'indice prima del valore, come il flowchart.
@@ -86,6 +87,15 @@
 // ogni» l'indice della riga scelta sta in `_sorgente`. L'elemento `m[i][j]` si legge e si assegna così; JavaScript calcola
 // gli indici prima del valore, come il flowchart.
 //
+// Le tabelle come nel Python: un `Array` di oggetti della classe (`alunno[]`), ogni record un oggetto suo, come la
+// comprensione del Python (`Array.from({ length: 3 }, () => new alunno())`, mai `new Array(3).fill(new alunno())`, che ripete
+// lo stesso oggetto), e nessun record è mai condiviso da due dati: per valore e nel risultato dal nome la tabella si copia
+// record per record col costruttore (`x = x.map((_elemento) => new alunno(_elemento.nome, _elemento.voto));`). La copia col
+// nome (`u ← t`) è il ciclo dei record con una riga per campo. Il record `t[i]` è un record dovunque ne va uno: `r ← t[i]`,
+// `t[i] ← r` e `t[i] ← t[j]` una riga per campo (l'indice che non è un numero né un nome calcolato una volta, come
+// nell'interprete), restituito un oggetto nuovo; nel «per ogni» l'elemento è un oggetto nuovo dal costruttore. Il campo
+// `t[i].nome` per riferimento è un elemento della tabella col suo campo (`elementi_diversi` col campo).
+//
 // Un arresto scrive «Errore alla riga N: motivo» sullo standard error ed esce con 1: `fermati` trova la riga nella pila
 // delle chiamate (`new Error().stack`), alla prima chiamata dentro `main` o dentro un'altra funzione del programma, come
 // il Python che risale le cornici; una cornice nativa di Bun (`at map (native:1:11)`) non è mai del programma.
@@ -105,7 +115,7 @@ import { chiamateDellaFunzione, chiamateIn, funzioniDelGiro, funzioniVersoIlGiro
 import { lunghezzaMassima as lunghezzaMassimaNelNucleo } from "../controllo/lunghezza";
 import { spazioDellaPila, spazioDiUnaChiamata, tettoDelleChiamate } from "../controllo/spazio";
 import { analizza, type Espressione } from "../espressioni/analizzatore";
-import { eUnaCopiaDiUnRecord, nomiDeiRecord } from "../progetto/copia";
+import { eUnaCopiaDiUnRecord, nomiDeiRecord, nomiDelleTabelle } from "../progetto/copia";
 import { opzioniPredefinite, tipoSemplice, type Blocco, type Campo, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto, type Tipo, type TipoDelDato } from "../progetto/modello";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import { controlliDegliElementi, genera, parametriDelCaso, posizioni, segnate, type Generato, type Riga } from "./forma";
@@ -114,7 +124,7 @@ import { contatoriDellaRicorsione, indiceDelLivello, nomeDelRisultato, nomeDella
 import type { NoteDeiDati, Prova } from "./python";
 
 export function typescript(p: Progetto, limiti: Tetti, lingua: LinguaDelCodice, note: NoteDeiDati, prova?: Prova): Generato {
-  return genera(p, limiti, (q) => righeDelTypeScript(q, lingua, note, prova), undefined, nonAncora);
+  return genera(p, limiti, (q) => righeDelTypeScript(q, lingua, note, prova));
 }
 
 const rientro = "  ";
@@ -224,17 +234,6 @@ function nelTesto(codice: number): string {
   return c;
 }
 
-// ------------------------------------------------------------------------------------- la guardia
-
-/** Il primo costrutto del progetto che il generatore non sa ancora scrivere, o niente: la tabella, cercata nel risultato e
- * nei dati di ogni funzione (il programma di prova di una funzione è quello del suo progetto). Nessuna espressione la usa
- * senza un dato o un risultato che lo sia: un record di una tabella (`t[i].nome`) viene da una tabella. */
-function nonAncora(p: Progetto): string | undefined {
-  for (const f of p.functions) if (f.return_type === "record" && f.return_size !== undefined) return "la tabella";
-  for (const d of [...(p.shared_constants ?? []), ...p.functions.flatMap((f) => f.data)]) if (d.type === "record" && d.size !== undefined) return "la tabella";
-  return undefined;
-}
-
 // ------------------------------------------------------------------------------------------- il programma
 
 function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prova: Prova | undefined): Riga[] {
@@ -268,9 +267,18 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   /** I record del progetto, per nome, e i campi di un record. */
   const records = new Map((p.records ?? []).map((r) => [r.name, r]));
   const campiDi = (record: string | undefined): readonly Campo[] => records.get(record ?? "")!.fields;
-  /** Il record di un'espressione che ne dà uno intero: il nome di un dato record, o una funzione che lo restituisce. */
+  /** Il record dei record di una tabella intera: il nome di una tabella, o una funzione che ne restituisce una. */
+  const tabellaDi = (e: Espressione): string | undefined =>
+    e.genere === "nome" ? (dati.get(e.nome)!.size !== undefined ? dati.get(e.nome)!.record : undefined)
+    : e.genere === "chiamata" ? (perNome.get(e.nome)?.return_size !== undefined ? perNome.get(e.nome)?.return_record : undefined)
+    : undefined;
+  /** Il record di un'espressione che ne dà uno intero: il nome di un dato record, una funzione che lo restituisce, o un
+   * record di una tabella (`t[i]`, anche di quella restituita da una funzione). */
   const recordDi = (e: Espressione): string | undefined =>
-    e.genere === "nome" ? dati.get(e.nome)!.record : e.genere === "chiamata" ? perNome.get(e.nome)?.return_record : undefined;
+    e.genere === "nome" ? (dati.get(e.nome)!.size === undefined ? dati.get(e.nome)!.record : undefined)
+    : e.genere === "chiamata" ? (perNome.get(e.nome)?.return_size === undefined ? perNome.get(e.nome)?.return_record : undefined)
+    : e.genere === "indice" ? tabellaDi(e.base)
+    : undefined;
   /** Un record nuovo dai campi di `x`, col costruttore della sua classe: la copia di un record, che non è mai lo stesso
    * oggetto. */
   const costruttore = (record: string, x: string) => `new ${record}(${campiDi(record).map((c) => `${x}.${c.name}`).join(", ")})`;
@@ -384,12 +392,17 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     return { ...chiamata(usa(f), ...argomenti), coda: true };
   };
 
-  /** Un lato che `tsc` può vedere col tipo letterale: un letterale (col meno davanti) o un dato booleano (un numero e una
-   * stringa non si restringono mai). */
+  /** Un booleano che `tsc` può aver ristretto a `true` o `false` (misurato): un letterale, un dato, un campo, un elemento,
+   * con `!`, `&&` e `||` davanti o intorno. Una chiamata e un confronto no (un numero e una stringa non si restringono mai). */
+  const ristretto = (e: Espressione): boolean =>
+    e.genere === "booleano" || ((e.genere === "nome" || e.genere === "campo" || e.genere === "indice") && tipo(e) === "boolean") ||
+    (e.genere === "unario" && e.operatore === "not" && ristretto(e.operando)) ||
+    (e.genere === "binario" && (e.operatore === "and" || e.operatore === "or") && (ristretto(e.sinistro) || ristretto(e.destro)));
+  /** Un lato che `tsc` può vedere col tipo letterale: un letterale (col meno davanti) o un booleano ristretto. */
   const letteraleOBooleano = (e: Espressione): boolean =>
-    e.genere === "intero" || e.genere === "reale" || e.genere === "carattere" || e.genere === "stringa" || e.genere === "booleano" ||
+    e.genere === "intero" || e.genere === "reale" || e.genere === "carattere" || e.genere === "stringa" ||
     (e.genere === "unario" && e.operatore === "-" && (e.operando.genere === "intero" || e.operando.genere === "reale")) ||
-    (e.genere === "nome" && tipo(e) === "boolean");
+    ristretto(e);
   const tipoDiTypeScript = (t: TipoDelDato) => (t === "boolean" ? "boolean" : t === "integer" || t === "real" ? "number" : "string");
 
   function espressione(e: Espressione): Testo {
@@ -534,8 +547,8 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       return { t: `${fra(l, 11)} ${ordine[op]} ${fra(r, 11)}`, forza: 10 };
     }
     // `tsc` rifiuta l'uguaglianza fra due tipi letterali diversi (TS2367): due letterali, o un booleano che un letterale
-    // assegnato prima restringe a `true` o `false`. Il lato sinistro allarga il suo tipo con `as`.
-    const sinistro = letteraleOBooleano(e.sinistro) && letteraleOBooleano(e.destro) ? operando(`(${l.t} as ${tipoDiTypeScript(ts)})`) : l;
+    // assegnato prima restringe a `true` o `false`. Il lato sinistro allarga il suo tipo con `as`, che lega più di `&&` e `||`.
+    const sinistro = letteraleOBooleano(e.sinistro) && letteraleOBooleano(e.destro) ? operando(`(${fra(l, 15)} as ${tipoDiTypeScript(ts)})`) : l;
     return { t: `${fra(sinistro, 11)} ${op === "==" ? "===" : "!=="} ${fra(r, 11)}`, forza: 9 };
   }
 
@@ -553,9 +566,12 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   /** Un vettore intero che va in un dato o nel risultato di una funzione (`verso`): una lista nuova. Dal nome di un
    * vettore, o da una riga di una matrice, la copia (`Array.from`, il `list` del Python); con gli elementi stringa che
    * possono essere più lunghi di quelli di `verso`, ognuno dal controllo (`map`, la comprensione del Python); da una
-   * funzione è già nuovo. Una matrice dal suo nome si copia riga per riga (`x.map((_riga) => Array.from(_riga))`). */
+   * funzione è già nuovo. Una matrice dal suo nome si copia riga per riga (`x.map((_riga) => Array.from(_riga))`), una
+   * tabella record per record, ognuno col costruttore. */
   function listaNuova(e: Espressione, verso: Pick<Dato, "type" | "max_length">): Testo {
     const x = espressione(e);
+    const tabella = tabellaDi(e);
+    if (tabella !== undefined) return e.genere === "nome" ? operando(`${x.t}.map((${nomeDellElemento[lingua]}) => ${costruttore(tabella, nomeDellElemento[lingua])})`) : x;
     const massima = verso.max_length ?? lunghezzaPredefinita;
     const lungo = verso.type === "string" && (misureDi(e).max_length ?? lunghezzaPredefinita) > massima;
     const elemento = nomeDellElemento[lingua];
@@ -568,10 +584,23 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     return e.genere === "nome" || e.genere === "indice" ? operando(`Array.from(${x.t})`) : x;
   }
 
-  /** Un record intero che va in un risultato: dal nome di un record un oggetto nuovo, campo per campo; da una funzione è
-   * già nuovo. */
-  function recordNuovo(e: Espressione): Testo {
+  /** Un record intero che va in un risultato: dal nome di un record, o da un record di una tabella, un oggetto nuovo, campo
+   * per campo; da una funzione è già nuovo. L'indice di un record di una tabella che non è un numero né un nome si calcola
+   * una volta prima, in una riga del blocco `id`. */
+  function recordNuovo(e: Espressione, id: string): Testo {
+    if (e.genere === "indice") return operando(costruttore(recordDi(e)!, recordDellaTabella(rientro, id, e)));
     return e.genere === "nome" ? operando(costruttore(recordDi(e)!, e.nome)) : espressione(e);
+  }
+
+  /** Il testo di un record di una tabella (`t[i]`) letto più volte: con un indice che non è un numero né un nome, calcolato
+   * una volta prima in un nome suo (`calcolati` conta quelli già presi dalla stessa regola), in una riga del blocco `id`
+   * (col `campo` 0 nella copia campo per campo, la cui prima azione calcola gli indici). */
+  function recordDellaTabella(r: string, id: string, e: Extract<Espressione, { genere: "indice" }>, calcolati = 0, campo?: number): string {
+    const nome = (e.base as { nome: string }).nome;
+    if (e.indice.genere === "intero" || e.indice.genere === "nome") return `${nome}[${espressione(e.indice).t}]`;
+    const indice = indiceAl(cicliPerOgni + calcolati + 1);
+    corpo.push({ testo: `${r}${indice} = ${espressione(e.indice).t};`, blocco: id, ...(campo !== undefined ? { campo } : {}) });
+    return `${nome}[${indice}]`;
   }
 
   // ---------------------------------------------------------------------------------------- le dichiarazioni
@@ -586,8 +615,15 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   const valoreIniziale = (d: Dato): string | undefined => {
     const v = d.initial;
     // Un record nasce sempre come oggetto: senza valore coi campi senza valore (`new alunno()`), con un valore un letterale
-    // per campo.
-    if (d.type === "record") return `new ${d.record!}(${((v as readonly string[] | undefined) ?? []).map((x, k) => nelDato(albero(x), campiDi(d.record)[k]!)).join(", ")})`;
+    // per campo. Una tabella un oggetto per record, ognuno dal suo costruttore (mai `new Array(3).fill(new alunno())`, che
+    // ripete lo stesso oggetto).
+    if (d.type === "record") {
+      const uno = (valori: readonly string[] | undefined) => `new ${d.record!}(${(valori ?? []).map((x, k) => nelDato(albero(x), campiDi(d.record)[k]!)).join(", ")})`;
+      if (d.size === undefined) return uno(v as readonly string[] | undefined);
+      if (v === undefined) return `Array.from({ length: ${d.size} }, () => ${uno(undefined)})`;
+      if (Array.isArray(v)) return `[${(v as readonly (readonly string[])[]).map(uno).join(", ")}]`;
+      return `Array.from({ length: ${d.size} }, () => ${uno((v as unknown as { readonly each: readonly string[] }).each)})`;
+    }
     const elemento = annotazioneDelTipo(tipoSemplice(d.type));
     // Una matrice: ogni riga un Array suo, come la comprensione del Python (mai `new Array(2).fill(riga)`, che ripete la
     // stessa riga); col valore ripetuto, il valore in ogni riga.
@@ -657,8 +693,9 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
 
   let corpo: Riga[] = [];
   const struttura = (testo: string) => corpo.push({ testo });
-  /** I record della funzione che si scrive (con le costanti comuni): riconoscono la copia col nome. */
+  /** I record e le tabelle della funzione che si scrive (con le costanti comuni): riconoscono la copia col nome. */
   let deiRecord: ReadonlySet<string> = new Set();
+  let delleTabelle: ReadonlySet<string> = new Set();
 
   /** Una destinazione e il valore che riceve: un dato, il campo di un record, l'elemento di un vettore o di una matrice, o
    * la riga di una matrice (JavaScript calcola gli indici prima del valore, come il flowchart: nessuno si calcola prima,
@@ -706,6 +743,17 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     const lungo = tipo(t) === "string" && (misureDi(v).max_length ?? lunghezzaPredefinita) > massima;
     const preso = (x: string) => (lungo ? conArresto("alPiu", x, String(massima)).t : x);
     const i = indiceAl(cicliPerOgni + 1);
+    const tabella = tabellaDi(t);
+    if (tabella !== undefined) {
+      // Una tabella: il ciclo dei record, con dentro una riga per campo, ognuna col campo che copia (lo stesso record: le
+      // stringhe hanno la stessa lunghezza).
+      fase(`${r}${i} = 0;`, undefined, "inizio");
+      fase(`${r}while (${i} < ${misure.size}) {`, undefined, "condizione");
+      campiDi(tabella).forEach((c, k) => corpo.push({ testo: `${r}${rientro}${verso}[${i}].${c.name} = ${da}[${i}].${c.name};`, blocco: id, fasi: ["elemento"], campo: k }));
+      fase(`${r}${rientro}${i} = ${i} + 1;`, undefined, "passo");
+      struttura(`${r}}`);
+      return;
+    }
     if (misure.columns === undefined) {
       fase(`${r}${i} = 0;`, undefined, "inizio");
       fase(`${r}while (${i} < ${misure.size}) {`, undefined, "condizione");
@@ -743,13 +791,18 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     type Argomento =
       | { readonly genere: "valore"; readonly testo: string; readonly ferma: boolean }
       | { readonly genere: "nome"; readonly testo: string }
-      | { readonly genere: "elemento"; readonly vettore: string; readonly indici: readonly { readonly t: string; readonly scritto: boolean }[]; readonly ferma: boolean };
+      | { readonly genere: "elemento"; readonly vettore: string; readonly indici: readonly { readonly t: string; readonly scritto: boolean }[]; readonly ferma: boolean; readonly campo?: string };
     const argomenti: Argomento[] = b.arguments.map((testo, k) => {
       const d = parametri[k]!;
       const a = albero(testo);
       ferma = false;
       if (d.parameter === "value") return { genere: "valore", testo: nelDato(a, d), ferma };
       if (a.genere === "nome") return { genere: "nome", testo: a.nome };
+      // Il campo di un record di una tabella: un elemento della tabella col suo campo, gli indici dal primo.
+      if (a.genere === "campo" && a.base.genere === "indice") {
+        const { nome, indici } = elementoDi(a.base);
+        return { genere: "elemento", vettore: nome, indici: indici.map((i) => ({ t: espressione(i).t, scritto: i.genere === "intero" })), ferma, campo: a.campo };
+      }
       // Un campo per riferimento si passa e si riassegna come un dato.
       if (a.genere === "campo") return { genere: "nome", testo: espressione(a).t };
       const { nome, indici } = elementoDi(a);
@@ -774,15 +827,16 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
           riga(`${nome} = ${i.t};`);
           return nome;
         });
-        passati.push(`${a.vettore}${usati[k]!.map((i) => `[${i}]`).join("")}`);
+        passati.push(`${a.vettore}${usati[k]!.map((i) => `[${i}]`).join("")}${a.campo !== undefined ? `.${a.campo}` : ""}`);
       } else if (a.genere === "valore" && a.ferma && k < ultimaCheFerma) {
         const nome = temporanea(annotazione(parametri[k]!));
         riga(`${nome} = ${a.testo};`);
         passati.push(nome);
       } else passati.push(a.testo);
     });
+    const campoDellArgomento = (k: number) => (argomenti[k] as { campo?: string }).campo;
     for (const ks of gruppi)
-      for (const confronto of controlliDegliElementi(ks.map((k) => usati[k]!), dati.get((argomenti[ks[0]!] as { vettore: string }).vettore)!))
+      for (const confronto of controlliDegliElementi(ks.map((k) => usati[k]!), dati.get((argomenti[ks[0]!] as { vettore: string }).vettore)!, ks.map(campoDellArgomento)))
         riga(`${usa("elementiDiversi")}(${confronto.join(", ")});`);
     const chiamataDelSalto = `${b.callee}(${passati.filter((_, k) => parametri[k]!.parameter !== "out").join(", ")})`;
     const riassegnati = argomenti.flatMap((a, k) => (a.genere === "valore" ? [] : [passati[k]!]));
@@ -834,10 +888,14 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
           });
         }
         const t = albero(b.target);
-        if (eUnaCopiaDiUnRecord(b, deiRecord)) {
-          // La copia di un record col suo nome, campo per campo: una riga per campo, col campo che copia (mai `b = a`, che
-          // farebbe dei due nomi lo stesso oggetto).
-          const [verso, da] = [espressione(t).t, espressione(v).t];
+        if (eUnaCopiaDiUnRecord(b, deiRecord, delleTabelle)) {
+          // La copia di un record col suo nome, o di un record di una tabella, campo per campo: una riga per campo, col campo
+          // che copia (mai `b = a`, che farebbe dei due nomi lo stesso oggetto). Gli indici che non sono un numero né un nome
+          // si calcolano prima, come nella prima azione dell'interprete: quello della destinazione, poi quello della sorgente.
+          const recordIn = (e: Espressione, calcolati: number) => (e.genere === "indice" ? recordDellaTabella(r, b.id, e, calcolati, 0) : espressione(e).t);
+          const calcolato = (e: Espressione) => (e.genere === "indice" && e.indice.genere !== "intero" && e.indice.genere !== "nome" ? 1 : 0);
+          const verso = recordIn(t, 0);
+          const da = recordIn(v, calcolato(t));
           campiDi(recordDi(t)).forEach((c, k) => corpo.push({ testo: `${r}${verso}.${c.name} = ${da}.${c.name};`, blocco: b.id, campo: k }));
           return;
         }
@@ -923,8 +981,11 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
         // Un elemento stringa che può essere più lungo del dato che lo riceve passa dal controllo.
         const massima = elemento.max_length ?? lunghezzaPredefinita;
         const lungo = elemento.type === "string" && (lunghezzaDellaSorgente ?? lunghezzaPredefinita) > massima;
+        // Il record di una tabella è un oggetto nuovo, dal costruttore (l'interprete lo prende in un'azione).
+        const tabella = tabellaDi(s);
         const preso =
-          dimensione === undefined ? conArresto("carattereDi", sorgente, indice).t
+          tabella !== undefined ? costruttore(tabella, `${sorgente}[${indice}]`)
+          : dimensione === undefined ? conArresto("carattereDi", sorgente, indice).t
           : lungo ? conArresto("alPiu", `${sorgente}[${indice}]`, String(massima)).t
           : `${sorgente}[${indice}]`;
         fase(`${r}${indice} = 0;`, "inizio");
@@ -954,6 +1015,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   function scriviFunzione(f: Funzione): Riga[] {
     dati = new Map<string, Dato>([...comuni, ...f.data].map((d) => [d.name, d]));
     deiRecord = nomiDeiRecord([...comuni, ...f.data]);
+    delleTabelle = nomiDelleTabelle([...comuni, ...f.data]);
     corpo = [];
     cicliPerOgni = 0;
     livelli = 0;
@@ -991,7 +1053,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       prese.clear();
       const e = albero(f.end.return_value!);
       const verso = { type: f.return_type!, ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}) };
-      const x = f.return_size !== undefined ? listaNuova(e, verso) : f.return_type === "record" ? recordNuovo(e) : nelDatoTesto(e, verso);
+      const x = f.return_size !== undefined ? listaNuova(e, verso) : f.return_type === "record" ? recordNuovo(e, f.end.id) : nelDatoTesto(e, verso);
       if (giro && chiamaIlGiro(e)) {
         const v = temporanea(annotazioneDelRisultato(f));
         corpo.push({ testo: `${rientro}${v} = ${x.t};`, blocco: f.end.id });
@@ -1044,8 +1106,11 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       // Una matrice riga dopo riga; con un valore per ogni elemento, letto una volta e copiato in ogni riga, come il Python.
       const elemento = d.type === "record" ? "" : annotazioneDelTipo(tipoSemplice(d.type));
       const riga = nomeDellaRigaCopiata[lingua];
+      // Una tabella record dopo record, ognuno un campo per voce.
+      const delRecord = (i: number) => `new ${d.record!}(${campiDi(d.record).map((c, k) => delCampo(elementi[i * campiDi(d.record).length + k]!, c)).join(", ")})`;
       const valore =
-        d.type === "record" ? `new ${d.record!}(${campiDi(d.record).map((c, k) => delCampo(elementi[k]!, c)).join(", ")})`
+        d.type === "record" && d.size !== undefined ? `[${[...Array(d.size).keys()].map(delRecord).join(", ")}]`
+        : d.type === "record" ? delRecord(0)
         : d.size === undefined ? uno(elementi[0]!)
         : d.columns !== undefined && ognuno ? `new Array<${elemento}[]>(${d.size}).fill(new Array<${elemento}>(${d.columns}).fill(${uno(elementi[0]!)})).map((${riga}) => Array.from(${riga}))`
         : d.columns !== undefined ? `[${[...Array(d.size).keys()].map((i) => `[${elementi.slice(i * d.columns!, (i + 1) * d.columns!).map(uno).join(", ")}]`).join(", ")}]`
@@ -1062,7 +1127,13 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     const scrivi = (testo: string, conLaChiamata = false) => righe.push({ testo: `${rientro}${usa("scrivi")}(\`${testo}\\n\`);`, ...(conLaChiamata ? delCaso : {}) });
     /** Le parti di un record come le scrive l'esecuzione (`.nome`), col tipo. */
     const campiScritti = (record: string | undefined, davanti: string): [string, TipoDelDato][] => campiDi(record).map((c) => [`${davanti}.${c.name}`, c.type]);
-    if (f.kind === "function" && f.return_type === "record") {
+    if (f.kind === "function" && f.return_size !== undefined && f.return_type === "record") {
+      // La funzione si chiama una volta, poi una riga per campo di ogni record.
+      const nome = nomeDelRisultato[lingua];
+      righe.push({ testo: `${rientro}let ${nome}: ${annotazioneDelRisultato(f)} = ${chiamataDiF};`, ...delCaso });
+      for (const k of posizioni(f.return_size, undefined))
+        for (const [x, t] of campiScritti(f.return_record, k)) scrivi(`→ ${x} = ${comeScritto(`${nome}${x}`, t)}`);
+    } else if (f.kind === "function" && f.return_type === "record") {
       // La funzione si chiama una volta, poi una riga per campo, come per un vettore.
       const nome = nomeDelRisultato[lingua];
       righe.push({ testo: `${rientro}let ${nome}: ${annotazioneDelRisultato(f)} = ${chiamataDiF};`, ...delCaso });
@@ -1081,7 +1152,8 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       for (const d of riferimenti) {
         // Un record una riga per campo, `r.nome = …`.
         const pezzi: [string, TipoDelDato][] =
-          d.type === "record" ? campiScritti(d.record, d.name)
+          d.type === "record" && d.size !== undefined ? posizioni(d.size, undefined).flatMap((k) => campiScritti(d.record, `${d.name}${k}`))
+          : d.type === "record" ? campiScritti(d.record, d.name)
           : d.size === undefined ? [[d.name, d.type]]
           : posizioni(d.size, d.columns).map((k) => [`${d.name}${k}`, d.type]);
         for (const [nome, t] of pezzi) scrivi(`${nome} = ${comeScritto(nome, t)}`);

@@ -1,0 +1,74 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "tabella-col-record-ripetuto",
+    "description": "Una tabella col record ripetuto: ogni record è un oggetto suo, e cambiarne uno non cambia gli altri."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "t",
+          "type": "record",
+          "record": "alunno",
+          "size": 2,
+          "initial": {
+            "each": [
+              "\"Ada\"",
+              "6"
+            ]
+          }
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "t[0].voto",
+          "value": "9"
+        },
+        {
+          "id": "b2",
+          "kind": "write",
+          "values": [
+            "t[0].voto",
+            "\" \"",
+            "t[1].voto"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "tabella-col-record-ripetuto",
+      "inputs": [],
+      "expected": {
+        "output": "9 6\n"
+      }
+    }
+  ]
+}

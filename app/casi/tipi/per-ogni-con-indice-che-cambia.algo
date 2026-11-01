@@ -1,0 +1,89 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "per-ogni-con-indice-che-cambia",
+    "description": "Il «per ogni» su m[k] sceglie la riga alla partenza: l'indice cambiato nel corpo, con le righe diverse, non cambia la riga percorsa."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "m",
+          "type": "integer",
+          "size": 2,
+          "columns": 3,
+          "initial": [
+            [
+              "1",
+              "2",
+              "3"
+            ],
+            [
+              "4",
+              "5",
+              "6"
+            ]
+          ]
+        },
+        {
+          "name": "k",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "x",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for_each",
+          "item": "x",
+          "source": "m[k]",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "write",
+              "values": [
+                "x",
+                "\" \""
+              ],
+              "newline": false
+            },
+            {
+              "id": "b3",
+              "kind": "assignment",
+              "target": "k",
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "\"|\"",
+            "k"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-ogni-con-indice-che-cambia",
+      "inputs": [],
+      "expected": {
+        "output": "1 2 3 |1\n"
+      }
+    }
+  ]
+}

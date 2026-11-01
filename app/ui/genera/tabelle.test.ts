@@ -48,11 +48,10 @@ test("ogni linguaggio scrive le tabelle: generato il progetto giusto, con gli er
     const atteso = !k.fuoriTappa && k.errori.length > 0 ? "errori-statici" : "generato";
     const ottenuti = linguaggi.map((v) => {
       const g = v.genera(p, tetti, "it", paroleDelloPseudocodice("it"), undefined);
-      return g.generato ? "generato" : g.perche === "non-ancora" ? `non-ancora: ${g.costrutto}` : g.perche;
+      return g.generato ? "generato" : g.perche;
     });
     // «Accademico» non ha le tabelle: per lui il progetto giusto non ci sta.
-    // Il TypeScript non sa ancora scrivere le tabelle (i record sì): per lui il progetto giusto è «non ancora» per la tabella.
-    const giusto = linguaggi.every((v, i) => ottenuti[i] === (atteso === "generato" && v.id === "accademico" ? "non-ci-sta" : atteso === "generato" && v.id === "typescript" ? "non-ancora: la tabella" : atteso));
+    const giusto = linguaggi.every((v, i) => ottenuti[i] === (atteso === "generato" && v.id === "accademico" ? "non-ci-sta" : atteso));
     return { nome, giusto, atteso, ottenuti };
   });
   expect(esiti.filter((e) => !e.giusto)).toEqual([]);
@@ -71,9 +70,8 @@ test("il programma di prova di ogni caso di una funzione con le tabelle si gener
   });
   const daEseguire = linguaggi.filter((v) => v.genere === "da-eseguire");
   const rifiutati = casi.flatMap(({ nome, p, f, caso }) => daEseguire.flatMap((v) => (v.genera(p, tetti, "it", paroleDelloPseudocodice("it"), { funzione: f.id, caso }).generato ? [] : [`${nome} ${v.id}`])));
-  // Il TypeScript li rifiuta tutti: non sa ancora scrivere il programma di prova.
-  expect(rifiutati).toEqual(casi.map(({ nome }) => `${nome} typescript`));
-  // Controllo positivo: i casi delle funzioni della cartella sono tre (crea, migliore, alzata), ognuno per due linguaggi.
+  expect(rifiutati).toEqual([]);
+  // Controllo positivo: i casi delle funzioni della cartella sono tre (crea, migliore, alzata), ognuno per tre linguaggi.
   expect(casi.length).toBe(confermato("tabelle - casi delle funzioni della cartella", casi.length));
   expect(daEseguire.length).toBe(3);
 });

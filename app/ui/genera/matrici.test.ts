@@ -18,7 +18,7 @@ import { pseudocodice } from "../../core/genera/pseudocodice";
 import { python } from "../../core/genera/python";
 import { typescript } from "../../core/genera/typescript";
 import { apri } from "../../core/progetto/formato";
-import { usaLeMatrici, usaLeTabelle, type Progetto } from "../../core/progetto/modello";
+import { usaLeMatrici, type Progetto } from "../../core/progetto/modello";
 import type { Lingua } from "../../i18n/lingue";
 import {
   comeParametroC,
@@ -50,8 +50,7 @@ test("ogni linguaggio scrive le matrici: generato il progetto giusto, con gli er
       return g.generato ? "generato" : g.perche;
     });
     // «Accademico» non ha le matrici: per lui il progetto giusto non ci sta.
-    // Il TypeScript scrive le matrici, non ancora le tabelle: per lui il progetto giusto che ne ha una è «non ancora».
-    const giusto = linguaggi.every((v, i) => ottenuti[i] === (atteso === "generato" && v.id === "accademico" ? "non-ci-sta" : atteso === "generato" && v.id === "typescript" && usaLeTabelle(p) ? "non-ancora" : atteso));
+    const giusto = linguaggi.every((v, i) => ottenuti[i] === (atteso === "generato" && v.id === "accademico" ? "non-ci-sta" : atteso));
     return { nome, giusto, atteso, ottenuti };
   });
   expect(esiti.filter((e) => !e.giusto)).toEqual([]);
@@ -70,10 +69,9 @@ test("il programma di prova di ogni caso di una funzione con le matrici si gener
   });
   const daEseguire = linguaggi.filter((v) => v.genere === "da-eseguire");
   const rifiutati = casi.flatMap(({ nome, p, f, caso }) => daEseguire.flatMap((v) => (v.genera(p, tetti, "it", paroleDelloPseudocodice("it"), { funzione: f.id, caso }).generato ? [] : [`${nome} ${v.id}`])));
-  // Il TypeScript rifiuta solo quelli di un progetto con una tabella: le matrici le sa scrivere, le tabelle non ancora.
-  expect(rifiutati).toEqual(casi.filter(({ p }) => usaLeTabelle(p)).map(({ nome }) => `${nome} typescript`));
+  expect(rifiutati).toEqual([]);
   // Controllo positivo: i casi delle funzioni della cartella sono cinque (totale, azzera_riga, trasposta, raddoppia,
-  // riempi), ognuno per due linguaggi.
+  // riempi), ognuno per tre linguaggi.
   expect(casi.length).toBe(confermato("matrici - casi delle funzioni della cartella", casi.length));
   expect(daEseguire.length).toBe(3);
 });

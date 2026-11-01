@@ -14,7 +14,9 @@
 // record quattro programmi del corpus (la costante, le copie per valore, dal risultato e col nome, il riferimento, l'uscita,
 // il campo per riferimento, la lettura in un campo) e due programmi di prova; delle matrici due programmi del corpus (la
 // copia col nome, la riga come vettore, il «per ogni» su una riga, la matrice e la riga per valore, per riferimento e
-// restituite) e due programmi di prova (le righe lette una dopo l'altra, o un valore per tutti gli elementi). Le funzioni di supporto sono scritte qui
+// restituite) e due programmi di prova (le righe lette una dopo l'altra, o un valore per tutti gli elementi); delle tabelle
+// cinque programmi del corpus (ogni via di copia, il record della tabella come record, il riferimento coi due indici
+// calcolati, il «per ogni», la tabella per valore, per uscita e restituita) e due programmi di prova. Le funzioni di supporto sonoscritte qui
 // una volta per lingua e messe in coda a ogni programma che le usa, nell'ordine fisso. Le righe allineate dicono a mano
 // quanti spazi vanno prima del commento.
 import type { Progetto } from "../../core/progetto/modello";
@@ -1743,8 +1745,345 @@ export const delleProveDelleMatrici: Readonly<Record<string, { readonly funzione
   },
 };
 
+// La tabella: un Array di oggetti della classe, ogni record un oggetto suo (`Array.from({ length: 2 }, () => new alunno())`,
+// come la comprensione del Python), copiata record per record col costruttore, dal suo generato letto prima
+// (`tipi/copia-di-una-tabella`, `scambio-e-ordinamento`, `stesso-record-della-tabella`, `tabella-come-parametro`,
+// `vettore-di-record`).
+/** Un record nuovo dai campi di `x`. */
+const alunnoDa = (x: string) => `new alunno(${x}.nome, ${x}.classe, ${x}.voto)`;
+/** La copia di una tabella dal suo nome: una lista nuova, record per record. */
+const copiaDellaTabella = (l: Lingua, x: string) => `${x}.map((${elemento(l)}) => ${alunnoDa(elemento(l))})`;
+const tabellaSenzaValore = (nome: string, n: number) => `  let ${nome}: alunno[] = Array.from({ length: ${n} }, () => new alunno());`;
+/** Una riga per campo, da un record a un altro. */
+const unaRigaPerCampo = (verso: string, da: string, rientro = "  ") => ["nome", "classe", "voto"].map((c) => `${rientro}${verso}.${c} = ${da}.${c};`);
+const dueAlunni = '[new alunno("Anna", "3A", 7), new alunno("Bruno", "3B", 5)]';
+
+/** La copia col nome, il ciclo dei record con una riga per campo; il record della tabella in un record, un record in un
+ * record della tabella, un record della tabella in un altro. */
+const copiaDiUnaTabella = (l: Lingua) => {
+  const i = indice(l);
+  return programma(
+    l,
+    "copia-di-una-tabella",
+    [
+      "function main(): void {",
+      `  let t: alunno[] = ${dueAlunni};`,
+      tabellaSenzaValore("u", 2),
+      "  let r: alunno = new alunno();",
+      `  let ${i}: number;`,
+      `  ${i} = 0;`,
+      `  while (${i} < 2) {`,
+      ...unaRigaPerCampo(`u[${i}]`, `t[${i}]`, "    "),
+      `    ${i} = ${i} + 1;`,
+      "  }",
+      "  t[0].voto = 1;",
+      "  {scrivi}(`${u[0].voto} ${t[0].voto}\\n`);",
+      ...unaRigaPerCampo("r", "t[1]"),
+      "  t[1].voto = 2;",
+      "  {scrivi}(`${r.voto} ${t[1].voto}\\n`);",
+      ...unaRigaPerCampo("u[1]", "r"),
+      "  r.voto = 3;",
+      "  {scrivi}(`${u[1].voto} ${r.voto}\\n`);",
+      ...unaRigaPerCampo("u[0]", "u[1]"),
+      '  u[1].nome = "Zeno";',
+      "  {scrivi}(`${u[0].nome} ${u[1].nome}\\n`);",
+      "}",
+    ],
+    ["scrivi"],
+    [],
+    [],
+    [classeAlunno],
+  );
+};
+
+/** Lo scambio di due record col record di appoggio, l'indice calcolato una volta in `_indice` per ogni copia; il «per ogni»
+ * sulla tabella, l'elemento un oggetto nuovo. */
+const scambioEOrdinamento = (l: Lingua) => {
+  const k = indice(l);
+  return programma(
+    l,
+    "scambio-e-ordinamento",
+    [
+      "function main(): void {",
+      '  let t: alunno[] = [new alunno("Anna", "3A", 7), new alunno("Bruno", "3B", 5), new alunno("Carla", "3A", 9), new alunno("Dario", "3C", 6)];',
+      "  let tmp: alunno = new alunno();",
+      "  let a: alunno = new alunno();",
+      "  let i!: number;",
+      "  let j!: number;",
+      `  let ${k}: number;`,
+      "  i = 0;",
+      "  while (i <= 2) {",
+      "    j = 0;",
+      "    while (j <= 2 - i) {",
+      "      if (t[j].voto > t[j + 1].voto) {",
+      ...unaRigaPerCampo("tmp", "t[j]", "        "),
+      `        ${k} = j + 1;`,
+      ...unaRigaPerCampo("t[j]", `t[${k}]`, "        "),
+      `        ${k} = j + 1;`,
+      ...unaRigaPerCampo(`t[${k}]`, "tmp", "        "),
+      "      }",
+      "      j = j + 1;",
+      "    }",
+      "    i = i + 1;",
+      "  }",
+      `  ${k} = 0;`,
+      `  while (${k} < t.length) {`,
+      `    a = ${alunnoDa(`t[${k}]`)};`,
+      "    {scrivi}(`${a.nome} ${a.voto}\\n`);",
+      `    ${k} = ${k} + 1;`,
+      "  }",
+      "}",
+    ],
+    ["scrivi"],
+    [],
+    [],
+    [classeAlunno],
+  );
+};
+
+/** Due record della tabella per riferimento, un record col campo di un altro: gli indici calcolati prima, il controllo che
+ * siano diversi, la tupla riassegnata ai due posti. */
+const stessoRecordDellaTabella = (l: Lingua) => {
+  const [i1, i2] = [indice(l), indice(l, 2)];
+  return programma(
+    l,
+    "stesso-record-della-tabella",
+    [
+      "function main(): void {",
+      `  let t: alunno[] = ${dueAlunni};`,
+      "  let i!: number;",
+      "  let j!: number;",
+      "  let k!: number;",
+      `  let ${i1}: number;`,
+      `  let ${i2}: number;`,
+      "  i = {leggiIntero}();",
+      "  j = {leggiIntero}();",
+      "  k = {leggiIntero}();",
+      `  ${i1} = i;`,
+      `  ${i2} = j;`,
+      `  {elementiDiversi}(${i1}, ${i2});`,
+      `  [t[${i1}], t[${i2}]] = scambia(t[${i1}], t[${i2}]);`,
+      "  {scrivi}(`${t[0].nome} ${t[1].nome}\\n`);",
+      `  ${i1} = i;`,
+      `  ${i2} = k;`,
+      `  {elementiDiversi}(${i1}, ${i2});`,
+      `  [t[${i1}], t[${i2}].voto] = metti(t[${i1}], t[${i2}].voto);`,
+      "  {scrivi}(`${t[0].voto} ${t[1].voto}\\n`);",
+      "}",
+    ],
+    ["leggiIntero", "elementiDiversi", "scrivi"],
+    [],
+    [
+      {
+        nome: "scambia",
+        righe: [
+          "function scambia(x: alunno, y: alunno): [alunno, alunno] {",
+          "  let tmp: alunno = new alunno();",
+          ...unaRigaPerCampo("tmp", "x"),
+          ...unaRigaPerCampo("x", "y"),
+          ...unaRigaPerCampo("y", "tmp"),
+          "  return [x, y];",
+          "}",
+        ],
+      },
+      { nome: "metti", righe: ["function metti(x: alunno, v: number): [alunno, number] {", "  v = 0;", "  x.voto = 1;", "  return [x, v];", "}"] },
+    ],
+    [classeAlunno],
+  );
+};
+
+/** La tabella col valore per record, la costante col record ripetuto (ogni record un oggetto suo); il campo letto, scritto e
+ * letto dalla console; il «per ogni» il cui elemento è una copia presa prima del corpo. */
+const vettoreDiRecord = (l: Lingua) => {
+  const i = indice(l);
+  return programma(
+    l,
+    "vettore-di-record",
+    [
+      "function main(): void {",
+      '  let classe: alunno[] = [new alunno("Anna", "3A", 7), new alunno("Bruno", "3B", 5), new alunno("Carla", "3A", 8)];',
+      "  let a: alunno = new alunno();",
+      "  let somma: number = 0;",
+      `  let ${i}: number;`,
+      "  classe[1].voto = classe[1].voto + 1;",
+      "  classe[2].nome = {leggiStringa}(20);",
+      `  ${i} = 0;`,
+      `  while (${i} < classe.length) {`,
+      `    a = ${alunnoDa(`classe[${i}]`)};`,
+      "    classe[0].voto = 0;",
+      "    {scrivi}(`${a.nome} ${a.voto}\\n`);",
+      "    somma = somma + a.voto;",
+      `    ${i} = ${i} + 1;`,
+      "  }",
+      "  {scrivi}(`${VUOTI[1].classe} ${somma} ${classe[0].voto}\\n`);",
+      "}",
+    ],
+    ["leggiStringa", "scrivi"],
+    ['const VUOTI: alunno[] = Array.from({ length: 2 }, () => new alunno("-", "0X", 0));'],
+    [],
+    [classeAlunno],
+  );
+};
+
+const costanteIniziali = 'const INIZIALI: alunno[] = [new alunno("Ada", "1A", 1), new alunno("Ben", "1B", 2), new alunno("Cloe", "1C", 3)];';
+/** La tabella per valore copiata per prima, per riferimento restituita, per uscita dichiarata e restituita; il record della
+ * tabella per valore e restituito come un oggetto nuovo; la tabella restituita dal nome e da una costante, una copia. */
+const delleTabelleComeParametro = (l: Lingua): readonly { readonly nome: string; readonly righe: readonly string[] }[] => [
+  {
+    nome: "alza",
+    righe: [
+      "function alza(x: alunno[], y: alunno[]): alunno[] {",
+      `  x = ${copiaDellaTabella(l, "x")};`,
+      "  y[0].voto = 8;",
+      "  {scrivi}(`${x[0].voto} ${y[0].voto}\\n`);",
+      "  return y;",
+      "}",
+    ],
+  },
+  {
+    nome: "crea",
+    righe: [
+      "function crea(s: alunno): alunno[] {",
+      `  s = ${alunnoDa("s")};`,
+      tabellaSenzaValore("z", 3),
+      ...unaRigaPerCampo("z[0]", "s"),
+      ...unaRigaPerCampo("z[1]", "s"),
+      ...unaRigaPerCampo("z[2]", "s"),
+      "  z[1].voto = 0;",
+      "  s.voto = 99;",
+      "  return z;",
+      "}",
+    ],
+  },
+  {
+    nome: "migliore",
+    righe: [
+      "function migliore(x: alunno[]): alunno {",
+      `  x = ${copiaDellaTabella(l, "x")};`,
+      "  let b: number = 0;",
+      "  let k!: number;",
+      "  k = 1;",
+      "  while (k <= 2) {",
+      "    if (x[k].voto > x[b].voto) {",
+      "      b = k;",
+      "    }",
+      "    k = k + 1;",
+      "  }",
+      `  return ${alunnoDa("x[b]")};`,
+      "}",
+    ],
+  },
+  {
+    nome: "alzata",
+    righe: [
+      "function alzata(x: alunno[]): alunno[] {",
+      `  x = ${copiaDellaTabella(l, "x")};`,
+      "  x[1].voto = 100;",
+      `  return ${copiaDellaTabella(l, "x")};`,
+      "}",
+    ],
+  },
+  { nome: "iniziali", righe: ["function iniziali(): alunno[] {", `  return ${copiaDellaTabella(l, "INIZIALI")};`, "}"] },
+];
+
+const tabellaComeParametro = (l: Lingua) => {
+  const [i, s] = [indice(l), sorgente(l)];
+  return programma(
+    l,
+    "tabella-come-parametro",
+    [
+      "function main(): void {",
+      '  let t: alunno[] = [new alunno("Anna", "3A", 7), new alunno("Bruno", "3B", 5), new alunno("Carla", "3A", 9)];',
+      tabellaSenzaValore("u", 3),
+      "  let m: alunno = new alunno();",
+      "  let a: alunno = new alunno();",
+      `  let ${i}: number;`,
+      `  let ${s}: alunno[];`,
+      "  t = alza(t, t);",
+      "  u = crea(t[2]);",
+      "  {scrivi}(`${u[1].nome} ${u[1].voto} ${u[2].voto} ${t[2].voto}\\n`);",
+      "  m = migliore(t);",
+      "  {scrivi}(`${m.nome}\\n`);",
+      "  u = alzata(t);",
+      "  {scrivi}(`${u[1].voto} ${t[1].voto} ${alzata(t)[2].nome}\\n`);",
+      "  u = iniziali();",
+      "  u[0].voto = 50;",
+      "  {scrivi}(`${u[0].voto} ${INIZIALI[0].voto}\\n`);",
+      `  ${s} = iniziali();`,
+      `  ${i} = 0;`,
+      `  while (${i} < ${s}.length) {`,
+      `    a = ${alunnoDa(`${s}[${i}]`)};`,
+      "    {scrivi}(`${a.nome}\\n`);",
+      `    ${i} = ${i} + 1;`,
+      "  }",
+      "}",
+    ],
+    ["scrivi"],
+    [costanteIniziali],
+    delleTabelleComeParametro(l),
+    [classeAlunno],
+  );
+};
+const funzioneDiTabellaComeParametro = (l: Lingua, nome: string) => delleTabelleComeParametro(l).filter((f) => f.nome === nome);
+const alunnoLetto = "new alunno({leggiStringa}(20), {leggiStringa}(3), {leggiIntero}())";
+const postiDelleTabelle = ["[0]", "[1]", "[2]"].flatMap((k) => ["nome", "classe", "voto"].map((c) => `${k}.${c}`));
+
+/** I programmi di prova con le tabelle: il record letto campo dopo campo, la tabella record dopo record; il risultato una
+ * riga scritta per campo di ogni record; il parametro per uscita dichiarato, che dà la chiamata. */
+export const delleProveDelleTabelle: Readonly<Record<string, { readonly funzione: string; readonly caso: string; readonly atteso: Atteso }>> = {
+  "tipi/tabella-come-parametro": {
+    funzione: "alzata",
+    caso: "da-sola",
+    atteso: inDueLingue((l) =>
+      programma(
+        l,
+        "tabella-come-parametro",
+        [
+          "function main(): void {",
+          `  let x: alunno[] = [${alunnoLetto}, ${alunnoLetto}, ${alunnoLetto}];`,
+          `  let ${risultato(l)}: alunno[] = alzata(x);`,
+          ...postiDelleTabelle.map((k) => `  {scrivi}(\`→ ${k} = \${${risultato(l)}${k}}\\n\`);`),
+          "}",
+        ],
+        ["leggiStringa", "leggiIntero", "scrivi"],
+        [costanteIniziali],
+        funzioneDiTabellaComeParametro(l, "alzata"),
+        [classeAlunno],
+      ),
+    ),
+  },
+  "tipi/tabella-come-parametro#crea": {
+    funzione: "crea",
+    caso: "da-sola",
+    atteso: inDueLingue((l) =>
+      programma(
+        l,
+        "tabella-come-parametro",
+        [
+          "function main(): void {",
+          "  let z!: alunno[];",
+          `  let s: alunno = ${alunnoLetto};`,
+          "  z = crea(s);",
+          "  {scrivi}(`\\n`);",
+          ...postiDelleTabelle.map((k) => `  {scrivi}(\`z${k} = \${z${k}}\\n\`);`),
+          "}",
+        ],
+        ["leggiStringa", "leggiIntero", "scrivi"],
+        [costanteIniziali],
+        funzioneDiTabellaComeParametro(l, "crea"),
+        [classeAlunno],
+      ),
+    ),
+  },
+};
+
 /** I programmi del corpus, per percorso del file (senza `.algo`), nelle due lingue. */
 export const delCorpus: Readonly<Record<string, Atteso>> = {
+  "tipi/copia-di-una-tabella": inDueLingue(copiaDiUnaTabella),
+  "tipi/scambio-e-ordinamento": inDueLingue(scambioEOrdinamento),
+  "tipi/stesso-record-della-tabella": inDueLingue(stessoRecordDellaTabella),
+  "tipi/vettore-di-record": inDueLingue(vettoreDiRecord),
+  "tipi/tabella-come-parametro": inDueLingue(tabellaComeParametro),
   "tipi/copia-di-una-matrice": inDueLingue(copiaDiUnaMatrice),
   "tipi/matrice-come-parametro": inDueLingue(matriceComeParametro),
   "tipi/record-in-un-programma": inDueLingue(recordInUnProgramma),

@@ -64,7 +64,7 @@ export interface Mancanza {
   readonly funzione?: string;
 }
 
-/** Con `non-ancora`, un generatore che cresce un gruppo di costrutti per volta (oggi il TypeScript) non sa ancora
+/** Con `non-ancora`, un generatore che cresce un gruppo di costrutti per volta (oggi nessuno) non sa ancora
  * scrivere `costrutto`, il primo che trova: lo dice chi conta i programmi generati, l'interfaccia mostra il testo del
  * fuori tappa. */
 export type Generato =

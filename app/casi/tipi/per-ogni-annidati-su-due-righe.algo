@@ -1,0 +1,99 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "per-ogni-annidati-su-due-righe",
+    "description": "Due «per ogni» uno dentro l'altro su due righe scelte con un indice in un dato: ognuno tiene la sua riga, anche con lo stesso giro."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "m",
+          "type": "integer",
+          "size": 2,
+          "columns": 2,
+          "initial": [
+            [
+              "1",
+              "2"
+            ],
+            [
+              "3",
+              "4"
+            ]
+          ]
+        },
+        {
+          "name": "k",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "j",
+          "type": "integer",
+          "initial": "1"
+        },
+        {
+          "name": "x",
+          "type": "integer"
+        },
+        {
+          "name": "y",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for_each",
+          "item": "x",
+          "source": "m[k]",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "for_each",
+              "item": "y",
+              "source": "m[j]",
+              "body": [
+                {
+                  "id": "b3",
+                  "kind": "write",
+                  "values": [
+                    "x",
+                    "\" \"",
+                    "y",
+                    "\";\""
+                  ],
+                  "newline": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "\"|\""
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-ogni-annidati-su-due-righe",
+      "inputs": [],
+      "expected": {
+        "output": "1 3;1 4;2 3;2 4;|\n"
+      }
+    }
+  ]
+}
