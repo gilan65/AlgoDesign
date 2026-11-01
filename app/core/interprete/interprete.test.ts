@@ -1,6 +1,7 @@
 // L'interprete delle tappe dalla 1 alla 4: il corpus eseguito coi suoi casi d'uso, le prove sui comportamenti che il
 // corpus non esercita, le procedure e le funzioni evento per evento (sequenze scritte a mano), il censimento dei codici
-// d'errore dell'interprete e le mutazioni. I casi delle funzioni eseguite da sole li prova `core/casi/esecutore.test.ts`.
+// d'errore dell'interprete e, solo in `bun run mutazioni`, le mutazioni. I casi delle funzioni eseguite da sole li prova
+// `core/casi/esecutore.test.ts`.
 //
 // Qui un caso d'uso consegna i suoi input in ordine e confronta `output`, `error.code` ed `error.block`.
 // Il destinatario di ogni voce (`input_mismatch`), le voci avanzate (`unused_inputs`) e `warnings` sono
@@ -10,6 +11,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { confermato } from "../../strumenti/corpus";
+import { variabileDelleMutazioni } from "../../strumenti/mutazioni";
 import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -910,6 +912,10 @@ describe("procedure e funzioni, evento per evento", () => {
 // corpus, una delle potenze inesatte o una delle sequenze attese delle chiamate deve diventare rosso. Il
 // sorgente si copia in una cartella temporanea, con gli import resi assoluti; la copia senza mutazioni è
 // il controllo positivo.
+//
+// Sono quasi metà del tempo di `bun test` (ognuna rifà il corpus intero, 314 s su 680, e una tocca i 3,7 GB) e dipendono da
+// questa cartella: senza la variabile di `strumenti/mutazioni.ts` non esistono (non sono saltate: un `skip` il collaudo lo
+// fa rosso), e la sua porta è rossa se la cartella è cambiata dopo l'ultima `bun run mutazioni`.
 const sorgente = readFileSync(join(import.meta.dir, "interprete.ts"), "utf8");
 const mutazioni: Record<string, [string, string]> = {
   "nessuna (controllo positivo)": ["", ""],
@@ -1070,7 +1076,7 @@ const mutazioni: Record<string, [string, string]> = {
   ],
 };
 
-describe("mutazioni: le primitive di JavaScript e le regole sbagliate fanno rosso il corpus o le sequenze", () => {
+if (process.env[variabileDelleMutazioni] === "1") describe("mutazioni: le primitive di JavaScript e le regole sbagliate fanno rosso il corpus o le sequenze", () => {
   const nucleo = join(import.meta.dir, "..").replaceAll("\\", "/");
   for (const [nome, [da, a]] of Object.entries(mutazioni)) {
     test(
