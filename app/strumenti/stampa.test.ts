@@ -138,14 +138,14 @@ test("un linguaggio che non c'è, scritto due volte, o la forma senza tipi: esce
   expect(senzaIlProgetto(dove)).toEqual([]);
 });
 
-test("un progetto con errori statici: esce 1, una riga per errore col codice e il testo breve, senza scrivere, con qualunque coppia", () => {
+test("un progetto con errori statici: esce 1, una riga per errore col testo breve, senza scrivere, con qualunque coppia", () => {
   const { dove, file } = copia("tipi/campo-sconosciuto");
   const a = apri(readFileSync(file, "utf8"));
   if (!a.ok) throw new Error("non si apre");
   const c = controlla(a.progetto, tetti);
   if (c.fuoriTappa) throw new Error("fuori tappa");
   expect(c.errori.length).toBeGreaterThan(0);
-  const attese = [...new Set(c.errori.map((e) => `ERRORE ${file}: errore statico ${e.code}, ${testiDeiCodici.it[e.code as keyof typeof testiDeiCodici.it].breve}`))];
+  const attese = [...new Set(c.errori.map((e) => `ERRORE ${file}: il progetto ha un errore, ${testiDeiCodici.it[e.code as keyof typeof testiDeiCodici.it].breve}`))];
   expect(lancia("stampa", file)).toEqual({ esito: FERMO, righe: attese });
   expect(lancia("stampa", file, "--linguaggi", "pseudocodice", "accademico")).toEqual({ esito: FERMO, righe: attese });
   expect(senzaIlProgetto(dove)).toEqual([]);

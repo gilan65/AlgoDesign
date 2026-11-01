@@ -20,7 +20,7 @@ const comandi = { accademico: comandoAccademico, stampa: comandoStampa } as cons
 const modoDUso = `Gli strumenti di AlgoDesign a riga di comando.
 
   ${nome} accademico <testo.txt> [opzioni]    da un testo in «Accademico» una libreria di AlgoDesign
-  ${nome} stampa <progetto.algo> [opzioni]    due testi di codice affiancati da stampare, e la pagina di prova nel browser
+  ${nome} stampa <progetto.algo> [opzioni]    due testi di codice affiancati da stampare e la pagina di prova nel browser
   ${nome} <comando> -h                        l'aiuto di un comando
   ${nome} -h                                  mostra questo aiuto
 `;

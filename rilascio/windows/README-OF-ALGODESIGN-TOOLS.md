@@ -20,7 +20,7 @@ It needs no installation, and AlgoDesign is not needed to use it (it is needed t
 .\algodesign-tools stampa exercise.algo --lingua en
 ```
 
-Files are given with their path, or copied into the same folder. The two commands are explained in the guide to `algodesign-tools`, `GUIDA-AD-ALGODESIGN-TOOLS.md`, in this folder (in Italian); the options, the examples and what `accademico` prints in chapter 6 of the guide to “Academic”, `GUIDA-AD-ACCADEMICO.md` (in Italian). The tool writes only the files it is told to write, and its messages are in Italian.
+Files are given with their path, or copied into the same folder. The two commands are explained in the guide to `algodesign-tools`, `GUIDA-AD-ALGODESIGN-TOOLS.md`, in this folder (in Italian); the options, the examples and what `accademico` prints in chapter 6 of the guide to “Academic”, `GUIDA-AD-ACCADEMICO.md` (in Italian). The tool writes only the files its command produces, and its messages are in Italian.
 
 If you had `algodesign-accademico.exe`, the tool of the previous versions, type `accademico` after the new name; the rest of the line does not change.
 

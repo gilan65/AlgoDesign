@@ -75,7 +75,7 @@ export function paginaDelProgetto(p: Progetto, colonne: readonly [Colonnina, Col
     switch (g.perche) {
       case "errori-statici": {
         const r = controlla(p, tetti);
-        return r.fuoriTappa ? [`${percorso}: ha costrutti che questa versione non esegue`] : r.errori.map((e) => `${percorso}: errore statico ${e.code}, ${testiDeiCodici.it[e.code as keyof typeof testiDeiCodici.it].breve}`);
+        return r.fuoriTappa ? [`${percorso}: ha costrutti che questa versione non esegue`] : r.errori.map((e) => `${percorso}: il progetto ha un errore, ${testiDeiCodici.it[e.code as keyof typeof testiDeiCodici.it].breve}`);
       }
       case "non-ci-sta":
         return [`${percorso} non ci sta in «${c.italiano}»: ${g.mancanze.length === 1 ? "manca una cosa" : `mancano ${g.mancanze.length} cose`} (l'elenco è nell'app, nella linguetta «${c.italiano}»)`];
