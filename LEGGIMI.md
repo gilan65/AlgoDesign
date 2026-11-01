@@ -40,7 +40,7 @@ Le versioni di prova si scaricano dalla pagina del progetto.
 2. Estrai lo zip dove preferisci (il Desktop, una cartella dei documenti, una chiavetta): nasce la cartella `AlgoDesign-0.6.0-beta.2`.
 3. Apri la cartella e fai doppio clic su `AlgoDesign.exe`.
 
-**Lo strumento di «Accademico».** Accanto allo zip di AlgoDesign c'è un pacchetto a parte, `AlgoDesign-Accademico-0.6.0-beta.2-windows.zip`, con la sua impronta: `algodesign-accademico.exe` legge un testo scritto in «Accademico» e ne fa una libreria di AlgoDesign, da aprire ed eseguire passo passo. Si usa dal Terminale di Windows; come, lo dicono il `LEGGIMI.md` del pacchetto e il capitolo 6 della guida ad «Accademico», che il pacchetto porta con sé.
+**Lo strumento di «Accademico».** Accanto allo zip di AlgoDesign c'è un pacchetto a parte, `AlgoDesign-Tools-0.6.0-beta.2-windows.zip`, con la sua impronta: `algodesign-tools.exe` legge un testo scritto in «Accademico» e ne fa una libreria di AlgoDesign, da aprire ed eseguire passo passo. Si usa dal Terminale di Windows; come, lo dicono il `LEGGIMI.md` del pacchetto e il capitolo 6 della guida ad «Accademico», che il pacchetto porta con sé.
 
 **L'avviso di Windows al primo avvio.** AlgoDesign non è firmato digitalmente, e Windows avvisa quando si avvia un programma non firmato scaricato da internet. Se compare la finestra «Windows ha protetto il PC», scegli «Ulteriori informazioni» e poi «Esegui comunque». Per evitarla, prima di estrarre lo zip apri le sue Proprietà (tasto destro sullo zip), segna «Sblocca» in basso nella scheda «Generale» e conferma con «OK».
 

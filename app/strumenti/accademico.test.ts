@@ -1,4 +1,4 @@
-// Lo strumento a riga di comando di «Accademico» come processo, in una cartella temporanea: gli esiti (0, 1 senza
+// Il comando `accademico` dello strumento a riga di comando come processo, in una cartella temporanea: gli esiti (0, 1 senza
 // scrivere nulla, 2 col modo d'uso) e i messaggi dei casi che non dipendono dal lettore: il nome della procedura del
 // codice fuori dalle funzioni, il file d'uscita che c'è già e `-s`, `-o` uguale al testo, il testo in UTF-16, l'errore
 // che la libreria aveva già, il file che non si scrive.
@@ -24,7 +24,7 @@ const scrivi = (file: string, contenuto: string | Buffer) => {
   return p;
 };
 function lancia(...argomenti: string[]): { esito: number; righe: string[] } {
-  const r = Bun.spawnSync(["bun", "./strumenti/accademico.ts", ...argomenti], { cwd: app, stdout: "pipe", stderr: "pipe" });
+  const r = Bun.spawnSync(["bun", "./strumenti/algodesign-tools.ts", "accademico", ...argomenti], { cwd: app, stdout: "pipe", stderr: "pipe" });
   return { esito: r.exitCode ?? -1, righe: `${r.stdout}${r.stderr}`.trim().split(/\r?\n/) };
 }
 

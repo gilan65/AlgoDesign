@@ -34,26 +34,27 @@
 //    di Windows. Estratto in una cartella temporanea due volte, col `tar` e con la libreria degli zip di .NET (un
 //    lettore diverso da quello che lo ha scritto), ha le voci dell'elenco e ogni file ha l'impronta di quello della
 //    cartella. Accanto, `<zip>.sha256` con l'impronta dello zip.
-// 7. STRUMENTO: l'eseguibile a sé dello strumento di «Accademico» (`bun build --compile ./strumenti/accademico.ts`), in
+// 7. STRUMENTO: l'eseguibile a sé dello strumento a riga di comando (`bun build --compile ./strumenti/algodesign-tools.ts`), in
 //    una cartella temporanea nuova, con la lettura di `.env` e di `bunfig.toml` della cartella di avvio spenta (Bun la fa
-//    per predefinito) e le proprietà: il nome «AlgoDesign Accademico», la versione coi tre numeri e uno zero (Bun non
+//    per predefinito) e le proprietà: il nome «AlgoDesign Tools», la versione coi tre numeri e uno zero (Bun non
 //    accetta il suffisso: esce 1 e lascia lo stesso un eseguibile con le proprietà sue, quindi conta l'exit code), la
 //    versione intera nella descrizione, la società e il copyright di `tauri.conf.json`. L'icona di AlgoDesign
 //    (`shell/icons/icon.ico`, `--windows-icon`): ogni immagine dell'`.ico` dentro l'eseguibile, byte per byte; controllo
 //    positivo, Bun non ne ha nessuna e l'eseguibile dell'app, se c'è, le ha tutte. I moduli del metafile del build
 //    tutti del repository, fuori da `node_modules` (una libreria di altri vorrebbe la sua licenza); nei byte nessuno dei
 //    percorsi della macchina di 3, con lo stesso rilevatore e lo stesso controllo positivo.
-// 8. CARTELLA DELLO STRUMENTO: `dist/<versione>-accademico/` (`dist/prova/…` con `--prova`) con le voci di
+// 8. CARTELLA DELLO STRUMENTO: `dist/<versione>-tools/` (`dist/prova/…` con `--prova`) con le voci di
 //    `elencoDelloStrumento`: i due testi brevi da `--testi` (tracciati, coi segnaposto sostituiti), la guida ad
 //    «Accademico» da `docs/` (rossa se non dice il nome dello zip dello strumento), le due licenze dalla radice e le
 //    licenze di terze parti di `licenzeDelloStrumento` (`licenze.ts`). Il confronto nei due versi col controllo positivo.
-// 9. ZIP DELLO STRUMENTO: `dist/AlgoDesign-Accademico-<versione>-windows.zip`, con dentro la cartella
-//    `AlgoDesign-Accademico-<versione>`, con le prove di 6 e l'impronta accanto.
+// 9. ZIP DELLO STRUMENTO: `dist/AlgoDesign-Tools-<versione>-windows.zip`, con dentro la cartella
+//    `AlgoDesign-Tools-<versione>`, con le prove di 6 e l'impronta accanto.
 // 10. PROVA DELLO STRUMENTO: lo zip estratto in una cartella con uno spazio nel nome, l'eseguibile avviato da lì con un
 //    PATH senza Bun: `-h` mostra il modo d'uso col nome dell'eseguibile; un'opzione sbagliata esce 2; un testo con un
 //    errore esce 1 col messaggio e la riga, senza scrivere; i testi in «Accademico» dei cinque esempi forniti che ci
 //    stanno (scritti a mano in `ui/genera/attesi-di-accademico.ts`), letti uno dopo l'altro in una sola libreria (`-o`,
-//    poi `-l` e `-r`), danno le stesse righe e la stessa libreria, byte per byte, di `bun ./strumenti/accademico.ts`.
+//    poi `-l` e `-r`), danno le stesse righe e la stessa libreria, byte per byte, di `bun ./strumenti/algodesign-tools.ts accademico`;
+//    `stampa` su un progetto del corpus, senza e con `--linguaggi`, scrive le stesse pagine, byte per byte, della stessa riga con Bun.
 //    Le tracce: i nomi nuovi al primo livello di %APPDATA%, %LOCALAPPDATA%, %TEMP% (e %TMP%, se è un'altra cartella)
 //    intorno ai soli avvii dell'eseguibile; controllo positivo, l'eseguibile che scrive la sua uscita in %TEMP%.
 //
@@ -150,7 +151,7 @@ const configurazione = JSON.parse(readFileSync(join(radice, "shell", "tauri.conf
 const nomiS = nomiDelloStrumento(testoDelPackageJson);
 const cartellaDelloStrumento = join(dist, nomiS.cartella);
 const zipDelloStrumento = join(dist, nomiS.zip);
-const eseguibileS = "algodesign-accademico.exe";
+const eseguibileS = "algodesign-tools.exe";
 const data = dataMostrata(dataDiRilascio, "it");
 
 /** Lo stato dell'albero: il commit e le righe di `git status`. */
@@ -444,18 +445,18 @@ async function eseguibileDelloStrumento(): Promise<{ exe: string; moduli: string
   const metafile = join(build, "metafile.json");
   const { publisher, copyright } = configurazione.bundle;
   if (publisher === undefined || copyright === undefined) rosso("STRUMENTO", "tauri.conf.json non ha bundle.publisher e bundle.copyright");
-  const descrizione = `Lo strumento di Accademico di AlgoDesign ${nomiS.versione}`;
+  const descrizione = `Gli strumenti di AlgoDesign ${nomiS.versione}`;
   const b = await esegui([
     process.execPath,
     "build",
     "--compile",
-    "./strumenti/accademico.ts",
+    "./strumenti/algodesign-tools.ts",
     "--outfile",
     exe,
     `--metafile=${metafile}`,
     "--no-compile-autoload-dotenv",
     "--no-compile-autoload-bunfig",
-    "--windows-title=AlgoDesign Accademico",
+    "--windows-title=AlgoDesign Tools",
     `--windows-publisher=${publisher}`,
     `--windows-version=${nomiS.versioneDellEseguibile}`,
     `--windows-description=${descrizione}`,
@@ -466,7 +467,7 @@ async function eseguibileDelloStrumento(): Promise<{ exe: string; moduli: string
   if (b.codice !== 0 || !existsSync(exe)) rosso("STRUMENTO", `bun build --compile esce ${b.codice}${existsSync(exe) ? " (l'eseguibile c'è, ma non vale)" : ""} (dettaglio nel log)`);
   const nomiDelleProprieta = ["ProductName", "ProductVersion", "CompanyName", "LegalCopyright", "FileDescription"];
   const lette = await proprieta(exe, nomiDelleProprieta);
-  const attese = ["AlgoDesign Accademico", nomiS.versioneDellEseguibile, publisher, copyright, descrizione];
+  const attese = ["AlgoDesign Tools", nomiS.versioneDellEseguibile, publisher, copyright, descrizione];
   if (lette === null || attese.some((a, i) => a !== lette[i])) rosso("STRUMENTO", `le proprietà dell'eseguibile ${JSON.stringify(lette)} invece di ${JSON.stringify(attese)}`);
   // L'icona: quella di AlgoDesign, non quella di Bun. Controllo positivo: lo stesso confronto su Bun dà un'icona diversa
   // (il rilevatore sa dire «diversa»), e sull'eseguibile dell'app, se c'è, la stessa (sa dire «uguale»).
@@ -569,32 +570,50 @@ async function provaLoStrumento(): Promise<void> {
     mkdirSync(join(lavoro, "con lo strumento"));
     const libreriaDiBun = join(lavoro, "con bun", "esercizi.algo");
     for (const [i, t] of testi.entries()) {
-      const r = await esegui([process.execPath, "./strumenti/accademico.ts", t, ...(i === 0 ? ["-o", libreriaDiBun] : ["-l", libreriaDiBun]), "-r"]);
-      if (r.codice !== 0) rosso(C, `bun ./strumenti/accademico.ts su ${t} esce ${r.codice} (dettaglio nel log)`);
+      const r = await esegui([process.execPath, "./strumenti/algodesign-tools.ts", "accademico", t, ...(i === 0 ? ["-o", libreriaDiBun] : ["-l", libreriaDiBun]), "-r"]);
+      if (r.codice !== 0) rosso(C, `bun ./strumenti/algodesign-tools.ts accademico su ${t} esce ${r.codice} (dettaglio nel log)`);
       righeDiBun.push(`${r.out}${r.err}`.replace(/\r/g, "").trim().replaceAll(libreriaDiBun, "<libreria>"));
     }
 
     const prima = fotografia();
-    const aiuto = await lancia([exe, "-h"]);
-    const sbagliata = await lancia([exe, "-x"]);
-    const errore = await lancia([exe, rotto]);
+    const aiuto = await lancia([exe, "accademico", "-h"]);
+    const sbagliata = await lancia([exe, "accademico", "-x"]);
+    const errore = await lancia([exe, "accademico", rotto]);
     const libreria = join(lavoro, "con lo strumento", "esercizi.algo");
     const righe: string[] = [];
     for (const [i, t] of testi.entries()) {
-      const r = await lancia([exe, t, ...(i === 0 ? ["-o", libreria] : ["-l", libreria]), "-r"]);
+      const r = await lancia([exe, "accademico", t, ...(i === 0 ? ["-o", libreria] : ["-l", libreria]), "-r"]);
       if (r.codice !== 0) rosso(C, `lo strumento su ${t} esce ${r.codice}: ${r.uscita}`);
       righe.push(r.uscita.replaceAll(libreria, "<libreria>"));
     }
+    // `stampa`: le stesse pagine di Bun, byte per byte, senza e con `--linguaggi`, con un progetto che ha uno spazio nel nome.
+    const progetto = join(lavoro, "il progetto.algo");
+    cpSync(join(radice, "casi", "tappa-3", "tre-livelli.algo"), progetto);
+    const paginaDiBun = join(lavoro, "con bun");
+    const pagineDelloStrumento = join(lavoro, "con lo strumento");
+    const scelte: readonly (readonly string[])[] = [[], ["--linguaggi", "pseudocodice", "c"]];
+    for (const scelta of scelte) {
+      const r = await lancia([exe, "stampa", progetto, ...scelta, "-o", pagineDelloStrumento]);
+      if (r.codice !== 0 || !r.uscita.startsWith("SCRITTO ")) rosso(C, `stampa ${scelta.join(" ")} esce ${r.codice}: «${r.uscita}»`);
+    }
     const tracce = nomiNuovi(prima);
+    for (const scelta of scelte) {
+      const r = await esegui([process.execPath, "./strumenti/algodesign-tools.ts", "stampa", progetto, ...scelta, "-o", paginaDiBun]);
+      if (r.codice !== 0) rosso(C, `bun ./strumenti/algodesign-tools.ts stampa ${scelta.join(" ")} esce ${r.codice} (dettaglio nel log)`);
+    }
+    const pagine = readdirSync(pagineDelloStrumento).filter((f) => f.endsWith(".html")).sort();
+    const pagineDiBun = readdirSync(paginaDiBun).filter((f) => f.endsWith(".html")).sort();
+    if (pagine.length !== scelte.length || pagine.join() !== pagineDiBun.join()) rosso(C, `le pagine sono ${pagine.join(", ")} invece di ${pagineDiBun.join(", ")}`);
+    for (const f of pagine) if (impronta(join(pagineDelloStrumento, f)) !== impronta(join(paginaDiBun, f))) rosso(C, `la pagina «${f}» dello strumento non è quella di bun, byte per byte`);
     // Controllo positivo, nella stessa finestra: l'uscita scritta in %TEMP% si deve vedere.
-    const marcatore = `algodesign-accademico-prova-${process.pid}.algo`;
-    await lancia([exe, testi[0]!, "-o", join(radiciDelleTracce.TEMP!, marcatore)]);
+    const marcatore = `algodesign-tools-prova-${process.pid}.algo`;
+    await lancia([exe, "accademico", testi[0]!, "-o", join(radiciDelleTracce.TEMP!, marcatore)]);
     const acceso = nomiNuovi(prima).includes(`TEMP\\${marcatore}`);
     rmSync(join(radiciDelleTracce.TEMP!, marcatore), { force: true });
 
     if (conBun.length === 0) rosso(C, "nel PATH di questo processo nessuna cartella ha bun.exe: la prova «senza Bun» non toglierebbe nulla");
-    if (aiuto.codice !== 0 || !aiuto.uscita.includes("algodesign-accademico <testo.txt> [-l libreria.algo]")) rosso(C, `-h esce ${aiuto.codice} senza il modo d'uso col nome dell'eseguibile: «${aiuto.uscita.slice(0, 200)}»`);
-    if (sbagliata.codice !== 2 || !sbagliata.uscita.includes("algodesign-accademico <testo.txt>")) rosso(C, `un'opzione sbagliata esce ${sbagliata.codice} senza il modo d'uso`);
+    if (aiuto.codice !== 0 || !aiuto.uscita.includes("algodesign-tools accademico <testo.txt> [-l libreria.algo]")) rosso(C, `-h esce ${aiuto.codice} senza il modo d'uso col nome dell'eseguibile: «${aiuto.uscita.slice(0, 200)}»`);
+    if (sbagliata.codice !== 2 || !sbagliata.uscita.includes("algodesign-tools accademico <testo.txt>")) rosso(C, `un'opzione sbagliata esce ${sbagliata.codice} senza il modo d'uso`);
     if (errore.codice !== 1 || !errore.uscita.includes("riga 4") || existsSync(join(lavoro, "testo con un errore.algo"))) rosso(C, `il testo con un errore esce ${errore.codice}: «${errore.uscita}»`);
     const diverse = righe.map((r, i) => (r === righeDiBun[i] ? null : `${testi[i]}: «${r}» invece di «${righeDiBun[i]}»`)).filter((d) => d !== null);
     if (diverse.length > 0) rosso(C, `righe diverse da quelle di bun: ${diverse.join("; ")}`);
@@ -607,7 +626,7 @@ async function provaLoStrumento(): Promise<void> {
     if (!acceso) rosso(C, "controllo positivo delle tracce SPENTO: l'uscita scritta in %TEMP% non si vede");
     if (tracce.length > 0) rosso(C, `lo strumento lascia tracce: ${tracce.join(", ")}`);
     riga(
-      `${C}: VERDE | estratto in «${relative(base, dentro)}», PATH senza le ${conBun.length} cartelle con bun.exe | -h esce 0 col modo d'uso; -x esce 2; il testo con un errore esce 1 («${errore.uscita}») | ${testi.length} testi in una libreria: righe e libreria (${statSync(libreria).size} byte, sha256 ${impronta(libreria)}) uguali a quelle di bun | tracce fuori dalla cartella 0 in ${Object.keys(radiciDelleTracce).join(", ")}, controllo positivo acceso`,
+      `${C}: VERDE | estratto in «${relative(base, dentro)}», PATH senza le ${conBun.length} cartelle con bun.exe | -h esce 0 col modo d'uso; -x esce 2; il testo con un errore esce 1 («${errore.uscita}») | ${testi.length} testi in una libreria: righe e libreria (${statSync(libreria).size} byte, sha256 ${impronta(libreria)}) uguali a quelle di bun | stampa: ${pagine.length} pagine uguali a quelle di bun (${pagine.join(", ")}) | tracce fuori dalla cartella 0 in ${Object.keys(radiciDelleTracce).join(", ")}, controllo positivo acceso`,
     );
   } finally {
     rmSync(base, { recursive: true, force: true });

@@ -97,18 +97,18 @@ test("la versione è la stessa in package.json, nella configurazione di Tauri, i
   expect(discordi(copie(file(), nomiAltrove))).toEqual([`cartella del pacchetto: ${altrove}`, `zip del pacchetto: ${altrove}`, `cartella nello zip: ${altrove}`]);
 });
 
-test("i nomi del pacchetto dello strumento di «Accademico» seguono la versione; l'eseguibile ha i tre numeri e uno zero", () => {
+test("i nomi del pacchetto dello strumento seguono la versione; l'eseguibile ha i tre numeri e uno zero", () => {
   const s = nomiDelloStrumento(file()["package.json"]!);
   expect(s).toEqual({
     versione,
     versioneDellEseguibile: `${/^\d+\.\d+\.\d+/.exec(versione)![0]}.0`,
-    cartella: `${versione}-accademico`,
-    zip: `AlgoDesign-Accademico-${versione}-windows.zip`,
-    cartellaNelloZip: `AlgoDesign-Accademico-${versione}`,
+    cartella: `${versione}-tools`,
+    zip: `AlgoDesign-Tools-${versione}-windows.zip`,
+    cartellaNelloZip: `AlgoDesign-Tools-${versione}`,
   });
   // Controllo positivo: un'altra versione cambia tutti i nomi; una definitiva ha la stessa versione dell'eseguibile.
   const conVersione = (v: string) => nomiDelloStrumento(JSON.stringify({ version: v }));
-  expect(conVersione("9.9.9-prova")).toEqual({ versione: "9.9.9-prova", versioneDellEseguibile: "9.9.9.0", cartella: "9.9.9-prova-accademico", zip: "AlgoDesign-Accademico-9.9.9-prova-windows.zip", cartellaNelloZip: "AlgoDesign-Accademico-9.9.9-prova" });
+  expect(conVersione("9.9.9-prova")).toEqual({ versione: "9.9.9-prova", versioneDellEseguibile: "9.9.9.0", cartella: "9.9.9-prova-tools", zip: "AlgoDesign-Tools-9.9.9-prova-windows.zip", cartellaNelloZip: "AlgoDesign-Tools-9.9.9-prova" });
   expect(conVersione("1.0.0").versioneDellEseguibile).toBe("1.0.0.0");
   // La guida ad «Accademico» sta nei due pacchetti, e quello dello strumento ha le licenze come quello dell'app.
   expect(elencoDelPacchetto).toContain(guidaAdAccademico);
@@ -202,13 +202,13 @@ test("il registro delle modifiche comincia dalla versione dei file e dalla sua d
     { nome: "LEGGIMI.md", riga: `Versione ${versione} del ${dataMostrata(dataDellaVersione, "it")},` },
   ];
   expect(readme.map((r) => [r.nome, readFileSync(join(radice, r.nome), "utf8").includes(r.riga)])).toEqual(readme.map((r) => [r.nome, true]));
-  // Il nome dello zip dello strumento di «Accademico» nei due README è quello della versione (un nome dimenticato alla
+  // Il nome dello zip dello strumento nei due README è quello della versione (un nome dimenticato alla
   // release dopo rimanderebbe a uno zip che non c'è): ogni nome scritto, e almeno uno.
-  const zipDelloStrumento = (t: string) => [...t.matchAll(/AlgoDesign-Accademico-[^\s`]*-windows\.zip/g)].map((m) => m[0]);
+  const zipDelloStrumento = (t: string) => [...t.matchAll(/AlgoDesign-Tools-[^\s`]*-windows\.zip/g)].map((m) => m[0]);
   const zip = nomiDelloStrumento(file()["package.json"]!).zip;
   expect(readme.map((r) => [r.nome, zipDelloStrumento(readFileSync(join(radice, r.nome), "utf8"))])).toEqual(readme.map((r) => [r.nome, [zip]]));
   // Controllo positivo del rilevatore: un nome con un'altra versione si vede.
-  expect(zipDelloStrumento("vedi `AlgoDesign-Accademico-0.5.0-beta.1-windows.zip`.")).toEqual(["AlgoDesign-Accademico-0.5.0-beta.1-windows.zip"]);
+  expect(zipDelloStrumento("vedi `AlgoDesign-Tools-0.5.0-beta.1-windows.zip`.")).toEqual(["AlgoDesign-Tools-0.5.0-beta.1-windows.zip"]);
 });
 
 test("la data della versione è una data vera, e si legge nelle due lingue", () => {

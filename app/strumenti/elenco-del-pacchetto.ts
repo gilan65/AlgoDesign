@@ -95,10 +95,10 @@ export function nomiDiLinux(testoDelPackageJson: string): { versione: string; ca
   return { versione, cartella: `${versione}-linux`, archivio: `AlgoDesign-${versione}-linux-x64.tar.gz`, cartellaNellArchivio: cartellaNelloZip };
 }
 
-/** Le voci al primo livello del pacchetto aggiuntivo dello strumento di «Accademico» (`pacchetto.ts`): l'eseguibile a
+/** Le voci al primo livello del pacchetto aggiuntivo dello strumento a riga di comando (`pacchetto.ts`): l'eseguibile a
  * sé, i due testi brevi, la sua guida e le licenze; niente `data/`, perché lo strumento scrive solo dove gli si dice. */
 export const elencoDelloStrumento: readonly string[] = [
-  "algodesign-accademico.exe",
+  "algodesign-tools.exe",
   "LEGGIMI.md",
   "README.md",
   guidaAdAccademico,
@@ -121,9 +121,9 @@ export function nomiDelloStrumento(testoDelPackageJson: string): { versione: str
   return {
     versione,
     versioneDellEseguibile: `${/^\d+\.\d+\.\d+/.exec(versione)![0]}.0`,
-    cartella: `${versione}-accademico`,
-    zip: `AlgoDesign-Accademico-${versione}-windows.zip`,
-    cartellaNelloZip: `AlgoDesign-Accademico-${versione}`,
+    cartella: `${versione}-tools`,
+    zip: `AlgoDesign-Tools-${versione}-windows.zip`,
+    cartellaNelloZip: `AlgoDesign-Tools-${versione}`,
   };
 }
 

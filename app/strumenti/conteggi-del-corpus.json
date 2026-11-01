@@ -34,6 +34,8 @@
       "core/modifica/record.test.ts",
       "core/progetto/corpus.test.ts",
       "core/progetto/schema.test.ts",
+      "strumenti/colonne.test.ts",
+      "strumenti/stampa.test.ts",
       "ui/casi/casi.test.tsx",
       "ui/casi/tutti.test.ts",
       "ui/dati/bozza.test.ts",
@@ -57,6 +59,7 @@
       "e2e/dati.e2e.ts",
       "e2e/disegno.e2e.ts",
       "e2e/flowchart-in-svg.e2e.ts",
+      "e2e/pagina-affiancata.e2e.ts",
       "e2e/progetto-file.e2e.ts"
     ]
   },
@@ -240,6 +243,19 @@
       7,
       4
     ],
+    "stampa - progetti col typescript e il javascript": 173,
+    "stampa - progetti per coppia di linguaggi": {
+      "pseudocodice e python": 173,
+      "pseudocodice e c": 173,
+      "pseudocodice e accademico": 36,
+      "pseudocodice e typescript": 173,
+      "python e c": 173,
+      "python e accademico": 36,
+      "python e typescript": 173,
+      "c e accademico": 36,
+      "c e typescript": 173,
+      "accademico e typescript": 36
+    },
     "tabelle - casi delle funzioni della cartella": 3,
     "tabelle - file giusti e sbagliati": [
       8,
