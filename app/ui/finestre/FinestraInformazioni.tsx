@@ -1,5 +1,5 @@
 // La finestra «Informazioni su AlgoDesign», dal menu «Aiuto»: il nome e che cosa fa il programma, la versione con la
-// sua data (da `ui/prodotto.ts`, mai scritte nei testi), la frase della versione di prova solo se la versione ha un
+// sua data (da `ui/prodotto.ts`, mai scritte nei testi), la frase della versione beta solo se la versione ha un
 // suffisso (`-alpha…`, `-beta…`), la licenza e i file che accompagnano il programma. Si chiude
 // con «Chiudi» o con Esc; il fuoco parte da «Chiudi», l'unico comando.
 import { useRef, type ReactElement } from "react";

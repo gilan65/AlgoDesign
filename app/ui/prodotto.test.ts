@@ -27,7 +27,7 @@ import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
 import { nomeApplicazione } from "../core/applicazione";
 import { FinestraInformazioni } from "./finestre/FinestraInformazioni";
-import { elencoDelloStrumento, elencoDelPacchetto, guidaAdAccademico, nomiDelloStrumento, nomiDelPacchetto } from "../strumenti/elenco-del-pacchetto";
+import { elencoDelloStrumento, elencoDelPacchetto, elencoDiLinux, guidaAdAccademico, guidaDelloStrumento, nomiDelloStrumento, nomiDelPacchetto } from "../strumenti/elenco-del-pacchetto";
 import { politicaDelProdotto } from "../strumenti/politica";
 import { dataDellaVersione, dataMostrata, versione, versioneDiProva } from "./prodotto";
 
@@ -110,9 +110,8 @@ test("i nomi del pacchetto dello strumento seguono la versione; l'eseguibile ha 
   const conVersione = (v: string) => nomiDelloStrumento(JSON.stringify({ version: v }));
   expect(conVersione("9.9.9-prova")).toEqual({ versione: "9.9.9-prova", versioneDellEseguibile: "9.9.9.0", cartella: "9.9.9-prova-tools", zip: "AlgoDesign-Tools-9.9.9-prova-windows.zip", cartellaNelloZip: "AlgoDesign-Tools-9.9.9-prova" });
   expect(conVersione("1.0.0").versioneDellEseguibile).toBe("1.0.0.0");
-  // La guida ad «Accademico» sta nei due pacchetti, e quello dello strumento ha le licenze come quello dell'app.
-  expect(elencoDelPacchetto).toContain(guidaAdAccademico);
-  expect(elencoDelloStrumento).toContain(guidaAdAccademico);
+  // La guida ad «Accademico» e quella dello strumento stanno in ogni pacchetto, e quello dello strumento ha le licenze come quello dell'app.
+  for (const g of [guidaAdAccademico, guidaDelloStrumento]) for (const elenco of [elencoDelPacchetto, elencoDelloStrumento, elencoDiLinux]) expect(elenco).toContain(g);
   expect(elencoDelloStrumento.filter((v) => v.startsWith("LICEN")).sort()).toEqual(elencoDelPacchetto.filter((v) => v.startsWith("LICEN")).sort());
 });
 
@@ -207,6 +206,9 @@ test("il registro delle modifiche comincia dalla versione dei file e dalla sua d
   const zipDelloStrumento = (t: string) => [...t.matchAll(/AlgoDesign-Tools-[^\s`]*-windows\.zip/g)].map((m) => m[0]);
   const zip = nomiDelloStrumento(file()["package.json"]!).zip;
   expect(readme.map((r) => [r.nome, zipDelloStrumento(readFileSync(join(radice, r.nome), "utf8"))])).toEqual(readme.map((r) => [r.nome, [zip]]));
+  // Lo stesso nelle due guide che lo nominano: il pacchetto le pretende, e qui si vede senza comporlo.
+  const guide = [guidaAdAccademico, guidaDelloStrumento].map((g) => join("docs", g));
+  expect(guide.map((g) => [g, zipDelloStrumento(readFileSync(join(radice, g), "utf8"))])).toEqual(guide.map((g) => [g, [zip]]));
   // Controllo positivo del rilevatore: un nome con un'altra versione si vede.
   expect(zipDelloStrumento("vedi `AlgoDesign-Tools-0.5.0-beta.1-windows.zip`.")).toEqual(["AlgoDesign-Tools-0.5.0-beta.1-windows.zip"]);
 });
@@ -245,10 +247,17 @@ test("la finestra delle informazioni mostra la versione dei file e la sua data, 
     const finestra = document.querySelector('[role="dialog"]');
     expect(finestra?.querySelector("[data-versione]")?.textContent).toBe(riempi(testi.informazioniVersione, { versione: fonte.version, data: dataMostrata(fonte.dataDiRilascio, lingua) }));
     for (const t of [testi.informazioniTitolo, testi.informazioniLicenza, testi.informazioniFile, testi.informazioniDocumenti]) expect(finestra?.textContent).toContain(t);
-    // La frase della versione di prova c'è se e solo se la versione dei file ha un suffisso.
+    // La frase della versione beta c'è se e solo se la versione dei file ha un suffisso.
     expect(finestra?.textContent?.includes(testi.informazioniProva)).toBe(versioneDiProva(fonte.version));
     r.unmount();
   }
+});
+
+test("il motto dei due README è quello dei dizionari, e la frase della versione la dice beta", () => {
+  expect(readFileSync(join(dirname(app), "LEGGIMI.md"), "utf8")).toContain(`**${it.informazioniMotto}**`);
+  expect(readFileSync(join(dirname(app), "README.md"), "utf8")).toContain(`**${en.informazioniMotto}**`);
+  expect(it.informazioniProva).toContain("versione beta");
+  expect(en.informazioniProva).toContain("beta version");
 });
 
 test("una versione è di prova se e solo se ha un suffisso dopo i tre numeri", () => {

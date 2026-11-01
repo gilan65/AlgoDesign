@@ -164,10 +164,10 @@ export const it = {
   // La finestra con le informazioni del prodotto: versione e data vengono da `ui/prodotto.ts`.
   informazioni: "Informazioni su AlgoDesign",
   informazioniTitolo: "Informazioni su AlgoDesign",
-  informazioniMotto: "Progettare algoritmi con i flowchart, eseguirli passo passo e tradurli in pseudocodice, Python e C.",
+  informazioniMotto: "Progettare algoritmi con i flowchart, eseguirli passo passo e tradurli in pseudocodice, Python, C e TypeScript.",
   /** {versione} come nei file del programma, {data} come la scrive `dataMostrata`. */
   informazioniVersione: "Versione {versione} del {data}",
-  informazioniProva: "È una versione di prova: alcune funzioni mancano ancora e altre possono cambiare.",
+  informazioniProva: "È una versione beta: alcune funzioni mancano ancora e altre possono cambiare.",
   informazioniLicenza: "Licenza MIT · © 2026 Giuseppe Lancellotti",
   informazioniFile: "Il testo della licenza è nel file LICENSE, accanto al programma; le librerie che AlgoDesign usa, con le loro licenze, sono nel file LICENZE-DI-TERZE-PARTI.txt.",
   informazioniDocumenti: "La guida per lo studente è distribuita con licenza Creative Commons Attribuzione 4.0 (CC BY 4.0), nel file LICENSE-DOCS.",

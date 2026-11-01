@@ -2,7 +2,7 @@
 
 **Italiano** · [English](README.md)
 
-**Progettare algoritmi con i flowchart, eseguirli passo passo e tradurli in pseudocodice, Python e C.**
+**Progettare algoritmi con i flowchart, eseguirli passo passo e tradurli in pseudocodice, Python, C e TypeScript.**
 
 Versione 0.6.0-beta.2 del 28 ottobre 2026, per Windows 10 e 11 a 64 bit.
 
@@ -18,29 +18,29 @@ AlgoDesign separa i due compiti: prima si **progetta** l'algoritmo come flowchar
 
 ## Che cosa fa
 
-- **Vista dei dati** accanto al disegno: costanti e variabili, ciascuna con il suo tipo (intero, reale, carattere, stringa, booleano, anche come vettore), il suo valore iniziale e il suo ruolo.
+- **Vista dei dati** accanto al disegno: costanti e variabili, ciascuna con il suo tipo (intero, reale, carattere, stringa, booleano, anche come vettore o matrice; un record, anche in una tabella), il suo valore iniziale e il suo ruolo.
 - **Editor di flowchart** con i blocchi che si usano in aula: inizio e fine, assegnazione, lettura, scrittura, selezione («se»), cicli con il controllo in testa («mentre») e in coda («ripeti»), i cicli che contano («per») e che percorrono un vettore o una stringa («per ogni»), la chiamata di una procedura, commento. Si lavora con il mouse o da tastiera, anche su più blocchi insieme; gli errori sono segnalati sul blocco e nella riga di stato, con la causa precisa e un suggerimento.
 - **Procedure e funzioni**: un algoritmo si divide in pezzi con un nome, ognuno nella sua scheda, coi suoi dati e i suoi parametri, per valore, per riferimento o di uscita; una procedura compie un lavoro, una funzione calcola un risultato, anche una stringa o un vettore. Possono chiamare sé stesse (la ricorsione), e si importano da un altro progetto o da una cartella di librerie.
 - **Esecuzione passo passo**: tutto insieme, un'azione alla volta o in modo animato, dentro e fuori dalle procedure e dalle funzioni, con i punti di interruzione; si segue il blocco attivo, si scrivono i valori nella console e si guardano i dati cambiare valore nella tabella di traccia, che si esporta per un foglio di calcolo. Il valore di un dato si legge col puntatore del mouse sul suo nome, o da tastiera.
 - **Casi d'uso**: un algoritmo, o una sua procedura o funzione da sola, si prova su valori di ingresso e risultati attesi, come un piccolo collaudo, anche prima di scrivere le regole; un'esecuzione finita si salva come caso d'uso.
-- **Traduzione** del flowchart in pseudocodice (in italiano o in inglese), Python, C e, se lo si accende, «Accademico», lo pseudocodice delle Selezioni scolastiche delle Olimpiadi di Informatica, accanto al disegno, con la riga corrente evidenziata durante l'esecuzione; il codice si copia o si salva in un file. Quali linguaggi mostrare, e in che ordine, si sceglie nelle Impostazioni.
+- **Traduzione** del flowchart in pseudocodice (in italiano o in inglese), Python, C e, se li si accende, TypeScript e «Accademico», lo pseudocodice delle Selezioni scolastiche delle Olimpiadi di Informatica, accanto al disegno, con la riga corrente evidenziata durante l'esecuzione; il codice si copia o si salva in un file. Quali linguaggi mostrare, e in che ordine, si sceglie nelle Impostazioni.
 - **Stampa ed esportazione**: il progetto si stampa, anche in un PDF, coi dati, i flowchart, il codice e i casi d'uso, anche col flowchart e il codice affiancati; il flowchart si esporta come immagine PNG o SVG.
 - **Esempi** pronti da aprire e da modificare, in gruppi.
 - Interfaccia in **italiano** e **inglese**.
 
-Tipi e regole sono quelli del linguaggio C, con in più un tipo stringa, perché il passaggio dal flowchart al codice sia naturale. Il codice generato, però, è fatto per essere letto e non controlla i calcoli che escono dalle regole (un intero fuori dal suo intervallo, una divisione intera per zero, un indice fuori dal vettore e pochi altri, elencati nelle note di rilascio): AlgoDesign li ferma sempre, il Python e il C generati no, e su quei calcoli possono dare risultati diversi fra loro.
+Tipi e regole sono quelli del linguaggio C, con in più un tipo stringa, perché il passaggio dal flowchart al codice sia naturale. Il codice generato, però, è fatto per essere letto e non controlla i calcoli che escono dalle regole (un intero fuori dal suo intervallo, una divisione intera per zero, un indice fuori dal vettore e pochi altri, elencati nelle note di rilascio): AlgoDesign li ferma sempre, il Python, il C e il TypeScript generati no, e su quei calcoli possono dare risultati diversi fra loro.
 
-Come si usa AlgoDesign è nella **guida per lo studente**, `GUIDA-PER-LO-STUDENTE.md` (in inglese `STUDENT-GUIDE.md`): nel pacchetto sta accanto al programma, nel repository nella cartella `docs`. Dentro AlgoDesign la guida si apre dal menu **Aiuto**, «Guida per lo studente», nella lingua dell'interfaccia. Come si usa «Accademico» per allenarsi alle Selezioni è nella **guida ad «Accademico»**, `GUIDA-AD-ACCADEMICO.md`, accanto alla guida per lo studente. Le novità di ogni versione sono nel registro delle modifiche, `CHANGELOG.md`.
+Come si usa AlgoDesign è nella **guida per lo studente**, `GUIDA-PER-LO-STUDENTE.md` (in inglese `STUDENT-GUIDE.md`): nel pacchetto sta accanto al programma, nel repository nella cartella `docs`. Dentro AlgoDesign la guida si apre dal menu **Aiuto**, «Guida per lo studente», nella lingua dell'interfaccia. Come si usa «Accademico» per allenarsi alle Selezioni è nella **guida ad «Accademico»**, `GUIDA-AD-ACCADEMICO.md`; lo strumento a riga di comando nella **guida ad `algodesign-tools`**, `GUIDA-AD-ALGODESIGN-TOOLS.md`. Stanno accanto alla guida per lo studente. Le novità di ogni versione sono nel registro delle modifiche, `CHANGELOG.md`.
 
 ## Scaricare e avviare
 
-Le versioni di prova si scaricano dalla pagina del progetto.
+Le versioni beta si scaricano dalla pagina del progetto.
 
 1. Scarica lo zip e, se vuoi, controllane l'impronta: il file `.sha256` accanto allo zip contiene il suo codice SHA-256, che in PowerShell si calcola con `Get-FileHash <nome dello zip>` (PowerShell lo scrive in maiuscolo, il file in minuscolo: le lettere maiuscole e minuscole non contano).
 2. Estrai lo zip dove preferisci (il Desktop, una cartella dei documenti, una chiavetta): nasce la cartella `AlgoDesign-0.6.0-beta.2`.
 3. Apri la cartella e fai doppio clic su `AlgoDesign.exe`.
 
-**Lo strumento di «Accademico».** Accanto allo zip di AlgoDesign c'è un pacchetto a parte, `AlgoDesign-Tools-0.6.0-beta.2-windows.zip`, con la sua impronta: `algodesign-tools.exe` legge un testo scritto in «Accademico» e ne fa una libreria di AlgoDesign, da aprire ed eseguire passo passo. Si usa dal Terminale di Windows; come, lo dicono il `LEGGIMI.md` del pacchetto e il capitolo 6 della guida ad «Accademico», che il pacchetto porta con sé.
+**Lo strumento a riga di comando.** Accanto allo zip di AlgoDesign c'è un pacchetto a parte, `AlgoDesign-Tools-0.6.0-beta.2-windows.zip`, con la sua impronta: `algodesign-tools.exe` ha due comandi. `accademico` legge un testo scritto in «Accademico» e ne fa una libreria di AlgoDesign, da aprire ed eseguire passo passo; `stampa` scrive da un progetto una pagina da stampare con due testi di codice affiancati e una pagina che prova il JavaScript nel browser. Si usa dal Terminale di Windows; come, lo dicono il `LEGGIMI.md` del pacchetto e la guida ad `algodesign-tools`, che il pacchetto porta con sé.
 
 **L'avviso di Windows al primo avvio.** AlgoDesign non è firmato digitalmente, e Windows avvisa quando si avvia un programma non firmato scaricato da internet. Se compare la finestra «Windows ha protetto il PC», scegli «Ulteriori informazioni» e poi «Esegui comunque». Per evitarla, prima di estrarre lo zip apri le sue Proprietà (tasto destro sullo zip), segna «Sblocca» in basso nella scheda «Generale» e conferma con «OK».
 
@@ -71,7 +71,7 @@ Una cella che comincia con `=`, `+`, `-` o `@` e non è un numero (per esempio u
 
 - Questa versione è solo per Windows.
 - Non sono provati lo spegnimento o il riavvio di Windows con modifiche non salvate (prima conviene salvare) e un file trascinato sulla finestra (per aprirlo si usa «Apri»). I tasti del browser che ricaricherebbero la finestra o tornerebbero indietro (F5, Ctrl+R, «Aggiorna» e «Indietro» di certe tastiere, Alt+freccia) AlgoDesign li ferma: F5 esegue il programma.
-- Il codice generato non ha il limite delle azioni: un ciclo che non finisce, che AlgoDesign ferma dopo un milione di azioni, nel Python e nel C generati va fermato a mano.
+- Il codice generato non ha il limite delle azioni: un ciclo che non finisce, che AlgoDesign ferma dopo un milione di azioni, nel Python, nel C e nel TypeScript generati va fermato a mano.
 
 ## Come è stato sviluppato
 
@@ -84,7 +84,7 @@ https://www.lancellotti.info/blog/tag/algodesign/
 
 - [Bun](https://bun.sh) 1.4.2 e [Rust](https://rustup.rs) stabile (1.99.0).
 - Windows 10 o 11 con WebView2.
-- Per il collaudo, il confronto del codice generato: un gcc e un clang (C11) e Python 3, dati con le variabili `ALGODESIGN_CC` (gli eseguibili dei compilatori, separati come nel `PATH`) e `ALGODESIGN_PYTHON`, oppure nel file `app/.collaudo/toolchain.json` (`{ "c": [ … ], "python": "…" }`, non versionato), oppure trovati nel `PATH`.
+- Per il collaudo, il confronto del codice generato: un gcc e un clang (C11) e Python 3, dati con le variabili `ALGODESIGN_CC` (gli eseguibili dei compilatori, separati come nel `PATH`) e `ALGODESIGN_PYTHON`, oppure nel file `app/.collaudo/toolchain.json` (`{ "c": [ … ], "python": "…" }`, non versionato), oppure trovati nel `PATH`; e Node.js 24, per il TypeScript e il JavaScript.
 - Solo per la prova nel container Linux: Docker Desktop.
 
 ### Comandi
@@ -97,11 +97,12 @@ Tutti i comandi si danno nella cartella `app/`, dopo `bun install`.
 | Browser per i test dell'interfaccia (solo la prima volta) | `bun --bun playwright install chromium webkit` |
 | Casi d'uso del corpus di esempi (`casi/`), oppure di un progetto dato | `bun run casi`, `bun run casi <progetto.algo>` |
 | Da un testo in «Accademico» una libreria di AlgoDesign (le opzioni nel capitolo 6 della guida ad «Accademico») | `bun run accademico <testo.txt>`, `bun run accademico -h` |
+| Da un progetto due testi di codice affiancati e la pagina di prova (le opzioni nella guida ad `algodesign-tools`) | `bun run tools stampa <progetto.algo>`, `bun run tools stampa -h` |
 | Collaudo (tipi, test di unità, casi d'uso, confronto del codice generato, build, test del guscio in Rust, test dell'interfaccia in Chromium) | `bun run collaudo` |
 | Collaudo completo, coi test dell'interfaccia anche in WebKit | `bun run collaudo --completo` |
 | Confronto del codice generato con l'esecuzione sui casi d'uso | `bun run differenziale` |
 | Eseguibile di release per Windows | `bun tauri build --no-bundle` → `shell/target/release/algodesign.exe` |
-| Pacchetti della release per Windows: quello di AlgoDesign e quello dello strumento di «Accademico», dallo stesso albero (cartelle, zip e impronte in `dist/` alla radice; il primo porta questo file, `README.md`, le due guide per lo studente e la guida ad «Accademico» da `docs/` e le note di rilascio, il secondo l'eseguibile dello strumento, la sua guida e i due testi brevi; i testi si danno allo strumento) | `bun run pacchetto --testi ../rilascio/windows` (con `--prova` da un albero con modifiche, in `dist/prova/`) |
+| Pacchetti della release per Windows: quello di AlgoDesign e quello dello strumento a riga di comando, dallo stesso albero (cartelle, zip e impronte in `dist/` alla radice; il primo porta questo file, `README.md`, le due guide per lo studente, la guida ad «Accademico» e quella dello strumento da `docs/` e le note di rilascio, il secondo l'eseguibile dello strumento, le due guide e i due testi brevi; i testi si danno allo strumento) | `bun run pacchetto --testi ../rilascio/windows` (con `--prova` da un albero con modifiche, in `dist/prova/`) |
 | Lo JSON Schema del formato, dopo un cambio del lettore dei file | `bun ./strumenti/schema-del-formato.ts` |
 
 ### Le prove sul prodotto
