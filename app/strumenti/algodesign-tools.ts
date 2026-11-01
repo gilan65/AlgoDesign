@@ -1,7 +1,7 @@
 // Lo strumento a riga di comando di AlgoDesign, a parte dall'app: un comando per ciò che fa.
 //
 //   bun run tools accademico <testo.txt> …    da un testo in «Accademico» una libreria di AlgoDesign (`accademico.ts`)
-//   bun run tools stampa <progetto.algo> …    la pagina con due testi di codice affiancati (`stampa.ts`)
+//   bun run tools stampa <progetto.algo> …    la pagina con due testi di codice affiancati e la pagina di prova (`stampa.ts`)
 //   bun run tools -h
 //
 // Il pacchetto lo compila in `algodesign-tools.exe` (`pacchetto.ts`), con le clausole STRUMENTO.
@@ -20,7 +20,7 @@ const comandi = { accademico: comandoAccademico, stampa: comandoStampa } as cons
 const modoDUso = `Gli strumenti di AlgoDesign a riga di comando.
 
   ${nome} accademico <testo.txt> [opzioni]    da un testo in «Accademico» una libreria di AlgoDesign
-  ${nome} stampa <progetto.algo> [opzioni]    una pagina con due testi di codice affiancati, da stampare
+  ${nome} stampa <progetto.algo> [opzioni]    due testi di codice affiancati da stampare, e la pagina di prova nel browser
   ${nome} <comando> -h                        l'aiuto di un comando
   ${nome} -h                                  mostra questo aiuto
 `;

@@ -35,6 +35,7 @@
       "core/progetto/corpus.test.ts",
       "core/progetto/schema.test.ts",
       "strumenti/colonne.test.ts",
+      "strumenti/pagina-di-prova.test.ts",
       "strumenti/stampa.test.ts",
       "ui/casi/casi.test.tsx",
       "ui/casi/tutti.test.ts",
@@ -60,6 +61,7 @@
       "e2e/disegno.e2e.ts",
       "e2e/flowchart-in-svg.e2e.ts",
       "e2e/pagina-affiancata.e2e.ts",
+      "e2e/pagina-di-prova.e2e.ts",
       "e2e/progetto-file.e2e.ts"
     ]
   },
@@ -237,6 +239,12 @@
     ],
     "nomi - blocchi col valore iniziale nella tappa 1": 120,
     "nomi - copie espanse coi campi": 15,
+    "pagina di prova - casi con un arresto": 108,
+    "pagina di prova - casi del programma che leggono": 110,
+    "pagina di prova - casi eseguiti nelle due lingue": 416,
+    "pagina di prova - progetti con la pagina": 173,
+    "pagina di prova - programmi del corpus nelle due lingue": 346,
+    "pagina di prova - programmi di prova delle funzioni": 76,
     "progetto corpus - errori statici attesi": 19,
     "record - casi delle funzioni della cartella": 3,
     "record - file giusti e sbagliati": [

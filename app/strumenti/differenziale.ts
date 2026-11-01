@@ -91,50 +91,19 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "n
 import { availableParallelism, tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { eseguiCaso } from "../core/casi/esecutore";
-import { esitoDelCaso, margineDellOutput } from "../core/casi/esito";
-import { controlla, tetti, type EsitoDelControllo } from "../core/controllo/controllo";
+import { esitoDelCaso } from "../core/casi/esito";
+import { controlla, tetti } from "../core/controllo/controllo";
 import { tettoDelleChiamate } from "../core/controllo/spazio";
-import { parametriDelCaso, testoDelCodice, type Generato, type Riga } from "../core/genera/forma";
+import { testoDelCodice, type Generato, type Riga } from "../core/genera/forma";
 import { linguaggi, type Linguaggio, type VoceDelLinguaggio } from "../core/genera/linguaggi";
-import { codiceDelMotivo } from "../core/genera/motivi";
 import type { LinguaDelCodice } from "../core/genera/nomi";
 import { apri } from "../core/progetto/formato";
 import { usaIRecord, usaLeMatrici, usaLeTabelle, type Atteso, type CasoDiUnaFunzione, type Funzione, type Progetto } from "../core/progetto/modello";
 import { paroleDelloPseudocodice } from "../ui/genera/parole";
+import { casiDelProgetto, esclusi, ottenutoDaiTesti, type ControlloCheParte } from "./casi-del-confronto";
 import { ambienteDi, appaia, esecutoreDel, esecutori as tuttiGliEsecutori, lingueDelCodice as lingue, nomeDellaMacchina, trovaToolchain, type Esecutore, type Macchina } from "./esecutori";
 import { righeDellEsito } from "./righe-dei-casi";
 import { differenzaDalTypeScript, differenzaDellaProvenienza } from "./senza-tipi";
-
-/** Il controllo statico di un progetto della tappa: ha gli errori e gli avvisi. */
-type ControlloCheParte = Extract<EsitoDelControllo, { fuoriTappa: false }>;
-
-/** I casi fuori dal differenziale, per nome del file (o `file#caso`), con la ragione. */
-export const esclusi: Readonly<Record<string, string>> = {
-  "intero-minimo-diviso-meno-uno": "overflow di un intero, che il C non definisce",
-  "opposto-intero-minimo": "overflow di un intero, che il C non definisce",
-  "overflow-fattoriale": "overflow di un intero, che il C non definisce",
-  "divisione-per-zero": "divisione intera per zero, che il C non definisce",
-  "indice-fuori": "indice fuori da un vettore, che il C non definisce",
-  "indice-fuori-dalla-matrice": "indice fuori da una matrice, che il C non definisce",
-  "reale-fuori-intervallo": "reale fuori intervallo convertito in intero, che il C non definisce",
-  "reale-fuori-intervallo-parametro": "reale fuori intervallo convertito in intero, che il C non definisce",
-  "reale-non-finito": "reale non finito, che l'interprete ferma per regola sua",
-  "senza-valore-booleano": "dato letto senza valore, che il C non definisce",
-  "senza-valore-carattere": "dato letto senza valore, che il C non definisce",
-  "senza-valore-intero": "dato letto senza valore, che il C non definisce",
-  "senza-valore-reale": "dato letto senza valore, che il C non definisce",
-  "senza-valore-stringa": "dato letto senza valore, che il C non definisce",
-  "troppi-passi": "tetto dei passi dell'interprete: il programma generato non finisce",
-  "passi-fuori-dal-ciclo": "tetto dei passi dell'interprete in una ricorsione: il programma generato non lo ha",
-  "sequenza-di-fibonacci#ventisei": "tetto dei passi dell'interprete in una ricorsione dentro un ciclo: il programma generato non lo ha",
-  "riferimento-senza-valore-in-esecuzione": "dato senza valore passato per riferimento e letto, che il C non definisce",
-  "uscita-letta-prima": "parametro per uscita letto senza valore, che il C non definisce",
-  "uscita-con-valore-prima": "parametro per uscita letto prima di avere un valore: l'interprete lo fa partire senza valore e si ferma, il Python si ferma con UnboundLocalError, il C riceve il valore di chi chiama e lo scrive (divergenza voluta, con l'avviso del dato forse senza valore)",
-  "uscita-non-assegnata": "parametro per uscita mai assegnato e letto dopo: l'interprete si ferma sul dato senza valore, il Python con UnboundLocalError, il C scrive il valore che il dato aveva prima (divergenza voluta, con l'avviso del dato forse senza valore)",
-  "per-overflow-contatore": "overflow del contatore di un per, che il C non definisce",
-  "copia-con-un-campo-senza-valore": "campo di un record letto senza valore nella copia, che il C non definisce",
-  "riferimento-a-un-record-senza-valore#senza-valore": "record senza nessun campo con un valore passato per riferimento, che il C non definisce",
-};
 
 const radice = join(import.meta.dir, "..");
 const secondiDiUnProgramma = 10;
@@ -203,11 +172,8 @@ const utf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 /** I messaggi dei compilatori, solo da leggere. */
 const testoDelCompilatore = new TextDecoder("utf-8", { fatal: false });
 
-/** L'ottenuto di un programma generato nella forma dell'atteso, o il motivo per cui non ha un esito. Con `tagliato`:
- * l'output è stato tenuto solo fino all'atteso più il margine. `pila` è il tetto delle chiamate del progetto, che il motivo
- * del tetto dice. */
+/** L'ottenuto di un programma lanciato qui: i flussi in byte, poi il testo a `ottenutoDaiTesti`. */
 function ottenuto(f: Fine, voce: VoceDelLinguaggio, righe: readonly Riga[], lingua: LinguaDelCodice, atteso: Atteso, controllo: ControlloCheParte, pila: number): { atteso: Atteso; tagliato: boolean } | { senzaEsito: string } {
-  if (voce.genere !== "da-eseguire") throw new Error(`${voce.id} non è un linguaggio da eseguire`);
   if (f.scaduto) return { senzaEsito: `non finito in ${secondiDiUnProgramma} s` };
   let tutto: string;
   let err: string;
@@ -217,28 +183,7 @@ function ottenuto(f: Fine, voce: VoceDelLinguaggio, righe: readonly Riga[], ling
   } catch {
     return { senzaEsito: `lo stdout o lo stderr non è testo UTF-8: ${JSON.stringify(testoDelCompilatore.decode(f.out).slice(0, 200))}` };
   }
-  const tetto = atteso.output.length + margineDellOutput;
-  const tagliato = tutto.length > tetto;
-  // Il taglio non spezza un carattere fuori dal piano di base, come l'esecuzione.
-  const fine = tagliato && /[\ud800-\udbff]/.test(tutto[tetto - 1] ?? "") ? tetto - 1 : tetto;
-  const output = tagliato ? tutto.slice(0, fine) : tutto;
-  const avvisi = { warnings: controllo.avvisi };
-  if (f.uscita === 0 && err === "") return { atteso: { output, ...avvisi }, tagliato };
-  const m = voce.rigaDErrore.exec(err);
-  if (m === null || f.uscita !== 1) return { senzaEsito: `uscita ${f.uscita}, stderr ${JSON.stringify(err.slice(-300))}` };
-  const code = codiceDelMotivo(lingua, m[2]!, voce.motivi(pila));
-  if (code === undefined) return { senzaEsito: `motivo che la tabella dei motivi non conosce: ${JSON.stringify(m[2])}` };
-  const block = righe[Number(m[1]) - 1]?.blocco;
-  if (block === undefined) return { senzaEsito: `la riga ${m[1]} non viene da un blocco: ${JSON.stringify(righe[Number(m[1]) - 1]?.testo ?? "(oltre la fine)")}` };
-  return { atteso: { output, error: { code, block }, ...avvisi }, tagliato };
-}
-
-/** Perché una voce non sta in una riga, o niente. */
-function vocePerUnaRiga(testo: string): string | undefined {
-  if (testo.includes("\n")) return "ha un a capo";
-  if (testo.includes("\r")) return "ha un ritorno carrello";
-  if (/[\ud800-\udfff]/.test(testo.replace(/[\ud800-\udbff][\udc00-\udfff]/g, ""))) return "ha un surrogato isolato";
-  return undefined;
+  return ottenutoDaiTesti({ uscita: f.uscita, tutto, err }, voce, righe, lingua, atteso, controllo, pila);
 }
 
 // ------------------------------------------------------------------------------------------------ il giro
@@ -294,11 +239,8 @@ file.forEach(({ nome, percorso }, k) => {
     return;
   }
   const p = aperto.progetto;
-  // I casi del programma, poi quelli di ogni procedura o funzione eseguita da sola, col loro nome.
-  const casi: { id: string; caso: CasoDiUnaFunzione; funzione?: Funzione }[] = [
-    ...(p.test_cases ?? []).map((caso) => ({ id: `${nome}#${caso.name}`, caso })),
-    ...p.functions.flatMap((f) => (f.test_cases ?? []).map((caso) => ({ id: `${nome}#${f.name}/${caso.name}`, caso, funzione: f }))),
-  ];
+  const base = basename(nome).replace(/\.algo$/, "");
+  const casi = casiDelProgetto(nome, base, p);
   const controllo = controlla(p, tetti);
   if (controllo.fuoriTappa) {
     fuoriTappa += casi.length;
@@ -306,36 +248,22 @@ file.forEach(({ nome, percorso }, k) => {
     righeDiPrima.push(`FUORI TAPPA ${nome} (casi: ${casi.length})`);
     return;
   }
-  const base = basename(nome).replace(/\.algo$/, "");
   nomiTrovati.add(base);
   // Ogni programma della tappa si genera e si compila, anche quelli dei casi esclusi: gli avvisi si contano su tutti.
   daGenerare.set(k, { progetto: p, base, statico: controllo.errori.length > 0 });
   if (casi.length === 0) problemi.push(`${nome}: nessun caso d'uso`);
-  for (const { id, caso, funzione } of casi) {
-    // Escluso il file intero, o il solo caso (`file#caso`, un caso del programma).
-    const delCaso = `${base}#${caso.name}`;
-    nomiTrovati.add(delCaso);
-    const escluso = Object.hasOwn(esclusi, base) ? base : funzione === undefined && Object.hasOwn(esclusi, delCaso) ? delCaso : undefined;
-    if (escluso !== undefined) {
+  for (const c of casi) {
+    nomiTrovati.add(c.delCaso);
+    if ("escluso" in c) {
       quantiEsclusi++;
-      righeDiPrima.push(`ESCLUSO ${id}: ${esclusi[escluso]}`);
+      righeDiPrima.push(`ESCLUSO ${c.id}: ${c.escluso}`);
       continue;
     }
-    let input: string[];
-    if (funzione === undefined) input = caso.inputs.map((v) => v.text!);
-    else {
-      const letti = parametriDelCaso(funzione, caso, p.records);
-      if ("problema" in letti) {
-        problemi.push(`${id}: ${letti.problema}, e il programma di prova non la porta`);
-        continue;
-      }
-      input = letti.righe;
-    }
-    const senzaRiga = input.map((t, i) => [i, vocePerUnaRiga(t)] as const).filter(([, m]) => m !== undefined);
-    if (senzaRiga.length > 0) {
-      problemi.push(`${id}: ${senzaRiga.map(([i, m]) => `la voce ${i + 1} ${m}`).join("; ")}, e una riga non la porta`);
+    if ("problema" in c) {
+      problemi.push(c.problema);
       continue;
     }
+    const { id, caso, funzione, input } = c;
     if (controllo.errori.length > 0) {
       conErroreStatico++;
       righeDiPrima.push(`ERRORE STATICO ${id}: ${controllo.errori[0]!.code} ${controllo.errori[0]!.block}, nessun programma generato`);

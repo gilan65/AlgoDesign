@@ -1213,6 +1213,7 @@ const proveAttesePerSpec: Record<string, number> = {
   "modifica-dati.e2e.ts": 10,
   "modifica.e2e.ts": 7,
   "pagina-affiancata.e2e.ts": 4,
+  "pagina-di-prova.e2e.ts": 7,
   "parametri.e2e.ts": 3,
   "pila-lunga.e2e.ts": 2,
   "programmi-pesanti.e2e.ts": 20,
