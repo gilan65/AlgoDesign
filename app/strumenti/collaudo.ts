@@ -90,6 +90,7 @@ import {
   programmiConAvvisiAttesi as avvisiAttesiDal,
 } from "./esecutori";
 import { denominatoriDaConfermare, differenze, leggiIConteggi, misuraIlCorpus, numeriNonDichiarati, testiDelCensimento } from "./corpus";
+import { confrontoDellaPorta, controlloPositivo } from "./guida-delle-prove";
 import { fileDellInterprete, improntaDi, leggiLaConferma } from "./mutazioni";
 import { chiamate, senzaExact } from "./selettori";
 
@@ -633,6 +634,9 @@ async function portaCasi(): Promise<void> {
 // La riga `avvisi della compilazione` della corsa vera: nessun avviso non atteso né mancante, i programmi attesi tanti
 // quanti ne dichiarano gli esecutori del contratto, e le compilazioni con gli avvisi attesi tante quante, per ogni
 // esecutore eseguito che compila, i programmi attesi del suo esecutore.
+// La guida delle prove (`strumenti/guida-delle-prove.ts`): il blocco dei conteggi uguale, sugli elementi e nei due versi, alle
+// righe finali di questa corsa, e ogni elemento con la sua sezione nella prosa; col controllo positivo. Dove il documento locale
+// non c'è la porta lo dice nella sua riga, e non confronta.
 // Che cosa la porta NON guarda: i casi d'uso nel container Linux (alla chiusura del blocco); la console di Windows.
 
 /** Gli esclusi dalle decisioni dei blocchi (il codice generato non controlla ciò che il C non definisce, né il tetto dei
@@ -895,8 +899,15 @@ async function portaDifferenziale(): Promise<void> {
   if (senza.codice !== 1 || problemiSenza.length < 2 * delContratto.length || !soloInterprete)
     rosso("differenziale", `controllo positivo «senza toolchain» SPENTO (exit ${senza.codice}; problemi della toolchain ${problemiSenza.length}; solo l'interprete: ${soloInterprete})`);
 
+  // La guida delle prove, un documento locale: il blocco appena riscritto contro l'uscita di questa corsa, sugli elementi. Dove
+  // il documento non c'è (un clone, la CI) non si confronta, e la riga lo dice; il controllo positivo non ha bisogno di lui.
+  const guidaDelleProve = confrontoDellaPorta(vera.uscita);
+  if (guidaDelleProve.differenze.length > 0) rosso("differenziale", `la guida delle prove non è uguale al log: ${guidaDelleProve.differenze.slice(0, 6).join(" · ")}`);
+  const positivoDellaGuida = controlloPositivo(vera.uscita);
+  if (!positivoDellaGuida.acceso) rosso("differenziale", `controllo positivo della guida delle prove SPENTO: ${positivoDellaGuida.dettaglio}`);
+
   riga(
-    `PORTA differenziale: VERDE | ${secondi.toFixed(1)} s | exit 0, ${n} casi nel confronto (di funzioni ${riepilogo[3]}, contati nei file: ${diFunzioni}; con l'errore statico ${riepilogo[4]}, contati nei file: ${conStatico}; con gli esclusi ${riepilogo[5]}, per nome, contati nei file: ${contati}, contati nei file delle tappe ${tappeDelDifferenziale.join(", ")}), fuori tappa ${riepilogo[6]} in ${riepilogo[7]} file (contati nelle tappe ${tappeFuoriDalDifferenziale.join(", ")}) | per esecutore: ${riepilogo[8]} | non ancora: ${rigaNonAncora} | controllo dei tipi: ${rigaDeiTipi} | senza tipi: ${rigaSenzaTipi} | ${toolchain} | avvisi della compilazione: ${avvisi[1]} compilazioni, ${avvisi[2]} con gli avvisi attesi, nessun altro | controllo positivo acceso (corsa a parte: exit ${sonda.codice}; ${sondeDifferenziale.map((s) => s.nome).join(", ")}: ${attese.length} righe attese, tutte, nessuna in più) | controllo positivo «senza toolchain» acceso (exit ${senza.codice}, ${problemiSenza.length} problemi) | esecutori dal contratto: richiesti ${esecutoriRichiesti.length}, eseguiti ${esecutori.length}, mancanti 0, in più 0; programmi con gli avvisi attesi ${programmiConAvvisiAttesi} | controllo positivo degli esecutori richiesti acceso (senza uno: ${membri.length} su ${membri.length}; registro senza un linguaggio: ${senzaUno.map((s) => `senza ${s.id} richiesti ${s.richiesti} invece di ${esecutoriRichiesti.length}, ROSSO con ${s.inPiu.length} in più`).join("; ")})`,
+    `PORTA differenziale: VERDE | ${secondi.toFixed(1)} s | exit 0, ${n} casi nel confronto (di funzioni ${riepilogo[3]}, contati nei file: ${diFunzioni}; con l'errore statico ${riepilogo[4]}, contati nei file: ${conStatico}; con gli esclusi ${riepilogo[5]}, per nome, contati nei file: ${contati}, contati nei file delle tappe ${tappeDelDifferenziale.join(", ")}), fuori tappa ${riepilogo[6]} in ${riepilogo[7]} file (contati nelle tappe ${tappeFuoriDalDifferenziale.join(", ")}) | per esecutore: ${riepilogo[8]} | non ancora: ${rigaNonAncora} | controllo dei tipi: ${rigaDeiTipi} | senza tipi: ${rigaSenzaTipi} | ${toolchain} | avvisi della compilazione: ${avvisi[1]} compilazioni, ${avvisi[2]} con gli avvisi attesi, nessun altro | controllo positivo acceso (corsa a parte: exit ${sonda.codice}; ${sondeDifferenziale.map((s) => s.nome).join(", ")}: ${attese.length} righe attese, tutte, nessuna in più) | controllo positivo «senza toolchain» acceso (exit ${senza.codice}, ${problemiSenza.length} problemi) | esecutori dal contratto: richiesti ${esecutoriRichiesti.length}, eseguiti ${esecutori.length}, mancanti 0, in più 0; programmi con gli avvisi attesi ${programmiConAvvisiAttesi} | controllo positivo degli esecutori richiesti acceso (senza uno: ${membri.length} su ${membri.length}; registro senza un linguaggio: ${senzaUno.map((s) => `senza ${s.id} richiesti ${s.richiesti} invece di ${esecutoriRichiesti.length}, ROSSO con ${s.inPiu.length} in più`).join("; ")}) | guida delle prove: ${guidaDelleProve.controllata ? "confrontata col log, 0 differenze" : "NON confrontata, nessuna impostazione"}, controllo positivo acceso (${positivoDellaGuida.dettaglio})`,
   );
 }
 
