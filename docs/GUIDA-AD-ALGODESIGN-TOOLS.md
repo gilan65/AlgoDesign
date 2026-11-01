@@ -9,7 +9,7 @@ Lo strumento scrive solo i file che il comando produce, non apre il browser e no
 
 ## 1. Come si scarica e si avvia
 
-Per Windows lo strumento è `algodesign-tools.exe`, in un pacchetto a parte, `AlgoDesign-Tools-0.6.0-beta.2-windows.zip`, accanto a quello di AlgoDesign. Si estrae dove si preferisce: nasce la cartella `AlgoDesign-Tools-0.6.0-beta.2` e non c'è nulla da installare. Per usarlo non servono AlgoDesign, Node o altri motori.
+Per Windows lo strumento è `algodesign-tools.exe`, in un pacchetto a parte, `AlgoDesign-Tools-0.7.0-beta.3-windows.zip`, accanto a quello di AlgoDesign. Si estrae dove si preferisce: nasce la cartella `AlgoDesign-Tools-0.7.0-beta.3` e non c'è nulla da installare. Per usarlo non servono AlgoDesign, Node o altri motori.
 
 Si usa da **PowerShell**: in Esplora file, nella cartella dello strumento, si scrive `powershell` nella barra dell'indirizzo e si preme Invio (su Windows 11 va bene anche il tasto destro nella cartella, «Apri nel Terminale»). PowerShell non avvia un'applicazione della cartella senza `.\` davanti al nome: si scrive `.\algodesign-tools` negli esempi che seguono. I file si danno col loro percorso, fra virgolette se ha degli spazi, o si copiano nella stessa cartella.
 

@@ -5,7 +5,7 @@
 //   sostituire il file che c'è: `da_salvare`), o `null` (le chiavi le appaia con `ui/file.ts` una prova qui
 //   sotto); `scegli_file_da_esportare`, con gli stessi argomenti, fa lo stesso con `.csv`, per la tabella di
 //   traccia (il testo lo scrive `scrivi_progetto`); `scegli_file_del_codice`, con in più `estensione` (`.txt`,
-//   `.py` o `.c`: un'altra non apre la finestra e vale `null`), per il codice generato; `scegli_file_dell_immagine`,
+//   `.py`, `.c` o `.ts`: un'altra non apre la finestra e vale `null`), per il codice generato; `scegli_file_dell_immagine`,
 //   con `estensione` `.png` o `.svg`, per il flowchart esportato. Le finestre sono quelle native del sistema (libreria `rfd`), modali sulla
 //   finestra dell'app. Partono da `cartella` (quella del file aperto o dell'ultimo usato, se c'è ancora);
 //   altrimenti, nella versione portabile, dalla cartella dell'eseguibile; altrimenti da dove decide il sistema;

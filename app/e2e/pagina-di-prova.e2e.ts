@@ -18,7 +18,7 @@ import type { Riga } from "../core/genera/forma";
 import { formaSenzaTipiDel, linguaggi } from "../core/genera/linguaggi";
 import { tettoDelleChiamate } from "../core/controllo/spazio";
 import type { LinguaDelCodice } from "../core/genera/nomi";
-import { apri } from "../core/progetto/formato";
+import { apri, leggi } from "../core/progetto/formato";
 import type { Progetto } from "../core/progetto/modello";
 import { casiDelProgetto, ottenutoDaiTesti, type CasoDelProgetto, type ControlloCheParte } from "../strumenti/casi-del-confronto";
 import { confermato } from "../strumenti/corpus";
@@ -205,6 +205,66 @@ test("un programma che scrive senza fine: la pagina lo ferma oltre il tetto e lo
   // Si ferma alla scrittura che passa il tetto, non molto dopo.
   expect(f.tutto.length - tettoDellOutput).toBeLessThanOrEqual(scritta.length);
   expect(f.err).toBe("");
+});
+
+test("un programma che scrive sempre un testo vuoto: la pagina risponde e «Ferma» lo ferma", async ({ page }) => {
+  test.setTimeout(60_000);
+  const righe: Riga[] = [{ testo: "// scrive il vuoto" }, { testo: 'function main() { for (;;) writeSync(1, ""); }' }, { testo: "main();" }];
+  await apriLaPagina(page, paginaDiProva(righe, { lingua: "it", titolo: "scrive il vuoto" }));
+  await page.click("#esegui");
+  // Cinque secondi di scritture: con un messaggio per ognuna la pagina non risponde più, e il clic non arriva in dieci.
+  await page.waitForTimeout(5000);
+  await page.click("#ferma", { timeout: 10_000 });
+  await expect(page.locator("#stato")).toHaveAttribute("data-esito", "fermato", { timeout: 10_000 });
+  expect((await letto(page)).tutto).toBe("");
+});
+
+test("U+2028 e U+2029 nell'input: la riga dell'errore resta quella del file, e il programma li riceve uguali", async ({ page }) => {
+  const separatori = `a${String.fromCharCode(0x2028)}b${String.fromCharCode(0x2029)}c`;
+  const a = leggi({
+    format: "algodesign",
+    schema_version: 2,
+    metadata: { name: "due letture" },
+    functions: [{ id: "f1", kind: "main", data: [{ name: "s", type: "string" }, { name: "t", type: "string" }], body: [{ id: "b1", kind: "read", target: "s" }, { id: "b2", kind: "read", target: "t" }], end: { id: "fine" } }],
+    test_cases: [],
+  });
+  if (!a.ok) throw new Error(JSON.stringify(a));
+  const g = javascript.genera(a.progetto, tetti, "it", paroleDelloPseudocodice("it"));
+  if (!g.generato) throw new Error("il programma non genera");
+  await apriLaPagina(page, paginaDiProva(g.righe, { lingua: "it", titolo: "due letture" }));
+  // La seconda lettura si ferma per l'input finito, alla stessa riga con i separatori e senza.
+  const senza = await esegui(page, "a");
+  expect(senza.esito).toBe("errore");
+  const segnata = await page.locator(".riga.segnata").getAttribute("data-riga");
+  const con = await esegui(page, separatori);
+  expect(con.err).toBe(senza.err);
+  await expect(page.locator(".riga.segnata")).toHaveAttribute("data-riga", segnata!);
+  const eco: Riga[] = [{ testo: "// eco" }, { testo: "function main() { const b = new Uint8Array(64); let n = 0; while (readSync(0, b, n, 1, null) === 1) n++; writeSync(1, new TextDecoder().decode(b.subarray(0, n))); }" }, { testo: "main();" }];
+  await apriLaPagina(page, paginaDiProva(eco, { lingua: "it", titolo: "eco" }));
+  expect((await esegui(page, separatori)).tutto).toBe(separatori);
+});
+
+test("ogni esecuzione rilascia il testo del suo programma quando finisce", async ({ page }) => {
+  await page.addInitScript(() => {
+    const conti = { fatti: 0, rilasciati: 0 };
+    (window as unknown as { conti: typeof conti }).conti = conti;
+    const crea = URL.createObjectURL.bind(URL);
+    const rilascia = URL.revokeObjectURL.bind(URL);
+    URL.createObjectURL = (o) => {
+      conti.fatti++;
+      return crea(o);
+    };
+    URL.revokeObjectURL = (u) => {
+      conti.rilasciati++;
+      rilascia(u);
+    };
+  });
+  await apriLaPagina(page, paginaDiProva([{ testo: "// nulla" }], { lingua: "it", titolo: "nulla" }));
+  expect((await esegui(page, "")).esito).toBe("finito");
+  expect((await esegui(page, "")).esito).toBe("finito");
+  const conti = await page.evaluate(() => (window as unknown as { conti: { fatti: number; rilasciati: number } }).conti);
+  expect(conti.fatti).toBeGreaterThan(1);
+  expect(conti.rilasciati).toBe(conti.fatti);
 });
 
 test("il nome del progetto con i caratteri dell'HTML e dello script non rompe la pagina; l'errore che non è del programma è detto come tale", async ({ page }) => {

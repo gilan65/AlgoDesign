@@ -35,7 +35,7 @@ Save the project with **Save as** (Ctrl+Shift+S): the file has the `.algo` exten
 
 In the “Data” tab press **Add a data item** and fill in the fields:
 
-- **Name**: letters without accents, digits and the underscore, starting with a letter (`number`, `age`, not `età`), at most 63 characters; it cannot be a reserved word of C or Python (`if`, `while`, `int`, `return`…) or the name of an operator written as a word (`mod`, `length`…): this way the name goes unchanged into the generated code;
+- **Name**: letters without accents, digits and the underscore, starting with a letter (`number`, `age`, not `età`), at most 63 characters; it cannot be a reserved word of a language of the generated code (`if`, `while`, `int`, `return`, `new`…) or the name of an operator written as a word (`mod`, `length`…): this way the name goes unchanged into the generated code;
 - **Type**: integer, real, character, string or boolean, or a record of the project (§5);
 - **Shape**: single, array with the number of elements (at most 1000), or matrix with the rows and the columns (§5);
 - **Kind**: variable or constant (a constant always has a value);
@@ -285,7 +285,9 @@ TypeScript starts turned off: it is turned on in the Settings (§14) and has its
 
 With the zip, instead of `node` type the path of `node.exe` in quotes, with `&` in front: `& "D:\node\node.exe" media.ts`. A name with spaces goes in quotes: `node "media voti.ts"`. The program reads from the console one line for each read. To give it the values from a file go through `cmd`, because PowerShell has no `<`: `cmd /c "node media.ts < ingresso.txt"`. If the program stops on an error it writes “Error at line N: reason”, and N is the line of the file.
 
-Node runs the file without checking its types. If you want the check, ask `tsc`. Once in the folder, for the two packages it needs, type `npm install typescript @types/node`; then, for each check, `npx tsc --strict --noEmit --module preserve --moduleDetection force --erasableSyntaxOnly --types node media.ts`. With no errors `tsc` writes nothing: it produces no file, and the program to run with `node` stays the same.
+Node runs the file without checking its types. If you want the check, ask `tsc`. Once in the folder, for the two packages it needs, type `npm.cmd install --no-save typescript @types/node`; then, for each check, `npx.cmd tsc --strict --noEmit --module preserve --moduleDetection force --erasableSyntaxOnly --types node media.ts`. With no errors `tsc` writes nothing: it produces no file, and the program to run with `node` stays the same.
+
+In PowerShell type `npm.cmd` and `npx.cmd`, not `npm` and `npx`: on a freshly installed Windows those stop with an error about running scripts. With the zip, `npx.cmd` has to find Node: first type `$env:PATH = "D:\node;$env:PATH"`, which lasts as long as the PowerShell window stays open; then the commands are the same. If a folder higher up contains a `package.json` file, the packages end up there and Node also writes a warning (`MODULE_TYPELESS_PACKAGE_JSON`): the program still works.
 
 ### JavaScript and the `algodesign-tools` tool
 

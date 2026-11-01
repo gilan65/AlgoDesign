@@ -1578,6 +1578,7 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
       return [
         `/** ${{ it: `Un reale con ${decimali} decimali, come nel C: sul valore esatto del numero, la metà alla cifra pari.`, en: `A real with ${decimali} decimals, as in C: on the exact value of the number, halves to the even digit.` }[lingua]} */`,
         `function ${n.reale}(x${NUM})${STR} {`,
+        '  if (!Number.isFinite(x)) return x > 0 ? "inf" : x < 0 ? "-inf" : "nan";',
         `  // ${k.daiBit}`,
         `  const ${k.bit} = new DataView(new ArrayBuffer(8));`,
         `  ${k.bit}.setFloat64(0, x);`,

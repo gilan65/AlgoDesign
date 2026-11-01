@@ -4,7 +4,7 @@
 
 **Progettare algoritmi con i flowchart, eseguirli passo passo e tradurli in pseudocodice, Python, C e TypeScript.**
 
-Versione 0.6.0-beta.2 del 28 ottobre 2026, per Windows 10 e 11 a 64 bit.
+Versione 0.7.0-beta.3 del 1 novembre 2026, per Windows 10 e 11 a 64 bit.
 
 AlgoDesign è un ambiente didattico per chi impara a programmare: prima si progetta e si prova l'algoritmo come flowchart, poi si guarda come lo stesso ragionamento diventa codice. È un'applicazione **locale e leggera**: funziona senza internet, senza installarla e senza diritti di amministratore.
 
@@ -37,10 +37,10 @@ Come si usa AlgoDesign è nella **guida per lo studente**, `GUIDA-PER-LO-STUDENT
 Le versioni beta si scaricano dalla pagina del progetto.
 
 1. Scarica lo zip e, se vuoi, controllane l'impronta: il file `.sha256` accanto allo zip contiene il suo codice SHA-256, che in PowerShell si calcola con `Get-FileHash <nome dello zip>` (PowerShell lo scrive in maiuscolo, il file in minuscolo: le lettere maiuscole e minuscole non contano).
-2. Estrai lo zip dove preferisci (il Desktop, una cartella dei documenti, una chiavetta): nasce la cartella `AlgoDesign-0.6.0-beta.2`.
+2. Estrai lo zip dove preferisci (il Desktop, una cartella dei documenti, una chiavetta): nasce la cartella `AlgoDesign-0.7.0-beta.3`.
 3. Apri la cartella e fai doppio clic su `AlgoDesign.exe`.
 
-**Lo strumento a riga di comando.** Accanto allo zip di AlgoDesign c'è un pacchetto a parte, `AlgoDesign-Tools-0.6.0-beta.2-windows.zip`, con la sua impronta: `algodesign-tools.exe` ha due comandi. `accademico` legge un testo scritto in «Accademico» e ne fa una libreria di AlgoDesign, da aprire ed eseguire passo passo; `stampa` scrive da un progetto una pagina da stampare con due testi di codice affiancati e una pagina che prova il JavaScript nel browser. Si usa da PowerShell; come, lo dicono il `LEGGIMI.md` del pacchetto e la guida ad `algodesign-tools`, che il pacchetto porta con sé.
+**Lo strumento a riga di comando.** Accanto allo zip di AlgoDesign c'è un pacchetto a parte, `AlgoDesign-Tools-0.7.0-beta.3-windows.zip`, con la sua impronta: `algodesign-tools.exe` ha due comandi. `accademico` legge un testo scritto in «Accademico» e ne fa una libreria di AlgoDesign, da aprire ed eseguire passo passo; `stampa` scrive da un progetto una pagina da stampare con due testi di codice affiancati e una pagina che prova il JavaScript nel browser. Si usa da PowerShell; come, lo dicono il `LEGGIMI.md` del pacchetto e la guida ad `algodesign-tools`, che il pacchetto porta con sé.
 
 **L'avviso di Windows al primo avvio.** AlgoDesign non è firmato digitalmente, e Windows avvisa quando si avvia un programma non firmato scaricato da internet. Se compare la finestra «Windows ha protetto il PC», scegli «Ulteriori informazioni» e poi «Esegui comunque». Per evitarla, prima di estrarre lo zip apri le sue Proprietà (tasto destro sullo zip), segna «Sblocca» in basso nella scheda «Generale» e conferma con «OK».
 

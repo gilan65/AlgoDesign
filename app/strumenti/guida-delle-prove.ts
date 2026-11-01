@@ -156,6 +156,7 @@ export function bloccoDal(log: string, fuori: FuoriDalLog): string {
     const dello = l.esecutori.filter((e) => e.macchina === m);
     const inLingua = (lingua: string) => dello.find((e) => e.lingua === lingua)?.casi ?? "—";
     const motore = delMotore(m, l.versioni);
+    if (motore === undefined && m !== "interprete") throw new Error(`la riga «toolchain:» non dà la versione di ${m}`);
     const versione = motore === undefined ? "il nucleo" : `${motore} ${l.versioni.get(motore)}`;
     // L'interprete non ha una lingua del codice: i suoi casi stanno nella prima colonna.
     const senzaLingua = dello.find((e) => e.lingua === undefined);
