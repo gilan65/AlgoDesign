@@ -153,6 +153,8 @@ export const provenienzeDellaCopia = {
   pseudocodice: ["inizio condizione elemento passo"],
   python: ["inizio", "condizione", "inizio+", "condizione+", "elemento+", "passo+", "passo"],
   c: ["inizio condizione passo", "inizio+ condizione+ passo+", "elemento+"],
+  // Come il Python: le graffe che chiudono i due cicli non hanno il blocco.
+  typescript: ["inizio", "condizione", "inizio+", "condizione+", "elemento+", "passo+", "passo"],
 } as const;
 
 // --------------------------------------------------------------------------------- matrice-come-parametro

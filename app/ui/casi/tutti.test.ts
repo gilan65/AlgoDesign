@@ -24,6 +24,9 @@ const progettoDi = (nome: string): Progetto => {
   return r.progetto;
 };
 
+// Un limite di tempo suo, 30 s: la durata che conta è quella della prima fetta (sotto); il caso portato alla fine e
+// rieseguito dura 1,3 s da solo, ma in una corsa intera su una macchina rallentata ha preso 6,2 s, e il limite di 5 s di
+// Bun la dava rossa senza un difetto.
 test("una fetta non porta alla fine un caso di un milione di azioni, e dura poco più del tempo dato", () => {
   const p = progettoDi("troppi-passi.algo");
   const t = new TuttiICasi(p, tetti);
@@ -42,7 +45,7 @@ test("una fetta non porta alla fine un caso di un milione di azioni, e dura poco
   console.log(`fette fino alla fine: ${fette}`);
   expect(fette).toBeGreaterThan(5);
   expect(t.esiti).toEqual([eseguiCaso(p, p.test_cases![0]!, tetti)]);
-});
+}, 30_000);
 
 test("più casi brevi in una fetta, contati dall'avanzamento, con gli esiti della riga di comando", () => {
   const p = progettoDi("lettura-intero.algo");

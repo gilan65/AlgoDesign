@@ -12,7 +12,9 @@
 // senza giri, il `per ogni` dentro un altro, l'elemento stringa da `al_piu`, gli indici nascosti dichiarati); della tappa
 // 4 la torre di Hanoi e il giro attraverso una funzione (il valore del giro e la chiamata in coda in `_valore`); dei
 // record quattro programmi del corpus (la costante, le copie per valore, dal risultato e col nome, il riferimento, l'uscita,
-// il campo per riferimento, la lettura in un campo) e due programmi di prova. Le funzioni di supporto sono scritte qui
+// il campo per riferimento, la lettura in un campo) e due programmi di prova; delle matrici due programmi del corpus (la
+// copia col nome, la riga come vettore, il «per ogni» su una riga, la matrice e la riga per valore, per riferimento e
+// restituite) e due programmi di prova (le righe lette una dopo l'altra, o un valore per tutti gli elementi). Le funzioni di supporto sono scritte qui
 // una volta per lingua e messe in coda a ogni programma che le usa, nell'ordine fisso. Le righe allineate dicono a mano
 // quanti spazi vanno prima del commento.
 import type { Progetto } from "../../core/progetto/modello";
@@ -1524,8 +1526,227 @@ export const delleProveDeiRecord: Readonly<Record<string, { readonly funzione: s
   },
 };
 
+// La matrice: un Array di Array, ogni riga un Array suo (`Array.from({ length: 2 }, () => new Array<number>(2))`, come la
+// comprensione del Python), copiata riga per riga (`x.map((_riga) => Array.from(_riga))`), dal suo generato letto prima
+// (`tipi/copia-di-una-matrice`, `matrice-come-parametro`).
+const rigaCopiata = (l: Lingua) => (l === "it" ? "_riga" : "_row");
+/** La copia di una matrice dal suo nome: una lista nuova, riga per riga. */
+const copiaDellaMatrice = (l: Lingua, x: string) => `${x}.map((${rigaCopiata(l)}) => Array.from(${rigaCopiata(l)}))`;
+
+/** La copia col nome, due cicli; la riga come vettore, ricevuta e data; il «per ogni» sulla riga, che rilegge la riga. */
+const copiaDiUnaMatrice = (l: Lingua) => {
+  const [i, j] = [indice(l), indice(l, 2)];
+  return programma(
+    l,
+    "copia-di-una-matrice",
+    [
+      "function main(): void {",
+      "  let a: number[][] = [[1, 2], [3, 4]];",
+      "  let b: number[][] = Array.from({ length: 2 }, () => new Array<number>(2));",
+      "  let v: number[] = new Array<number>(2);",
+      "  let x!: number;",
+      `  let ${i}: number;`,
+      `  let ${j}: number;`,
+      `  ${i} = 0;`,
+      `  while (${i} < 2) {`,
+      `    ${j} = 0;`,
+      `    while (${j} < 2) {`,
+      `      b[${i}][${j}] = a[${i}][${j}];`,
+      `      ${j} = ${j} + 1;`,
+      "    }",
+      `    ${i} = ${i} + 1;`,
+      "  }",
+      "  b[0][0] = 9;",
+      "  a[1][1] = 8;",
+      "  {scrivi}(`${a[0][0]} ${b[0][0]} ${a[1][1]} ${b[1][1]}\\n`);",
+      `  ${i} = 0;`,
+      `  while (${i} < 2) {`,
+      `    v[${i}] = a[1][${i}];`,
+      `    ${i} = ${i} + 1;`,
+      "  }",
+      "  v[0] = 5;",
+      "  {scrivi}(`${a[1][0]} ${v[0]}\\n`);",
+      `  ${i} = 0;`,
+      `  while (${i} < 2) {`,
+      `    a[0][${i}] = v[${i}];`,
+      `    ${i} = ${i} + 1;`,
+      "  }",
+      "  v[1] = 0;",
+      "  {scrivi}(`${a[0][0]} ${a[0][1]} ${v[1]}\\n`);",
+      `  ${i} = 0;`,
+      `  while (${i} < a[1].length) {`,
+      `    x = a[1][${i}];`,
+      "    {scrivi}(`${x} `);",
+      "    a[1][1] = 0;",
+      `    ${i} = ${i} + 1;`,
+      "  }",
+      "  {scrivi}(`|\\n`);",
+      "}",
+    ],
+    ["scrivi"],
+  );
+};
+
+/** La matrice per valore copiata per prima, per riferimento restituita; la riga per riferimento e per valore; l'elemento
+ * per riferimento con l'indice calcolato prima; la matrice e la riga restituite come liste nuove dal nome. */
+const delleMatriciComeParametro = (l: Lingua): readonly { readonly nome: string; readonly righe: readonly string[] }[] => [
+  { nome: "metti", righe: ["function metti(e: number): number {", "  e = 77;", "  return e;", "}"] },
+  {
+    nome: "totale",
+    righe: [
+      "function totale(x: number[][]): number {",
+      `  x = ${copiaDellaMatrice(l, "x")};`,
+      "  let q!: number;",
+      "  let i!: number;",
+      "  let j!: number;",
+      "  q = 0;",
+      "  i = 0;",
+      "  while (i <= 1) {",
+      "    j = 0;",
+      "    while (j <= 2) {",
+      "      q = q + x[i][j];",
+      "      j = j + 1;",
+      "    }",
+      "    i = i + 1;",
+      "  }",
+      "  x[0][0] = 100;",
+      "  return q;",
+      "}",
+    ],
+  },
+  { nome: "azzera_riga", righe: ["function azzera_riga(v: number[]): number[] {", "  v[0] = 0;", "  v[1] = 0;", "  v[2] = 0;", "  return v;", "}"] },
+  {
+    nome: "trasposta",
+    righe: [
+      "function trasposta(x: number[][]): number[][] {",
+      `  x = ${copiaDellaMatrice(l, "x")};`,
+      "  let u: number[][] = Array.from({ length: 3 }, () => new Array<number>(2));",
+      "  let i!: number;",
+      "  let j!: number;",
+      "  i = 0;",
+      "  while (i <= 1) {",
+      "    j = 0;",
+      "    while (j <= 2) {",
+      "      u[j][i] = x[i][j];",
+      "      j = j + 1;",
+      "    }",
+      "    i = i + 1;",
+      "  }",
+      `  return ${copiaDellaMatrice(l, "u")};`,
+      "}",
+    ],
+  },
+  { nome: "prima_riga", righe: ["function prima_riga(x: number[][]): number[] {", `  x = ${copiaDellaMatrice(l, "x")};`, "  return Array.from(x[0]);", "}"] },
+  {
+    nome: "raddoppia",
+    righe: [
+      "function raddoppia(w: number[][]): number[][] {",
+      "  let i!: number;",
+      "  let j!: number;",
+      "  i = 0;",
+      "  while (i <= 1) {",
+      "    j = 0;",
+      "    while (j <= 1) {",
+      "      w[i][j] = w[i][j] * 2;",
+      "      j = j + 1;",
+      "    }",
+      "    i = i + 1;",
+      "  }",
+      "  return w;",
+      "}",
+    ],
+  },
+  { nome: "tocca", righe: ["function tocca(v: number[]): void {", "  v = Array.from(v);", "  v[0] = 9;", "  {scrivi}(`${v[0]}\\n`);", "}"] },
+  { nome: "sposta", righe: ["function sposta(k: number, e: number): [number, number] {", "  k = k + 1;", "  e = 5;", "  return [k, e];", "}"] },
+];
+const matriceComeParametro = (l: Lingua) =>
+  programma(
+    l,
+    "matrice-come-parametro",
+    [
+      "function main(): void {",
+      "  let m: number[][] = [[1, 2, 3], [4, 5, 6]];",
+      "  let s!: number;",
+      "  let t: number[][] = Array.from({ length: 3 }, () => new Array<number>(2));",
+      "  let r: number[] = new Array<number>(3);",
+      "  let n: number[][] = Array.from({ length: 2 }, () => new Array<number>(2).fill(3));",
+      "  let i: number = 0;",
+      `  let ${indice(l)}: number;`,
+      "  m[0][2] = metti(m[0][2]);",
+      "  s = totale(m);",
+      "  {scrivi}(`${m[0][0]} ${s}\\n`);",
+      "  m[1] = azzera_riga(m[1]);",
+      "  t = trasposta(m);",
+      "  r = prima_riga(m);",
+      "  {scrivi}(`${t[2][0]} ${t[1][1]} ${r[2]} ${m[1][2]}\\n`);",
+      "  n = raddoppia(n);",
+      "  {scrivi}(`${n[1][1]}\\n`);",
+      "  tocca(m[0]);",
+      "  {scrivi}(`${m[0][0]}\\n`);",
+      "  r[0] = 50;",
+      "  {scrivi}(`${m[0][0]} ${r[0]}\\n`);",
+      `  ${indice(l)} = i;`,
+      `  [i, m[${indice(l)}][1]] = sposta(i, m[${indice(l)}][1]);`,
+      "  {scrivi}(`${m[0][1]} ${m[1][1]}\\n`);",
+      "}",
+    ],
+    ["scrivi"],
+    [],
+    delleMatriciComeParametro(l),
+  );
+const funzioneDiMatriceComeParametro = (l: Lingua, nome: string) => delleMatriciComeParametro(l).filter((f) => f.nome === nome);
+
+/** I programmi di prova con le matrici: una riga dopo l'altra, o un valore per ogni elemento letto una volta e copiato in
+ * ogni riga; il risultato una riga scritta per elemento. */
+export const delleProveDelleMatrici: Readonly<Record<string, { readonly funzione: string; readonly caso: string; readonly atteso: Atteso }>> = {
+  "tipi/matrice-come-parametro": {
+    funzione: "trasposta",
+    caso: "due-righe",
+    atteso: inDueLingue((l) =>
+      programma(
+        l,
+        "matrice-come-parametro",
+        [
+          "function main(): void {",
+          "  let x: number[][] = [[{leggiIntero}(), {leggiIntero}(), {leggiIntero}()], [{leggiIntero}(), {leggiIntero}(), {leggiIntero}()]];",
+          `  let ${risultato(l)}: number[][] = trasposta(x);`,
+          ...["[0][0]", "[0][1]", "[1][0]", "[1][1]", "[2][0]", "[2][1]"].map((k) => `  {scrivi}(\`→ ${k} = \${${risultato(l)}${k}}\\n\`);`),
+          "}",
+        ],
+        ["leggiIntero", "scrivi"],
+        [],
+        funzioneDiMatriceComeParametro(l, "trasposta"),
+      ),
+    ),
+  },
+  "tipi/matrice-come-parametro#totale": {
+    funzione: "totale",
+    caso: "tutti-2",
+    atteso: inDueLingue((l) =>
+      programma(
+        l,
+        "matrice-come-parametro",
+        [
+          "function main(): void {",
+          `  let x: number[][] = new Array<number[]>(2).fill(new Array<number>(3).fill({leggiIntero}())).map((${rigaCopiata(l)}) => Array.from(${rigaCopiata(l)}));`,
+          "  let q!: number;",
+          "  q = totale(x);",
+          "  {scrivi}(`\\n`);",
+          "  {scrivi}(`q = ${q}\\n`);",
+          "}",
+        ],
+        ["leggiIntero", "scrivi"],
+        [],
+        funzioneDiMatriceComeParametro(l, "totale"),
+      ),
+    ),
+  },
+};
+
 /** I programmi del corpus, per percorso del file (senza `.algo`), nelle due lingue. */
 export const delCorpus: Readonly<Record<string, Atteso>> = {
+  "tipi/copia-di-una-matrice": inDueLingue(copiaDiUnaMatrice),
+  "tipi/matrice-come-parametro": inDueLingue(matriceComeParametro),
   "tipi/record-in-un-programma": inDueLingue(recordInUnProgramma),
   "tipi/copia-di-un-record": inDueLingue(copiaDiUnRecord),
   "tipi/funzione-con-un-record": inDueLingue(funzioneConUnRecord),
