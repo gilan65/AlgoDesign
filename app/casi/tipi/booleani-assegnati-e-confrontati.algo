@@ -1,0 +1,374 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "booleani-assegnati-e-confrontati",
+    "description": "Un booleano assegnato con un valore e poi confrontato: un campo, un elemento, il campo di un record di una tabella, con not, and e or."
+  },
+  "records": [
+    {
+      "name": "esito",
+      "fields": [
+        {
+          "name": "promosso",
+          "type": "boolean"
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "record",
+          "record": "esito"
+        },
+        {
+          "name": "t",
+          "type": "record",
+          "record": "esito",
+          "size": 2
+        },
+        {
+          "name": "v",
+          "type": "boolean",
+          "size": 2
+        },
+        {
+          "name": "p",
+          "type": "boolean"
+        },
+        {
+          "name": "q",
+          "type": "boolean"
+        },
+        {
+          "name": "i",
+          "type": "integer",
+          "initial": "1"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "assignment",
+          "target": "a.promosso",
+          "value": "true"
+        },
+        {
+          "id": "b2",
+          "kind": "if",
+          "condition": "a.promosso == false",
+          "then": [
+            {
+              "id": "b2a",
+              "kind": "write",
+              "values": [
+                "\"1\""
+              ],
+              "newline": false
+            }
+          ],
+          "else": [
+            {
+              "id": "b2b",
+              "kind": "write",
+              "values": [
+                "\"a\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b3",
+          "kind": "assignment",
+          "target": "v[0]",
+          "value": "true"
+        },
+        {
+          "id": "b4",
+          "kind": "if",
+          "condition": "v[0] == false",
+          "then": [
+            {
+              "id": "b4a",
+              "kind": "write",
+              "values": [
+                "\"2\""
+              ],
+              "newline": false
+            }
+          ],
+          "else": [
+            {
+              "id": "b4b",
+              "kind": "write",
+              "values": [
+                "\"b\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "v[i]",
+          "value": "false"
+        },
+        {
+          "id": "b6",
+          "kind": "if",
+          "condition": "v[i] != false",
+          "then": [
+            {
+              "id": "b6a",
+              "kind": "write",
+              "values": [
+                "\"3\""
+              ],
+              "newline": false
+            }
+          ],
+          "else": [
+            {
+              "id": "b6b",
+              "kind": "write",
+              "values": [
+                "\"c\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b7",
+          "kind": "assignment",
+          "target": "t[0].promosso",
+          "value": "false"
+        },
+        {
+          "id": "b8",
+          "kind": "if",
+          "condition": "t[0].promosso == true",
+          "then": [
+            {
+              "id": "b8a",
+              "kind": "write",
+              "values": [
+                "\"4\""
+              ],
+              "newline": false
+            }
+          ],
+          "else": [
+            {
+              "id": "b8b",
+              "kind": "write",
+              "values": [
+                "\"d\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b9",
+          "kind": "assignment",
+          "target": "t[i].promosso",
+          "value": "true"
+        },
+        {
+          "id": "b10",
+          "kind": "if",
+          "condition": "t[i].promosso == false",
+          "then": [
+            {
+              "id": "b10a",
+              "kind": "write",
+              "values": [
+                "\"5\""
+              ],
+              "newline": false
+            }
+          ],
+          "else": [
+            {
+              "id": "b10b",
+              "kind": "write",
+              "values": [
+                "\"e\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b11",
+          "kind": "assignment",
+          "target": "p",
+          "value": "true"
+        },
+        {
+          "id": "b12",
+          "kind": "assignment",
+          "target": "q",
+          "value": "false"
+        },
+        {
+          "id": "b13",
+          "kind": "if",
+          "condition": "(not p) == true",
+          "then": [
+            {
+              "id": "b13a",
+              "kind": "write",
+              "values": [
+                "\"6\""
+              ],
+              "newline": false
+            }
+          ],
+          "else": [
+            {
+              "id": "b13b",
+              "kind": "write",
+              "values": [
+                "\"f\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b14",
+          "kind": "if",
+          "condition": "(p and q) == true",
+          "then": [
+            {
+              "id": "b14a",
+              "kind": "write",
+              "values": [
+                "\"7\""
+              ],
+              "newline": false
+            }
+          ],
+          "else": [
+            {
+              "id": "b14b",
+              "kind": "write",
+              "values": [
+                "\"g\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b15",
+          "kind": "if",
+          "condition": "(p or q) == false",
+          "then": [
+            {
+              "id": "b15a",
+              "kind": "write",
+              "values": [
+                "\"8\""
+              ],
+              "newline": false
+            }
+          ],
+          "else": [
+            {
+              "id": "b15b",
+              "kind": "write",
+              "values": [
+                "\"h\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b16",
+          "kind": "if",
+          "condition": "p == q",
+          "then": [
+            {
+              "id": "b16a",
+              "kind": "write",
+              "values": [
+                "\"9\""
+              ],
+              "newline": false
+            }
+          ],
+          "else": [
+            {
+              "id": "b16b",
+              "kind": "write",
+              "values": [
+                "\"i\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b17",
+          "kind": "if",
+          "condition": "a.promosso == q",
+          "then": [
+            {
+              "id": "b17a",
+              "kind": "write",
+              "values": [
+                "\"0\""
+              ],
+              "newline": false
+            }
+          ],
+          "else": [
+            {
+              "id": "b17b",
+              "kind": "write",
+              "values": [
+                "\"l\""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b18",
+          "kind": "write",
+          "values": [
+            "\"|\""
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "booleani-assegnati-e-confrontati",
+      "inputs": [],
+      "expected": {
+        "output": "abcdefghil|\n"
+      }
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "per-ogni-su-riga-di-stringhe-lunghe",
+    "description": "Il «per ogni» su una riga di stringhe più lunghe del dato che le riceve, scelta con un indice in un dato: ognuna passa dal controllo quando la prende."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "size": 2,
+          "columns": 2,
+          "initial": [
+            [
+              "\"ab\"",
+              "\"cd\""
+            ],
+            [
+              "\"xy\"",
+              "\"abcde\""
+            ]
+          ],
+          "max_length": 5
+        },
+        {
+          "name": "k",
+          "type": "integer",
+          "initial": "0"
+        },
+        {
+          "name": "e",
+          "type": "string",
+          "max_length": 3
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for_each",
+          "item": "e",
+          "source": "s[k]",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "write",
+              "values": [
+                "e",
+                "\" \""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b3",
+          "kind": "write",
+          "values": [
+            "\"|\""
+          ],
+          "newline": true
+        },
+        {
+          "id": "b4",
+          "kind": "assignment",
+          "target": "k",
+          "value": "1"
+        },
+        {
+          "id": "b5",
+          "kind": "for_each",
+          "item": "e",
+          "source": "s[k]",
+          "body": [
+            {
+              "id": "b6",
+              "kind": "write",
+              "values": [
+                "e",
+                "\" \""
+              ],
+              "newline": false
+            }
+          ]
+        },
+        {
+          "id": "b7",
+          "kind": "write",
+          "values": [
+            "\"|\""
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "per-ogni-su-riga-di-stringhe-lunghe",
+      "inputs": [],
+      "expected": {
+        "output": "ab cd |\nxy ",
+        "error": {
+          "code": "string_too_long",
+          "block": "b5"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,158 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "stringa-per-valore-da-un-campo",
+    "description": "Una stringa per valore presa da un campo più lungo del parametro vale come un'assegnazione: passa se il valore ci sta, altrimenti si ferma sul salto."
+  },
+  "records": [
+    {
+      "name": "alunno",
+      "fields": [
+        {
+          "name": "nome",
+          "type": "string",
+          "max_length": 20
+        },
+        {
+          "name": "voto",
+          "type": "integer"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "a",
+          "type": "record",
+          "record": "alunno"
+        },
+        {
+          "name": "t",
+          "type": "record",
+          "record": "alunno",
+          "size": 2
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "read",
+          "target": "a.nome"
+        },
+        {
+          "id": "b2",
+          "kind": "read",
+          "target": "t[1].nome"
+        },
+        {
+          "id": "b3",
+          "kind": "call",
+          "callee": "saluta",
+          "arguments": [
+            "a.nome"
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "call",
+          "callee": "saluta",
+          "arguments": [
+            "t[1].nome"
+          ]
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    },
+    {
+      "id": "f2",
+      "kind": "procedure",
+      "name": "saluta",
+      "data": [
+        {
+          "name": "s",
+          "type": "string",
+          "max_length": 10,
+          "parameter": "value"
+        }
+      ],
+      "body": [
+        {
+          "id": "c1",
+          "kind": "write",
+          "values": [
+            "s"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "g1"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "ci-stanno",
+      "inputs": [
+        {
+          "data": "a",
+          "text": "Anna"
+        },
+        {
+          "data": "t",
+          "text": "Ben"
+        }
+      ],
+      "expected": {
+        "output": "Anna\nBen\n"
+      }
+    },
+    {
+      "name": "il-campo-del-record",
+      "inputs": [
+        {
+          "data": "a",
+          "text": "Alessandro Magno"
+        },
+        {
+          "data": "t",
+          "text": "Ben"
+        }
+      ],
+      "expected": {
+        "output": "",
+        "error": {
+          "code": "string_too_long",
+          "block": "b3"
+        }
+      }
+    },
+    {
+      "name": "il-campo-del-record-della-tabella",
+      "inputs": [
+        {
+          "data": "a",
+          "text": "Anna"
+        },
+        {
+          "data": "t",
+          "text": "Alessandro Magno"
+        }
+      ],
+      "expected": {
+        "output": "Anna\n",
+        "error": {
+          "code": "string_too_long",
+          "block": "b4"
+        }
+      }
+    }
+  ]
+}
