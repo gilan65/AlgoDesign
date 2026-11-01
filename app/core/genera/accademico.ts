@@ -119,9 +119,9 @@ export function mancanzeDiAccademico(p: Progetto): Mancanza[] {
     if (r !== undefined) segna({ specie: r, funzione: f.id });
     if (f.return_columns !== undefined) segna({ specie: "matrice", funzione: f.id });
     f.data.forEach((d) => dato(d, funzione));
-    const tipi = new Map([...comuni, ...f.data].map((d) => [d.name, d.type]));
+    const dati = new Map([...comuni, ...f.data].map((d) => [d.name, d]));
 
-    const esamina = (e: Espressione, contesto: Contesto, blocco: string) => {
+    const esamina =(e: Espressione, contesto: Contesto, blocco: string) => {
       const manca = (specie: SpecieDellaMancanza, operatore?: OperatoreUnario | "raised_to") => segna({ specie, ...(operatore !== undefined ? { operatore } : {}), blocco });
       switch (e.genere) {
         case "reale":
@@ -163,8 +163,13 @@ export function mancanzeDiAccademico(p: Progetto): Mancanza[] {
         }
       }
     };
-    /** Il tipo del dato che riceve un'assegnazione (il nome, o il vettore di un elemento). */
-    const destinazione = (t: Espressione) => (t.genere === "nome" ? tipi.get(t.nome) : t.genere === "indice" && t.base.genere === "nome" ? tipi.get(t.base.nome) : undefined);
+    /** Il dato di una destinazione: il nome, il vettore o la matrice di un elemento, la tabella del record di un campo. */
+    const datoDi = (t: Espressione): Dato | undefined => (t.genere === "nome" ? dati.get(t.nome) : t.genere === "indice" || t.genere === "campo" ? datoDi(t.base) : undefined);
+    /** Il tipo di ciò che riceve un'assegnazione: il dato, un suo elemento, il campo di un record. */
+    const destinazione = (t: Espressione): TipoDelDato | undefined => {
+      if (t.genere === "campo") return p.records?.find((r) => r.name === datoDi(t.base)?.record)?.fields.find((c) => c.name === t.campo)?.type;
+      return datoDi(t)?.type;
+    };
 
     const visita = (b: Blocco) => {
       const testo = (t: string, contesto: Contesto) => esamina(albero(t), contesto, b.id);

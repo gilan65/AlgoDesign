@@ -27,7 +27,7 @@ const testo = (...righe: string[]) => righe.join("\n") + "\n";
 
 type Lingua = keyof Atteso;
 
-const testa: Record<Lingua, readonly string[]> = {
+export const testa: Record<Lingua, readonly string[]> = {
   it: [
     "// Programma principale generato da AlgoDesign dal flowchart e dalla vista dei dati.",
     "// Come il C, non controlla i calcoli che il C lascia senza regola (un intero oltre i 32 bit, la divisione",
@@ -44,7 +44,7 @@ const testa: Record<Lingua, readonly string[]> = {
   ],
 };
 
-const titoloDelSupporto: Record<Lingua, string> = {
+export const titoloDelSupporto: Record<Lingua, string> = {
   it: "// Funzioni di supporto: fanno ciò che fa il C.",
   en: "// Support functions: they do what C does.",
 };

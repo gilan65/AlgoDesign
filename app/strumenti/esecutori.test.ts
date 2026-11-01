@@ -60,20 +60,29 @@ describe("il registro e gli esecutori", () => {
 });
 
 describe("gli esecutori richiesti dal contratto", () => {
-  const tutti = ["interprete", "python it", "python en", "gcc it", "gcc en", "clang it", "clang en", "node it", "node en", "bun it", "bun en"];
+  const dellaFormaSenzaTipi = ["js-node it", "js-node en", "js-bun it", "js-bun en"];
+  const tutti = ["interprete", "python it", "python en", "gcc it", "gcc en", "clang it", "clang en", "node it", "node en", "bun it", "bun en", ...dellaFormaSenzaTipi];
 
-  test("l'interprete, il Python, il C con un gcc e con un clang, il TypeScript con Node e con Bun, nelle due lingue", () => {
+  test("l'interprete, il Python, il C con un gcc e con un clang, il TypeScript e il suo JavaScript con Node e con Bun, nelle due lingue", () => {
     expect(esecutoriRichiesti(linguaggi, esecutori)).toEqual(tutti);
   });
 
   test("col registro senza il C restano l'interprete, il Python e il TypeScript", () => {
-    expect(esecutoriRichiesti(senzaIlC, esecutori)).toEqual(["interprete", "python it", "python en", "node it", "node en", "bun it", "bun en"]);
+    expect(esecutoriRichiesti(senzaIlC, esecutori)).toEqual(["interprete", "python it", "python en", "node it", "node en", "bun it", "bun en", ...dellaFormaSenzaTipi]);
+  });
+
+  test("senza la forma nel registro nessun esecutore con la forma: la chiede la voce, non l'esecutore", () => {
+    const senzaForma = linguaggi.map((v) => ({ id: v.id, genere: v.genere }));
+    expect(esecutoriRichiesti(senzaForma, esecutori)).toEqual(tutti.filter((x) => !dellaFormaSenzaTipi.includes(x)));
+    // Il controllo positivo: la macchina con la forma, in un registro senza, non è di nessuno.
+    expect(eseguitiDel("typescript", tutti, senzaForma, esecutori)).toEqual(["node it", "node en", "bun it", "bun en"]);
   });
 
   test("gli esecutori di ogni linguaggio da eseguire, e nessuno per l'interprete", () => {
     expect(eseguitiDel("python", tutti, linguaggi, esecutori)).toEqual(["python it", "python en"]);
     expect(eseguitiDel("c", [...tutti, "gcc-2 it"], linguaggi, esecutori)).toEqual(["gcc it", "gcc en", "clang it", "clang en", "gcc-2 it"]);
-    expect(eseguitiDel("typescript", tutti, linguaggi, esecutori)).toEqual(["node it", "node en", "bun it", "bun en"]);
+    expect(eseguitiDel("typescript", tutti, linguaggi, esecutori)).toEqual(["node it", "node en", "bun it", "bun en", ...dellaFormaSenzaTipi]);
+    expect(eseguitiDel("typescript", ["js-node-2 it"], linguaggi, esecutori)).toEqual(["js-node-2 it"]);
     // Ogni esecutore eseguito tranne l'interprete è di un linguaggio, e di uno solo.
     const di = linguaggi.filter((v) => v.genere === "da-eseguire").flatMap((v) => eseguitiDel(v.id, tutti, linguaggi, esecutori));
     expect(di.sort()).toEqual(tutti.filter((x) => x !== "interprete").sort());

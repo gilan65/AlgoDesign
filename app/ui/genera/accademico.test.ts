@@ -340,6 +340,36 @@ describe("le mancanze", () => {
     ]);
   });
 
+  test("il booleano da una condizione ci sta anche in un campo, nel campo di una tabella e in un elemento di una matrice; in un campo intero no", () => {
+    const conLeDestinazioni: Progetto = {
+      format: "algodesign",
+      schema_version: 2,
+      metadata: { name: "destinazioni" },
+      records: [{ name: "alunno", fields: [{ name: "attivo", type: "boolean" }, { name: "voto", type: "integer" }] }],
+      functions: [
+        {
+          id: "f1",
+          kind: "main",
+          data: [
+            { name: "voto", type: "integer", initial: "6" },
+            { name: "a", type: "record", record: "alunno" },
+            { name: "t", type: "record", record: "alunno", size: 2 },
+            { name: "m", type: "boolean", size: 2, columns: 2 },
+          ],
+          body: [
+            { id: "b1", kind: "assignment", target: "a.attivo", value: "voto > 5" },
+            { id: "b2", kind: "assignment", target: "t[0].attivo", value: "voto > 5" },
+            { id: "b3", kind: "assignment", target: "m[0][1]", value: "voto > 5" },
+            { id: "b4", kind: "assignment", target: "a.voto", value: "voto > 5" },
+          ],
+          end: { id: "b5" },
+        },
+      ],
+    };
+    // Il controllo positivo è b4: la mancanza si accende, sul campo che non è booleano.
+    expect(mancanzeDiAccademico(conLeDestinazioni).filter((m) => m.specie === "condizione-come-valore")).toEqual([{ specie: "condizione-come-valore", blocco: "b4" }]);
+  });
+
   test("il progetto che non ci sta: nessun testo, l'elenco intero", () => {
     expect(accademico(tutte, tetti, "it")).toEqual({ generato: false, perche: "non-ci-sta", mancanze: mancanzeDiAccademico(tutte) });
   });

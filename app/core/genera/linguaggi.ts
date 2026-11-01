@@ -48,10 +48,21 @@ interface VoceComune {
   readonly diPartenza: boolean;
 }
 
+/** Una forma equivalente di un linguaggio, che non è un linguaggio in più: nessuna linguetta, nessuna voce nel menu e nelle
+ * preferenze. Lo stesso programma senza le annotazioni, con le stesse righe e la stessa provenienza. */
+export interface FormaSenzaTipi {
+  /** Come il differenziale la distingue (`js-node it`). */
+  readonly id: string;
+  readonly estensione: string;
+  readonly genera: VoceComune["genera"];
+}
+
 export type VoceDelLinguaggio =
   | (VoceComune & { readonly genere: "da-leggere" })
   | (VoceComune & {
       readonly genere: "da-eseguire";
+      /** Lo stesso programma senza i tipi, se il linguaggio ha una forma così. */
+      readonly formaSenzaTipi?: FormaSenzaTipi;
       /** Il motivo di ogni codice d'errore con cui il programma si ferma, nelle lingue del codice, col tetto delle
        * chiamate del progetto (che i motivi dei tetti della ricorsione dicono). */
       readonly motivi: (tetto: number) => TabellaDeiMotivi;
@@ -118,6 +129,11 @@ export const linguaggi = [
     estensione: ".ts",
     genere: "da-eseguire",
     genera: (p, limiti, lingua, parole, prova) => typescript(p, limiti, lingua, parole, prova),
+    formaSenzaTipi: {
+      id: "js",
+      estensione: ".js",
+      genera: (p, limiti, lingua, parole, prova) => typescript(p, limiti, lingua, parole, prova, true),
+    },
     riservati: riservatiDelTypeScript,
     riservatiNelFile: [],
     riservatiAUnRecord: riservatiAUnRecordDelTypeScript,
@@ -134,6 +150,12 @@ export type EstensioneDelCodice = (typeof linguaggi)[number]["estensione"];
 
 export function voceDel(id: Linguaggio): VoceDelLinguaggio & { readonly id: Linguaggio; readonly estensione: EstensioneDelCodice } {
   return linguaggi.find((v) => v.id === id)!;
+}
+
+/** La forma senza tipi di un linguaggio, se ne ha una. */
+export function formaSenzaTipiDel(id: Linguaggio): FormaSenzaTipi | undefined {
+  const v: VoceDelLinguaggio = voceDel(id);
+  return v.genere === "da-eseguire" ? v.formaSenzaTipi : undefined;
 }
 
 /** I nomi riservati di tutti i linguaggi del registro. */

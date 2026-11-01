@@ -13,6 +13,10 @@
 // e ogni errore è un PROBLEMA. Un esecutore può volere variabili d'ambiente sue nei processi (Bun: nessuna cache dei
 // programmi trasformati nel profilo dell'utente).
 //
+// Una voce del registro può avere una forma senza tipi (il JavaScript del TypeScript), che non è un linguaggio in più: le
+// stesse macchine la eseguono, e un esecutore del differenziale ha la forma davanti (`js-node it`). L'esecutore dice come
+// si tolgono le annotazioni dal TypeScript (`togliITipi`), per il confronto che fa il differenziale.
+//
 // Un esecutore ha una o più FAMIGLIE della sua toolchain (il C: gcc e clang), tutte richieste: il collaudo è rosso se ne
 // manca una, il differenziale lo dice nella riga della toolchain e corre con quelle che trova. Ogni eseguibile trovato
 // è una macchina, chiamata come la sua famiglia (`gcc`; un secondo gcc `gcc-2`); un esecutore del differenziale è una
@@ -76,6 +80,12 @@ export interface Esecutore {
     readonly configurazione: (sorgenti: readonly string[]) => object;
     readonly comando: (configurazione: string) => string[];
     readonly errori: (testo: string) => { sorgente: string; riga: string }[];
+  };
+  /** Le annotazioni tolte da una macchina di una famiglia: il comando che legge il file con l'elenco dei sorgenti e scrive
+   * accanto a ognuno `<sorgente>.tolto`. Manca per un linguaggio senza una forma senza tipi. */
+  readonly togliITipi?: {
+    readonly famiglia: string;
+    readonly comando: (m: Macchina, elenco: string) => string[];
   };
 }
 
@@ -175,13 +185,18 @@ export const esecutori: readonly Esecutore[] = [
       comando: (configurazione) => [join(radice, "node_modules", ".bin", suWindows ? "tsc.exe" : "tsc"), "-p", configurazione],
       errori: (testo) => [...testo.matchAll(/^(.+?)\(\d+,\d+\): error TS\d+: .*$/gm)].map((m) => ({ sorgente: m[1]!, riga: m[0] })),
     },
+    // `stripTypeScriptTypes` c'è solo in Node, ed è sperimentale: l'avviso spento, e comunque sullo standard error.
+    togliITipi: {
+      famiglia: "node",
+      comando: (m, elenco) => [m.percorso, "--disable-warning=ExperimentalWarning", join(radice, "strumenti", "togli-i-tipi.ts"), elenco],
+    },
   },
 ];
 
 // ------------------------------------------------------------------------------------ il contratto, nei due versi
 
 /** Del registro basta l'identificatore e il genere: una prova può passarne uno con una voce in più o in meno. */
-export type VoceDelRegistro = { readonly id: string; readonly genere: GenereDelLinguaggio };
+export type VoceDelRegistro = { readonly id: string; readonly genere: GenereDelLinguaggio; readonly formaSenzaTipi?: { readonly id: string } };
 
 const daEseguire = (registro: readonly VoceDelRegistro[]) => registro.filter((v) => v.genere === "da-eseguire");
 
@@ -199,11 +214,13 @@ export function appaia(registro: readonly VoceDelRegistro[], tutti: readonly Ese
 }
 
 /** Gli esecutori che il differenziale deve far correre: l'interprete, e ogni famiglia di ogni linguaggio da eseguire in
- * ogni lingua del codice. */
+ * ogni lingua del codice, poi la stessa famiglia con la forma senza tipi, se il linguaggio ne ha una. */
 export function esecutoriRichiesti(registro: readonly VoceDelRegistro[], tutti: readonly Esecutore[]): string[] {
   return [
     "interprete",
-    ...daEseguire(registro).flatMap((v) => (esecutoreDel(v.id, tutti)?.famiglie ?? []).flatMap((f) => lingueDelCodice.map((l) => `${f} ${l}`))),
+    ...daEseguire(registro).flatMap((v) =>
+      [undefined, v.formaSenzaTipi?.id].flatMap((forma, k) => (k > 0 && forma === undefined ? [] : (esecutoreDel(v.id, tutti)?.famiglie ?? []).flatMap((f) => lingueDelCodice.map((l) => `${nomeDellaMacchina(f, forma)} ${l}`)))),
+    ),
   ];
 }
 
@@ -212,13 +229,16 @@ export function programmiConAvvisiAttesi(registro: readonly VoceDelRegistro[], t
   return daEseguire(registro).reduce((n, v) => n + Object.keys(esecutoreDel(v.id, tutti)?.avvisiAttesi ?? {}).length, 0);
 }
 
-/** L'esecutore di un esecutore del differenziale (`gcc it`, `gcc-2 en`, `node it`): quello di un linguaggio da eseguire
- * del registro che ha la sua famiglia; niente per l'interprete. */
+/** Il nome di una macchina che esegue una forma senza tipi: la forma davanti (`js-node`, `js-node-2`). */
+export const nomeDellaMacchina = (macchina: string, forma: string | undefined) => (forma === undefined ? macchina : `${forma}-${macchina}`);
+
+/** L'esecutore di un esecutore del differenziale (`gcc it`, `gcc-2 en`, `node it`, `js-node it`): quello di un linguaggio da
+ * eseguire del registro che ha la sua famiglia, con la forma davanti se è di una forma senza tipi; niente per l'interprete. */
 export function esecutoreDellEseguito(eseguito: string, registro: readonly VoceDelRegistro[], tutti: readonly Esecutore[]): Esecutore | undefined {
   const famiglia = eseguito.replace(/(-\d+)? \S+$/, "");
   return daEseguire(registro)
-    .map((v) => esecutoreDel(v.id, tutti))
-    .find((e) => e?.famiglie.includes(famiglia));
+    .flatMap((v) => (esecutoreDel(v.id, tutti) === undefined ? [] : [{ v, e: esecutoreDel(v.id, tutti)! }]))
+    .find(({ v, e }) => e.famiglie.some((f) => famiglia === f || (v.formaSenzaTipi !== undefined && famiglia === nomeDellaMacchina(f, v.formaSenzaTipi.id))))?.e;
 }
 
 /** Se un esecutore del differenziale (`gcc it`, `gcc-2 en`) è di una toolchain che compila. */
