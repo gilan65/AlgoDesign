@@ -2,14 +2,14 @@
 
 `algodesign-tools` è lo strumento a riga di comando di AlgoDesign. È un'applicazione a sé, senza finestre, con due comandi:
 
-- **`accademico`** legge un testo scritto in «Accademico», lo pseudocodice delle Selezioni scolastiche delle Olimpiadi di Informatica, e ne fa una libreria di AlgoDesign;
+- **`accademico`** legge un testo scritto in «Accademico», lo pseudocodice delle Selezioni scolastiche delle Olimpiadi di Informatica e ne fa una libreria di AlgoDesign;
 - **`stampa`** legge un progetto di AlgoDesign e scrive due pagine HTML: due testi di codice affiancati da stampare e una pagina per provare il programma nel browser.
 
-Lo strumento scrive solo i file che gli si dicono, non apre il browser e non stampa da solo. I suoi messaggi sono in italiano. Come si usa AlgoDesign è nella guida per lo studente (`GUIDA-PER-LO-STUDENTE.md`).
+Lo strumento scrive solo i file che il comando produce, non apre il browser e non stampa da solo. I suoi messaggi sono in italiano. Come si usa AlgoDesign è nella guida per lo studente (`GUIDA-PER-LO-STUDENTE.md`).
 
 ## 1. Come si scarica e si avvia
 
-Per Windows lo strumento è `algodesign-tools.exe`, in un pacchetto a parte, `AlgoDesign-Tools-0.6.0-beta.2-windows.zip`, accanto a quello di AlgoDesign. Si estrae dove si preferisce: nasce la cartella `AlgoDesign-Tools-0.6.0-beta.2`, e non c'è nulla da installare. Per usarlo non servono AlgoDesign, Node o altri motori.
+Per Windows lo strumento è `algodesign-tools.exe`, in un pacchetto a parte, `AlgoDesign-Tools-0.6.0-beta.2-windows.zip`, accanto a quello di AlgoDesign. Si estrae dove si preferisce: nasce la cartella `AlgoDesign-Tools-0.6.0-beta.2` e non c'è nulla da installare. Per usarlo non servono AlgoDesign, Node o altri motori.
 
 Si usa da **PowerShell**: in Esplora file, nella cartella dello strumento, si scrive `powershell` nella barra dell'indirizzo e si preme Invio (su Windows 11 va bene anche il tasto destro nella cartella, «Apri nel Terminale»). PowerShell non avvia un'applicazione della cartella senza `.\` davanti al nome: si scrive `.\algodesign-tools` negli esempi che seguono. I file si danno col loro percorso, fra virgolette se ha degli spazi, o si copiano nella stessa cartella.
 
@@ -19,7 +19,7 @@ Si usa da **PowerShell**: in Esplora file, nella cartella dello strumento, si sc
 .\algodesign-tools accademico -h
 ```
 
-Lo strumento non è firmato digitalmente e Windows può avvisare quando lo si avvia la prima volta: come procedere è nel `LEGGIMI.md` di AlgoDesign, nel suo pacchetto, ed è lo stesso.
+Lo strumento non è firmato digitalmente e Windows può avvisare al primo avvio: come procedere è nel `LEGGIMI.md` di AlgoDesign, nel suo pacchetto, ed è lo stesso.
 
 Chi ha il codice di AlgoDesign e Bun scrive `bun run tools` al posto di `.\algodesign-tools`, dalla cartella `app`; i comandi e le opzioni sono gli stessi.
 
@@ -90,7 +90,7 @@ Con `--linguaggi` la pagina da stampare affianca due linguaggi del codice genera
 SCRITTO media (Pseudocodice e C).html
 ```
 
-I linguaggi si chiamano `pseudocodice`, `python`, `c`, `accademico` e `typescript`, anche quelli spenti nelle Impostazioni di AlgoDesign. JavaScript non si sceglie: si affianca al solo TypeScript, senza `--linguaggi`.
+I linguaggi si chiamano `pseudocodice`, `python`, `c`, `accademico` e `typescript`, anche quelli non attivi nelle Impostazioni di AlgoDesign. JavaScript non si sceglie: si affianca al solo TypeScript, senza `--linguaggi`.
 
 ### Le opzioni
 
