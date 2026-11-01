@@ -24,6 +24,13 @@
 // sua toolchain in ogni lingua del codice (`python it`, `python en`, `gcc it`, `gcc en`, `clang it`, `clang en`). Un
 // linguaggio che si compila si compila una volta per programma, lingua e macchina.
 //
+// La forma senza tipi di una voce del registro (il JavaScript del TypeScript) non è un linguaggio in più: le stesse macchine
+// la eseguono su ogni caso, con la forma davanti al nome (`js-node it`), e ogni suo programma, anche di prova, si confronta
+// con quello coi tipi: stesse righe e stessa provenienza (`differenzaDellaProvenienza`), e uguale, a meno degli spazi lasciati
+// dalle annotazioni, al testo senza annotazioni che dà la macchina dell'esecutore (`togliITipi`, `differenzaDalTypeScript`).
+// Una differenza è un PROBLEMA; la riga `senza tipi: …` li conta. Senza quella macchina il confronto non si fa, e lo dice la
+// stessa riga (la toolchain che manca è già un problema).
+//
 // L'ottenuto di un programma generato:
 // - lo stdout e lo stderr si leggono in byte: un `\r` e un BOM restano nel testo, un byte che non è UTF-8 lascia il
 //   programma senza esito;
@@ -65,7 +72,7 @@
 // Righe: per ogni caso ed esecutore quelle di `righe-dei-casi.ts` precedute dall'esecutore (`VERDE gcc it
 // tappa-1/x#x`), o `ROSSO … senza esito: …`; `ESCLUSO <caso>: <ragione>`; `ERRORE STATICO <caso>: <codice> <blocco>,
 // nessun programma generato`; `FUORI TAPPA <file> (casi: <n>)`; `NON ANCORA …`; `PROBLEMA …`;
-// in fondo la riga `toolchain: …`, quella del controllo dei tipi, quella dei «non ancora», quella dei casi per tipo (`per tipo: …`, i casi nel confronto che usano i record, fra
+// in fondo la riga `toolchain: …`, quella del controllo dei tipi, quella della forma senza tipi, quella dei «non ancora», quella dei casi per tipo (`per tipo: …`, i casi nel confronto che usano i record, fra
 // loro quelli che usano le tabelle, quelli che usano le matrici e gli altri) e quella del riepilogo `differenziale: …`. Un caso con gli avvisi diversi è rosso:
 // qui ogni differenza lo è. Esce con 1 se c'è un rosso o un problema.
 //
@@ -94,8 +101,9 @@ import type { LinguaDelCodice } from "../core/genera/nomi";
 import { apri } from "../core/progetto/formato";
 import { usaIRecord, usaLeMatrici, usaLeTabelle, type Atteso, type CasoDiUnaFunzione, type Funzione, type Progetto } from "../core/progetto/modello";
 import { paroleDelloPseudocodice } from "../ui/genera/parole";
-import { ambienteDi, appaia, esecutoreDel, esecutori as tuttiGliEsecutori, lingueDelCodice as lingue, trovaToolchain, type Esecutore, type Macchina } from "./esecutori";
+import { ambienteDi, appaia, esecutoreDel, esecutori as tuttiGliEsecutori, lingueDelCodice as lingue, nomeDellaMacchina, trovaToolchain, type Esecutore, type Macchina } from "./esecutori";
 import { righeDellEsito } from "./righe-dei-casi";
+import { differenzaDalTypeScript, differenzaDellaProvenienza } from "./senza-tipi";
 
 /** Il controllo statico di un progetto della tappa: ha gli errori e gli avvisi. */
 type ControlloCheParte = Extract<EsitoDelControllo, { fuoriTappa: false }>;
@@ -143,6 +151,17 @@ const daEseguire: DaEseguire[] = linguaggi.flatMap((voce) => {
   const esecutore = voce.genere === "da-eseguire" ? esecutoreDel(voce.id) : undefined;
   return esecutore === undefined ? [] : [{ voce, esecutore }];
 });
+/** Che cosa si scrive per una voce da eseguire: il linguaggio, e la sua forma senza tipi se ne ha una (`forma` è il suo nome,
+ * `chiave` la distingue fra i programmi scritti). */
+type Scritta = { chiave: string; forma: string | undefined; voce: DaEseguire["voce"]; estensione: string; genera: VoceDelLinguaggio["genera"] };
+const scritteDi = (voce: DaEseguire["voce"]): Scritta[] => {
+  const senza = voce.genere === "da-eseguire" ? voce.formaSenzaTipi : undefined;
+  return [
+    { chiave: voce.id, forma: undefined, voce, estensione: voce.estensione, genera: voce.genera },
+    ...(senza === undefined ? [] : [{ chiave: `${voce.id}-${senza.id}`, forma: senza.id, voce, estensione: senza.estensione, genera: senza.genera }]),
+  ];
+};
+const tutteLeScritte = daEseguire.flatMap(({ voce }) => scritteDi(voce));
 
 // ------------------------------------------------------------------------------------------------ i processi
 
@@ -239,10 +258,11 @@ if (corpus) {
 
 // La toolchain di ogni linguaggio da eseguire, e gli esecutori: l'interprete, poi ogni macchina in ogni lingua.
 const toolchain = daEseguire.map((d) => ({ ...d, ...trovaToolchain(d.esecutore, problemi) }));
-/** Un esecutore di un programma generato: una macchina della toolchain di un linguaggio, in una lingua del codice. */
-type DiUnGenerato = { nome: string; voce: DaEseguire["voce"]; esecutore: Esecutore; macchina: Macchina; lingua: LinguaDelCodice };
+/** Un esecutore di un programma generato: una macchina della toolchain di un linguaggio, in una lingua del codice, sul
+ * linguaggio o sulla sua forma senza tipi. */
+type DiUnGenerato = { nome: string; voce: DaEseguire["voce"]; scritta: Scritta; esecutore: Esecutore; macchina: Macchina; lingua: LinguaDelCodice };
 const generatiDa: DiUnGenerato[] = toolchain.flatMap(({ voce, esecutore, macchine }) =>
-  macchine.flatMap((macchina) => lingue.map((lingua) => ({ nome: `${macchina.nome} ${lingua}`, voce, esecutore, macchina, lingua }))),
+  scritteDi(voce).flatMap((scritta) => macchine.flatMap((macchina) => lingue.map((lingua) => ({ nome: `${nomeDellaMacchina(macchina.nome, scritta.forma)} ${lingua}`, voce, scritta, esecutore, macchina, lingua })))),
 );
 const esecutori = ["interprete", ...generatiDa.map((g) => g.nome)];
 
@@ -328,31 +348,31 @@ if (corpus) for (const n of Object.keys(esclusi).filter((n) => !nomiTrovati.has(
 
 // Il codice generato di ogni file della tappa, scritto in una cartella temporanea.
 const tmp = mkdtempSync(join(tmpdir(), "differenziale-"));
-type Codice = { righe: readonly Riga[]; sorgente: string; file: number; linguaggio: Linguaggio; lingua: LinguaDelCodice } | { statico: true } | { nonAncora: string };
+type Codice = { righe: readonly Riga[]; sorgente: string; file: number; linguaggio: Linguaggio; forma: string | undefined; lingua: LinguaDelCodice } | { statico: true } | { nonAncora: string };
 const generati = new Map<string, Codice>();
 const chiave = (k: number, linguaggio: string, l: LinguaDelCodice) => `${k} ${linguaggio} ${l}`;
 /** I file che un linguaggio non sa ancora scrivere, per linguaggio: l'indice del file e il costrutto. */
 const nonAncora = new Map<string, Map<number, string>>(daEseguire.map(({ voce }) => [voce.id, new Map()]));
 for (const [k, { progetto: p, statico }] of daGenerare) {
   for (const l of lingue)
-    for (const { voce } of daEseguire) {
-      const g: Generato = voce.genera(p, tetti, l, paroleDelloPseudocodice(l));
+    for (const { chiave: scritta, forma, voce, estensione, genera } of tutteLeScritte) {
+      const g: Generato = genera(p, tetti, l, paroleDelloPseudocodice(l));
       if (!g.generato && g.perche === "non-ancora") {
         const prima = nonAncora.get(voce.id)!.get(k);
         if (prima !== undefined && prima !== g.costrutto) throw new Error(`${file[k]!.nome}: il generatore ${voce.id} dice due costrutti diversi nelle due lingue`);
         nonAncora.get(voce.id)!.set(k, g.costrutto);
-        generati.set(chiave(k, voce.id, l), { nonAncora: g.costrutto });
+        generati.set(chiave(k, scritta, l), { nonAncora: g.costrutto });
         continue;
       }
       if (!g.generato) {
         if (g.perche !== "errori-statici" || !statico) throw new Error(`${file[k]!.nome}: il generatore ${voce.id} lo dice ${g.perche} e il controllo no`);
-        generati.set(chiave(k, voce.id, l), { statico: true });
+        generati.set(chiave(k, scritta, l), { statico: true });
         continue;
       }
       if (statico) throw new Error(`${file[k]!.nome}: il controllo vi trova errori statici e il generatore lo traduce`);
-      const sorgente = join(tmp, `${k}-${l}${voce.estensione}`);
+      const sorgente = join(tmp, `${k}-${l}${estensione}`);
       writeFileSync(sorgente, testoDelCodice(g.righe));
-      generati.set(chiave(k, voce.id, l), { righe: g.righe, sorgente, file: k, linguaggio: voce.id, lingua: l });
+      generati.set(chiave(k, scritta, l), { righe: g.righe, sorgente, file: k, linguaggio: voce.id, forma, lingua: l });
     }
 }
 // I programmi di prova dei casi delle funzioni, uno per caso, linguaggio e lingua: si compilano anche loro.
@@ -360,18 +380,18 @@ const prove = new Map<string, Codice>();
 daConfrontare.forEach((d, n) => {
   if (d.funzione === undefined || d.controllo.errori.length > 0) return;
   for (const l of lingue)
-    for (const { voce } of daEseguire) {
+    for (const { chiave: scritta, forma, voce, estensione, genera } of tutteLeScritte) {
       // Il programma di prova di un file che il linguaggio non sa ancora scrivere non si genera.
       const delFile = nonAncora.get(voce.id)!.get(d.file);
       if (delFile !== undefined) {
-        prove.set(`${d.id} ${voce.id} ${l}`, { nonAncora: delFile });
+        prove.set(`${d.id} ${scritta} ${l}`, { nonAncora: delFile });
         continue;
       }
-      const g = voce.genera(d.progetto, tetti, l, paroleDelloPseudocodice(l), { funzione: d.funzione.id, caso: d.caso });
+      const g = genera(d.progetto, tetti, l, paroleDelloPseudocodice(l), { funzione: d.funzione.id, caso: d.caso });
       if (!g.generato) throw new Error(`${d.id}: il programma di prova non si genera (${g.perche})`);
-      const sorgente = join(tmp, `${d.file}-prova-${n}-${l}${voce.estensione}`);
+      const sorgente = join(tmp, `${d.file}-prova-${n}-${l}${estensione}`);
       writeFileSync(sorgente, testoDelCodice(g.righe));
-      prove.set(`${d.id} ${voce.id} ${l}`, { righe: g.righe, sorgente, file: d.file, linguaggio: voce.id, lingua: l });
+      prove.set(`${d.id} ${scritta} ${l}`, { righe: g.righe, sorgente, file: d.file, linguaggio: voce.id, forma, lingua: l });
     }
 });
 
@@ -381,7 +401,7 @@ const tipiPer: string[] = [];
 for (const { voce, esecutore } of daEseguire) {
   const c = esecutore.controllaITipi;
   if (c === undefined) continue;
-  const sorgenti = [...generati.values(), ...prove.values()].flatMap((x) => ("righe" in x && x.linguaggio === voce.id ? [basename(x.sorgente)] : []));
+  const sorgenti = [...generati.values(), ...prove.values()].flatMap((x) => ("righe" in x && x.linguaggio === voce.id && x.forma === undefined ? [basename(x.sorgente)] : []));
   let errori = 0;
   if (sorgenti.length > 0) {
     const configurazione = `tipi-${voce.id}.json`;
@@ -398,6 +418,43 @@ for (const { voce, esecutore } of daEseguire) {
     if (f.uscita === 0 && trovati.length > 0) problemi.push(`tipi ${voce.id}: il controllo esce con 0 e ha ${trovati.length} errori`);
   }
   tipiPer.push(`${voce.id} programmi ${sorgenti.length}, errori ${errori}`);
+}
+
+// La forma senza tipi di ogni voce che ne ha una: ogni suo programma contro quello coi tipi (quelli di ogni file e quelli di
+// prova di ogni caso di una funzione), nelle righe e nella provenienza e nel testo senza le annotazioni.
+const senzaTipiPer: string[] = [];
+for (const { voce, esecutore, macchine } of toolchain) {
+  const senza = scritteDi(voce).find((s) => s.forma !== undefined);
+  if (senza === undefined) continue;
+  type Scritto = Extract<Codice, { righe: readonly Riga[] }>;
+  const coppie = lingue.flatMap((l) => [
+    ...[...daGenerare.keys()].map((k) => ({ chi: `${file[k]!.nome} ${l}`, ts: generati.get(chiave(k, voce.id, l)), js: generati.get(chiave(k, senza.chiave, l)) })),
+    ...daConfrontare.filter((d) => d.funzione !== undefined).map((d) => ({ chi: `${d.id} ${l}`, ts: prove.get(`${d.id} ${voce.id} ${l}`), js: prove.get(`${d.id} ${senza.chiave} ${l}`) })),
+  ]).flatMap(({ chi, ts, js }) => (ts !== undefined && js !== undefined && "righe" in ts && "righe" in js ? [{ chi, ts: ts as Scritto, js: js as Scritto }] : []));
+  let provenienzaUguale = 0;
+  for (const { chi, ts, js } of coppie) {
+    const d = differenzaDellaProvenienza(ts.righe, js.righe);
+    if (d === undefined) provenienzaUguale++;
+    else problemi.push(`senza tipi ${chi}: la provenienza è diversa, ${d}`);
+  }
+  const togli = esecutore.togliITipi;
+  const macchina = macchine.find((m) => m.famiglia === togli?.famiglia);
+  let uguali = 0;
+  let confronto = `senza ${togli?.famiglia ?? "chi toglie i tipi"}: testo non confrontato`;
+  if (togli !== undefined && macchina !== undefined && coppie.length > 0) {
+    const elenco = join(tmp, `tolti-${voce.id}.json`);
+    writeFileSync(elenco, JSON.stringify(coppie.map((c) => c.ts.sorgente)));
+    const f = await lancia(togli.comando(macchina, elenco), new Uint8Array(), 300, macchina.percorso, esecutore.ambiente?.(macchina));
+    if (f.uscita !== 0) problemi.push(`senza tipi ${voce.id}: le annotazioni non si tolgono, uscita ${f.scaduto ? "per il tempo scaduto" : f.uscita}: ${JSON.stringify(testoDelCompilatore.decode(f.err).slice(0, 500))}`);
+    else
+      for (const { chi, ts, js } of coppie) {
+        const d = differenzaDalTypeScript(testoDelCodice(ts.righe), readFileSync(`${ts.sorgente}.tolto`, "utf8"), testoDelCodice(js.righe));
+        if (d === undefined) uguali++;
+        else problemi.push(`senza tipi ${chi}: non è il TypeScript senza le annotazioni, ${d}`);
+      }
+    confronto = `testo confrontato da ${macchina.nome} ${macchina.versione}`;
+  }
+  senzaTipiPer.push(`${voce.id} programmi ${coppie.length}, senza annotazioni uguali ${uguali}, provenienza uguale ${provenienzaUguale}, ${confronto}`);
 }
 
 // Le compilazioni, una per programma, lingua e macchina di un linguaggio che si compila. Gli avvisi di ognuna si
@@ -456,16 +513,16 @@ for (const d of daConfrontare) {
     const esito = eseguiCaso(d.progetto, d.caso, tetti, d.funzione?.id);
     risultati.set(chi, esito.fuoriTappa ? { genere: "rosso", righe: [`ROSSO ${chi} fuori tappa per l'esecuzione`] } : righeDellEsito(chi, esito));
   }
-  for (const { nome, voce, esecutore, macchina, lingua: l } of generatiDa) {
+  for (const { nome, voce, scritta, esecutore, macchina, lingua: l } of generatiDa) {
     const chi = `${nome} ${d.id}`;
-    const delFile = generati.get(chiave(d.file, voce.id, l))!;
+    const delFile = generati.get(chiave(d.file, scritta.chiave, l))!;
     // Un file che il linguaggio non sa ancora scrivere: i suoi esecutori non corrono il caso.
     if ("nonAncora" in delFile) continue;
     if ("statico" in delFile) {
       risultati.set(chi, confronta(d.caso.expected, { output: "", static_error: d.controllo.errori[0]!, warnings: d.controllo.avvisi }, false, chi));
       continue;
     }
-    const chiaveDelCodice = d.funzione === undefined ? chiave(d.file, voce.id, l) : `${d.id} ${voce.id} ${l}`;
+    const chiaveDelCodice = d.funzione === undefined ? chiave(d.file, scritta.chiave, l) : `${d.id} ${scritta.chiave} ${l}`;
     const scritto = d.funzione === undefined ? delFile : prove.get(chiaveDelCodice)!;
     if ("nonAncora" in scritto) continue;
     const codice = scritto as Extract<Codice, { righe: readonly Riga[] }>;
@@ -514,6 +571,7 @@ console.log(
   `toolchain: ${toolchain.map(({ esecutore, da, macchine, mancanti }) => `${esecutore.nome} da ${da}: ${macchine.map((k) => `${k.nome} ${k.versione} (${k.percorso})`).join(", ") || "nessuno"}${mancanti.length > 0 ? ` (manca: ${mancanti.join(", ")})` : ""}`).join("; ")}`,
 );
 console.log(`controllo dei tipi: ${tipiPer.join("; ") || "nessun linguaggio lo ha"}`);
+console.log(`senza tipi: ${senzaTipiPer.join("; ") || "nessun linguaggio ha la forma"}`);
 // I casi che gli esecutori di un linguaggio non corrono, perché il linguaggio non sa ancora scrivere il loro file.
 console.log(
   `non ancora: ${[...nonAncora].map(([linguaggio, perFile]) => `${linguaggio} file ${perFile.size}, casi ${daConfrontare.filter((d) => perFile.has(d.file)).length}`).join("; ")}`,

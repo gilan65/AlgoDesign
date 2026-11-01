@@ -77,7 +77,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from "node:os";
 import { basename, join, relative } from "node:path";
 import { tetti } from "../core/controllo/controllo";
-import { linguaggi, voceDel } from "../core/genera/linguaggi";
+import { formaSenzaTipiDel, linguaggi, voceDel } from "../core/genera/linguaggi";
 import { apri } from "../core/progetto/formato";
 import { paroleDelloPseudocodice } from "../ui/genera/parole";
 import {
@@ -611,7 +611,9 @@ async function portaCasi(): Promise<void> {
 // clang, il TypeScript con Node e con Bun: la toolchain che manca fa rossa la porta, non la salta). Gli esecutori di un
 // linguaggio che non sa ancora scrivere un file non ne corrono i casi: ognuno è verde sui casi del confronto meno quelli
 // che la riga `non ancora` conta per il suo linguaggio (le righe NON ANCORA tante quanti i file che conta). Il controllo
-// dei tipi di ogni linguaggio che l'ha: dei programmi, nessun errore. La durata nella riga.
+// dei tipi di ogni linguaggio che l'ha: dei programmi, nessun errore. La forma senza tipi di ogni voce che ne ha una: i suoi
+// esecutori sono fra quelli richiesti, e ogni suo programma ha le righe e la provenienza del linguaggio ed è il suo testo
+// senza le annotazioni. La durata nella riga.
 // Controlli positivi, ciascuno in una corsa a parte:
 // - PER CAMPO, coi file dati: copie di casi del corpus con l'atteso alterato (l'output con un carattere in meno, cioè
 //   l'ottenuto con uno in più; l'errore atteso su un altro blocco; un carattere dell'output cambiato, anche in un caso
@@ -781,6 +783,14 @@ async function portaDifferenziale(): Promise<void> {
     return m === null || Number(m[1]) === 0 || m[2] !== "0";
   });
   if (conITipi.length === 0 || tipiNonVerdi.length > 0) rosso("differenziale", `controllo dei tipi: ${JSON.stringify(rigaDeiTipi)}; linguaggi che l'hanno ${JSON.stringify(conITipi)}, senza programmi o con errori ${JSON.stringify(tipiNonVerdi)}`);
+  // La forma senza tipi di ogni voce che ne ha una: ogni programma uguale, nei due confronti.
+  const rigaSenzaTipi = vera.uscita.match(/^senza tipi: (.*)$/m)?.[1] ?? "";
+  const conLaForma = linguaggi.filter((v) => formaSenzaTipiDel(v.id) !== undefined).map((v) => v.id as string);
+  const formeNonVerdi = conLaForma.filter((id) => {
+    const m = rigaSenzaTipi.match(new RegExp(`(?:^|; )${id} programmi (\\d+), senza annotazioni uguali (\\d+), provenienza uguale (\\d+), testo confrontato da `));
+    return m === null || Number(m[1]) === 0 || m[2] !== m[1] || m[3] !== m[1];
+  });
+  if (conLaForma.length === 0 || formeNonVerdi.length > 0) rosso("differenziale", `la forma senza tipi: ${JSON.stringify(rigaSenzaTipi)}; voci che l'hanno ${JSON.stringify(conLaForma)}, senza programmi o con differenze ${JSON.stringify(formeNonVerdi)}`);
   const { mancanti, inPiu: eseguitiInPiu } = confrontoDegliEsecutori(esecutoriRichiesti, esecutori);
   if (n === 0 || nonTutti.length > 0 || mancanti.length > 0 || eseguitiInPiu.length > 0)
     rosso("differenziale", `casi nel confronto ${n}; esecutori non verdi su tutti i loro (non ancora: ${rigaNonAncora}): ${JSON.stringify(nonTutti.map((m) => m?.[0]))}; richiesti ${esecutoriRichiesti.length} dal contratto, mancanti: ${JSON.stringify(mancanti)}, eseguiti in più: ${JSON.stringify(eseguitiInPiu)} | ${toolchain}`);
@@ -886,7 +896,7 @@ async function portaDifferenziale(): Promise<void> {
     rosso("differenziale", `controllo positivo «senza toolchain» SPENTO (exit ${senza.codice}; problemi della toolchain ${problemiSenza.length}; solo l'interprete: ${soloInterprete})`);
 
   riga(
-    `PORTA differenziale: VERDE | ${secondi.toFixed(1)} s | exit 0, ${n} casi nel confronto (di funzioni ${riepilogo[3]}, contati nei file: ${diFunzioni}; con l'errore statico ${riepilogo[4]}, contati nei file: ${conStatico}; con gli esclusi ${riepilogo[5]}, per nome, contati nei file: ${contati}, contati nei file delle tappe ${tappeDelDifferenziale.join(", ")}), fuori tappa ${riepilogo[6]} in ${riepilogo[7]} file (contati nelle tappe ${tappeFuoriDalDifferenziale.join(", ")}) | per esecutore: ${riepilogo[8]} | non ancora: ${rigaNonAncora} | controllo dei tipi: ${rigaDeiTipi} | ${toolchain} | avvisi della compilazione: ${avvisi[1]} compilazioni, ${avvisi[2]} con gli avvisi attesi, nessun altro | controllo positivo acceso (corsa a parte: exit ${sonda.codice}; ${sondeDifferenziale.map((s) => s.nome).join(", ")}: ${attese.length} righe attese, tutte, nessuna in più) | controllo positivo «senza toolchain» acceso (exit ${senza.codice}, ${problemiSenza.length} problemi) | esecutori dal contratto: richiesti ${esecutoriRichiesti.length}, eseguiti ${esecutori.length}, mancanti 0, in più 0; programmi con gli avvisi attesi ${programmiConAvvisiAttesi} | controllo positivo degli esecutori richiesti acceso (senza uno: ${membri.length} su ${membri.length}; registro senza un linguaggio: ${senzaUno.map((s) => `senza ${s.id} richiesti ${s.richiesti} invece di ${esecutoriRichiesti.length}, ROSSO con ${s.inPiu.length} in più`).join("; ")})`,
+    `PORTA differenziale: VERDE | ${secondi.toFixed(1)} s | exit 0, ${n} casi nel confronto (di funzioni ${riepilogo[3]}, contati nei file: ${diFunzioni}; con l'errore statico ${riepilogo[4]}, contati nei file: ${conStatico}; con gli esclusi ${riepilogo[5]}, per nome, contati nei file: ${contati}, contati nei file delle tappe ${tappeDelDifferenziale.join(", ")}), fuori tappa ${riepilogo[6]} in ${riepilogo[7]} file (contati nelle tappe ${tappeFuoriDalDifferenziale.join(", ")}) | per esecutore: ${riepilogo[8]} | non ancora: ${rigaNonAncora} | controllo dei tipi: ${rigaDeiTipi} | senza tipi: ${rigaSenzaTipi} | ${toolchain} | avvisi della compilazione: ${avvisi[1]} compilazioni, ${avvisi[2]} con gli avvisi attesi, nessun altro | controllo positivo acceso (corsa a parte: exit ${sonda.codice}; ${sondeDifferenziale.map((s) => s.nome).join(", ")}: ${attese.length} righe attese, tutte, nessuna in più) | controllo positivo «senza toolchain» acceso (exit ${senza.codice}, ${problemiSenza.length} problemi) | esecutori dal contratto: richiesti ${esecutoriRichiesti.length}, eseguiti ${esecutori.length}, mancanti 0, in più 0; programmi con gli avvisi attesi ${programmiConAvvisiAttesi} | controllo positivo degli esecutori richiesti acceso (senza uno: ${membri.length} su ${membri.length}; registro senza un linguaggio: ${senzaUno.map((s) => `senza ${s.id} richiesti ${s.richiesti} invece di ${esecutoriRichiesti.length}, ROSSO con ${s.inPiu.length} in più`).join("; ")})`,
   );
 }
 

@@ -5,6 +5,13 @@
 // che il C non definisce non si controllano, e il commento in testa lo dice. Solo sintassi che si cancella togliendo i
 // tipi (niente `enum` né `namespace`): il programma resta JavaScript a meno delle annotazioni.
 //
+// Con `senzaTipi` il generatore scrive la forma JavaScript, che non è un linguaggio in più: lo stesso programma, con le stesse
+// righe e la stessa provenienza, senza nessuna annotazione. Le annotazioni si tolgono dove nascono (`a`, che le lascia o le
+// annulla), mai dal testo finito, dove una stringa con `: number` dentro le somiglierebbe. Quello che resta è ciò che resta
+// togliendo i tipi: l'`as` lascia le sue parentesi (`(p) === false`), il `!` di un campo lascia il campo (`nome;`, che esiste
+// e vale `undefined` finché non ha un valore, in Node e in Bun), il `<number>` di un `Array` lascia `new Array(3)`. Il
+// differenziale la esegue su ogni caso e la confronta con `stripTypeScriptTypes` di Node.
+//
 // Il generatore sa scrivere le tappe 1, 2, 3 e 4: i dati e le costanti dei
 // cinque tipi semplici e i vettori, l'assegnazione (anche a un elemento, e la copia di un vettore col nome), la lettura,
 // la scrittura, il commento, `se`, `mentre`, `ripeti`, `per`, `per ogni`, ogni espressione della tappa 1, le procedure e
@@ -123,9 +130,12 @@ import { motiviCol } from "./motivi";
 import { contatoriDellaRicorsione, indiceDelLivello, nomeDelRisultato, nomeDellaRigaCopiata, nomeDellaSorgente, nomeDellElemento, nomeDelValore, nomiDelSupporto, nomiDelSupportoDelTypeScript, type LinguaDelCodice } from "./nomi";
 import type { NoteDeiDati, Prova } from "./python";
 
-export function typescript(p: Progetto, limiti: Tetti, lingua: LinguaDelCodice, note: NoteDeiDati, prova?: Prova): Generato {
-  return genera(p, limiti, (q) => righeDelTypeScript(q, lingua, note, prova));
+export function typescript(p: Progetto, limiti: Tetti, lingua: LinguaDelCodice, note: NoteDeiDati, prova?: Prova, senzaTipi = false): Generato {
+  return genera(p, limiti, (q) => righeDelTypeScript(q, lingua, note, prova, senzaTipi));
 }
+
+/** Un'annotazione: il suo testo nel TypeScript, niente nella forma senza tipi. */
+type Annotazione = (testo: string) => string;
 
 const rientro = "  ";
 
@@ -236,7 +246,10 @@ function nelTesto(codice: number): string {
 
 // ------------------------------------------------------------------------------------------- il programma
 
-function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prova: Prova | undefined): Riga[] {
+function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prova: Prova | undefined, senzaTipi: boolean): Riga[] {
+  const a: Annotazione = (testo) => (senzaTipi ? "" : testo);
+  /** Un `Array` di n elementi senza valore, col tipo dell'elemento. */
+  const nuovoArray = (elemento: string, n: number) => `new Array${a(`<${elemento}>`)}(${n})`;
   const w = testi[lingua];
   const nomi = nomiIn(lingua);
   const main = p.functions.find((f) => f.kind === "main")!;
@@ -471,7 +484,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
         return { t: `!${fra(espressione(o), 15)}`, forza: 15 };
       case "to_integer": {
         const x = espressione(o);
-        return t === "integer" ? x : t === "character" ? operando(`${fra(x, 20)}.codePointAt(0)!`) : chiamata("Math.trunc", x.t);
+        return t === "integer" ? x : t === "character" ? operando(`${fra(x, 20)}.codePointAt(0)${a("!")}`) : chiamata("Math.trunc", x.t);
       }
       case "to_real":
         return nelReale(o);
@@ -548,7 +561,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     }
     // `tsc` rifiuta l'uguaglianza fra due tipi letterali diversi (TS2367): due letterali, o un booleano che un letterale
     // assegnato prima restringe a `true` o `false`. Il lato sinistro allarga il suo tipo con `as`, che lega più di `&&` e `||`.
-    const sinistro = letteraleOBooleano(e.sinistro) && letteraleOBooleano(e.destro) ? operando(`(${fra(l, 15)} as ${tipoDiTypeScript(ts)})`) : l;
+    const sinistro = letteraleOBooleano(e.sinistro) && letteraleOBooleano(e.destro) ? operando(`(${fra(l, 15)}${a(` as ${tipoDiTypeScript(ts)}`)})`) : l;
     return { t: `${fra(sinistro, 11)} ${op === "==" ? "===" : "!=="} ${fra(r, 11)}`, forza: 9 };
   }
 
@@ -629,14 +642,14 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     // stessa riga); col valore ripetuto, il valore in ogni riga.
     if (d.columns !== undefined) {
       const righe = (riga: string) => `Array.from({ length: ${d.size} }, () => ${riga})`;
-      if (v === undefined) return righe(`new Array<${elemento}>(${d.columns})`);
+      if (v === undefined) return righe(nuovoArray(elemento, d.columns));
       if (Array.isArray(v)) return `[${(v as readonly (readonly string[])[]).map((riga) => `[${riga.map((x) => nelDato(albero(x), d)).join(", ")}]`).join(", ")}]`;
-      return righe(`new Array<${elemento}>(${d.columns}).fill(${nelDato(albero((v as { readonly each: string }).each), d)})`);
+      return righe(`${nuovoArray(elemento, d.columns)}.fill(${nelDato(albero((v as { readonly each: string }).each), d)})`);
     }
-    if (v === undefined) return d.size === undefined ? undefined : `new Array<${elemento}>(${d.size})`;
+    if (v === undefined) return d.size === undefined ? undefined : nuovoArray(elemento, d.size);
     if (typeof v === "string") return nelDato(albero(v), d);
     if (Array.isArray(v)) return `[${(v as readonly string[]).map((x) => nelDato(albero(x), d)).join(", ")}]`;
-    return `new Array<${elemento}>(${d.size}).fill(${nelDato(albero((v as { readonly each: string }).each), d)})`;
+    return `${nuovoArray(elemento, d.size!)}.fill(${nelDato(albero((v as { readonly each: string }).each), d)})`;
   };
 
   /** Le dichiarazioni, con la colonna dei commenti allineata sulle righe che ne hanno uno; `funzione`, quella che le
@@ -646,7 +659,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       const v = valoreIniziale(d);
       const parola = d.constant === true || prima === "" ? "const" : "let";
       const nota = !conNota ? "" : d.constant === true ? note.costante : d.role !== undefined ? note.ruoli[d.role] : "";
-      return { d, testo: `${prima}${parola} ${d.name}${v === undefined ? "!" : ""}: ${annotazione(d)}${v === undefined ? "" : ` = ${v}`};`, nota };
+      return { d, testo: `${prima}${parola} ${d.name}${a(`${v === undefined ? "!" : ""}: ${annotazione(d)}`)}${v === undefined ? "" : ` = ${v}`};`, nota };
     });
     const larghezza = (t: string) => Array.from(t).length;
     const colonna = Math.max(0, ...voci.filter((x) => x.nota !== "").map((x) => larghezza(x.testo)));
@@ -1033,7 +1046,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       : `[${riferimenti.map(annotazione).join(", ")}]`;
     // Un parametro per uscita non si riceve: è un dato senza valore della procedura, dichiarato coi suoi dati.
     const ricevuti = parametri.filter((d) => d.parameter !== "out");
-    const intestazione = `function ${f.kind === "main" ? "main" : f.name}(${ricevuti.map((d) => `${d.name}: ${annotazione(d)}`).join(", ")}): ${ritorno} {`;
+    const intestazione = `function ${f.kind === "main" ? "main" : f.name}(${ricevuti.map((d) => `${d.name}${a(`: ${annotazione(d)}`)}`).join(", ")})${a(`: ${ritorno}`)} {`;
     // Un vettore e un record per valore la funzione li copia per prima cosa: nessuno dei due è mai lo stesso oggetto di chi
     // chiama.
     const copie = parametri
@@ -1073,8 +1086,8 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       corpo.push({ testo: `${rientro}return ${nomiDeiRiferimenti.length === 1 ? nomiDeiRiferimenti[0] : `[${nomiDeiRiferimenti.join(", ")}]`};`, blocco: f.end.id });
     } else uscita();
     const delGeneratore: Riga[] = [
-      ...Array.from({ length: livelli }, (_, k) => ({ testo: `${rientro}let ${indiceDelLivello(lingua, k + 1)}: number;` })),
-      ...[...temporanee, ...sorgenti].map((x) => ({ testo: `${rientro}let ${x.nome}: ${x.tipo};` })),
+      ...Array.from({ length: livelli }, (_, k) => ({ testo: `${rientro}let ${indiceDelLivello(lingua, k + 1)}${a(": number")};` })),
+      ...[...temporanee, ...sorgenti].map((x) => ({ testo: `${rientro}let ${x.nome}${a(`: ${x.tipo}`)};` })),
     ];
     if (f.name !== undefined) fermano.set(f.name, fermaLaFunzione);
     return [{ testo: intestazione }, ...entrata, ...copie, ...dichiarazioni, ...delGeneratore, ...corpo, { testo: "}" }];
@@ -1091,10 +1104,10 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     const letti = parametriDelCaso(f, caso, p.records);
     if ("problema" in letti) throw new Error(`il caso ${caso.name} non ha un programma di prova: ${letti.problema}`);
     dati = new Map<string, Dato>([...comuni, ...f.data].map((d) => [d.name, d]));
-    const righe: Riga[] = [{ testo: "function main(): void {" }];
+    const righe: Riga[] = [{ testo: `function main()${a(": void")} {` }];
     for (const { dato: d, elementi, ognuno } of letti.parametri) {
       if (d.parameter === "out") {
-        righe.push({ testo: `${rientro}let ${d.name}!: ${annotazione(d)};` });
+        righe.push({ testo: `${rientro}let ${d.name}${a(`!: ${annotazione(d)}`)};` });
         continue;
       }
       const uno = (x: "riga" | "nessuno") => {
@@ -1112,11 +1125,11 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
         d.type === "record" && d.size !== undefined ? `[${[...Array(d.size).keys()].map(delRecord).join(", ")}]`
         : d.type === "record" ? delRecord(0)
         : d.size === undefined ? uno(elementi[0]!)
-        : d.columns !== undefined && ognuno ? `new Array<${elemento}[]>(${d.size}).fill(new Array<${elemento}>(${d.columns}).fill(${uno(elementi[0]!)})).map((${riga}) => Array.from(${riga}))`
+        : d.columns !== undefined && ognuno ? `${nuovoArray(`${elemento}[]`, d.size)}.fill(${nuovoArray(elemento, d.columns)}.fill(${uno(elementi[0]!)})).map((${riga}) => Array.from(${riga}))`
         : d.columns !== undefined ? `[${[...Array(d.size).keys()].map((i) => `[${elementi.slice(i * d.columns!, (i + 1) * d.columns!).map(uno).join(", ")}]`).join(", ")}]`
-        : ognuno ? `new Array<${elemento}>(${d.size}).fill(${uno(elementi[0]!)})`
+        : ognuno ? `${nuovoArray(elemento, d.size)}.fill(${uno(elementi[0]!)})`
         : `[${elementi.map(uno).join(", ")}]`;
-      righe.push({ testo: `${rientro}let ${d.name}: ${annotazione(d)} = ${valore};`, blocco: f.id });
+      righe.push({ testo: `${rientro}let ${d.name}${a(`: ${annotazione(d)}`)} = ${valore};`, blocco: f.id });
     }
     const parametri = f.data.filter((d) => d.parameter !== undefined);
     const riferimenti = parametri.filter((d) => d.parameter === "reference" || d.parameter === "out");
@@ -1130,18 +1143,18 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     if (f.kind === "function" && f.return_size !== undefined && f.return_type === "record") {
       // La funzione si chiama una volta, poi una riga per campo di ogni record.
       const nome = nomeDelRisultato[lingua];
-      righe.push({ testo: `${rientro}let ${nome}: ${annotazioneDelRisultato(f)} = ${chiamataDiF};`, ...delCaso });
+      righe.push({ testo: `${rientro}let ${nome}${a(`: ${annotazioneDelRisultato(f)}`)} = ${chiamataDiF};`, ...delCaso });
       for (const k of posizioni(f.return_size, undefined))
         for (const [x, t] of campiScritti(f.return_record, k)) scrivi(`→ ${x} = ${comeScritto(`${nome}${x}`, t)}`);
     } else if (f.kind === "function" && f.return_type === "record") {
       // La funzione si chiama una volta, poi una riga per campo, come per un vettore.
       const nome = nomeDelRisultato[lingua];
-      righe.push({ testo: `${rientro}let ${nome}: ${annotazioneDelRisultato(f)} = ${chiamataDiF};`, ...delCaso });
+      righe.push({ testo: `${rientro}let ${nome}${a(`: ${annotazioneDelRisultato(f)}`)} = ${chiamataDiF};`, ...delCaso });
       for (const [x, t] of campiScritti(f.return_record, "")) scrivi(`→ ${x} = ${comeScritto(`${nome}${x}`, t)}`);
     } else if (f.kind === "function" && f.return_size !== undefined) {
       // La funzione si chiama una volta, poi una riga per elemento: se si ferma, nulla è scritto.
       const nome = nomeDelRisultato[lingua];
-      righe.push({ testo: `${rientro}let ${nome}: ${annotazioneDelRisultato(f)} = ${chiamataDiF};`, ...delCaso });
+      righe.push({ testo: `${rientro}let ${nome}${a(`: ${annotazioneDelRisultato(f)}`)} = ${chiamataDiF};`, ...delCaso });
       for (const k of posizioni(f.return_size, f.return_columns)) scrivi(`→ ${k} = ${comeScritto(`${nome}${k}`, tipoSemplice(f.return_type!))}`);
     } else if (f.kind === "function") scrivi(`→ ${comeScritto(chiamataDiF, tipoSemplice(f.return_type!))}`, true);
     else if (riferimenti.length === 0) righe.push({ testo: `${rientro}${chiamataDiF};`, ...delCaso });
@@ -1220,10 +1233,10 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       { testo: "" },
       { testo: "" },
       { testo: `class ${r.name} {` },
-      ...r.fields.map((c) => ({ testo: `${rientro}${c.name}!: ${annotazioneDelTipo(c.type)};` })),
+      ...r.fields.map((c) => ({ testo: `${rientro}${c.name}${a(`!: ${annotazioneDelTipo(c.type)}`)};` })),
       { testo: "" },
-      { testo: `${rientro}constructor(${r.fields.map((c) => `${c.name}?: ${annotazioneDelTipo(c.type)}`).join(", ")}) {` },
-      ...r.fields.map((c) => ({ testo: `${rientro}${rientro}this.${c.name} = ${c.name}!;` })),
+      { testo: `${rientro}constructor(${r.fields.map((c) => `${c.name}${a(`?: ${annotazioneDelTipo(c.type)}`)}`).join(", ")}) {` },
+      ...r.fields.map((c) => ({ testo: `${rientro}${rientro}this.${c.name} = ${c.name}${a("!")};` })),
       { testo: `${rientro}}` },
       { testo: "}" },
     );
@@ -1235,7 +1248,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   const funzioni = supportoInOrdine.filter((f) => usate.has(f));
   if (funzioni.length > 0) {
     righe.push({ testo: "" }, { testo: "" }, { testo: `// ${w.supporto}` });
-    for (const f of funzioni) righe.push({ testo: "" }, { testo: "" }, ...funzione(f, lingua, nomi, decimali, riempimento, tetto, risale, usate.has("entraNellaRicorsione")).map((testo) => ({ testo })));
+    for (const f of funzioni) righe.push({ testo: "" }, { testo: "" }, ...funzione(f, lingua, nomi, decimali, riempimento, tetto, risale, usate.has("entraNellaRicorsione"), a).map((testo) => ({ testo })));
   }
   righe.push({ testo: "" }, { testo: "" }, { testo: "main();" });
   return righe;
@@ -1334,7 +1347,8 @@ const interni = {
 /** Il testo di una funzione di supporto: la spiegazione, la firma, il corpo. `risale`, le funzioni del programma fino a
  * cui `fermati` cerca la riga (senza procedure né funzioni, il solo `main`); `ricorsione`, se il programma ha funzioni del
  * giro: allora `fermati` sa saltare un numero dato di cornici del programma. */
-function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Supporto, string>>, decimali: number, riempimento: number, tetto: number, risale: readonly string[] | undefined, ricorsione: boolean): string[] {
+function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Supporto, string>>, decimali: number, riempimento: number, tetto: number, risale: readonly string[] | undefined, ricorsione: boolean, a: Annotazione): string[] {
+  const [NUM, STR, BOOL, VOID, BIG] = [a(": number"), a(": string"), a(": boolean"), a(": void"), a(": bigint")];
   const k = interni[lingua];
   const m = motiviCol(tetto)[lingua];
   const ferma = (motivo: string) => `${n.fermati}("${motivo}")`;
@@ -1356,7 +1370,7 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
       // nessuno dei tre flussi è una console, e non parte.
       return [
         s(f),
-        `function ${n.preparaConsole}(): void {`,
+        `function ${n.preparaConsole}()${VOID} {`,
         '  if (process.platform === "win32" && (process.stdin.isTTY || process.stdout.isTTY || process.stderr.isTTY)) execSync("chcp 65001", { stdio: "ignore" });',
         "}",
       ];
@@ -1370,7 +1384,7 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
       const cornice = risale === undefined ? "at main \\(" : `at (?:${risale.join("|")}) \\((?!native:)`;
       return [
         s(f),
-        `function ${n.fermati}(${k.motivo}: string${ricorsione ? `, ${k.cornice}: number = 0` : ""}): never {`,
+        `function ${n.fermati}(${k.motivo}${STR}${ricorsione ? `, ${k.cornice}${NUM} = 0` : ""})${a(": never")} {`,
         `  let ${k.riga} = "?";`,
         `  for (const ${k.chiamata} of (new Error().stack ?? "").split("\\n")) {`,
         `    const ${k.trovata} = /^\\s*${cornice}.*:(\\d+):\\d+\\)$/.exec(${k.chiamata});`,
@@ -1388,17 +1402,17 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
     case "leggiRiga":
       return [
         s(f),
-        `function ${n.leggiRiga}(): string {`,
+        `function ${n.leggiRiga}()${STR} {`,
         "  const byte = new Uint8Array(1);",
-        `  const ${k.letti}: number[] = [];`,
+        `  const ${k.letti}${a(": number[]")} = [];`,
         "  for (;;) {",
         "    let n = 0;",
         "    try {",
         "      n = readSync(0, byte, 0, 1, null);",
         "    } catch (e) {",
         `      // ${k.nonBloccante}`,
-        '      if ((e as { code?: string }).code === "EAGAIN") continue;',
-        '      if ((e as { code?: string }).code !== "EOF") throw e;',
+        `      if ((e${a(" as { code?: string }")}).code === "EAGAIN") continue;`,
+        `      if ((e${a(" as { code?: string }")}).code !== "EOF") throw e;`,
         "    }",
         "    if (n === 0) break;",
         `    ${k.letti}.push(byte[0]);`,
@@ -1421,7 +1435,7 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
       const valore = `Number(${c}[1] + ${c}[2])`;
       return [
         s(f),
-        `function ${n.leggiIntero}(): number {`,
+        `function ${n.leggiIntero}()${NUM} {`,
         `  const ${k.riga} = ${n.leggiRiga}();`,
         `  const ${c} = /^ *([+-]?)0*([0-9]{1,10}) *$/.exec(${k.riga});`,
         `  if (${c} === null || !(-2147483648 <= ${valore} && ${valore} <= 2147483647)) ${ferma(m.invalid_input)};`,
@@ -1430,28 +1444,28 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
       ];
     }
     case "leggiReale":
-      return lettura(f, "): number", `!/^ *[+-]?[0-9]{1,}(\\.[0-9]+([eE][+-]?[0-9]+)?)? *$/.test(${k.riga}) || !Number.isFinite(Number(${k.riga}))`, `Number(${k.riga})`);
+      return lettura(f, `)${NUM}`, `!/^ *[+-]?[0-9]{1,}(\\.[0-9]+([eE][+-]?[0-9]+)?)? *$/.test(${k.riga}) || !Number.isFinite(Number(${k.riga}))`, `Number(${k.riga})`);
     case "leggiCarattere":
-      return lettura(f, "): string", `${n.lunghezza}(${k.riga}) !== 1`, k.riga);
+      return lettura(f, `)${STR}`, `${n.lunghezza}(${k.riga}) !== 1`, k.riga);
     case "leggiStringa":
-      return lettura(f, "n: number): string", `${n.lunghezza}(${k.riga}) > n || ${k.riga}.includes("\\0")`, k.riga);
+      return lettura(f, `n${NUM})${STR}`, `${n.lunghezza}(${k.riga}) > n || ${k.riga}.includes("\\0")`, k.riga);
     case "leggiBooleano":
-      return lettura(f, "): boolean", `${k.riga} !== "true" && ${k.riga} !== "false"`, `${k.riga} === "true"`);
+      return lettura(f, `)${BOOL}`, `${k.riga} !== "true" && ${k.riga} !== "false"`, `${k.riga} === "true"`);
     case "dividi":
-      return [s(f), `function ${n.dividi}(a: number, b: number): number {`, "  return Math.trunc(a / b);", "}"];
+      return [s(f), `function ${n.dividi}(a${NUM}, b${NUM})${NUM} {`, "  return Math.trunc(a / b);", "}"];
     case "convertiAReale":
-      return [s(f), `function ${n.convertiAReale}(n: number): number {`, "  return n + 0;", "}"];
+      return [s(f), `function ${n.convertiAReale}(n${NUM})${NUM} {`, "  return n + 0;", "}"];
     case "elevatoA":
       return [
         s(f),
-        `function ${n.elevatoA}(x: number, y: number): number {`,
+        `function ${n.elevatoA}(x${NUM}, y${NUM})${NUM} {`,
         `  /** ${k.quantiBit} */`,
-        `  function ${k.bitDi}(b: bigint): number {`,
+        `  function ${k.bitDi}(b${BIG})${NUM} {`,
         "    return b.toString(2).length;",
         "  }",
         "",
         `  /** ${k.dueAllaE} */`,
-        `  function ${k.dueAlla}(e: number): number {`,
+        `  function ${k.dueAlla}(e${NUM})${NUM} {`,
         "    const b = new DataView(new ArrayBuffer(8));",
         "    if (e >= -1022) b.setInt32(0, (e + 1023) << 20);",
         "    else if (e + 1074 >= 32) b.setInt32(0, 1 << (e + 1042));",
@@ -1460,7 +1474,7 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
         "  }",
         "",
         `  /** ${k.piuVicino} */`,
-        `  function ${k.arrotondato}(num: bigint, den: bigint, p: number): number {`,
+        `  function ${k.arrotondato}(num${BIG}, den${BIG}, p${NUM})${NUM} {`,
         `    const s = 55 - (${k.bitDi}(num) - ${k.bitDi}(den));`,
         "    const n = s >= 0 ? num << BigInt(s) : num;",
         "    const d = s >= 0 ? den : den << BigInt(-s);",
@@ -1499,11 +1513,11 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
         "}",
       ];
     case "arrotonda":
-      return [s(f), `function ${n.arrotonda}(x: number): number {`, "  const t = Math.trunc(x);", "  return Math.abs(x - t) >= 0.5 ? t + (x < 0 ? -1 : 1) : t;", "}"];
+      return [s(f), `function ${n.arrotonda}(x${NUM})${NUM} {`, "  const t = Math.trunc(x);", "  return Math.abs(x - t) >= 0.5 ? t + (x < 0 ? -1 : 1) : t;", "}"];
     case "convertiACarattere":
       return [
         s(f),
-        `function ${n.convertiACarattere}(n: number): string {`,
+        `function ${n.convertiACarattere}(n${NUM})${STR} {`,
         `  if (!(0 <= n && n <= 0x10FFFF) || (0xD800 <= n && n <= 0xDFFF)) ${ferma(m.invalid_character_code)};`,
         "  return String.fromCodePoint(n);",
         "}",
@@ -1516,54 +1530,54 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
       }[lingua];
       return [
         `/** ${spiegazione} */`,
-        `function ${n.convertiAVettore}(s: string, n: number): string[] {`,
+        `function ${n.convertiAVettore}(s${STR}, n${NUM})${a(": string[]")} {`,
         "  const c = Array.from(s);",
         `  if (c.length > n) ${ferma(m.string_longer_than_array)};`,
-        `  return c.concat(new Array<string>(n - c.length).fill(${letteraleStringa([riempimento])}));`,
+        `  return c.concat(new Array${a("<string>")}(n - c.length).fill(${letteraleStringa([riempimento])}));`,
         "}",
       ];
     }
     case "convertiAStringa":
-      return [s(f), `function ${n.convertiAStringa}(v: string[]): string {`, `  if (v.includes("\\0")) ${ferma(m.null_character_in_string)};`, '  return v.join("");', "}"];
+      return [s(f), `function ${n.convertiAStringa}(v${a(": string[]")})${STR} {`, `  if (v.includes("\\0")) ${ferma(m.null_character_in_string)};`, '  return v.join("");', "}"];
     case "carattereDi":
       return [
         s(f),
-        `function ${n.carattereDi}(s: string, i: number): string {`,
+        `function ${n.carattereDi}(s${STR}, i${NUM})${STR} {`,
         "  const c = Array.from(s);",
         `  if (!(0 <= i && i < c.length)) ${ferma(m.index_out_of_range)};`,
         "  return c[i];",
         "}",
       ];
     case "lunghezza":
-      return [s(f), `function ${n.lunghezza}(s: string): number {`, "  return Array.from(s).length;", "}"];
+      return [s(f), `function ${n.lunghezza}(s${STR})${NUM} {`, "  return Array.from(s).length;", "}"];
     case "confronta":
       return [
         s(f),
-        `function ${n.confronta}(a: string, b: string): number {`,
+        `function ${n.confronta}(a${STR}, b${STR})${NUM} {`,
         "  const x = Array.from(a);",
         "  const y = Array.from(b);",
         "  for (let i = 0; i < x.length && i < y.length; i++) {",
-        "    if (x[i] !== y[i]) return x[i].codePointAt(0)! - y[i].codePointAt(0)!;",
+        `    if (x[i] !== y[i]) return x[i].codePointAt(0)${a("!")} - y[i].codePointAt(0)${a("!")};`,
         "  }",
         "  return x.length - y.length;",
         "}",
       ];
     case "nellaStringa":
-      return [s(f), `function ${n.nellaStringa}(c: string): string {`, `  if (c === "\\0") ${ferma(m.null_character_in_string)};`, "  return c;", "}"];
+      return [s(f), `function ${n.nellaStringa}(c${STR})${STR} {`, `  if (c === "\\0") ${ferma(m.null_character_in_string)};`, "  return c;", "}"];
     case "concatenazione":
-      return [s(f), `function ${n.concatenazione}(a: string, b: string): string {`, `  if (a === "\\0" || b === "\\0") ${ferma(m.null_character_in_string)};`, "  return a + b;", "}"];
+      return [s(f), `function ${n.concatenazione}(a${STR}, b${STR})${STR} {`, `  if (a === "\\0" || b === "\\0") ${ferma(m.null_character_in_string)};`, "  return a + b;", "}"];
     case "alPiu":
-      return [s(f), `function ${n.alPiu}(s: string, n: number): string {`, `  if (${n.lunghezza}(s) > n) ${ferma(m.string_too_long)};`, "  return s;", "}"];
+      return [s(f), `function ${n.alPiu}(s${STR}, n${NUM})${STR} {`, `  if (${n.lunghezza}(s) > n) ${ferma(m.string_too_long)};`, "  return s;", "}"];
     case "elementiDiversi":
       // Il `set` del Python: due indici uguali lo fanno più corto dell'elenco.
-      return [s(f), `function ${n.elementiDiversi}(...${k.indici}: number[]): void {`, `  if (new Set(${k.indici}).size < ${k.indici}.length) ${ferma(m.same_reference)};`, "}"];
+      return [s(f), `function ${n.elementiDiversi}(...${k.indici}${a(": number[]")})${VOID} {`, `  if (new Set(${k.indici}).size < ${k.indici}.length) ${ferma(m.same_reference)};`, "}"];
     case "reale": {
       const scala = `1${"0".repeat(decimali)}n`;
       const cifre = k.cifre;
       const segno = `\${${k.alto} >>> 31 === 1 ? "-" : ""}`;
       return [
         `/** ${{ it: `Un reale con ${decimali} decimali, come nel C: sul valore esatto del numero, la metà alla cifra pari.`, en: `A real with ${decimali} decimals, as in C: on the exact value of the number, halves to the even digit.` }[lingua]} */`,
-        `function ${n.reale}(x: number): string {`,
+        `function ${n.reale}(x${NUM})${STR} {`,
         `  // ${k.daiBit}`,
         `  const ${k.bit} = new DataView(new ArrayBuffer(8));`,
         `  ${k.bit}.setFloat64(0, x);`,
@@ -1571,7 +1585,7 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
         `  const ${k.esponente} = (${k.alto} >>> 20) & 0x7ff;`,
         `  const mantissa = (BigInt(${k.alto} & 0xfffff) << 32n) | BigInt(${k.bit}.getUint32(4)) | (${k.esponente} > 0 ? 1n << 52n : 0n);`,
         `  const e = Math.max(${k.esponente}, 1) - 1075;`,
-        "  let q: bigint;",
+        `  let q${BIG};`,
         "  if (e >= 0) {",
         `    q = (mantissa << BigInt(e)) * ${scala};`,
         "  } else {",
@@ -1587,9 +1601,9 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
       ];
     }
     case "booleano":
-      return [s(f), `function ${n.booleano}(b: boolean): string {`, '  return b ? "true" : "false";', "}"];
+      return [s(f), `function ${n.booleano}(b${BOOL})${STR} {`, '  return b ? "true" : "false";', "}"];
     case "scrivi":
-      return [s(f), `function ${n.scrivi}(${k.testo}: string): void {`, `  writeSync(1, ${k.testo});`, "}"];
+      return [s(f), `function ${n.scrivi}(${k.testo}${STR})${VOID} {`, `  writeSync(1, ${k.testo});`, "}"];
     case "entraNellaRicorsione": {
       // I contatori stanno sopra, a livello del modulo; `fermati` scrive la riga di chi ha chiamato la funzione del giro
       // (salta una cornice del programma: quella della funzione del giro).
@@ -1600,7 +1614,7 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
         "",
         "",
         s(f),
-        `function ${n.entraNellaRicorsione}(${k.spazio}: number): void {`,
+        `function ${n.entraNellaRicorsione}(${k.spazio}${NUM})${VOID} {`,
         `  ${c.chiamate} += 1;`,
         `  ${c.spazio} += ${k.spazio};`,
         `  if (${c.chiamate} > ${tetto}) ${n.fermati}("${m.recursion_too_deep}", 1);`,
@@ -1610,7 +1624,7 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
     }
     case "esciDallaRicorsione": {
       const c = contatoriDellaRicorsione[lingua];
-      return [s(f), `function ${n.esciDallaRicorsione}(${k.spazio}: number): void {`, `  ${c.chiamate} -= 1;`, `  ${c.spazio} -= ${k.spazio};`, "}"];
+      return [s(f), `function ${n.esciDallaRicorsione}(${k.spazio}${NUM})${VOID} {`, `  ${c.chiamate} -= 1;`, `  ${c.spazio} -= ${k.spazio};`, "}"];
     }
   }
 }
