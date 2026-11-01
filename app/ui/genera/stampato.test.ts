@@ -316,17 +316,30 @@ describe("le parti sul corpus, per ogni linguaggio del registro", () => {
     expect(difetti.slice(0, 10)).toEqual([]);
     // Ogni linguaggio del registro dà codice sul corpus e ne segna le righe.
     for (const v of linguaggi) expect(conteggi[v.id]?.segnate ?? 0, v.id).toBeGreaterThan(0);
-    // I tipi nuovi: per specie, i linguaggi che ne danno il codice (quelli che non lo danno, come «Accademico», stampano
-    // ciò che manca). Ogni specie ha codice dai linguaggi attesi, scritti qui: un linguaggio nuovo del registro che scrive
-    // codice entra in questo elenco.
+    // I tipi nuovi: per specie, i linguaggi che ne danno il codice. Attesi tutti quelli del registro tranne chi dichiara che
+    // la specie gli manca su ogni suo file (`non-ci-sta`, come «Accademico», che stampa ciò che manca; `non-ancora`, un
+    // generatore che cresce un gruppo di costrutti per volta): un linguaggio che non la scrive per un'altra ragione resta
+    // atteso, ed è rosso. L'elenco si ricava dal registro, non si scrive qui.
     const deiTipi: Record<string, string[]> = {};
     for (const { linguaggio, file: f, p } of codici) {
       const s = specieDi(f, p);
       if (s !== undefined && !(deiTipi[s] ??= []).includes(linguaggio)) deiTipi[s].push(linguaggio);
     }
     console.log(`parti dei tipi nuovi, i linguaggi per specie: ${JSON.stringify(deiTipi)}`);
-    const attesi = ["c", "pseudocodice", "python"];
-    expect(Object.fromEntries(Object.entries(deiTipi).map(([s, l]) => [s, [...l].sort()]))).toEqual({ matrice: attesi, record: attesi, tabella: attesi });
+    const specie = ["matrice", "record", "tabella"] as const;
+    const dellaSpecie = (s: string) => progetti.filter(({ file: f, p }) => specieDi(f, p) === s);
+    // Sui file giusti della specie (uno con un errore statico non dà codice in nessun linguaggio).
+    const laDichiaraMancante = (id: string, s: string) => {
+      const esiti = dellaSpecie(s)
+        .map(({ p }) => linguaggi.find((v) => v.id === id)!.genera(p, tetti, "it", paroleDelloPseudocodice("it"), undefined))
+        .filter((g) => g.generato || (g.perche !== "errori-statici" && g.perche !== "fuori-tappa"));
+      return esiti.length > 0 && esiti.every((g) => !g.generato && (g.perche === "non-ci-sta" || g.perche === "non-ancora"));
+    };
+    const attesi = Object.fromEntries(specie.map((s) => [s, linguaggi.filter((v) => !laDichiaraMancante(v.id, s)).map((v) => v.id).sort()]));
+    // Controllo positivo: ogni specie ha file nel corpus, e «Accademico», che non ha i tipi nuovi, non è atteso per nessuna.
+    for (const s of specie) expect(dellaSpecie(s).length, s).toBeGreaterThan(0);
+    for (const s of specie) expect(attesi[s], s).not.toContain("accademico");
+    expect(Object.fromEntries(Object.entries(deiTipi).map(([s, l]) => [s, [...l].sort()]))).toEqual(attesi);
   });
 
   test("controlli positivi: una riga tolta, i segni di una funzione tolti → rosso", () => {

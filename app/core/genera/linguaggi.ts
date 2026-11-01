@@ -19,7 +19,7 @@ import { accademico } from "./accademico";
 import { c } from "./c";
 import type { Generato } from "./forma";
 import { motiviCol, type TabellaDeiMotivi } from "./motivi";
-import { nomiDelleIntestazioni, riservatiDelC, riservatiDelPython, riservatiDelTypeScript, type LinguaDelCodice } from "./nomi";
+import { nomiDelleIntestazioni, riservatiAUnCampoDelTypeScript, riservatiAUnRecordDelTypeScript, riservatiDelC, riservatiDelPython, riservatiDelTypeScript, type LinguaDelCodice } from "./nomi";
 import { pseudocodice, type ParoleDelloPseudocodice } from "./pseudocodice";
 import { python, type Prova } from "./python";
 import { typescript } from "./typescript";
@@ -39,6 +39,10 @@ interface VoceComune {
   /** I nomi vietati solo a ciò che sta a livello di file (una procedura, una funzione, una costante comune): un dato
    * dentro una funzione può averli. */
   readonly riservatiNelFile: readonly string[];
+  /** I nomi vietati in più a un record (il suo nome può stare dove va un tipo) e a un campo di un record: un dato e una
+   * funzione possono averli. */
+  readonly riservatiAUnRecord: readonly string[];
+  readonly riservatiAUnCampo: readonly string[];
   /** Acceso nel menu dei linguaggi per chi non l'ha ancora scelto (le preferenze senza il campo): i linguaggi di
    * partenza sì; uno aggiunto da una versione dopo no, e nasce spento in fondo al menu. */
   readonly diPartenza: boolean;
@@ -66,6 +70,8 @@ export const linguaggi = [
     genera: (p, limiti, _lingua, parole) => pseudocodice(p, limiti, parole),
     riservati: [],
     riservatiNelFile: [],
+    riservatiAUnRecord: [],
+    riservatiAUnCampo: [],
     diPartenza: true,
   },
   {
@@ -75,6 +81,8 @@ export const linguaggi = [
     genera: (p, limiti, lingua, parole, prova) => python(p, limiti, lingua, parole, prova),
     riservati: riservatiDelPython,
     riservatiNelFile: [],
+    riservatiAUnRecord: [],
+    riservatiAUnCampo: [],
     diPartenza: true,
     motivi: motiviCol,
     rigaDErrore,
@@ -86,6 +94,8 @@ export const linguaggi = [
     genera: (p, limiti, lingua, parole, prova) => c(p, limiti, lingua, parole, prova),
     riservati: riservatiDelC,
     riservatiNelFile: nomiDelleIntestazioni,
+    riservatiAUnRecord: [],
+    riservatiAUnCampo: [],
     diPartenza: true,
     motivi: motiviCol,
     rigaDErrore,
@@ -98,6 +108,8 @@ export const linguaggi = [
     genera: (p, limiti, lingua) => accademico(p, limiti, lingua),
     riservati: [],
     riservatiNelFile: [],
+    riservatiAUnRecord: [],
+    riservatiAUnCampo: [],
     diPartenza: false,
   },
   {
@@ -108,6 +120,8 @@ export const linguaggi = [
     genera: (p, limiti, lingua, parole, prova) => typescript(p, limiti, lingua, parole, prova),
     riservati: riservatiDelTypeScript,
     riservatiNelFile: [],
+    riservatiAUnRecord: riservatiAUnRecordDelTypeScript,
+    riservatiAUnCampo: riservatiAUnCampoDelTypeScript,
     diPartenza: false,
     motivi: motiviCol,
     rigaDErrore,
@@ -130,4 +144,12 @@ export function nomiRiservati(): ReadonlySet<string> {
 /** I nomi riservati a livello di file da tutti i linguaggi del registro. */
 export function nomiRiservatiNelFile(): ReadonlySet<string> {
   return new Set(linguaggi.flatMap((v) => v.riservatiNelFile));
+}
+
+/** I nomi vietati in più a un record, e a un campo di un record, da tutti i linguaggi del registro. */
+export function nomiRiservatiAUnRecord(): ReadonlySet<string> {
+  return new Set(linguaggi.flatMap((v) => v.riservatiAUnRecord));
+}
+export function nomiRiservatiAUnCampo(): ReadonlySet<string> {
+  return new Set(linguaggi.flatMap((v) => v.riservatiAUnCampo));
 }

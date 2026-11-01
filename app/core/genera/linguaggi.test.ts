@@ -9,8 +9,8 @@
 // dichiarati siano TUTTI quelli che il codice generato usa (lo guardano le prove del Python e del C sul generato).
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { causaDelNome } from "../controllo/controllo";
-import { linguaggi, nomiRiservati, nomiRiservatiNelFile, voceDel } from "./linguaggi";
+import { causaDelNome, causaDelNomeDiUnCampo, causaDelNomeDiUnRecord } from "../controllo/controllo";
+import { linguaggi, nomiRiservati, nomiRiservatiAUnCampo, nomiRiservatiAUnRecord, nomiRiservatiNelFile, voceDel } from "./linguaggi";
 import { motivi, type CodiceDiUnMotivo } from "./motivi";
 import { opzioniPredefinite } from "../progetto/modello";
 
@@ -79,8 +79,20 @@ test("il controllo statico rifiuta ogni nome riservato di ogni linguaggio, e que
   expect(causaDelNome("voto", true)).toBeUndefined();
 });
 
+test("il controllo rifiuta come record e come campo i nomi che un linguaggio vieta a un record e a un campo, e li lascia a un dato", () => {
+  // Controllo positivo nel numero: il TypeScript vieta le parole di tipo a un record e `constructor` a un campo.
+  expect(voceDel("typescript").riservatiAUnRecord).toContain("number");
+  expect(voceDel("typescript").riservatiAUnCampo).toEqual(["constructor"]);
+  expect(nomiRiservatiAUnRecord().size).toBeGreaterThan(10);
+  for (const n of nomiRiservatiAUnRecord()) expect({ n, record: causaDelNomeDiUnRecord(n)?.causa, dato: causaDelNome(n, true) }).toEqual({ n, record: "nome_riservato", dato: undefined });
+  for (const n of nomiRiservatiAUnCampo()) expect({ n, campo: causaDelNomeDiUnCampo(n)?.causa, dato: causaDelNome(n, false) }).toEqual({ n, campo: "nome_riservato", dato: undefined });
+  // Un nome che nessun linguaggio riserva resta valido come record e come campo; un riservato a ogni dato lo è anche lì.
+  expect([causaDelNomeDiUnRecord("alunno"), causaDelNomeDiUnCampo("voto")]).toEqual([undefined, undefined]);
+  expect([causaDelNomeDiUnRecord("while")?.causa, causaDelNomeDiUnCampo("while")?.causa]).toEqual(["nome_riservato", "nome_riservato"]);
+});
+
 test("nessun nome riservato ha la forma della copia di un dato (finisce con _<numero>) o comincia col trattino basso", () => {
-  const tutti = [...nomiRiservati(), ...nomiRiservatiNelFile()];
+  const tutti = [...nomiRiservati(), ...nomiRiservatiNelFile(), ...nomiRiservatiAUnRecord(), ...nomiRiservatiAUnCampo()];
   expect(tutti.filter((n) => /_\d+$/.test(n))).toEqual([]);
   expect(tutti.filter((n) => n.startsWith("_"))).toEqual([]);
   expect(["voto_2", "_indice"].filter((n) => /_\d+$/.test(n) || n.startsWith("_"))).toEqual(["voto_2", "_indice"]);

@@ -1,7 +1,8 @@
 // I record nei linguaggi del registro: ogni generatore scrive ogni progetto giusto della cartella dei record (e il
 // programma di prova di ogni caso di una funzione), mai con un'eccezione, e un progetto coi record e un errore statico
 // resta con gli errori; «Accademico» dice ciò che manca, coi record fra le specie. Il codice di tre file del corpus
-// contro gli attesi scritti a mano (`attesi-dei-record.ts`), con la provenienza della copia una riga per campo.
+// contro gli attesi scritti a mano (`attesi-dei-record.ts`; quelli del TypeScript in `attesi-del-typescript.ts`), con la
+// provenienza della copia una riga per campo.
 //
 // Che cosa queste prove NON guardano: che il codice generato dia l'output dell'interprete (lo prova il differenziale,
 // che esegue i programmi); le matrici e le tabelle, che hanno la loro prova (`matrici.test.ts`, `tabelle.test.ts`).
@@ -16,6 +17,7 @@ import { righeDi, testoDelCodice, type Generato, type Riga } from "../../core/ge
 import { linguaggi } from "../../core/genera/linguaggi";
 import { pseudocodice } from "../../core/genera/pseudocodice";
 import { python } from "../../core/genera/python";
+import { typescript } from "../../core/genera/typescript";
 import { apri } from "../../core/progetto/formato";
 import { usaIRecord, usaLeMatrici, usaLeTabelle, type Progetto } from "../../core/progetto/modello";
 import type { Lingua } from "../../i18n/lingue";
@@ -70,8 +72,7 @@ test("ogni linguaggio scrive i record: generato il progetto giusto, con gli erro
       return g.generato ? "generato" : g.perche;
     });
     // «Accademico» non ha i record: per lui il progetto giusto non ci sta.
-    // Il TypeScript non li sa ancora scrivere: per lui il progetto giusto è «non ancora».
-    const giusto = linguaggi.every((v, i) => ottenuti[i] === (atteso === "generato" && v.id === "accademico" ? "non-ci-sta" : atteso === "generato" && v.id === "typescript" ? "non-ancora" : atteso));
+    const giusto = linguaggi.every((v, i) => ottenuti[i] === (atteso === "generato" && v.id === "accademico" ? "non-ci-sta" : atteso));
     return { nome, giusto, atteso, ottenuti };
   });
   expect(esiti.filter((e) => !e.giusto)).toEqual([]);
@@ -90,8 +91,7 @@ test("il programma di prova di ogni caso di una funzione coi record si genera in
   });
   const daEseguire = linguaggi.filter((v) => v.genere === "da-eseguire");
   const rifiutati = casi.flatMap(({ nome, p, f, caso }) => daEseguire.flatMap((v) => (v.genera(p, tetti, "it", paroleDelloPseudocodice("it"), { funzione: f.id, caso }).generato ? [] : [`${nome} ${v.id}`])));
-  // Il TypeScript li rifiuta tutti: non sa ancora scrivere il programma di prova.
-  expect(rifiutati).toEqual(casi.map(({ nome }) => `${nome} typescript`));
+  expect(rifiutati).toEqual([]);
   // Controllo positivo: i casi delle funzioni della cartella sono tre (migliore, promuovi, crea), ognuno per due linguaggi.
   expect(casi.length).toBe(confermato("record - casi delle funzioni della cartella", casi.length));
   expect(daEseguire.length).toBe(3);
@@ -124,11 +124,15 @@ describe("il codice dei record uguale all'atteso scritto a mano", () => {
     const delPython = righe(python(copia, tetti, "it", parole), "python");
     const delC = righe(c(copia, tetti, "it", parole), "c");
     const delloPseudocodice = righe(pseudocodice(copia, tetti, parole), "pseudocodice");
-    expect({ pseudocodice: provenienze(delloPseudocodice), python: provenienze(delPython), c: provenienze(delC) }).toEqual({
+    const delTypeScript = righe(typescript(copia, tetti, "it", parole), "typescript");
+    // Il TypeScript ha le righe del Python, ognuna con la sua provenienza.
+    expect({ pseudocodice: provenienze(delloPseudocodice), python: provenienze(delPython), c: provenienze(delC), typescript: provenienze(delTypeScript) }).toEqual({
       pseudocodice: [...provenienzeDellaCopia.pseudocodice],
       python: [...provenienzeDellaCopia.python],
       c: [...provenienzeDellaCopia.c],
+      typescript: [...provenienzeDellaCopia.python],
     });
+    expect(righeDi(delTypeScript, { blocco: "b1", campo: 1 }).map((i) => delTypeScript[i]!.testo.trim())).toEqual(["b.classe = a.classe;"]);
     // La pausa sul campo 1 accende la sola riga di quel campo; lo pseudocodice la sua riga unica, a ogni campo.
     expect(righeDi(delPython, { blocco: "b1", campo: 1 }).map((i) => delPython[i]!.testo.trim())).toEqual(["b.classe = a.classe"]);
     expect(righeDi(delC, { blocco: "b1", campo: 2 }).map((i) => delC[i]!.testo.trim())).toEqual(["b.voto = a.voto;"]);

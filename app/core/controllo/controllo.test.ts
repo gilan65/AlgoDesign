@@ -1815,6 +1815,14 @@ describe("i record", () => {
     expect(errori((p) => main(p).data.push(dato("v", "integer", { size: 2, initial: { each: ["1", "2"] } })))).toEqual({ errori: ["invalid_data_item@f1"], cause: [] });
     expect(errori((p) => (r(p).fields[2].name = "1voto"))).toEqual({ errori: ["invalid_name@", "unknown_record_field@b2", "unknown_record_field@b3", "unknown_record_field@b5"], cause: ["invalid_name@ nome_cifra", "unknown_record_field@b2 campo_assente «voto»", "unknown_record_field@b3 campo_assente «voto»", "unknown_record_field@b5 campo_assente «voto»"] });
     expect(errori(rinominato("and"))).toEqual({ errori: ["invalid_name@"], cause: ["invalid_name@ nome_riservato «and»"] });
+    // Una parola di tipo del TypeScript è vietata a un record e `constructor` a un campo (la classe del TypeScript
+    // generato); un dato può chiamarsi così.
+    expect(errori(rinominato("number"))).toEqual({ errori: ["invalid_name@"], cause: ["invalid_name@ nome_riservato «number»"] });
+    expect(errori((p) => (r(p).fields[0].name = "constructor"))).toEqual({
+      errori: ["invalid_name@", "unknown_record_field@b3"],
+      cause: ["invalid_name@ nome_riservato «constructor»", "unknown_record_field@b3 campo_assente «nome»"],
+    });
+    expect(errori((p) => main(p).data.push(dato("number", "integer", { initial: "1" })))).toEqual({ errori: [], cause: [] });
     expect(errori((p) => (r(p).fields[2].max_length = 5))).toEqual({ errori: ["invalid_data_item@"], cause: ["invalid_data_item@ lunghezza_non_stringa"] });
     expect(errori((p) => (k(p).initial = ['"Anna"', '"3A"']))).toEqual({ errori: ["invalid_data_item@"], cause: [] });
     expect(errori((p) => (k(p).initial = ['"Anna"', "7", "7"]))).toEqual({ errori: ["type_mismatch@"], cause: [] });

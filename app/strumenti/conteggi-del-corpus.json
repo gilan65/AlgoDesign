@@ -182,7 +182,14 @@
       47
     ],
     "genera typescript - generati fuori dalle tappe 1, 2, 3 e 4": [
-      "tipi/carattere-di-un-risultato"
+      "tipi/carattere-di-un-risultato",
+      "tipi/copia-con-un-campo-senza-valore",
+      "tipi/copia-di-un-record",
+      "tipi/copie-di-un-record",
+      "tipi/funzione-con-un-record",
+      "tipi/record-in-un-programma",
+      "tipi/record-per-riferimento",
+      "tipi/riferimento-a-un-record-senza-valore"
     ],
     "genera typescript - programmi col giro, nelle due lingue": 46,
     "genera typescript - tappa 2 (generati, blocchi, cicli)": [

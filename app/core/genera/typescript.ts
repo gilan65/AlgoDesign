@@ -8,9 +8,9 @@
 // Il generatore cresce un gruppo di costrutti per volta. Oggi sa scrivere le tappe 1, 2, 3 e 4: i dati e le costanti dei
 // cinque tipi semplici e i vettori, l'assegnazione (anche a un elemento, e la copia di un vettore col nome), la lettura,
 // la scrittura, il commento, `se`, `mentre`, `ripeti`, `per`, `per ogni`, ogni espressione della tappa 1, le procedure e
-// le funzioni coi loro programmi di prova, la ricorsione; per ogni altro costrutto il progetto non si genera, e
-// `nonAncora` dice il primo che trova («il record», «la tabella», «la matrice»), dopo gli errori statici come un
-// generatore che si ferma.
+// le funzioni coi loro programmi di prova, la ricorsione, i record; per ogni altro costrutto il progetto non si genera, e
+// `nonAncora` dice il primo che trova («la tabella», «la matrice»), dopo gli errori statici come un generatore che si
+// ferma.
 //
 // La forma: il nome del progetto e la testa, gli import da Node (`execSync` per `prepara_console`, e da `node:fs` le sole
 // funzioni che leggono e scrivono, isolate in `leggi_riga`, `scrivi` e `fermati`: una pagina nel browser le può
@@ -68,6 +68,15 @@
 // `fermati(motivo, 1)` salta la cornice della funzione del giro che si ferma e prende quella di chi la chiama (le cornici
 // del programma, non le righe della pila, che in Bun perde quelle delle chiamate in coda).
 //
+// I record come nel Python, ma con una classe di TypeScript per record (dopo gli import): ogni campo col suo tipo e senza
+// valore finché non ne ha uno (`nome!: string;`, come un dato senza valore iniziale: annotato `string | undefined`, come il
+// `str | None` del Python, `tsc` rifiuterebbe `x.voto + 1`), il costruttore coi parametri facoltativi nell'ordine dei
+// campi. Il campo si scrive `a.voto` come nel flowchart. Nessun record è mai condiviso da due dati: la copia col nome
+// (`b ← a`) una riga per campo, ognuna col campo che copia; un record per valore la funzione chiamata lo copia per prima
+// cosa (`x = new alunno(x.nome, x.classe, x.voto);`); un record restituito dal suo nome torna come un oggetto nuovo, da
+// una funzione è già nuovo; per riferimento e per uscita la procedura lo restituisce, come gli altri dati. Un campo per
+// riferimento è come un dato (`a.voto = raddoppia(a.voto);`).
+//
 // Un arresto scrive «Errore alla riga N: motivo» sullo standard error ed esce con 1: `fermati` trova la riga nella pila
 // delle chiamate (`new Error().stack`), alla prima chiamata dentro `main` o dentro un'altra funzione del programma, come
 // il Python che risale le cornici; una cornice nativa di Bun (`at map (native:1:11)`) non è mai del programma.
@@ -87,7 +96,8 @@ import { chiamateDellaFunzione, chiamateIn, funzioniDelGiro, funzioniVersoIlGiro
 import { lunghezzaMassima as lunghezzaMassimaNelNucleo } from "../controllo/lunghezza";
 import { spazioDellaPila, spazioDiUnaChiamata, tettoDelleChiamate } from "../controllo/spazio";
 import { analizza, type Espressione } from "../espressioni/analizzatore";
-import { opzioniPredefinite, tipoSemplice, type Blocco, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto, type Tipo, type TipoDelDato } from "../progetto/modello";
+import { eUnaCopiaDiUnRecord, nomiDeiRecord } from "../progetto/copia";
+import { opzioniPredefinite, tipoSemplice, type Blocco, type Campo, type CasoDiUnaFunzione, type Dato, type Funzione, type Progetto, type Tipo, type TipoDelDato } from "../progetto/modello";
 import type { FaseDelCiclo } from "../interprete/interprete";
 import { controlliDegliElementi, genera, parametriDelCaso, posizioni, segnate, type Generato, type Riga } from "./forma";
 import { motiviCol } from "./motivi";
@@ -170,13 +180,6 @@ const albero = (testo: string): Espressione => {
   return a.espressione;
 };
 
-/** I blocchi di una sequenza, quelli dentro compresi. */
-const tuttiIBlocchi = (bs: readonly Blocco[]): Blocco[] =>
-  bs.flatMap((b) => [
-    b,
-    ...tuttiIBlocchi(b.kind === "if" ? [...b.then, ...b.else] : b.kind === "while" || b.kind === "repeat" || b.kind === "for" || b.kind === "for_each" ? b.body : []),
-  ]);
-
 // ------------------------------------------------------------------------------------------------ i letterali
 
 /** Un codice di un letterale fra `apice`: le sequenze di JavaScript, i caratteri di controllo in esadecimale, i due
@@ -214,59 +217,18 @@ function nelTesto(codice: number): string {
 
 // ------------------------------------------------------------------------------------- la guardia
 
-/** Il primo costrutto di un'espressione che il generatore non sa ancora scrivere. */
-function nonAncoraNellEspressione(e: Espressione): string | undefined {
-  switch (e.genere) {
-    case "campo":
-      return "il campo di un record";
-    case "chiamata":
-      return e.argomenti.map(nonAncoraNellEspressione).find((x) => x !== undefined);
-    case "indice":
-      return nonAncoraNellEspressione(e.base) ?? nonAncoraNellEspressione(e.indice);
-    case "unario":
-      return nonAncoraNellEspressione(e.operando);
-    case "binario":
-      return nonAncoraNellEspressione(e.sinistro) ?? nonAncoraNellEspressione(e.destro);
-    default:
-      return undefined;
-  }
-}
-
-/** Il primo costrutto del progetto che il generatore non sa ancora scrivere, o niente: il record, la tabella e la
- * matrice, cercati in ogni funzione (il programma di prova di una funzione è quello del suo progetto). */
+/** Il primo costrutto del progetto che il generatore non sa ancora scrivere, o niente: la tabella e la matrice, cercate
+ * nel risultato e nei dati di ogni funzione (il programma di prova di una funzione è quello del suo progetto). Nessuna
+ * espressione le usa senza un dato o un risultato che lo sia: un record di una tabella (`t[i].nome`) viene da una
+ * tabella, una riga (`m[i]`) da una matrice. */
 function nonAncora(p: Progetto): string | undefined {
-  if ((p.records ?? []).length > 0) return "il record";
   for (const f of p.functions) {
-    if (f.return_type === "record") return f.return_size === undefined ? "il record" : "la tabella";
+    if (f.return_type === "record" && f.return_size !== undefined) return "la tabella";
     if (f.return_columns !== undefined) return "la matrice";
   }
   for (const d of [...(p.shared_constants ?? []), ...p.functions.flatMap((f) => f.data)]) {
-    if (d.type === "record") return d.size === undefined ? "il record" : "la tabella";
+    if (d.type === "record" && d.size !== undefined) return "la tabella";
     if (d.columns !== undefined) return "la matrice";
-    const valori = d.initial === undefined ? [] : typeof d.initial === "string" ? [d.initial] : Array.isArray(d.initial) ? (d.initial as readonly string[]) : [(d.initial as { readonly each: string }).each];
-    for (const v of valori) {
-      const nelValore = nonAncoraNellEspressione(albero(v));
-      if (nelValore !== undefined) return nelValore;
-    }
-  }
-  for (const f of p.functions) {
-    const espressioni = [
-      ...tuttiIBlocchi(f.body).flatMap((b) =>
-        b.kind === "assignment" ? [b.target, b.value]
-        : b.kind === "read" ? [b.target]
-        : b.kind === "write" ? b.values
-        : b.kind === "if" || b.kind === "while" || b.kind === "repeat" ? [b.condition]
-        : b.kind === "for" ? [b.from, b.to]
-        : b.kind === "for_each" ? [b.source]
-        : b.kind === "call" ? b.arguments
-        : [],
-      ),
-      ...(f.end.return_value !== undefined ? [f.end.return_value] : []),
-    ];
-    for (const x of espressioni) {
-      const nellEspressione = nonAncoraNellEspressione(albero(x));
-      if (nellEspressione !== undefined) return nellEspressione;
-    }
   }
   return undefined;
 }
@@ -301,6 +263,18 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
 
   // ------------------------------------------------------------------------------------------- i tipi
 
+  /** I record del progetto, per nome, e i campi di un record. */
+  const records = new Map((p.records ?? []).map((r) => [r.name, r]));
+  const campiDi = (record: string | undefined): readonly Campo[] => records.get(record ?? "")!.fields;
+  /** Il record di un'espressione che ne dà uno intero: il nome di un dato record, o una funzione che lo restituisce. */
+  const recordDi = (e: Espressione): string | undefined =>
+    e.genere === "nome" ? dati.get(e.nome)!.record : e.genere === "chiamata" ? perNome.get(e.nome)?.return_record : undefined;
+  /** Un record nuovo dai campi di `x`, col costruttore della sua classe: la copia di un record, che non è mai lo stesso
+   * oggetto. */
+  const costruttore = (record: string, x: string) => `new ${record}(${campiDi(record).map((c) => `${x}.${c.name}`).join(", ")})`;
+  /** Il campo di un'espressione `base.campo`: la base è un dato record o una funzione che restituisce un record. */
+  const campoDi = (e: Extract<Espressione, { genere: "campo" }>): Campo => campiDi(recordDi(e.base)).find((c) => c.name === e.campo)!;
+
   /** Un vettore intero: il nome di un vettore, o una funzione che lo restituisce. */
   const vettore = (e: Espressione): boolean =>
     e.genere === "nome" ? dati.get(e.nome)!.size !== undefined : e.genere === "chiamata" && perNome.get(e.nome)?.return_size !== undefined;
@@ -330,6 +304,8 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
         return vettore(e.base) ? tipo(e.base) : "character";
       case "chiamata":
         return perNome.get(e.nome)!.return_type!;
+      case "campo":
+        return campoDi(e).type;
       case "unario":
         switch (e.operatore) {
           case "-":
@@ -354,18 +330,19 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
         return s === "integer" && d === "integer" ? "integer" : "real";
       }
       default:
-        throw new Error(`espressione fuori dalla tappa 3: ${e.genere}`);
+        // Ogni genere ha il suo ramo: questo non si raggiunge.
+        throw new Error(`espressione sconosciuta: ${(e as { genere: string }).genere}`);
     }
   }
 
   /** La lunghezza massima che una stringa può avere. */
-  const lunghezzaMassima = (e: Espressione): number => lunghezzaMassimaNelNucleo(e, (n) => dati.get(n), (n) => perNome.get(n), () => undefined);
+  const lunghezzaMassima = (e: Espressione): number => lunghezzaMassimaNelNucleo(e, (n) => dati.get(n), (n) => perNome.get(n), campoDi);
 
-  /** Un carattere che può essere quello di codice 0: un dato, un elemento di un vettore, una conversione da intero, ciò
-   * che una funzione restituisce. Un letterale non lo è (sarebbe un errore statico), e nemmeno un carattere preso da una
-   * stringa. */
+  /** Un carattere che può essere quello di codice 0: un dato, il campo di un record, un elemento di un vettore, una
+   * conversione da intero, ciò che una funzione restituisce. Un letterale non lo è (sarebbe un errore statico), e nemmeno
+   * un carattere preso da una stringa. */
   function puoEssereZero(e: Espressione): boolean {
-    if (e.genere === "nome" || e.genere === "chiamata") return true;
+    if (e.genere === "nome" || e.genere === "chiamata" || e.genere === "campo") return true;
     if (e.genere === "indice") return vettore(e.base);
     if (e.genere === "unario" && e.operatore === "to_character") return tipo(e.operando) === "integer" || puoEssereZero(e.operando);
     return false;
@@ -430,12 +407,16 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
         // Una funzione del giro si ferma al tetto sulla riga di chi la chiama: restituita così, sarebbe in coda.
         return delGiro.has(perNome.get(e.nome)!) ? { ...chiamata(e.nome, ...argomenti), coda: true } : chiamata(e.nome, ...argomenti);
       }
+      case "campo":
+        // Il campo di un dato, o del record restituito da una funzione: prima la chiamata, poi il campo (non è in coda).
+        return operando(`${espressione(e.base).t}.${e.campo}`);
       case "unario":
         return unario(e.operatore, e.operando);
       case "binario":
         return binario(e);
       default:
-        throw new Error(`espressione fuori dalla tappa 3: ${e.genere}`);
+        // Ogni genere ha il suo ramo: questo non si raggiunge.
+        throw new Error(`espressione sconosciuta: ${(e as { genere: string }).genere}`);
     }
   }
 
@@ -566,13 +547,24 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     return e.genere === "nome" ? operando(`Array.from(${x.t})`) : x;
   }
 
+  /** Un record intero che va in un risultato: dal nome di un record un oggetto nuovo, campo per campo; da una funzione è
+   * già nuovo. */
+  function recordNuovo(e: Espressione): Testo {
+    return e.genere === "nome" ? operando(costruttore(recordDi(e)!, e.nome)) : espressione(e);
+  }
+
   // ---------------------------------------------------------------------------------------- le dichiarazioni
 
   const annotazioneDelTipo = (t: Tipo) => ({ integer: "number", real: "number", character: "string", string: "string", boolean: "boolean" })[t];
-  const annotazione = (d: Dato) => `${annotazioneDelTipo(tipoSemplice(d.type))}${d.size === undefined ? "" : "[]"}`;
-  const annotazioneDelRisultato = (f: Funzione) => `${annotazioneDelTipo(tipoSemplice(f.return_type!))}${f.return_size === undefined ? "" : "[]"}`;
+  /** Il tipo di un dato, o degli elementi di un vettore: un record col nome della sua classe. */
+  const delTipo = (t: TipoDelDato, record: string | undefined) => (t === "record" ? record! : annotazioneDelTipo(t));
+  const annotazione = (d: Dato) => `${delTipo(d.type, d.record)}${d.size === undefined ? "" : "[]"}`;
+  const annotazioneDelRisultato = (f: Funzione) => `${delTipo(f.return_type!, f.return_record)}${f.return_size === undefined ? "" : "[]"}`;
   const valoreIniziale = (d: Dato): string | undefined => {
     const v = d.initial;
+    // Un record nasce sempre come oggetto: senza valore coi campi senza valore (`new alunno()`), con un valore un letterale
+    // per campo.
+    if (d.type === "record") return `new ${d.record!}(${((v as readonly string[] | undefined) ?? []).map((x, k) => nelDato(albero(x), campiDi(d.record)[k]!)).join(", ")})`;
     const elemento = annotazioneDelTipo(tipoSemplice(d.type));
     if (v === undefined) return d.size === undefined ? undefined : `new Array<${elemento}>(${d.size})`;
     if (typeof v === "string") return nelDato(albero(v), d);
@@ -634,13 +626,21 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
 
   let corpo: Riga[] = [];
   const struttura = (testo: string) => corpo.push({ testo });
+  /** I record della funzione che si scrive (con le costanti comuni): riconoscono la copia col nome. */
+  let deiRecord: ReadonlySet<string> = new Set();
 
-  /** Una destinazione e il valore che riceve: un dato, o l'elemento di un vettore (JavaScript calcola l'indice prima del
-   * valore, come il flowchart). */
+  /** Una destinazione e il valore che riceve: un dato, il campo di un record, o l'elemento di un vettore (JavaScript
+   * calcola l'indice prima del valore, come il flowchart). */
   function assegna(r: string, id: string, bersaglio: string, valore: (d: Dato) => string) {
     const e = albero(bersaglio);
     if (e.genere === "nome") {
       corpo.push({ testo: `${r}${e.nome} = ${valore(dati.get(e.nome)!)};`, blocco: id });
+      return;
+    }
+    if (e.genere === "campo") {
+      // Il campo di un dato record riceve il valore come un dato del tipo del campo.
+      const destinazione = `${espressione(e.base).t}.${e.campo}`;
+      corpo.push({ testo: `${r}${destinazione} = ${valore({ ...campoDi(e), name: destinazione })};`, blocco: id });
       return;
     }
     const x = e as Extract<Espressione, { genere: "indice" }>;
@@ -690,6 +690,8 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       ferma = false;
       if (d.parameter === "value") return { genere: "valore", testo: nelDato(a, d), ferma };
       if (a.genere === "nome") return { genere: "nome", testo: a.nome };
+      // Un campo per riferimento si passa e si riassegna come un dato.
+      if (a.genere === "campo") return { genere: "nome", testo: espressione(a).t };
       const { nome, indici } = elementoDi(a);
       return { genere: "elemento", vettore: nome, indici: indici.map((i) => ({ t: espressione(i).t, scritto: i.genere === "intero" })), ferma };
     });
@@ -772,6 +774,13 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
           });
         }
         const t = albero(b.target);
+        if (eUnaCopiaDiUnRecord(b, deiRecord)) {
+          // La copia di un record col suo nome, campo per campo: una riga per campo, col campo che copia (mai `b = a`, che
+          // farebbe dei due nomi lo stesso oggetto).
+          const [verso, da] = [espressione(t).t, espressione(v).t];
+          campiDi(recordDi(t)).forEach((c, k) => corpo.push({ testo: `${r}${verso}.${c.name} = ${da}.${c.name};`, blocco: b.id, campo: k }));
+          return;
+        }
         if (vettore(t)) {
           // Un vettore intero: da una funzione una lista nuova, dal nome di un altro vettore la copia elemento per elemento.
           if (v.genere !== "nome") return assegna(r, b.id, b.target, (d) => listaNuova(v, d).t);
@@ -874,6 +883,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
    * (`fermati` troverebbe la riga di chi la chiama). La riga che chiama `prepara_console` la mette l'insieme. */
   function scriviFunzione(f: Funzione): Riga[] {
     dati = new Map<string, Dato>([...comuni, ...f.data].map((d) => [d.name, d]));
+    deiRecord = nomiDeiRecord([...comuni, ...f.data]);
     corpo = [];
     cicliPerOgni = 0;
     livelli = 0;
@@ -892,7 +902,11 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     // Un parametro per uscita non si riceve: è un dato senza valore della procedura, dichiarato coi suoi dati.
     const ricevuti = parametri.filter((d) => d.parameter !== "out");
     const intestazione = `function ${f.kind === "main" ? "main" : f.name}(${ricevuti.map((d) => `${d.name}: ${annotazione(d)}`).join(", ")}): ${ritorno} {`;
-    const copie = parametri.filter((d) => d.parameter === "value" && d.size !== undefined).map((d) => ({ testo: `${rientro}${d.name} = Array.from(${d.name});` }));
+    // Un vettore e un record per valore la funzione li copia per prima cosa: nessuno dei due è mai lo stesso oggetto di chi
+    // chiama.
+    const copie = parametri
+      .filter((d) => d.parameter === "value" && (d.size !== undefined || d.type === "record"))
+      .map((d) => ({ testo: `${rientro}${d.name} = ${d.size !== undefined ? `Array.from(${d.name})` : costruttore(d.record!, d.name)};` }));
     const propri = f.data.filter((d) => d.parameter === undefined || d.parameter === "out");
     const dichiarazioni = dichiara(propri, rientro, true, f.kind === "main" ? undefined : f.id);
     for (const b of f.body) blocco(b, 1);
@@ -907,7 +921,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       prese.clear();
       const e = albero(f.end.return_value!);
       const verso = { type: f.return_type!, ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}) };
-      const x = f.return_size !== undefined ? listaNuova(e, verso) : nelDatoTesto(e, verso);
+      const x = f.return_size !== undefined ? listaNuova(e, verso) : f.return_type === "record" ? recordNuovo(e) : nelDatoTesto(e, verso);
       if (giro && chiamaIlGiro(e)) {
         const v = temporanea(annotazioneDelRisultato(f));
         corpo.push({ testo: `${rientro}${v} = ${x.t};`, blocco: f.end.id });
@@ -955,8 +969,11 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
         if (x !== "riga") throw new Error(`il parametro ${d.name} senza valore nel caso ${caso.name}`);
         return leggi(d);
       };
+      // Un record: un campo per voce, nell'ordine dei campi; un campo senza valore non si legge.
+      const delCampo = (x: "riga" | "nessuno", c: Campo) => (x === "riga" ? leggi(c) : "undefined");
       const valore =
-        d.size === undefined ? uno(elementi[0]!)
+        d.type === "record" ? `new ${d.record!}(${campiDi(d.record).map((c, k) => delCampo(elementi[k]!, c)).join(", ")})`
+        : d.size === undefined ? uno(elementi[0]!)
         : ognuno ? `new Array<${annotazioneDelTipo(tipoSemplice(d.type))}>(${d.size}).fill(${uno(elementi[0]!)})`
         : `[${elementi.map(uno).join(", ")}]`;
       righe.push({ testo: `${rientro}let ${d.name}: ${annotazione(d)} = ${valore};`, blocco: f.id });
@@ -968,7 +985,14 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     // della funzione, come le letture dei parametri (l'esecuzione si ferma lì).
     const delCaso = delGiro.has(f) ? { blocco: f.id } : {};
     const scrivi = (testo: string, conLaChiamata = false) => righe.push({ testo: `${rientro}${usa("scrivi")}(\`${testo}\\n\`);`, ...(conLaChiamata ? delCaso : {}) });
-    if (f.kind === "function" && f.return_size !== undefined) {
+    /** Le parti di un record come le scrive l'esecuzione (`.nome`), col tipo. */
+    const campiScritti = (record: string | undefined, davanti: string): [string, TipoDelDato][] => campiDi(record).map((c) => [`${davanti}.${c.name}`, c.type]);
+    if (f.kind === "function" && f.return_type === "record") {
+      // La funzione si chiama una volta, poi una riga per campo, come per un vettore.
+      const nome = nomeDelRisultato[lingua];
+      righe.push({ testo: `${rientro}let ${nome}: ${annotazioneDelRisultato(f)} = ${chiamataDiF};`, ...delCaso });
+      for (const [x, t] of campiScritti(f.return_record, "")) scrivi(`→ ${x} = ${comeScritto(`${nome}${x}`, t)}`);
+    } else if (f.kind === "function" && f.return_size !== undefined) {
       // La funzione si chiama una volta, poi una riga per elemento: se si ferma, nulla è scritto.
       const nome = nomeDelRisultato[lingua];
       righe.push({ testo: `${rientro}let ${nome}: ${annotazioneDelRisultato(f)} = ${chiamataDiF};`, ...delCaso });
@@ -980,7 +1004,11 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       righe.push({ testo: `${rientro}${nomiDeiRiferimenti.length === 1 ? nomiDeiRiferimenti[0] : `[${nomiDeiRiferimenti.join(", ")}]`} = ${chiamataDiF};`, ...delCaso });
       scrivi("");
       for (const d of riferimenti) {
-        const pezzi: [string, TipoDelDato][] = d.size === undefined ? [[d.name, d.type]] : posizioni(d.size, undefined).map((k) => [`${d.name}${k}`, d.type]);
+        // Un record una riga per campo, `r.nome = …`.
+        const pezzi: [string, TipoDelDato][] =
+          d.type === "record" ? campiScritti(d.record, d.name)
+          : d.size === undefined ? [[d.name, d.type]]
+          : posizioni(d.size, undefined).map((k) => [`${d.name}${k}`, d.type]);
         for (const [nome, t] of pezzi) scrivi(`${nome} = ${comeScritto(nome, t)}`);
       }
     }
@@ -1037,6 +1065,21 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     ...(conLaConsole ? [{ testo: 'import { execSync } from "node:child_process";' }] : []),
     ...(letti.length > 0 ? [{ testo: `import { ${letti.join(", ")} } from "node:fs";` }] : []),
   ];
+  // I record: una classe per record, dopo gli import, come la classe di dati del Python; ogni campo senza valore finché non
+  // ne ha uno (`nome!: string`, come un dato senza valore iniziale), il costruttore coi parametri facoltativi nell'ordine
+  // dei campi.
+  for (const r of p.records ?? [])
+    righe.push(
+      { testo: "" },
+      { testo: "" },
+      { testo: `class ${r.name} {` },
+      ...r.fields.map((c) => ({ testo: `${rientro}${c.name}!: ${annotazioneDelTipo(c.type)};` })),
+      { testo: "" },
+      { testo: `${rientro}constructor(${r.fields.map((c) => `${c.name}?: ${annotazioneDelTipo(c.type)}`).join(", ")}) {` },
+      ...r.fields.map((c) => ({ testo: `${rientro}${rientro}this.${c.name} = ${c.name}!;` })),
+      { testo: `${rientro}}` },
+      { testo: "}" },
+    );
   if (costanti.length > 0) righe.push({ testo: "" }, { testo: `// ${w.costantiComuni}` }, ...costanti);
   righe.push({ testo: "" }, { testo: "" }, ...principale);
   for (const f of delProgramma) righe.push({ testo: "" }, { testo: "" }, ...segnate(scritte.get(f)!, f.id));

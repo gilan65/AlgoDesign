@@ -20,10 +20,10 @@ import { voceDel } from "../../core/genera/linguaggi";
 import { typescript } from "../../core/genera/typescript";
 import { apri } from "../../core/progetto/formato";
 import type { Prova } from "../../core/genera/python";
-import type { Progetto } from "../../core/progetto/modello";
+import { usaLeMatrici, usaLeTabelle, type Progetto } from "../../core/progetto/modello";
 import type { Lingua } from "../../i18n/lingue";
 import {
-  delCorpus, delleProve, fasiDellaTappa2, formeDellaTappa1, formeDellaTappa1Attese, formeDellaTappa2, formeDellaTappa2Attese, formeDellaTappa3, formeDellaTappa3Attese,
+  delCorpus, delleProve, delleProveDeiRecord, fasiDellaTappa2, formeDellaTappa1, formeDellaTappa1Attese, formeDellaTappa2, formeDellaTappa2Attese, formeDellaTappa3, formeDellaTappa3Attese,
   formeDelloScheletro, formeDelloScheletroAttese, provenienzeDelloScheletro,
 } from "./attesi-del-typescript";
 import { paroleDelloPseudocodice } from "./parole";
@@ -71,7 +71,7 @@ describe("il TypeScript uguale all'atteso scritto a mano", () => {
     test(`forme-della-tappa-1 (${l})`, () => uguale(codice(formeDellaTappa1, l), formeDellaTappa1Attese[l], `forme-della-tappa-1 (${l})`));
     test(`forme-della-tappa-2 (${l})`, () => uguale(codice(formeDellaTappa2, l), formeDellaTappa2Attese[l], `forme-della-tappa-2 (${l})`));
     test(`forme-della-tappa-3 (${l})`, () => uguale(codice(formeDellaTappa3, l), formeDellaTappa3Attese[l], `forme-della-tappa-3 (${l})`));
-    for (const [nome, { funzione, caso, atteso }] of Object.entries(delleProve))
+    for (const [nome, { funzione, caso, atteso }] of [...Object.entries(delleProve), ...Object.entries(delleProveDeiRecord)])
       test(`la prova ${nome}#${funzione}/${caso} (${l})`, () => {
         const p = leggi(`${nome}.algo`);
         uguale(codice(p, l, provaDi(p, funzione, caso)), atteso[l], `la prova ${nome}#${funzione}/${caso} (${l})`);
@@ -120,7 +120,7 @@ describe("la provenienza delle righe", () => {
 });
 
 describe("i costrutti che sa scrivere", () => {
-  test("si generano tutti e soli i progetti del corpus che sa scrivere (le tappe 1, 2, 3 e 4 intere); ogni altro dice il costrutto che manca", () => {
+  test("si generano tutti e soli i progetti del corpus che sa scrivere (le tappe 1, 2, 3 e 4 intere e i record); ogni altro dice il costrutto che manca", () => {
     // Controllo positivo nel numero: il corpus c'è, e i progetti dello scheletro ne sono una parte.
     expect(corpus.length).toBeGreaterThan(100);
     const generati: string[] = [];
@@ -146,11 +146,19 @@ describe("i costrutti che sa scrivere", () => {
     expect(tappe.filter((f) => f.startsWith("tappa-2/")).length).toBeGreaterThan(10);
     expect(tappe.filter((f) => f.startsWith("tappa-3/")).length).toBeGreaterThan(40);
     expect(tappe.filter((f) => f.startsWith("tappa-4/")).length).toBeGreaterThan(15);
-    // I file fuori dalle tappe che il generatore sa scrivere (senza tipi composti), confermati; ogni file delle tappe si
-    // genera.
+    // I file fuori dalle tappe che il generatore sa scrivere (coi record, senza tabelle né matrici), confermati; ogni file
+    // delle tappe si genera.
     const fuoriDalleTappe = confermato("genera typescript - generati fuori dalle tappe 1, 2, 3 e 4", [...new Set(generati.map((g) => g.slice(0, g.lastIndexOf(" "))))].filter((f) => !tappe.includes(f)).sort());
     expect(generati.sort()).toEqual([...tappe, ...fuoriDalleTappe].flatMap((f) => lingue.map((l) => `${f} ${l}`)).sort());
-    expect(nonAncora.size).toBeGreaterThan(40);
+    // I «non ancora» sono tutti e soli i file giusti con una tabella o una matrice, confrontati per file nei due versi
+    // (mai un numero scritto qui: il generatore che cresce lo sposta); controllo positivo nel numero: il corpus ne ha.
+    const conTabelleOMatrici = corpus.filter((f) => {
+      const p = leggi(`${f}.algo`);
+      const c = controlla(p, tetti);
+      return !c.fuoriTappa && c.errori.length === 0 && (usaLeTabelle(p) || usaLeMatrici(p));
+    });
+    expect(conTabelleOMatrici.length).toBeGreaterThan(0);
+    expect([...nonAncora.keys()].sort()).toEqual(conTabelleOMatrici.flatMap((f) => lingue.map((l) => `${f} ${l}`)).sort());
     for (const [chi, costrutto] of nonAncora) expect({ chi, costrutto: costrutto.length > 0 }).toEqual({ chi, costrutto: true });
     // Le due lingue dicono lo stesso costrutto.
     for (const f of corpus) if (nonAncora.has(`${f} it`)) expect(nonAncora.get(`${f} en`)).toBe(nonAncora.get(`${f} it`));
@@ -164,9 +172,14 @@ describe("i costrutti che sa scrivere", () => {
   });
 
   test("il programma di prova di una funzione di un progetto che non sa ancora scrivere non si genera", () => {
-    const p = leggi("tipi/record-in-un-programma.algo");
+    // Una tabella: i record si scrivono, la tabella ancora no.
+    const p = leggi("tipi/tabella-come-parametro.algo");
     const g = typescript(p, tetti, "it", paroleDelloPseudocodice("it"));
-    expect(g.generato ? "generato" : g.perche).toBe("non-ancora");
+    expect(g.generato ? "generato" : g.perche === "non-ancora" ? g.costrutto : g.perche).toBe("la tabella");
+    const casi = p.functions.flatMap((f) => (f.test_cases ?? []).map((caso) => ({ funzione: f.id, caso })));
+    // Controllo positivo nel numero: il progetto ha casi di funzioni.
+    expect(casi.length).toBeGreaterThan(0);
+    for (const prova of casi) expect(typescript(p, tetti, "it", paroleDelloPseudocodice("it"), prova).generato).toBe(false);
   });
 
   test("ogni programma di prova dei casi delle funzioni delle tappe 3 e 4 si genera, nelle due lingue", () => {
@@ -235,12 +248,12 @@ describe("i nomi", () => {
       for (const p of [formeDelloScheletro, formeDellaTappa1, formeDellaTappa2, formeDellaTappa3, ...Object.keys(delCorpus).map((n) => leggi(`${n}.algo`))]) {
         const t = codice(p, l);
         // Le funzioni a livello del file, che devono essere riservate se non sono del progetto, e quelle dentro una
-        // funzione di supporto (la potenza), che non lo devono.
-        const delProgetto = new Set(["main", ...p.functions.flatMap((f) => (f.name === undefined ? [] : [f.name]))]);
+        // funzione di supporto (la potenza), che non lo devono; le classi dei record, che sono del progetto.
+        const delProgetto = new Set(["main", ...p.functions.flatMap((f) => (f.name === undefined ? [] : [f.name])), ...(p.records ?? []).map((r) => r.name)]);
         const definite = new Set([...t.matchAll(/^function (\w+)\(/gm)].map((m) => m[1]!).filter((x) => !delProgetto.has(x)));
         const interne = new Set([...t.matchAll(/^ +function (\w+)\(/gm)].map((m) => m[1]!));
-        // Le parole di controllo seguite da una parentesi non sono chiamate.
-        const chiamate = [...t.matchAll(/(?<![\w.])([A-Za-z_]\w*)\(/g)].map((m) => m[1]!).filter((x) => x !== "function");
+        // Le parole seguite da una parentesi che non sono chiamate: `function` e il costruttore di una classe.
+        const chiamate = [...t.matchAll(/(?<![\w.])([A-Za-z_]\w*)\(/g)].map((m) => m[1]!).filter((x) => x !== "function" && x !== "constructor");
         // Controllo positivo nel numero: il programma chiama qualcosa.
         expect(chiamate.length).toBeGreaterThan(0);
         for (const c of chiamate) expect({ c, ok: definite.has(c) || interne.has(c) || riservati.has(c) || delProgetto.has(c) }).toEqual({ c, ok: true });

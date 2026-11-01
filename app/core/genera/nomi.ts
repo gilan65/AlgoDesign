@@ -315,3 +315,16 @@ export const riservatiDelC: readonly string[] = [...new Set([...paroleDelC11, ..
 export const riservatiDelTypeScript: readonly string[] = [
   ...new Set([...paroleDiTypeScript, ...nomiComuniDelGenerato, ...Object.values(nomiDelSupportoDelTypeScript).flatMap((x) => Object.values(x)), ...nomiDiTypeScript]),
 ];
+
+/** I nomi che un record non può avere nel TypeScript generato, oltre a quelli di ogni dato: il record è una classe, e il
+ * suo nome sta anche dove va un tipo (`let a: alunno`), dove le parole del solo TypeScript non si possono usare (misurato
+ * con `tsc` 7, Node 24 e Bun 1.4: `class number` è rifiutata, `let x: keyof` non si legge); Node rifiuta anche la classe
+ * `intrinsic`. `string` e `boolean` sono nomi di tipo del flowchart, già vietati a un record. Un dato e una funzione
+ * possono chiamarsi così. */
+export const riservatiAUnRecordDelTypeScript: readonly string[] = (
+  "any unknown never number bigint symbol object undefined readonly keyof infer intrinsic"
+).split(" ");
+
+/** I nomi che un campo di un record non può avere nel TypeScript generato: una classe non lascia a un campo il nome
+ * `constructor` (misurato con `tsc` 7, Node 24 e Bun 1.4). */
+export const riservatiAUnCampoDelTypeScript: readonly string[] = ["constructor"];

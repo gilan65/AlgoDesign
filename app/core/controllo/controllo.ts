@@ -90,7 +90,7 @@
 //   cambiare più).
 
 import { analizza, parole, type Causa, type Espressione, type Fermata } from "../espressioni/analizzatore";
-import { nomiRiservati, nomiRiservatiNelFile } from "../genera/linguaggi";
+import { nomiRiservati, nomiRiservatiAUnCampo, nomiRiservatiAUnRecord, nomiRiservatiNelFile } from "../genera/linguaggi";
 import type { Blocco, Campo, CodiceAvviso, CodiceErroreStatico, Dato, DefinizioneDelRecord, Funzione, GenereDiFunzione, Progetto, Segnalazione, Tipo, TipoDelDato } from "../progetto/modello";
 
 /** I tetti delle impostazioni dell'app. */
@@ -183,9 +183,11 @@ const operatoriAParola = [
  * che il codice generato usa per sé, in ogni lingua); `nelFile`, quelli vietati solo a ciò che sta a livello di file
  * (nel C, i nomi che le intestazioni dichiarano lì). Si costruiscono alla prima domanda, non all'avvio del modulo: il
  * registro importa i generatori, che importano questo modulo. */
-let riservati: { readonly ovunque: ReadonlySet<string>; readonly nelFile: ReadonlySet<string> } | undefined;
+let riservati:
+  | { readonly ovunque: ReadonlySet<string>; readonly nelFile: ReadonlySet<string>; readonly aUnRecord: ReadonlySet<string>; readonly aUnCampo: ReadonlySet<string> }
+  | undefined;
 function nomiRiservatiDelControllo(): NonNullable<typeof riservati> {
-  riservati ??= { ovunque: new Set([...operatoriAParola, ...nomiRiservati()]), nelFile: nomiRiservatiNelFile() };
+  riservati ??= { ovunque: new Set([...operatoriAParola, ...nomiRiservati()]), nelFile: nomiRiservatiNelFile(), aUnRecord: nomiRiservatiAUnRecord(), aUnCampo: nomiRiservatiAUnCampo() };
   return riservati;
 }
 
@@ -214,6 +216,18 @@ export function causaDelNome(nome: string, nelFile: boolean): Fermata | undefine
 }
 /** Esportata per chi chiede un nome prima di crearlo (`motivoDelNome` delle operazioni sulle funzioni). */
 export const nomeValidoNelFile = (nome: string) => causaDelNome(nome, true) === undefined;
+
+/** Il nome di un record: valido a livello di file, e non uno di quelli che un linguaggio del registro vieta a un record
+ * (il nome di un record sta anche dove va un tipo). La causa, `undefined` se il nome è valido. */
+export function causaDelNomeDiUnRecord(nome: string): Fermata | undefined {
+  return causaDelNome(nome, true) ?? (nomiRiservatiDelControllo().aUnRecord.has(nome) ? { causa: "nome_riservato", segno: nome } : undefined);
+}
+
+/** Il nome di un campo di un record: valido come quello di un dato, e non uno di quelli che un linguaggio del registro
+ * vieta a un campo. La causa, `undefined` se il nome è valido. */
+export function causaDelNomeDiUnCampo(nome: string): Fermata | undefined {
+  return causaDelNome(nome, false) ?? (nomiRiservatiDelControllo().aUnCampo.has(nome) ? { causa: "nome_riservato", segno: nome } : undefined);
+}
 
 /** Il tipo di un'espressione; per un vettore intero anche la dimensione e la lunghezza massima degli elementi, per un record
  * il suo nome. Una matrice intera è un vettore con le colonne: `dimensione` le righe, e ogni riga è un vettore di `colonne`
@@ -618,7 +632,7 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
   for (const [indice, r] of (p.records ?? []).entries()) {
     recordCorrente = indice;
     // Il nome: valido anche a livello di file, unico fra i record, mai quello di un tipo, di un dato o di una funzione.
-    const causa = causaDelNome(r.name, true);
+    const causa = causaDelNomeDiUnRecord(r.name);
     if (causa !== undefined) delProgetto({ codice: "invalid_name", fermata: causa });
     else if (records.has(r.name)) delProgetto(difetto("record_name_in_use", "record_doppio", r.name));
     else if (nomiDeiTipi.has(r.name)) delProgetto(difetto("record_name_in_use", "nome_di_un_tipo", r.name));
@@ -629,7 +643,7 @@ export function controlla(p: Progetto, limiti: Tetti): EsitoDelControllo {
     if (r.fields.length === 0) delProgetto(difetto("invalid_record", "senza_campi", r.name));
     const visti = new Set<string>();
     for (const c of r.fields) {
-      const delCampo = causaDelNome(c.name, false);
+      const delCampo = causaDelNomeDiUnCampo(c.name);
       const sbagliato: Difetto | undefined =
         delCampo !== undefined ? { codice: "invalid_name", fermata: delCampo } : visti.has(c.name) ? difetto("invalid_record", "campo_doppio", c.name) : erroreDellaMisura(c);
       if (sbagliato !== undefined) delProgetto(sbagliato);
