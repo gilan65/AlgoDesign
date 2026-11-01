@@ -22,7 +22,7 @@
 //    il copyright, se le licenze comuni mancano, se una libreria non ha un pacchetto e non è una cache dei moduli.
 // 6. CARTELLA: `dist/<versione>-linux/` alla radice del repository (`dist/prova/…` con `--prova`), con le voci di
 //    `elencoDiLinux`; i testi per l'utente dalla cartella di `--testi` coi segnaposto sostituiti (un `{{` rimasto è
-//    rosso); le due guide per lo studente e la guida ad «Accademico» da `docs/`, i due README e il registro delle modifiche dalla radice, così come sono (come per
+//    rosso); le due guide per lo studente, la guida ad «Accademico» e quella dello strumento da `docs/`, i due README e il registro delle modifiche dalla radice, così come sono (come per
 //    Windows); le licenze
 //    di terze parti per `x86_64-unknown-linux-gnu` con `licenze.ts`. Le voci, al primo livello e nella cartella delle
 //    librerie di sistema, si confrontano con l'atteso nei due versi; controllo positivo: lo stesso confronto, con una
@@ -48,7 +48,7 @@ import { createHash } from "node:crypto";
 import { homedir, tmpdir } from "node:os";
 import { basename, join, relative } from "node:path";
 import { dataMostrata } from "../ui/prodotto";
-import { cartellaDelleLibrerieDiSistema, differenzeDallElenco, documentiDellaRadice, documentiDelPacchetto, elencoDiLinux, guidaAdAccademico, fileDelleLicenze, nomiDiLinux, testiDiLinux } from "./elenco-del-pacchetto";
+import { cartellaDelleLibrerieDiSistema, differenzeDallElenco, documentiDellaRadice, documentiDelPacchetto, elencoDiLinux, guidaAdAccademico, guidaDelloStrumento, fileDelleLicenze, nomiDiLinux, testiDiLinux } from "./elenco-del-pacchetto";
 import { licenzeDiTerzeParti } from "./licenze";
 
 /** La glibc più vecchia su cui l'AppImage deve partire: quella che il testo di Linux promette. */
@@ -326,7 +326,7 @@ async function componi(appimage: string, sistema: LibrerieDiSistema): Promise<vo
     if (rimasto) rosso("CARTELLA", `${sorgente}: «${rimasto[0]}» non sostituito (si sostituiscono solo {{versione}} e {{data}})`);
     writeFileSync(join(cartella, destinazione), testo);
   }
-  for (const d of [...documentiDelPacchetto, guidaAdAccademico]) {
+  for (const d of [...documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento]) {
     const sorgente = join(repository, "docs", d);
     if (!existsSync(sorgente)) rosso("CARTELLA", `manca il documento ${sorgente}`);
     const testo = readFileSync(sorgente, "utf8");

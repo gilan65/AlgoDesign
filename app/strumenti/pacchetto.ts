@@ -23,7 +23,7 @@
 //    dalla cartella di `--testi`, tracciati dal repository (una cartella fuori, come le note di una versione di prima
 //    rimaste fra i documenti di lavoro, è rossa), con `{{versione}}` e `{{data}}` sostituiti (un segnaposto rimasto, un nome
 //    fra due graffe doppie, è rosso; il valore di una matrice come `{{1, 2}, {3, 4}}` no, con le sue sonde); le guide per lo
-//    studente e la guida ad «Accademico» da `docs/` del repository, così come sono (valgono per la versione del prodotto; un segnaposto è rosso); `README.md` e
+//    studente, la guida ad «Accademico» e quella dello strumento da `docs/` del repository, così come sono (valgono per la versione del prodotto; un segnaposto è rosso); `README.md` e
 //    `LEGGIMI.md` dalla radice, così come sono, rossi se non dicono la cartella della versione (`AlgoDesign-<versione>`);
 //    `CHANGELOG.md`
 //    dalla radice del repository, così com'è: senza la voce della versione («## <versione>, »), o con un
@@ -45,7 +45,7 @@
 //    percorsi della macchina di 3, con lo stesso rilevatore e lo stesso controllo positivo.
 // 8. CARTELLA DELLO STRUMENTO: `dist/<versione>-tools/` (`dist/prova/…` con `--prova`) con le voci di
 //    `elencoDelloStrumento`: i due testi brevi da `--testi` (tracciati, coi segnaposto sostituiti), la guida ad
-//    «Accademico» da `docs/` (rossa se non dice il nome dello zip dello strumento), le due licenze dalla radice e le
+//    «Accademico» e quella dello strumento da `docs/` (rosse se non dicono il nome dello zip dello strumento), le due licenze dalla radice e le
 //    licenze di terze parti di `licenzeDelloStrumento` (`licenze.ts`). Il confronto nei due versi col controllo positivo.
 // 9. ZIP DELLO STRUMENTO: `dist/AlgoDesign-Tools-<versione>-windows.zip`, con dentro la cartella
 //    `AlgoDesign-Tools-<versione>`, con le prove di 6 e l'impronta accanto.
@@ -87,6 +87,7 @@ import {
   elencoDelPacchetto,
   fileDelleLicenze,
   guidaAdAccademico,
+  guidaDelloStrumento,
   nomiDelloStrumento,
   nomiDelPacchetto,
   testiDelloStrumento,
@@ -362,7 +363,7 @@ async function componi(rilascio: string): Promise<void> {
   if (registro.includes("SEGNAPOSTO")) rosso("CARTELLA", "CHANGELOG.md ha un SEGNAPOSTO rimasto");
   writeFileSync(join(cartella, "CHANGELOG.md"), registro);
   for (const t of testiDelPacchetto) writeFileSync(join(cartella, t), testoConISegnaposto("CARTELLA", t));
-  for (const d of [...documentiDelPacchetto, guidaAdAccademico]) writeFileSync(join(cartella, d), documento("CARTELLA", d));
+  for (const d of [...documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento]) writeFileSync(join(cartella, d), documento("CARTELLA", d));
   for (const d of documentiDellaRadice) {
     const testo = readFileSync(join(repository, d), "utf8");
     const rimasto = segnaposto.exec(testo);
@@ -504,9 +505,11 @@ function componiLoStrumento(exe: string, moduli: readonly string[]): void {
   cpSync(join(repository, "LICENSE-DOCS"), join(cartellaDelloStrumento, "LICENSE-DOCS"));
   for (const [sorgente, destinazione] of Object.entries(testiDelloStrumento))
     writeFileSync(join(cartellaDelloStrumento, destinazione), testoConISegnaposto("CARTELLA DELLO STRUMENTO", sorgente));
-  const guida = documento("CARTELLA DELLO STRUMENTO", guidaAdAccademico);
-  if (!guida.includes(nomiS.zip)) rosso("CARTELLA DELLO STRUMENTO", `${guidaAdAccademico} non dice il nome del pacchetto dello strumento, «${nomiS.zip}»`);
-  writeFileSync(join(cartellaDelloStrumento, guidaAdAccademico), guida);
+  for (const g of [guidaAdAccademico, guidaDelloStrumento]) {
+    const guida = documento("CARTELLA DELLO STRUMENTO", g);
+    if (!guida.includes(nomiS.zip)) rosso("CARTELLA DELLO STRUMENTO", `${g} non dice il nome del pacchetto dello strumento, «${nomiS.zip}»`);
+    writeFileSync(join(cartellaDelloStrumento, g), guida);
+  }
   const l = licenzeDelloStrumento(nomiS.versione, moduli, rosso);
   writeFileSync(join(cartellaDelloStrumento, fileDelleLicenze), l.testo);
   const trovate = voci(cartellaDelloStrumento);

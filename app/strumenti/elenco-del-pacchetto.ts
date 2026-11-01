@@ -16,6 +16,7 @@ export const elencoDelPacchetto: readonly string[] = [
   "GUIDA-PER-LO-STUDENTE.md",
   "STUDENT-GUIDE.md",
   "GUIDA-AD-ACCADEMICO.md",
+  "GUIDA-AD-ALGODESIGN-TOOLS.md",
   "CHANGELOG.md",
   "LICENSE",
   "LICENSE-DOCS",
@@ -39,6 +40,10 @@ export const documentiDelPacchetto: readonly string[] = ["GUIDA-PER-LO-STUDENTE.
 /** La guida ad «Accademico», da `docs/` così com'è: nel pacchetto dell'app (la guida per lo studente la nomina) e in
  * quello dello strumento. Fuori da `documentiDelPacchetto`, che sono le guide della finestra «Guida». */
 export const guidaAdAccademico = "GUIDA-AD-ACCADEMICO.md";
+
+/** La guida dello strumento a riga di comando, da `docs/` così com'è: nel pacchetto dell'app (la guida per lo studente la
+ * nomina) e in quello dello strumento. Fuori da `documentiDelPacchetto`, che sono le guide della finestra «Guida». */
+export const guidaDelloStrumento = "GUIDA-AD-ALGODESIGN-TOOLS.md";
 
 export type NomiDelPacchetto = {
   versione: string;
@@ -73,6 +78,7 @@ export const elencoDiLinux: readonly string[] = [
   "GUIDA-PER-LO-STUDENTE.md",
   "STUDENT-GUIDE.md",
   "GUIDA-AD-ACCADEMICO.md",
+  "GUIDA-AD-ALGODESIGN-TOOLS.md",
   "CHANGELOG.md",
   "LICENSE",
   "LICENSE-DOCS",
@@ -96,11 +102,12 @@ export function nomiDiLinux(testoDelPackageJson: string): { versione: string; ca
 }
 
 /** Le voci al primo livello del pacchetto aggiuntivo dello strumento a riga di comando (`pacchetto.ts`): l'eseguibile a
- * sé, i due testi brevi, la sua guida e le licenze; niente `data/`, perché lo strumento scrive solo dove gli si dice. */
+ * sé, i due testi brevi, le due guide e le licenze; niente `data/`, perché lo strumento scrive solo dove gli si dice. */
 export const elencoDelloStrumento: readonly string[] = [
   "algodesign-tools.exe",
   "LEGGIMI.md",
   "README.md",
+  guidaDelloStrumento,
   guidaAdAccademico,
   "LICENSE",
   "LICENSE-DOCS",
@@ -110,8 +117,8 @@ export const elencoDelloStrumento: readonly string[] = [
 /** I testi brevi del pacchetto dello strumento, letti dalla cartella di `--testi` coi segnaposto sostituiti: il nome
  * nella cartella e quello dentro il pacchetto. */
 export const testiDelloStrumento: Readonly<Record<string, string>> = {
-  "LEGGIMI-DI-ACCADEMICO.md": "LEGGIMI.md",
-  "README-OF-ACADEMIC.md": "README.md",
+  "LEGGIMI-DI-ALGODESIGN-TOOLS.md": "LEGGIMI.md",
+  "README-OF-ALGODESIGN-TOOLS.md": "README.md",
 };
 
 /** I nomi del pacchetto dello strumento, dal testo di `package.json`, con la stessa regola della versione dell'app; la
