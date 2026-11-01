@@ -9,8 +9,9 @@
 // tutti e quattro anche quando se ne chiedono due: misurato) con quelli del modo, nei due versi, e dice nella
 // sua riga quali motori ha provato e quali no. La prima porta è l'elenco delle prove del modo (pochi secondi, senza
 // server), poi i selettori delle prove (un controllo del sorgente, meno di un secondo), poi i conteggi del corpus
-// (`strumenti/corpus.ts`: un corpus cambiato dopo l'ultima `bun run conferma-corpus` è rosso prima della corsa lunga);
-// con `--solo-elenco` il collaudo si ferma lì.
+// (`strumenti/corpus.ts`: un corpus cambiato dopo l'ultima `bun run conferma-corpus` è rosso prima della corsa lunga), poi
+// le mutazioni dell'interprete, che il collaudo non esegue (`strumenti/mutazioni.ts`: `core/interprete/` cambiata dopo
+// l'ultima `bun run mutazioni` è rossa); con `--solo-elenco` il collaudo si ferma lì.
 //
 // Ogni porta ha il proprio CONTROLLO POSITIVO nello stesso giro: una sonda (file `__sonda__*`) scritta
 // dentro la configurazione vera, che deve far fallire la porta con l'errore atteso e nessun altro; poi
@@ -65,7 +66,9 @@
 // - lo stile del codice (nessun linter);
 // - che le porte chiamino davvero i confronti dei progetti e degli spec: le sonde provano le funzioni del confronto,
 //   non la chiamata, che una riga cancellata toglierebbe senza rosso;
-// - con `--solo-elenco`, nulla oltre l'elenco e i selettori: la riga «ESITO: SOLO ELENCO» lo dice, ma l'uscita è 0 come quella del
+// - le mutazioni dell'interprete quando cambia il corpus o il resto del nucleo: la loro porta guarda solo `core/interprete/`,
+//   e quella riga dice che non sono state eseguite;
+// - con `--solo-elenco`, nulla oltre l'elenco, i selettori, i conteggi del corpus e l'impronta delle mutazioni: la riga «ESITO: SOLO ELENCO» lo dice, ma l'uscita è 0 come quella del
 //   collaudo verde, e chi legge solo l'uscita non li distingue.
 //
 // Gli exit code si leggono dal processo avviato (`await proc.exited`), mai attraverso una pipe.
@@ -87,6 +90,7 @@ import {
   programmiConAvvisiAttesi as avvisiAttesiDal,
 } from "./esecutori";
 import { denominatoriDaConfermare, differenze, leggiIConteggi, misuraIlCorpus } from "./corpus";
+import { fileDellInterprete, improntaDi, leggiLaConferma } from "./mutazioni";
 import { chiamate, senzaExact } from "./selettori";
 
 const argomenti = process.argv.slice(2);
@@ -1343,6 +1347,23 @@ function portaCorpus(): void {
   );
 }
 
+// ------------------------------------------------------------------------------------------ mutazioni
+
+// Le mutazioni dell'interprete non corrono qui: sono quasi metà del tempo di `bun test`, e dipendono da una cartella sola.
+// La porta confronta l'impronta di `core/interprete/` con quella su cui sono state confermate verdi.
+function portaMutazioni(): void {
+  const file = fileDellInterprete();
+  if (file.length === 0) rosso("mutazioni", "denominatore a zero: nessun file in core/interprete/");
+  const ora = improntaDi(file);
+  const conferma = leggiLaConferma();
+  if (conferma === undefined) rosso("mutazioni", "nessuna conferma registrata: prima della corsa lunga `bun run mutazioni`");
+  if (conferma.impronta !== ora) rosso("mutazioni", "core/interprete/ è cambiata dopo l'ultima conferma: prima della corsa lunga `bun run mutazioni`, che le esegue e solo se verdi registra l'impronta");
+  if (conferma.mutazioni === 0) rosso("mutazioni", "denominatore a zero: la conferma non ha mutazioni");
+  const conUnByte = improntaDi(file.map((f, k) => (k === 0 ? { ...f, testo: `${f.testo}x` } : f)));
+  if (conUnByte === ora) rosso("mutazioni", "controllo positivo SPENTO: un byte in più lascia l'impronta uguale");
+  riga(`PORTA mutazioni: VERDE | core/interprete/ (${file.length} file) è quella dell'ultima conferma: ${conferma.mutazioni} mutazioni verdi su questa impronta, NON eseguite in questo giro | controllo positivo acceso (un byte in più cambia l'impronta)`);
+}
+
 // -------------------------------------------------------------------------------------------- giro
 
 log(`=== INIZIO COLLAUDO ${new Date().toISOString()} · bun ${Bun.version} · modo ${modo} ===`);
@@ -1354,9 +1375,10 @@ try {
   await portaElenco();
   await portaSelettori();
   portaCorpus();
+  portaMutazioni();
   if (soloElenco) {
     // Un esito suo, non quello del collaudo: chi legge «ESITO: VERDE» crede che le prove siano passate.
-    riga(`ESITO: SOLO ELENCO, VERDE — controllato l'elenco delle prove del modo ${modo} (progetti e spec), i selettori e i conteggi del corpus, non il collaudo: nessuna prova eseguita`);
+    riga(`ESITO: SOLO ELENCO, VERDE — controllato l'elenco delle prove del modo ${modo} (progetti e spec), i selettori, i conteggi del corpus e l'impronta delle mutazioni, non il collaudo: nessuna prova eseguita`);
     log("=== FINE COLLAUDO ===");
     process.exit(0);
   }
@@ -1367,7 +1389,7 @@ try {
   await portaBuild();
   await portaCargo();
   await portaPlaywright();
-  riga(`ESITO: VERDE (porte: elenco, selettori, corpus, 3 tsc, bun test, casi, differenziale, build, cargo test, playwright nel modo ${modo}: ${progettiEseguitiAttesi.join(", ")})`);
+  riga(`ESITO: VERDE (porte: elenco, selettori, corpus, mutazioni confermate, 3 tsc, bun test, casi, differenziale, build, cargo test, playwright nel modo ${modo}: ${progettiEseguitiAttesi.join(", ")})`);
   log("=== FINE COLLAUDO ===");
 } catch (e) {
   riga(e instanceof PortaRossa ? e.message : `ERRORE DEL COLLAUDO: ${e instanceof Error ? e.stack : String(e)}`);
