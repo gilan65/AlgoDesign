@@ -16,8 +16,9 @@ import { righeDi, testoDelCodice, type Generato, type Riga } from "../../core/ge
 import { linguaggi } from "../../core/genera/linguaggi";
 import { pseudocodice } from "../../core/genera/pseudocodice";
 import { python } from "../../core/genera/python";
+import { typescript } from "../../core/genera/typescript";
 import { apri } from "../../core/progetto/formato";
-import { usaLeMatrici, type Progetto } from "../../core/progetto/modello";
+import { usaLeMatrici, usaLeTabelle, type Progetto } from "../../core/progetto/modello";
 import type { Lingua } from "../../i18n/lingue";
 import {
   comeParametroC,
@@ -49,8 +50,8 @@ test("ogni linguaggio scrive le matrici: generato il progetto giusto, con gli er
       return g.generato ? "generato" : g.perche;
     });
     // «Accademico» non ha le matrici: per lui il progetto giusto non ci sta.
-    // Il TypeScript non li sa ancora scrivere: per lui il progetto giusto è «non ancora».
-    const giusto = linguaggi.every((v, i) => ottenuti[i] === (atteso === "generato" && v.id === "accademico" ? "non-ci-sta" : atteso === "generato" && v.id === "typescript" ? "non-ancora" : atteso));
+    // Il TypeScript scrive le matrici, non ancora le tabelle: per lui il progetto giusto che ne ha una è «non ancora».
+    const giusto = linguaggi.every((v, i) => ottenuti[i] === (atteso === "generato" && v.id === "accademico" ? "non-ci-sta" : atteso === "generato" && v.id === "typescript" && usaLeTabelle(p) ? "non-ancora" : atteso));
     return { nome, giusto, atteso, ottenuti };
   });
   expect(esiti.filter((e) => !e.giusto)).toEqual([]);
@@ -69,12 +70,24 @@ test("il programma di prova di ogni caso di una funzione con le matrici si gener
   });
   const daEseguire = linguaggi.filter((v) => v.genere === "da-eseguire");
   const rifiutati = casi.flatMap(({ nome, p, f, caso }) => daEseguire.flatMap((v) => (v.genera(p, tetti, "it", paroleDelloPseudocodice("it"), { funzione: f.id, caso }).generato ? [] : [`${nome} ${v.id}`])));
-  // Il TypeScript li rifiuta tutti: non sa ancora scrivere il programma di prova.
-  expect(rifiutati).toEqual(casi.map(({ nome }) => `${nome} typescript`));
+  // Il TypeScript rifiuta solo quelli di un progetto con una tabella: le matrici le sa scrivere, le tabelle non ancora.
+  expect(rifiutati).toEqual(casi.filter(({ p }) => usaLeTabelle(p)).map(({ nome }) => `${nome} typescript`));
   // Controllo positivo: i casi delle funzioni della cartella sono cinque (totale, azzera_riga, trasposta, raddoppia,
   // riempi), ognuno per due linguaggi.
   expect(casi.length).toBe(confermato("matrici - casi delle funzioni della cartella", casi.length));
   expect(daEseguire.length).toBe(3);
+});
+
+test("nel C, una stringa copiata dallo stesso dato con indici diversi nel testo va con `memmove`: a runtime può essere la stessa cella", () => {
+  // La diagonale di `m[i][j] ← m[j][i]` (b3) e la riga `m[i] ← m[j]` con i uguale a j (b7): `strcpy` di una stringa su sé
+  // stessa non ha regola (AddressSanitizer: `strcpy-param-overlap`), `memmove` sì.
+  const delBlocco = (nome: string, blocco: string) => righe(c(progetto(nome), tetti, "it", paroleDelloPseudocodice("it")), nome).filter((x) => x.blocco === blocco && /\b(strcpy|memmove)\(/.test(x.testo)).map((x) => x.testo.trim());
+  for (const blocco of ["b3", "b7"]) {
+    const copie = delBlocco("diagonale-di-stringhe.algo", blocco);
+    expect({ blocco, copie: copie.length > 0, tutteMemmove: copie.every((x) => x.startsWith("memmove(")) }).toEqual({ blocco, copie: true, tutteMemmove: true });
+  }
+  // Controllo positivo: fra due matrici diverse resta `strcpy` (la copia di `s` in `t`, coi controlli della lunghezza).
+  expect(delBlocco("righe-calcolate.algo", "b10")).toEqual(["strcpy(t[_indice][_indice2], al_piu(s[_indice][_indice2], 3));"]);
 });
 
 /** Il confronto col messaggio che nomina la prima riga diversa, con le due forme. */
@@ -112,14 +125,16 @@ describe("il codice delle matrici uguale all'atteso scritto a mano", () => {
     uguale(testoDi(python(p, tetti, "it", parole, prova), "prova python"), provaDellaTraspostaPython, "prova python");
     uguale(testoDi(c(p, tetti, "it", parole, prova), "prova c"), provaDellaTraspostaC, "prova c");
   });
-  test("la copia col nome: due cicli nel Python e nel C, una riga nello pseudocodice; la riga corrente di ogni pausa", () => {
+  test("la copia col nome: due cicli nel Python, nel C e nel TypeScript, una riga nello pseudocodice; la riga corrente di ogni pausa", () => {
     const delPython = righe(python(copia, tetti, "it", parole), "python");
     const delC = righe(c(copia, tetti, "it", parole), "c");
+    const delTypeScript = righe(typescript(copia, tetti, "it", parole), "typescript");
     const delloPseudocodice = righe(pseudocodice(copia, tetti, parole), "pseudocodice");
-    expect({ pseudocodice: fasiDi(delloPseudocodice, "b1"), python: fasiDi(delPython, "b1"), c: fasiDi(delC, "b1") }).toEqual({
+    expect({ pseudocodice: fasiDi(delloPseudocodice, "b1"), python: fasiDi(delPython, "b1"), c: fasiDi(delC, "b1"), typescript: fasiDi(delTypeScript, "b1") }).toEqual({
       pseudocodice: [...provenienzeDellaCopia.pseudocodice],
       python: [...provenienzeDellaCopia.python],
       c: [...provenienzeDellaCopia.c],
+      typescript: [...provenienzeDellaCopia.typescript],
     });
     const accese = (r: readonly Riga[], fase: "inizio" | "condizione" | "elemento" | "passo", interno?: true) =>
       righeDi(r, { blocco: "b1", fase, ...(interno ? { interno } : {}) }).map((i) => r[i]!.testo.trim());
@@ -127,6 +142,8 @@ describe("il codice delle matrici uguale all'atteso scritto a mano", () => {
     expect(accese(delPython, "condizione")).toEqual(["while _indice < 2:"]);
     expect(accese(delPython, "condizione", true)).toEqual(["while _indice2 < 2:"]);
     expect(accese(delC, "elemento", true)).toEqual(["b[_indice][_indice2] = a[_indice][_indice2];"]);
+    expect(accese(delTypeScript, "condizione", true)).toEqual(["while (_indice2 < 2) {"]);
+    expect(accese(delTypeScript, "elemento", true)).toEqual(["b[_indice][_indice2] = a[_indice][_indice2];"]);
     expect(accese(delC, "passo")).toEqual(["for (_indice = 0; _indice < 2; _indice++)"]);
     // Lo pseudocodice la sua riga unica, a ogni pausa.
     expect(accese(delloPseudocodice, "passo", true)).toEqual(["b ← a"]);

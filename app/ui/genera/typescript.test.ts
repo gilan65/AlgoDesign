@@ -23,7 +23,7 @@ import type { Prova } from "../../core/genera/python";
 import { usaLeMatrici, usaLeTabelle, type Progetto } from "../../core/progetto/modello";
 import type { Lingua } from "../../i18n/lingue";
 import {
-  delCorpus, delleProve, delleProveDeiRecord, fasiDellaTappa2, formeDellaTappa1, formeDellaTappa1Attese, formeDellaTappa2, formeDellaTappa2Attese, formeDellaTappa3, formeDellaTappa3Attese,
+  delCorpus, delleProve, delleProveDeiRecord, delleProveDelleMatrici, fasiDellaTappa2, formeDellaTappa1, formeDellaTappa1Attese, formeDellaTappa2, formeDellaTappa2Attese, formeDellaTappa3, formeDellaTappa3Attese,
   formeDelloScheletro, formeDelloScheletroAttese, provenienzeDelloScheletro,
 } from "./attesi-del-typescript";
 import { paroleDelloPseudocodice } from "./parole";
@@ -71,11 +71,14 @@ describe("il TypeScript uguale all'atteso scritto a mano", () => {
     test(`forme-della-tappa-1 (${l})`, () => uguale(codice(formeDellaTappa1, l), formeDellaTappa1Attese[l], `forme-della-tappa-1 (${l})`));
     test(`forme-della-tappa-2 (${l})`, () => uguale(codice(formeDellaTappa2, l), formeDellaTappa2Attese[l], `forme-della-tappa-2 (${l})`));
     test(`forme-della-tappa-3 (${l})`, () => uguale(codice(formeDellaTappa3, l), formeDellaTappa3Attese[l], `forme-della-tappa-3 (${l})`));
-    for (const [nome, { funzione, caso, atteso }] of [...Object.entries(delleProve), ...Object.entries(delleProveDeiRecord)])
+    // La chiave è il file, con `#` e un nome quando lo stesso file ha più di una prova.
+    for (const [chiave, { funzione, caso, atteso }] of [...Object.entries(delleProve), ...Object.entries(delleProveDeiRecord), ...Object.entries(delleProveDelleMatrici)]) {
+      const nome = chiave.split("#")[0]!;
       test(`la prova ${nome}#${funzione}/${caso} (${l})`, () => {
         const p = leggi(`${nome}.algo`);
         uguale(codice(p, l, provaDi(p, funzione, caso)), atteso[l], `la prova ${nome}#${funzione}/${caso} (${l})`);
       });
+    }
   }
 });
 
@@ -120,7 +123,7 @@ describe("la provenienza delle righe", () => {
 });
 
 describe("i costrutti che sa scrivere", () => {
-  test("si generano tutti e soli i progetti del corpus che sa scrivere (le tappe 1, 2, 3 e 4 intere e i record); ogni altro dice il costrutto che manca", () => {
+  test("si generano tutti e soli i progetti del corpus che sa scrivere (le tappe 1, 2, 3 e 4 intere, i record e le matrici); ogni altro dice il costrutto che manca", () => {
     // Controllo positivo nel numero: il corpus c'è, e i progetti dello scheletro ne sono una parte.
     expect(corpus.length).toBeGreaterThan(100);
     const generati: string[] = [];
@@ -146,19 +149,29 @@ describe("i costrutti che sa scrivere", () => {
     expect(tappe.filter((f) => f.startsWith("tappa-2/")).length).toBeGreaterThan(10);
     expect(tappe.filter((f) => f.startsWith("tappa-3/")).length).toBeGreaterThan(40);
     expect(tappe.filter((f) => f.startsWith("tappa-4/")).length).toBeGreaterThan(15);
-    // I file fuori dalle tappe che il generatore sa scrivere (coi record, senza tabelle né matrici), confermati; ogni file
-    // delle tappe si genera.
+    // I file fuori dalle tappe che il generatore sa scrivere (coi record e le matrici, senza tabelle), confermati; ogni
+    // file delle tappe si genera.
     const fuoriDalleTappe = confermato("genera typescript - generati fuori dalle tappe 1, 2, 3 e 4", [...new Set(generati.map((g) => g.slice(0, g.lastIndexOf(" "))))].filter((f) => !tappe.includes(f)).sort());
     expect(generati.sort()).toEqual([...tappe, ...fuoriDalleTappe].flatMap((f) => lingue.map((l) => `${f} ${l}`)).sort());
-    // I «non ancora» sono tutti e soli i file giusti con una tabella o una matrice, confrontati per file nei due versi
-    // (mai un numero scritto qui: il generatore che cresce lo sposta); controllo positivo nel numero: il corpus ne ha.
-    const conTabelleOMatrici = corpus.filter((f) => {
-      const p = leggi(`${f}.algo`);
+    // I «non ancora» sono tutti e soli i file giusti con una tabella, confrontati per file nei due versi (mai un numero
+    // scritto qui: il generatore che cresce lo sposta); controllo positivo nel numero: il corpus ne ha. Un file giusto con
+    // una matrice si genera: controllo positivo che il corpus ne abbia.
+    const giusto = (p: Progetto) => {
       const c = controlla(p, tetti);
-      return !c.fuoriTappa && c.errori.length === 0 && (usaLeTabelle(p) || usaLeMatrici(p));
+      return !c.fuoriTappa && c.errori.length === 0;
+    };
+    const conTabelle = corpus.filter((f) => {
+      const p = leggi(`${f}.algo`);
+      return giusto(p) && usaLeTabelle(p);
     });
-    expect(conTabelleOMatrici.length).toBeGreaterThan(0);
-    expect([...nonAncora.keys()].sort()).toEqual(conTabelleOMatrici.flatMap((f) => lingue.map((l) => `${f} ${l}`)).sort());
+    expect(conTabelle.length).toBeGreaterThan(0);
+    expect([...nonAncora.keys()].sort()).toEqual(conTabelle.flatMap((f) => lingue.map((l) => `${f} ${l}`)).sort());
+    const conMatrici = corpus.filter((f) => {
+      const p = leggi(`${f}.algo`);
+      return giusto(p) && usaLeMatrici(p) && !usaLeTabelle(p);
+    });
+    expect(conMatrici.length).toBeGreaterThan(0);
+    for (const f of conMatrici) for (const l of lingue) expect({ f, l, generato: generati.includes(`${f} ${l}`) }).toEqual({ f, l, generato: true });
     for (const [chi, costrutto] of nonAncora) expect({ chi, costrutto: costrutto.length > 0 }).toEqual({ chi, costrutto: true });
     // Le due lingue dicono lo stesso costrutto.
     for (const f of corpus) if (nonAncora.has(`${f} it`)) expect(nonAncora.get(`${f} en`)).toBe(nonAncora.get(`${f} it`));

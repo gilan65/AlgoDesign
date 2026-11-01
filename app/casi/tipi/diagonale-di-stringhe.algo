@@ -1,0 +1,121 @@
+{
+  "format": "algodesign",
+  "schema_version": 2,
+  "metadata": {
+    "name": "diagonale-di-stringhe",
+    "description": "In una matrice di stringhe m[i][j] ← m[j][i] sulla diagonale, e m[i] ← m[j] con i uguale a j, copiano una stringa su sé stessa."
+  },
+  "functions": [
+    {
+      "id": "f1",
+      "kind": "main",
+      "data": [
+        {
+          "name": "m",
+          "type": "string",
+          "size": 2,
+          "columns": 2,
+          "initial": [
+            [
+              "\"uno\"",
+              "\"due\""
+            ],
+            [
+              "\"tre\"",
+              "\"quattro\""
+            ]
+          ],
+          "max_length": 10
+        },
+        {
+          "name": "i",
+          "type": "integer"
+        },
+        {
+          "name": "j",
+          "type": "integer"
+        }
+      ],
+      "body": [
+        {
+          "id": "b1",
+          "kind": "for",
+          "counter": "i",
+          "from": "0",
+          "to": "1",
+          "body": [
+            {
+              "id": "b2",
+              "kind": "for",
+              "counter": "j",
+              "from": "0",
+              "to": "1",
+              "body": [
+                {
+                  "id": "b3",
+                  "kind": "assignment",
+                  "target": "m[i][j]",
+                  "value": "m[j][i]"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "b4",
+          "kind": "write",
+          "values": [
+            "m[0][0]",
+            "\" \"",
+            "m[0][1]",
+            "\" \"",
+            "m[1][0]",
+            "\" \"",
+            "m[1][1]"
+          ],
+          "newline": true
+        },
+        {
+          "id": "b5",
+          "kind": "assignment",
+          "target": "j",
+          "value": "1"
+        },
+        {
+          "id": "b6",
+          "kind": "assignment",
+          "target": "i",
+          "value": "j"
+        },
+        {
+          "id": "b7",
+          "kind": "assignment",
+          "target": "m[i]",
+          "value": "m[j]"
+        },
+        {
+          "id": "b8",
+          "kind": "write",
+          "values": [
+            "m[1][0]",
+            "\" \"",
+            "m[1][1]"
+          ],
+          "newline": true
+        }
+      ],
+      "end": {
+        "id": "fine"
+      }
+    }
+  ],
+  "test_cases": [
+    {
+      "name": "diagonale-di-stringhe",
+      "inputs": [],
+      "expected": {
+        "output": "uno tre tre quattro\ntre quattro\n"
+      }
+    }
+  ]
+}

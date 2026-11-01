@@ -8,9 +8,8 @@
 // Il generatore cresce un gruppo di costrutti per volta. Oggi sa scrivere le tappe 1, 2, 3 e 4: i dati e le costanti dei
 // cinque tipi semplici e i vettori, l'assegnazione (anche a un elemento, e la copia di un vettore col nome), la lettura,
 // la scrittura, il commento, `se`, `mentre`, `ripeti`, `per`, `per ogni`, ogni espressione della tappa 1, le procedure e
-// le funzioni coi loro programmi di prova, la ricorsione, i record; per ogni altro costrutto il progetto non si genera, e
-// `nonAncora` dice il primo che trova («la tabella», «la matrice»), dopo gli errori statici come un generatore che si
-// ferma.
+// le funzioni coi loro programmi di prova, la ricorsione, i record, le matrici; per la tabella il progetto non si genera,
+// e `nonAncora` lo dice («la tabella»), dopo gli errori statici come un generatore che si ferma.
 //
 // La forma: il nome del progetto e la testa, gli import da Node (`execSync` per `prepara_console`, e da `node:fs` le sole
 // funzioni che leggono e scrivono, isolate in `leggi_riga`, `scrivi` e `fermati`: una pagina nel browser le può
@@ -77,6 +76,16 @@
 // una funzione è già nuovo; per riferimento e per uscita la procedura lo restituisce, come gli altri dati. Un campo per
 // riferimento è come un dato (`a.voto = raddoppia(a.voto);`).
 //
+// Le matrici come nel Python: un `Array` di `Array` (`number[][]`), ogni riga un `Array` suo, come la comprensione del
+// Python (`Array.from({ length: 2 }, () => new Array<number>(3))`, mai `new Array(2).fill(riga)`, che ripete la stessa
+// riga), e nessuna riga è mai condivisa da due dati: per valore e nel risultato dal nome la matrice si copia riga per riga
+// (`x = x.map((_riga) => Array.from(_riga));`). La copia col nome (`b ← a`) è il `mentre` delle righe con dentro quello
+// delle colonne, una riga per fase, quelle del ciclo delle colonne `interno`. La riga `m[i]` è un vettore dovunque ne va
+// uno: si copia come un vettore (`Array.from(m[i])`, il `mentre` della copia col nome), si passa e si percorre col «per
+// ogni»; l'indice di una riga che non è un numero né un nome si calcola una volta, nella partenza della copia, e nel «per
+// ogni» l'indice della riga scelta sta in `_sorgente`. L'elemento `m[i][j]` si legge e si assegna così; JavaScript calcola
+// gli indici prima del valore, come il flowchart.
+//
 // Un arresto scrive «Errore alla riga N: motivo» sullo standard error ed esce con 1: `fermati` trova la riga nella pila
 // delle chiamate (`new Error().stack`), alla prima chiamata dentro `main` o dentro un'altra funzione del programma, come
 // il Python che risale le cornici; una cornice nativa di Bun (`at map (native:1:11)`) non è mai del programma.
@@ -101,7 +110,7 @@ import { opzioniPredefinite, tipoSemplice, type Blocco, type Campo, type CasoDiU
 import type { FaseDelCiclo } from "../interprete/interprete";
 import { controlliDegliElementi, genera, parametriDelCaso, posizioni, segnate, type Generato, type Riga } from "./forma";
 import { motiviCol } from "./motivi";
-import { contatoriDellaRicorsione, indiceDelLivello, nomeDelRisultato, nomeDellaSorgente, nomeDellElemento, nomeDelValore, nomiDelSupporto, nomiDelSupportoDelTypeScript, type LinguaDelCodice } from "./nomi";
+import { contatoriDellaRicorsione, indiceDelLivello, nomeDelRisultato, nomeDellaRigaCopiata, nomeDellaSorgente, nomeDellElemento, nomeDelValore, nomiDelSupporto, nomiDelSupportoDelTypeScript, type LinguaDelCodice } from "./nomi";
 import type { NoteDeiDati, Prova } from "./python";
 
 export function typescript(p: Progetto, limiti: Tetti, lingua: LinguaDelCodice, note: NoteDeiDati, prova?: Prova): Generato {
@@ -217,19 +226,12 @@ function nelTesto(codice: number): string {
 
 // ------------------------------------------------------------------------------------- la guardia
 
-/** Il primo costrutto del progetto che il generatore non sa ancora scrivere, o niente: la tabella e la matrice, cercate
- * nel risultato e nei dati di ogni funzione (il programma di prova di una funzione è quello del suo progetto). Nessuna
- * espressione le usa senza un dato o un risultato che lo sia: un record di una tabella (`t[i].nome`) viene da una
- * tabella, una riga (`m[i]`) da una matrice. */
+/** Il primo costrutto del progetto che il generatore non sa ancora scrivere, o niente: la tabella, cercata nel risultato e
+ * nei dati di ogni funzione (il programma di prova di una funzione è quello del suo progetto). Nessuna espressione la usa
+ * senza un dato o un risultato che lo sia: un record di una tabella (`t[i].nome`) viene da una tabella. */
 function nonAncora(p: Progetto): string | undefined {
-  for (const f of p.functions) {
-    if (f.return_type === "record" && f.return_size !== undefined) return "la tabella";
-    if (f.return_columns !== undefined) return "la matrice";
-  }
-  for (const d of [...(p.shared_constants ?? []), ...p.functions.flatMap((f) => f.data)]) {
-    if (d.type === "record" && d.size !== undefined) return "la tabella";
-    if (d.columns !== undefined) return "la matrice";
-  }
+  for (const f of p.functions) if (f.return_type === "record" && f.return_size !== undefined) return "la tabella";
+  for (const d of [...(p.shared_constants ?? []), ...p.functions.flatMap((f) => f.data)]) if (d.type === "record" && d.size !== undefined) return "la tabella";
   return undefined;
 }
 
@@ -275,14 +277,29 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   /** Il campo di un'espressione `base.campo`: la base è un dato record o una funzione che restituisce un record. */
   const campoDi = (e: Extract<Espressione, { genere: "campo" }>): Campo => campiDi(recordDi(e.base)).find((c) => c.name === e.campo)!;
 
-  /** Un vettore intero: il nome di un vettore, o una funzione che lo restituisce. */
+  /** Una matrice intera: il nome di una matrice, o una funzione che la restituisce. */
+  const matrice = (e: Espressione) =>
+    e.genere === "nome" ? dati.get(e.nome)!.columns !== undefined : e.genere === "chiamata" && perNome.get(e.nome)?.return_columns !== undefined;
+  /** Un vettore intero: il nome di un vettore (una matrice è un vettore di righe), una funzione che lo restituisce, o la
+   * riga di una matrice. */
   const vettore = (e: Espressione): boolean =>
-    e.genere === "nome" ? dati.get(e.nome)!.size !== undefined : e.genere === "chiamata" && perNome.get(e.nome)?.return_size !== undefined;
-  /** La dimensione e la lunghezza massima degli elementi di un vettore intero, o di una stringa, come per un dato. */
-  const misureDi = (e: Espressione): Pick<Dato, "size" | "max_length"> => {
+    e.genere === "nome" ? dati.get(e.nome)!.size !== undefined
+    : e.genere === "chiamata" ? perNome.get(e.nome)?.return_size !== undefined
+    : e.genere === "indice" && matrice(e.base);
+  /** La dimensione (le colonne, per una matrice), le righe e la lunghezza massima degli elementi di un vettore intero, o di
+   * una stringa, come per un dato: la riga di una matrice ha la dimensione delle sue colonne. */
+  const misureDi = (e: Espressione): Pick<Dato, "size" | "columns" | "max_length"> => {
     if (e.genere === "nome") return dati.get(e.nome)!;
+    if (e.genere === "indice") {
+      const m = misureDi(e.base);
+      return { size: m.columns!, ...(m.max_length !== undefined ? { max_length: m.max_length } : {}) };
+    }
     const f = perNome.get((e as { nome: string }).nome)!;
-    return { ...(f.return_size !== undefined ? { size: f.return_size } : {}), ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}) };
+    return {
+      ...(f.return_size !== undefined ? { size: f.return_size } : {}),
+      ...(f.return_columns !== undefined ? { columns: f.return_columns } : {}),
+      ...(f.return_max_length !== undefined ? { max_length: f.return_max_length } : {}),
+    };
   };
 
   function tipo(e: Espressione): TipoDelDato {
@@ -534,17 +551,21 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   const nelDato = (e: Espressione, verso: Pick<Dato, "type" | "size" | "max_length">): string => nelDatoTesto(e, verso).t;
 
   /** Un vettore intero che va in un dato o nel risultato di una funzione (`verso`): una lista nuova. Dal nome di un
-   * vettore la copia (`Array.from`, il `list` del Python); con gli elementi stringa che possono essere più lunghi di quelli
-   * di `verso`, ognuno dal controllo (`map`, la comprensione del Python); da una funzione è già nuovo. */
+   * vettore, o da una riga di una matrice, la copia (`Array.from`, il `list` del Python); con gli elementi stringa che
+   * possono essere più lunghi di quelli di `verso`, ognuno dal controllo (`map`, la comprensione del Python); da una
+   * funzione è già nuovo. Una matrice dal suo nome si copia riga per riga (`x.map((_riga) => Array.from(_riga))`). */
   function listaNuova(e: Espressione, verso: Pick<Dato, "type" | "max_length">): Testo {
     const x = espressione(e);
     const massima = verso.max_length ?? lunghezzaPredefinita;
     const lungo = verso.type === "string" && (misureDi(e).max_length ?? lunghezzaPredefinita) > massima;
-    if (lungo) {
-      const elemento = nomeDellElemento[lingua];
-      return { t: `${fra(x, 20)}.map((${elemento}) => ${conArresto("alPiu", elemento, String(massima)).t})`, forza: 20, coda: true };
+    const elemento = nomeDellElemento[lingua];
+    const riga = nomeDellaRigaCopiata[lingua];
+    if (matrice(e)) {
+      if (lungo) return { t: `${fra(x, 20)}.map((${riga}) => ${riga}.map((${elemento}) => ${conArresto("alPiu", elemento, String(massima)).t}))`, forza: 20, coda: true };
+      return e.genere === "nome" ? operando(`${x.t}.map((${riga}) => Array.from(${riga}))`) : x;
     }
-    return e.genere === "nome" ? operando(`Array.from(${x.t})`) : x;
+    if (lungo) return { t: `${fra(x, 20)}.map((${elemento}) => ${conArresto("alPiu", elemento, String(massima)).t})`, forza: 20, coda: true };
+    return e.genere === "nome" || e.genere === "indice" ? operando(`Array.from(${x.t})`) : x;
   }
 
   /** Un record intero che va in un risultato: dal nome di un record un oggetto nuovo, campo per campo; da una funzione è
@@ -558,14 +579,24 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   const annotazioneDelTipo = (t: Tipo) => ({ integer: "number", real: "number", character: "string", string: "string", boolean: "boolean" })[t];
   /** Il tipo di un dato, o degli elementi di un vettore: un record col nome della sua classe. */
   const delTipo = (t: TipoDelDato, record: string | undefined) => (t === "record" ? record! : annotazioneDelTipo(t));
-  const annotazione = (d: Dato) => `${delTipo(d.type, d.record)}${d.size === undefined ? "" : "[]"}`;
-  const annotazioneDelRisultato = (f: Funzione) => `${delTipo(f.return_type!, f.return_record)}${f.return_size === undefined ? "" : "[]"}`;
+  /** Il tipo di un dato, di un vettore (`number[]`) o di una matrice (`number[][]`). */
+  const forma = (t: string, size: number | undefined, columns: number | undefined) => `${t}${size === undefined ? "" : columns === undefined ? "[]" : "[][]"}`;
+  const annotazione = (d: Dato) => forma(delTipo(d.type, d.record), d.size, d.columns);
+  const annotazioneDelRisultato = (f: Funzione) => forma(delTipo(f.return_type!, f.return_record), f.return_size, f.return_columns);
   const valoreIniziale = (d: Dato): string | undefined => {
     const v = d.initial;
     // Un record nasce sempre come oggetto: senza valore coi campi senza valore (`new alunno()`), con un valore un letterale
     // per campo.
     if (d.type === "record") return `new ${d.record!}(${((v as readonly string[] | undefined) ?? []).map((x, k) => nelDato(albero(x), campiDi(d.record)[k]!)).join(", ")})`;
     const elemento = annotazioneDelTipo(tipoSemplice(d.type));
+    // Una matrice: ogni riga un Array suo, come la comprensione del Python (mai `new Array(2).fill(riga)`, che ripete la
+    // stessa riga); col valore ripetuto, il valore in ogni riga.
+    if (d.columns !== undefined) {
+      const righe = (riga: string) => `Array.from({ length: ${d.size} }, () => ${riga})`;
+      if (v === undefined) return righe(`new Array<${elemento}>(${d.columns})`);
+      if (Array.isArray(v)) return `[${(v as readonly (readonly string[])[]).map((riga) => `[${riga.map((x) => nelDato(albero(x), d)).join(", ")}]`).join(", ")}]`;
+      return righe(`new Array<${elemento}>(${d.columns}).fill(${nelDato(albero((v as { readonly each: string }).each), d)})`);
+    }
     if (v === undefined) return d.size === undefined ? undefined : `new Array<${elemento}>(${d.size})`;
     if (typeof v === "string") return nelDato(albero(v), d);
     if (Array.isArray(v)) return `[${(v as readonly string[]).map((x) => nelDato(albero(x), d)).join(", ")}]`;
@@ -629,8 +660,9 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
   /** I record della funzione che si scrive (con le costanti comuni): riconoscono la copia col nome. */
   let deiRecord: ReadonlySet<string> = new Set();
 
-  /** Una destinazione e il valore che riceve: un dato, il campo di un record, o l'elemento di un vettore (JavaScript
-   * calcola l'indice prima del valore, come il flowchart). */
+  /** Una destinazione e il valore che riceve: un dato, il campo di un record, l'elemento di un vettore o di una matrice, o
+   * la riga di una matrice (JavaScript calcola gli indici prima del valore, come il flowchart: nessuno si calcola prima,
+   * come invece nel Python). La riga riceve un vettore delle sue colonne. */
   function assegna(r: string, id: string, bersaglio: string, valore: (d: Dato) => string) {
     const e = albero(bersaglio);
     if (e.genere === "nome") {
@@ -643,30 +675,58 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       corpo.push({ testo: `${r}${destinazione} = ${valore({ ...campoDi(e), name: destinazione })};`, blocco: id });
       return;
     }
-    const x = e as Extract<Espressione, { genere: "indice" }>;
-    const nome = (x.base as { nome: string }).nome;
-    const posto = `${nome}[${espressione(x.indice).t}]`;
-    corpo.push({ testo: `${r}${posto} = ${valore(dati.get(nome)!)};`, blocco: id });
+    const { nome, indici } = elementoDi(e);
+    const d = dati.get(nome)!;
+    const posto = `${nome}${indici.map((i) => `[${espressione(i).t}]`).join("")}`;
+    corpo.push({ testo: `${r}${posto} = ${valore(d.columns !== undefined && indici.length === 1 ? { ...d, size: d.columns, columns: undefined } : d)};`, blocco: id });
   }
 
-  /** La copia col nome (`altri ← voti`), elemento per elemento: il `mentre` equivalente, una riga per fase, come il Python
-   * (mai `altri = voti`, che farebbe dei due nomi lo stesso vettore). Un elemento stringa che può essere più lungo di
-   * quelli che lo ricevono passa dal controllo. */
-  function copia(r: string, id: string, t: Extract<Espressione, { genere: "nome" }>, v: Extract<Espressione, { genere: "nome" }>) {
-    const fase = (testo: string, ...fasi: FaseDelCiclo[]) => corpo.push({ testo, blocco: id, fasi });
+  /** La copia col nome (`altri ← voti`, `v ← m[1]`, `m[0] ← v`, `b ← a` fra due matrici), elemento per elemento: il
+   * `mentre` equivalente, una riga per fase, come il Python (mai `altri = voti`, che farebbe dei due nomi lo stesso
+   * vettore); per una matrice quello delle colonne dentro quello delle righe, con le sue righe `interno`. L'indice di una
+   * riga che non è un numero né un nome si calcola nella partenza, una volta, in un nome suo dopo quello della posizione.
+   * Un elemento stringa che può essere più lungo di quelli che lo ricevono passa dal controllo. */
+  function copia(r: string, id: string, t: Espressione, v: Espressione) {
+    const fase = (testo: string, interno: boolean | undefined, ...fasi: FaseDelCiclo[]) =>
+      corpo.push({ testo, blocco: id, fasi, ...(interno !== undefined ? { interno } : {}) });
+    let calcolati = 1;
+    const vettoreDi = (e: Espressione): string => {
+      if (e.genere === "nome") return e.nome;
+      const x = e as Extract<Espressione, { genere: "indice" }>;
+      const nome = (x.base as { nome: string }).nome;
+      if (x.indice.genere === "intero" || x.indice.genere === "nome") return `${nome}[${espressione(x.indice).t}]`;
+      const indice = indiceAl(cicliPerOgni + ++calcolati);
+      fase(`${r}${indice} = ${espressione(x.indice).t};`, undefined, "inizio");
+      return `${nome}[${indice}]`;
+    };
+    const verso = vettoreDi(t);
+    const da = vettoreDi(v);
     const misure = misureDi(t);
     const massima = misure.max_length ?? lunghezzaPredefinita;
     const lungo = tipo(t) === "string" && (misureDi(v).max_length ?? lunghezzaPredefinita) > massima;
+    const preso = (x: string) => (lungo ? conArresto("alPiu", x, String(massima)).t : x);
     const i = indiceAl(cicliPerOgni + 1);
-    const preso = lungo ? conArresto("alPiu", `${v.nome}[${i}]`, String(massima)).t : `${v.nome}[${i}]`;
-    fase(`${r}${i} = 0;`, "inizio");
-    fase(`${r}while (${i} < ${misure.size}) {`, "condizione");
-    fase(`${r}${rientro}${t.nome}[${i}] = ${preso};`, "elemento");
-    fase(`${r}${rientro}${i} = ${i} + 1;`, "passo");
+    if (misure.columns === undefined) {
+      fase(`${r}${i} = 0;`, undefined, "inizio");
+      fase(`${r}while (${i} < ${misure.size}) {`, undefined, "condizione");
+      fase(`${r}${rientro}${verso}[${i}] = ${preso(`${da}[${i}]`)};`, undefined, "elemento");
+      fase(`${r}${rientro}${i} = ${i} + 1;`, undefined, "passo");
+      struttura(`${r}}`);
+      return;
+    }
+    const j = indiceAl(cicliPerOgni + 2);
+    fase(`${r}${i} = 0;`, false, "inizio");
+    fase(`${r}while (${i} < ${misure.size}) {`, false, "condizione");
+    fase(`${r}${rientro}${j} = 0;`, true, "inizio");
+    fase(`${r}${rientro}while (${j} < ${misure.columns}) {`, true, "condizione");
+    fase(`${r}${rientro.repeat(2)}${verso}[${i}][${j}] = ${preso(`${da}[${i}][${j}]`)};`, true, "elemento");
+    fase(`${r}${rientro.repeat(2)}${j} = ${j} + 1;`, true, "passo");
+    struttura(`${r}${rientro}}`);
+    fase(`${r}${rientro}${i} = ${i} + 1;`, false, "passo");
     struttura(`${r}}`);
   }
 
-  /** Il dato e gli indici, dal primo, di un elemento di un vettore. */
+  /** Il dato e gli indici, dal primo, di un elemento di un vettore o di una matrice, o di una riga (`m[i][j]`: `m`, i, j). */
   function elementoDi(e: Espressione): { nome: string; indici: Espressione[] } {
     if (e.genere !== "indice") return { nome: (e as { nome: string }).nome, indici: [] };
     const sotto = elementoDi(e.base);
@@ -782,9 +842,10 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
           return;
         }
         if (vettore(t)) {
-          // Un vettore intero: da una funzione una lista nuova, dal nome di un altro vettore la copia elemento per elemento.
-          if (v.genere !== "nome") return assegna(r, b.id, b.target, (d) => listaNuova(v, d).t);
-          return copia(r, b.id, t as Extract<Espressione, { genere: "nome" }>, v);
+          // Un vettore intero, una matrice intera o la riga di una matrice: da una funzione una lista nuova, dal nome di un
+          // altro vettore, o da una riga, la copia elemento per elemento.
+          if (v.genere !== "nome" && !(v.genere === "indice" && vettore(v))) return assegna(r, b.id, b.target, (d) => listaNuova(v, d).t);
+          return copia(r, b.id, t, v);
         }
         return assegna(r, b.id, b.target, (d) => nelDato(v, d));
       }
@@ -837,13 +898,22 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       case "for_each": {
         // Un indice nascosto, e la lunghezza della sorgente ricalcolata a ogni controllo (mai `for … of`, che la prende
         // una volta). Una stringa per codici: `length` e `s[i]` di JavaScript contano le unità UTF-16. Una funzione si
-        // chiama una volta, alla partenza, e il suo risultato sta in `_sorgente`.
+        // chiama una volta, alla partenza, e il suo risultato sta in `_sorgente`. La riga di una matrice si sceglie alla
+        // partenza: con un indice che non è un numero, l'indice sta in `_sorgente` e il ciclo legge `m[_sorgente]` a ogni
+        // giro, come il Python (la riga assegnata nel ciclo è un'altra lista, e l'interprete legge la riga che c'è).
         const fase = (testo: string, ...fasi: FaseDelCiclo[]) => corpo.push({ testo, blocco: b.id, fasi });
         const elemento = dati.get((albero(b.item) as { nome: string }).nome)!;
         const s = albero(b.source);
         let sorgente: string;
         if (s.genere === "nome") sorgente = s.nome;
-        else {
+        else if (s.genere === "indice") {
+          if (s.indice.genere === "intero") sorgente = espressione(s).t;
+          else {
+            const riga = sorgenteNuova("number");
+            fase(`${r}${riga} = ${espressione(s.indice).t};`, "inizio");
+            sorgente = `${espressione(s.base).t}[${riga}]`;
+          }
+        } else {
           sorgente = sorgenteNuova(annotazioneDelRisultato(perNome.get((s as { nome: string }).nome)!));
           fase(`${r}${sorgente} = ${espressione(s).t};`, "inizio");
         }
@@ -906,7 +976,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     // chiama.
     const copie = parametri
       .filter((d) => d.parameter === "value" && (d.size !== undefined || d.type === "record"))
-      .map((d) => ({ testo: `${rientro}${d.name} = ${d.size !== undefined ? `Array.from(${d.name})` : costruttore(d.record!, d.name)};` }));
+      .map((d) => ({ testo: `${rientro}${d.name} = ${d.size !== undefined ? listaNuova({ genere: "nome", nome: d.name }, d).t : costruttore(d.record!, d.name)};` }));
     const propri = f.data.filter((d) => d.parameter === undefined || d.parameter === "out");
     const dichiarazioni = dichiara(propri, rientro, true, f.kind === "main" ? undefined : f.id);
     for (const b of f.body) blocco(b, 1);
@@ -971,10 +1041,15 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       };
       // Un record: un campo per voce, nell'ordine dei campi; un campo senza valore non si legge.
       const delCampo = (x: "riga" | "nessuno", c: Campo) => (x === "riga" ? leggi(c) : "undefined");
+      // Una matrice riga dopo riga; con un valore per ogni elemento, letto una volta e copiato in ogni riga, come il Python.
+      const elemento = d.type === "record" ? "" : annotazioneDelTipo(tipoSemplice(d.type));
+      const riga = nomeDellaRigaCopiata[lingua];
       const valore =
         d.type === "record" ? `new ${d.record!}(${campiDi(d.record).map((c, k) => delCampo(elementi[k]!, c)).join(", ")})`
         : d.size === undefined ? uno(elementi[0]!)
-        : ognuno ? `new Array<${annotazioneDelTipo(tipoSemplice(d.type))}>(${d.size}).fill(${uno(elementi[0]!)})`
+        : d.columns !== undefined && ognuno ? `new Array<${elemento}[]>(${d.size}).fill(new Array<${elemento}>(${d.columns}).fill(${uno(elementi[0]!)})).map((${riga}) => Array.from(${riga}))`
+        : d.columns !== undefined ? `[${[...Array(d.size).keys()].map((i) => `[${elementi.slice(i * d.columns!, (i + 1) * d.columns!).map(uno).join(", ")}]`).join(", ")}]`
+        : ognuno ? `new Array<${elemento}>(${d.size}).fill(${uno(elementi[0]!)})`
         : `[${elementi.map(uno).join(", ")}]`;
       righe.push({ testo: `${rientro}let ${d.name}: ${annotazione(d)} = ${valore};`, blocco: f.id });
     }
@@ -996,7 +1071,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
       // La funzione si chiama una volta, poi una riga per elemento: se si ferma, nulla è scritto.
       const nome = nomeDelRisultato[lingua];
       righe.push({ testo: `${rientro}let ${nome}: ${annotazioneDelRisultato(f)} = ${chiamataDiF};`, ...delCaso });
-      for (const k of posizioni(f.return_size, undefined)) scrivi(`→ ${k} = ${comeScritto(`${nome}${k}`, tipoSemplice(f.return_type!))}`);
+      for (const k of posizioni(f.return_size, f.return_columns)) scrivi(`→ ${k} = ${comeScritto(`${nome}${k}`, tipoSemplice(f.return_type!))}`);
     } else if (f.kind === "function") scrivi(`→ ${comeScritto(chiamataDiF, tipoSemplice(f.return_type!))}`, true);
     else if (riferimenti.length === 0) righe.push({ testo: `${rientro}${chiamataDiF};`, ...delCaso });
     else {
@@ -1008,7 +1083,7 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
         const pezzi: [string, TipoDelDato][] =
           d.type === "record" ? campiScritti(d.record, d.name)
           : d.size === undefined ? [[d.name, d.type]]
-          : posizioni(d.size, undefined).map((k) => [`${d.name}${k}`, d.type]);
+          : posizioni(d.size, d.columns).map((k) => [`${d.name}${k}`, d.type]);
         for (const [nome, t] of pezzi) scrivi(`${nome} = ${comeScritto(nome, t)}`);
       }
     }

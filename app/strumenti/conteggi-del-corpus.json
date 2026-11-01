@@ -1,20 +1,20 @@
 {
   "fatti": {
-    "impronta": "10180dd78355adad9efcaa1ed643e9422263998c50addf49c29ead62ffb0acf6",
+    "impronta": "48a93fdddd9dd70f10e74bc7623d631beb4ad43acfe10f98450ac4143d886495",
     "file": {
       "tappa-1": 60,
       "tappa-2": 16,
       "tappa-3": 54,
       "tappa-4": 23,
-      "tipi": 31,
-      "totale": 184
+      "tipi": 32,
+      "totale": 185
     },
     "tipi": {
       "record": 17,
-      "matrici": 13,
+      "matrici": 14,
       "tabelle": 6,
       "conErroreStatico": 9,
-      "senzaLetture": 16,
+      "senzaLetture": 17,
       "tabelleSenzaLetture": 3
     }
   },
@@ -62,15 +62,15 @@
   },
   "denominatori": {
     "accademico - esiti sul corpus": [
-      184,
+      185,
       36,
       19,
-      129
+      130
     ],
-    "accademico - file con le mancanze": 140,
+    "accademico - file con le mancanze": 141,
     "accademico - matrici, giuste e tutte": [
-      9,
-      13
+      10,
+      14
     ],
     "accademico - record, giusti e tutti": [
       7,
@@ -96,7 +96,7 @@
     "campi - file del corpus": 153,
     "casi - file delle tappe 2 e 3": 70,
     "casi dalla esecuzione - riga del totale": "totale 194: uguali 181, esclusi errore statico 10, riga non valida 2, voci finite 1",
-    "controllo - file controllati del corpus": 184,
+    "controllo - file controllati del corpus": 185,
     "controllo dato per dato - file della tappa 1": 60,
     "disegno e2e - copie col nome nella tappa 3": 2,
     "disegno e2e - funzioni delle tappe 3 e 4, dei progetti coi salti": [
@@ -118,8 +118,8 @@
       "casi": 32
     },
     "esempi - file dei tipi, con le matrici": [
-      31,
-      13
+      32,
+      14
     ],
     "esempi - file delle tappe 3 e 4, con un risultato": [
       54,
@@ -185,11 +185,21 @@
       "tipi/carattere-di-un-risultato",
       "tipi/copia-con-un-campo-senza-valore",
       "tipi/copia-di-un-record",
+      "tipi/copia-di-una-matrice",
       "tipi/copie-di-un-record",
+      "tipi/diagonale-di-stringhe",
       "tipi/funzione-con-un-record",
+      "tipi/indice-fuori-dalla-matrice",
+      "tipi/matrice-come-parametro",
+      "tipi/matrice-di-stringhe",
+      "tipi/matrice-in-un-programma",
       "tipi/record-in-un-programma",
       "tipi/record-per-riferimento",
-      "tipi/riferimento-a-un-record-senza-valore"
+      "tipi/riferimento-a-un-record-senza-valore",
+      "tipi/riga-di-un-risultato-in-stringa",
+      "tipi/riga-sostituita-nel-per-ogni",
+      "tipi/righe-calcolate",
+      "tipi/stessa-cella-della-matrice"
     ],
     "genera typescript - programmi col giro, nelle due lingue": 46,
     "genera typescript - tappa 2 (generati, blocchi, cicli)": [
@@ -207,7 +217,7 @@
     "interprete - errori statici attesi del corpus": 19,
     "matrici - casi delle funzioni della cartella": 5,
     "matrici - file giusti e sbagliati": [
-      9,
+      10,
       4
     ],
     "nomi - blocchi col valore iniziale nella tappa 1": 120,

@@ -77,6 +77,8 @@ describe("l'andata e ritorno sui file del corpus che si scrivono", () => {
     console.log(`andata e ritorno: ${conIlCodice.length} file × ${lingue.length} lingue, ${righe} righe identiche`);
   });
 
+  // Un limite di tempo suo, 30 s: da sola la prova dura meno di 3 s, ma in due corse intere su una macchina rallentata
+  // ha preso 12,4 e 12,0 s, e il limite di 5 s di Bun la dava rossa senza un difetto.
   test("i casi d'uso del file originale sul progetto letto: lo stesso output a meno degli a capo e lo stesso errore", () => {
     let casi = 0;
     let conIlBooleano = 0;
@@ -104,7 +106,7 @@ describe("l'andata e ritorno sui file del corpus che si scrivono", () => {
     // i denominatori: i 37 casi dei 36 file, e i 2 casi dei 2 file col booleano
     expect([casi, conIlBooleano]).toEqual([37, 2]);
     console.log(`casi sul progetto letto: ${casi}, di cui ${conIlBooleano} coi booleani letti come 1 e 0`);
-  });
+  }, 30_000);
 });
 
 /** Il programma con le forme che il corpus che si scrive non ha. */

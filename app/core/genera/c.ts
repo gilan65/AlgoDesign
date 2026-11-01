@@ -825,7 +825,14 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
     return { ...resto, size: columns! };
   };
 
-  const baseDi = (e: Espressione) => (e.genere === "nome" ? e.nome : e.genere === "indice" && e.base.genere === "nome" ? e.base.nome : undefined);
+  /** Il dato di un nome, di un suo elemento o di una riga (`m[j][i]`: `m`), dove una stringa può essere quella che la
+   * riceve: con indici diversi nel testo, a runtime possono essere la stessa cella (la diagonale di `m[i][j] ← m[j][i]`).
+   * Il carattere di una stringa non scende oltre la stringa. */
+  const baseDi = (e: Espressione): string | undefined =>
+    e.genere === "nome" ? e.nome
+    : e.genere === "indice" && e.base.genere === "nome" ? e.base.nome
+    : e.genere === "indice" && e.base.genere === "indice" && vettore(e.base) ? baseDi(e.base)
+    : undefined;
 
   /** Un valore in un dato: una stringa si copia (con `memmove` dallo stesso dato, che può essere lo stesso elemento). */
   const valoreNelDato = (v: Espressione, destinazione: string, d: Dato): string => {
@@ -884,12 +891,16 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       return;
     }
     const i = indice();
+    // Dallo stesso dato, anche con indici diversi nel testo: la riga `m[i] ← m[j]` con `i` uguale a `j` copia ogni stringa
+    // su sé stessa, e `strcpy` su due stringhe che si sovrappongono non ha regola (`memmove` sì).
+    const base = v.genere === "chiamata" ? undefined : baseDi(v);
+    const stesso = sorgente === destinazione || (base !== undefined && (destinazione === base || destinazione.startsWith(`${base}[`)));
     if (d.type === "record") {
       // Una tabella: il ciclo dei record, con dentro una riga per campo, ognuna col campo che copia (lo stesso record: le
       // stringhe hanno la stessa lunghezza).
       corpo.push({ testo: `${r}for (${i} = 0; ${i} < ${d.size}; ${i}++) {`, blocco: id, ...fasi("inizio", "condizione", "passo") });
       campiDi(d.record).forEach((c, k) => {
-        const copia = calcola(r, id, () => elementoInElemento(`${destinazione}[${i}].${c.name}`, `${sorgente}[${i}].${c.name}`, c, c.max_length ?? lunghezzaPredefinita, sorgente === destinazione));
+        const copia = calcola(r, id, () => elementoInElemento(`${destinazione}[${i}].${c.name}`, `${sorgente}[${i}].${c.name}`, c, c.max_length ?? lunghezzaPredefinita, stesso));
         corpo.push({ testo: `${r}${rientro}${copia}`, blocco: id, ...fasi("elemento"), ...(conFasi ? { campo: k } : {}) });
       });
       struttura(`${r}}`);
@@ -901,11 +912,11 @@ function righeDelC(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiDati, prov
       const j = indice(2);
       corpo[corpo.length - 1] = { ...corpo.at(-1)!, ...(conFasi ? { interno: false } : {}) };
       corpo.push({ testo: `${r}${rientro}for (${j} = 0; ${j} < ${d.columns}; ${j}++)`, blocco: id, ...fasi("inizio", "condizione", "passo"), ...(conFasi ? { interno: true } : {}) });
-      const copia = calcola(r, id, () => elementoInElemento(`${destinazione}[${i}][${j}]`, `${sorgente}[${i}][${j}]`, d, lunghezzaDellaSorgente, sorgente === destinazione));
+      const copia = calcola(r, id, () => elementoInElemento(`${destinazione}[${i}][${j}]`, `${sorgente}[${i}][${j}]`, d, lunghezzaDellaSorgente, stesso));
       corpo.push({ testo: `${r}${rientro.repeat(2)}${copia}`, blocco: id, ...fasi("elemento"), ...(conFasi ? { interno: true } : {}) });
       return;
     }
-    const copia = calcola(r, id, () => elementoInElemento(`${destinazione}[${i}]`, `${sorgente}[${i}]`, d, lunghezzaDellaSorgente, sorgente === destinazione));
+    const copia = calcola(r, id, () => elementoInElemento(`${destinazione}[${i}]`, `${sorgente}[${i}]`, d, lunghezzaDellaSorgente, stesso));
     corpo.push({ testo: `${r}${rientro}${copia}`, blocco: id, ...fasi("elemento") });
   }
 
