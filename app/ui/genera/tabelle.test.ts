@@ -48,11 +48,11 @@ test("ogni linguaggio scrive le tabelle: generato il progetto giusto, con gli er
     const atteso = !k.fuoriTappa && k.errori.length > 0 ? "errori-statici" : "generato";
     const ottenuti = linguaggi.map((v) => {
       const g = v.genera(p, tetti, "it", paroleDelloPseudocodice("it"), undefined);
-      return g.generato ? "generato" : g.perche;
+      return g.generato ? "generato" : g.perche === "non-ancora" ? `non-ancora: ${g.costrutto}` : g.perche;
     });
     // «Accademico» non ha le tabelle: per lui il progetto giusto non ci sta.
-    // Il TypeScript non li sa ancora scrivere: per lui il progetto giusto è «non ancora».
-    const giusto = linguaggi.every((v, i) => ottenuti[i] === (atteso === "generato" && v.id === "accademico" ? "non-ci-sta" : atteso === "generato" && v.id === "typescript" ? "non-ancora" : atteso));
+    // Il TypeScript non sa ancora scrivere le tabelle (i record sì): per lui il progetto giusto è «non ancora» per la tabella.
+    const giusto = linguaggi.every((v, i) => ottenuti[i] === (atteso === "generato" && v.id === "accademico" ? "non-ci-sta" : atteso === "generato" && v.id === "typescript" ? "non-ancora: la tabella" : atteso));
     return { nome, giusto, atteso, ottenuti };
   });
   expect(esiti.filter((e) => !e.giusto)).toEqual([]);

@@ -10,7 +10,9 @@
 // scrittura spezzata, la concatenazione col carattere 0 dopo il lato destro); della tappa 2 il `per` del corpus, il `per
 // ogni` su una stringa, la parola al contrario, e un programma con le forme della tappa 2 (il passo negativo, il `per`
 // senza giri, il `per ogni` dentro un altro, l'elemento stringa da `al_piu`, gli indici nascosti dichiarati); della tappa
-// 4 la torre di Hanoi e il giro attraverso una funzione (il valore del giro e la chiamata in coda in `_valore`). Le funzioni di supporto sono scritte qui
+// 4 la torre di Hanoi e il giro attraverso una funzione (il valore del giro e la chiamata in coda in `_valore`); dei
+// record quattro programmi del corpus (la costante, le copie per valore, dal risultato e col nome, il riferimento, l'uscita,
+// il campo per riferimento, la lettura in un campo) e due programmi di prova. Le funzioni di supporto sono scritte qui
 // una volta per lingua e messe in coda a ogni programma che le usa, nell'ordine fisso. Le righe allineate dicono a mano
 // quanti spazi vanno prima del commento.
 import type { Progetto } from "../../core/progetto/modello";
@@ -715,7 +717,8 @@ const fermatiDelGiro = (l: Lingua, delProgramma: readonly string[]): readonly st
   );
 };
 
-/** Un programma intero: la testa col nome, gli import di ciò che legge e scrive, le costanti comuni, il programma
+/** Un programma intero: la testa col nome, gli import di ciò che legge e scrive, le classi dei record (`classi`, le
+ * righe di tutte, separate fra loro da due righe vuote), le costanti comuni, il programma
  * principale (le righe con `{chiave}` per i nomi delle funzioni di supporto; un programma che legge, scrive o si ferma
  * prepara la console nella prima riga di `main`), le procedure e le funzioni del progetto (`delProgramma`, ognuna coi suoi
  * nomi e con le sue righe, con `{chiave}` come quelle di `main`), le funzioni di supporto usate con quelle che chiamano,
@@ -727,6 +730,7 @@ export function programma(
   usate: readonly Supporto[],
   costanti: readonly string[] = [],
   delProgramma: readonly { readonly nome: string; readonly righe: readonly string[] }[] = [],
+  classi: readonly (readonly string[])[] = [],
 ): string {
   const tutte = new Set<Supporto>(usate);
   for (const f of [...tutte]) for (const g of chiama[f] ?? []) tutte.add(g);
@@ -745,6 +749,7 @@ export function programma(
     ...testa[l],
     ...(conLaConsole ? ['import { execSync } from "node:child_process";'] : []),
     ...(letti.length === 0 ? [] : [`import { ${letti.join(", ")} } from "node:fs";`]),
+    ...classi.flatMap((c) => ["", "", ...c]),
     ...(costanti.length === 0 ? [] : ["", l === "it" ? "// Costanti comuni" : "// Shared constants", ...costanti]),
     "",
     "",
@@ -1324,8 +1329,207 @@ const giroAttraversoUnaFunzione = (l: Lingua) => {
   );
 };
 
+// Il record: una classe come quella di dati del Python, coi campi `nome!: string`, dal suo generato
+// letto prima (`tipi/record-in-un-programma`, `copia-di-un-record`, `funzione-con-un-record`, `record-per-riferimento`).
+
+/** La classe del record `alunno` del corpus dei tipi: i campi senza valore finché non ne hanno uno, il costruttore coi
+ * parametri facoltativi nell'ordine dei campi. */
+const classeAlunno: readonly string[] = [
+  "class alunno {",
+  "  nome!: string;",
+  "  classe!: string;",
+  "  voto!: number;",
+  "",
+  "  constructor(nome?: string, classe?: string, voto?: number) {",
+  "    this.nome = nome!;",
+  "    this.classe = classe!;",
+  "    this.voto = voto!;",
+  "  }",
+  "}",
+];
+
+/** Il record costante, il record per valore copiato per primo, il record restituito dal nome come un oggetto nuovo. */
+const recordInUnProgramma = (l: Lingua) =>
+  programma(
+    l,
+    "record-in-un-programma",
+    ["function main(): void {", "  let a: alunno = new alunno();", "  a = promosso(primo);", "  {scrivi}(`${a.nome} ${a.classe} ${a.voto} ${primo.voto}\\n`);", "}"],
+    ["scrivi"],
+    ['const primo: alunno = new alunno("Anna", "3A", 7);'],
+    [
+      {
+        nome: "promosso",
+        righe: [
+          "function promosso(x: alunno): alunno {",
+          "  x = new alunno(x.nome, x.classe, x.voto);",
+          "  x.voto = x.voto + 1;",
+          "  return new alunno(x.nome, x.classe, x.voto);",
+          "}",
+        ],
+      },
+    ],
+    [classeAlunno],
+  );
+
+/** La copia col nome, una riga per campo: dopo, i due record sono due oggetti. */
+const copiaDiUnRecord = (l: Lingua) =>
+  programma(
+    l,
+    "copia-di-un-record",
+    [
+      "function main(): void {",
+      '  let a: alunno = new alunno("Anna", "3A", 7);',
+      "  let b: alunno = new alunno();",
+      "  b.nome = a.nome;",
+      "  b.classe = a.classe;",
+      "  b.voto = a.voto;",
+      "  b.voto = 9;",
+      "  {scrivi}(`${a.voto} ${b.voto}\\n`);",
+      '  a.nome = "Bruno";',
+      "  {scrivi}(`${a.nome} ${b.nome}\\n`);",
+      "}",
+    ],
+    ["scrivi"],
+    [],
+    [],
+    [classeAlunno],
+  );
+
+/** La funzione che restituisce un record: i due record per valore copiati, la copia col nome nei due rami, il risultato
+ * un oggetto nuovo; il campo del risultato di una chiamata. */
+const migliore: readonly string[] = [
+  "function migliore(p: alunno, q: alunno): alunno {",
+  "  p = new alunno(p.nome, p.classe, p.voto);",
+  "  q = new alunno(q.nome, q.classe, q.voto);",
+  "  let r: alunno = new alunno();",
+  "  if (p.voto >= q.voto) {",
+  "    r.nome = p.nome;",
+  "    r.classe = p.classe;",
+  "    r.voto = p.voto;",
+  "  } else {",
+  "    r.nome = q.nome;",
+  "    r.classe = q.classe;",
+  "    r.voto = q.voto;",
+  "  }",
+  "  return new alunno(r.nome, r.classe, r.voto);",
+  "}",
+];
+const funzioneConUnRecord = (l: Lingua) =>
+  programma(
+    l,
+    "funzione-con-un-record",
+    [
+      "function main(): void {",
+      '  let a: alunno = new alunno("Anna", "3A", 7);',
+      '  let b: alunno = new alunno("Bruno", "3B", 9);',
+      "  let m: alunno = new alunno();",
+      "  {scrivi}(`${migliore(a, b).nome} ${migliore(a, b).voto}\\n`);",
+      "  m = migliore(a, b);",
+      "  m.voto = 10;",
+      "  b.voto = 1;",
+      "  {scrivi}(`${b.voto} ${m.voto}\\n`);",
+      "}",
+    ],
+    ["scrivi"],
+    [],
+    [{ nome: "migliore", righe: migliore }],
+    [classeAlunno],
+  );
+
+/** Il record per riferimento restituito (lo stesso oggetto di chi chiama), il campo per riferimento come un dato, il record
+ * per uscita dichiarato dalla procedura, la lettura in un campo. */
+const promuovi: readonly string[] = ["function promuovi(r: alunno): alunno {", "  r.voto = r.voto + 1;", "  return r;", "}"];
+const recordPerRiferimento = (l: Lingua) =>
+  programma(
+    l,
+    "record-per-riferimento",
+    [
+      "function main(): void {",
+      '  let a: alunno = new alunno("Anna", "3A", 7);',
+      "  let c: alunno = new alunno();",
+      "  let s: alunno = new alunno();",
+      "  a.nome = {leggiStringa}(20);",
+      "  a = promuovi(a);",
+      "  a.voto = raddoppia(a.voto);",
+      "  c = crea();",
+      "  s.nome = c.nome;",
+      "  s.classe = c.classe;",
+      "  s.voto = c.voto;",
+      "  s = promuovi(s);",
+      "  {scrivi}(`${a.voto} ${c.voto} ${s.voto} ${a.nome}\\n`);",
+      "}",
+    ],
+    ["leggiStringa", "scrivi"],
+    [],
+    [
+      { nome: "promuovi", righe: promuovi },
+      { nome: "raddoppia", righe: ["function raddoppia(n: number): number {", "  n = n * 2;", "  return n;", "}"] },
+      {
+        nome: "crea",
+        righe: ["function crea(): alunno {", "  let r: alunno = new alunno();", '  r.nome = "Carla";', '  r.classe = "2B";', "  r.voto = 6;", "  return r;", "}"],
+      },
+    ],
+    [classeAlunno],
+  );
+
+/** I programmi di prova coi record: un campo per voce nell'ordine dei campi, una riga scritta per campo. */
+export const delleProveDeiRecord: Readonly<Record<string, { readonly funzione: string; readonly caso: string; readonly atteso: Atteso }>> = {
+  "tipi/record-per-riferimento": {
+    funzione: "promuovi",
+    caso: "da-solo",
+    atteso: inDueLingue((l) =>
+      programma(
+        l,
+        "record-per-riferimento",
+        [
+          "function main(): void {",
+          "  let r: alunno = new alunno({leggiStringa}(20), {leggiStringa}(3), {leggiIntero}());",
+          "  r = promuovi(r);",
+          "  {scrivi}(`\\n`);",
+          "  {scrivi}(`r.nome = ${r.nome}\\n`);",
+          "  {scrivi}(`r.classe = ${r.classe}\\n`);",
+          "  {scrivi}(`r.voto = ${r.voto}\\n`);",
+          "}",
+        ],
+        ["leggiStringa", "leggiIntero", "scrivi"],
+        [],
+        [{ nome: "promuovi", righe: promuovi }],
+        [classeAlunno],
+      ),
+    ),
+  },
+  "tipi/funzione-con-un-record": {
+    funzione: "migliore",
+    caso: "da-sola",
+    atteso: inDueLingue((l) =>
+      programma(
+        l,
+        "funzione-con-un-record",
+        [
+          "function main(): void {",
+          "  let p: alunno = new alunno({leggiStringa}(20), {leggiStringa}(3), {leggiIntero}());",
+          "  let q: alunno = new alunno({leggiStringa}(20), {leggiStringa}(3), {leggiIntero}());",
+          `  let ${risultato(l)}: alunno = migliore(p, q);`,
+          `  {scrivi}(\`→ .nome = \${${risultato(l)}.nome}\\n\`);`,
+          `  {scrivi}(\`→ .classe = \${${risultato(l)}.classe}\\n\`);`,
+          `  {scrivi}(\`→ .voto = \${${risultato(l)}.voto}\\n\`);`,
+          "}",
+        ],
+        ["leggiStringa", "leggiIntero", "scrivi"],
+        [],
+        [{ nome: "migliore", righe: migliore }],
+        [classeAlunno],
+      ),
+    ),
+  },
+};
+
 /** I programmi del corpus, per percorso del file (senza `.algo`), nelle due lingue. */
 export const delCorpus: Readonly<Record<string, Atteso>> = {
+  "tipi/record-in-un-programma": inDueLingue(recordInUnProgramma),
+  "tipi/copia-di-un-record": inDueLingue(copiaDiUnRecord),
+  "tipi/funzione-con-un-record": inDueLingue(funzioneConUnRecord),
+  "tipi/record-per-riferimento": inDueLingue(recordPerRiferimento),
   "tappa-1/assegnazione-intero": inDueLingue(assegnazioneIntero),
   "tappa-1/assegnazione-booleano": inDueLingue(assegnazioneBooleano),
   "tappa-1/scrittura-stringa": inDueLingue(scritturaStringa),
