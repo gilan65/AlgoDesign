@@ -21,7 +21,7 @@
 //    scritto lì).
 // 5. CARTELLA: `dist/<versione>/` alla radice del repository (`dist/prova/<versione>/` con `--prova`), con le voci di `elencoDelPacchetto`; i testi per l'utente
 //    dalla cartella di `--testi`, tracciati dal repository (una cartella fuori, come le note di una versione di prima
-//    rimaste fra i documenti di lavoro, è rossa), con `{{versione}}` e `{{data}}` sostituiti (un segnaposto rimasto, un nome
+//    rimaste fra i documenti di lavoro, è rossa), con `{{versione}}`, `{{delData}}` e `{{date}}` sostituiti (un segnaposto rimasto, un nome
 //    fra due graffe doppie, è rosso; il valore di una matrice come `{{1, 2}, {3, 4}}` no, con le sue sonde); le guide per lo
 //    studente, la guida ad «Accademico» e quella dello strumento da `docs/` del repository, così come sono (valgono per la versione del prodotto; un segnaposto è rosso); `README.md` e
 //    `LEGGIMI.md` dalla radice, così come sono, rossi se non dicono la cartella della versione (`AlgoDesign-<versione>`);
@@ -78,7 +78,7 @@ import { createHash } from "node:crypto";
 import { homedir, tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { delCorpus } from "../ui/genera/attesi-di-accademico";
-import { dataMostrata } from "../ui/prodotto";
+import { dataConPreposizione, dataMostrata } from "../ui/prodotto";
 import {
   differenzeDallElenco,
   documentiDellaRadice,
@@ -153,7 +153,7 @@ const nomiS = nomiDelloStrumento(testoDelPackageJson);
 const cartellaDelloStrumento = join(dist, nomiS.cartella);
 const zipDelloStrumento = join(dist, nomiS.zip);
 const eseguibileS = "algodesign-tools.exe";
-const data = dataMostrata(dataDiRilascio, "it");
+const delData = dataConPreposizione(dataDiRilascio, "it");
 
 /** Lo stato dell'albero: il commit e le righe di `git status`. */
 async function statoDellAlbero(): Promise<{ commit: string; modificati: string[] }> {
@@ -301,15 +301,15 @@ function sondaDeiSegnaposto(clausola: string): void {
   if (JSON.stringify(visti) !== JSON.stringify([true, true, false, false])) rosso(clausola, `il rilevatore dei segnaposto sbaglia sulle sue sonde: ${JSON.stringify(visti)}`);
 }
 
-/** Un testo per l'utente dalla cartella di `--testi`, con `{{versione}}` e `{{data}}` sostituiti: un segnaposto rimasto
+/** Un testo per l'utente dalla cartella di `--testi`, con `{{versione}}`, `{{delData}}` e `{{date}}` sostituiti: un segnaposto rimasto
  * è rosso. */
 function testoConISegnaposto(clausola: string, t: string): string {
   const sorgente = join(cartellaTesti!, t);
   if (!existsSync(sorgente)) rosso(clausola, `manca il testo ${sorgente}`);
-  const testo = readFileSync(sorgente, "utf8").replaceAll("{{versione}}", nomi.versione).replaceAll("{{data}}", data);
+  const testo = readFileSync(sorgente, "utf8").replaceAll("{{versione}}", nomi.versione).replaceAll("{{delData}}", delData).replaceAll("{{date}}", dataMostrata(dataDiRilascio, "en"));
   sondaDeiSegnaposto(clausola);
   const rimasto = segnaposto.exec(testo);
-  if (rimasto) rosso(clausola, `${t}: «${rimasto[0]}» non sostituito (si sostituiscono solo {{versione}} e {{data}})`);
+  if (rimasto) rosso(clausola, `${t}: «${rimasto[0]}» non sostituito (si sostituiscono solo {{versione}}, {{delData}} e {{date}})`);
   return testo;
 }
 
@@ -378,7 +378,7 @@ async function componi(rilascio: string): Promise<void> {
   const sonda = confrontoConLElenco("CARTELLA", trovate, elencoDelPacchetto);
   if (readdirSync(join(cartella, "data")).length > 0) rosso("CARTELLA", "data non è vuota");
   riga(
-    `CARTELLA: VERDE | ${relative(repository, cartella)} con le ${trovate.length} voci dell'elenco (${trovate.join(", ")}) | testi del ${data} | licenze di terze parti: ${l.js} librerie JavaScript, ${l.rust} Rust, ${l.testi} testi, ${Buffer.byteLength(l.testo)} byte | controllo positivo acceso (${sonda})`,
+    `CARTELLA: VERDE | ${relative(repository, cartella)} con le ${trovate.length} voci dell'elenco (${trovate.join(", ")}) | testi ${delData} | licenze di terze parti: ${l.js} librerie JavaScript, ${l.rust} Rust, ${l.testi} testi, ${Buffer.byteLength(l.testo)} byte | controllo positivo acceso (${sonda})`,
   );
 }
 

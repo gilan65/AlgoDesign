@@ -1,6 +1,6 @@
 # The command-line tool of AlgoDesign {{versione}}
 
-Version of {{data}}, for 64-bit Windows 10 and 11.
+Version of {{date}}, for 64-bit Windows 10 and 11.
 
 `algodesign-tools.exe` is an application of its own, with no windows and two commands:
 

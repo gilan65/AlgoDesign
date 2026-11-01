@@ -46,7 +46,7 @@ import { en } from "../i18n/en";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
 import { fileDa, scelteIniziali } from "../ui/preferenze";
-import { dataMostrata } from "../ui/prodotto";
+import { dataConPreposizione } from "../ui/prodotto";
 import { aggiungiStile, apri, apriVuota, costruisciFinzione, voceDellAiuto } from "./pagina";
 
 test.beforeAll(costruisciFinzione);
@@ -349,7 +349,7 @@ test("il menu «Aiuto» è l'ultimo della barra, alla destra di «Impostazioni»
   await page.keyboard.press("Enter");
   const informazioni = page.getByRole("dialog", { name: it.informazioniTitolo, exact: true });
   await expect(informazioni).toBeVisible();
-  await expect(informazioni.locator("[data-versione]")).toHaveText(riempi(it.informazioniVersione, { versione: pacchetto.version, data: dataMostrata(pacchetto.dataDiRilascio, "it") }));
+  await expect(informazioni.locator("[data-versione]")).toHaveText(riempi(it.informazioniVersione, { versione: pacchetto.version, data: dataConPreposizione(pacchetto.dataDiRilascio, "it") }));
   await expect(informazioni).toContainText(it.informazioniLicenza);
   await expect.poll(() => informazioni.evaluate((el) => el.contains(document.activeElement))).toBe(true);
   await page.keyboard.press("Escape");

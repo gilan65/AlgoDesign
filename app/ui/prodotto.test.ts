@@ -18,7 +18,7 @@
 //   pacchetto, quando lo compone (rosso se diverse), non qui;
 // - che la data della versione sia quella vera del rilascio: si cambia a mano, insieme alla versione.
 import { expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { createElement } from "react";
 import { act, render } from "@testing-library/react";
@@ -29,7 +29,7 @@ import { nomeApplicazione } from "../core/applicazione";
 import { FinestraInformazioni } from "./finestre/FinestraInformazioni";
 import { elencoDelloStrumento, elencoDelPacchetto, elencoDiLinux, guidaAdAccademico, guidaDelloStrumento, nomiDelloStrumento, nomiDelPacchetto } from "../strumenti/elenco-del-pacchetto";
 import { politicaDelProdotto } from "../strumenti/politica";
-import { dataDellaVersione, dataMostrata, versione, versioneDiProva } from "./prodotto";
+import { dataConPreposizione, dataDellaVersione, dataMostrata, versione, versioneDiProva } from "./prodotto";
 
 const app = join(import.meta.dir, "..");
 const leggi = (percorso: string) => readFileSync(join(app, percorso), "utf8");
@@ -198,7 +198,7 @@ test("il registro delle modifiche comincia dalla versione dei file e dalla sua d
   expect(prima).toBe(`## ${versione}, ${dataMostrata(dataDellaVersione, "it")}`);
   const readme = [
     { nome: "README.md", riga: `Version ${versione} of ${dataMostrata(dataDellaVersione, "en")},` },
-    { nome: "LEGGIMI.md", riga: `Versione ${versione} del ${dataMostrata(dataDellaVersione, "it")},` },
+    { nome: "LEGGIMI.md", riga: `Versione ${versione} ${dataConPreposizione(dataDellaVersione, "it")},` },
   ];
   expect(readme.map((r) => [r.nome, readFileSync(join(radice, r.nome), "utf8").includes(r.riga)])).toEqual(readme.map((r) => [r.nome, true]));
   // Il nome dello zip dello strumento nei due README è quello della versione (un nome dimenticato alla
@@ -237,6 +237,31 @@ test("la data della versione è una data vera, e si legge nelle due lingue", () 
   }
 });
 
+test("in italiano la data dopo «Versione» vuole «dell'» davanti a 1, 8 e 11 e «del» davanti agli altri giorni; in inglese è la data sola", () => {
+  const giorni = Array.from({ length: 31 }, (_, i) => i + 1);
+  const conLElisione = giorni.filter((g) => dataConPreposizione(`2026-10-${String(g).padStart(2, "0")}`, "it").startsWith("dell'"));
+  expect(conLElisione).toEqual([1, 8, 11]);
+  expect(giorni.filter((g) => dataConPreposizione(`2026-10-${String(g).padStart(2, "0")}`, "it").startsWith("del "))).toHaveLength(28);
+  expect(dataConPreposizione("2026-11-01", "it")).toBe("dell'1 novembre 2026");
+  expect(dataConPreposizione("2026-10-20", "it")).toBe("del 20 ottobre 2026");
+  expect(dataConPreposizione("2026-11-01", "en")).toBe("1 November 2026");
+  expect(riempi(it.informazioniVersione, { versione: "0.7.0-beta.3", data: dataConPreposizione("2026-11-01", "it") })).toBe("Versione 0.7.0-beta.3 dell'1 novembre 2026");
+});
+
+test("nei testi del pacchetto la data è scritta solo con i segnaposto che la dicono giusta: {{delData}} in italiano, {{date}} in inglese", () => {
+  const cartella = join(dirname(app), "rilascio");
+  const testi = readdirSync(cartella, { recursive: true, encoding: "utf8" }).filter((f) => f.endsWith(".md"));
+  const nomi = (t: string) => [...t.matchAll(/\{\{([^{}]*)\}\}/g)].map((m) => m[1]!);
+  const usati = new Set(testi.flatMap((f) => nomi(readFileSync(join(cartella, f), "utf8"))));
+  expect([...usati].sort()).toEqual(["date", "delData", "versione"]);
+  // Il solo testo inglese che dice la data ha {{date}}, gli italiani {{delData}}: i testi di ciascuno, con la cardinalità nel confronto.
+  const conLaData = (n: string) => testi.filter((f) => nomi(readFileSync(join(cartella, f), "utf8")).includes(n)).map((f) => f.replaceAll("\\", "/")).sort();
+  expect(conLaData("date")).toEqual(["windows/README-OF-ALGODESIGN-TOOLS.md"]);
+  expect(conLaData("delData")).toEqual(["linux/ALGODESIGN-PER-LINUX.md", "linux/NOTE-DI-RILASCIO.md", "windows/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "windows/NOTE-DI-RILASCIO.md"]);
+  // Controllo positivo del rilevatore: un segnaposto vecchio si vede.
+  expect(nomi("Versione del {{data}}.")).toEqual(["data"]);
+});
+
 test("la finestra delle informazioni mostra la versione dei file e la sua data, nelle due lingue", async () => {
   const fonte = JSON.parse(file()["package.json"]!) as { version: string; dataDiRilascio: string };
   for (const [lingua, testi] of [
@@ -245,7 +270,7 @@ test("la finestra delle informazioni mostra la versione dei file e la sua data, 
   ] as const) {
     const r = await act(async () => render(createElement(FinestraInformazioni, { aperta: true, testi, lingua, chiudi: () => undefined })));
     const finestra = document.querySelector('[role="dialog"]');
-    expect(finestra?.querySelector("[data-versione]")?.textContent).toBe(riempi(testi.informazioniVersione, { versione: fonte.version, data: dataMostrata(fonte.dataDiRilascio, lingua) }));
+    expect(finestra?.querySelector("[data-versione]")?.textContent).toBe(riempi(testi.informazioniVersione, { versione: fonte.version, data: dataConPreposizione(fonte.dataDiRilascio, lingua) }));
     for (const t of [testi.informazioniTitolo, testi.informazioniLicenza, testi.informazioniFile, testi.informazioniDocumenti]) expect(finestra?.textContent).toContain(t);
     // La frase della versione beta c'è se e solo se la versione dei file ha un suffisso.
     expect(finestra?.textContent?.includes(testi.informazioniProva)).toBe(versioneDiProva(fonte.version));

@@ -1,6 +1,6 @@
 # AlgoDesign {{versione}}: note di rilascio
 
-Versione del {{data}}. È la **quarta versione di prova** (ALPHA 4) di AlgoDesign, qui **per Linux** a 64 bit, in una **copia di prova riservata**: la versione per Linux è stata provata solo in parte e mai su un desktop vero. È un'AppImage portabile: si estrae l'archivio e si avvia `AlgoDesign.AppImage`, senza installarla. Come si avvia, i requisiti e i **limiti della versione per Linux** sono nel file `ALGODESIGN-PER-LINUX.md`; come si usa è nella guida per lo studente, `GUIDA-PER-LO-STUDENTE.md`, che vale anche qui, con gli stessi tasti di Windows.
+Versione {{delData}}. È la **quarta versione di prova** (ALPHA 4) di AlgoDesign, qui **per Linux** a 64 bit, in una **copia di prova riservata**: la versione per Linux è stata provata solo in parte e mai su un desktop vero. È un'AppImage portabile: si estrae l'archivio e si avvia `AlgoDesign.AppImage`, senza installarla. Come si avvia, i requisiti e i **limiti della versione per Linux** sono nel file `ALGODESIGN-PER-LINUX.md`; come si usa è nella guida per lo studente, `GUIDA-PER-LO-STUDENTE.md`, che vale anche qui, con gli stessi tasti di Windows.
 
 Una versione di prova serve a provare il programma in aula e a raccogliere osservazioni: alcune funzioni mancano ancora, e altre possono cambiare nelle prossime versioni.
 

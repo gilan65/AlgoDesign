@@ -2,7 +2,7 @@
 
 **Progettare algoritmi con i flowchart, eseguirli passo passo e tradurli in pseudocodice, Python e C.**
 
-Versione {{versione}} del {{data}}, **per Linux**.
+Versione {{versione}} {{delData}}, **per Linux**.
 
 > **Una versione di prova riservata.** Questa copia per Linux è data ad alcuni studenti prima che la versione per Linux sia stata provata del tutto: è la stessa AlgoDesign della versione per Windows, ma su Linux è stata provata solo in parte e mai su un desktop vero. Può avere difetti che su Windows non ci sono. Leggi la sezione **«Limiti della versione per Linux»** prima di usarla, e salva spesso. Non diffonderla: le versioni pubbliche si scaricano dalla pagina del progetto.
 

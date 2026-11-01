@@ -18,3 +18,10 @@ export function dataMostrata(data: string, lingua: Lingua): string {
   const giorno = new Date(`${data}T00:00:00Z`);
   return new Intl.DateTimeFormat(lingua === "it" ? "it-IT" : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(giorno);
 }
+
+/** La data dopo «Versione …»: in italiano con la preposizione, elisa davanti a 1, 8 e 11 («dell'1 novembre 2026», «del 20 ottobre 2026»); in inglese la data sola. */
+export function dataConPreposizione(data: string, lingua: Lingua): string {
+  const mostrata = dataMostrata(data, lingua);
+  if (lingua !== "it") return mostrata;
+  return /^(1|8|11) /.test(mostrata) ? `dell'${mostrata}` : `del ${mostrata}`;
+}

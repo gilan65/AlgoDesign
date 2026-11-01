@@ -5,7 +5,7 @@
 import { useRef, type ReactElement } from "react";
 import type { Dizionario } from "../../i18n/it";
 import { riempi, type Lingua } from "../../i18n/lingue";
-import { dataDellaVersione, dataMostrata, versione, versioneDiProva } from "../prodotto";
+import { dataConPreposizione, dataDellaVersione, versione, versioneDiProva } from "../prodotto";
 import { Descrizione, Finestra, Rinuncia, stili } from "./Finestra";
 
 export function FinestraInformazioni({ aperta, testi, lingua, chiudi }: { aperta: boolean; testi: Dizionario; lingua: Lingua; chiudi: () => void }): ReactElement {
@@ -16,7 +16,7 @@ export function FinestraInformazioni({ aperta, testi, lingua, chiudi }: { aperta
       <Descrizione className={stili.spiegazione}>{testi.informazioniMotto}</Descrizione>
       <p className={`${stili.spiegazione} ${stili.informazioni}`}>
         <span className={stili.versione} data-versione={versione}>
-          {riempi(testi.informazioniVersione, { versione, data: dataMostrata(dataDellaVersione, lingua) })}
+          {riempi(testi.informazioniVersione, { versione, data: dataConPreposizione(dataDellaVersione, lingua) })}
         </span>
         {versioneDiProva(versione) && <span>{testi.informazioniProva}</span>}
       </p>

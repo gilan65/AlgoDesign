@@ -165,8 +165,8 @@ export const it = {
   informazioni: "Informazioni su AlgoDesign",
   informazioniTitolo: "Informazioni su AlgoDesign",
   informazioniMotto: "Progettare algoritmi con i flowchart, eseguirli passo passo e tradurli in pseudocodice, Python, C e TypeScript.",
-  /** {versione} come nei file del programma, {data} come la scrive `dataMostrata`. */
-  informazioniVersione: "Versione {versione} del {data}",
+  /** {versione} come nei file del programma, {data} come la scrive `dataConPreposizione`. */
+  informazioniVersione: "Versione {versione} {data}",
   informazioniProva: "È una versione beta: alcune funzioni mancano ancora e altre possono cambiare.",
   informazioniLicenza: "Licenza MIT · © 2026 Giuseppe Lancellotti",
   informazioniFile: "Il testo della licenza è nel file LICENSE, accanto al programma; le librerie che AlgoDesign usa, con le loro licenze, sono nel file LICENZE-DI-TERZE-PARTI.txt.",
