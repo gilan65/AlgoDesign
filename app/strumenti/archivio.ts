@@ -47,7 +47,7 @@ import { appendFileSync, chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, 
 import { createHash } from "node:crypto";
 import { homedir, tmpdir } from "node:os";
 import { basename, join, relative } from "node:path";
-import { dataMostrata } from "../ui/prodotto";
+import { dataConPreposizione, dataMostrata } from "../ui/prodotto";
 import { cartellaDelleLibrerieDiSistema, differenzeDallElenco, documentiDellaRadice, documentiDelPacchetto, elencoDiLinux, guidaAdAccademico, guidaDelloStrumento, fileDelleLicenze, nomiDiLinux, testiDiLinux } from "./elenco-del-pacchetto";
 import { licenzeDiTerzeParti } from "./licenze";
 
@@ -317,13 +317,13 @@ async function componi(appimage: string, sistema: LibrerieDiSistema): Promise<vo
   if (!registro.includes(`\n## ${nomi.versione}, `)) rosso("CARTELLA", `CHANGELOG.md non ha la voce «## ${nomi.versione}, »`);
   if (registro.includes("SEGNAPOSTO")) rosso("CARTELLA", "CHANGELOG.md ha un SEGNAPOSTO rimasto");
   writeFileSync(join(cartella, "CHANGELOG.md"), registro);
-  const data = dataMostrata(dataDiRilascio, "it");
+  const delData = dataConPreposizione(dataDiRilascio, "it");
   for (const [sorgente, destinazione] of Object.entries(testiDiLinux)) {
     const da = join(cartellaTesti!, sorgente);
     if (!existsSync(da)) rosso("CARTELLA", `manca il testo ${da}`);
-    const testo = readFileSync(da, "utf8").replaceAll("{{versione}}", nomi.versione).replaceAll("{{data}}", data);
+    const testo = readFileSync(da, "utf8").replaceAll("{{versione}}", nomi.versione).replaceAll("{{delData}}", delData).replaceAll("{{date}}", dataMostrata(dataDiRilascio, "en"));
     const rimasto = /\{\{[^}]*\}\}?/.exec(testo);
-    if (rimasto) rosso("CARTELLA", `${sorgente}: «${rimasto[0]}» non sostituito (si sostituiscono solo {{versione}} e {{data}})`);
+    if (rimasto) rosso("CARTELLA", `${sorgente}: «${rimasto[0]}» non sostituito (si sostituiscono solo {{versione}}, {{delData}} e {{date}})`);
     writeFileSync(join(cartella, destinazione), testo);
   }
   for (const d of [...documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento]) {
@@ -358,7 +358,7 @@ async function componi(appimage: string, sistema: LibrerieDiSistema): Promise<vo
   if (readdirSync(join(cartella, "data")).length > 0) rosso("CARTELLA", "data non è vuota");
   if ((statSync(join(cartella, "AlgoDesign.AppImage")).mode & 0o777) !== 0o755) rosso("CARTELLA", "l'AppImage non ha i permessi 0755");
   riga(
-    `CARTELLA: VERDE | ${relative(repository, cartella)} con le ${trovate.length} voci dell'elenco (${trovate.join(", ")}) | ${cartellaDelleLibrerieDiSistema}/ con ${nelleLibrerie.length} voci (${sistema.copyright.size} copyright, ${fileDi(join(librerie, "licenze-comuni")).length} licenze comuni) | testi del ${data} | licenze di terze parti: ${l.js} librerie JavaScript, ${l.rust} Rust, ${l.testi} testi, ${Buffer.byteLength(l.testo)} byte | controllo positivo acceso (${controllo})`,
+    `CARTELLA: VERDE | ${relative(repository, cartella)} con le ${trovate.length} voci dell'elenco (${trovate.join(", ")}) | ${cartellaDelleLibrerieDiSistema}/ con ${nelleLibrerie.length} voci (${sistema.copyright.size} copyright, ${fileDi(join(librerie, "licenze-comuni")).length} licenze comuni) | testi ${delData} | licenze di terze parti: ${l.js} librerie JavaScript, ${l.rust} Rust, ${l.testi} testi, ${Buffer.byteLength(l.testo)} byte | controllo positivo acceso (${controllo})`,
   );
 }
 

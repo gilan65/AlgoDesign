@@ -1,6 +1,6 @@
 # AlgoDesign {{versione}}: note di rilascio
 
-Versione del {{data}}. È la **terza versione beta** di AlgoDesign, per Windows 10 e 11 a 64 bit, nella forma portabile: si estrae lo zip e si avvia `AlgoDesign.exe`, senza installarlo. Come si avvia, i requisiti e l'avviso di Windows al primo avvio sono nel file `LEGGIMI.md` (in inglese `README.md`); come si usa è nella guida per lo studente, `GUIDA-PER-LO-STUDENTE.md` (in inglese `STUDENT-GUIDE.md`).
+Versione {{delData}}. È la **terza versione beta** di AlgoDesign, per Windows 10 e 11 a 64 bit, nella forma portabile: si estrae lo zip e si avvia `AlgoDesign.exe`, senza installarlo. Come si avvia, i requisiti e l'avviso di Windows al primo avvio sono nel file `LEGGIMI.md` (in inglese `README.md`); come si usa è nella guida per lo studente, `GUIDA-PER-LO-STUDENTE.md` (in inglese `STUDENT-GUIDE.md`).
 
 Una versione beta serve a provare l'applicazione a fondo in aula e a raccogliere osservazioni: qualche dettaglio può ancora cambiare.
 

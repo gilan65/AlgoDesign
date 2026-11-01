@@ -1,6 +1,6 @@
 # Lo strumento a riga di comando di AlgoDesign {{versione}}
 
-Versione del {{data}}, per Windows 10 e 11 a 64 bit.
+Versione {{delData}}, per Windows 10 e 11 a 64 bit.
 
 `algodesign-tools.exe` è un'applicazione a sé, senza finestre, con due comandi:
 

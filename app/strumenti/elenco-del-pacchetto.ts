@@ -26,7 +26,7 @@ export const elencoDelPacchetto: readonly string[] = [
 /** Il file delle licenze di terze parti: con l'estensione, perché Windows lo apra con un doppio clic. */
 export const fileDelleLicenze = "LICENZE-DI-TERZE-PARTI.txt";
 
-/** I testi per l'utente, letti da una cartella data allo strumento: `{{versione}}` e `{{data}}` diventano quelle della release. */
+/** I testi per l'utente, letti da una cartella data allo strumento: `{{versione}}`, `{{delData}}` e `{{date}}` diventano quelle della release. */
 export const testiDelPacchetto: readonly string[] = ["NOTE-DI-RILASCIO.md"];
 
 /** I due README della radice del repository (inglese e italiano), che il pacchetto copia così come sono: dicono la
