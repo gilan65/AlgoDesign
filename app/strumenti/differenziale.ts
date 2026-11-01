@@ -76,6 +76,11 @@
 // loro quelli che usano le tabelle, quelli che usano le matrici e gli altri) e quella del riepilogo `differenziale: …`. Un caso con gli avvisi diversi è rosso:
 // qui ogni differenza lo è. Esce con 1 se c'è un rosso o un problema.
 //
+// Una corsa senza argomenti sul corpus, verde e con tutte le famiglie, riscrive dalle righe finali il blocco dei conteggi della
+// guida delle prove, che è un documento locale (`strumenti/guida-delle-prove.ts`), e lo dice nella riga `guida delle prove: …`:
+// anche quando non scrive, perché non c'è l'impostazione o la corsa non è verde. Un documento che l'impostazione nomina e che
+// non c'è è un PROBLEMA.
+//
 // Gli avvisi della compilazione: ogni programma della tappa (anche quelli dei casi esclusi) e ogni programma di prova si
 // generano e si compilano nelle due lingue con ogni macchina; un programma fra gli avvisi attesi del suo esecutore deve
 // avvisare con la sua opzione e solo con quella, ogni altro non deve avvisare. Un avviso non atteso, o uno atteso che
@@ -102,6 +107,7 @@ import { usaIRecord, usaLeMatrici, usaLeTabelle, type Atteso, type CasoDiUnaFunz
 import { paroleDelloPseudocodice } from "../ui/genera/parole";
 import { casiDelProgetto, esclusi, ottenutoDaiTesti, type ControlloCheParte } from "./casi-del-confronto";
 import { ambienteDi, appaia, esecutoreDel, esecutori as tuttiGliEsecutori, lingueDelCodice as lingue, nomeDellaMacchina, trovaToolchain, type Esecutore, type Macchina } from "./esecutori";
+import { scriviDopoIlDifferenziale } from "./guida-delle-prove";
 import { righeDellEsito } from "./righe-dei-casi";
 import { differenzaDalTypeScript, differenzaDellaProvenienza } from "./senza-tipi";
 
@@ -495,23 +501,39 @@ const coiRecord = daConfrontare.filter((d) => usaIRecord(d.progetto));
 const conLeTabelle = daConfrontare.filter((d) => usaLeTabelle(d.progetto));
 const conLeMatrici = daConfrontare.filter((d) => usaLeMatrici(d.progetto));
 for (const p of problemi) console.log(`PROBLEMA ${p}`);
-console.log(
+/** Le righe finali: si stampano, e da loro nasce il blocco dei conteggi della guida delle prove. */
+const righeFinali: string[] = [];
+const finale = (r: string) => {
+  righeFinali.push(r);
+  console.log(r);
+};
+finale(
   `toolchain: ${toolchain.map(({ esecutore, da, macchine, mancanti }) => `${esecutore.nome} da ${da}: ${macchine.map((k) => `${k.nome} ${k.versione} (${k.percorso})`).join(", ") || "nessuno"}${mancanti.length > 0 ? ` (manca: ${mancanti.join(", ")})` : ""}`).join("; ")}`,
 );
-console.log(`controllo dei tipi: ${tipiPer.join("; ") || "nessun linguaggio lo ha"}`);
-console.log(`senza tipi: ${senzaTipiPer.join("; ") || "nessun linguaggio ha la forma"}`);
+finale(`controllo dei tipi: ${tipiPer.join("; ") || "nessun linguaggio lo ha"}`);
+finale(`senza tipi: ${senzaTipiPer.join("; ") || "nessun linguaggio ha la forma"}`);
 // I casi che gli esecutori di un linguaggio non corrono, perché il linguaggio non sa ancora scrivere il loro file.
-console.log(
+finale(
   `non ancora: ${[...nonAncora].map(([linguaggio, perFile]) => `${linguaggio} file ${perFile.size}, casi ${daConfrontare.filter((d) => perFile.has(d.file)).length}`).join("; ")}`,
 );
 const avvisiAttesi = daEseguire.flatMap(({ voce, esecutore }) => Object.entries(esecutore.avvisiAttesi).map(([f, o]) => `${voce.id} ${f} ${o}`));
-console.log(
+finale(
   `per tipo: con i record ${coiRecord.length} casi nel confronto (verdi con ogni esecutore ${verdiConOgni(coiRecord)}; con le tabelle ${conLeTabelle.length}, verdi con ogni esecutore ${verdiConOgni(conLeTabelle)}), con le matrici ${conLeMatrici.length} (verdi con ogni esecutore ${verdiConOgni(conLeMatrici)}), senza ${daConfrontare.filter((d) => !coiRecord.includes(d) && !conLeMatrici.includes(d)).length}`,
 );
-console.log(
+finale(
   `avvisi della compilazione: compilazioni ${compilazioni.length}, con gli avvisi attesi ${compilazioniConAvvisiAttesi} (${avvisiAttesi.join(", ")}), non attesi ${avvisiNonAttesi}, attesi e mancanti ${avvisiMancanti}`,
 );
-console.log(
+finale(
   `differenziale: file ${file.length}, casi nel confronto ${n} (di funzioni ${diFunzioni}, con l'errore statico ${conErroreStatico}), esclusi ${quantiEsclusi}, fuori tappa ${fuoriTappa} in ${fileFuoriTappa} file; per esecutore: ${esecutori.map((e) => `${e} ${verdiPer.get(e)}/${corsiPer.get(e)}`).join(", ")}; rossi ${rossi}, problemi ${problemi.length}; compilazioni ${compilazioni.length} in ${secondiDelleCompilazioni.toFixed(1)} s, esecuzioni ${esecuzioni.length} in ${secondiDelleEsecuzioni.toFixed(1)} s, in tutto ${((performance.now() - inizio) / 1000).toFixed(1)} s`,
 );
+// La guida delle prove: il blocco dei conteggi si riscrive solo dopo una corsa verde sul corpus, con tutte le famiglie.
+if (argomenti.length === 0) {
+  const verde = rossi === 0 && problemi.length === 0 && toolchain.every((t) => t.mancanti.length === 0);
+  const guida: { riga: string; problema?: string } = verde ? scriviDopoIlDifferenziale(righeFinali.join("\n")) : { riga: "guida delle prove: non scritta, la corsa non è verde con tutte le famiglie" };
+  console.log(guida.riga);
+  if (guida.problema !== undefined) {
+    console.log(`PROBLEMA guida delle prove: ${guida.problema}`);
+    process.exit(1);
+  }
+}
 process.exit(rossi > 0 || problemi.length > 0 ? 1 : 0);
