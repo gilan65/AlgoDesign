@@ -35,7 +35,7 @@ Salva il progetto con **Salva con nome** (Ctrl+Maiusc+S): il file ha l'estension
 
 Nella scheda «Dati» premi **Aggiungi un dato** e compila i campi:
 
-- **Nome**: lettere senza accento, cifre e trattino basso, cominciando con una lettera (`numero`, `eta`, non `età`), al massimo 63 caratteri; non può essere una parola riservata del C o di Python (`if`, `while`, `int`, `return`…) né il nome di un operatore scritto a parole (`mod`, `lunghezza`…): così il nome passa identico nel codice generato;
+- **Nome**: lettere senza accento, cifre e trattino basso, cominciando con una lettera (`numero`, `eta`, non `età`), al massimo 63 caratteri; non può essere una parola riservata di un linguaggio del codice generato (`if`, `while`, `int`, `return`, `new`…) né il nome di un operatore scritto a parole (`mod`, `lunghezza`…): così il nome passa identico nel codice generato;
 - **Tipo**: intero, reale, carattere, stringa o booleano, oppure un record del progetto (§5);
 - **Forma**: semplice, vettore con il numero degli elementi (al più 1000), oppure matrice con le righe e le colonne (§5);
 - **Natura**: variabile o costante (una costante ha sempre un valore);
@@ -285,7 +285,9 @@ Il TypeScript di partenza non è attivo: si attiva nelle Impostazioni (§14) e h
 
 Con lo zip, al posto di `node` si scrive il percorso di `node.exe` fra virgolette, con `&` davanti: `& "D:\node\node.exe" media.ts`. Un nome con gli spazi va fra virgolette: `node "media voti.ts"`. Il programma legge dalla console una riga per ogni lettura. Per dargli i valori da un file si passa da `cmd`, perché in PowerShell il `<` non c'è: `cmd /c "node media.ts < ingresso.txt"`. Un errore ferma il programma con la riga «Errore alla riga N: motivo»: N è la riga del file.
 
-Node esegue il file senza controllarne i tipi. Chi vuole il controllo lo chiede a `tsc`. Una volta sola nella cartella, per i due pacchetti che servono, si scrive `npm install typescript @types/node`; poi, per ogni controllo, `npx tsc --strict --noEmit --module preserve --moduleDetection force --erasableSyntaxOnly --types node media.ts`. Senza errori `tsc` non scrive nulla e non produce nessun file: il programma resta quello da eseguire con `node`.
+Node esegue il file senza controllarne i tipi. Chi vuole il controllo lo chiede a `tsc`. Una volta sola nella cartella, per i due pacchetti che servono, si scrive `npm.cmd install --no-save typescript @types/node`; poi, per ogni controllo, `npx.cmd tsc --strict --noEmit --module preserve --moduleDetection force --erasableSyntaxOnly --types node media.ts`. Senza errori `tsc` non scrive nulla e non produce nessun file: il programma resta quello da eseguire con `node`.
+
+In PowerShell si scrive `npm.cmd` e `npx.cmd`, non `npm` e `npx`: su un Windows appena installato questi ultimi si fermano con un errore sull'esecuzione di script. Con lo zip, `npx.cmd` deve trovare Node: prima si scrive `$env:PATH = "D:\node;$env:PATH"`, che vale finché la finestra di PowerShell resta aperta; poi i comandi sono gli stessi. Se in una cartella più in alto c'è un file `package.json`, i pacchetti finiscono lì e Node scrive anche un avviso (`MODULE_TYPELESS_PACKAGE_JSON`): il programma funziona lo stesso.
 
 ### Il JavaScript e lo strumento `algodesign-tools`
 

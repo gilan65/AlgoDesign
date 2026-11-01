@@ -9,20 +9,24 @@
 // Il Worker:
 // - classico, da un `blob:`: da `file://` un Worker di modulo non parte, con un evento `error` senza messaggio (misurato in Chromium);
 // - la preparazione sta tutta sulla prima riga, davanti al commento con cui il programma comincia: le righe non si spostano;
+//   per lo stesso motivo l'input ci entra con i due separatori di Unicode scritti con la fuga, che in JavaScript vanno a capo
+//   anche dentro una stringa e che `JSON.stringify` lascia come sono;
 // - il programma sta in una funzione col modo stretto, come in un modulo: i suoi nomi non toccano quelli del Worker;
 // - `process.exit` lancia un valore che nessuno cattura, spento dal filtro degli errori; ogni altro errore arriva alla pagina,
 //   che lo dice: non è un esito del programma.
 //
 // L'input si scrive prima di «Esegui», una riga per ogni lettura: finite le righe, `readSync` dà 0 e il programma si ferma
 // come con Node. Il programma che non finisce: «Ferma» termina il Worker e la pagina resta viva; oltre `tettoDellOutput`
-// caratteri lo termina la pagina, che altrimenti un programma che scrive senza fine renderebbe inutilizzabile.
+// caratteri lo termina la pagina, che altrimenti un programma che scrive senza fine renderebbe inutilizzabile. Un testo vuoto
+// non diventa un messaggio: il tetto non lo conta, e un ciclo di messaggi vuoti bloccherebbe la pagina prima di «Ferma».
 //
 // CHE COSA NON FA: nessun limite di tempo; i browser diversi da Chromium non sono provati (fuori da V8 la forma della pila è
 // un'altra, e la riga esce «?»); un input che non è testo (una casella contiene solo testo).
 import type { Riga } from "../core/genera/forma";
 import type { Lingua } from "../i18n/lingue";
 
-/** I caratteri di output oltre i quali la pagina ferma il programma: il più lungo del corpus ne scrive poche centinaia. */
+/** I caratteri di output oltre i quali la pagina ferma il programma: il più lungo del corpus ne scrive poche centinaia. Contati
+ * come li conta `length`: uno fuori dal piano base vale due, e il tetto arriva un po' prima. */
 export const tettoDellOutput = 1_000_000;
 
 interface TestiDellaPagina {
@@ -92,7 +96,7 @@ export const PREPARAZIONE = [
   "let letti = 0;",
   'self.addEventListener("error", function (e) { if (e.error === uscita) e.preventDefault(); });',
   "self.readSync = function (fd, b, da) { if (letti >= input.length) return 0; b[da] = input[letti++]; return 1; };",
-  "self.writeSync = function (fd, testo) { posta({ flusso: fd, testo: testo }); return testo.length; };",
+  'self.writeSync = function (fd, testo) { if (testo !== "") posta({ flusso: fd, testo: testo }); return testo.length; };',
   'self.execSync = function () { throw new Error("execSync"); };',
   'self.process = { platform: "browser", stdin: {}, stdout: {}, stderr: {}, exit: function (c) { posta({ fine: c }); throw uscita; } };',
   "})();",
@@ -130,6 +134,7 @@ function metti(testo, esito) {
 }
 function finisci(testo, esito) {
   lavoro.worker.terminate();
+  URL.revokeObjectURL(lavoro.indirizzo);
   lavoro.scrivi();
   lavoro = null;
   metti(testo, esito);
@@ -147,12 +152,14 @@ function esegui() {
   metti(testi.inCorso, "in-corso");
   pulsanteEsegui.disabled = true;
   pulsanteFerma.disabled = false;
-  const testo = PREPARAZIONE.replace("INPUT", () => JSON.stringify(casella.value)) + PROGRAMMA + CHIUSURA;
+  const input = JSON.stringify(casella.value).replace(/[\\p{Zl}\\p{Zp}]/gu, (c) => "\\\\u" + c.charCodeAt(0).toString(16));
+  const testo = PREPARAZIONE.replace("INPUT", () => input) + PROGRAMMA + CHIUSURA;
   const indirizzo = URL.createObjectURL(new Blob([testo], { type: "text/javascript" }));
   const pezzi = [];
   let orologio = null;
   const questo = {
     worker: { terminate() {} },
+    indirizzo,
     caratteri: 0,
     scrivi() {
       if (orologio !== null) clearTimeout(orologio);

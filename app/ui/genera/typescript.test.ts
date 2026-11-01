@@ -16,7 +16,7 @@ import { spazioDiUnaChiamata, tettoDelleChiamate } from "../../core/controllo/sp
 import { motiviCol } from "../../core/genera/motivi";
 import { nomiDelSupporto } from "../../core/genera/nomi";
 import { testoDelCodice, type Riga } from "../../core/genera/forma";
-import { voceDel } from "../../core/genera/linguaggi";
+import { formaSenzaTipiDel, voceDel } from "../../core/genera/linguaggi";
 import { typescript } from "../../core/genera/typescript";
 import { apri } from "../../core/progetto/formato";
 import type { Prova } from "../../core/genera/python";
@@ -63,6 +63,20 @@ const corpus = readdirSync(cartella, { withFileTypes: true })
   .filter((v) => v.isDirectory())
   .flatMap((v) => readdirSync(join(cartella, v.name)).filter((f) => f.endsWith(".algo")).map((f) => `${v.name}/${f.slice(0, -".algo".length)}`))
   .sort();
+
+describe("un reale che non è finito si scrive come nel Python e nel C", () => {
+  const nome = corpus.find((c) => c.endsWith("/reale-non-finito"))!;
+  for (const l of lingue)
+    test(`inf, -inf e nan, non le cifre dei suoi bit (${l})`, () => {
+      const g = formaSenzaTipiDel("typescript")!.genera(leggi(`${nome}.algo`), tetti, l, paroleDelloPseudocodice(l));
+      if (!g.generato) throw new Error(nome);
+      const testi = g.righe.map((r) => r.testo);
+      const da = testi.findIndex((t) => /^function real[e]?\(/.test(t));
+      const a = testi.indexOf("}", da);
+      const reale = new Function(`${testi.slice(da, a + 1).join("\n")}\nreturn ${testi[da]!.slice("function ".length, testi[da]!.indexOf("("))};`)() as (x: number) => string;
+      expect([reale(1 / 0), reale(-1 / 0), reale(0 / 0), reale(1.5)]).toEqual(["inf", "-inf", "nan", "1.50"]);
+    });
+});
 
 describe("il TypeScript uguale all'atteso scritto a mano", () => {
   for (const l of lingue) {

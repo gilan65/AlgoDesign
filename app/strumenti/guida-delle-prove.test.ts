@@ -35,6 +35,11 @@ describe("il blocco viene dal log", () => {
     expect(blocco).toContain("| uno | nessuna macchina: il testo atteso | 2 file | la conferma del corpus, non questa corsa |");
     expect(blocco).toContain("| due | nessuna macchina: il lettore | 2 file: 1 con il codice | la conferma del corpus, non questa corsa |");
   });
+  test("una macchina di cui il log non dà la versione è un errore: «il nucleo» è solo dell'interprete", () => {
+    // Un percorso con le parentesi, come «C:\Program Files (x86)»: la riga della toolchain non dà la versione di gcc.
+    const conParentesi = log.replace("gcc 15.3.0 (C:/x/gcc.exe)", "gcc 15.3.0 (C:/x (y)/gcc.exe)");
+    expect(() => bloccoDal(conParentesi, fuori)).toThrow("gcc");
+  });
   test("nessuna durata, che cambierebbe il documento a ogni corsa", () => {
     expect(blocco).not.toMatch(/\d s\b/);
     expect(bloccoDal(log.replace("in 2.0 s", "in 9.9 s"), fuori)).toBe(blocco);

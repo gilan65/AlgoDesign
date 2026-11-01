@@ -4,7 +4,7 @@
 
 **Design algorithms as flowcharts, run them step by step and translate them into pseudocode, Python, C and TypeScript.**
 
-Version 0.6.0-beta.2 of 28 October 2026, for 64-bit Windows 10 and 11.
+Version 0.7.0-beta.3 of 1 November 2026, for 64-bit Windows 10 and 11.
 
 AlgoDesign is a teaching environment for people learning to program: first you design and test the algorithm as a flowchart, then you see how the same reasoning becomes code. It is a **local and lightweight** application: it works without internet, without installing it and without administrator rights.
 
@@ -37,10 +37,10 @@ How to use AlgoDesign is in the **student guide**, `STUDENT-GUIDE.md` (in Italia
 The beta versions are downloaded from the project page.
 
 1. Download the zip and, if you like, check its fingerprint: the `.sha256` file next to the zip contains its SHA-256 code, which in PowerShell is computed with `Get-FileHash <zip name>` (PowerShell writes it in uppercase, the file in lowercase: upper and lower case do not matter).
-2. Extract the zip wherever you like (the Desktop, a documents folder, a USB stick): the folder `AlgoDesign-0.6.0-beta.2` is created.
+2. Extract the zip wherever you like (the Desktop, a documents folder, a USB stick): the folder `AlgoDesign-0.7.0-beta.3` is created.
 3. Open the folder and double-click `AlgoDesign.exe`.
 
-**The command-line tool.** Next to the AlgoDesign zip there is a separate package, `AlgoDesign-Tools-0.6.0-beta.2-windows.zip`, with its fingerprint: `algodesign-tools.exe` has two commands. `accademico` reads a text written in “Academic” and turns it into an AlgoDesign library, to open and run step by step; `stampa` writes from a project a page to print with two code texts side by side and a page that tests the JavaScript in the browser. It is used from PowerShell; how is told by the `README.md` of the package and by the guide to `algodesign-tools`, which the package carries.
+**The command-line tool.** Next to the AlgoDesign zip there is a separate package, `AlgoDesign-Tools-0.7.0-beta.3-windows.zip`, with its fingerprint: `algodesign-tools.exe` has two commands. `accademico` reads a text written in “Academic” and turns it into an AlgoDesign library, to open and run step by step; `stampa` writes from a project a page to print with two code texts side by side and a page that tests the JavaScript in the browser. It is used from PowerShell; how is told by the `README.md` of the package and by the guide to `algodesign-tools`, which the package carries.
 
 **The Windows warning at the first start.** AlgoDesign is not digitally signed, and Windows warns when a program downloaded from the internet without a signature is started. If the window “Windows protected your PC” appears, choose “More info” and then “Run anyway”. To avoid it, before extracting the zip open its Properties (right-click on the zip), tick “Unblock” at the bottom of the “General” tab and confirm with “OK”.
 

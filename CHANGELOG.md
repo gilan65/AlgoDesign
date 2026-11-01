@@ -2,6 +2,20 @@
 
 Le novità e le correzioni di ogni versione, dalla più recente. Il dettaglio di una versione è nelle sue note di rilascio (`NOTE-DI-RILASCIO.md`); come si usa AlgoDesign è nella guida per lo studente (`GUIDA-PER-LO-STUDENTE.md`).
 
+## 0.7.0-beta.3, 1 novembre 2026
+
+Terza versione beta, per Windows.
+
+### Novità
+
+- **I record**: un tipo con dei campi, che si definisce una volta per tutto il progetto, con «Aggiungi un record» del menu «Progetto»; il record intero si copia, si passa a una procedura o a una funzione e può essere il risultato di una funzione.
+- **Le matrici**: la forma «matrice» di un dato, con le righe e le colonne; una riga va dovunque va un vettore.
+- **Le tabelle**: un vettore di record. Con i record e le matrici si eseguono passo passo, si stampano e si generano in ogni linguaggio tranne «Accademico»; come si mostrano nella tabella di traccia si sceglie nelle Impostazioni.
+- **TypeScript**, fra i linguaggi che si attivano nelle Impostazioni: «Salva…» scrive un file `.ts`, che si esegue con Node.js 24.
+- **JavaScript e la pagina di prova**: lo stesso programma senza i tipi, affiancato al TypeScript in una pagina da stampare ed eseguito nel browser in una pagina di prova, dallo strumento a riga di comando.
+- **Lo strumento cambia nome**: `algodesign-accademico.exe` ora è `algodesign-tools.exe`, in un pacchetto a parte (`AlgoDesign-Tools-0.7.0-beta.3-windows.zip`), con l'icona di AlgoDesign. Ciò che faceva prima si scrive con `accademico` dopo il nome nuovo; il comando nuovo, `stampa`, scrive da un progetto due testi di codice affiancati, anche due linguaggi a scelta.
+- Un progetto salvato con questa versione non si apre con le versioni precedenti.
+
 ## 0.6.0-beta.2, 28 ottobre 2026
 
 Seconda versione beta, per Windows.

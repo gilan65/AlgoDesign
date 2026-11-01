@@ -330,6 +330,7 @@ const supporto: Record<Lingua, Record<Supporto, readonly string[]>> = {
     reale: [
       "/** Un reale con 2 decimali, come nel C: sul valore esatto del numero, la metà alla cifra pari. */",
       "function reale(x: number): string {",
+      '  if (!Number.isFinite(x)) return x > 0 ? "inf" : x < 0 ? "-inf" : "nan";',
       "  // |x| = mantissa · 2^e, dai bit del numero.",
       "  const bit = new DataView(new ArrayBuffer(8));",
       "  bit.setFloat64(0, x);",
@@ -629,6 +630,7 @@ const supporto: Record<Lingua, Record<Supporto, readonly string[]>> = {
     reale: [
       "/** A real with 2 decimals, as in C: on the exact value of the number, halves to the even digit. */",
       "function real(x: number): string {",
+      '  if (!Number.isFinite(x)) return x > 0 ? "inf" : x < 0 ? "-inf" : "nan";',
       "  // |x| = mantissa · 2^e, from the bits of the number.",
       "  const bits = new DataView(new ArrayBuffer(8));",
       "  bits.setFloat64(0, x);",

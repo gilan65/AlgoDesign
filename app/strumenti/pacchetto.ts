@@ -1,5 +1,5 @@
 // Il pacchetto della release, solo Windows: `bun run pacchetto --testi <cartella> [--prova [--senza-build]]`. Compone
-// due archivi dallo stesso albero: quello di AlgoDesign (1–6) e quello aggiuntivo dello strumento di «Accademico» (7–10).
+// due archivi dallo stesso albero: quello di AlgoDesign (1–6) e quello aggiuntivo dello strumento a riga di comando (7–10).
 //
 // 1. ALBERO: il commit da cui nasce il pacchetto. Con file modificati o nuovi rispetto al commit, o con un commit che non
 //    ha l'etichetta `v<versione>`, è rosso, se non con `--prova`: il pacchetto si dice allora di prova, non è una
@@ -582,6 +582,8 @@ async function provaLoStrumento(): Promise<void> {
     const aiuto = await lancia([exe, "accademico", "-h"]);
     const sbagliata = await lancia([exe, "accademico", "-x"]);
     const errore = await lancia([exe, "accademico", rotto]);
+    const senzaComando = await lancia([exe]);
+    const stampaSbagliata = await lancia([exe, "stampa", join(lavoro, "non c'e.algo")]);
     const libreria = join(lavoro, "con lo strumento", "esercizi.algo");
     const righe: string[] = [];
     for (const [i, t] of testi.entries()) {
@@ -621,6 +623,8 @@ async function provaLoStrumento(): Promise<void> {
     if (aiuto.codice !== 0 || !aiuto.uscita.includes("algodesign-tools accademico <testo.txt> [-l libreria.algo]")) rosso(C, `-h esce ${aiuto.codice} senza il modo d'uso col nome dell'eseguibile: «${aiuto.uscita.slice(0, 200)}»`);
     if (sbagliata.codice !== 2 || !sbagliata.uscita.includes("algodesign-tools accademico <testo.txt>")) rosso(C, `un'opzione sbagliata esce ${sbagliata.codice} senza il modo d'uso`);
     if (errore.codice !== 1 || !errore.uscita.includes("riga 4") || existsSync(join(lavoro, "testo con un errore.algo"))) rosso(C, `il testo con un errore esce ${errore.codice}: «${errore.uscita}»`);
+    if (senzaComando.codice !== 2) rosso(C, `senza un comando esce ${senzaComando.codice}: «${senzaComando.uscita.slice(0, 200)}»`);
+    if (stampaSbagliata.codice !== 1 || !stampaSbagliata.uscita.startsWith("ERRORE")) rosso(C, `stampa di un file che non c'è esce ${stampaSbagliata.codice}: «${stampaSbagliata.uscita.slice(0, 200)}»`);
     const diverse = righe.map((r, i) => (r === righeDiBun[i] ? null : `${testi[i]}: «${r}» invece di «${righeDiBun[i]}»`)).filter((d) => d !== null);
     if (diverse.length > 0) rosso(C, `righe diverse da quelle di bun: ${diverse.join("; ")}`);
     if (!existsSync(libreria) || impronta(libreria) !== impronta(libreriaDiBun)) {
