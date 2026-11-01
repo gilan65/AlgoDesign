@@ -1222,8 +1222,8 @@ function righeDelTypeScript(p: Progetto, lingua: LinguaDelCodice, note: NoteDeiD
     { testo: `// ${nome}` },
     { testo: `// ${w.generato}` },
     ...w.nonControllati.map((t) => ({ testo: `// ${t}` })),
-    ...(conLaConsole ? [{ testo: 'import { execSync } from "node:child_process";' }] : []),
-    ...(letti.length > 0 ? [{ testo: `import { ${letti.join(", ")} } from "node:fs";` }] : []),
+    ...(conLaConsole ? [{ testo: 'import { execSync } from "node:child_process";', delMotore: true }] : []),
+    ...(letti.length > 0 ? [{ testo: `import { ${letti.join(", ")} } from "node:fs";`, delMotore: true }] : []),
   ];
   // I record: una classe per record, dopo gli import, come la classe di dati del Python; ogni campo senza valore finché non
   // ne ha uno (`nome!: string`, come un dato senza valore iniziale), il costruttore coi parametri facoltativi nell'ordine

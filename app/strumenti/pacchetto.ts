@@ -586,7 +586,8 @@ async function provaLoStrumento(): Promise<void> {
       if (r.codice !== 0) rosso(C, `lo strumento su ${t} esce ${r.codice}: ${r.uscita}`);
       righe.push(r.uscita.replaceAll(libreria, "<libreria>"));
     }
-    // `stampa`: le stesse pagine di Bun, byte per byte, senza e con `--linguaggi`, con un progetto che ha uno spazio nel nome.
+    // `stampa`: le stesse pagine di Bun, byte per byte, senza `--linguaggi` (le colonne e la pagina di prova) e con, con un
+    // progetto che ha uno spazio nel nome.
     const progetto = join(lavoro, "il progetto.algo");
     cpSync(join(radice, "casi", "tappa-3", "tre-livelli.algo"), progetto);
     const paginaDiBun = join(lavoro, "con bun");
@@ -594,7 +595,9 @@ async function provaLoStrumento(): Promise<void> {
     const scelte: readonly (readonly string[])[] = [[], ["--linguaggi", "pseudocodice", "c"]];
     for (const scelta of scelte) {
       const r = await lancia([exe, "stampa", progetto, ...scelta, "-o", pagineDelloStrumento]);
-      if (r.codice !== 0 || !r.uscita.startsWith("SCRITTO ")) rosso(C, `stampa ${scelta.join(" ")} esce ${r.codice}: «${r.uscita}»`);
+      const attese = scelta.length === 0 ? 2 : 1;
+      const scritte = r.uscita.split("\n").filter((x) => x.startsWith("SCRITTO "));
+      if (r.codice !== 0 || scritte.length !== attese) rosso(C, `stampa ${scelta.join(" ")} esce ${r.codice}, con ${scritte.length} pagine scritte invece di ${attese}: «${r.uscita}»`);
     }
     const tracce = nomiNuovi(prima);
     for (const scelta of scelte) {
@@ -603,7 +606,7 @@ async function provaLoStrumento(): Promise<void> {
     }
     const pagine = readdirSync(pagineDelloStrumento).filter((f) => f.endsWith(".html")).sort();
     const pagineDiBun = readdirSync(paginaDiBun).filter((f) => f.endsWith(".html")).sort();
-    if (pagine.length !== scelte.length || pagine.join() !== pagineDiBun.join()) rosso(C, `le pagine sono ${pagine.join(", ")} invece di ${pagineDiBun.join(", ")}`);
+    if (!pagine.includes("il progetto (prova).html") || pagine.length !== scelte.length + 1 || pagine.join() !== pagineDiBun.join()) rosso(C, `le pagine sono ${pagine.join(", ")} invece di ${pagineDiBun.join(", ")}, con la pagina di prova`);
     for (const f of pagine) if (impronta(join(pagineDelloStrumento, f)) !== impronta(join(paginaDiBun, f))) rosso(C, `la pagina «${f}» dello strumento non è quella di bun, byte per byte`);
     // Controllo positivo, nella stessa finestra: l'uscita scritta in %TEMP% si deve vedere.
     const marcatore = `algodesign-tools-prova-${process.pid}.algo`;

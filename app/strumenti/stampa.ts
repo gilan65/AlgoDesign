@@ -5,7 +5,9 @@
 //   bun run tools stampa <progetto.algo> [--linguaggi <primo> <secondo>] [--lingua it|en] [-o cartella]
 //
 // Scrive `<progetto> (<primo> e <secondo>).html` accanto al progetto o nella cartella di `-o`, e stampa `SCRITTO <file>`;
-// un file che c'è già si sostituisce, e stampa `SOSTITUITO <file>`: la pagina si rifà dal progetto.
+// un file che c'è già si sostituisce, e stampa `SOSTITUITO <file>`: la pagina si rifà dal progetto. Senza `--linguaggi` scrive
+// anche la pagina di prova (`pagina-di-prova.ts`), `<progetto> (prova).html`, col JavaScript da eseguire nel browser: una riga
+// per file. I due file si scrivono insieme o per niente: se il secondo non si scrive, il primo torna com'era.
 //
 // Esce con 1, senza scrivere nulla, su un progetto che non si legge o non è valido, con errori statici (una riga per
 // errore), che un linguaggio non sa scrivere (il numero di ciò che manca), una cartella che non c'è, un file che non si
@@ -14,7 +16,7 @@
 //
 // CHE COSA NON FA: aprire il browser o stampare; l'elenco di ciò che manca, che è nell'app; i messaggi in inglese: `--lingua`
 // è la lingua della pagina e del nome del file.
-import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join } from "node:path";
 import { controlla, tetti } from "../core/controllo/controllo";
 import type { Generato } from "../core/genera/forma";
@@ -26,6 +28,7 @@ import { dizionari, type Lingua } from "../i18n/lingue";
 import { paroleDeiLinguaggi } from "../ui/genera/codice";
 import { paroleDelloPseudocodice } from "../ui/genera/parole";
 import { paginaAffiancata, type Allineamento } from "./colonne";
+import { paginaDiProva } from "./pagina-di-prova";
 
 /** Ciò che lo strumento legge del registro: una prova gli può dare un registro con una voce in più. */
 export type VoceDaAffiancare = Pick<VoceDelLinguaggio, "id" | "genera"> & { readonly formaSenzaTipi?: FormaSenzaTipi };
@@ -101,9 +104,43 @@ export function paginaDelProgetto(p: Progetto, colonne: readonly [Colonnina, Col
   return { testo: pagina.testo };
 }
 
+const provaLaParola: Readonly<Record<Lingua, string>> = { it: "prova", en: "test" };
+
+/** Il nome del file della pagina di prova, senza la cartella. */
+export const nomeDellaPaginaDiProva = (progetto: string, lingua: Lingua): string => `${progetto} (${provaLaParola[lingua]}).html`;
+
+/** La pagina di prova di un progetto dalla colonna del JavaScript, o niente se non genera: i motivi li dice già l'altra pagina. */
+export function paginaDiProvaDelProgetto(p: Progetto, javascript: Colonnina, lingua: Lingua): string | undefined {
+  const g = javascript.genera(p, tetti, lingua, paroleDelloPseudocodice(lingua));
+  return g.generato ? paginaDiProva(g.righe, { lingua, titolo: `${p.metadata.name} · ${provaLaParola[lingua]}` }) : undefined;
+}
+
+/** Scrive i file insieme: se uno non si scrive, quelli già scritti tornano com'erano (o spariscono), e il motivo è l'esito. */
+export function scriviInsieme(file: readonly { readonly percorso: string; readonly testo: string }[]): { righe: readonly string[] } | { motivo: string } {
+  const fatti: { percorso: string; prima: Buffer | undefined }[] = [];
+  const righe: string[] = [];
+  for (const { percorso, testo } of file) {
+    const cera = existsSync(percorso);
+    try {
+      const prima = cera ? readFileSync(percorso) : undefined;
+      writeFileSync(percorso, testo, "utf8");
+      fatti.push({ percorso, prima });
+    } catch (e) {
+      for (const f of fatti) {
+        if (f.prima === undefined) rmSync(f.percorso, { force: true });
+        else writeFileSync(f.percorso, f.prima);
+      }
+      return { motivo: `${percorso} non si scrive: ${(e as Error).message}` };
+    }
+    righe.push(`${cera ? "SOSTITUITO" : "SCRITTO"} ${percorso}`);
+  }
+  return { righe };
+}
+
 /** Il comando: `argomenti` senza il suo nome, `comando` come lo scrive chi lo usa. Esce con `process.exit` dove serve. */
 export function comandoStampa(argomenti: readonly string[], comando: string): void {
   const modoDUso = `Scrive una pagina HTML con due testi di codice affiancati: si apre nel browser e si stampa con Ctrl+P, su carta o in PDF.
+Senza --linguaggi scrive anche la pagina di prova, col JavaScript da eseguire nel browser: input e output nella pagina.
 
   ${comando} <progetto.algo> [--linguaggi <primo> <secondo>] [--lingua it|en] [-o cartella]
   ${comando} -h
@@ -112,7 +149,7 @@ export function comandoStampa(argomenti: readonly string[], comando: string): vo
   --linguaggi <primo> <secondo>   due linguaggi, il primo a sinistra, con le righe allineate blocco per blocco:
                                   ${linguaggi.map((v) => v.id).join(", ")} (senza: TypeScript e JavaScript)
   --lingua it|en                  la lingua del codice e della pagina (senza: it)
-  -o cartella                     dove scrivere (senza: accanto al progetto); un file che c'è già si sostituisce
+  -o cartella                     dove scrivere (senza: accanto al progetto); i file che ci sono già si sostituiscono
   -h                              mostra questo aiuto
 
 Esempio:
@@ -173,14 +210,16 @@ Esempio:
     if (!a.ok) return ferma(`${file} non è un file di AlgoDesign valido`);
     const pagina = paginaDelProgetto(a.progetto, scelta.colonne, scelta.allineamento, lingua, file);
     if ("errori" in pagina) return ferma(...pagina.errori);
-    const scritto = join(dove, nomeDellaPagina(basename(file, extname(file)), scelta.colonne, lingua));
-    const cera = existsSync(scritto);
-    try {
-      writeFileSync(scritto, pagina.testo, "utf8");
-    } catch (e) {
-      ferma(`${scritto} non si scrive: ${(e as Error).message}`);
+    const progetto = basename(file, extname(file));
+    const daScrivere = [{ percorso: join(dove, nomeDellaPagina(progetto, scelta.colonne, lingua)), testo: pagina.testo }];
+    if (nomi === undefined) {
+      const prova = paginaDiProvaDelProgetto(a.progetto, scelta.colonne[1], lingua);
+      if (prova === undefined) return ferma(`${file}: la pagina di prova non si scrive, il JavaScript non c'è`);
+      daScrivere.push({ percorso: join(dove, nomeDellaPaginaDiProva(progetto, lingua)), testo: prova });
     }
-    console.log(`${cera ? "SOSTITUITO" : "SCRITTO"} ${scritto}`);
+    const esito = scriviInsieme(daScrivere);
+    if ("motivo" in esito) return ferma(esito.motivo);
+    for (const r of esito.righe) console.log(r);
   } catch (e) {
     // Un errore che lo strumento non prevede: il messaggio, non la traccia.
     ferma(`${file}: ${(e as Error).message}`);

@@ -38,6 +38,9 @@ export interface Riga {
   readonly campo?: number;
   readonly interno?: boolean;
   readonly nellaFunzione?: string;
+  /** Una riga che c'è solo per il motore fuori dal browser (l'`import` da Node): la pagina di prova, che porta lei quelle
+   * funzioni, la lascia vuota, e tutte le altre righe restano al loro numero. */
+  readonly delMotore?: boolean;
 }
 
 /** Le righe di una funzione, segnate come sue. */

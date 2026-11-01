@@ -41,14 +41,46 @@ function copia(caso: string, nome = "esercizio.algo"): { dove: string; file: str
 const titoli = (pagina: string) => [...pagina.matchAll(/data-titolo="\d">([^<]*)</g)].slice(0, 2).map((m) => m[1]);
 const senzaIlProgetto = (dove: string) => readdirSync(dove).filter((f) => !f.endsWith(".algo"));
 
-test("senza opzioni: TypeScript e JavaScript accanto al progetto; rilanciato, sostituisce e lo dice", () => {
+test("senza opzioni: TypeScript e JavaScript e la pagina di prova accanto al progetto; rilanciato, sostituisce e lo dice", () => {
   const { dove, file } = copia("tappa-3/tre-livelli");
   const atteso = join(dove, "esercizio (TypeScript e JavaScript).html");
-  expect(lancia("stampa", file)).toEqual({ esito: 0, righe: [`SCRITTO ${atteso}`] });
+  const prova = join(dove, "esercizio (prova).html");
+  expect(lancia("stampa", file)).toEqual({ esito: 0, righe: [`SCRITTO ${atteso}`, `SCRITTO ${prova}`] });
   expect(titoli(readFileSync(atteso, "utf8"))).toEqual(["TypeScript", "JavaScript"]);
+  expect(readFileSync(prova, "utf8")).toContain('<textarea id="input"');
   writeFileSync(atteso, "vecchio");
-  expect(lancia("stampa", file)).toEqual({ esito: 0, righe: [`SOSTITUITO ${atteso}`] });
+  writeFileSync(prova, "vecchio");
+  expect(lancia("stampa", file)).toEqual({ esito: 0, righe: [`SOSTITUITO ${atteso}`, `SOSTITUITO ${prova}`] });
   expect(readFileSync(atteso, "utf8")).toStartWith("<!doctype html>");
+  expect(readFileSync(prova, "utf8")).toStartWith("<!doctype html>");
+});
+
+test("la pagina di prova col suo nome in inglese; con --linguaggi non c'è, e l'aiuto lo dice", () => {
+  const { dove, file } = copia("tappa-3/tre-livelli");
+  expect(lancia("stampa", file, "--lingua", "en").righe).toEqual([`SCRITTO ${join(dove, "esercizio (TypeScript and JavaScript).html")}`, `SCRITTO ${join(dove, "esercizio (test).html")}`]);
+  const altra = copia("tappa-3/tre-livelli");
+  expect(lancia("stampa", altra.file, "--linguaggi", "python", "c").righe).toEqual([`SCRITTO ${join(altra.dove, "esercizio (Python e C).html")}`]);
+  expect(senzaIlProgetto(altra.dove)).toEqual(["esercizio (Python e C).html"]);
+  expect(lancia("stampa", "-h").righe.join(" ")).toContain("Senza --linguaggi scrive anche la pagina di prova");
+});
+
+test("il secondo file che non si scrive: esce 1, e il primo torna com'era, o non c'è", () => {
+  // Una cartella col nome della pagina di prova: la scrittura fallisce davvero, sul solo secondo file.
+  const { dove, file } = copia("tappa-3/tre-livelli");
+  const prima = join(dove, "esercizio (TypeScript e JavaScript).html");
+  const prova = join(dove, "esercizio (prova).html");
+  mkdirSync(prova);
+  const r = lancia("stampa", file);
+  expect(r.esito).toBe(FERMO);
+  expect(r.righe.slice(1)).toEqual([]);
+  expect(r.righe[0]).toStartWith(`ERRORE ${prova} non si scrive: `);
+  expect(existsSync(prima)).toBe(false);
+  writeFileSync(prima, "la pagina di prima");
+  expect(lancia("stampa", file).esito).toBe(FERMO);
+  expect(readFileSync(prima, "utf8")).toBe("la pagina di prima");
+  // Controllo positivo: tolto l'ostacolo, gli stessi due file si scrivono.
+  rmSync(prova, { recursive: true });
+  expect(lancia("stampa", file).righe).toEqual([`SOSTITUITO ${prima}`, `SCRITTO ${prova}`]);
 });
 
 test("--linguaggi: il primo a sinistra; l'ordine cambia il file e le colonne; le maiuscole non contano", () => {
@@ -78,7 +110,7 @@ test("-o scrive nella cartella data; una cartella che non c'è ferma senza scriv
   const { dove, file } = copia("tappa-3/tre-livelli");
   const altrove = join(dove, "altrove");
   mkdirSync(altrove);
-  expect(lancia("stampa", file, "-o", altrove)).toEqual({ esito: 0, righe: [`SCRITTO ${join(altrove, "esercizio (TypeScript e JavaScript).html")}`] });
+  expect(lancia("stampa", file, "-o", altrove)).toEqual({ esito: 0, righe: [`SCRITTO ${join(altrove, "esercizio (TypeScript e JavaScript).html")}`, `SCRITTO ${join(altrove, "esercizio (prova).html")}`] });
   const manca = join(dove, "manca");
   expect(lancia("stampa", file, "-o", manca)).toEqual({ esito: FERMO, righe: [`ERRORE ${manca} non è una cartella`] });
   expect(existsSync(manca)).toBe(false);
