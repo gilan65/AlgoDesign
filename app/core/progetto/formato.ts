@@ -81,58 +81,58 @@ const versioniLette: readonly unknown[] = [1, versioneSchema];
  */
 export const livelliMassimi = 50;
 
-type Contesto = { errori: ErroreDiApertura[]; id: Set<string>; principali: number; livello: number };
+export type Contesto = { errori: ErroreDiApertura[]; id: Set<string>; principali: number; livello: number };
 
 /** Un pezzo di JSON Schema (draft 2020-12): ciò che un lettore accetta, detto nella lingua degli editor. */
 export type Schema = { readonly [chiave: string]: unknown };
 
 /** Un lettore porta con sé il pezzo di schema che gli corrisponde: lo schema del formato si compone da questi pezzi
  * (`schemaDelFormato`), quindi dice per costruzione i campi, i tipi, gli elenchi di valori e gli obbligatori del lettore. */
-type Lettore = ((v: unknown, percorso: string, c: Contesto) => unknown) & { readonly schema: Schema };
+export type Lettore = ((v: unknown, percorso: string, c: Contesto) => unknown) & { readonly schema: Schema };
 type Campo = { obbligatorio: boolean; leggi: Lettore; vietato?: true };
-type Campi = Record<string, Campo>;
+export type Campi = Record<string, Campo>;
 
-const lettore = (leggi: (v: unknown, percorso: string, c: Contesto) => unknown, schema: Schema): Lettore => Object.assign(leggi, { schema });
+export const lettore = (leggi: (v: unknown, percorso: string, c: Contesto) => unknown, schema: Schema): Lettore => Object.assign(leggi, { schema });
 
-const segnala = (c: Contesto, percorso: string, motivo: Motivo): undefined => {
+export const segnala = (c: Contesto, percorso: string, motivo: Motivo): undefined => {
   c.errori.push({ percorso, motivo });
   return undefined;
 };
 
-const sotto = (percorso: string, chiave: string | number) =>
+export const sotto = (percorso: string, chiave: string | number) =>
   typeof chiave === "number" ? `${percorso}[${chiave}]` : percorso === "" ? chiave : `${percorso}.${chiave}`;
 
-const eOggetto = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+export const eOggetto = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
 // ------------------------------------------------------------------------------------- lettori di base
 
-const stringa = lettore((v, p, c) => (typeof v === "string" ? v : segnala(c, p, "wrong_type")), { type: "string" });
+export const stringa = lettore((v, p, c) => (typeof v === "string" ? v : segnala(c, p, "wrong_type")), { type: "string" });
 
 const stringaNonVuota = lettore((v, p, c) => (typeof v !== "string" ? segnala(c, p, "wrong_type") : v === "" ? segnala(c, p, "invalid_value") : v), {
   type: "string",
   minLength: 1,
 });
 
-const booleano = lettore((v, p, c) => (typeof v === "boolean" ? v : segnala(c, p, "wrong_type")), { type: "boolean" });
+export const booleano = lettore((v, p, c) => (typeof v === "boolean" ? v : segnala(c, p, "wrong_type")), { type: "boolean" });
 
 /** Un intero; `-0` diventa `0`, perché il testo JSON lo scrive `0` e la riapertura deve dare lo stesso modello. */
-const intero = (min = -Infinity, max = Infinity): Lettore =>
+export const intero = (min = -Infinity, max = Infinity): Lettore =>
   lettore(
     (v, p, c) =>
       !Number.isInteger(v) ? segnala(c, p, "wrong_type") : (v as number) < min || (v as number) > max ? segnala(c, p, "invalid_value") : Object.is(v, -0) ? 0 : v,
     { type: "integer", ...(min > -Infinity ? { minimum: min } : {}), ...(max < Infinity ? { maximum: max } : {}) },
   );
 
-const uno = (valori: readonly string[]): Lettore =>
+export const uno = (valori: readonly string[]): Lettore =>
   lettore((v, p, c) => (typeof v !== "string" ? segnala(c, p, "wrong_type") : valori.includes(v) ? v : segnala(c, p, "invalid_value")), {
     type: "string",
     enum: [...valori],
   });
 
 /** Un valore fisso, già controllato da chi legge l'oggetto (il genere, la versione dello schema): si tiene com'è. */
-const fisso = (valore: string | number): Lettore => lettore((x) => x, { const: valore });
+export const fisso = (valore: string | number): Lettore => lettore((x) => x, { const: valore });
 
-const elenco = (voce: Lettore, almenoUna = false): Lettore =>
+export const elenco = (voce: Lettore, almenoUna = false): Lettore =>
   lettore(
     (v, p, c) => {
       if (!Array.isArray(v)) return segnala(c, p, "wrong_type");
@@ -143,7 +143,7 @@ const elenco = (voce: Lettore, almenoUna = false): Lettore =>
   );
 
 /** Un oggetto con esattamente i campi dati: ricostruito nell'ordine di `campi`. */
-function oggetto(v: unknown, p: string, c: Contesto, campi: Campi): Record<string, unknown> | undefined {
+export function oggetto(v: unknown, p: string, c: Contesto, campi: Campi): Record<string, unknown> | undefined {
   if (!eOggetto(v)) return segnala(c, p, "wrong_type");
   // `Object.hasOwn`, non `in`: `constructor` o `__proto__` non sono campi dello schema.
   for (const chiave of Object.keys(v)) if (!Object.hasOwn(campi, chiave)) segnala(c, sotto(p, chiave), "unknown_field");
@@ -159,15 +159,15 @@ function oggetto(v: unknown, p: string, c: Contesto, campi: Campi): Record<strin
   return fuori;
 }
 
-const campo = (leggi: Lettore): Campo => ({ obbligatorio: true, leggi });
-const facoltativo = (leggi: Lettore): Campo => ({ obbligatorio: false, leggi });
+export const campo = (leggi: Lettore): Campo => ({ obbligatorio: true, leggi });
+export const facoltativo = (leggi: Lettore): Campo => ({ obbligatorio: false, leggi });
 
 /** Un campo che per questo genere di funzione o di blocco non deve esserci: nello schema non compare, e un oggetto
  * dello schema non ammette campi oltre i suoi. */
 const vietato: Campo = { obbligatorio: false, leggi: lettore((_v, p, c) => segnala(c, p, "field_not_allowed"), {}), vietato: true };
 
 /** Lo schema di un oggetto coi campi dati: i campi nell'ordine del formato, gli obbligatori, nessun campo in più. */
-const schemaDiCampi = (campi: Campi): Schema => {
+export const schemaDiCampi = (campi: Campi): Schema => {
   const ammessi = Object.entries(campi).filter(([, x]) => !x.vietato);
   return {
     type: "object",
@@ -177,14 +177,14 @@ const schemaDiCampi = (campi: Campi): Schema => {
   };
 };
 
-const conOggetto = (campi: Campi): Lettore => lettore((v, p, c) => oggetto(v, p, c, campi), schemaDiCampi(campi));
+export const conOggetto = (campi: Campi): Lettore => lettore((v, p, c) => oggetto(v, p, c, campi), schemaDiCampi(campi));
 
 /**
  * Lo schema di un oggetto i cui campi dipendono dal genere (`kind`): un ramo `if`/`then` per genere. Un validatore guarda
  * solo il ramo del genere scritto; con un `oneOf` li proverebbe tutti, e i generi che contengono altri blocchi
  * moltiplicherebbero il lavoro a ogni livello annidato, fino a non finire su un file annidato in profondità.
  */
-function perGenere<G extends string>(generi: readonly G[], schemaDi: (g: G) => Schema): Schema {
+export function perGenere<G extends string>(generi: readonly G[], schemaDi: (g: G) => Schema): Schema {
   return {
     type: "object",
     properties: { kind: { type: "string", enum: [...generi] } },
@@ -317,7 +317,7 @@ const campoDelRecord = conOggetto({ name: campo(stringa), type: campo(uno(tipi))
 /** Un record del progetto: il nome e i campi (almeno uno lo chiede il controllo statico, non l'apertura). */
 const definizioneDelRecord = conOggetto({ name: campo(stringa), fields: campo(elenco(campoDelRecord)) });
 
-const segnalazione = (codici: readonly string[]) => conOggetto({ code: campo(uno(codici)), block: campo(stringa) });
+export const segnalazione = (codici: readonly string[]) => conOggetto({ code: campo(uno(codici)), block: campo(stringa) });
 
 const campiDellAtteso: Campi = {
   output: campo(stringa),
@@ -353,7 +353,7 @@ const casoDUso = conOggetto({
 
 /** Un caso di una funzione eseguita da sola: una voce può non avere il testo (un parametro per riferimento senza valore)
  * e può valere per ogni elemento di un parametro vettore (`each`); a quale lettura arriva lo dice l'esecuzione. */
-const casoDiUnaFunzione = conOggetto({
+export const casoDiUnaFunzione = conOggetto({
   name: campo(stringa),
   description: facoltativo(stringa),
   inputs: campo(elenco(conOggetto({ data: campo(stringa), text: facoltativo(stringa), each: facoltativo(booleano) }))),
@@ -439,7 +439,7 @@ function campiDellaFunzione(g: (typeof generiDiFunzione)[number]): Campi {
  * Il genere si legge per primo, perché decide quali campi sono ammessi; se manca o è sconosciuto si
  * segnala solo quello, invece di dichiarare sconosciuti tutti gli altri campi.
  */
-function genere(v: Record<string, unknown>, p: string, c: Contesto, generi: readonly string[]): string | undefined {
+export function genere(v: Record<string, unknown>, p: string, c: Contesto, generi: readonly string[]): string | undefined {
   if (!Object.hasOwn(v, "kind")) return segnala(c, sotto(p, "kind"), "missing_field");
   return uno(generi)(v.kind, sotto(p, "kind"), c) as string | undefined;
 }
@@ -520,9 +520,21 @@ export function schemaDelFormato(): Schema {
     $schema: "https://json-schema.org/draft/2020-12/schema",
     title: "AlgoDesign project (.algo)",
     ...schemaDiCampi(campiDelProgetto),
-    $defs: { block: perGenere(generiDiBlocco, (g) => schemaDiCampi(campiDelBlocco(g))) },
+    $defs: definizioniDelFormato(),
   };
 }
+
+/** Le definizioni a cui lo schema del progetto rimanda per nome: chi lo annida le mette nella propria radice. */
+export const definizioniDelFormato = (): Schema => ({ block: perGenere(generiDiBlocco, (g) => schemaDiCampi(campiDelBlocco(g))) });
+
+/** Un progetto dentro un altro file: lo stesso lettore, con i percorsi degli errori sotto il campo che lo contiene. Lo
+ * schema rimanda alle definizioni (`definizioniDelFormato`), che stanno nella radice di chi lo annida. */
+export const progettoAnnidato: Lettore = lettore((v, p, c) => {
+  const letto = leggi(v);
+  if (letto.ok) return letto.progetto;
+  for (const e of letto.errori) c.errori.push({ percorso: e.percorso === "" ? p : sotto(p, e.percorso), motivo: e.motivo });
+  return undefined;
+}, schemaDiCampi(campiDelProgetto));
 
 /** Il testo del file dello schema pubblicato: rientro di 2 spazi e un a capo finale, come un progetto salvato. */
 export const testoDelloSchema = (): string => `${JSON.stringify(schemaDelFormato(), null, 2)}\n`;
@@ -582,15 +594,21 @@ export function chiaviRipetute(testo: string): ErroreDiApertura[] {
 
 /** Apre il testo di un file `.algo`; un BOM UTF-8 in testa si salta. */
 export function apri(testo: string): Esito {
+  const v = valoreDelTesto(testo);
+  return v.ok ? leggi(v.valore) : v;
+}
+
+/** Il valore JSON di un testo, senza il BOM in testa, senza chiavi ripetute. */
+export function valoreDelTesto(testo: string): { readonly ok: true; readonly valore: unknown } | { readonly ok: false; readonly errori: readonly ErroreDiApertura[] } {
   const senzaBom = testo.charCodeAt(0) === 0xfeff ? testo.slice(1) : testo;
-  let v: unknown;
+  let valore: unknown;
   try {
-    v = JSON.parse(senzaBom);
+    valore = JSON.parse(senzaBom);
   } catch {
     return { ok: false, errori: [{ percorso: "", motivo: "invalid_json" }] };
   }
   const ripetute = chiaviRipetute(senzaBom);
-  return ripetute.length > 0 ? { ok: false, errori: ripetute } : leggi(v);
+  return ripetute.length > 0 ? { ok: false, errori: ripetute } : { ok: true, valore };
 }
 
 /** Il testo canonico di un progetto: campi nell'ordine stabilito dal formato, rientro di 2 spazi, a capo finale. */
