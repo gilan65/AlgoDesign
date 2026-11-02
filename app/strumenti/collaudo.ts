@@ -172,7 +172,7 @@ function togliSondeRimaste(cartella: string): string[] {
 const tsc = join(radice, "node_modules", ".bin", process.platform === "win32" ? "tsc.exe" : "tsc");
 const erroreTsc = /^(.+?)\(\d+,\d+\): error (TS\d+):/gm;
 
-type PortaTsc = { nome: string; config: string; sonda: string; contenuto: string; codiceAtteso: string[] };
+type PortaTsc = { nome: string; config: string; sonda: string; contenuto: string; codiceAtteso: string[]; guardaAnche?: string[] };
 
 const porteTsc: PortaTsc[] = [
   {
@@ -182,6 +182,8 @@ const porteTsc: PortaTsc[] = [
     // Il nucleo non ha il DOM: `document` non deve esistere.
     contenuto: "export const sonda = document.title;\n",
     codiceAtteso: ["TS2584", "TS2304"],
+    // Fuori da core/: se uscissero dalla configurazione, il DOM vi tornerebbe senza un errore.
+    guardaAnche: ["ui/genera/parole.ts", "ui/dati/righe.ts"],
   },
   {
     nome: "tsc interfaccia",
@@ -210,6 +212,8 @@ async function portaTsc(p: PortaTsc): Promise<void> {
     .split(/\r?\n/)
     .filter((r) => r.trim() !== "" && !r.includes("node_modules"));
   if (elenco.codice !== 0 || guardati.length === 0) rosso(p.nome, "--listFilesOnly non elenca alcun file del progetto");
+  const fuori = (p.guardaAnche ?? []).filter((f) => !guardati.some((g) => g.replaceAll("\\", "/").endsWith(`/${f}`)));
+  if (fuori.length > 0) rosso(p.nome, `la configurazione non guarda: ${fuori.join(", ")}`);
 
   // Giro vero, con la sonda dentro: deve fallire SOLO per la sonda.
   const esito = await conSonda(p.sonda, p.contenuto, () => esegui([tsc, "-p", p.config, "--noEmit"]));

@@ -34,6 +34,7 @@
       "core/modifica/record.test.ts",
       "core/progetto/corpus.test.ts",
       "core/progetto/schema.test.ts",
+      "core/registrazione/corpus.test.ts",
       "strumenti/colonne.test.ts",
       "strumenti/pagina-di-prova.test.ts",
       "strumenti/stampa.test.ts",
@@ -251,6 +252,33 @@
       7,
       4
     ],
+    "registrazione - esecuzioni con le righe lunghe del file": 251,
+    "registrazione - esecuzioni del corpus riprodotte": {
+      "cartelle": 5,
+      "voci": 251,
+      "esecuzioni": 954,
+      "perModo": {
+        "libera": 251,
+        "caso": 251,
+        "pausa": 226,
+        "in corso": 226
+      },
+      "perEsito": {
+        "finished": 461,
+        "paused": 357,
+        "running": 83,
+        "asking": 15,
+        "not_started": 38
+      }
+    },
+    "registrazione - file guardati dal rilevatore dei percorsi": 954,
+    "registrazione - file validi per il lettore e per lo schema": 954,
+    "registrazione - sonde alterate del corpus": {
+      "conLetture": 86,
+      "lettureRilevate": 86,
+      "finite": 152,
+      "esitiRilevati": 152
+    },
     "stampa - progetti col typescript e il javascript": 173,
     "stampa - progetti per coppia di linguaggi": {
       "pseudocodice e python": 173,

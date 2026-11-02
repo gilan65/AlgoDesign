@@ -36,7 +36,8 @@
 //   caso si tiene l'output fino alla lunghezza dell'atteso più il margine dell'esito, perché il confronto resti
 //   esatto senza che un ciclo che scrive senza fine riempia la memoria.
 // - Senza caso l'esecuzione tiene anche le righe date alle letture, intere, come voci di un caso (`lette`): un caso
-//   d'uso composto da un'esecuzione finita (`casi/dallEsecuzione.ts`) le prende da qui, non dalla console.
+//   d'uso composto da un'esecuzione finita (`casi/dallEsecuzione.ts`) le prende da qui, non dalla console. Le rifiutate
+//   stanno solo in `righeDate`, al loro posto: una registrazione le ridà, perché anche loro scrivono nella console.
 // - I punti di interruzione si possono cambiare in pausa: valgono dal comando successivo.
 // - La pila delle chiamate attive si legge dagli eventi: a ogni evento il suo livello (la profondità) prende la funzione e
 //   il blocco dell'azione, e i livelli sotto si tolgono. Nei livelli sopra l'ultimo il blocco è quindi quello della
@@ -109,6 +110,11 @@ export interface RigheLunghe {
 }
 export const righeLunghePredefinite: RigheLunghe = { caratteri: 250, modo: "a-capo" };
 
+/** Una riga data a una lettura; `rifiutata`: la lettura non l'ha accettata e l'ha chiesta di nuovo. */
+export interface RigaData extends VoceDiUnaFunzione {
+  readonly rifiutata?: true;
+}
+
 /** `righe`: quante righe tengono la tabella di traccia e la console (`righeTenute`); `righeLunghe`: come la console tiene una
  * riga più lunga dei suoi caratteri; `caso`: il caso d'uso, nel modo caso; `tabella: false`: nessuna riga nella
  * tabella di traccia (la riga di comando dei casi, che non la mostra: è metà del tempo di un caso lungo, misurato);
@@ -156,7 +162,9 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
   /** Senza caso: le righe date alle letture, intere e nell'ordine, come voci di un caso (col dato che le ha chieste; la
    * stessa riga a ogni elemento con `each`, nessun testo per un parametro arrivato senza valore). La console le spezza
    * a righe, e può perderle: un caso d'uso composto dall'esecuzione le prende da qui. */
-  readonly #lette: VoceDiUnaFunzione[] = [];
+  readonly #lette: RigaData[] = [];
+  /** I risultati dell'interprete guardati: dicono il punto esatto di un'esecuzione, anche fra due fette. */
+  #avanzamenti = 0;
   /** Le righe chiuse della console; la riga aperta (scritta senza a capo) sta a parte, come testo: un oggetto per
    * riga solo quando si chiude. */
   #console: VoceDellaConsole[] = [];
@@ -255,7 +263,23 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
 
   /** Senza caso, le righe date alle letture come voci di un caso, intere e nell'ordine; nel modo caso nessuna. */
   get lette(): readonly VoceDiUnaFunzione[] {
+    return this.#lette.filter((v) => v.rifiutata !== true);
+  }
+
+  /** Senza caso, ogni riga data alle letture, nell'ordine, comprese le rifiutate; nel modo caso nessuna. */
+  get righeDate(): readonly RigaData[] {
     return [...this.#lette];
+  }
+
+  /** Quanti risultati dell'interprete l'esecuzione ha guardato: lo stesso numero è lo stesso punto, in qualunque modo ci
+   * si arrivi (i comandi e le fette non lo cambiano). */
+  get avanzamenti(): number {
+    return this.#avanzamenti;
+  }
+
+  /** Come la console tiene una riga più lunga dei suoi caratteri. */
+  get righeLunghe(): RigheLunghe {
+    return this.#righeLunghe;
   }
 
   /** La pila delle chiamate attive all'ultima azione cominciata, dalla radice (prima della prima, la radice sola). */
@@ -377,8 +401,10 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
       this.#traccia?.letto(scritta);
       this.#leggi(scritta);
       if (libera) this.#lette.push({ data: this.#chiesto, text: scritta, ...(typeof riga === "object" ? { each: true } : {}) });
-    } else if (typeof scritta === "string") this.#aggiungi({ genere: "nonValido", dato: this.#chiesto, ...this.#laFine(scritta) });
-    else if (scritta === senzaValore) {
+    } else if (typeof scritta === "string") {
+      this.#aggiungi({ genere: "nonValido", dato: this.#chiesto, ...this.#laFine(scritta) });
+      if (libera) this.#lette.push({ data: this.#chiesto, text: scritta, ...(typeof riga === "object" ? { each: true } : {}), rifiutata: true });
+    } else if (scritta === senzaValore) {
       this.#aggiungi({ genere: "senzaValore", dato: this.#chiesto, testo: "" });
       if (libera) this.#lette.push({ data: this.#chiesto, ...(typeof riga === "object" ? { each: true } : {}) });
     }
@@ -426,6 +452,7 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
   }
 
   #guarda(r: IteratorResult<Passo, Esito>): void {
+    this.#avanzamenti++;
     if (r.done) {
       const esito = r.value;
       if (!esito.parte) throw new Error("il controllo statico non è più quello dell'avvio");
