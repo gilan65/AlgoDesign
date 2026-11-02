@@ -80,7 +80,7 @@ test("il controllo positivo sul corpus: una lettura e un esito alterati nel file
 }, 300_000);
 
 /** I campi dell'elenco chiuso, fuori dal progetto e dai casi (che hanno il loro lettore). */
-const elencoChiuso = ["format", "schema_version", "product_version", "language", "system", "limits", "long_lines", "app_errors", "executions"];
+const elencoChiuso = ["format", "schema_version", "product_version", "language", "system", "limits", "long_lines", "app_errors", "app_errors_lost", "executions"];
 const campiDiUnEsecuzione = ["project", "function", "test_case", "reads", "console", "console_removed", "advances", "outcome"];
 const campiDeiLimiti = ["vector_elements", "string_length", "string_vector_characters"];
 const campiDelleRigheLunghe = ["characters", "mode"];

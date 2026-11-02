@@ -13,7 +13,7 @@
 import type { Tetti } from "../controllo/controllo";
 import type { Esecuzione, RigaData, RigheLunghe, Stato, VoceDellaConsole } from "../esecuzione/esecuzione";
 import type { CasoDiUnaFunzione } from "../progetto/modello";
-import type { EsecuzioneRegistrata, EsitoDelFile, EsitoRegistrato, FaseDelFile, LimitiDelFile, Registrazione, RigaDellaConsole, RigaLetta, RigheLungheDelFile, Sistema } from "./formato";
+import type { ErroreDellApp, EsecuzioneRegistrata, EsitoDelFile, EsitoRegistrato, FaseDelFile, LimitiDelFile, Registrazione, RigaDellaConsole, RigaLetta, RigheLungheDelFile, Sistema } from "./formato";
 import { formatoDellaRegistrazione } from "./formato";
 import type { Lingua } from "../../i18n/lingue";
 
@@ -108,7 +108,8 @@ export interface ContestoDellaRegistrazione {
   readonly versione: string;
   readonly lingua: Lingua;
   readonly sistema: Sistema;
-  readonly erroriDellApp: readonly string[];
+  readonly erroriDellApp: readonly ErroreDellApp[];
+  readonly erroriPersi: number;
 }
 
 /** La registrazione di una o più esecuzioni. I cinque valori si scrivono una volta sola: se sono cambiati fra due esecuzioni non
@@ -127,6 +128,7 @@ export function componi(contesto: ContestoDellaRegistrazione, fotografie: readon
     limits: prima.limits,
     long_lines: prima.long_lines,
     app_errors: contesto.erroriDellApp,
+    app_errors_lost: contesto.erroriPersi,
     executions: fotografie.map((f) => f.esecuzione),
   };
 }

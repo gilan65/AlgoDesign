@@ -109,6 +109,8 @@ import { RigaDiStato, type VoceDelControllo } from "./RigaDiStato";
 import stili from "./Applicazione.module.css";
 import { Barra, type Azioni, type Stati } from "./Barra";
 import { Divisore } from "./Divisore";
+import { annotaErrore } from "./errori-dell-app";
+import { ricordaIlLavoro } from "./ErroreInatteso";
 import { Barretta } from "./esecuzione/Barretta";
 import { Console } from "./esecuzione/Console";
 import { DoveSei } from "./esecuzione/DoveSei";
@@ -2129,7 +2131,7 @@ export function Applicazione({
     }
     setAvviso(v.suggerimento);
   }
-  const salvaStabile = useCallback(() => void comandiDelCodice.current.salva().catch((e: unknown) => console.error("codice non salvato:", e)), []);
+  const salvaStabile = useCallback(() => void comandiDelCodice.current.salva().catch((e: unknown) => annotaErrore("codice non salvato", e)), []);
   /** «Copia» del codice generato: il testo del linguaggio mostrato negli appunti; l'avviso dice com'è andata. */
   function copiaIlCodice(): void {
     if (!codice?.generato) return;
@@ -2295,6 +2297,11 @@ export function Applicazione({
   const daPerdere = modificato || campiAperti;
   const modificatoOra = useRef(daPerdere);
   modificatoOra.current = daPerdere;
+  // Per il riparo, a ogni aggiornamento riuscito della finestra e non durante il disegno: se è l'ultima modifica a rompere il disegno,
+  // il file salvato da lì si può riaprire. Il testo dei campi aperti non è nel progetto, e il riparo non lo salva.
+  useLayoutEffect(() => {
+    ricordaIlLavoro({ testo: () => testoCompleto(progetto), nome: progetto.metadata.name, percorso: documento.percorso, cartella: partenza, modificato });
+  });
   useEffect(() => {
     const tasto = (e: KeyboardEvent) => {
       if (lasciaLaPagina(e)) e.preventDefault();
@@ -3215,17 +3222,17 @@ export function Applicazione({
   useEffect(() => {
     if (avviata.current) return;
     avviata.current = true;
-    rileggiEsempi().catch((e: unknown) => console.error("esempi non letti:", e));
-    rileggiLibrerie().catch((e: unknown) => console.error("librerie non lette:", e));
+    rileggiEsempi().catch((e: unknown) => annotaErrore("esempi non letti", e));
+    rileggiLibrerie().catch((e: unknown) => annotaErrore("librerie non lette", e));
     fileDatoAllAvvio()
       .then((p) => (p === null ? undefined : apriIl(p)))
-      .catch((e: unknown) => console.error("file dato all'avvio non letto:", e));
+      .catch((e: unknown) => annotaErrore("file dato all'avvio non letto", e));
   });
 
   // Il guscio ferma la chiusura della finestra solo se sa che ci sono modifiche non salvate, o dei campi aperti:
   // allora la chiusura arriva qui, i campi si confermano e, se il progetto non è cambiato, si chiude senza chiedere.
   useEffect(() => {
-    segnaModificato(daPerdere).catch((e: unknown) => console.error("stato delle modifiche non comunicato:", e));
+    segnaModificato(daPerdere).catch((e: unknown) => annotaErrore("stato delle modifiche non comunicato", e));
   }, [daPerdere]);
 
   useEffect(() => {
@@ -3236,7 +3243,7 @@ export function Applicazione({
         uscendo.current = true;
         chiudiFinestra().catch((e: unknown) => {
           uscendo.current = false;
-          console.error("finestra non chiusa:", e);
+          annotaErrore("finestra non chiusa", e);
         });
       }, p),
     );
@@ -3247,7 +3254,7 @@ export function Applicazione({
   // Sul Mac il menu in cima allo schermo, nella lingua dell'interfaccia. Le sue voci Informazioni e Impostazioni
   // fanno ciò che fanno nella barra, ma non sopra un'altra finestra (come i tasti globali).
   useEffect(() => {
-    if (sulMac()) impostaMenu(dizionari[lingua]).catch((e: unknown) => console.error("menu del Mac non impostato:", e));
+    if (sulMac()) impostaMenu(dizionari[lingua]).catch((e: unknown) => annotaErrore("menu del Mac non impostato", e));
   }, [lingua]);
   useEffect(() => {
     const ascolta = (e: Event) => {
@@ -3368,7 +3375,7 @@ export function Applicazione({
         }
       : {}),
     genera: () => setConCodice((c) => !c),
-    ...(esecuzione && situazione !== "in corso" ? { esportaTabella: () => void esportaLaTabella().catch((e: unknown) => console.error("tabella non esportata:", e)) } : {}),
+    ...(esecuzione && situazione !== "in corso" ? { esportaTabella: () => void esportaLaTabella().catch((e: unknown) => annotaErrore("tabella non esportata", e)) } : {}),
     // Il flowchart si esporta sempre, tranne mentre l'esecuzione va avanti (il blocco corrente cambia) e durante «tutto
     // insieme».
     ...(situazione !== "in corso" && tutti === null ? { esportaFlowchart: apriLEsportazione } : {}),
