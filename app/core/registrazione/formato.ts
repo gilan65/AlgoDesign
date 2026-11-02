@@ -115,6 +115,19 @@ export interface EsitoRegistrato {
 /** Con le righe date alle letture, o nel modo caso con il caso, che ha le sue voci. */
 export type EsecuzioneRegistrata = EsitoRegistrato & { readonly project: Progetto; readonly function?: string } & ({ readonly reads: readonly RigaLetta[]; readonly test_case?: undefined } | { readonly test_case: CasoDiUnaFunzione; readonly reads?: undefined });
 
+/** Da dove viene un errore dell'app: il disegno, un errore che nessuno ha preso (un gestore di un evento, un fotogramma), una promessa
+ * rifiutata che nessuno ha preso, un errore che l'app ha preso e gestito (un errore del guscio, una finestra d'errore). */
+export const originiDegliErrori = ["drawing", "uncaught", "rejected", "handled"] as const;
+export type OrigineDellErrore = (typeof originiDegliErrori)[number];
+
+export interface ErroreDellApp {
+  readonly origin: OrigineDellErrore;
+  /** Senza percorsi (`errori.ts`). */
+  readonly text: string;
+  /** Quante volte è arrivato lo stesso testo dalla stessa origine. */
+  readonly times: number;
+}
+
 export interface Registrazione {
   readonly format: typeof formatoDellaRegistrazione;
   readonly schema_version: typeof versioneDellaRegistrazione;
@@ -123,7 +136,9 @@ export interface Registrazione {
   readonly system: Sistema;
   readonly limits: LimitiDelFile;
   readonly long_lines: RigheLungheDelFile;
-  readonly app_errors: readonly string[];
+  readonly app_errors: readonly ErroreDellApp[];
+  /** Le voci diverse che non sono entrate perché l'elenco era pieno. */
+  readonly app_errors_lost: number;
   readonly executions: readonly EsecuzioneRegistrata[];
 }
 
@@ -225,7 +240,8 @@ const campiDellaRegistrazione: Campi = {
   system: campo(uno(sistemi)),
   limits: campo(conOggetto({ vector_elements: campo(almeno(1)), string_length: campo(almeno(1)), string_vector_characters: campo(almeno(1)) })),
   long_lines: campo(conOggetto({ characters: campo(almeno(1)), mode: campo(uno(["wrap", "tail"])) })),
-  app_errors: campo(elenco(stringa)),
+  app_errors: campo(elenco(conOggetto({ origin: campo(uno(originiDegliErrori)), text: campo(stringa), times: campo(almeno(1)) }))),
+  app_errors_lost: campo(almeno(0)),
   executions: campo(elenco(esecuzione, true)),
 };
 

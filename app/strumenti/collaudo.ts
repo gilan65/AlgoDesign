@@ -1212,6 +1212,7 @@ const proveAttesePerSpec: Record<string, number> = {
   "domanda.e2e.ts": 3,
   "editor-dei-cicli.e2e.ts": 7,
   "editor.e2e.ts": 5,
+  "errori-dell-app.e2e.ts": 6,
   "esecuzione.e2e.ts": 12,
   "esporta.e2e.ts": 5,
   "espressioni.e2e.ts": 6,

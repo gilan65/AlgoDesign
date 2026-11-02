@@ -1,0 +1,11 @@
+/* La pagina del riparo: la frase e i pulsanti, con i pulsanti delle finestre. */
+.frase {
+  margin: 1rem;
+}
+
+.comandi {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem;
+}

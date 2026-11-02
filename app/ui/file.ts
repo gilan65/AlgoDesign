@@ -4,6 +4,7 @@
 // caricamento (come al primo avvio).
 import { invoke } from "@tauri-apps/api/core";
 import type { EstensioneDelCodice } from "../core/genera/linguaggi";
+import { annota } from "./errori-dell-app";
 
 /** I generi di un errore del guscio (`GENERI` in `shell/src/progetto.rs`, appaiati da una prova di `cargo test`): il
  * file non è testo UTF-8, il messaggio del sistema, e per gli esempi e i gruppi un nome non ammesso, un gruppo con dentro
@@ -161,8 +162,10 @@ export async function chiudiFinestra(): Promise<void> {
 export const eventoDiChiusura = "algodesign-chiusura";
 
 /** Un errore rifiutato da `invoke`, riconosciuto per forma; un'altra cosa (la finzione lancia un `Error`)
- * è un errore del sistema col suo testo. */
+ * è un errore del sistema col suo testo. Ogni errore del guscio che arriva a una finestra passa di qui: è il punto in cui entra
+ * nell'elenco degli errori dell'app. */
 export function erroreDelFile(e: unknown): ErroreDelFile {
+  annota("handled", "", e);
   if (typeof e === "object" && e !== null && "genere" in e && generiDelFile.some((g) => g === e.genere))
     return { genere: e.genere as ErroreDelFile["genere"], dettaglio: String((e as { dettaglio?: unknown }).dettaglio ?? "") };
   const messaggio = (e as { message?: unknown } | null)?.message;

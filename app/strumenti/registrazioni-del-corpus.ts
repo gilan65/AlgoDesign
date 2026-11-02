@@ -120,7 +120,7 @@ export function esecuzioniDi(v: Voce, righeLunghe?: RigheLunghe): EsecuzioneDelC
   return fuori;
 }
 
-export const contestoDiProva = { versione: "0.7.0-beta.3", lingua: "it", sistema: "windows", erroriDellApp: [] } as const;
+export const contestoDiProva = { versione: "0.7.0-beta.3", lingua: "it", sistema: "windows", erroriDellApp: [], erroriPersi: 0 } as const;
 
 /** La registrazione di una sola esecuzione. */
 export const registrazioneDi = (es: Esecuzione<CasoDiUnaFunzione>): Registrazione => componi(contestoDiProva, [fotografa(es)]);
@@ -153,7 +153,7 @@ function testiDi(v: unknown): string[] {
 /** I percorsi assoluti (Windows, rete, Unix) e il nome del profilo nei testi di un file JSON: le occorrenze trovate. */
 export function percorsiEProfilo(json: string): string[] {
   const nome = userInfo().username.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const rilevatore = new RegExp(`(?<![A-Za-z])[A-Za-z]:[\\\\/][^\\s]*|\\\\\\\\[^\\s]+|/(?:Users|home|mnt|root)/[^\\s]*|\\b${nome}\\b`, "gi");
+  const rilevatore = new RegExp(`(?<![A-Za-z])[A-Za-z]:[\\\\/][^\\s]*|\\\\\\\\[^\\s]+|/(?:Users|home|media|mnt|root)/[^\\s]*|\\b${nome}\\b`, "gi");
   return testiDi(JSON.parse(json)).flatMap((t) => [...t.matchAll(rilevatore)].map((m) => m[0]));
 }
 

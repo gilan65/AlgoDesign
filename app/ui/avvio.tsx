@@ -2,9 +2,13 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { dizionari, linguaDelSistema } from "../i18n/lingue";
 import { Applicazione } from "./Applicazione";
+import { annotaErrore, ascoltaGliErrori } from "./errori-dell-app";
 import { ErroreInatteso } from "./ErroreInatteso";
 import { leggiPreferenze, preferenzeDa } from "./preferenze";
 import "./tema.css";
+
+// Prima di tutto il resto: un errore dell'avvio non deve sfuggire.
+ascoltaGliErrori();
 
 const radice = document.getElementById("radice");
 if (!radice) throw new Error("manca l'elemento #radice in index.html");
@@ -14,7 +18,7 @@ if (!radice) throw new Error("manca l'elemento #radice in index.html");
 // risponde, vale come nessuna preferenza: l'app parte lo stesso (la pagina resterebbe bianca), e l'errore va
 // nella console.
 const lette = await leggiPreferenze().catch((e: unknown) => {
-  console.error("preferenze non lette:", e);
+  annotaErrore("preferenze non lette", e);
   return null;
 });
 const salvate = preferenzeDa(lette);

@@ -358,6 +358,11 @@ export const it = {
   modificaRifiutata: "La modifica non si applica: il progetto non si potrebbe più aprire.",
   // Al posto della finestra, quando l'interfaccia non si può disegnare.
   erroreInatteso: "Qualcosa non ha funzionato e la finestra non si può mostrare. Chiudi l'applicazione e riaprila.",
+  // Lo stesso, quando ci sono modifiche non salvate. {file} è il nome del file appena salvato.
+  erroreInattesoConModifiche: "Qualcosa non ha funzionato e la finestra non si può mostrare. Le modifiche al progetto non sono salvate: salvale in un file, poi chiudi l'applicazione e riaprila.",
+  erroreInattesoChiudi: "Chiudi senza salvare",
+  erroreInattesoAllaChiusura: "Le modifiche non sono salvate: salvale o scegli «Chiudi senza salvare».",
+  erroreInattesoSalvato: "Il progetto è stato salvato in «{file}». Chiudi l'applicazione e riaprila.",
   // Lo spostamento di un blocco, col mouse o dalla tastiera. {blocco} è il nome del blocco.
   spostamentoDentroSeStesso: "Un blocco non si può spostare dentro sé stesso.",
   spostamentoIniziato: "Si sposta «{blocco}»: con Tab raggiungi un «+» e premi Invio; Esc annulla.",
