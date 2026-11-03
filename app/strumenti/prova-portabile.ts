@@ -130,6 +130,7 @@
 //      (`SessionInfo\<n>\ApplicationViewManagement\W32:<identificativo>`, aggiunto e tolto); la PowerShell della prova.
 //      Nei messaggi chiave e nome del valore, mai il dato;
 //    - SEGNALAZIONE: il comando dal menu «Aiuto», in pausa; rinunciando nessun file; col gesto il file è il testo mostrato, senza percorsi;
+//    - REGISTRAZIONE: attivata dal menu «Aiuto» il segno la dice e conta l'esecuzione; non scrive le preferenze; riaperta l'app è spenta;
 //    - TRACCE: nessuna cartella dell'identificatore e nessuna voce nuova al primo livello di
 //      %APPDATA%, %LOCALAPPDATA%, %TEMP% (e %TMP%, se è un'altra cartella); nella cartella di prova,
 //      accanto all'eseguibile, nient'altro che `data\`. Voci ammesse: nessuna. Il log dice quanto pesa `data\webview`.
@@ -407,6 +408,7 @@ const clausole: [string, string][] = [
   ["ESECUZIONE", "esecuzione"],
   ["SICUREZZA", "politica di sicurezza dei contenuti"],
   ["SEGNALAZIONE", "file per una segnalazione"],
+  ["REGISTRAZIONE", "registrazione delle esecuzioni"],
   ["CODICE", "codice generato"],
   ["ACCADEMICO", "«Accademico» dal menu dei linguaggi"],
   ["VETTORE", "vettore di 1000 elementi"],
@@ -597,8 +599,14 @@ const appDiSistema = /^HKEY_CURRENT_USER\\Software\\Classes\\Local Settings\\Sof
 // seconda e la terza; fra la prima e l'ultima non si vede). Ammesso solo in questa forma, come chiave aggiunta o tolta.
 const vistaDellaFinestra = /^HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\SessionInfo\\\d+\\ApplicationViewManagement\\W32:[0-9A-F]{16} :: <chiave (aggiunta|tolta)>$/;
 // Il rumore che cambia più di rado dei due intervalli a vuoto: OneDrive annota il suo ultimo aggiornamento ogni 2–4
-// minuti, con l'app chiusa.
-const rumoreLento = new Set([`HKEY_CURRENT_USER\\Software\\Microsoft\\OneDrive\\Accounts :: "LastUpdate"`]);
+// minuti, con l'app chiusa. Il Sensore di memoria di Windows gira a orari suoi e annota l'ultimo avvio, l'ultimo errore e lo spazio del giorno, un
+// valore col nome della data (visto due volte: l'ha preso nell'intervallo della stampa, e spariva al rilancio).
+// Il motore degli script di Windows conta il proprio uso per nome del processo (nella stessa chiave powerpnt.exe e wmiprvse.exe), e quello di
+// msedgewebview2.exe lo muove chiunque usi quel runtime: la ricerca di Windows ne tiene aperto uno (misurato, il genitore è SearchHost).
+const sensoreDiMemoria = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\StorageSense\\Parameters\\StoragePolicy";
+const usoDegliScript = `HKEY_CURRENT_USER\\Software\\Microsoft\\Windows Script\\Settings\\Telemetry\\msedgewebview2.exe :: "JScript9LegacySetScriptStateStarted"`;
+const rumoreLento = new Set([`HKEY_CURRENT_USER\\Software\\Microsoft\\OneDrive\\Accounts :: "LastUpdate"`, `${sensoreDiMemoria} :: "StoragePoliciesLastFailure"`, `${sensoreDiMemoria} :: "StoragePoliciesLastTrigger"`, usoDegliScript]);
+const spazioDelGiorno = new RegExp(`^${sensoreDiMemoria.replace(/\\/g, "\\\\")}\\\\SpaceHistory :: "\\d{8}"$`);
 // La firma delle impostazioni del profilo «Default» del runtime WebView2, una chiave che condividono tutti i suoi host:
 // la riscrive l'avvio con un profilo nuovo (`schedule_to_flush_to_disk`, `extensions.settings` tolta) e la stampa in PDF
 // (`extensions.settings` di nuovo, col visore PDF del motore e un'altra estensione interna). L'app non la evita (un
@@ -621,6 +629,7 @@ const ammesso = (c: string) => {
   return (
     diWindows.has(c) ||
     rumoreLento.has(c) ||
+    spazioDelGiorno.test(c) ||
     dellaStampa.has(c) ||
     dellaProva.has(c) ||
     vistaDellaFinestra.test(c) ||
@@ -1078,6 +1087,7 @@ async function giroPortabile(): Promise<Set<string>> {
   await giroDelleFunzioni(iniziale);
   await giroDellEsecuzione(iniziale);
   await giroDellaSegnalazione(iniziale);
+  await giroDellaRegistrazione(iniziale);
   await giroDelCodice(iniziale);
   await giroDiAccademico(iniziale);
   await giroDelVettore(iniziale);
@@ -1528,6 +1538,47 @@ async function giroDellaSegnalazione(lingua: Lingua): Promise<void> {
   rmSync(segnalata);
   rmSync(progettoFuori);
   verde("SEGNALAZIONE", `rinunciando nessun file; col gesto ${nomeDellaSegnalazione}.txt di ${Buffer.byteLength(scritto)} byte uguali al testo mostrato, avviso «${detto}», nessun percorso né il nome del profilo | controllo positivo acceso (${nellePreferenze.length} occorrenze nel preferenze.json con cui l'app è partita)`);
+}
+
+/** La clausola REGISTRAZIONE: la attiva il gesto, il segno la dice (è anche il controllo positivo di ciò che al riavvio deve mancare), non tocca le
+ * preferenze; l'app chiusa e riaperta la trova spenta. */
+async function giroDellaRegistrazione(lingua: Lingua): Promise<void> {
+  const testi = dizionari[lingua];
+  const preferenze = join(dati, "preferenze.json");
+  const lePreferenze = () => (existsSync(preferenze) ? readFileSync(preferenze, "utf8") : null);
+  writeFileSync(progettoFuori, testoDiPartenza);
+  const partenza = apriProgetto(testoDiPartenza);
+  if (!partenza.ok) rosso("REGISTRAZIONE", "il file del corpus non si apre");
+  const nome = `${testi.flowchart}: ${partenza.progetto.metadata.name}`;
+  const prima = lePreferenze();
+  const voce = async (p: Page, testo: string) => {
+    await p.getByRole("banner").getByRole("button", { name: testi.menuAiuto, exact: true }).click();
+    await p.waitForFunction(() => document.activeElement?.closest('[role="menu"]') != null, undefined, { polling: "raf", timeout: 10_000 });
+    return p.getByRole("menu", { name: testi.menuAiuto, exact: true }).getByRole("menuitem", { name: testo, exact: true });
+  };
+  const a = await avvia([progettoFuori]);
+  await a.pagina.getByRole("group", { name: nome, exact: true }).waitFor({ timeout: 15_000 });
+  const segno = a.pagina.locator("[data-in-registrazione]");
+  if ((await segno.count()) !== 0) rosso("REGISTRAZIONE", "attiva all'avvio, senza un gesto");
+  await (await voce(a.pagina, testi.registraAttiva)).click();
+  await segno.waitFor({ timeout: 10_000 });
+  await a.pagina.getByRole("region", { name: testi.vistaFlowchart, exact: true }).click({ position: { x: 5, y: 5 } });
+  await a.pagina.keyboard.press("F10");
+  await a.pagina.waitForFunction((pronto) => document.querySelector("[data-stato-esecuzione]")?.textContent !== pronto, testi.statoPronto, { polling: "raf", timeout: 10_000 });
+  const detto = await segno.textContent({ timeout: 5_000 });
+  if (detto !== testi.statoInRegistrazioneUna) rosso("REGISTRAZIONE", `il segno dice «${detto}» invece di «${testi.statoInRegistrazioneUna}»`);
+  await chiudi(a);
+  if (lePreferenze() !== prima) rosso("REGISTRAZIONE", "le preferenze sono cambiate senza un gesto che le riguardi");
+
+  const b = await avvia([progettoFuori]);
+  await b.pagina.getByRole("group", { name: nome, exact: true }).waitFor({ timeout: 15_000 });
+  const accesa = await b.pagina.locator("[data-in-registrazione]").count();
+  if (accesa !== 0) rosso("REGISTRAZIONE", "attiva dopo il riavvio");
+  await (await voce(b.pagina, testi.registraAttiva)).waitFor({ timeout: 10_000 });
+  await chiudi(b);
+  if (lePreferenze() !== prima) rosso("REGISTRAZIONE", "le preferenze sono cambiate al riavvio");
+  rmSync(progettoFuori);
+  verde("REGISTRAZIONE", `il segno «${detto}» dopo il gesto, nessuno al riavvio (segni ${accesa}), la voce di nuovo «${testi.registraAttiva}», preferenze invariate (${prima === null ? "nessun file" : `${Buffer.byteLength(prima)} byte`})`);
 }
 
 /** Una corsa del vettore di 1000 elementi, misurata come nella prova nei motori: la risposta della pagina (un giro di
@@ -2425,6 +2476,7 @@ async function sondaDelRegistro(rumore: Set<string>): Promise<void> {
       `${viste}\\W32:0000000000FC087E :: <chiave tolta>`,
       ...diWindows,
       ...rumoreLento,
+      `${sensoreDiMemoria}\\SpaceHistory :: "20261103"`,
       ...dellaStampa,
       ...dellaProva,
       ...[...diWindowsPerChiave].map((k) => `${k} :: "0"`),
@@ -2432,6 +2484,11 @@ async function sondaDelRegistro(rumore: Set<string>): Promise<void> {
       `${sistema}\\Microsoft.AAD.BrokerPlugin_cw5n1h2txyewy\\HAM\\AUI\\App\\V1\\LU :: "PCT"`,
     ];
     const vicine = [
+      `${sensoreDiMemoria} :: "Altro"`,
+      `${sensoreDiMemoria}\\SpaceHistory :: "Altro"`,
+      `${sensoreDiMemoria}\\Altro :: "20261103"`,
+      `HKEY_CURRENT_USER\\Software\\Microsoft\\Windows Script\\Settings\\Telemetry\\msedgewebview2.exe :: "Altro"`,
+      `HKEY_CURRENT_USER\\Software\\Microsoft\\Windows Script\\Settings\\Telemetry\\algodesign.exe :: "JScript9LegacySetScriptStateStarted"`,
       `${viste}\\W32:0000000000FC087E :: "0"`,
       `${viste}\\Altro :: <chiave aggiunta>`,
       `${viste} :: <chiave aggiunta>`,

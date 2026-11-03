@@ -5,7 +5,7 @@
 // A differenza di un caso composto (`casi/dall-esecuzione.ts`) una console che ha perso righe resta registrabile, e il file dice
 // quante ne ha perse: una registrazione è ciò che è successo, non un atteso.
 //
-// Una fotografia si fa quando serve, e non tiene l'esecuzione: la modalità che registra più esecuzioni tiene le fotografie.
+// Una fotografia si fa quando serve, e non tiene l'esecuzione: la modalità che registra più esecuzioni (`in-registrazione.ts`) tiene le fotografie.
 //
 // Che cosa NON guarda: gli errori dell'app, che dà chi chiama; il contenuto del progetto, che è ciò che lo studente ha scritto e la
 // finestra gli mostra prima di salvare.
@@ -112,13 +112,12 @@ export interface ContestoDellaRegistrazione {
   readonly erroriPersi: number;
 }
 
-/** La registrazione di una o più esecuzioni. I cinque valori si scrivono una volta sola: se sono cambiati fra due esecuzioni non
- * c'è un file che li dica, e chi registra deve fare due file. */
-export function componi(contesto: ContestoDellaRegistrazione, fotografie: readonly Fotografia[]): Registrazione {
+/** La registrazione di una o più esecuzioni. I cinque valori si scrivono una volta sola, quelli della prima; un'esecuzione con valori
+ * diversi (cambiati nelle Impostazioni mentre si registrava) porta i propri. `esecuzioniPerse`: quelle che chi registra non ha più. */
+export function componi(contesto: ContestoDellaRegistrazione, fotografie: readonly Fotografia[], esecuzioniPerse = 0): Registrazione {
   const prima = fotografie[0];
   if (prima === undefined) throw new Error("una registrazione senza esecuzioni");
   const valori = (f: Fotografia) => JSON.stringify([f.limits, f.long_lines]);
-  if (fotografie.some((f) => valori(f) !== valori(prima))) throw new Error("i limiti o le righe lunghe sono cambiati fra due esecuzioni della stessa registrazione");
   return {
     format: formatoDellaRegistrazione,
     schema_version: 1,
@@ -129,6 +128,7 @@ export function componi(contesto: ContestoDellaRegistrazione, fotografie: readon
     long_lines: prima.long_lines,
     app_errors: contesto.erroriDellApp,
     app_errors_lost: contesto.erroriPersi,
-    executions: fotografie.map((f) => f.esecuzione),
+    executions_lost: esecuzioniPerse,
+    executions: fotografie.map((f) => (valori(f) === valori(prima) ? f.esecuzione : { ...f.esecuzione, limits: f.limits, long_lines: f.long_lines })),
   };
 }

@@ -109,9 +109,10 @@ import { RigaDiStato, type VoceDelControllo } from "./RigaDiStato";
 import stili from "./Applicazione.module.css";
 import { Barra, type Azioni, type Stati } from "./Barra";
 import { Divisore } from "./Divisore";
-import { annotaErrore } from "./errori-dell-app";
+import { annotaErrore, erroriDellApp } from "./errori-dell-app";
 import { ricordaIlLavoro } from "./ErroreInatteso";
-import { testoPerSegnalare } from "./segnalazione";
+import { InRegistrazione } from "../core/registrazione/in-registrazione";
+import { perSegnalare, type PerSegnalare } from "./segnalazione";
 import { Barretta } from "./esecuzione/Barretta";
 import { Console } from "./esecuzione/Console";
 import { DoveSei } from "./esecuzione/DoveSei";
@@ -309,7 +310,7 @@ type Aperta =
   | { readonly genere: "impostazioni" }
   | { readonly genere: "informazioni" }
   /** La finestra prima di salvare il file per una segnalazione, col testo fotografato all'apertura. */
-  | { readonly genere: "segnala"; readonly testo: string }
+  | { readonly genere: "segnala"; readonly segnalazione: PerSegnalare }
   /** La finestra di una procedura o di una funzione: nuova, le proprietà, il nome. */
   | { readonly genere: "funzione"; readonly modo: ModoDellaFinestra }
   /** «Procedure e funzioni…». */
@@ -343,6 +344,9 @@ export function Applicazione({
 }): ReactElement {
   const [lingua, setLingua] = useState(linguaIniziale);
   const [scelte, setScelte] = useState(scelteIniziali);
+  // La registrazione delle esecuzioni: solo qui, mai su disco né nelle preferenze, quindi spenta a ogni avvio. L'oggetto cambia dentro, e il
+  // disegno che segue mostra il numero: come per l'esecuzione.
+  const [registrazione, setRegistrazione] = useState<InRegistrazione | null>(null);
   // La guida per lo studente: non è una delle finestre (`finestra`), resta aperta mentre si lavora e i tasti valgono.
   const [guidaAperta, setGuidaAperta] = useState(false);
   const memoriaDellaGuida = useRef(memoriaNuova());
@@ -1737,12 +1741,15 @@ export function Applicazione({
     if (indiceDelCaso !== undefined && caso === undefined) return false;
     const es = new Esecuzione<CasoDiUnaFunzione>(c.presente, limiti, { righeLunghe: righeLungheDi(scelte), controllo: controlla(c.presente, limiti), ...(funzione !== undefined ? { funzione } : {}), ...(caso ? { caso } : {}) });
     if (es.stato.genere === "non parte") {
+      registrazione?.tieni(es, erroriDellApp().voci);
       if (caso) concludiIlCaso(es);
       else setAvviso(testi.annuncioNonParte);
+      ridisegna();
       return false;
     }
     // I punti li dà l'effetto qui sotto, prima della prima fetta: una via sola.
     es.comanda(comando);
+    registrazione?.apri(es, erroriDellApp().voci);
     setEsecuzione(es);
     setAperto(false);
     setElencoSu(null);
@@ -1762,6 +1769,7 @@ export function Applicazione({
     setAnimata(false);
     if (esecuzione === null) return;
     const inCorso = inEsecuzione;
+    registrazione?.chiudi(erroriDellApp().voci);
     setEsecuzione(null);
     setAperto(true);
     setAvviso(inCorso ? testi.annuncioFermata : null);
@@ -2169,21 +2177,33 @@ export function Applicazione({
 
   /** «Salva per segnalare…»: il testo si fotografa qui, una volta sola. Prima si confermano i campi aperti, come per i comandi dei file. */
   function apriLaSegnalazione(): void {
-    const es = esecuzione;
-    if (!es || (!inEsecuzione && !confermaIApertiCampi())) return;
+    if (!inEsecuzione && !confermaIApertiCampi()) return;
     setMenuDellaFunzione(null);
     try {
-      setFinestra({ genere: "segnala", testo: testoPerSegnalare(es, lingua) });
+      setFinestra({ genere: "segnala", segnalazione: perSegnalare(lingua, esecuzione, registrazione) });
     } catch (e) {
       annotaErrore("testo per la segnalazione non preparato", e);
       setAvviso(testi.segnalaNonPreparato);
     }
   }
 
+  /** Attiva la registrazione: da qui le esecuzioni restano in memoria, l'aperta compresa. Non scrive nulla. */
+  function attivaLaRegistrazione(): void {
+    setRegistrazione(new InRegistrazione(esecuzione, erroriDellApp().voci));
+    setFinestra(null);
+    setAvviso(testi.registrazioneAttivata);
+  }
+  /** Disattiva, senza chiedere: è un gesto esplicito dal menu, e l'avviso dice che le esecuzioni non ci sono più. */
+  function disattivaLaRegistrazione(): void {
+    setRegistrazione(null);
+    setAvviso(testi.registrazioneDisattivata);
+  }
+
   /** Il gesto: quel testo nel file che l'utente sceglie. Rinunciando (al nome, alla finestra del sistema, a «Sostituire?») nessun file, e si
    * torna alla finestra con lo stesso testo. */
-  async function salvaLaSegnalazione(testo: string): Promise<void> {
-    const torna = () => setFinestra({ genere: "segnala", testo });
+  async function salvaLaSegnalazione(segnalazione: PerSegnalare): Promise<void> {
+    const { testo } = segnalazione;
+    const torna = () => setFinestra({ genere: "segnala", segnalazione });
     const nome = await nomeDaUsare(progetto.metadata.name, ".txt", testi.nomeDellaSegnalazione);
     if (nome === null) return torna();
     const scelto = await scegliFileDelCodice(nome, testi.filtroDellaSegnalazione, ".txt", partenza);
@@ -2341,8 +2361,8 @@ export function Applicazione({
       percorso: documento.percorso,
       cartella: partenza,
       modificato,
-      // Solo se serve: l'esecuzione aperta o, senza, una mai partita del progetto.
-      segnalazione: () => testoPerSegnalare(esecuzione ?? new Esecuzione<CasoDiUnaFunzione>(progetto, limiti, { tabella: false, righeLunghe: righeLungheDi(scelte) }), lingua),
+      // Solo se serve: le esecuzioni registrate, se ce ne sono; se no l'esecuzione aperta o, senza, una mai partita del progetto.
+      segnalazione: () => perSegnalare(lingua, esecuzione ?? new Esecuzione<CasoDiUnaFunzione>(progetto, limiti, { tabella: false, righeLunghe: righeLungheDi(scelte) }), registrazione),
     });
   });
   useEffect(() => {
@@ -2843,6 +2863,7 @@ export function Applicazione({
     const tuttiICasi = c ? casiDella(c.presente, funzioneDeiCasi) : [];
     const indici = tuttiICasi.flatMap((x, i) => (!soloSelezionati || selezionati.has(chiaveDiUnCaso(x.name)) ? [i] : []));
     if (!c || indici.length === 0) return;
+    registrazione?.chiudi(erroriDellApp().voci);
     setEsecuzione(null);
     setTutti(new TuttiICasi(c.presente, limiti, indici, funzioneDeiCasi));
     setAvviso(null);
@@ -2924,6 +2945,7 @@ export function Applicazione({
     setSelezionati(new Set());
     setAvviso(null);
     if (esecuzione) setAperto(true);
+    registrazione?.chiudi(erroriDellApp().voci);
     setEsecuzione(null);
   }
 
@@ -3380,7 +3402,8 @@ export function Applicazione({
     ...comandiDelProgetto,
     ...azioniDelMenu,
     // La guida resta aperta mentre si lavora: già aperta, la voce le riporta il fuoco.
-    ...(esecuzione && situazione !== "in corso" && tutti === null ? { segnala: apriLaSegnalazione } : {}),
+    registra: registrazione === null ? attivaLaRegistrazione : disattivaLaRegistrazione,
+    ...((esecuzione !== null || (registrazione?.numero ?? 0) > 0) && situazione !== "in corso" && tutti === null ? { segnala: apriLaSegnalazione } : {}),
     guida: () => (guidaAperta ? document.querySelector<HTMLElement>("[data-finestra-guida] article")?.focus() : setGuidaAperta(true)),
     ...(siAnnulla(cronologia) && !inEsecuzione ? { annulla: () => passo("annulla") } : {}),
     ...(siRipete(cronologia) && !inEsecuzione ? { ripeti: () => passo("ripeti") } : {}),
@@ -3435,6 +3458,7 @@ export function Applicazione({
     adatta,
   };
   const stati: Stati = {
+    registra: { testo: registrazione === null ? testi.registraAttiva : testi.registraDisattiva },
     funzione: { suggerimento: testi.comandoFunzioneSuggerimento },
     esegui: { testo: situazione === "in pausa" ? testi.continua : testi.esegui },
     entra: { suggerimento: suggerimento("entra", testi.entraSuggerimento, testi) },
@@ -3992,6 +4016,9 @@ export function Applicazione({
         {...(giri.frasi.length > 0 ? { ricorsioni: giri.frasi } : {})}
         testi={testi}
         esecuzione={statoInParole}
+        inRegistrazione={
+          registrazione === null ? undefined : registrazione.numero === 0 ? testi.statoInRegistrazione : registrazione.numero === 1 ? testi.statoInRegistrazioneUna : riempi(testi.statoInRegistrazioneMolte, { n: String(registrazione.numero) })
+        }
         zoom={{ scala, azioni, stati }}
         lingua={{ attuale: lingua, scegli: scegliLingua }}
         daiUnValore={inEsecuzione ? undefined : daiUnValore}
@@ -4190,7 +4217,7 @@ export function Applicazione({
           nomeDi={nomeDi}
         />
       )}
-      <FinestraSegnala testo={finestra?.genere === "segnala" ? finestra.testo : null} testi={testi} salva={(t) => void salvaLaSegnalazione(t)} rinuncia={() => setFinestra(null)} />
+      <FinestraSegnala segnalazione={finestra?.genere === "segnala" ? finestra.segnalazione : null} testi={testi} salva={(s) => void salvaLaSegnalazione(s)} rinuncia={() => setFinestra(null)} attiva={attivaLaRegistrazione} />
       <ConfermaSostituzione
         file={finestra?.genere === "sostituire" ? nomeDelFile(finestra.percorso) : null}
         testi={testi}

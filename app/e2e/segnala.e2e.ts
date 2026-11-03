@@ -1,7 +1,7 @@
 // «Salva per segnalare un malfunzionamento…» nel motore vero (server di sviluppo e build), col guscio simulato: il comando, la finestra col
 // testo esatto, la finestra del sistema.
 //
-// - Il comando c'è solo con un'esecuzione ferma: spento senza, durante la corsa e dopo «Ferma».
+// - Il comando c'è solo con un'esecuzione ferma: spento senza, durante la corsa e dopo «Ferma». Con la registrazione attiva: `e2e/in-registrazione.e2e.ts`.
 // - Il testo mostrato è byte per byte ciò che arriva alla scrittura, si riapre col lettore, ha solo i campi dell'elenco chiuso e nessun
 //   percorso né il nome del profilo. Controllo positivo: il rilevatore si accende su un file delle preferenze vero.
 // - Nessuna scrittura senza il gesto: rinunciando alla finestra, a quella del sistema o alla domanda «Sostituire?» nessun file, e si torna
@@ -69,7 +69,7 @@ async function apriLaFinestra(page: Page): Promise<Locator> {
   return f;
 }
 
-test("il comando è nel menu «Aiuto», fra «Esempi» e «Informazioni»; c'è solo con un'esecuzione ferma", async ({ page }) => {
+test("il comando è nel menu «Aiuto», dopo la voce della registrazione; c'è solo con un'esecuzione ferma", async ({ page }) => {
   await apriVuota(page, { lingua: "it" });
   const spenta = async (spento: boolean, dove: string) => {
     const v = await voce(page);
@@ -80,7 +80,7 @@ test("il comando è nel menu «Aiuto», fra «Esempi» e «Informazioni»; c'è 
   };
   await (await voce(page)).waitFor();
   const voci = await page.getByRole("menu", { name: it.menuAiuto, exact: true }).getByRole("menuitem").allInnerTexts();
-  expect(voci.map((v) => v.trim().split("\n")[0])).toEqual([it.guida, it.esempi, it.segnalaComando, it.informazioni]);
+  expect(voci.map((v) => v.trim().split("\n")[0])).toEqual([it.guida, it.esempi, it.registraAttiva, it.segnalaComando, it.informazioni]);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("menu")).toHaveCount(0);
 

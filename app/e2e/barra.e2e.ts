@@ -348,7 +348,7 @@ test("il menu «Aiuto» è l'ultimo della barra, alla destra di «Impostazioni»
   await expect(menuAiuto).toBeVisible();
   await fuocoNelMenu(page);
   const voci = await menuAiuto.getByRole("menuitem").evaluateAll((v) => v.map((x) => `${x.getAttribute("data-comando")}: ${x.querySelector("[data-testo]")?.textContent}`));
-  expect(voci).toEqual([`guida: ${it.guida}`, `esempi: ${it.esempi}`, `segnala: ${it.segnalaComando}`, `informazioni: ${it.informazioni}`]);
+  expect(voci).toEqual([`guida: ${it.guida}`, `esempi: ${it.esempi}`, `registra: ${it.registraAttiva}`, `segnala: ${it.segnalaComando}`, `informazioni: ${it.informazioni}`]);
 
   // Dalla tastiera: Fine sull'ultima voce, Invio apre le informazioni; Esc le chiude e il fuoco torna al pulsante.
   await page.keyboard.press("End");

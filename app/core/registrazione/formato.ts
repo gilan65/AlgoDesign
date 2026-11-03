@@ -11,7 +11,8 @@
 //
 // Che cosa il lettore NON guarda (lo fa la riproduzione, che dice le differenze): che le letture, la console e l'esito siano
 // quelli del programma, né che il caso eseguito sia uno di quelli del progetto (si porta con sé le voci e l'atteso).
-// Le regole che lo schema non sa dire: la funzione eseguita che esiste nel progetto, la chiave ripetuta.
+// Le regole che lo schema non sa dire: la funzione eseguita che esiste nel progetto, la chiave ripetuta, una posizione degli errori dell'app
+// che l'elenco non ha.
 
 import { codiciErrore, codiciErroreStatico, modalita, type CasoDiUnaFunzione, type CodiceErrore, type CodiceErroreStatico, type Progetto, type Segnalazione } from "../progetto/modello";
 import {
@@ -113,7 +114,15 @@ export interface EsitoRegistrato {
 }
 
 /** Con le righe date alle letture, o nel modo caso con il caso, che ha le sue voci. */
-export type EsecuzioneRegistrata = EsitoRegistrato & { readonly project: Progetto; readonly function?: string } & ({ readonly reads: readonly RigaLetta[]; readonly test_case?: undefined } | { readonly test_case: CasoDiUnaFunzione; readonly reads?: undefined });
+export type EsecuzioneRegistrata = EsitoRegistrato & {
+  readonly project: Progetto;
+  readonly function?: string;
+  /** I limiti e le righe lunghe di questa esecuzione, se non sono quelli scritti in cima al file. */
+  readonly limits?: LimitiDelFile;
+  readonly long_lines?: RigheLungheDelFile;
+  /** Le posizioni in `app_errors` delle voci arrivate mentre questa esecuzione era aperta; assente se nessuna. */
+  readonly app_errors_during?: readonly number[];
+} & ({ readonly reads: readonly RigaLetta[]; readonly test_case?: undefined } | { readonly test_case: CasoDiUnaFunzione; readonly reads?: undefined });
 
 /** Da dove viene un errore dell'app: il disegno, un errore che nessuno ha preso (un gestore di un evento, un fotogramma), una promessa
  * rifiutata che nessuno ha preso, un errore che l'app ha preso e gestito (un errore del guscio, una finestra d'errore). */
@@ -139,6 +148,8 @@ export interface Registrazione {
   readonly app_errors: readonly ErroreDellApp[];
   /** Le voci diverse che non sono entrate perché l'elenco era pieno. */
   readonly app_errors_lost: number;
+  /** Le esecuzioni più vecchie che non ci sono, perché chi registra ne tiene un numero fisso. */
+  readonly executions_lost: number;
   readonly executions: readonly EsecuzioneRegistrata[];
 }
 
@@ -199,9 +210,15 @@ const campiDellEsito: Readonly<Record<EsitoDelFile["kind"], Campi>> = {
 
 const rigaLetta = conOggetto({ data: campo(stringa), text: facoltativo(stringa), each: facoltativo(vero), rejected: facoltativo(vero) });
 
+const limitiDelFile = conOggetto({ vector_elements: campo(almeno(1)), string_length: campo(almeno(1)), string_vector_characters: campo(almeno(1)) });
+const righeLungheDelFile = conOggetto({ characters: campo(almeno(1)), mode: campo(uno(["wrap", "tail"])) });
+
 const campiDellEsecuzione: Campi = {
   project: campo(progettoAnnidato),
   function: facoltativo(stringa),
+  limits: facoltativo(limitiDelFile),
+  long_lines: facoltativo(righeLungheDelFile),
+  app_errors_during: facoltativo(elenco(almeno(0))),
   test_case: facoltativo(casoDiUnaFunzione),
   reads: facoltativo(elenco(rigaLetta)),
   console: campo(elenco(perGeneri(campiDellaConsole))),
@@ -238,10 +255,11 @@ const campiDellaRegistrazione: Campi = {
   product_version: campo(stringa),
   language: campo(uno(Object.keys(lingueDelFile))),
   system: campo(uno(sistemi)),
-  limits: campo(conOggetto({ vector_elements: campo(almeno(1)), string_length: campo(almeno(1)), string_vector_characters: campo(almeno(1)) })),
-  long_lines: campo(conOggetto({ characters: campo(almeno(1)), mode: campo(uno(["wrap", "tail"])) })),
+  limits: campo(limitiDelFile),
+  long_lines: campo(righeLungheDelFile),
   app_errors: campo(elenco(conOggetto({ origin: campo(uno(originiDegliErrori)), text: campo(stringa), times: campo(almeno(1)) }))),
   app_errors_lost: campo(almeno(0)),
+  executions_lost: campo(almeno(0)),
   executions: campo(elenco(esecuzione, true)),
 };
 
@@ -266,7 +284,14 @@ export function leggiRegistrazione(v: unknown): EsitoDellaLettura {
   if (v.schema_version !== versioneDellaRegistrazione) return { ok: false, errori: [{ percorso: "schema_version", motivo: Number.isInteger(v.schema_version) ? "unknown_schema_version" : "wrong_type" }] };
   const letta = oggetto(v, "", c, campiDellaRegistrazione);
   if (c.errori.length > 0 || letta === undefined) return { ok: false, errori: c.errori };
-  return { ok: true, registrazione: letta as unknown as Registrazione };
+  const registrazione = letta as unknown as Registrazione;
+  // Una regola che lo schema non sa dire: una posizione dell'elenco degli errori che l'elenco non ha.
+  registrazione.executions.forEach((x, n) =>
+    x.app_errors_during?.forEach((posizione, i) => {
+      if (posizione >= registrazione.app_errors.length) segnala(c, `executions[${n}].app_errors_during[${i}]`, "invalid_value");
+    }),
+  );
+  return c.errori.length > 0 ? { ok: false, errori: c.errori } : { ok: true, registrazione };
 }
 
 /** Apre il testo di un file; un BOM in testa si salta. */

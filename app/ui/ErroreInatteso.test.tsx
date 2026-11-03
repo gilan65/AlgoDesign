@@ -92,7 +92,7 @@ function guscio(scelto: unknown, scrittura: () => unknown = () => null) {
 const giro = () => act(async () => await new Promise((r) => setTimeout(r, 0)));
 const pulsante = (nome: string) => [...document.querySelectorAll("button")].find((b) => b.textContent === nome) ?? null;
 
-const conModifiche = { testo: () => "il testo del progetto", nome: "Media", percorso: null, cartella: null, modificato: true, segnalazione: () => "il testo per segnalare" } as const;
+const conModifiche = { testo: () => "il testo del progetto", nome: "Media", percorso: null, cartella: null, modificato: true, segnalazione: () => ({ testo: "il testo per segnalare", registrate: null }) } as const;
 
 afterEach(() => {
   ricordaIlLavoro(null);
@@ -130,7 +130,7 @@ test("per segnalare, il testo esatto prima di scrivere: si compone una volta sol
     ...conModifiche,
     segnalazione: () => {
       volte++;
-      return `il testo per segnalare, ${volte}`;
+      return { testo: `il testo per segnalare, ${volte}`, registrate: null };
     },
   });
   disegna(<Lancia />, it);

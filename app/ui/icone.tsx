@@ -101,6 +101,13 @@ export const icone = {
       <path d="M10.5 2H4.5a1 1 0 00-1 1v12a1 1 0 001 1h9a1 1 0 001-1v-3M10.5 2v4h4v1.5M8 10h9M14.5 7.5L17 10l-2.5 2.5" />
     </Icona>
   ),
+  /** Un cerchio con un punto pieno. */
+  registra: (
+    <Icona>
+      <circle cx="9" cy="9" r="6.5" />
+      <circle cx="9" cy="9" r="2.5" fill="currentColor" />
+    </Icona>
+  ),
   /** Una bandierina. */
   segnala: (
     <Icona>

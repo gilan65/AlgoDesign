@@ -210,10 +210,32 @@ test("solo i 5 valori, mai un campo in più di chi li passa", () => {
   expect(testo).not.toContain("altro");
 });
 
-test("i valori che cambiano fra due esecuzioni non si scrivono una volta sola: la composizione rifiuta", () => {
+test("i valori che cambiano fra due esecuzioni stanno nell'esecuzione, e la riproduzione usa quelli: ignorarli dà «diverso»", () => {
+  // Un vettore di 5 elementi parte col limite predefinito e non parte con un limite di 2: l'esito dipende dal valore.
+  const lungo = { ...programma(), functions: [{ ...programma().functions[0]!, data: [{ name: "n", type: "integer", role: "input", size: 5 }] }] } as unknown as Progetto;
+  const una = fotografa(new Esecuzione(lungo, tetti, { tabella: false }));
+  const limiti = { ...tetti, elementiDiUnVettore: 2 };
+  const stretta = new Esecuzione(lungo, limiti, { tabella: false, righeLunghe: { caratteri: 9, modo: "la-fine" } });
+  const altra = fotografa(stretta);
+  const r = componi(contestoDiProva, [una, altra]);
+  expect(r.limits).toEqual(una.limits);
+  expect(r.long_lines).toEqual(una.long_lines);
+  expect(r.executions[0]!.limits).toBeUndefined();
+  expect(r.executions[0]!.long_lines).toBeUndefined();
+  expect(r.executions[1]!.limits).toEqual(altra.limits);
+  expect(r.executions[1]!.long_lines).toEqual({ characters: 9, mode: "tail" });
+  expect(tuttoIlPercorso(r)).toEqual({ uguale: true, esecuzioni: 2, differenze: [] });
+  // Controllo positivo: senza i suoi valori si riproduce con quelli del file, e l'esito è un altro.
+  const senza = alterata(r, (_x, t) => {
+    delete (t.executions as { limits?: unknown }[])[1]!.limits;
+  });
+  expect(riproduci(senza).differenze.map((d) => [d.esecuzione, d.campo])).toContainEqual([1, "outcome"]);
+});
+
+test("il file dice quante esecuzioni ha perso: nessuna, se non è detto", () => {
   const una = fotografa(eseguita(programma(), "5"));
-  const altra = fotografa(new Esecuzione(programma(), { ...tetti, elementiDiUnVettore: 9 }, { tabella: false }));
-  expect(() => componi(contestoDiProva, [una, altra])).toThrow();
+  expect(componi(contestoDiProva, [una]).executions_lost).toBe(0);
+  expect(componi(contestoDiProva, [una], 7).executions_lost).toBe(7);
 });
 
 // --------------------------------------------------------------------------- il lettore, lo schema, il testo
@@ -247,6 +269,11 @@ const sonde: readonly (readonly [string, (r: ReturnType<typeof partenza>) => voi
   ["un errore sconosciuto", (r) => (r.executions[0]!.outcome = { kind: "finished", error: { code: "boh", block: "b1" } }), "executions[0].outcome.error.code", "invalid_value"],
   ["una pausa senza il blocco", (r) => (r.executions[0]!.outcome = { kind: "paused", depth: 0 }), "executions[0].outcome.block", "missing_field"],
   ["avanzamenti negativi", (r) => (r.executions[0]!.advances = -1), "executions[0].advances", "invalid_value"],
+  ["senza le esecuzioni perse", (r) => delete r.executions_lost, "executions_lost", "missing_field"],
+  ["esecuzioni perse negative", (r) => (r.executions_lost = -1), "executions_lost", "invalid_value"],
+  ["un campo sconosciuto nei limiti di un'esecuzione", (r) => (r.executions[0]!.limits = { vector_elements: 1, string_length: 1, string_vector_characters: 1, cartellaEsempi: "x" }), "executions[0].limits.cartellaEsempi", "unknown_field"],
+  ["un modo sconosciuto nelle righe lunghe di un'esecuzione", (r) => (r.executions[0]!.long_lines = { characters: 1, mode: "a-capo" }), "executions[0].long_lines.mode", "invalid_value"],
+  ["una posizione negativa negli errori di un'esecuzione", (r) => (r.executions[0]!.app_errors_during = [-1]), "executions[0].app_errors_during[0]", "invalid_value"],
 ];
 
 test("il testo si riapre uguale, a due spazi con un a capo finale, senza BOM; e un BOM in testa si accetta", () => {
@@ -283,6 +310,12 @@ test("le regole che lo schema non sa dire le rifiuta solo il lettore: la funzion
   const letto = leggiRegistrazione(r);
   expect(letto.ok ? [] : letto.errori).toEqual([{ percorso: "executions[0].function", motivo: "invalid_value" }]);
   expect(valida(r)).toBe(true);
+  // Una posizione negli errori dell'app che l'elenco non ha.
+  const senzaVoce = partenza();
+  senzaVoce.executions[0]!.app_errors_during = [0];
+  const lettoSenzaVoce = leggiRegistrazione(senzaVoce);
+  expect(lettoSenzaVoce.ok ? [] : lettoSenzaVoce.errori).toEqual([{ percorso: "executions[0].app_errors_during[0]", motivo: "invalid_value" }]);
+  expect(valida(senzaVoce)).toBe(true);
   const testo = testoDellaRegistrazione(registrazioneDi(eseguita(programma(), "5"))).replace('"language": "it",', '"language": "it",\n  "language": "it",');
   const aperta = apriRegistrazione(testo);
   expect(aperta.ok ? [] : aperta.errori).toEqual([{ percorso: "language", motivo: "duplicate_key" }]);
