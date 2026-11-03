@@ -16,7 +16,7 @@
 //   bun ./strumenti/registrazioni-del-corpus.ts --rileva <file>       il rilevatore dei percorsi su un file vero (exit 0 se si accende)
 // `--leggi` esce 0 solo se ogni file è «uguale» e i file sono quelli dichiarati da `--scrivi`.
 //
-// Che cosa NON guarda: l'interfaccia, che arriva con la finestra.
+// Che cosa NON guarda: l'interfaccia, disegno e tabella: il file non la ripete, e l'app non lo apre.
 
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { hostname, userInfo } from "node:os";

@@ -12,10 +12,10 @@
 //   porta `dellaMacchina`, perché non si legga come una differenza del programma.
 // - Un'eccezione dell'esecuzione è un difetto dell'app, proprio ciò che si cerca: si dice come una differenza, non esce di qui.
 //
-// Che cosa NON guarda: la versione del prodotto (la dice chi mostra l'esito), gli errori dell'app, i punti di interruzione.
+// Che cosa NON guarda: la versione del prodotto (è un campo del file, la legge chi lo riesegue), gli errori dell'app, i punti di interruzione.
 
 import { Esecuzione } from "../esecuzione/esecuzione";
-import { senzaValore, type Riga } from "../interprete/interprete";
+import { GuidaDelleRighe } from "../esecuzione/ripartenza";
 import { nonSiAttendono, type CasoDiUnaFunzione } from "../progetto/modello";
 import { esitoRegistrato, righeLette } from "./composizione";
 import type { EsecuzioneRegistrata, EsitoDelFile, Registrazione, RigaLetta } from "./formato";
@@ -42,32 +42,11 @@ export interface Riproduzione {
 
 const senzaOrologio = () => 0;
 
-const comeRiga = (v: RigaLetta): Exclude<Riga, undefined> => {
-  const testo = v.text ?? senzaValore;
-  return v.each === true ? { ognuno: testo } : testo;
-};
-
-/** L'esecuzione guidata con le righe del file, fino agli avanzamenti (`undefined`: fino a dove arriva) o a una riga che manca. */
+/** L'esecuzione guidata con le righe del file, fino agli avanzamenti (`undefined`: fino a dove arriva) o a una riga che manca: dove si
+ * ferma lo diranno le letture consumate. */
 function guida(es: Esecuzione<CasoDiUnaFunzione>, righe: readonly RigaLetta[], fino: number | undefined): void {
-  let prossima = 0;
-  for (;;) {
-    if (fino !== undefined && es.avanzamenti >= fino) return;
-    const s = es.stato;
-    if (s.genere === "pronta" || s.genere === "pausa") es.comanda(fino === undefined ? "continua" : "dentro");
-    // Con la durata zero una fetta fa un solo avanzamento: ci si ferma esattamente al punto.
-    else if (s.genere === "in corso") es.fetta(senzaOrologio, fino === undefined ? Infinity : 0);
-    else if (s.genere === "chiede") {
-      const riga = righe[prossima];
-      if (riga === undefined || riga.data !== s.dato) return;
-      prossima++;
-      try {
-        es.inserisci(comeRiga(riga));
-      } catch {
-        // Una riga che questa lettura non ammette (un file scritto a mano): le letture consumate lo diranno.
-        return;
-      }
-    } else return;
-  }
+  const g = new GuidaDelleRighe<CasoDiUnaFunzione, "arrivata">(es, righe, fino === undefined ? "continua" : "dentro", () => (fino !== undefined && es.avanzamenti >= fino ? "arrivata" : undefined));
+  while (g.fermata === undefined) g.fetta(senzaOrologio, Infinity);
 }
 
 /** La prima posizione diversa di due elenchi, con gli elementi come testo. */

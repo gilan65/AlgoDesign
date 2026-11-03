@@ -28,6 +28,7 @@
       "core/disegno/impaginazione.test.ts",
       "core/disegno/nomi.test.ts",
       "core/esecuzione/esecuzione.test.ts",
+      "core/esecuzione/ripartenza-corpus.test.ts",
       "core/interprete/interprete.test.ts",
       "core/modifica/funzioni.test.ts",
       "core/modifica/operazioni.test.ts",
@@ -278,6 +279,26 @@
       "lettureRilevate": 86,
       "finite": 152,
       "esitiRilevati": 152
+    },
+    "ripartenza - modifiche sul corpus": {
+      "cartelle": 5,
+      "pauseProvate": 225,
+      "scrittura": {
+        "ritrovato": 164,
+        "non_parte": 61
+      },
+      "assegnazione": {
+        "ritrovato": 225
+      },
+      "nonPartePerEffetto": 61,
+      "stessoNumeroDiAzione": 12
+    },
+    "ripartenza - pause del corpus riprese": {
+      "cartelle": 5,
+      "voci": 251,
+      "conPause": 231,
+      "ripartenze": 2153,
+      "voltePiuDiUna": 819
     },
     "stampa - progetti col typescript e il javascript": 173,
     "stampa - progetti per coppia di linguaggi": {
