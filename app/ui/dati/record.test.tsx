@@ -30,6 +30,13 @@ const alunno: DefinizioneDelRecord = {
   ],
 };
 
+test("il nome di un record e quelli dei campi: gli spazi ai lati si tolgono alla conferma, uno dentro resta", () => {
+  const b = bozzaDelRecord(alunno);
+  const { record } = recordDaBozza({ ...b, nome: " alunno ", campi: b.campi.map((c) => ({ ...c, nome: ` ${c.nome} ` })) });
+  expect(record).toEqual(alunno);
+  expect(recordDaBozza({ ...b, nome: "un alunno" }).record.name).toBe("un alunno");
+});
+
 test("la bozza di un record torna il record, coi campi spostati, aggiunti e tolti e le loro origini", () => {
   const b = bozzaDelRecord(alunno);
   expect(recordDaBozza(b)).toEqual({ record: alunno, origini: [0, 1, 2] });

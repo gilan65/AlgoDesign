@@ -929,6 +929,8 @@ export const en: Dizionario = {
   flowchartEsportatoIn: "Flowchart exported to “{file}”.",
   esportaFlowchartErroreTitolo: "The flowchart is not exported to “{file}”",
   stampa: "Print…",
+  chiudiProgetto: "Close",
+  esciDallApp: "Exit",
   stampaTitolo: "Print",
   stampaQualiFunzioni: "Which procedures and functions",
   stampaTutte: "All",

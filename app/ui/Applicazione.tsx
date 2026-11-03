@@ -3111,10 +3111,26 @@ export function Applicazione({
     if (percorso !== null) await apriIl(percorso);
   }
 
+  // L'uscita, dal menu e dalla X della finestra: i campi aperti si confermano e, se il progetto non è cambiato, si chiude
+  // senza chiedere. Se la finestra non si chiude (il guscio rifiuta), la rete di `beforeunload` torna a parlare, e il guscio,
+  // che azzera «modificato» solo dopo una chiusura riuscita, alla X dopo chiede di nuovo.
+  const esciDallApp = confermatiPoi((p) =>
+    seNonSiPerdeNulla(() => {
+      uscendo.current = true;
+      chiudiFinestra().catch((e: unknown) => {
+        uscendo.current = false;
+        annotaErrore("finestra non chiusa", e);
+      });
+    }, p),
+  );
+
   // I comandi dei file confermano prima i campi aperti: il testo scritto è una modifica, che si salva o fa chiedere.
   const comandiDelProgetto = {
     nuovo: confermatiPoi((p) => seNonSiPerdeNulla(() => setFinestra({ genere: "progetto", nuovo: true }), p)),
     apri: confermatiPoi((p) => seNonSiPerdeNulla(() => void apriUnFile(), p)),
+    // Non c'è un'app senza progetto: chiuso, torna quello senza nome dell'avvio, senza file.
+    chiudiProgetto: confermatiPoi((p) => seNonSiPerdeNulla(() => carica(progettoVuoto(testi.progettoSenzaNome, scelte.pilaDeiProgettiNuovi), null), p)),
+    esciDallApp,
     salva: confermatiPoi((p) => void salvaIl(false, p)),
     salvaConNome: confermatiPoi((p) => void salvaIl(true, p)),
     // Il segno della libreria è una modifica: durante l'esecuzione no, come le proprietà.
@@ -3236,19 +3252,8 @@ export function Applicazione({
   }, [daPerdere]);
 
   useEffect(() => {
-    // Se la finestra non si chiude (il guscio rifiuta), la rete di `beforeunload` torna a parlare, e il guscio,
-    // che azzera «modificato» solo dopo una chiusura riuscita, alla X dopo chiede di nuovo.
-    const ascolta = confermatiPoi((p) =>
-      seNonSiPerdeNulla(() => {
-        uscendo.current = true;
-        chiudiFinestra().catch((e: unknown) => {
-          uscendo.current = false;
-          annotaErrore("finestra non chiusa", e);
-        });
-      }, p),
-    );
-    window.addEventListener(eventoDiChiusura, ascolta);
-    return () => window.removeEventListener(eventoDiChiusura, ascolta);
+    window.addEventListener(eventoDiChiusura, esciDallApp);
+    return () => window.removeEventListener(eventoDiChiusura, esciDallApp);
   });
 
   // Sul Mac il menu in cima allo schermo, nella lingua dell'interfaccia. Le sue voci Informazioni e Impostazioni

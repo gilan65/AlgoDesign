@@ -92,7 +92,9 @@ function Campi({
   const [predefinitoScritto, setPredefinitoScritto] = useState(modo.modo !== "nuova" && modo.funzione.default_result !== undefined);
   const [tentato, setTentato] = useState(false);
   const modulo = useRef<HTMLFormElement>(null);
-  const e = errori(bozza);
+  // Gli spazi ai lati del nome, scritti per errore, non contano; il campo tiene ciò che si sta scrivendo.
+  const daConfermare = { ...bozza, nome: bozza.nome.trim() };
+  const e = errori(daConfermare);
   const mostra = (campo: "nome" | "predefinito") => (tentato || bozza[campo] !== iniziale[campo] ? e[campo] : undefined);
   const conNome = modo.modo !== "proprieta";
   const conGenere = modo.modo === "proprieta" || (modo.modo === "nuova" && !modo.soloFunzione && modo.salto === undefined);
@@ -107,7 +109,7 @@ function Campi({
     setTentato(true);
     const sbagliato = (["nome", "predefinito"] as const).find((c) => e[c] !== undefined && (c === "nome" ? conNome : conPredefinito));
     if (sbagliato) modulo.current?.querySelector<HTMLElement>(`[data-campo="${sbagliato}"]`)?.focus();
-    else conferma(bozza);
+    else conferma(daConfermare);
   }
   /** Il campo di un numero: gli elementi di un vettore (le righe di una matrice), le colonne, la lunghezza massima di una
    * stringa. */

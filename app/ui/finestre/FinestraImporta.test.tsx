@@ -227,6 +227,14 @@ test("i conflitti: la scelta cambia ciò che entra, «Sostituisci» dice i casi 
   await cambia(nomeNuovoDi("valido"), "leggi_numero");
   expect(testoDellaVoce("f:f3")).toContain(testi.importaNomeInUso);
   expect(spento(testi.importaConferma)).toBe(true);
+  await cambia(nomeNuovoDi("valido"), "voto valido");
+  expect(testoDellaVoce("f:f3")).toContain(testi.importaNomeNonValido);
+  expect(spento(testi.importaConferma)).toBe(true);
+  // Gli spazi ai lati non contano, e il campo tiene ciò che si sta scrivendo.
+  await cambia(nomeNuovoDi("valido"), " voto_valido ");
+  expect(nomeNuovoDi("valido").value).toBe(" voto_valido ");
+  expect(nomeNuovoDi("valido").getAttribute("aria-invalid")).toBe("false");
+  expect(spento(testi.importaConferma)).toBe(false);
   await cambia(nomeNuovoDi("valido"), "voto_valido");
   expect(nomeNuovoDi("valido").getAttribute("aria-invalid")).toBe("false");
   expect(spento(testi.importaConferma)).toBe(false);

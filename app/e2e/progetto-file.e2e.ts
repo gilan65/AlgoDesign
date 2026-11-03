@@ -374,6 +374,58 @@ test("salva → apri: «Salva» va al file del primo «Salva con nome»; la riga
   expect({ metadata: scritto.metadata, options: scritto.options }).toEqual({ metadata: { name: "Prova nuova" }, options: { real_decimals: 3, call_stack_limit: 10 } });
 });
 
+// -------------------------------------------------------------------- chiudere il progetto e uscire
+
+test("«Chiudi» riporta al progetto senza nome dell'avvio e l'app resta aperta, «Esci» chiude l'app; con modifiche chiedono prima", async ({ page }) => {
+  await apriVuota(page, { lingua: "it" }, { file: { [RIFERIMENTO.percorso]: RIFERIMENTO.testo } });
+  const siChiude = () => page.waitForFunction(() => window.__finzione__.chiusa, null, { timeout: 1_500 }).then(() => true, () => false);
+  const domanda = allerta(page, riempi(it.modificheTitolo, { nome: "riferimento-media-voti" }));
+  const riapri = async () => {
+    await apriIl(page, RIFERIMENTO.percorso);
+    await expect(flowchart(page, "riferimento-media-voti")).toBeVisible();
+  };
+
+  // Senza modifiche non chiede, e il progetto chiuso non è più legato al suo file: «Salva» chiede dove.
+  await riapri();
+  await (await voceDelMenu(page, it.chiudiProgetto)).click();
+  await expect(flowchart(page, it.progettoSenzaNome)).toBeVisible();
+  expect(await annullaSpento(page)).toBe("true");
+  expect(await siChiude(), "«Chiudi» ha chiuso l'app").toBe(false);
+  await imposta(page, { daSalvare: "D:\\altrove\\dopo.algo" });
+  await (await voceDelMenu(page, it.salva)).click();
+  await page.waitForFunction(() => window.__finzione__.file["D:\\altrove\\dopo.algo"] !== undefined, null, { polling: "raf" });
+  expect(JSON.parse((await finzione(page)).file[RIFERIMENTO.percorso]!).metadata.name).toBe("riferimento-media-voti");
+
+  // Con modifiche chiede: «Annulla» lascia tutto com'è, «Non salvare» chiude il progetto.
+  await riapri();
+  await cambiaAutore(page, "Y");
+  await (await voceDelMenu(page, it.chiudiProgetto)).click();
+  await domanda.getByRole("button", { name: it.annullaEsc, exact: true }).click();
+  await expect(domanda).toBeHidden();
+  await expect(flowchart(page, "riferimento-media-voti")).toBeVisible();
+  await (await voceDelMenu(page, it.chiudiProgetto)).click();
+  await domanda.getByRole("button", { name: it.modificheNonSalvare, exact: true }).click();
+  await expect(flowchart(page, it.progettoSenzaNome)).toBeVisible();
+  expect((await finzione(page)).file[RIFERIMENTO.percorso]).toBe(RIFERIMENTO.testo);
+
+  // «Esci» senza modifiche non chiede. Il guscio simulato non chiude davvero: dopo ogni chiusura la prova lo rimette aperto.
+  await riapri();
+  await (await voceDelMenu(page, it.esciDallApp)).click();
+  expect(await siChiude(), "«Esci» senza modifiche non ha chiuso l'app").toBe(true);
+  await expect(domanda).toHaveCount(0);
+  await imposta(page, { chiusa: false });
+
+  // «Esci» con modifiche: «Annulla» non chiude, «Non salvare» sì.
+  await cambiaAutore(page, "Y");
+  await (await voceDelMenu(page, it.esciDallApp)).click();
+  await domanda.getByRole("button", { name: it.annullaEsc, exact: true }).click();
+  await expect(domanda).toBeHidden();
+  expect(await siChiude(), "«Annulla» ha chiuso l'app").toBe(false);
+  await (await voceDelMenu(page, it.esciDallApp)).click();
+  await domanda.getByRole("button", { name: it.modificheNonSalvare, exact: true }).click();
+  expect(await siChiude(), "«Non salvare» non ha chiuso l'app").toBe(true);
+});
+
 // -------------------------------------------------------------------- le modifiche non salvate
 
 test("con modifiche non salvate Nuovo, Apri, un esempio e la chiusura chiedono prima; «Salva» salva e prosegue, rinunciato non prosegue, Esc e «Annulla» non fanno nulla", async ({ page }) => {

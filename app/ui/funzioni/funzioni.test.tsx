@@ -21,6 +21,7 @@ import { join } from "node:path";
 import { apri } from "../../core/progetto/formato";
 import type { Progetto } from "../../core/progetto/modello";
 import { it as testi } from "../../i18n/it";
+import { testoDellaSegnalazione } from "../../i18n/codici";
 import { riempi } from "../../i18n/lingue";
 import { Applicazione } from "../Applicazione";
 import { scelteIniziali } from "../preferenze";
@@ -220,6 +221,17 @@ test("creare dal pulsante «Funzione»: solo una funzione; i nomi vuoti o già u
   expect(schede().at(-1)).toBe(`[doppio ${testi.genereFunzione}]`);
   // Il file: la funzione nuova, coi campi del formato.
   expect((await salvato()).functions.at(-1)).toEqual({ id: "f5", kind: "function", name: "doppio", return_type: "integer", data: [], body: [], end: { id: "b28", return_value: "" } });
+});
+
+test("il nome di una funzione: gli spazi ai lati si tolgono, uno dentro ferma la conferma con la sua causa", async () => {
+  await apriLaFinestra();
+  await clic(document.querySelector('[data-comando="funzione"]')!);
+  await scriviEConferma("nome", "dop pio", testi.funzioneCrea);
+  expect(finestra()?.textContent).toContain(testoDellaSegnalazione("it", "invalid_name", false, { causa: "nome_spazio" }).breve);
+  await scriviEConferma("nome", "  doppio ", testi.funzioneCrea);
+  expect(finestra()?.outerHTML ?? null).toBeNull();
+  expect(schede().at(-1)).toBe(`[doppio ${testi.genereFunzione}]`);
+  expect((await salvato()).functions.at(-1)?.name).toBe("doppio");
 });
 
 test("il valore predefinito: segue il tipo finché non lo si scrive; uno che non è del tipo ferma la conferma; le Proprietà lo cambiano col tipo", async () => {

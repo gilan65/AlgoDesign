@@ -5,6 +5,7 @@ import { expect, test } from "bun:test";
 import { confermato } from "../../strumenti/corpus";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { causaDelNome } from "../../core/controllo/controllo";
 import { apri } from "../../core/progetto/formato";
 import type { Dato } from "../../core/progetto/modello";
 import { bozzaDi, conNatura, conRipetuto, datoDaBozza, elementi, inizialeDaBozza, naturaDi, stessoDato } from "./bozza";
@@ -57,6 +58,17 @@ test("il ritorno non giudica: campi vuoti, numeri non interi, lunghezza fuori da
   expect(datoDaBozza({ ...base, lunghezza: "20" })).toEqual({ name: "x", type: "integer" });
   expect(datoDaBozza({ ...base, tipo: "string", lunghezza: "20" })).toEqual({ name: "x", type: "string", max_length: 20 });
   expect(datoDaBozza({ ...base, costante: true, ruolo: "input" })).toEqual({ name: "x", type: "integer", constant: true, role: "input" });
+});
+
+test("il nome di un dato: gli spazi ai lati si tolgono alla conferma, uno dentro resta e lo segnala il controllo", () => {
+  const base = bozzaDi({ name: "x", type: "integer" }, "elenco");
+  expect(["eta ", " eta", "  eta  "].map((nome) => datoDaBozza({ ...base, nome }).name)).toEqual(["eta", "eta", "eta"]);
+  // Solo spazi: un nome vuoto, come il campo vuoto.
+  expect(datoDaBozza({ ...base, nome: "   " }).name).toBe("");
+  // Il dato di prima con uno spazio in più nella bozza non è un cambiamento.
+  expect(stessoDato(datoDaBozza({ ...base, nome: "x " }), { name: "x", type: "integer" })).toBe(true);
+  expect(datoDaBozza({ ...base, nome: "e ta" }).name).toBe("e ta");
+  expect(causaDelNome("e ta", false)).toEqual({ causa: "nome_spazio" });
 });
 
 test("la natura: un parametro torna col suo modo, senza valore iniziale, ruolo né costante; «globale» solo per una costante", () => {
