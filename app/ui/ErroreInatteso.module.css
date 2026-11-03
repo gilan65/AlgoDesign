@@ -9,3 +9,19 @@
   gap: 0.5rem;
   margin: 1rem;
 }
+
+/* Il testo esatto per una segnalazione, nella pagina. */
+.segnalazione {
+  display: grid;
+  row-gap: 0.75rem;
+  max-inline-size: 60rem;
+  margin: 1rem;
+}
+
+.segnalazione .comandi {
+  margin: 0px;
+}
+
+.segnalazione .frase {
+  margin: 0px;
+}

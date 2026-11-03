@@ -2,4 +2,9 @@
 // al posto di Ctrl, ⌫ che elimina (la tastiera del Mac non ha Canc), il menu in cima allo schermo. Una sola fonte: il
 // motore. Quello del Mac (il WebKit di macOS) si presenta come «Macintosh»; WebView2 dice «Windows», WebKitGTK
 // «Linux». Le prove la cambiano col motore (`userAgent` di Playwright) o, sotto happy-dom, con `navigator.userAgent`.
+import type { Sistema } from "../core/registrazione/formato";
+
 export const sulMac = (): boolean => navigator.userAgent.includes("Macintosh");
+
+/** Il sistema per il file di una segnalazione: un valore di un elenco chiuso, mai il testo che il motore dice di sé. */
+export const sistemaDelMotore = (): Sistema => (sulMac() ? "macos" : navigator.userAgent.includes("Windows") ? "windows" : "linux");

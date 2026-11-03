@@ -101,6 +101,12 @@ export const icone = {
       <path d="M10.5 2H4.5a1 1 0 00-1 1v12a1 1 0 001 1h9a1 1 0 001-1v-3M10.5 2v4h4v1.5M8 10h9M14.5 7.5L17 10l-2.5 2.5" />
     </Icona>
   ),
+  /** Una bandierina. */
+  segnala: (
+    <Icona>
+      <path d="M4 16V2.5M4 3h9.5l-2.2 3.5 2.2 3.5H4" />
+    </Icona>
+  ),
   /** Un foglio con una «×». */
   chiudiProgetto: (
     <Icona>

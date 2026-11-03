@@ -410,6 +410,23 @@ textarea.campo {
   font-size: 0.9rem;
 }
 
+/* Il testo esatto di un file prima di salvarlo: scorre nel suo riquadro, senza andare a capo, e prende il fuoco col Tab. */
+.testoEsatto {
+  margin: 0px;
+  height: min(22rem, 45vh);
+  overflow: auto;
+  padding: 0.4rem 0.5rem;
+  font-family: var(--carattere-codice);
+  font-size: 0.8rem;
+  background: var(--colore-sopra);
+  border: 1px solid var(--colore-riga);
+  border-radius: 4px;
+}
+
+.testoEsatto:focus-visible {
+  outline: 2px solid var(--colore-accento);
+}
+
 /* Nel riepilogo dell'importazione, le scelte di un conflitto: l'elenco e il nome nuovo, sulla stessa riga se c'è posto. */
 .sceltaDelConflitto {
   display: flex;

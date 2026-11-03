@@ -30,21 +30,12 @@ export function annotaErrore(contesto: string, errore: unknown): void {
   annota("handled", contesto, errore);
 }
 
-declare global {
-  interface Window {
-    /** La lettura dell'elenco per una prova nel browser, che si riconosce dallo stato del guscio simulato (`__finzione__`): finché nessuna
-     * finestra lo mostra, non c'è un'altra via. */
-    __erroriDellApp__?: () => ErroriDellApp;
-  }
-}
-
 let inAscolto = false;
 
 /** Da chiamare prima di ogni attesa dell'avvio, o un errore dell'avvio sfugge. Una volta sola. */
 export function ascoltaGliErrori(): void {
   if (inAscolto) return;
   inAscolto = true;
-  if ("__finzione__" in window) window.__erroriDellApp__ = erroriDellApp;
   window.addEventListener("error", (e) => annota("uncaught", "", e.error ?? e.message));
   window.addEventListener("unhandledrejection", (e) => annota("rejected", "", e.reason));
 }

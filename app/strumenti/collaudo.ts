@@ -1234,6 +1234,7 @@ const proveAttesePerSpec: Record<string, number> = {
   "pila-lunga.e2e.ts": 2,
   "programmi-pesanti.e2e.ts": 20,
   "scelta.e2e.ts": 3,
+  "segnala.e2e.ts": 4,
   "scorrimento.e2e.ts": 1,
   "stampa.e2e.ts": 8,
   "progetto-file.e2e.ts": 13,

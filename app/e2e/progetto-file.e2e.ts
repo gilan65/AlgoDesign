@@ -928,6 +928,8 @@ test("ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, c
     AvvisoDelNome: ["codice.e2e.ts", "nomeCambiaTitolo"],
     // La conferma prima di eliminare una procedura o una funzione: vuole un progetto che ne abbia una.
     EliminaFunzione: ["funzioni.e2e.ts", "eliminaFunzioneTitoloF"],
+    // Il testo per una segnalazione: vuole un'esecuzione ferma. Lì il fuoco e Esc si provano.
+    FinestraSegnala: ["segnala.e2e.ts", "segnalaTitolo"],
   };
   const ui = fileURLToPath(new URL("../ui/", import.meta.url));
   const componenti = (readdirSync(ui, { recursive: true }) as string[])
