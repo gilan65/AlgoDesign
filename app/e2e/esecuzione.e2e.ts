@@ -677,6 +677,16 @@ const coseAperte: { nome: string; funzioni?: true; apri: (page: Page) => Promise
     },
   },
   {
+    // Uno dei generi della finestra, che c'è solo con un'esecuzione ferma: F5 non la fa ripartire.
+    nome: "la finestra col testo per una segnalazione",
+    apri: async (page) => {
+      await page.keyboard.press("F10");
+      await expect(page.locator("[data-stato-esecuzione]")).not.toHaveText(it.statoPronto);
+      await (await voceDellAiuto(page, it.segnalaComando)).click();
+      return page.getByRole("dialog", { name: it.segnalaTitolo, exact: true });
+    },
+  },
+  {
     // Uno dei generi della finestra (`finestra !== null`), non uno stato nuovo della guardia: il caso lo prova lo stesso.
     nome: "la finestra «Esporta il flowchart»",
     apri: async (page) => {
@@ -746,6 +756,8 @@ test("con ogni cosa aperta che la finestra guarda, F5 non fa partire l'esecuzion
       await expect(statoDi(page)).toHaveText(it.statoPronto);
       const aperta = await c.apri(page);
       await expect(aperta, `${c.nome} non si apre`).toBeVisible();
+      // Lo stato con la cosa aperta: «Pronto», tranne per ciò che c'è solo con un'esecuzione ferma.
+      const prima = await statoDi(page).textContent();
       await page.keyboard.press("F5");
       await giro(page);
       await page.waitForTimeout(150);
@@ -755,8 +767,8 @@ test("con ogni cosa aperta che la finestra guarda, F5 non fa partire l'esecuzion
       await (c.chiudi ?? ((p: Page) => p.keyboard.press("Escape")))(page);
       await expect(aperta).toBeHidden();
       await page.keyboard.press("F5");
-      await expect.poll(() => statoDi(page).textContent(), { message: `${c.nome}: chiusa, F5 non parte` }).not.toBe(it.statoPronto);
-      if (conLaCosa !== it.statoPronto || !ancoraAperta) esiti.push(`${c.nome}: con la cosa aperta F5 ha dato «${conLaCosa}»${ancoraAperta ? "" : " e la cosa si è chiusa"}`);
+      await expect.poll(() => statoDi(page).textContent(), { message: `${c.nome}: chiusa, F5 non parte` }).not.toBe(prima);
+      if (conLaCosa !== prima || !ancoraAperta) esiti.push(`${c.nome}: con la cosa aperta F5 ha dato «${conLaCosa}»${ancoraAperta ? "" : " e la cosa si è chiusa"}`);
     } catch (errore) {
       esiti.push(`${c.nome}: interrotto, ${(errore as Error).message.split("\n")[0]}`);
     } finally {
@@ -765,7 +777,7 @@ test("con ogni cosa aperta che la finestra guarda, F5 non fa partire l'esecuzion
   }
   console.log(`[${info.project.name}] F5 con una cosa aperta: ${coseAperte.length} casi, diversi ${esiti.length}`);
   expect(esiti, "F5 ha fatto partire l'esecuzione con una cosa aperta").toEqual([]);
-  expect(coseAperte.length).toBe(11);
+  expect(coseAperte.length).toBe(12);
 });
 
 test("le scorciatoie dei file valgono col fuoco in un campo; Canc su un «+» non cancella; Ctrl+Z col menu di un dato aperto non annulla", async ({ page }) => {

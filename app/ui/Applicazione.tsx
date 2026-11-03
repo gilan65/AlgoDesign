@@ -111,6 +111,7 @@ import { Barra, type Azioni, type Stati } from "./Barra";
 import { Divisore } from "./Divisore";
 import { annotaErrore } from "./errori-dell-app";
 import { ricordaIlLavoro } from "./ErroreInatteso";
+import { testoPerSegnalare } from "./segnalazione";
 import { Barretta } from "./esecuzione/Barretta";
 import { Console } from "./esecuzione/Console";
 import { DoveSei } from "./esecuzione/DoveSei";
@@ -195,6 +196,7 @@ import { estensioneDel, inBase64, nomeDellImmagine, pngDallSvg, sceltePredefinit
 import { FinestraImporta, nomiCheEntrano, type DaUnFile } from "./finestre/FinestraImporta";
 import { FinestraGuida, memoriaNuova } from "./finestre/FinestraGuida";
 import { FinestraInformazioni } from "./finestre/FinestraInformazioni";
+import { FinestraSegnala } from "./finestre/FinestraSegnala";
 import { FinestraImpostazioni } from "./finestre/FinestraImpostazioni";
 import { FinestraProgetto, type DatiDelProgetto } from "./finestre/FinestraProgetto";
 import { useSpostabile } from "./spostabile";
@@ -306,6 +308,8 @@ type Aperta =
   | { readonly genere: "nome"; readonly chiesto: NomeDaChiedere; readonly risposta: (nome: string | null) => void }
   | { readonly genere: "impostazioni" }
   | { readonly genere: "informazioni" }
+  /** La finestra prima di salvare il file per una segnalazione, col testo fotografato all'apertura. */
+  | { readonly genere: "segnala"; readonly testo: string }
   /** La finestra di una procedura o di una funzione: nuova, le proprietà, il nome. */
   | { readonly genere: "funzione"; readonly modo: ModoDellaFinestra }
   /** «Procedure e funzioni…». */
@@ -1930,7 +1934,7 @@ export function Applicazione({
     const ordine = colonneMostrate(tabellaMostrata.colonne, disposizione.ordine).map((m) => m.cella);
     const testo = csv(es.traccia, tabellaMostrata, scelte.formaDelCsv, separatori.campo, ordine);
     const tolte = es.traccia.tolte;
-    const nome = await nomeDaUsare(es.progetto.metadata.name, ".csv", true);
+    const nome = await nomeDaUsare(es.progetto.metadata.name, ".csv", testi.nomeDellaTabella);
     if (nome === null) return;
     const scelto = await scegliFileDaEsportare(nome, testi.filtroDellaTabella, partenza);
     if (scelto === null || (scelto.sostituire && !(await sostituire(scelto.percorso)))) return;
@@ -2163,6 +2167,37 @@ export function Applicazione({
     setAvviso(riempi(testi.codiceSalvatoIn, { file: nomeDelFile(scelto.percorso) }));
   }
 
+  /** «Salva per segnalare…»: il testo si fotografa qui, una volta sola. Prima si confermano i campi aperti, come per i comandi dei file. */
+  function apriLaSegnalazione(): void {
+    const es = esecuzione;
+    if (!es || (!inEsecuzione && !confermaIApertiCampi())) return;
+    setMenuDellaFunzione(null);
+    try {
+      setFinestra({ genere: "segnala", testo: testoPerSegnalare(es, lingua) });
+    } catch (e) {
+      annotaErrore("testo per la segnalazione non preparato", e);
+      setAvviso(testi.segnalaNonPreparato);
+    }
+  }
+
+  /** Il gesto: quel testo nel file che l'utente sceglie. Rinunciando (al nome, alla finestra del sistema, a «Sostituire?») nessun file, e si
+   * torna alla finestra con lo stesso testo. */
+  async function salvaLaSegnalazione(testo: string): Promise<void> {
+    const torna = () => setFinestra({ genere: "segnala", testo });
+    const nome = await nomeDaUsare(progetto.metadata.name, ".txt", testi.nomeDellaSegnalazione);
+    if (nome === null) return torna();
+    const scelto = await scegliFileDelCodice(nome, testi.filtroDellaSegnalazione, ".txt", partenza);
+    if (scelto === null || (scelto.sostituire && !(await sostituire(scelto.percorso)))) return torna();
+    setFinestra(null);
+    try {
+      await scriviProgetto(scelto.percorso, testo);
+    } catch (e) {
+      erroreDiUnFile(testi.segnalaErroreTitolo, scelto.percorso, e);
+      return;
+    }
+    setAvviso(riempi(testi.segnalaSalvatoIn, { file: nomeDelFile(scelto.percorso) }));
+  }
+
   /** Il comando di un pulsante della barra: ciò che fa il suo tasto in questa situazione; assente se nulla. */
   const comandoDelTasto = (t: TastoDellEsecuzione) => {
     const a = azioneDelTasto(situazione, t);
@@ -2300,7 +2335,15 @@ export function Applicazione({
   // Per il riparo, a ogni aggiornamento riuscito della finestra e non durante il disegno: se è l'ultima modifica a rompere il disegno,
   // il file salvato da lì si può riaprire. Il testo dei campi aperti non è nel progetto, e il riparo non lo salva.
   useLayoutEffect(() => {
-    ricordaIlLavoro({ testo: () => testoCompleto(progetto), nome: progetto.metadata.name, percorso: documento.percorso, cartella: partenza, modificato });
+    ricordaIlLavoro({
+      testo: () => testoCompleto(progetto),
+      nome: progetto.metadata.name,
+      percorso: documento.percorso,
+      cartella: partenza,
+      modificato,
+      // Solo se serve: l'esecuzione aperta o, senza, una mai partita del progetto.
+      segnalazione: () => testoPerSegnalare(esecuzione ?? new Esecuzione<CasoDiUnaFunzione>(progetto, limiti, { tabella: false, righeLunghe: righeLungheDi(scelte) }), lingua),
+    });
   });
   useEffect(() => {
     const tasto = (e: KeyboardEvent) => {
@@ -2998,17 +3041,17 @@ export function Applicazione({
   const sostituire = (percorso: string) => new Promise<boolean>((risposta) => setFinestra({ genere: "sostituire", percorso, risposta }));
 
   /** Il nome (senza l'estensione) da proporre alla finestra del sistema per salvare il progetto, il codice o la tabella:
-   * quello del progetto come lo propone `baseProposta` (per la tabella «Tabella di …», dove un nome riservato non può
-   * nascere: si tolgono solo i caratteri). Se non è il nome del progetto, l'avviso lo dice e lo lascia cambiare; `null`
-   * se l'utente rinuncia. */
-  function nomeDaUsare(nomeDelProgetto: string, estensione: string, tabella = false): Promise<string | null> {
+   * quello del progetto come lo propone `baseProposta`. Con `modello` (la tabella, la segnalazione: un nome col nome del progetto dentro e
+   * l'estensione in fondo, dove un nome riservato non può nascere) si tolgono solo i caratteri. Se non è il nome del progetto, l'avviso lo
+   * dice e lo lascia cambiare; `null` se l'utente rinuncia. */
+  function nomeDaUsare(nomeDelProgetto: string, estensione: string, modello?: string): Promise<string | null> {
     const ripiego = testi.ripiegoDelNomeDelFile;
-    const base = tabella ? senzaVietati(nomeDelProgetto) || ripiego : baseProposta(nomeDelProgetto, ripiego);
-    const proposto = tabella ? riempi(testi.nomeDellaTabella, { nome: base }) : base;
+    const base = modello !== undefined ? senzaVietati(nomeDelProgetto) || ripiego : baseProposta(nomeDelProgetto, ripiego);
+    const proposto = modello !== undefined ? riempi(modello, { nome: base }) : base;
     if (!nomeCambiato(nomeDelProgetto, base)) return Promise.resolve(proposto);
-    const motivo = tabella ? "caratteri" : motivoDelCambio(nomeDelProgetto);
-    // Il nome della tabella porta già l'estensione: l'avviso la mostra accanto al campo, una volta, e la rimette dopo.
-    if (tabella && proposto.endsWith(estensione)) {
+    const motivo = modello !== undefined ? "caratteri" : motivoDelCambio(nomeDelProgetto);
+    // Il nome col modello porta già l'estensione: l'avviso la mostra accanto al campo, una volta, e la rimette dopo.
+    if (modello !== undefined && proposto.endsWith(estensione)) {
       const senza = proposto.slice(0, -estensione.length);
       return new Promise((risposta) => setFinestra({ genere: "nome", chiesto: { progetto: nomeDelProgetto, proposto: senza, estensione, motivo }, risposta: (n) => risposta(n === null ? null : `${n}${estensione}`) }));
     }
@@ -3337,6 +3380,7 @@ export function Applicazione({
     ...comandiDelProgetto,
     ...azioniDelMenu,
     // La guida resta aperta mentre si lavora: già aperta, la voce le riporta il fuoco.
+    ...(esecuzione && situazione !== "in corso" && tutti === null ? { segnala: apriLaSegnalazione } : {}),
     guida: () => (guidaAperta ? document.querySelector<HTMLElement>("[data-finestra-guida] article")?.focus() : setGuidaAperta(true)),
     ...(siAnnulla(cronologia) && !inEsecuzione ? { annulla: () => passo("annulla") } : {}),
     ...(siRipete(cronologia) && !inEsecuzione ? { ripeti: () => passo("ripeti") } : {}),
@@ -4146,6 +4190,7 @@ export function Applicazione({
           nomeDi={nomeDi}
         />
       )}
+      <FinestraSegnala testo={finestra?.genere === "segnala" ? finestra.testo : null} testi={testi} salva={(t) => void salvaLaSegnalazione(t)} rinuncia={() => setFinestra(null)} />
       <ConfermaSostituzione
         file={finestra?.genere === "sostituire" ? nomeDelFile(finestra.percorso) : null}
         testi={testi}

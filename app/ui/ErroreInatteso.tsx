@@ -7,17 +7,21 @@
 // salvate il lavoro si salva da qui, e finché non è salvato questa pagina tiene ferme le vie che lo perderebbero: la X, i tasti della
 // ricarica, il menu del motore. Senza nulla da perdere il guscio non deve aspettare nessuna domanda: la X chiude.
 //
+// Con e senza modifiche da qui si salva anche il file per una segnalazione: l'elenco degli errori sta solo in memoria, e senza questo passo un
+// errore nel disegno non arriverebbe mai in un file. Il testo si compone solo se viene chiesto, e si mostra prima di scrivere, come nella finestra.
+//
 // Nessun componente di Ark UI: meno cose che si possono rompere una seconda volta.
-import { Component, useEffect, useState, type ErrorInfo, type ReactElement, type ReactNode } from "react";
+import { Component, useCallback, useEffect, useState, type ErrorInfo, type ReactElement, type ReactNode } from "react";
 import type { Dizionario } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
 import { testoDellErrore } from "./esempi";
 import { annota, annotaErrore } from "./errori-dell-app";
 import stili from "./ErroreInatteso.module.css";
-import { chiudiFinestra, erroreDelFile, eventoDiChiusura, nomeDelFile, scegliFileDaSalvare, scriviProgetto, segnaModificato } from "./file";
+import { chiudiFinestra, erroreDelFile, eventoDiChiusura, nomeDelFile, scegliFileDaSalvare, scegliFileDelCodice, scriviProgetto, segnaModificato } from "./file";
+import { CorpoDellaSegnalazione } from "./finestre/CorpoDellaSegnalazione";
 import stiliDelleFinestre from "./finestre/Finestra.module.css";
 import { lasciaLaPagina } from "./modifiche";
-import { baseProposta } from "./nomi";
+import { baseProposta, senzaVietati } from "./nomi";
 
 /** Ciò che serve a salvare il progetto senza la finestra. Il testo si calcola solo se serve. */
 export interface LavoroDaSalvare {
@@ -27,6 +31,8 @@ export interface LavoroDaSalvare {
   /** Da dove parte la finestra del sistema. */
   readonly cartella: string | null;
   readonly modificato: boolean;
+  /** Il testo per una segnalazione: si compone solo se serve, e può lanciare. */
+  readonly segnalazione: () => string;
 }
 
 let lavoro: LavoroDaSalvare | null = null;
@@ -36,6 +42,120 @@ export function ricordaIlLavoro(l: LavoroDaSalvare | null): void {
 }
 
 const segnaSenzaModifiche = () => segnaModificato(false).catch((e: unknown) => annotaErrore("stato delle modifiche non comunicato", e));
+
+function DomandaSostituire({ testi, percorso, rispondi }: { testi: Dizionario; percorso: string; rispondi: (sostituisci: boolean) => void }): ReactElement {
+  return (
+    <div
+      role="alertdialog"
+      aria-label={riempi(testi.sostituireTitolo, { file: nomeDelFile(percorso) })}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") rispondi(false);
+      }}
+    >
+      <p className={stili.frase}>{riempi(testi.sostituireTitolo, { file: nomeDelFile(percorso) })}</p>
+      <p className={stili.frase}>{testi.sostituireSpiegazione}</p>
+      <div className={stili.comandi}>
+        <button type="button" className={stiliDelleFinestre.comando} autoFocus onClick={() => rispondi(false)}>
+          {testi.sostituireRinuncia}
+        </button>
+        <button type="button" className={stiliDelleFinestre.comando} onClick={() => rispondi(true)}>
+          {testi.sostituireConferma}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Il comando per segnalare e, chiesto, il testo esatto al suo posto. `children` dispone il pulsante fra gli altri della pagina. */
+function DaSegnalare({ testi, lavoro: l, primo = false, children }: { testi: Dizionario; lavoro: LavoroDaSalvare; primo?: boolean; children: (pulsante: ReactElement) => ReactNode }): ReactElement {
+  const [testo, setTesto] = useState<string | null>(null);
+  const [sostituire, setSostituire] = useState<string | null>(null);
+  const [esito, setEsito] = useState<string | null>(null);
+  const alTesto = useCallback((sezione: HTMLElement | null) => sezione?.querySelector("pre")?.focus(), []);
+
+  function apri(): void {
+    setEsito(null);
+    try {
+      setTesto(l.segnalazione());
+    } catch (e) {
+      annotaErrore("testo per la segnalazione non preparato", e);
+      setEsito(testi.segnalaNonPreparato);
+    }
+  }
+
+  const nonSalvato = (file: string, e: unknown) => setEsito(`${riempi(testi.segnalaErroreTitolo, { file })}: ${testoDellErrore(erroreDelFile(e), testi)}`);
+
+  async function scrivi(percorso: string, t: string): Promise<void> {
+    setSostituire(null);
+    try {
+      await scriviProgetto(percorso, t);
+    } catch (e) {
+      nonSalvato(nomeDelFile(percorso), e);
+      return;
+    }
+    setTesto(null);
+    setEsito(riempi(testi.segnalaSalvatoIn, { file: nomeDelFile(percorso) }));
+  }
+
+  async function salva(t: string): Promise<void> {
+    setEsito(null);
+    const proposto = riempi(testi.nomeDellaSegnalazione, { nome: senzaVietati(l.nome) || testi.ripiegoDelNomeDelFile });
+    let scelto;
+    try {
+      scelto = await scegliFileDelCodice(proposto, testi.filtroDellaSegnalazione, ".txt", l.cartella);
+    } catch (e) {
+      nonSalvato(proposto, e);
+      return;
+    }
+    if (scelto === null) return;
+    if (scelto.sostituire) setSostituire(scelto.percorso);
+    else await scrivi(scelto.percorso, t);
+  }
+
+  const frase =
+    esito !== null ? (
+      <p role="alert" data-esito-della-segnalazione="" className={stili.frase}>
+        {esito}
+      </p>
+    ) : null;
+
+  if (testo !== null && sostituire !== null) return <DomandaSostituire testi={testi} percorso={sostituire} rispondi={(si) => (si ? void scrivi(sostituire, testo) : setSostituire(null))} />;
+
+  if (testo !== null)
+    return (
+      <section
+        ref={alTesto}
+        aria-label={testi.segnalaTitolo}
+        className={stili.segnalazione}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setTesto(null);
+        }}
+      >
+        <h2 className={stiliDelleFinestre.titolo}>{testi.segnalaTitolo}</h2>
+        <CorpoDellaSegnalazione testo={testo} testi={testi} />
+        {frase}
+        <div className={stili.comandi}>
+          <button type="button" className={stiliDelleFinestre.comando} onClick={() => setTesto(null)}>
+            {testi.annullaEsc}
+          </button>
+          <button type="button" className={stiliDelleFinestre.comando} onClick={() => void salva(testo)}>
+            {testi.segnalaSalva}
+          </button>
+        </div>
+      </section>
+    );
+
+  return (
+    <>
+      {children(
+        <button type="button" className={stiliDelleFinestre.comando} autoFocus={primo} onClick={apri}>
+          {testi.segnalaComando}
+        </button>,
+      )}
+      {frase}
+    </>
+  );
+}
 
 function DaSalvare({ testi, lavoro: l }: { testi: Dizionario; lavoro: LavoroDaSalvare }): ReactElement {
   const [salvato, setSalvato] = useState<string | null>(null);
@@ -104,32 +224,17 @@ function DaSalvare({ testi, lavoro: l }: { testi: Dizionario; lavoro: LavoroDaSa
 
   if (salvato !== null)
     return (
-      <p role="alert" data-errore-inatteso="" className={stili.frase}>
-        {riempi(testi.erroreInattesoSalvato, { file: salvato })}
-      </p>
-    );
-
-  if (sostituire !== null)
-    return (
-      <div
-        role="alertdialog"
-        aria-label={riempi(testi.sostituireTitolo, { file: nomeDelFile(sostituire) })}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") setSostituire(null);
-        }}
-      >
-        <p className={stili.frase}>{riempi(testi.sostituireTitolo, { file: nomeDelFile(sostituire) })}</p>
-        <p className={stili.frase}>{testi.sostituireSpiegazione}</p>
-        <div className={stili.comandi}>
-          <button type="button" className={stiliDelleFinestre.comando} autoFocus onClick={() => setSostituire(null)}>
-            {testi.sostituireRinuncia}
-          </button>
-          <button type="button" className={stiliDelleFinestre.comando} onClick={() => void scrivi(sostituire)}>
-            {testi.sostituireConferma}
-          </button>
-        </div>
+      <div>
+        <p role="alert" data-errore-inatteso="" className={stili.frase}>
+          {riempi(testi.erroreInattesoSalvato, { file: salvato })}
+        </p>
+        <DaSegnalare testi={testi} lavoro={l} primo>
+          {(pulsante) => <div className={stili.comandi}>{pulsante}</div>}
+        </DaSegnalare>
       </div>
     );
+
+  if (sostituire !== null) return <DomandaSostituire testi={testi} percorso={sostituire} rispondi={(si) => (si ? void scrivi(sostituire) : setSostituire(null))} />;
 
   return (
     <div>
@@ -142,14 +247,19 @@ function DaSalvare({ testi, lavoro: l }: { testi: Dizionario; lavoro: LavoroDaSa
           {errore.titolo}: {errore.testo}
         </p>
       ) : null}
-      <div className={stili.comandi}>
-        <button type="button" className={stiliDelleFinestre.comando} autoFocus onClick={() => void salva()}>
-          {testi.salvaConNome}
-        </button>
-        <button type="button" className={stiliDelleFinestre.comando} onClick={chiudi}>
-          {testi.erroreInattesoChiudi}
-        </button>
-      </div>
+      <DaSegnalare testi={testi} lavoro={l}>
+        {(pulsante) => (
+          <div className={stili.comandi}>
+            <button type="button" className={stiliDelleFinestre.comando} autoFocus onClick={() => void salva()}>
+              {testi.salvaConNome}
+            </button>
+            {pulsante}
+            <button type="button" className={stiliDelleFinestre.comando} onClick={chiudi}>
+              {testi.erroreInattesoChiudi}
+            </button>
+          </div>
+        )}
+      </DaSegnalare>
     </div>
   );
 }
@@ -171,9 +281,16 @@ export class ErroreInatteso extends Component<{ testi: Dizionario; children: Rea
     if (!this.state.errore) return this.props.children;
     if (lavoro?.modificato) return <DaSalvare testi={this.props.testi} lavoro={lavoro} />;
     return (
-      <p role="alert" data-errore-inatteso="" className={stili.frase}>
-        {this.props.testi.erroreInatteso}
-      </p>
+      <div>
+        <p role="alert" data-errore-inatteso="" className={stili.frase}>
+          {this.props.testi.erroreInatteso}
+        </p>
+        {lavoro !== null && (
+          <DaSegnalare testi={this.props.testi} lavoro={lavoro} primo>
+            {(pulsante) => <div className={stili.comandi}>{pulsante}</div>}
+          </DaSegnalare>
+        )}
+      </div>
     );
   }
 }

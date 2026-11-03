@@ -90,7 +90,7 @@ test("ogni pulsante della barra e ogni voce del menu vengono dal catalogo, e ogn
   });
   expect(screen.getAllByRole("menu").length).toBe(1);
   // Controllo positivo della raccolta: le voci del menu «Aiuto» ci sono.
-  expect(aiuto.comandi).toEqual(["guida @ menu", "esempi @ menu", "informazioni @ menu"]);
+  expect(aiuto.comandi).toEqual(["guida @ menu", "esempi @ menu", "segnala @ menu", "informazioni @ menu"]);
   const esito = appaia(aiuto);
   console.log(`appaiamento: ${esito.conteggio}`);
   const senzaChiamate = ["entra @ barra", "esci @ barra"];

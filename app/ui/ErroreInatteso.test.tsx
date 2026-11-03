@@ -77,7 +77,7 @@ function guscio(scelto: unknown, scrittura: () => unknown = () => null) {
   const segnati: unknown[] = [];
   mockIPC((comando, a) => {
     const argomenti = a as { percorso?: unknown; testo?: unknown; modificato?: unknown };
-    if (comando === "scegli_file_da_salvare") return scelto;
+    if (comando === "scegli_file_da_salvare" || comando === "scegli_file_del_codice") return scelto;
     if (comando === "scrivi_progetto") {
       const esito = scrittura();
       scritti.push([argomenti.percorso, argomenti.testo]);
@@ -92,7 +92,7 @@ function guscio(scelto: unknown, scrittura: () => unknown = () => null) {
 const giro = () => act(async () => await new Promise((r) => setTimeout(r, 0)));
 const pulsante = (nome: string) => [...document.querySelectorAll("button")].find((b) => b.textContent === nome) ?? null;
 
-const conModifiche = { testo: () => "il testo del progetto", nome: "Media", percorso: null, cartella: null, modificato: true } as const;
+const conModifiche = { testo: () => "il testo del progetto", nome: "Media", percorso: null, cartella: null, modificato: true, segnalazione: () => "il testo per segnalare" } as const;
 
 afterEach(() => {
   ricordaIlLavoro(null);
@@ -108,13 +108,95 @@ test("con modifiche la frase è quella del salvataggio e il guscio resta avvisat
   expect(pulsante(it.salvaConNome)).not.toBeNull();
   expect(segnati).toEqual([]);
   cleanup();
-  // Un progetto ricordato ma senza modifiche: come senza progetto.
+  // Un progetto ricordato ma senza modifiche: la frase di sempre, col solo comando per segnalare.
   ricordaIlLavoro({ ...conModifiche, modificato: false });
   disegna(<Lancia />, en);
   await giro();
   expect(document.querySelector("[data-errore-inatteso]")?.textContent).toBe(en.erroreInatteso);
-  expect(document.querySelectorAll("button").length).toBe(0);
+  expect([...document.querySelectorAll("button")].map((b) => b.textContent)).toEqual([en.segnalaComando]);
   expect(segnati).toEqual([false]);
+  cleanup();
+  // Senza nessun progetto ricordato (un errore prima del primo aggiornamento) nemmeno quello.
+  ricordaIlLavoro(null);
+  disegna(<Lancia />, it);
+  await giro();
+  expect(document.querySelectorAll("button").length).toBe(0);
+});
+
+test("per segnalare, il testo esatto prima di scrivere: si compone una volta sola, rinunciando nessun file, col gesto il file è quel testo", async () => {
+  const { scritti } = guscio(null);
+  let volte = 0;
+  ricordaIlLavoro({
+    ...conModifiche,
+    segnalazione: () => {
+      volte++;
+      return `il testo per segnalare, ${volte}`;
+    },
+  });
+  disegna(<Lancia />, it);
+  // Il comando sta fra gli altri due.
+  expect([...document.querySelectorAll("button")].map((b) => b.textContent)).toEqual([it.salvaConNome, it.segnalaComando, it.erroreInattesoChiudi]);
+  expect(volte).toBe(0);
+  await act(async () => pulsante(it.segnalaComando)!.click());
+  const mostrato = () => document.querySelector("[data-testo-della-segnalazione]")?.textContent ?? null;
+  expect(mostrato()).toBe("il testo per segnalare, 1");
+  expect(document.activeElement?.getAttribute("data-testo-della-segnalazione")).toBe("");
+  // Rinunciando alla finestra del sistema si resta sul testo.
+  await act(async () => pulsante(it.segnalaSalva)!.click());
+  await giro();
+  expect(scritti).toEqual([]);
+  expect(mostrato()).toBe("il testo per segnalare, 1");
+  // «Annulla» torna ai pulsanti, ed Esc lo stesso.
+  await act(async () => pulsante(it.annullaEsc)!.click());
+  expect(mostrato()).toBeNull();
+  await act(async () => pulsante(it.segnalaComando)!.click());
+  await act(async () => void document.querySelector("[data-testo-della-segnalazione]")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+  expect(mostrato()).toBeNull();
+  expect(pulsante(it.salvaConNome)).not.toBeNull();
+  // Il gesto, su un file che c'è: prima la domanda.
+  cleanup();
+  const altro = guscio({ percorso: "C:\\miei\\media - segnalazione.txt", sostituire: true });
+  disegna(<Lancia />, it);
+  await act(async () => pulsante(it.segnalaComando)!.click());
+  const testo = mostrato();
+  await act(async () => pulsante(it.segnalaSalva)!.click());
+  await giro();
+  await act(async () => pulsante(it.sostituireRinuncia)!.click());
+  expect(altro.scritti).toEqual([]);
+  expect(mostrato()).toBe(testo);
+  await act(async () => pulsante(it.segnalaSalva)!.click());
+  await giro();
+  await act(async () => pulsante(it.sostituireConferma)!.click());
+  await giro();
+  expect(altro.scritti).toEqual([["C:\\miei\\media - segnalazione.txt", testo]]);
+  expect(document.querySelector("[data-esito-della-segnalazione]")?.textContent).toBe(riempi(it.segnalaSalvatoIn, { file: "media - segnalazione.txt" }));
+  // Il lavoro non è salvato da questo gesto: i pulsanti ci sono ancora.
+  expect(pulsante(it.salvaConNome)).not.toBeNull();
+});
+
+test("per segnalare, un testo che non si prepara lo dice e non rompe la pagina; una scrittura rifiutata lo dice e il testo resta", async () => {
+  guscio({ percorso: "C:\\miei\\x.txt", sostituire: false }, () => Promise.reject({ genere: "sistema", dettaglio: "sonda della segnalazione rifiutata" }));
+  ricordaIlLavoro({
+    ...conModifiche,
+    segnalazione: () => {
+      throw new Error("sonda del testo per segnalare");
+    },
+  });
+  disegna(<Lancia />, it);
+  await act(async () => pulsante(it.segnalaComando)!.click());
+  expect(document.querySelector("[data-esito-della-segnalazione]")?.textContent).toBe(it.segnalaNonPreparato);
+  expect(pulsante(it.salvaConNome)).not.toBeNull();
+  expect(erroriDellApp().voci.filter((v) => v.origin === "handled" && v.text.includes("sonda del testo per segnalare")).length).toBe(1);
+  cleanup();
+
+  ricordaIlLavoro(conModifiche);
+  disegna(<Lancia />, it);
+  await act(async () => pulsante(it.segnalaComando)!.click());
+  await act(async () => pulsante(it.segnalaSalva)!.click());
+  await giro();
+  expect(document.querySelector("[data-esito-della-segnalazione]")?.textContent).toContain("sonda della segnalazione rifiutata");
+  expect(document.querySelector("[data-testo-della-segnalazione]")?.textContent).toBe("il testo per segnalare");
+  expect(erroriDellApp().voci.filter((v) => v.origin === "handled" && v.text.includes("sonda della segnalazione rifiutata")).length).toBe(1);
 });
 
 test("rinunciare alla finestra del sistema non scrive nulla e lascia i pulsanti", async () => {

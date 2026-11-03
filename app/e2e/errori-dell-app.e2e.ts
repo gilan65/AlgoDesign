@@ -2,29 +2,26 @@
 // punto che li annota. Il disegno si rompe facendo lanciare `measureText` (la misura si fa nel disegno), il fotogramma e la promessa
 // sono un fotogramma e una promessa della pagina, l'errore del guscio è una scrittura rifiutata.
 //
-// - Ogni errore forzato è nel file composto e riletto, per elementi nei due versi, con il conteggio accanto; il percorso che portava non
-//   c'è più. Controllo positivo: il rilevatore si accende sul messaggio di partenza.
+// - Ogni errore forzato è nel testo mostrato dalla pagina dopo l'errore e nel file scritto, per elementi nei due versi, con il conteggio
+//   accanto; il percorso che portava non c'è più. Controllo positivo: il rilevatore si accende sul messaggio di partenza.
 // - Un errore preso dal riparo è una voce sola, anche nel server di sviluppo: nessun doppione.
 // - Un difetto a ogni fotogramma è una voce sola che conta, e un errore dopo si vede ancora.
 // - Il riparo con modifiche: si salva davvero e il file si riapre, la X non chiude finché non si è salvato, i tasti della ricarica sono
-//   fermi; dopo il salvataggio la X chiude. «Chiudi senza salvare» chiude. Senza modifiche: la frase e nessun pulsante, e la X chiude.
+//   fermi; dopo il salvataggio la X chiude. «Chiudi senza salvare» chiude. Senza modifiche: la frase e il solo comando per segnalare, e la X
+//   chiude.
 //
 // CHE COSA NON GUARDA:
-// - la finestra che mostra il testo e il file scritto davvero (arrivano con il comando per segnalare): qui il file lo compone la prova;
+// - il comando e la finestra col testo esatto, fuori da questa pagina: `e2e/segnala.e2e.ts`;
 // - la domanda «Sostituire?», l'errore di scrittura e la rinuncia nel riparo: `ui/ErroreInatteso.test.tsx`;
 // - un errore nel disegno del riparo stesso, che lascerebbe la pagina bianca.
 
 import { expect, test, type Page } from "@playwright/test";
-import { tetti } from "../core/controllo/controllo";
-import { Esecuzione } from "../core/esecuzione/esecuzione";
 import { apri as apriProgetto } from "../core/progetto/formato";
-import type { Progetto } from "../core/progetto/modello";
-import { componi, fotografa } from "../core/registrazione/composizione";
-import { apriRegistrazione, testoDellaRegistrazione, type OrigineDellErrore } from "../core/registrazione/formato";
+import { apriRegistrazione, type ErroreDellApp, type OrigineDellErrore } from "../core/registrazione/formato";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
-import { contestoDiProva, percorsiEProfilo } from "../strumenti/registrazioni-del-corpus";
-import { apriVuota, costruisciFinzione, voceDelMenu } from "./pagina";
+import { percorsiEProfilo } from "../strumenti/registrazioni-del-corpus";
+import { apriVuota, costruisciFinzione, voceDelMenu, voceDellAiuto } from "./pagina";
 
 test.beforeAll(costruisciFinzione);
 test.use({ viewport: { width: 1600, height: 1000 } });
@@ -75,20 +72,29 @@ async function modificaERompi(page: Page): Promise<void> {
   await expect(page.locator("[data-errore-inatteso]")).toBeVisible();
 }
 
-const elenco = (page: Page) => page.evaluate(() => window.__erroriDellApp__!());
+const riletta = (testo: string) => {
+  const r = apriRegistrazione(testo);
+  if (!r.ok) throw new Error(`riaperta con errori: ${JSON.stringify(r.errori)}`);
+  return r.registrazione;
+};
+
+/** L'elenco degli errori come lo mostra la finestra col testo esatto: la si apre, si legge, si chiude. */
+async function elenco(page: Page): Promise<{ voci: readonly ErroreDellApp[]; perse: number }> {
+  await (await voceDellAiuto(page, it.segnalaComando)).click();
+  const f = page.getByRole("dialog", { name: it.segnalaTitolo, exact: true });
+  const r = riletta((await f.locator("[data-testo-della-segnalazione]").textContent())!);
+  await page.keyboard.press("Escape");
+  await expect(f).toHaveCount(0);
+  return { voci: r.app_errors, perse: r.app_errors_lost };
+}
+
 const finzione = (page: Page) => page.evaluate(() => window.__finzione__);
 const imposta = (page: Page, valori: object) => page.evaluate((v) => void Object.assign(window.__finzione__, v), valori);
 const laX = (page: Page) => page.evaluate(() => window.__laX__());
 
-/** Un'esecuzione qualunque per comporre il file: qui contano gli errori. */
-function unaFotografia() {
-  const p = { format: "algodesign", schema_version: 2, metadata: { name: "Prova" }, functions: [{ id: "f0", kind: "main", data: [], body: [], end: { id: "b1" } }] } as unknown as Progetto;
-  return fotografa(new Esecuzione(p, tetti, { tabella: false }));
-}
-
 test("un errore nel disegno, in un fotogramma, in una promessa e nel guscio sono tutti nel file, senza il percorso", async ({ page }, info) => {
   await preparaLaRottura(page);
-  await apriVuota(page, { lingua: "it" }, { daSalvare: "C:\\miei\\prova", scritturaRifiutata: `${PERCORSO}: sonda del guscio` });
+  await apriVuota(page, { lingua: "it" }, { daSalvare: "C:\\miei\\prova", daSalvareIlCodice: "C:\\miei\\segnalazione", scritturaRifiutata: `${PERCORSO}: sonda del guscio` });
 
   // Ogni origine con la sua sonda: chi non arriva, o arriva due volte, si vede dal confronto.
   const attese: readonly (readonly [OrigineDellErrore, string])[] = [
@@ -118,16 +124,16 @@ test("un errore nel disegno, in un fotogramma, in una promessa e nel guscio sono
   await inserisci(page, it.bloccoSe);
   await expect(page.locator("[data-errore-inatteso]")).toBeVisible();
 
-  const { voci, perse } = await elenco(page);
-  const testo = testoDellaRegistrazione(componi({ ...contestoDiProva, erroriDellApp: voci, erroriPersi: perse }, [unaFotografia()]));
-  const riaperta = apriRegistrazione(testo);
-  if (!riaperta.ok) throw new Error(`riaperta con errori: ${JSON.stringify(riaperta.errori)}`);
-  const nelFile = riaperta.registrazione.app_errors;
+  // Dalla pagina dopo l'errore: il testo esatto, col progetto all'ultimo aggiornamento riuscito.
+  await page.getByRole("button", { name: it.segnalaComando, exact: true }).click();
+  const testo = (await page.locator("[data-testo-della-segnalazione]").textContent())!;
+  const riaperta = riletta(testo);
+  const nelFile = riaperta.app_errors;
 
   const appaia = (o: OrigineDellErrore, s: string) => nelFile.filter((v) => v.origin === o && v.text.includes(s)).map((v) => v.times);
   const senzaVoce = attese.filter(([o, s]) => appaia(o, s).length !== 1).map(([o, s]) => `${o}: ${s} (${appaia(o, s).length} voci)`);
   const senzaAttesa = nelFile.filter((v) => !attese.some(([o, s]) => v.origin === o && v.text.includes(s))).map((v) => `${v.origin}: ${v.text.slice(0, 120)}`);
-  console.log(`[${info.project.name}] errori attesi ${attese.length}, voci nel file ${nelFile.length}, perse ${riaperta.registrazione.app_errors_lost}, senza voce ${senzaVoce.length}, senza attesa ${senzaAttesa.length}`);
+  console.log(`[${info.project.name}] errori attesi ${attese.length}, voci nel file ${nelFile.length}, perse ${riaperta.app_errors_lost}, senza voce ${senzaVoce.length}, senza attesa ${senzaAttesa.length}`);
   expect(senzaVoce).toEqual([]);
   expect(senzaAttesa).toEqual([]);
   // Nessun doppione: ognuno è arrivato una volta, nel server di sviluppo e nel build.
@@ -139,14 +145,28 @@ test("un errore nel disegno, in un fotogramma, in una promessa e nel guscio sono
   expect(testo).not.toContain("Rossi");
   expect(testo).toContain("<path>");
 
-  // Mai su disco: la sola scrittura chiesta è stata rifiutata.
+  // Mai su disco senza il gesto: la sola scrittura chiesta è stata rifiutata.
   const f = await finzione(page);
   expect(Object.keys(f.file)).toEqual([]);
   expect(f.scritte).toEqual([]);
+
+  // Il gesto: una scrittura rifiutata lo dice e il testo resta; riuscita, il file è il testo mostrato.
+  const salva = page.getByRole("button", { name: it.segnalaSalva, exact: true });
+  await salva.click();
+  await expect(page.locator("[data-esito-della-segnalazione]")).toContainText(riempi(it.segnalaErroreTitolo, { file: "segnalazione.txt" }));
+  expect(Object.keys((await finzione(page)).file)).toEqual([]);
+  await imposta(page, { scritturaRifiutata: null });
+  await salva.click();
+  await expect(page.locator("[data-esito-della-segnalazione]")).toHaveText(riempi(it.segnalaSalvatoIn, { file: "segnalazione.txt" }));
+  // Rifiutata, la scrittura è un errore in più nell'elenco: il testo è quello mostrato all'apertura.
+  expect((await finzione(page)).file["C:\\miei\\segnalazione.txt"]).toBe(testo);
 });
 
 test("un difetto a ogni fotogramma è una voce sola che conta, e un errore dopo si vede ancora", async ({ page }, info) => {
   await apriVuota(page, { lingua: "it" });
+  // Il comando c'è con un'esecuzione ferma.
+  await page.keyboard.press("F10");
+  await expect(page.locator("[data-stato-esecuzione]")).not.toHaveText(it.statoPronto);
   await page.evaluate(() => {
     const giro = () => {
       requestAnimationFrame(giro);
@@ -228,7 +248,7 @@ test("«Chiudi senza salvare» chiude l'applicazione", async ({ page }) => {
   expect(Object.keys((await finzione(page)).file)).toEqual([]);
 });
 
-test("senza modifiche resta la frase di sempre, nessun pulsante, e la X chiude", async ({ page }) => {
+test("senza modifiche resta la frase di sempre col solo comando per segnalare, e la X chiude", async ({ page }) => {
   await preparaLaRottura(page);
   await apriVuota(page, { lingua: "it" });
   await expect(page.getByRole("banner")).toBeVisible();
@@ -237,7 +257,7 @@ test("senza modifiche resta la frase di sempre, nessun pulsante, e la X chiude",
   });
   await inserisci(page, it.bloccoSe);
   await expect(page.locator("[data-errore-inatteso]")).toHaveText(it.erroreInatteso);
-  await expect(page.getByRole("button")).toHaveCount(0);
+  await expect(page.getByRole("button")).toHaveText([it.segnalaComando]);
   await expect.poll(async () => (await finzione(page)).segnato).toBe(false);
   await laX(page);
   expect((await finzione(page)).chiusa).toBe(true);

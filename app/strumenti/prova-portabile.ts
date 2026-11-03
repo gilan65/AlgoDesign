@@ -129,6 +129,7 @@
 //      dell'utente); per ramo la vista delle cartelle; per forma esatta l'appunto della shell sulla finestra aperta
 //      (`SessionInfo\<n>\ApplicationViewManagement\W32:<identificativo>`, aggiunto e tolto); la PowerShell della prova.
 //      Nei messaggi chiave e nome del valore, mai il dato;
+//    - SEGNALAZIONE: il comando dal menu «Aiuto», in pausa; rinunciando nessun file; col gesto il file è il testo mostrato, senza percorsi;
 //    - TRACCE: nessuna cartella dell'identificatore e nessuna voce nuova al primo livello di
 //      %APPDATA%, %LOCALAPPDATA%, %TEMP% (e %TMP%, se è un'altra cartella); nella cartella di prova,
 //      accanto all'eseguibile, nient'altro che `data\`. Voci ammesse: nessuna. Il log dice quanto pesa `data\webview`.
@@ -298,6 +299,7 @@ import { CARTA, righeNelLato } from "../e2e/stampa-pagina";
 import { misuraDelPng } from "../ui/disegno/esporta";
 import { nomeNellaStampa } from "../ui/stampa/parti";
 import { leggiPdf } from "./lettore-pdf";
+import { percorsiEProfilo } from "./registrazioni-del-corpus";
 import { difettiDelPdf, scritteDiEdge, type FoglioAtteso } from "./pdf-stampato";
 import { csvIngleseAtteso, csvItalianoAtteso } from "../core/esecuzione/atteso-del-riferimento";
 import { costruisci as costruisciIlRiferimento, differenze, primaDifferenza, riferimentoDellaTappa2, riferimentoDellaTappa3 } from "../e2e/costruzione";
@@ -357,6 +359,7 @@ const nomeProgetto = "progetto di prova.algo";
 const progettoFuori = join(cartellaProva, nomeProgetto);
 // La tabella della clausola ESECUZIONE, accanto al progetto: il nome scritto nella finestra del sistema, senza `.csv`.
 const nomeEsportata = "tabella esportata";
+const nomeDellaSegnalazione = "segnalazione di prova";
 // Le immagini della clausola ESPORTA (il nome scritto nella finestra del sistema, senza l'estensione) e il PDF della
 // clausola STAMPA, accanto al progetto; tolti dopo la loro clausola (il PDF si conserva accanto al log).
 const nomeDellImmagineEsportata = "flowchart esportato";
@@ -403,6 +406,7 @@ const clausole: [string, string][] = [
   ["FUNZIONI", "costruzione con le funzioni"],
   ["ESECUZIONE", "esecuzione"],
   ["SICUREZZA", "politica di sicurezza dei contenuti"],
+  ["SEGNALAZIONE", "file per una segnalazione"],
   ["CODICE", "codice generato"],
   ["ACCADEMICO", "«Accademico» dal menu dei linguaggi"],
   ["VETTORE", "vettore di 1000 elementi"],
@@ -911,7 +915,7 @@ function estraneeAllaProva(): string[] {
   if (!existsSync(cartellaProva)) return [];
   // L'eseguibile e i file del pacchetto, di una prova fatta in un modo o nell'altro (Windows non bada alle maiuscole).
   const dellaProva = new Set(["algodesign.exe", ...elencoDelPacchetto.filter((v) => !v.endsWith("/")).map((v) => v.toLowerCase())]);
-  const scritti = [nomeProgetto, `${nomeEsportata}.csv`, `${nomeDellImmagineEsportata}.svg`, `${nomeDellImmagineEsportata}.png`, basename(pdfStampato)];
+  const scritti = [nomeProgetto, `${nomeEsportata}.csv`, `${nomeDellaSegnalazione}.txt`, `${nomeDellImmagineEsportata}.svg`, `${nomeDellImmagineEsportata}.png`, basename(pdfStampato)];
   const estranee = readdirSync(cartellaProva).filter((v) => !dellaProva.has(v.toLowerCase()) && v !== "data" && !scritti.includes(v));
   for (const v of readdirSync(cartellaProva).filter((v) => dellaProva.has(v.toLowerCase()))) if (!lstatSync(join(cartellaProva, v)).isFile()) estranee.push(`${v} (non è un file)`);
   if (existsSync(progettoFuori) && !lstatSync(progettoFuori).isFile()) estranee.push(`${nomeProgetto} (non è un file)`);
@@ -1073,6 +1077,7 @@ async function giroPortabile(): Promise<Set<string>> {
   await giroDellaCostruzione(iniziale);
   await giroDelleFunzioni(iniziale);
   await giroDellEsecuzione(iniziale);
+  await giroDellaSegnalazione(iniziale);
   await giroDelCodice(iniziale);
   await giroDiAccademico(iniziale);
   await giroDelVettore(iniziale);
@@ -1090,7 +1095,13 @@ async function giroPortabile(): Promise<Set<string>> {
   if (nelProfilo === 0) rosso("TRACCE", "data\\webview è vuota: il profilo della WebView non è andato in data\\");
   const accanto = readdirSync(cartellaProva).filter((v) => !accantoAmmessi.includes(v) && v !== "data");
   if (accanto.length > 0) rosso("TRACCE", `accanto all'eseguibile, fuori da data\\: ${accanto.join(", ")}`);
-  verde("TRACCE (portabile)", `zero | profilo della WebView in data\\webview (${nelProfilo} file, ${(byteDelProfilo / 1024 / 1024).toFixed(1)} MB) | accanto all'eseguibile solo data\\${pacchetto === undefined ? "" : " e i file del pacchetto"}`);
+  // Controllo positivo sul giro stesso: una scrittura vera in %TEMP% il rilevatore la vede.
+  const sondaInTemp = join(radiciTracce.TEMP!, `sonda delle tracce ${process.pid}.txt`);
+  writeFileSync(sondaInTemp, "sonda");
+  const conLaSonda = rileva(prima, soglia).nuove.includes(sondaInTemp);
+  rmSync(sondaInTemp);
+  if (!conLaSonda) rosso("TRACCE (portabile)", `SPENTO: il rilevatore non vede una scrittura vera in ${sondaInTemp}`);
+  verde("TRACCE (portabile)", `zero | controllo positivo acceso (una scrittura vera in %TEMP% si vede) | profilo della WebView in data\\webview (${nelProfilo} file, ${(byteDelProfilo / 1024 / 1024).toFixed(1)} MB) | accanto all'eseguibile solo data\\${pacchetto === undefined ? "" : " e i file del pacchetto"}`);
   return rumore;
 }
 
@@ -1460,6 +1471,63 @@ async function giroDellEsecuzione(lingua: Lingua): Promise<void> {
     `in «${lingua}», F5 sul riferimento dato come argomento, ${caso.inputs.length} valori del caso scritti nella console, «${finale}» in ${secondi} s: output uguale all'atteso del caso (${Buffer.byteLength(visto)} byte) | «Esporta la tabella…» con la finestra del sistema compilata («${nomeEsportata}», senza estensione): ${nomeEsportata}.csv di ${Buffer.byteLength(scritto)} byte uguali al CSV atteso, avviso «${detto}», nessun temporaneo | controllo positivo: prima di F5 l'output era diverso (${JSON.stringify(outputPrima)})`,
   );
   verde("SICUREZZA", `nessuna violazione della politica di sicurezza dei contenuti dall'apertura del file all'esportazione | controllo positivo acceso (${sonde.length} sonde per ${new Set(sonde.map((s) => s.direttiva)).size} direttive, ognuna fermata con la sua violazione)`);
+}
+
+/** La clausola SEGNALAZIONE: rinunciando nessun file; col gesto, la finestra del sistema compilata coi messaggi di Windows e il file uguale,
+ * byte per byte, al testo mostrato, senza percorsi. Controllo positivo: il rilevatore si accende sul `preferenze.json` con cui l'app è partita. */
+async function giroDellaSegnalazione(lingua: Lingua): Promise<void> {
+  const testi = dizionari[lingua];
+  const segnalata = join(cartellaProva, `${nomeDellaSegnalazione}.txt`);
+  if (existsSync(segnalata)) rosso("SEGNALAZIONE", `${segnalata} c'è già prima del giro`);
+  writeFileSync(progettoFuori, testoDiPartenza);
+  const partenza = apriProgetto(testoDiPartenza);
+  if (!partenza.ok) rosso("SEGNALAZIONE", "il file del corpus non si apre");
+  // Le preferenze con un percorso vero in uso: una cartella scelta è l'unico percorso che portano, e non deve arrivare al file.
+  const preferenze = join(dati, "preferenze.json");
+  writeFileSync(preferenze, JSON.stringify({ lingua, cartellaEsempi: join(dati, "esempi") }));
+  const a = await avvia([progettoFuori]);
+  await a.pagina.getByRole("group", { name: `${testi.flowchart}: ${partenza.progetto.metadata.name}`, exact: true }).waitFor({ timeout: 15_000 });
+  await a.pagina.getByRole("region", { name: testi.vistaFlowchart, exact: true }).click({ position: { x: 5, y: 5 } });
+  await a.pagina.keyboard.press("F10");
+  await a.pagina.waitForFunction((pronto) => document.querySelector("[data-stato-esecuzione]")?.textContent !== pronto, testi.statoPronto, { polling: "raf", timeout: 10_000 });
+  const apri = async () => {
+    await a.pagina.getByRole("banner").getByRole("button", { name: testi.menuAiuto, exact: true }).click();
+    await a.pagina.waitForFunction(() => document.activeElement?.closest('[role="menu"]') != null, undefined, { polling: "raf", timeout: 10_000 });
+    await a.pagina.getByRole("menu", { name: testi.menuAiuto, exact: true }).getByRole("menuitem", { name: testi.segnalaComando, exact: true }).click();
+    const f = a.pagina.getByRole("dialog", { name: testi.segnalaTitolo, exact: true });
+    await f.waitFor({ timeout: 10_000 });
+    return f;
+  };
+  // Rinunciando, nessun file.
+  let f = await apri();
+  await f.getByRole("button", { name: testi.annullaEsc, exact: true }).click();
+  await f.waitFor({ state: "detached", timeout: 10_000 });
+  if (existsSync(segnalata)) rosso("SEGNALAZIONE", "un file scritto senza il gesto");
+  // Il gesto.
+  f = await apri();
+  const mostrato = (await f.locator("[data-testo-della-segnalazione]").textContent({ timeout: 5_000 })) ?? "";
+  await f.getByRole("button", { name: testi.segnalaSalva, exact: true }).click();
+  const compilata = await finestraVera(a.proc.pid, "salva", join(cartellaProva, nomeDellaSegnalazione));
+  if (compilata !== "salvato") rosso("SEGNALAZIONE", `la finestra del sistema non è stata compilata: ${compilata}`);
+  const avviso = riempi(testi.segnalaSalvatoIn, { file: `${nomeDellaSegnalazione}.txt` });
+  let detto = "";
+  for (let i = 0; i < 40 && detto !== avviso; i++) {
+    detto = (await a.pagina.locator('output[role="status"]').textContent({ timeout: 5_000 }).catch(() => "")) ?? "";
+    if (detto !== avviso) await Bun.sleep(250);
+  }
+  await chiudi(a);
+  if (detto !== avviso) rosso("SEGNALAZIONE", `l'avviso dice «${detto}» invece di «${avviso}»`);
+  if (!existsSync(segnalata)) rosso("SEGNALAZIONE", `nessun ${segnalata} dopo il gesto`);
+  const scritto = readFileSync(segnalata, "utf8");
+  if (scritto !== mostrato) rosso("SEGNALAZIONE", `il file (${Buffer.byteLength(scritto)} byte) non è il testo mostrato (${Buffer.byteLength(mostrato)} byte)`);
+  const trovati = percorsiEProfilo(scritto);
+  if (trovati.length > 0) rosso("SEGNALAZIONE", `percorsi o nome del profilo nel file: ${trovati.join("; ")}`);
+  const nellePreferenze = percorsiEProfilo(readFileSync(preferenze, "utf8"));
+  if (nellePreferenze.length === 0) rosso("SEGNALAZIONE (controllo positivo)", "il rilevatore non si accende sul preferenze.json della corsa");
+  rmSync(preferenze);
+  rmSync(segnalata);
+  rmSync(progettoFuori);
+  verde("SEGNALAZIONE", `rinunciando nessun file; col gesto ${nomeDellaSegnalazione}.txt di ${Buffer.byteLength(scritto)} byte uguali al testo mostrato, avviso «${detto}», nessun percorso né il nome del profilo | controllo positivo acceso (${nellePreferenze.length} occorrenze nel preferenze.json con cui l'app è partita)`);
 }
 
 /** Una corsa del vettore di 1000 elementi, misurata come nella prova nei motori: la risposta della pagina (un giro di

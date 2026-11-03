@@ -75,6 +75,8 @@ export const catalogo = {
   impostazioni: { testo: "impostazioni", icona: "impostazioni", gruppo: "applicazione", posti: ["barra"] },
   guida: { testo: "guida", icona: "guida", gruppo: "applicazione", posti: ["menu"] },
   esempi: { testo: "esempi", icona: "esempio", gruppo: "applicazione", posti: ["menu"] },
+  // Salva il file per una segnalazione, dopo averne mostrato il testo: c'è finché c'è un'esecuzione ferma.
+  segnala: { testo: "segnalaComando", icona: "segnala", gruppo: "applicazione", posti: ["menu"] },
   informazioni: { testo: "informazioni", icona: "informazioni", gruppo: "applicazione", posti: ["menu"] },
   riduci: { testo: "zoomRiduci", icona: "riduci", gruppo: "zoom", posti: ["riga di stato"] },
   cento: { testo: "zoomCento", icona: "cento", gruppo: "zoom", posti: ["riga di stato"] },
@@ -91,7 +93,7 @@ export const delGruppo = (g: Gruppo, posto: Posto): IdComando[] =>
 /** Le voci del menu «Progetto»: i comandi del gruppo che stanno nel menu, con le linee che li separano. */
 export const VOCI_DEL_MENU: readonly (IdComando | "—")[] = ["nuovo", "apri", "—", "salva", "salvaConNome", "salvaComeLibreria", "—", "proprieta", "—", "aggiungiRecord", "nuovaFunzione", "funzioni", "importa", "—", "esportaFlowchart", "esportaTabella", "—", "stampa", "—", "chiudiProgetto", "esciDallApp"];
 /** Le voci del menu «Aiuto», alla destra di «Impostazioni»: i comandi del gruppo dell'applicazione che stanno nel menu. */
-export const VOCI_DELL_AIUTO: readonly (IdComando | "—")[] = ["guida", "esempi", "—", "informazioni"];
+export const VOCI_DELL_AIUTO: readonly (IdComando | "—")[] = ["guida", "esempi", "—", "segnala", "—", "informazioni"];
 
 /** Il tasto di un comando sulla piattaforma: sul Mac Cmd (`Meta`) al posto di Ctrl, e Ripeti è Cmd+Maiusc+Z, come
  * nel menu Modifica del Mac (Cmd+Y vale lo stesso). */
