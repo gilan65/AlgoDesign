@@ -22,6 +22,7 @@ import { CorpoDellaSegnalazione } from "./finestre/CorpoDellaSegnalazione";
 import stiliDelleFinestre from "./finestre/Finestra.module.css";
 import { lasciaLaPagina } from "./modifiche";
 import { baseProposta, senzaVietati } from "./nomi";
+import type { PerSegnalare } from "./segnalazione";
 
 /** Ciò che serve a salvare il progetto senza la finestra. Il testo si calcola solo se serve. */
 export interface LavoroDaSalvare {
@@ -32,7 +33,7 @@ export interface LavoroDaSalvare {
   readonly cartella: string | null;
   readonly modificato: boolean;
   /** Il testo per una segnalazione: si compone solo se serve, e può lanciare. */
-  readonly segnalazione: () => string;
+  readonly segnalazione: () => PerSegnalare;
 }
 
 let lavoro: LavoroDaSalvare | null = null;
@@ -68,7 +69,8 @@ function DomandaSostituire({ testi, percorso, rispondi }: { testi: Dizionario; p
 
 /** Il comando per segnalare e, chiesto, il testo esatto al suo posto. `children` dispone il pulsante fra gli altri della pagina. */
 function DaSegnalare({ testi, lavoro: l, primo = false, children }: { testi: Dizionario; lavoro: LavoroDaSalvare; primo?: boolean; children: (pulsante: ReactElement) => ReactNode }): ReactElement {
-  const [testo, setTesto] = useState<string | null>(null);
+  const [segnalazione, setSegnalazione] = useState<PerSegnalare | null>(null);
+  const testo = segnalazione?.testo ?? null;
   const [sostituire, setSostituire] = useState<string | null>(null);
   const [esito, setEsito] = useState<string | null>(null);
   const alTesto = useCallback((sezione: HTMLElement | null) => sezione?.querySelector("pre")?.focus(), []);
@@ -76,7 +78,7 @@ function DaSegnalare({ testi, lavoro: l, primo = false, children }: { testi: Diz
   function apri(): void {
     setEsito(null);
     try {
-      setTesto(l.segnalazione());
+      setSegnalazione(l.segnalazione());
     } catch (e) {
       annotaErrore("testo per la segnalazione non preparato", e);
       setEsito(testi.segnalaNonPreparato);
@@ -93,7 +95,7 @@ function DaSegnalare({ testi, lavoro: l, primo = false, children }: { testi: Diz
       nonSalvato(nomeDelFile(percorso), e);
       return;
     }
-    setTesto(null);
+    setSegnalazione(null);
     setEsito(riempi(testi.segnalaSalvatoIn, { file: nomeDelFile(percorso) }));
   }
 
@@ -121,21 +123,21 @@ function DaSegnalare({ testi, lavoro: l, primo = false, children }: { testi: Diz
 
   if (testo !== null && sostituire !== null) return <DomandaSostituire testi={testi} percorso={sostituire} rispondi={(si) => (si ? void scrivi(sostituire, testo) : setSostituire(null))} />;
 
-  if (testo !== null)
+  if (segnalazione !== null && testo !== null)
     return (
       <section
         ref={alTesto}
         aria-label={testi.segnalaTitolo}
         className={stili.segnalazione}
         onKeyDown={(e) => {
-          if (e.key === "Escape") setTesto(null);
+          if (e.key === "Escape") setSegnalazione(null);
         }}
       >
         <h2 className={stiliDelleFinestre.titolo}>{testi.segnalaTitolo}</h2>
-        <CorpoDellaSegnalazione testo={testo} testi={testi} />
+        <CorpoDellaSegnalazione segnalazione={segnalazione} testi={testi} />
         {frase}
         <div className={stili.comandi}>
-          <button type="button" className={stiliDelleFinestre.comando} onClick={() => setTesto(null)}>
+          <button type="button" className={stiliDelleFinestre.comando} onClick={() => setSegnalazione(null)}>
             {testi.annullaEsc}
           </button>
           <button type="button" className={stiliDelleFinestre.comando} onClick={() => void salva(testo)}>

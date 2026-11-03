@@ -138,6 +138,24 @@
   background: var(--colore-premuto);
 }
 
+/* Il segno della registrazione: col bordo e il pallino dell'errore, in chiaro e in scuro; lo spazio lo cede il nome del file. */
+.inRegistrazione {
+  display: inline-flex;
+  column-gap: 0.35rem;
+  place-items: center;
+  padding: 0px 0.4rem;
+  font-weight: 600;
+  border: 1px solid var(--colore-errore);
+  border-radius: 4px;
+}
+
+.pallino {
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  background: var(--colore-errore);
+}
+
 .zoom {
   display: inline-flex;
   column-gap: 0.2rem;

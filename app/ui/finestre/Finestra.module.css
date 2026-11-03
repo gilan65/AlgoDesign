@@ -55,6 +55,10 @@
   gap: 0.5rem;
 }
 
+.aSinistra {
+  margin-right: auto;
+}
+
 .comando {
   font: inherit;
   color: var(--colore-testo);

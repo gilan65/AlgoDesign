@@ -80,8 +80,8 @@ test("il controllo positivo sul corpus: una lettura e un esito alterati nel file
 }, 300_000);
 
 /** I campi dell'elenco chiuso, fuori dal progetto e dai casi (che hanno il loro lettore). */
-const elencoChiuso = ["format", "schema_version", "product_version", "language", "system", "limits", "long_lines", "app_errors", "app_errors_lost", "executions"];
-const campiDiUnEsecuzione = ["project", "function", "test_case", "reads", "console", "console_removed", "advances", "outcome"];
+const elencoChiuso = ["format", "schema_version", "product_version", "language", "system", "limits", "long_lines", "app_errors", "app_errors_lost", "executions_lost", "executions"];
+const campiDiUnEsecuzione = ["project", "function", "limits", "long_lines", "app_errors_during", "test_case", "reads", "console", "console_removed", "advances", "outcome"];
 const campiDeiLimiti = ["vector_elements", "string_length", "string_vector_characters"];
 const campiDelleRigheLunghe = ["characters", "mode"];
 
@@ -110,14 +110,15 @@ test("il file ha solo i campi dell'elenco chiuso, appaiato con lo schema nei due
     for (const o of percorsiEProfilo(testo)) trovati.push(`${e.id}: ${o}`);
   }
   // Nei due versi: ogni campo dell'elenco si vede nei file, e nei file nessun campo fuori dall'elenco. Gli errori dell'app sono
-  // vuoti finché non li raccoglie nessuno; il caso e la funzione ci sono solo nei loro modi.
+  // vuoti finché non li raccoglie nessuno; il caso e la funzione ci sono solo nei loro modi. I valori propri di un'esecuzione e i suoi errori
+  // ci sono solo con più esecuzioni: `in-registrazione.test.ts`.
   const radici = new Set([...visti].map((x) => x.slice(1).split(/[.[]/)[0]!));
   const delleEsecuzioni = new Set([...visti].filter((x) => x.startsWith(".executions[].")).map((x) => x.slice(".executions[].".length).split(/[.[]/)[0]!));
   const fuori = [...[...radici].filter((c) => !elencoChiuso.includes(c)), ...[...delleEsecuzioni].filter((c) => !campiDiUnEsecuzione.includes(c))];
   const maiVisti = [...elencoChiuso.filter((c) => !radici.has(c)), ...campiDiUnEsecuzione.filter((c) => !delleEsecuzioni.has(c))];
   console.log(`campi: file ${file}, percorsi distinti ${visti.size}, fuori elenco ${fuori.length}, mai visti ${JSON.stringify(maiVisti)}, percorsi o profilo ${trovati.length}`);
   expect(fuori).toEqual([]);
-  expect(maiVisti).toEqual(["app_errors"]);
+  expect(maiVisti).toEqual(["app_errors", "limits", "long_lines", "app_errors_during"]);
   expect(trovati).toEqual([]);
   expect(file).toBe(confermato("registrazione - file guardati dal rilevatore dei percorsi", file));
 }, 300_000);

@@ -89,13 +89,16 @@ function riproduciUna(r: Registrazione, x: EsecuzioneRegistrata, indice: number)
   const finita = x.outcome.kind === "finished" || x.outcome.kind === "not_started";
   let ottenuto;
   let lette: readonly RigaLetta[] = [];
+  // I valori dell'esecuzione, se li porta (cambiati mentre si registrava), altrimenti quelli del file.
+  const limiti = x.limits ?? r.limits;
+  const righeLunghe = x.long_lines ?? r.long_lines;
   try {
     const es = new Esecuzione<CasoDiUnaFunzione>(
       x.project,
-      { elementiDiUnVettore: r.limits.vector_elements, lunghezzaDiUnaStringa: r.limits.string_length, caratteriDiUnVettoreDiStringhe: r.limits.string_vector_characters },
+      { elementiDiUnVettore: limiti.vector_elements, lunghezzaDiUnaStringa: limiti.string_length, caratteriDiUnVettoreDiStringhe: limiti.string_vector_characters },
       {
         tabella: false,
-        righeLunghe: { caratteri: r.long_lines.characters, modo: r.long_lines.mode === "wrap" ? "a-capo" : "la-fine" },
+        righeLunghe: { caratteri: righeLunghe.characters, modo: righeLunghe.mode === "wrap" ? "a-capo" : "la-fine" },
         ...(x.function !== undefined ? { funzione: x.function } : {}),
         ...(x.test_case !== undefined ? { caso: x.test_case } : {}),
       },

@@ -20,6 +20,9 @@
 // dell'esecuzione non è una regione che parla da sé: lo stesso evento lo annuncia l'avviso (la pausa, la fine,
 // l'errore), o la console (il valore da scrivere); detto due volte, a ogni passo dell'animata lo si sentirebbe doppio.
 //
+// Accanto allo stato dell'esecuzione, il segno della registrazione: finché è attiva si vede, per intero. Non è un pulsante, perché un clic per
+// sbaglio perderebbe le esecuzioni: si disattiva dal menu «Aiuto».
+//
 // All'estrema destra la lingua dell'interfaccia, come quella della tastiera nella barra di Windows: «ITA» o «ENG», e col
 // clic un menu con le due lingue, ognuna scritta nella sua. È una scorciatoia della lingua delle Impostazioni: la stessa
 // preferenza, scritta subito.
@@ -99,6 +102,7 @@ export function RigaDiStato({
   daiUnValore,
   sostituisciConOut,
   esecuzione,
+  inRegistrazione,
   zoom,
   lingua,
 }: {
@@ -119,6 +123,8 @@ export function RigaDiStato({
   sostituisciConOut?: ((funzione: string, indice: number, blocco: string | null) => void) | undefined;
   /** Lo stato dell'esecuzione, in parole. */
   esecuzione: string;
+  /** Il segno della registrazione delle esecuzioni, in parole; assente se è spenta. */
+  inRegistrazione?: string | undefined;
   /** La scala del flowchart e i comandi dello zoom, con ciò che mostrano (dopo «Adatta», un altro nome). */
   zoom: { readonly scala: number; readonly azioni: Azioni; readonly stati?: Stati };
   /** La lingua dell'interfaccia e la scelta di un'altra (la preferenza delle Impostazioni). */
@@ -226,6 +232,12 @@ export function RigaDiStato({
         })}
       </ul>
       <span className={stili.destra}>
+        {inRegistrazione !== undefined && (
+          <span className={stili.inRegistrazione} data-in-registrazione="">
+            <span className={stili.pallino} aria-hidden="true" />
+            {inRegistrazione}
+          </span>
+        )}
         <span className={stili.stato} data-stato-esecuzione="">
           {esecuzione}
         </span>

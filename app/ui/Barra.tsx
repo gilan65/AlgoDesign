@@ -166,7 +166,7 @@ const MENU = {
  * al corpo della pagina: dopo Esc (misurato nei due motori, 4 volte su 16 con la freccia ed Esc nello stesso
  * fotogramma) e dopo una voce, che apre una finestra (in WebKit sotto carico la prima lettera scritta nella
  * finestra andava persa, 1 volta su 10). */
-function MenuDeiComandi({ menu, testi, azioni }: { menu: keyof typeof MENU; testi: Dizionario; azioni: Azioni }): ReactElement {
+function MenuDeiComandi({ menu, testi, azioni, stati }: { menu: keyof typeof MENU; testi: Dizionario; azioni: Azioni; stati: Stati }): ReactElement {
   const pulsante = useRef<HTMLButtonElement>(null);
   const { testo, icona, voci } = MENU[menu];
   return (
@@ -215,7 +215,7 @@ function MenuDeiComandi({ menu, testi, azioni }: { menu: keyof typeof MENU; test
                 >
                   {icone[c.icona]}
                   <span className={stili.testoDellaVoce} data-testo>
-                    {testi[c.testo]}
+                    {stati[v]?.testo ?? testi[c.testo]}
                   </span>
                   {tasto !== undefined && (
                     <span className={stili.tasto} data-tasto aria-hidden="true">
@@ -263,7 +263,7 @@ export function Barra({
       {completa && (
         <div className={stili.gruppi} data-gruppi>
           <div role="group" aria-label={testi.menuProgetto} className={stili.gruppo} data-gruppo="progetto">
-            <MenuDeiComandi menu="progetto" testi={testi} azioni={azioni} />
+            <MenuDeiComandi menu="progetto" testi={testi} azioni={azioni} stati={stati} />
             {delGruppo("progetto", "barra").map((id) => pulsante(id))}
           </div>
           <div role="group" aria-label={testi.modifica} className={stili.gruppo} data-gruppo="modifica">
@@ -279,7 +279,7 @@ export function Barra({
       )}
       <div role="group" aria-label={testi.gruppoApplicazione} className={`${stili.gruppo} ${stili.applicazione}`} data-gruppo="applicazione">
         {applicazione.map((id) => pulsante(id))}
-        {completa && <MenuDeiComandi menu="aiuto" testi={testi} azioni={azioni} />}
+        {completa && <MenuDeiComandi menu="aiuto" testi={testi} azioni={azioni} stati={stati} />}
       </div>
     </header>
   );

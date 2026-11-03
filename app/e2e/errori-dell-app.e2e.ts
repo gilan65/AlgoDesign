@@ -92,6 +92,35 @@ const finzione = (page: Page) => page.evaluate(() => window.__finzione__);
 const imposta = (page: Page, valori: object) => page.evaluate((v) => void Object.assign(window.__finzione__, v), valori);
 const laX = (page: Page) => page.evaluate(() => window.__laX__());
 
+test("con la registrazione attiva la pagina dopo l'errore salva tutte le esecuzioni, e lo dice", async ({ page }) => {
+  await preparaLaRottura(page);
+  await apriVuota(page, { lingua: "it" });
+  await (await voceDellAiuto(page, it.registraAttiva)).click();
+  await expect(page.locator("[data-in-registrazione]")).toBeVisible();
+  // Finché un menu è nel documento i tasti della finestra tacciono.
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  for (let i = 0; i < 2; i++) {
+    await page.keyboard.press("F5");
+    await expect(page.locator("[data-stato-esecuzione]")).toHaveText(it.statoFinita);
+  }
+  await expect(page.locator("[data-in-registrazione]")).toHaveText(riempi(it.statoInRegistrazioneMolte, { n: "2" }));
+  await page.evaluate(() => {
+    window.__rompi__ = true;
+  });
+  await inserisci(page, it.bloccoSe);
+  await expect(page.locator("[data-errore-inatteso]")).toBeVisible();
+
+  await page.getByRole("button", { name: it.segnalaComando, exact: true }).click();
+  const pagina = page.locator("section", { has: page.locator("[data-testo-della-segnalazione]") });
+  await expect(pagina).toContainText(riempi(it.segnalaContieneRegistrate, { n: "2" }));
+  // Qui non si può più attivare nulla: nessun consiglio, nessun pulsante.
+  await expect(pagina).not.toContainText(it.segnalaConsiglio);
+  await expect(page.getByRole("button", { name: it.segnalaAttiva, exact: true })).toHaveCount(0);
+  const riaperta = riletta((await page.locator("[data-testo-della-segnalazione]").textContent())!);
+  expect(riaperta.executions.map((x) => x.outcome.kind)).toEqual(["finished", "finished"]);
+  expect(riaperta.app_errors.map((v) => v.origin)).toContain("drawing");
+});
+
 test("un errore nel disegno, in un fotogramma, in una promessa e nel guscio sono tutti nel file, senza il percorso", async ({ page }, info) => {
   await preparaLaRottura(page);
   await apriVuota(page, { lingua: "it" }, { daSalvare: "C:\\miei\\prova", daSalvareIlCodice: "C:\\miei\\segnalazione", scritturaRifiutata: `${PERCORSO}: sonda del guscio` });
