@@ -57,7 +57,7 @@ export type { Comando } from "./controllore";
 
 /** L'`id` della funzione che contiene il blocco (o la sua fine), o `undefined`. Un errore sul valore iniziale di un dato
  * cade sull'`id` della funzione stessa. */
-function funzioneDelBlocco(p: Progetto, id: string): string | undefined {
+export function funzioneDelBlocco(p: Progetto, id: string): string | undefined {
   const dentro = (bs: readonly Blocco[]): boolean =>
     bs.some((b) => b.id === id || (b.kind === "if" ? dentro(b.then) || dentro(b.else) : "body" in b && dentro(b.body)));
   return p.functions.find((f) => f.id === id || f.end.id === id || dentro(f.body))?.id;
