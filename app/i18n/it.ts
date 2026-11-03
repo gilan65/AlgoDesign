@@ -1070,6 +1070,8 @@ export const it = {
   // nell'intestazione dei fogli). {nome} è il nome di una procedura o funzione (o «Programma principale»), {punti} e
   // {reali} numeri di punti tipografici, {elenco} voci di `stampaVoceRistretta` separate da virgole, {n} e {m} numeri.
   stampa: "Stampa…",
+  chiudiProgetto: "Chiudi",
+  esciDallApp: "Esci",
   stampaTitolo: "Stampa",
   stampaQualiFunzioni: "Di quali procedure e funzioni",
   stampaTutte: "Tutte",

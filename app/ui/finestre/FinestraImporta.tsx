@@ -268,7 +268,9 @@ function CheCosa({ sorgente, cambiaSorgente, progetto, prossimo, limiti, testi, 
   const prima = useRef<HTMLParagraphElement>(null);
   useEffect(() => prima.current?.querySelector<HTMLElement>("button")?.focus(), []);
   const [conCasi, setConCasi] = useState(true);
-  const [scelte, setScelte] = useState<ReadonlyMap<string, Scelta>>(new Map());
+  const [scritte, setScelte] = useState<ReadonlyMap<string, Scelta>>(new Map());
+  // Gli spazi ai lati di un nome scelto, scritti per errore, non contano; il campo tiene ciò che si sta scrivendo.
+  const scelte = useMemo<ReadonlyMap<string, Scelta>>(() => new Map([...scritte].map(([chiave, s]) => [chiave, s.come === "rinomina" ? { ...s, nome: s.nome.trim() } : s])), [scritte]);
   const sotto = sorgente.progetto.functions.filter((f) => f.kind !== "main");
   const omonime = useMemo(() => omonimeDopoLaPrima(sorgente.progetto), [sorgente.progetto]);
   const opzioni = useMemo(() => opzioniDiverse(progetto, sorgente.progetto), [progetto, sorgente.progetto]);
@@ -315,6 +317,7 @@ function CheCosa({ sorgente, cambiaSorgente, progetto, prossimo, limiti, testi, 
     const f = perNome.get(v.chiave);
     const c = v.genere === "constant" ? costante(v.nome) : undefined;
     const scelta = v.scelta;
+    const scritta = scritte.get(v.chiave);
     const errore = scelta?.come === "rinomina" && nomeRifiutato?.nome === scelta.nome ? (nomeRifiutato.motivo === "nome_non_valido" ? testi.importaNomeNonValido : testi.importaNomeInUso) : undefined;
     return (
       <li key={v.chiave} className={stili.esempio} data-voce={v.chiave}>
@@ -356,7 +359,7 @@ function CheCosa({ sorgente, cambiaSorgente, progetto, prossimo, limiti, testi, 
                   className={stili.campo}
                   aria-label={riempi(testi.importaNomeNuovo, { nome: v.nome })}
                   aria-invalid={errore !== undefined}
-                  value={scelta.nome}
+                  value={scritta?.come === "rinomina" ? scritta.nome : scelta.nome}
                   onChange={(e) => scegli(v.chiave, { come: "rinomina", nome: e.currentTarget.value })}
                 />
               )}

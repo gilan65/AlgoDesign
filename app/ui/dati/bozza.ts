@@ -1,6 +1,7 @@
 // I campi di un dato mentre si scrivono: la BOZZA, coi valori come li mostrano i campi (testo, scelte), e
 // il ritorno al dato del modello. Il ritorno non giudica: un nome o un letterale sbagliato passa così com'è
-// e lo segnala il controllo statico, sulla riga del dato.
+// e lo segnala il controllo statico, sulla riga del dato. Del nome si tolgono solo gli spazi ai lati, scritti per
+// errore; uno spazio dentro il nome resta, e il controllo lo segnala.
 //
 // Il valore iniziale di un vettore si scrive come lo mostra la tabella: l'elenco completo dei letterali
 // separati da virgole, fra graffe (senza vale lo stesso), oppure un letterale solo «in ogni elemento» (`ripetuto`). Una
@@ -180,7 +181,7 @@ export function conIlValoreDi(d: Dato, b: Pick<BozzaDelDato, "iniziale" | "vetto
 export function datoDaBozza(b: BozzaDelDato): Dato {
   const iniziale = b.parametro === "" ? inizialeDaBozza(b, b.tipo === "record") : undefined;
   return {
-    name: b.nome,
+    name: b.nome.trim(),
     type: b.tipo,
     ...(b.tipo === "record" ? { record: b.record } : {}),
     ...(b.vettore ? { size: intero(b.dimensione) } : {}),

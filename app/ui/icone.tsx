@@ -101,6 +101,18 @@ export const icone = {
       <path d="M10.5 2H4.5a1 1 0 00-1 1v12a1 1 0 001 1h9a1 1 0 001-1v-3M10.5 2v4h4v1.5M8 10h9M14.5 7.5L17 10l-2.5 2.5" />
     </Icona>
   ),
+  /** Un foglio con una «×». */
+  chiudiProgetto: (
+    <Icona>
+      <path d="M10.5 2H4.5a1 1 0 00-1 1v12a1 1 0 001 1h9a1 1 0 001-1V6zM10.5 2v4h4M6.7 9.2l4.6 4.6M11.3 9.2l-4.6 4.6" />
+    </Icona>
+  ),
+  /** Una porta e una freccia che esce. */
+  esciDallApp: (
+    <Icona>
+      <path d="M8 2.5H3.5a1 1 0 00-1 1v11a1 1 0 001 1H8M7 9h9M13.5 6.5L16 9l-2.5 2.5" />
+    </Icona>
+  ),
   /** Una stampante col foglio che esce. */
   stampa: (
     <Icona>
