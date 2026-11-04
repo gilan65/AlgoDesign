@@ -23,6 +23,16 @@ const tolti: readonly (readonly [string, string])[] = [
   [String.raw`mario non legge C:\Users\mario\x.algo: negato a Mario`, "<user> non legge <path>: negato a <user>"],
   // L'oggetto di un errore del guscio arriva scritto in JSON, con le barre raddoppiate.
   [JSON.stringify({ genere: "sistema", dettaglio: String.raw`C:\Users\Mario Rossi\x.algo: negato a Mario Rossi` }), `{"genere":"sistema","dettaglio":"<path>: negato a <user>"}`],
+  // L'apostrofo è lecito in un nome: un cognome, una cartella, e non deve fermare il taglio.
+  [String.raw`preferenze illeggibili in C:\Users\D'Angelo\AppData\x.json: negato`, "preferenze illeggibili in <path>: negato"],
+  [String.raw`C:\Users\mario\Documenti\Compiti dell'anno\x.algo: negato`, "<path>: negato"],
+  ["/Users/mario/Mario's Files/x.algo: negato", "<path>: negato"],
+  ["/home/d'amico/x.algo: negato", "<path>: negato"],
+  [JSON.stringify({ dettaglio: String.raw`C:\Users\Dell'Orto\x.algo: negato a Dell'Orto` }), `{"dettaglio":"<path>: negato a <user>"}`],
+  [String.raw`D'Angelo non legge C:\Users\D'Angelo\x.algo: negato a D'Angelo`, "<user> non legge <path>: negato a <user>"],
+  // Un percorso fra apici: si toglie anche ciò che lo segue fino ai due punti, qualche parola in più e mai il contrario.
+  [String.raw`apertura di 'C:\Users\mario\x.algo' negata: errore`, "apertura di '<path>: errore"],
+  [String.raw`in 'C:\Users\mario': negato a mario`, "in '<path>: negato a <user>"],
 ];
 
 // Restano uguali: gli indirizzi degli stack servono a capire il difetto, e nessuno di loro porta un percorso del computer.

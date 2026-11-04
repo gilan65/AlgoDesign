@@ -26,7 +26,7 @@ if (opened.ok) {
 - `controlla(progetto)` gives the static check of the project, with the errors and the warnings.
 - `genera(progetto, linguaggio, lingua)` gives the code of the project, or the reason why it cannot be generated. The language is `pseudocodice`, `python`, `c`, `accademico` or `typescript` and the natural language is `it` or `en`: any other value is an exception with its name.
 - `leggiAccademico(testo, opzioni, libreria)` gives the flowchart that a text in “Academic” describes, or the line and the reason why it cannot be read. The options and the library can be omitted.
-- `aggiungiAllaLibreria(dove, letto, rinomina)` adds what was read to an open library, or to a new one if `dove` is `{ nome }`. The result carries the `testo` of the file to write.
+- `aggiungiAllaLibreria(dove, letto, rinomina)` adds what was read to an open library, or to a new one if `dove` is `{ nome }`. With `ok: true` the result carries the `testo` of the file to write. With `ok: false` it carries `conflitti`, if a name is already there and `rinomina` is false, or `rifiuto`, if the name of the new library is not valid or `dove` is not a library. With `rinomina` true a name already in use takes `_2`.
 
 ## License
 

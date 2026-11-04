@@ -28,6 +28,7 @@ import {
   latoOttenuto,
   motiviDi,
   nodeDellaToolchain,
+  percorsoVietato,
   postoDelModulo,
   problemiDelPacchetto,
   puntoDIngresso,
@@ -84,6 +85,15 @@ test("i rilevatori del pacchetto si accendono, ciascuno sul suo caso, e il rosso
   expect(problemiDelPacchetto(`${testo}\n// bun:sqlite`, moduli)).toEqual(["una stringa vietata nel pacchetto: bun:"]);
   expect(vietateNel("in D:/x, con Bun.version")).toEqual(["Bun."]);
   expect(vietateNel(`da ${radice}`)).toContain(radice);
+  // Un percorso entra nei byte come letterale di una stringa, con le barre raddoppiate, e il disco può essere scritto minuscolo.
+  const barra = String.fromCharCode(92);
+  const altroDisco = `D${radice.slice(1)}`;
+  expect(vietateNel(`da ${radice.replaceAll(barra, barra + barra)}`).length).toBeGreaterThan(0);
+  expect(vietateNel(`da ${radice.toLowerCase()}`).length).toBeGreaterThan(0);
+  expect(vietateNel(`da ${altroDisco}`)).toEqual([]);
+  expect(percorsoVietato(altroDisco, `da ${altroDisco.replaceAll(barra, barra + barra)}`)).toBe(true);
+  expect(percorsoVietato(altroDisco, `da ${altroDisco.toLowerCase()}`)).toBe(true);
+  expect(percorsoVietato(altroDisco, "nessun percorso")).toBe(false);
   // Un posto si ha per nome: non basta stare in una cartella ammessa.
   for (const m of ["i18n/codici.ts", "ui/dati/altro.ts", "core/x.test.ts", "node_modules/a/index.ts", "strumenti/corpus.ts"]) expect(postoDelModulo(m)).toBeUndefined();
   for (const m of ["core/progetto/formato.ts", "i18n/it.ts", "ui/dati/righe.ts", puntoDIngresso]) expect(postoDelModulo(m)).toBeDefined();
@@ -123,6 +133,10 @@ test("i rami che il corpus non esercita: rifiuti, eccezioni col nome, conflitti,
   expect(caso("aggiungi una identica")).toMatchObject({ ok: true, aggiunte: [], identiche: ["somma"] });
   expect((caso("aggiungi un conflitto").conflitti as { nome: string; proposto: string }[]).map((c) => [c.nome, c.proposto])).toEqual([["somma", "somma_2"]]);
   expect(caso("aggiungi una rinominata")).toMatchObject({ ok: true, aggiunte: ["somma_2"] });
+  // Le opzioni e la libreria arrivano alla lettura: il nome si legge nel progetto, e un dato col nome di una funzione che solo la libreria ha è un rifiuto.
+  expect((caso("leggi con le opzioni").progetto as { metadata: { name: string } }).metadata.name).toBe("esercizio");
+  expect(caso("leggi senza la libreria").ok).toBe(true);
+  expect(caso("leggi con la libreria").ok).toBe(false);
   // Il `testo` di un'aggiunta è il file da scrivere: la nuova e la rinominata si riaprono da lì, sotto Bun coi sorgenti.
   const { apri } = await import("../core/progetto/formato");
   for (const nome of ["aggiungi a una nuova", "aggiungi una rinominata"]) {
@@ -182,6 +196,25 @@ test("una mutazione del pacchetto, su una copia, sotto Node: il rosso nomina cia
   expect(verdetto(attesi, alterato.esiti).sort()).toEqual([conTesto, conRifiuto, delControllo, lettura, aggiunta].map((k) => `diversa: ${k}`).sort());
   // Le mancanze tagliate lasciano il motivo com'è: il rosso viene dall'oggetto intero, non dal conto dei motivi.
   expect((alterato.esiti[conRifiuto] as { perche: string }).perche).toBe("non-ci-sta");
+}, LIMITE);
+
+test("un punto d'ingresso che perde le opzioni o la libreria, o che esporta anche un `default`: il rosso nomina quei casi e quell'esportazione, e nient'altro", async () => {
+  const { pacchetto, node, attesi } = await lati();
+  const copia = (nome: string, leggi: string) => {
+    const f = join(cartella, nome);
+    copyFileSync(pacchetto, f);
+    appendFileSync(f, `\n{ const v = module.exports; module.exports = { ...v, leggiAccademico: ${leggi} }; }\n`);
+    return f;
+  };
+  const senzaOpzioni = await latoOttenuto(node, copia("senza-opzioni.cjs", "(t, o, b) => v.leggiAccademico(t, undefined, b)"), corpus, join(cartella, "senza-opzioni.json"));
+  expect(verdetto(attesi, senzaOpzioni.esiti)).toEqual(["diversa: caso leggi con le opzioni"]);
+  const senzaLibreria = await latoOttenuto(node, copia("senza-libreria.cjs", "(t, o, b) => v.leggiAccademico(t, o)"), corpus, join(cartella, "senza-libreria.json"));
+  expect(verdetto(attesi, senzaLibreria.esiti)).toEqual(["diversa: caso leggi con la libreria"]);
+  const conDefault = join(cartella, "con-default.cjs");
+  copyFileSync(pacchetto, conDefault);
+  appendFileSync(conDefault, "\nmodule.exports = { ...module.exports, default: () => 0 };\n");
+  const alterato = await latoOttenuto(node, conDefault, corpus, join(cartella, "con-default.json"));
+  expect([...alterato.esportazioni]).toEqual(["aggiungiAllaLibreria", "apri", "controlla", "default", "genera", "leggiAccademico"]);
 }, LIMITE);
 
 test("il verdetto vede una combinazione tolta da ciascun lato e un carattere degli attesi; la sonda tutta rifiutata accende i motivi", async () => {

@@ -86,6 +86,32 @@ async function scriviNella(page: Page, c: Locator, nome: string, valore: string)
 const LIME = "rgb(140, 255, 0)";
 const sfondo = (l: Locator) => l.evaluate((e) => getComputedStyle(e).backgroundColor);
 
+test("un valore con un a capo, che un campo di testo non sa tenere: confermato senza scrivere nulla non cambia, e il carattere a capo non lascia il campo aperto", async ({ page }) => {
+  await aprilo(page, progetto(
+    [{ name: "t", type: "string", initial: String.raw`"a\nb"` }, { name: "c", type: "character", initial: String.raw`'\n'` }, intero("b")],
+    [assegna("b1", "b", "1"), assegna("b2", "b", "2")],
+  ));
+  await blocco(page, "b2").click();
+  await page.keyboard.press("F9");
+  await page.keyboard.press("F5");
+  await expect(correnti(page)).toHaveAttribute("data-blocco", "b2");
+  // Il campo mostra il valore senza l'a capo: è il motore a toglierlo.
+  await cella(page, 0).dblclick();
+  const campoT = campoDi(page, "t");
+  await expect(campoT).toHaveValue("ab");
+  await campoT.press("Enter");
+  await expect(campoT).toHaveCount(0);
+  await expect(cella(page, 0)).not.toHaveAttribute("data-modificata", "");
+  await cella(page, 1).dblclick();
+  const campoC = campoDi(page, "c");
+  await campoC.press("Enter");
+  await expect(campoC).toHaveCount(0);
+  await expect(cella(page, 1)).not.toHaveAttribute("data-modificata", "");
+  // Il controllo positivo: lo stesso campo, con un testo scritto, scrive.
+  await scriviNella(page, cella(page, 0), "t", "x");
+  await expect(cella(page, 0)).toHaveAttribute("data-modificata", "");
+});
+
 test("il doppio clic scrive il valore, più volte: il colore, le parole, lo stato; il campo propone quello di adesso; il programma prosegue col valore", async ({ page }) => {
   await alTerzoPassaggio(page);
   await cella(page, COL.s).dblclick();

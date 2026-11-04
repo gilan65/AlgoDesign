@@ -100,6 +100,11 @@ esiti["caso aggiungi un conflitto"] = aggiungi(riaperta.progetto, diversa, false
 esiti["caso aggiungi una rinominata"] = aggiungi(riaperta.progetto, diversa, true);
 esiti["caso aggiungi a chi non è una libreria"] = aggiungi(programma.progetto, letta, false);
 esiti["caso aggiungi con un nome vuoto"] = aggiungi({ nome: "" }, letta, false);
+// Gli argomenti facoltativi della lettura: le opzioni, e una libreria che ha già il nome di un dato del testo.
+const unDatoSomma = "function uno() → integer\n    variable somma: integer\n    somma ← 1\n    return somma\nend function\n";
+esiti["caso leggi con le opzioni"] = leggiAccademico(funzione("+"), { lingua: "en", nome: "esercizio" });
+esiti["caso leggi senza la libreria"] = leggiAccademico(unDatoSomma);
+esiti["caso leggi con la libreria"] = leggiAccademico(unDatoSomma, undefined, riaperta.progetto);
 
 // Il file nasce intero: uno a metà non esiste.
 writeFileSync(`${uscita}.provvisorio`, JSON.stringify(esiti, inJson));

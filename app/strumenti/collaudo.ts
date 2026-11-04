@@ -1234,7 +1234,7 @@ async function portaPlaywright(): Promise<void> {
 // in meno fa rosso.
 const proveAttesePerSpec: Record<string, number> = {
   "barra.e2e.ts": 14,
-  "casi.e2e.ts": 7,
+  "casi.e2e.ts": 8,
   "chiamate.e2e.ts": 7,
   "codice.e2e.ts": 11,
   "colonne.e2e.ts": 4,
@@ -1276,7 +1276,7 @@ const proveAttesePerSpec: Record<string, number> = {
   "tabella.e2e.ts": 9,
   "trascina.e2e.ts": 4,
   "valori-iniziali.e2e.ts": 4,
-  "valore-a-mano.e2e.ts": 25,
+  "valore-a-mano.e2e.ts": 26,
   "valori-modificati.e2e.ts": 8,
   "watch.e2e.ts": 7,
 };

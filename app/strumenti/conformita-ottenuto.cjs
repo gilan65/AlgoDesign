@@ -77,8 +77,14 @@ esiti["caso aggiungi un conflitto"] = m.aggiungiAllaLibreria(riaperta.progetto, 
 esiti["caso aggiungi una rinominata"] = m.aggiungiAllaLibreria(riaperta.progetto, diversa, true);
 esiti["caso aggiungi a chi non è una libreria"] = m.aggiungiAllaLibreria(programma.progetto, letta, false);
 esiti["caso aggiungi con un nome vuoto"] = m.aggiungiAllaLibreria({ nome: "" }, letta, false);
+// Gli argomenti facoltativi della lettura: le opzioni, e una libreria che ha già il nome di un dato del testo.
+const unDatoSomma = "function uno() → integer\n    variable somma: integer\n    somma ← 1\n    return somma\nend function\n";
+esiti["caso leggi con le opzioni"] = m.leggiAccademico(funzione("+"), { lingua: "en", nome: "esercizio" });
+esiti["caso leggi senza la libreria"] = m.leggiAccademico(unDatoSomma);
+esiti["caso leggi con la libreria"] = m.leggiAccademico(unDatoSomma, undefined, riaperta.progetto);
 
-const esportazioni = Object.keys(m).filter((k) => k !== "default" && k !== "__esModule").sort();
+// `__esModule` è il segno del formato, non una funzione; un `default` invece sì, e deve vedersi.
+const esportazioni = Object.keys(m).filter((k) => k !== "__esModule").sort();
 
 // Il file nasce intero: uno a metà non esiste.
 writeFileSync(`${uscita}.provvisorio`, JSON.stringify({ esportazioni, esiti }, inJson));

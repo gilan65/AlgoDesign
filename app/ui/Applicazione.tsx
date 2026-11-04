@@ -1936,7 +1936,8 @@ export function Applicazione({
     setEsitiPerNome((m) => new Map(m).set(chiaveDelCaso(radice, caso.name), { progetto: es.progetto, limiti: es.limiti, esito }));
     setAperto(true);
     setScheda("casi");
-    const indice = casiDella(es.progetto, es.funzione).indexOf(caso);
+    // Il posto nella lista di adesso e per nome: in pausa un caso sopra può essere stato eliminato o spostato.
+    const indice = casiDella(progetto, es.funzione).findIndex((x) => x.name === caso.name);
     // I casi sono nella scheda della radice: se la scheda ha seguito l'azione altrove, torna lì, e il caso si sceglie
     // dopo il cambio (che chiude la scelta della scheda di prima).
     if (radice !== mostrata.id && es.progetto.functions.some((f) => f.id === radice)) {

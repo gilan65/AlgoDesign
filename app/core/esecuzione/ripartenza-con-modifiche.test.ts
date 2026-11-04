@@ -93,6 +93,28 @@ const valoreDi = (es: Es | undefined, nome: string) => {
 };
 const intero = (v: number) => ({ tipo: "integer" as const, v });
 
+test("una modifica fatta in attesa di una riga, dopo una riga rifiutata: «Tieni» la riapplica allo stesso punto, e la riga rifiutata resta al suo posto", () => {
+  const dati = [{ name: "n", type: "integer", role: "input" }, { name: "m", type: "integer", role: "input" }, { name: "s", type: "integer", role: "output", initial: "1" }];
+  const blocchi = [{ id: "b1", kind: "read", target: "n" }, { id: "b2", kind: "read", target: "m" }, { id: "b3", kind: "assignment", target: "s", value: "s + n + m" }, { id: "b4", kind: "write", values: ["s"], newline: true }];
+  const p = programma(blocchi, dati);
+  const da: Es = new Esecuzione<CasoDiUnaFunzione>(p, tetti, {});
+  avanza(da, (s) => s.genere === "chiede" && s.dato === "n");
+  da.inserisci("abc");
+  avanza(da, (s) => s.genere === "chiede" && s.dato === "n" && s.nonValido);
+  da.inserisci("5");
+  avanza(da, (s) => s.genere === "chiede" && s.dato === "m");
+  expect(da.modifica({ dato: "s", elemento: 0 }, "100")).toEqual({ ok: true });
+  da.inserisci("2");
+  avanza(da, (s) => s.genere === "pausa" && s.blocco === "b4");
+  expect(valoreDi(da, "s")).toEqual(intero(107));
+  const tieni = riesegui(da, programma([via, ...blocchi], dati), "tieni");
+  expect(tieni.esito).toEqual({ ritrovato: true, righeAvanzate: 0 });
+  expect(valoreDi(tieni.esecuzione, "s")).toEqual(intero(107));
+  expect(tieni.esecuzione?.righeDate.map((r) => r.text)).toEqual(["abc", "5", "2"]);
+  // Il controllo positivo: senza la modifica il valore è un altro.
+  expect(valoreDi(riesegui(da, programma([via, ...blocchi], dati), "togli").esecuzione, "s")).toEqual(intero(8));
+});
+
 test("«Tieni» riapplica il valore allo stesso punto col programma cambiato; «Ricalcola» arriva allo stesso passaggio senza", () => {
   const da = fermaSu("b4", 2);
   expect(da.modifica({ dato: "s", elemento: 0 }, "100")).toEqual({ ok: true });

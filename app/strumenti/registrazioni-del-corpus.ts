@@ -18,7 +18,7 @@
 //
 // Che cosa NON guarda: l'interfaccia, disegno e tabella: il file non la ripete, e l'app non lo apre.
 
-import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { hostname, userInfo } from "node:os";
 import { join } from "node:path";
 import { tetti } from "../core/controllo/controllo";
@@ -160,6 +160,9 @@ export function percorsiEProfilo(json: string): string[] {
 /** Il nome di un file per l'indice dell'esecuzione: l'`id` può avere caratteri che un nome di file non ammette. */
 const nomeDelFile = (i: number) => `${String(i).padStart(5, "0")}.txt`;
 
+/** Una cartella che `--scrivi` può vuotare: non c'è, o ha solo ciò che lo strumento stesso scrive. Il nome lo batte chi lancia, e un errore non deve cancellare altro. */
+export const cartellaDelleRegistrazioni = (cartella: string): boolean => !existsSync(cartella) || readdirSync(cartella).every((f) => f === "elenco.json" || /^\d{5}\.txt$/.test(f));
+
 if (import.meta.main) {
   const [azione, cartella] = process.argv.slice(2);
   if ((azione !== "--scrivi" && azione !== "--leggi" && azione !== "--rileva") || cartella === undefined) {
@@ -175,6 +178,10 @@ if (import.meta.main) {
   const ambiente = `${process.platform} | fuso ${Intl.DateTimeFormat().resolvedOptions().timeZone} | lingua ${process.env.LANG ?? process.env.LANGUAGE ?? "(nessuna)"} | utente ${userInfo().username} | macchina ${hostname()}`;
   console.log(`INIZIO ${azione} | ${ambiente}`);
   if (azione === "--scrivi") {
+    if (!cartellaDelleRegistrazioni(cartella)) {
+      console.error(`FERMO: ${cartella} ha altri file, e non si cancella: indica una cartella nuova`);
+      process.exit(2);
+    }
     rmSync(cartella, { recursive: true, force: true });
     mkdirSync(cartella, { recursive: true });
     const elenco: { id: string; file: string }[] = [];

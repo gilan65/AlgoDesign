@@ -3,7 +3,9 @@
 // ne produce sessanta al secondo, tutte con lo stesso testo, e senza contarle a parte nasconderebbe l'errore dopo.
 //
 // Togliere un percorso vuole una regola più larga di rilevarlo: un percorso può avere uno spazio, e fermarsi lì lascerebbe il resto
-// del nome nel file. Il taglio arriva fino a due punti, virgolette o fine riga, e può togliere qualche parola in più, mai il contrario.
+// del nome nel file. Il taglio arriva fino a due punti, virgolette doppie o fine riga, e può togliere qualche parola in più, mai il contrario.
+// Lo stesso vale per l'apostrofo, lecito in un nome (un cognome, «Compiti dell'anno»): non ferma nulla, e un percorso fra apici singoli perde anche
+// ciò che lo segue fino ai due punti.
 //
 // Che cosa NON guarda: un nome del profilo nudo in un testo senza percorsi (nessun comando dice all'interfaccia come si chiama il
 // profilo, e i messaggi del guscio non ne portano); i percorsi scritti in una forma relativa; il contenuto del progetto, che è ciò che
@@ -19,7 +21,7 @@ const percorsoTolto = "<path>";
 const nomeTolto = "<user>";
 
 /** Ciò che può seguire l'inizio di un percorso: tutto, spazi compresi, fino a un carattere che Windows non ammette in un nome. */
-const resto = String.raw`[^:"'<>|?*\r\n]*`;
+const resto = String.raw`[^:"<>|?*\r\n]*`;
 const percorsi = [
   // Un indirizzo di un file, col disco o senza: anche i tre `/` di fila, che la regola per Unix non vede.
   new RegExp(String.raw`file:/+(?:[A-Za-z]:)?${resto}`, "gi"),
@@ -29,18 +31,19 @@ const percorsi = [
   // Un percorso di rete.
   new RegExp(String.raw`\\\\${resto}`, "g"),
   // Un percorso Unix di almeno due nomi: non un indirizzo (`http://x/y`, con `:` o `/` o una cifra davanti), non una divisione.
-  new RegExp(String.raw`(?<![\w:/.~-])/[^\s/:"'<>|?*]+/${resto}`, "g"),
+  new RegExp(String.raw`(?<![\w:/.~-])/[^\s/:"<>|?*]+/${resto}`, "g"),
 ];
 
 /** Il nome del profilo dentro un percorso: la cartella sotto quella degli utenti. Anche con le barre raddoppiate, perché l'oggetto di un
  * errore del guscio arriva qui scritto in JSON. */
-const profilo = /(?:[A-Za-z]:[\\/]+|\/)(?:Users|home|media)[\\/]+([^\\/:"'<>|?*\r\n]+)/gi;
+const profilo = /(?:[A-Za-z]:[\\/]+|\/)(?:Users|home|media)[\\/]+([^\\/:"<>|?*\r\n]+)/gi;
 
 const inUnaRegex = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 
 /** Il testo senza percorsi, e senza il nome del profilo che uno di quei percorsi portava. */
 export function senzaPercorsi(testo: string): string {
-  const nomi = [...testo.matchAll(profilo)].map((m) => m[1]!.trim()).filter((n) => n.length > 1);
+  // Un apice in coda è quello che chiude il percorso, non una lettera del nome.
+  const nomi = [...testo.matchAll(profilo)].map((m) => m[1]!.trim().replace(/'+$/, "")).filter((n) => n.length > 1);
   let fuori = percorsi.reduce((t, r) => t.replace(r, percorsoTolto), testo);
   for (const nome of nomi) fuori = fuori.replace(new RegExp(`(?<![\\p{L}\\p{N}])${inUnaRegex(nome)}(?![\\p{L}\\p{N}])`, "giu"), nomeTolto);
   return fuori;
@@ -67,7 +70,7 @@ export interface ElencoDegliErrori {
   /** Il testo è pulito qui, una volta per tutte: nessuna finestra può mostrare ciò che non è entrato. */
   aggiungi(origine: OrigineDellErrore, testo: string): void;
   readonly voci: () => readonly ErroreDellApp[];
-  /** Quante voci diverse non sono entrate perché l'elenco era pieno. */
+  /** Quante volte un errore non è entrato perché l'elenco era pieno: le occorrenze, non i testi diversi. */
   readonly perse: () => number;
 }
 
