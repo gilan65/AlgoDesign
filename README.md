@@ -73,6 +73,10 @@ A cell that starts with `=`, `+`, `-` or `@` and is not a number (for example a 
 - Not tested: shutting down or restarting Windows with unsaved changes (better save first) and a file dragged onto the window (to open it use “Open”). The browser keys that would reload the window or go back (F5, Ctrl+R, “Refresh” and “Back” of some keyboards, Alt+arrow) are stopped by AlgoDesign: F5 runs the program.
 - The generated code has no limit on actions: a loop that does not end, which AlgoDesign stops after a million actions, must be stopped by hand in the generated Python, C and TypeScript.
 
+## Reporting a malfunction
+
+If AlgoDesign does not behave as it should, it can be reported so that it gets fixed: from the **Help** menu you save a file with what happened and you attach it to a report on GitHub, https://github.com/gilan65/AlgoDesign/issues/new, with a sentence about what you expected. AlgoDesign sends nothing on its own. The whole path is in the **guide to reporting a malfunction**, [`GUIDE-TO-REPORTING-A-MALFUNCTION.md`](docs/GUIDE-TO-REPORTING-A-MALFUNCTION.md) (in Italian [`GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md`](docs/GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md)): in the package it sits next to the program, in the repository in the `docs` folder.
+
 ## How it was developed
 
 AlgoDesign is a *vibe coding* project: the author describes what is needed, makes the teaching decisions and checks every result, while most of the code is written by an artificial intelligence assistant. The development diary is on the site:
@@ -102,7 +106,7 @@ All the commands are given in the `app/` folder, after `bun install`.
 | Full test run, with the interface tests in WebKit too | `bun run collaudo --completo` |
 | Comparison of the generated code with the run on the test cases | `bun run differenziale` |
 | Release executable for Windows | `bun tauri build --no-bundle` → `shell/target/release/algodesign.exe` |
-| Release packages for Windows: the one of AlgoDesign and the one of the command-line tool, from the same tree (folders, zips and fingerprints in `dist/` at the root; the first carries this file, `LEGGIMI.md`, the two student guides, the guide to “Academic” and the one to the tool from `docs/` and the release notes, the second the executable of the tool, the two guides and the two short texts; the texts are given to the tool) | `bun run pacchetto --testi ../rilascio/windows` (with `--prova` from a tree with changes, in `dist/prova/`) |
+| Release packages for Windows: the one of AlgoDesign and the one of the command-line tool, from the same tree (folders, zips and fingerprints in `dist/` at the root; the first carries this file, `LEGGIMI.md`, the two student guides, the guide to “Academic”, the one to the tool and the two to report a malfunction from `docs/` and the release notes, the second the executable of the tool, the two guides and the two short texts; the texts are given to the tool) | `bun run pacchetto --testi ../rilascio/windows` (with `--prova` from a tree with changes, in `dist/prova/`) |
 | The JSON Schema of the format, after a change to the file reader | `bun ./strumenti/schema-del-formato.ts` |
 
 ### The tests on the product

@@ -88,6 +88,7 @@ import {
   fileDelleLicenze,
   guidaAdAccademico,
   guidaDelloStrumento,
+  guidePerSegnalare,
   nomiDelloStrumento,
   nomiDelPacchetto,
   testiDelloStrumento,
@@ -363,7 +364,7 @@ async function componi(rilascio: string): Promise<void> {
   if (registro.includes("SEGNAPOSTO")) rosso("CARTELLA", "CHANGELOG.md ha un SEGNAPOSTO rimasto");
   writeFileSync(join(cartella, "CHANGELOG.md"), registro);
   for (const t of testiDelPacchetto) writeFileSync(join(cartella, t), testoConISegnaposto("CARTELLA", t));
-  for (const d of [...documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento]) writeFileSync(join(cartella, d), documento("CARTELLA", d));
+  for (const d of [...documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", d));
   for (const d of documentiDellaRadice) {
     const testo = readFileSync(join(repository, d), "utf8");
     const rimasto = segnaposto.exec(testo);

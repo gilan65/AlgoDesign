@@ -73,6 +73,10 @@ Una cella che comincia con `=`, `+`, `-` o `@` e non è un numero (per esempio u
 - Non sono provati lo spegnimento o il riavvio di Windows con modifiche non salvate (prima conviene salvare) e un file trascinato sulla finestra (per aprirlo si usa «Apri»). I tasti del browser che ricaricherebbero la finestra o tornerebbero indietro (F5, Ctrl+R, «Aggiorna» e «Indietro» di certe tastiere, Alt+freccia) AlgoDesign li ferma: F5 esegue il programma.
 - Il codice generato non ha il limite delle azioni: un ciclo che non finisce, che AlgoDesign ferma dopo un milione di azioni, nel Python, nel C e nel TypeScript generati va fermato a mano.
 
+## Segnalare un malfunzionamento
+
+Se AlgoDesign non si comporta come dovrebbe, lo si può segnalare perché venga corretto: dal menu **Aiuto** si salva un file con ciò che è successo e lo si allega a una segnalazione su GitHub, https://github.com/gilan65/AlgoDesign/issues/new, con una frase su che cosa ci si aspettava. AlgoDesign non invia nulla da solo. Tutto il percorso è nella **guida per segnalare un malfunzionamento**, [`GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md`](docs/GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md) (in inglese [`GUIDE-TO-REPORTING-A-MALFUNCTION.md`](docs/GUIDE-TO-REPORTING-A-MALFUNCTION.md)): nel pacchetto sta accanto al programma, nel repository nella cartella `docs`.
+
 ## Come è stato sviluppato
 
 AlgoDesign è un progetto in *vibe coding*: l'autore descrive che cosa serve, prende le decisioni didattiche e verifica ogni risultato, mentre gran parte del codice è scritta da un assistente di intelligenza artificiale. Il diario dello sviluppo è sul sito:
@@ -102,7 +106,7 @@ Tutti i comandi si danno nella cartella `app/`, dopo `bun install`.
 | Collaudo completo, coi test dell'interfaccia anche in WebKit | `bun run collaudo --completo` |
 | Confronto del codice generato con l'esecuzione sui casi d'uso | `bun run differenziale` |
 | Eseguibile di release per Windows | `bun tauri build --no-bundle` → `shell/target/release/algodesign.exe` |
-| Pacchetti della release per Windows: quello di AlgoDesign e quello dello strumento a riga di comando, dallo stesso albero (cartelle, zip e impronte in `dist/` alla radice; il primo porta questo file, `README.md`, le due guide per lo studente, la guida ad «Accademico» e quella dello strumento da `docs/` e le note di rilascio, il secondo l'eseguibile dello strumento, le due guide e i due testi brevi; i testi si danno allo strumento) | `bun run pacchetto --testi ../rilascio/windows` (con `--prova` da un albero con modifiche, in `dist/prova/`) |
+| Pacchetti della release per Windows: quello di AlgoDesign e quello dello strumento a riga di comando, dallo stesso albero (cartelle, zip e impronte in `dist/` alla radice; il primo porta questo file, `README.md`, le due guide per lo studente, la guida ad «Accademico», quella dello strumento e le due per segnalare un malfunzionamento da `docs/` e le note di rilascio, il secondo l'eseguibile dello strumento, le due guide e i due testi brevi; i testi si danno allo strumento) | `bun run pacchetto --testi ../rilascio/windows` (con `--prova` da un albero con modifiche, in `dist/prova/`) |
 | Lo JSON Schema del formato, dopo un cambio del lettore dei file | `bun ./strumenti/schema-del-formato.ts` |
 
 ### Le prove sul prodotto

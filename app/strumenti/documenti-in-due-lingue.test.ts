@@ -1,6 +1,7 @@
 // I documenti che esistono in due lingue hanno la stessa forma: la guida per lo studente (`GUIDA-PER-LO-STUDENTE.md` e
-// `STUDENT-GUIDE.md`), il README (`LEGGIMI.md` e `README.md`) e i due testi brevi del pacchetto dello strumento a riga
-// di comando (`rilascio/windows/`). Una modifica fatta in una lingua si porta nell'altra:
+// `STUDENT-GUIDE.md`), la guida per segnalare un malfunzionamento, il README (`LEGGIMI.md` e `README.md`) e i due testi
+// brevi del pacchetto dello strumento a riga di comando (`rilascio/windows/`). Una modifica fatta in una lingua si porta
+// nell'altra:
 // questa prova appaia i due testi riga di forma per riga di forma, nello stesso ordine, e il primo punto dove si
 // separano è rosso.
 //
@@ -9,15 +10,19 @@
 //
 // Che cosa NON guarda: le parole, i paragrafi senza titolo, gli elenchi e le tabelle uguali di forma ma diversi nel
 // contenuto (una voce tradotta male resta verde).
+//
+// I collegamenti relativi di questi documenti portano a un file che c'è; quelli dei due README sono scritti qui per
+// elementi. Che cosa NON guarda: gli indirizzi internet, e i nomi di file fra apici inversi senza un collegamento.
 
 import { expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 const radice = join(import.meta.dir, "..", "..");
 
 export const coppie: readonly (readonly [string, string])[] = [
   ["docs/GUIDA-PER-LO-STUDENTE.md", "docs/STUDENT-GUIDE.md"],
+  ["docs/GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md", "docs/GUIDE-TO-REPORTING-A-MALFUNCTION.md"],
   ["LEGGIMI.md", "README.md"],
   ["rilascio/windows/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "rilascio/windows/README-OF-ALGODESIGN-TOOLS.md"],
 ];
@@ -58,6 +63,17 @@ export function primaDifferenza(a: readonly Elemento[], b: readonly Elemento[], 
   return null;
 }
 
+/** Le destinazioni relative dei collegamenti Markdown di un testo, fuori dai blocchi di codice. */
+export function collegamenti(testo: string): string[] {
+  const fuoriDalCodice = testo.replaceAll("\r\n", "\n").replace(/^```[^\n]*\n[\s\S]*?^```$/gm, "");
+  return [...fuoriDalCodice.matchAll(/\]\(([^)\s]+)\)/g)].map((m) => m[1]!).filter((d) => !/^[a-z]+:/.test(d));
+}
+
+/** I collegamenti di un documento che non portano a un file; la destinazione vale dalla cartella del documento. */
+export function collegamentiRotti(documento: string, testo: string): string[] {
+  return collegamenti(testo).filter((d) => !existsSync(join(radice, dirname(documento), d.split("#")[0]!)));
+}
+
 const leggi = (f: string) => readFileSync(join(radice, f), "utf8");
 
 for (const coppia of coppie) {
@@ -80,4 +96,24 @@ test("il confronto vede un titolo in meno, una voce in più e una tabella con un
     expect(alterato).not.toBe(testo);
     expect(primaDifferenza(forma(testo), forma(alterato), ["prima", "dopo"])).not.toBeNull();
   }
+});
+
+test("i collegamenti relativi dei documenti portano a un file che c'è, e quelli dei due README sono questi", () => {
+  const documenti = coppie.flat();
+  const rotti = documenti.flatMap((d) => collegamentiRotti(d, leggi(d)).map((c) => `${d}: ${c}`));
+  console.log(`collegamenti relativi: ${documenti.map((d) => `${d} ${collegamenti(leggi(d)).length}`).join(", ")}`);
+  expect(rotti).toEqual([]);
+  const attesi = ["LICENSE", "LICENSE-DOCS", "docs/GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md", "docs/GUIDE-TO-REPORTING-A-MALFUNCTION.md"];
+  expect(collegamenti(leggi("LEGGIMI.md")).sort()).toEqual(["README.md", ...attesi].sort());
+  expect(collegamenti(leggi("README.md")).sort()).toEqual(["LEGGIMI.md", ...attesi].sort());
+});
+
+test("il rilevatore vede un collegamento rotto vero, e non un indirizzo internet né un blocco di codice", () => {
+  const testo = leggi("LEGGIMI.md");
+  const conRotto = testo.replace("(LICENSE)", "(LICENSE-CHE-NON-C-E)");
+  expect(conRotto).not.toBe(testo);
+  expect(collegamentiRotti("LEGGIMI.md", conRotto)).toEqual(["LICENSE-CHE-NON-C-E"]);
+  // Il documento conta: lo stesso collegamento vale dalla radice e non da `docs/`.
+  expect(collegamentiRotti("docs/GUIDA-PER-LO-STUDENTE.md", "[licenza](LICENSE)")).toEqual(["LICENSE"]);
+  expect(collegamenti("[sito](https://esempio.it)\n```text\n[finto](finto.md)\n```\n[vero](vero.md)\n")).toEqual(["vero.md"]);
 });
