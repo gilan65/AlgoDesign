@@ -11,4 +11,6 @@ export const paroleDelMotivo: Record<MotivoDelNonRitrovato, keyof Dizionario> = 
   riga_non_ammessa: "rieseguiRigaNonAmmessa",
   riga_ora_rifiutata: "rieseguiRigaOraRifiutata",
   riga_ora_valida: "rieseguiRigaOraValida",
+  modifica_persa: "rieseguiModificaPersa",
+  modifica_rifiutata: "rieseguiModificaRifiutata",
 };

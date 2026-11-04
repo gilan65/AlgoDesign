@@ -45,10 +45,12 @@
 //   funzione stessa, il suo «Inizio».
 // - I limiti delle impostazioni arrivano all'interprete da qui, con l'unico controllo statico, che dà anche gli
 //   avvisi dell'esito di un caso.
+// - Un valore si scrive a mano (`modifica`) in pausa e in attesa di una riga, mai nel modo caso, e mai prima che la tabella abbia una riga: vale da lì in poi. Non è una
+//   riga data né un avanzamento; la riga corrente della tabella prende il valore e il segno, e le modifiche si tengono col punto in cui sono state fatte: chi riesegue le ripete.
 
 import { esitoDelCaso, margineDellOutput, type EsitoDelCaso } from "../casi/esito";
 import { controlla, type EsitoDelControllo, type Tetti } from "../controllo/controllo";
-import { eseguiDopoIlControllo, senzaValore, type Esito, type FaseDelCiclo, type Passo, type Restituito, type Riga } from "../interprete/interprete";
+import { eseguiDopoIlControllo, senzaValore, type BersaglioDiUnValore, type Esito, type FaseDelCiclo, type Passo, type PortaDeiValori, type Restituito, type RifiutoDiUnValore, type Riga } from "../interprete/interprete";
 import type { Blocco, CasoDiUnaFunzione, CasoDUso, CodiceErrore, Progetto, Segnalazione, VoceDiUnaFunzione } from "../progetto/modello";
 import { fermati, fermatiSullaRipresa, type Comando } from "./controllore";
 import { righeTenute, Traccia } from "./traccia";
@@ -115,6 +117,15 @@ export interface RigaData extends VoceDiUnaFunzione {
   readonly rifiutata?: true;
 }
 
+/** Un valore scritto a mano: il bersaglio, il testo com'è stato dato, e gli avanzamenti, cioè il punto. */
+export interface ModificaFatta extends BersaglioDiUnValore {
+  readonly avanzamenti: number;
+  readonly testo: string;
+}
+
+/** `caso`: nell'esecuzione di un caso d'uso; `non_ora`: né in pausa né in attesa di una riga, o la tabella non ha ancora una riga. */
+export type EsitoDellaModifica = { readonly ok: true } | { readonly ok: false; readonly motivo: RifiutoDiUnValore | "caso" | "non_ora" };
+
 /** `righe`: quante righe tengono la tabella di traccia e la console (`righeTenute`); `righeLunghe`: come la console tiene una
  * riga più lunga dei suoi caratteri; `caso`: il caso d'uso, nel modo caso; `tabella: false`: nessuna riga nella
  * tabella di traccia (la riga di comando dei casi, che non la mostra: è metà del tempo di un caso lungo, misurato);
@@ -140,6 +151,9 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
   readonly #traccia: Traccia | undefined;
 
   #g: Generator<Passo, Esito, Riga>;
+  /** L'ingresso per scrivere un valore a mano. */
+  readonly #porta: PortaDeiValori = {};
+  readonly #modifiche: ModificaFatta[] = [];
   #stato: Stato;
   /** Un risultato dell'interprete già arrivato e non ancora guardato (il primo evento). */
   #daGuardare: IteratorResult<Passo, Esito> | undefined;
@@ -215,7 +229,7 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
     this.#principale = p.functions.find((f) => f.kind === "main")?.id ?? "";
     this.#pila = [{ funzione: radice?.id ?? "", blocco: radice?.id ?? "" }];
     this.controllo = controllo ?? controlla(p, limiti);
-    this.#g = eseguiDopoIlControllo(p, this.controllo, funzione);
+    this.#g = eseguiDopoIlControllo(p, this.controllo, funzione, this.#porta);
     const primo = this.#g.next();
     if (primo.done && !primo.value.parte) this.#stato = { genere: "non parte", controllo: primo.value.controllo };
     else {
@@ -309,6 +323,25 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
     if (!rigaAmmessa(riga, s)) throw new Error(`riga non ammessa per ${s.dato}`);
     this.#riga = riga;
     this.#stato = { genere: "in corso" };
+  }
+
+  /** I valori scritti a mano, nell'ordine. */
+  get modifiche(): readonly ModificaFatta[] {
+    return [...this.#modifiche];
+  }
+
+  /** Scrive a mano un valore, con le regole di una lettura; un rifiuto non cambia nulla e non ferma nulla. */
+  modifica(bersaglio: BersaglioDiUnValore, testo: string): EsitoDellaModifica {
+    if (this.caso !== undefined) return { ok: false, motivo: "caso" };
+    const s = this.#stato.genere;
+    if ((s !== "pausa" && s !== "chiede") || this.#passi === 0) return { ok: false, motivo: "non_ora" };
+    const { funzione, dato, elemento } = bersaglio;
+    const dove = { ...(funzione !== undefined ? { funzione } : {}), dato, elemento };
+    const scritto = this.#porta.scrivi!(dove, testo);
+    if (!scritto.ok) return scritto;
+    this.#modifiche.push({ avanzamenti: this.#avanzamenti, ...dove, testo });
+    this.#traccia?.modifica(scritto.dati, { ...dove, prima: scritto.prima, valore: scritto.valore });
+    return { ok: true };
   }
 
   /** Un passo, poi avanza finché il comando non si ferma, o finché secondo `orologio` (in millisecondi) non passa

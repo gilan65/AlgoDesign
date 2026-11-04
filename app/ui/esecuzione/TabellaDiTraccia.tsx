@@ -106,6 +106,7 @@ export function testiDellaTraccia(lingua: Lingua): TestiDellaTraccia {
       csvUguale: d.tracciaCsvUguale,
       csvPerElemento: d.tracciaCsvPerElemento,
     },
+    valoriModificati: d.tracciaValoriModificati,
   };
 }
 

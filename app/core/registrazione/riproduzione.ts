@@ -11,16 +11,18 @@
 // - `out_of_memory` è il solo esito legato alla macchina: ogni differenza di un'esecuzione dove compare, da una parte o dall'altra,
 //   porta `dellaMacchina`, perché non si legga come una differenza del programma.
 // - Un'eccezione dell'esecuzione è un difetto dell'app, proprio ciò che si cerca: si dice come una differenza, non esce di qui.
+// - I valori scritti a mano si ripetono allo stesso numero di avanzamenti, sempre con «dentro» perché ci si fermi lì; una che non si può ripetere, o a cui non si arriva, è
+//   una differenza del suo campo.
 //
 // Che cosa NON guarda: la versione del prodotto (è un campo del file, la legge chi lo riesegue), gli errori dell'app, i punti di interruzione.
 
 import { Esecuzione } from "../esecuzione/esecuzione";
-import { GuidaDelleRighe } from "../esecuzione/ripartenza";
+import { GuidaDelleRighe, RipetizioneDelleModifiche } from "../esecuzione/ripartenza";
 import { nonSiAttendono, type CasoDiUnaFunzione } from "../progetto/modello";
 import { esitoRegistrato, righeLette } from "./composizione";
-import type { EsecuzioneRegistrata, EsitoDelFile, Registrazione, RigaLetta } from "./formato";
+import type { EsecuzioneRegistrata, EsitoDelFile, ModificaDelFile, Registrazione, RigaLetta } from "./formato";
 
-export type CampoDelConfronto = "outcome" | "console" | "console_removed" | "reads" | "advances" | "exception";
+export type CampoDelConfronto = "outcome" | "console" | "console_removed" | "reads" | "advances" | "changes" | "exception";
 
 export interface DifferenzaDellaRiproduzione {
   /** La posizione dell'esecuzione nel file, da 0. */
@@ -42,11 +44,18 @@ export interface Riproduzione {
 
 const senzaOrologio = () => 0;
 
+const modificaFatta = (m: ModificaDelFile) => ({ avanzamenti: m.advances, ...(m.function !== undefined ? { funzione: m.function } : {}), dato: m.data, elemento: m.element, testo: m.text });
+
 /** L'esecuzione guidata con le righe del file, fino agli avanzamenti (`undefined`: fino a dove arriva) o a una riga che manca: dove si
- * ferma lo diranno le letture consumate. */
-function guida(es: Esecuzione<CasoDiUnaFunzione>, righe: readonly RigaLetta[], fino: number | undefined): void {
-  const g = new GuidaDelleRighe<CasoDiUnaFunzione, "arrivata">(es, righe, fino === undefined ? "continua" : "dentro", () => (fino !== undefined && es.avanzamenti >= fino ? "arrivata" : undefined));
+ * ferma lo diranno le letture consumate. Dice dove una modifica del file non si è potuta ripetere, se è successo. */
+function guida(es: Esecuzione<CasoDiUnaFunzione>, righe: readonly RigaLetta[], fino: number | undefined, modifiche: readonly ModificaDelFile[]): string | undefined {
+  const ripetizione = new RipetizioneDelleModifiche(es, modifiche.map(modificaFatta));
+  const g = new GuidaDelleRighe<CasoDiUnaFunzione, "arrivata">(es, righe, fino === undefined && modifiche.length === 0 ? "continua" : "dentro", () => {
+    ripetizione.ripeti();
+    return fino !== undefined && es.avanzamenti >= fino ? "arrivata" : undefined;
+  });
   while (g.fermata === undefined) g.fetta(senzaOrologio, Infinity);
+  return ripetizione.rifiuto ?? (ripetizione.mancante !== undefined ? "non ripetuta" : undefined);
 }
 
 /** La prima posizione diversa di due elenchi, con gli elementi come testo. */
@@ -68,6 +77,7 @@ function riproduciUna(r: Registrazione, x: EsecuzioneRegistrata, indice: number)
   const finita = x.outcome.kind === "finished" || x.outcome.kind === "not_started";
   let ottenuto;
   let lette: readonly RigaLetta[] = [];
+  let modificaNonRipetuta: string | undefined;
   // I valori dell'esecuzione, se li porta (cambiati mentre si registrava), altrimenti quelli del file.
   const limiti = x.limits ?? r.limits;
   const righeLunghe = x.long_lines ?? r.long_lines;
@@ -82,7 +92,7 @@ function riproduciUna(r: Registrazione, x: EsecuzioneRegistrata, indice: number)
         ...(x.test_case !== undefined ? { caso: x.test_case } : {}),
       },
     );
-    guida(es, x.reads ?? [], finita ? undefined : x.advances);
+    modificaNonRipetuta = guida(es, x.reads ?? [], finita ? undefined : x.advances, x.changes ?? []);
     ottenuto = esitoRegistrato(es);
     lette = righeLette(es);
   } catch (e) {
@@ -99,6 +109,7 @@ function riproduciUna(r: Registrazione, x: EsecuzioneRegistrata, indice: number)
   const senzaFermata = x.outcome.kind === "running" || x.outcome.kind === "ready";
   if (!senzaFermata && JSON.stringify(x.outcome) !== JSON.stringify(ottenuto.outcome)) aggiungi("outcome", JSON.stringify(x.outcome), JSON.stringify(ottenuto.outcome));
   if (x.advances !== ottenuto.advances) aggiungi("advances", String(x.advances), String(ottenuto.advances));
+  if (modificaNonRipetuta !== undefined) aggiungi("changes", JSON.stringify(x.changes), modificaNonRipetuta);
   elenchi("reads", x.reads ?? [], lette);
   elenchi("console", x.console, ottenuto.console);
   if (x.console_removed !== ottenuto.console_removed) aggiungi("console_removed", String(x.console_removed), String(ottenuto.console_removed));

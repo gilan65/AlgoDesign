@@ -98,6 +98,7 @@ export const testiIt: TestiDellaTraccia = {
     csvUguale: "CSV uguale.",
     csvPerElemento: "CSV per elemento.",
   },
+  valoriModificati: "Valori modificati",
 };
 
 export const testiEn: TestiDellaTraccia = {
@@ -137,4 +138,5 @@ export const testiEn: TestiDellaTraccia = {
     csvUguale: "CSV same.",
     csvPerElemento: "CSV per element.",
   },
+  valoriModificati: "Changed values",
 };

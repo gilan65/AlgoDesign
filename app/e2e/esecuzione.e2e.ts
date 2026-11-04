@@ -632,7 +632,7 @@ const DELLE_FUNZIONI = "C:\\Documenti\\funzioni.algo";
 
 /** Ogni cosa aperta che la finestra guarda prima di un tasto (`conUnaFinestra` in `Applicazione.tsx`), una per caso:
  * come si apre, e dove si vede. */
-const coseAperte: { nome: string; funzioni?: true; apri: (page: Page) => Promise<Locator>; chiudi?: (page: Page) => Promise<void> }[] = [
+const coseAperte: { nome: string; funzioni?: true; conLaModifica?: true; apri: (page: Page) => Promise<Locator>; chiudi?: (page: Page) => Promise<void> }[] = [
   {
     nome: "l'elenco dei blocchi su un «+»",
     apri: async (page) => {
@@ -754,6 +754,25 @@ const coseAperte: { nome: string; funzioni?: true; apri: (page: Page) => Promise
     },
   },
   {
+    nome: "che cosa fare dei valori modificati prima di rieseguire",
+    conLaModifica: true,
+    apri: async (page) => {
+      await page.keyboard.press("F10");
+      await expect(statoDi(page)).toHaveText(riempi(it.statoInPausa, { n: "1" }));
+      await page.evaluate(() => (window.__modificaDiProva__ as (b: { dato: string; elemento: number }, testo: string) => unknown)({ dato: "n", elemento: 0 }, "1"));
+      await blocco(page, "b1").click();
+      await page.keyboard.press("Delete");
+      await page.keyboard.press("F5");
+      await page.getByRole("alertdialog").getByRole("button", { name: it.modificheNonSalvare, exact: true }).click();
+      return page.getByRole("alertdialog", { name: it.valoriTitolo, exact: true });
+    },
+    chiudi: async (page) => {
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("alertdialog")).toHaveCount(0);
+      await page.keyboard.press("Control+z");
+    },
+  },
+  {
     nome: "l'elenco delle procedure e delle funzioni",
     funzioni: true,
     apri: async (page) => {
@@ -771,6 +790,10 @@ test("con ogni cosa aperta che la finestra guarda, F5 non fa partire l'esecuzion
   for (const c of coseAperte) {
     const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
     try {
+      if (c.conLaModifica)
+        await page.addInitScript(() => {
+          window.__modificaDiProva__ = true;
+        });
       if (c.funzioni) {
         await apriVuota(page, { lingua: "it" }, { argomento: DELLE_FUNZIONI, file: { [DELLE_FUNZIONI]: CON_LE_FUNZIONI } });
         await expect(page.getByRole("status")).toHaveText(riempi(it.apertoIl, { file: "funzioni.algo" }));
@@ -799,7 +822,7 @@ test("con ogni cosa aperta che la finestra guarda, F5 non fa partire l'esecuzion
   }
   console.log(`[${info.project.name}] F5 con una cosa aperta: ${coseAperte.length} casi, diversi ${esiti.length}`);
   expect(esiti, "F5 ha fatto partire l'esecuzione con una cosa aperta").toEqual([]);
-  expect(coseAperte.length).toBe(13);
+  expect(coseAperte.length).toBe(14);
 });
 
 test("le scorciatoie dei file valgono col fuoco in un campo; Canc su un «+» non cancella; Ctrl+Z col menu di un dato aperto non annulla", async ({ page }) => {

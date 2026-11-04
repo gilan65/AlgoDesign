@@ -71,6 +71,12 @@
 // Le celle dei dati non si modificano: una scrittura mette nella cella un elenco nuovo. Così una
 // fotografia è un elenco di riferimenti alle celle di quell'istante, senza copie, e resta vera dopo.
 //
+// Un valore scritto a mano, a generatore fermo: `PortaDeiValori`, un ingresso fuori dal generatore, perché una risposta a `next` sarebbe un avanzamento in più e
+// sposterebbe il punto. Le regole sono quelle di una lettura (`convertiRiga`): un valore che non va è rifiutato col motivo e non ferma nulla. Vale per la chiamata più
+// profonda della funzione, quella che il suo gruppo mostra nella tabella; una costante non si modifica, e una posizione nascosta non è un dato. Un parametro per
+// riferimento è la cella di chi chiama. Ciò che è già calcolato resta com'è: la parte di un'espressione prima di una chiamata in una pausa di ripresa, l'indice di una
+// lettura in attesa della riga.
+//
 // La semantica è quella del C11, mai quella delle primitive di JavaScript: interi a 32 bit controllati,
 // reali che fermano l'esecuzione se non sono finiti, caratteri come codici Unicode, stringhe come
 // elenchi di codici (lunghezza, indice e confronto per codice, non per unità UTF-16), stampa dei reali
@@ -99,6 +105,24 @@ export type Valore =
   | { readonly tipo: "integer" | "real" | "character"; readonly v: number }
   | { readonly tipo: "string"; readonly v: readonly number[] }
   | { readonly tipo: "boolean"; readonly v: boolean };
+
+/** Dove scrivere un valore a mano: il dato di una funzione (nessuna: la radice), nella sua chiamata più profonda, e la posizione nella sua cella (0 per un dato
+ * semplice; l'elemento, riga dopo riga in una matrice; il campo in un record, record dopo record in una tabella). */
+export interface BersaglioDiUnValore {
+  readonly funzione?: string;
+  readonly dato: string;
+  readonly elemento: number;
+}
+
+export type RifiutoDiUnValore = "funzione_non_attiva" | "dato_sconosciuto" | "costante" | "elemento_sconosciuto" | "non_valido" | "troppo_lungo";
+
+/** `dati`: la fotografia dopo la scrittura. */
+export type ScritturaDiUnValore = { readonly ok: true; readonly dati: Fotografia; readonly prima: Valore | undefined; readonly valore: Valore } | { readonly ok: false; readonly motivo: RifiutoDiUnValore };
+
+/** L'ingresso per scrivere un valore a generatore fermo: `scrivi` c'è da quando il generatore ha cominciato. */
+export interface PortaDeiValori {
+  scrivi?: (b: BersaglioDiUnValore, testo: string) => ScritturaDiUnValore;
+}
 
 /**
  * I valori dei dati in un istante: le costanti comuni, poi i dati della radice (il programma principale, o la funzione
@@ -411,7 +435,7 @@ export function esegui(p: Progetto, limiti: Tetti, radice?: string): Generator<P
 }
 
 /** Per chi ha già controllato il progetto coi suoi limiti: l'esito di quel controllo decide se si parte. */
-export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo, radice?: string): Generator<Passo, Esito, Riga> {
+export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo, radice?: string, porta?: PortaDeiValori): Generator<Passo, Esito, Riga> {
   if (controllo.fuoriTappa || controllo.errori.length > 0) return { parte: false, controllo };
 
   const trovata = radice === undefined ? p.functions.find((f) => f.kind === "main")! : p.functions.find((f) => f.id === radice && f.kind !== "main");
@@ -1373,6 +1397,24 @@ export function* eseguiDopoIlControllo(p: Progetto, controllo: EsitoDelControllo
 
   qui = cornice(principale, () => undefined, principale.data.map(() => undefined), principale.data.map(() => undefined));
   pila.push(qui);
+  if (porta !== undefined)
+    porta.scrivi = ({ funzione, dato, elemento }, testo) => {
+      const nome = funzione ?? principale.id;
+      const chiamata = pila.findLast((c) => c.funzione.id === nome);
+      if (chiamata === undefined) return { ok: false, motivo: "funzione_non_attiva" };
+      if (comuni.some((c) => c.dato.name === dato)) return { ok: false, motivo: "costante" };
+      const k = chiamata.funzione.data.findIndex((d) => d.name === dato);
+      if (k < 0) return { ok: false, motivo: "dato_sconosciuto" };
+      if (chiamata.funzione.data[k]!.constant === true) return { ok: false, motivo: "costante" };
+      const c = chiamata.inOrdine[k]!;
+      if (!Number.isInteger(elemento) || elemento < 0 || elemento >= c.valori.length) return { ok: false, motivo: "elemento_sconosciuto" };
+      const pezzo = datoDelPezzo(c.dato, elemento);
+      const valore = convertiRiga(testo, pezzo);
+      if (valore === undefined) return { ok: false, motivo: pezzo.type === "string" && Array.from(testo).length > (pezzo.max_length ?? lunghezzaPredefinita) ? "troppo_lungo" : "non_valido" };
+      const prima = c.valori[elemento];
+      scriviIn(c, elemento, valore);
+      return { ok: true, dati: fotografia(), prima, valore };
+    };
   /** Il programma, o la funzione eseguita da sola, coi parametri chiesti come letture e i risultati scritti alla fine. */
   function* programma(): Generator<Pausa, void, Riga> {
     // Da sola, i parametri come letture, nell'ordine; un vettore elemento per elemento, o tutti con una riga. Un parametro

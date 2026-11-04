@@ -6,7 +6,7 @@ import { en } from "../../i18n/en";
 import { it } from "../../i18n/it";
 import { paroleDelMotivo } from "./riesecuzione";
 
-const motivi = ["posto_cancellato", "non_parte", "finito_prima", "riga_mancante", "riga_per_un_altro_dato", "riga_non_ammessa", "riga_ora_rifiutata", "riga_ora_valida"];
+const motivi = ["posto_cancellato", "non_parte", "finito_prima", "riga_mancante", "riga_per_un_altro_dato", "riga_non_ammessa", "riga_ora_rifiutata", "riga_ora_valida", "modifica_persa", "modifica_rifiutata"];
 
 test("ogni motivo ha le sue parole, diverse dalle altre, in italiano e in inglese", () => {
   expect(Object.keys(paroleDelMotivo).sort()).toEqual([...motivi].sort());
