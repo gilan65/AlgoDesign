@@ -37,6 +37,7 @@
       "core/progetto/schema.test.ts",
       "core/registrazione/corpus.test.ts",
       "strumenti/colonne.test.ts",
+      "strumenti/conformita-del-nucleo.test.ts",
       "strumenti/pagina-di-prova.test.ts",
       "strumenti/stampa.test.ts",
       "ui/casi/casi.test.tsx",
@@ -241,6 +242,20 @@
     ],
     "nomi - blocchi col valore iniziale nella tappa 1": 120,
     "nomi - copie espanse coi campi": 15,
+    "nucleo per node - esiti per motivo": {
+      "aggiungi: riuscita": 72,
+      "controlla: con errori": 19,
+      "controlla: senza errori": 173,
+      "genera: errori-statici": 190,
+      "genera: non-ci-sta": 274,
+      "genera: testo": 1456,
+      "leggi: riuscita": 72
+    },
+    "nucleo per node - file, combinazioni ed esiti": {
+      "file": 192,
+      "combinazioni": 1920,
+      "esiti": 2266
+    },
     "pagina di prova - casi con un arresto": 108,
     "pagina di prova - casi del programma che leggono": 110,
     "pagina di prova - casi eseguiti nelle due lingue": 416,

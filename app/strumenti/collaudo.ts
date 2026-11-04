@@ -11,7 +11,8 @@
 // server), poi i selettori delle prove (un controllo del sorgente, meno di un secondo), poi i conteggi del corpus
 // (`strumenti/corpus.ts`: un corpus cambiato dopo l'ultima `bun run conferma-corpus` è rosso prima della corsa lunga), poi
 // le mutazioni dell'interprete, che il collaudo non esegue (`strumenti/mutazioni.ts`: `core/interprete/` cambiata dopo
-// l'ultima `bun run mutazioni` è rossa); con `--solo-elenco` il collaudo si ferma lì.
+// l'ultima `bun run mutazioni` è rossa); con `--solo-elenco` il collaudo si ferma lì. Con `--solo-tipi` esegue le sole tre porte
+// di `tsc`, coi loro controlli positivi, e nient'altro.
 //
 // Ogni porta ha il proprio CONTROLLO POSITIVO nello stesso giro: una sonda (file `__sonda__*`) scritta
 // dentro la configurazione vera, che deve far fallire la porta con l'errore atteso e nessun altro; poi
@@ -95,15 +96,16 @@ import { fileDellInterprete, improntaDi, leggiLaConferma } from "./mutazioni";
 import { chiamate, senzaExact } from "./selettori";
 
 const argomenti = process.argv.slice(2);
-const opzioni = ["--completo", "--solo-elenco"];
+const opzioni = ["--completo", "--solo-elenco", "--solo-tipi"];
 if (argomenti.some((a) => !opzioni.includes(a)) || new Set(argomenti).size !== argomenti.length) {
-  console.error(`uso: collaudo [--completo] [--solo-elenco] (ricevuti: ${JSON.stringify(argomenti)})`);
+  console.error(`uso: collaudo [--completo] [--solo-elenco] [--solo-tipi] (ricevuti: ${JSON.stringify(argomenti)})`);
   process.exit(2);
 }
 const completo = argomenti.includes("--completo");
 // Solo le prime due porte (l'elenco delle prove del modo e i selettori, pochi secondi): per controllare un modo senza la
 // corsa intera.
 const soloElenco = argomenti.includes("--solo-elenco");
+const soloTipi = argomenti.includes("--solo-tipi");
 
 const radice = join(import.meta.dir, "..");
 const cartellaLog = join(radice, ".collaudo");
@@ -143,12 +145,17 @@ async function esegui(cmd: string[], env: Record<string, string> = {}): Promise<
 
 /** Scrive la sonda, esegue `corpo`, e cancella la sonda in ogni caso. */
 async function conSonda<T>(percorso: string, contenuto: string, corpo: () => Promise<T>): Promise<T> {
-  const pieno = join(radice, percorso);
-  writeFileSync(pieno, contenuto);
+  return await conSonde([{ percorso, contenuto }], corpo);
+}
+
+/** Più sonde nello stesso giro, cancellate tutte in ogni caso. */
+async function conSonde<T>(sonde: readonly { percorso: string; contenuto: string }[], corpo: () => Promise<T>): Promise<T> {
+  const pieni = sonde.map((s) => join(radice, s.percorso));
   try {
+    sonde.forEach((s, i) => writeFileSync(pieni[i]!, s.contenuto));
     return await corpo();
   } finally {
-    rmSync(pieno, { force: true });
+    for (const p of pieni) rmSync(p, { force: true });
   }
 }
 
@@ -172,38 +179,65 @@ function togliSondeRimaste(cartella: string): string[] {
 const tsc = join(radice, "node_modules", ".bin", process.platform === "win32" ? "tsc.exe" : "tsc");
 const erroreTsc = /^(.+?)\(\d+,\d+\): error (TS\d+):/gm;
 
-type PortaTsc = { nome: string; config: string; sonda: string; contenuto: string; codiceAtteso: string[]; guardaAnche?: string[] };
+/** Una sonda della porta, col codice che deve dare; senza codici è un file che serve a un'altra sonda e non deve dare errori. */
+type SondaTsc = { percorso: string; contenuto: string; codiciAttesi: string[] };
+
+type PortaTsc = { nome: string; config: string; sonde: SondaTsc[]; guardaAnche?: string[] };
 
 const porteTsc: PortaTsc[] = [
   {
     nome: "tsc nucleo",
     config: "tsconfig.nucleo.json",
-    sonda: "core/__sonda__.ts",
-    // Il nucleo non ha il DOM: `document` non deve esistere.
-    contenuto: "export const sonda = document.title;\n",
-    codiceAtteso: ["TS2584", "TS2304"],
+    // Il nucleo e ciò che il punto d'ingresso del pacchetto per Node importa non conoscono il DOM, Bun e `node:`: una sonda per
+    // specie. Il presidio è `"types": []` di `tsconfig.json`, che questa configurazione eredita, più `lib` senza il DOM.
+    // L'ultima coppia: un file fuori da `core/`, visto solo perché il punto d'ingresso lo importa.
+    //
+    // Che cosa resta fuori (uno zero di questa porta non lo dice): uno specificatore calcolato a run time; un file letto per
+    // nome a run time; un `globalThis["Bun"]`; le due stringhe `node:` di `core/genera/typescript.ts`, che sono righe del
+    // programma generato e al compilatore non interessano. I byte del pacchetto li guarda `strumenti/conformita-del-nucleo.ts`.
+    sonde: [
+      { percorso: "core/__sonda__.ts", contenuto: "export const sonda = document.title;\n", codiciAttesi: ["TS2584", "TS2304"] },
+      { percorso: "core/__sonda__bun.ts", contenuto: "export const sonda = Bun.version;\n", codiciAttesi: ["TS2868"] },
+      { percorso: "core/__sonda__node.ts", contenuto: 'import { readFileSync } from "node:fs";\nexport const sonda = readFileSync;\n', codiciAttesi: ["TS2591"] },
+      { percorso: "core/__sonda__tipo.ts", contenuto: 'import type { Stats } from "node:fs";\nexport type Sonda = Stats;\n', codiciAttesi: ["TS2591"] },
+      { percorso: "core/__sonda__sqlite.ts", contenuto: 'import { Database } from "bun:sqlite";\nexport const sonda = Database;\n', codiciAttesi: ["TS2307"] },
+      { percorso: "core/__sonda__process.ts", contenuto: "export const sonda = process.argv;\n", codiciAttesi: ["TS2591"] },
+      { percorso: "entrypoint/__sonda__.ts", contenuto: 'export { sonda } from "../i18n/__sonda__chiusura";\n', codiciAttesi: [] },
+      { percorso: "i18n/__sonda__chiusura.ts", contenuto: "export const sonda = Bun.version;\n", codiciAttesi: ["TS2868"] },
+    ],
     // Fuori da core/: se uscissero dalla configurazione, il DOM vi tornerebbe senza un errore.
-    guardaAnche: ["ui/genera/parole.ts", "ui/dati/righe.ts"],
+    guardaAnche: ["entrypoint/index.ts", "ui/genera/parole.ts", "ui/dati/righe.ts"],
   },
   {
     nome: "tsc interfaccia",
     config: "tsconfig.json",
-    sonda: "i18n/__sonda__.ts",
     // L'inglese con una chiave tolta: il dizionario deve smettere di essere un `Dizionario`. La chiave
     // è una vera e stabile; se sparisse dall'italiano l'errore cambierebbe codice, e la porta lo dice.
-    contenuto:
-      'import { en } from "./en";\nimport type { Dizionario } from "./it";\nconst { premessa: _, ...senzaUnaChiave } = en;\nexport const sonda: Dizionario = senzaUnaChiave;\n',
-    codiceAtteso: ["TS2741"],
+    sonde: [
+      {
+        percorso: "i18n/__sonda__.ts",
+        contenuto: 'import { en } from "./en";\nimport type { Dizionario } from "./it";\nconst { premessa: _, ...senzaUnaChiave } = en;\nexport const sonda: Dizionario = senzaUnaChiave;\n',
+        codiciAttesi: ["TS2741"],
+      },
+    ],
   },
   {
     nome: "tsc strumenti",
     config: "tsconfig.strumenti.json",
     // In e2e/: prova anche che le prove di Playwright sono guardate.
-    sonda: "e2e/__sonda__.ts",
-    contenuto: 'const sonda: number = "testo";\nexport default sonda;\n',
-    codiceAtteso: ["TS2322"],
+    sonde: [{ percorso: "e2e/__sonda__.ts", contenuto: 'const sonda: number = "testo";\nexport default sonda;\n', codiciAttesi: ["TS2322"] }],
   },
 ];
+
+/** Le sonde che non hanno dato il loro errore, per riga: un codice sbagliato, nessun errore, o un errore su quella che non doveva darne. */
+function sondeSbagliate(sonde: readonly SondaTsc[], errori: readonly { file: string; codice: string }[]): string[] {
+  return sonde.flatMap((s) => {
+    const sue = errori.filter((e) => e.file.endsWith(s.percorso));
+    if (s.codiciAttesi.length === 0) return sue.length === 0 ? [] : [`${s.percorso} non doveva dare errori e dà ${sue.map((e) => e.codice).join(",")}`];
+    if (sue.length === 0) return [`${s.percorso} non dà errori, invece di ${s.codiciAttesi.join("/")}`];
+    return sue.some((e) => s.codiciAttesi.includes(e.codice)) ? [] : [`${s.percorso} dà ${sue.map((e) => e.codice).join(",")} invece di ${s.codiciAttesi.join("/")}`];
+  });
+}
 
 async function portaTsc(p: PortaTsc): Promise<void> {
   // Denominatore: i file del progetto che questa configurazione guarda (senza la sonda).
@@ -215,17 +249,16 @@ async function portaTsc(p: PortaTsc): Promise<void> {
   const fuori = (p.guardaAnche ?? []).filter((f) => !guardati.some((g) => g.replaceAll("\\", "/").endsWith(`/${f}`)));
   if (fuori.length > 0) rosso(p.nome, `la configurazione non guarda: ${fuori.join(", ")}`);
 
-  // Giro vero, con la sonda dentro: deve fallire SOLO per la sonda.
-  const esito = await conSonda(p.sonda, p.contenuto, () => esegui([tsc, "-p", p.config, "--noEmit"]));
+  // Giro vero, con le sonde dentro: deve fallire SOLO per le sonde, e ognuna col suo codice.
+  const esito = await conSonde(p.sonde, () => esegui([tsc, "-p", p.config, "--noEmit"]));
   const errori = [...esito.uscita.matchAll(erroreTsc)].map((m) => ({ file: m[1]!.replaceAll("\\", "/"), codice: m[2]! }));
-  const dellaSonda = errori.filter((e) => e.file.endsWith(p.sonda));
-  const altri = errori.filter((e) => !e.file.endsWith(p.sonda));
+  const altri = errori.filter((e) => !p.sonde.some((s) => e.file.endsWith(s.percorso)));
   if (altri.length > 0) rosso(p.nome, `errori di tipo veri: ${altri.map((e) => `${e.file} ${e.codice}`).join("; ")}`);
-  if (esito.codice === 0 || dellaSonda.length === 0) rosso(p.nome, "controllo positivo SPENTO: la sonda non ha fatto fallire tsc");
-  if (!dellaSonda.some((e) => p.codiceAtteso.includes(e.codice)))
-    rosso(p.nome, `la sonda è fallita con ${dellaSonda.map((e) => e.codice).join(",")} invece di ${p.codiceAtteso.join("/")}`);
+  const problemiDelleSonde = sondeSbagliate(p.sonde, errori);
+  if (esito.codice === 0 || problemiDelleSonde.length > 0) rosso(p.nome, `controllo positivo SPENTO: ${problemiDelleSonde.length > 0 ? problemiDelleSonde.join("; ") : "le sonde non hanno fatto fallire tsc"}`);
 
-  riga(`PORTA ${p.nome}: VERDE | controllo positivo acceso (${dellaSonda[0]!.codice} sulla sonda, nessun altro errore) | file guardati: ${guardati.length}`);
+  const accese = p.sonde.filter((s) => s.codiciAttesi.length > 0);
+  riga(`PORTA ${p.nome}: VERDE | controllo positivo acceso (${accese.length} ${accese.length === 1 ? "sonda" : "sonde"}, ${errori.map((e) => e.codice).join(" ")}, nessun altro errore) | file guardati: ${guardati.length}`);
 }
 
 // ----------------------------------------------------------------------------------------- bun test
@@ -1409,6 +1442,12 @@ const rimaste = togliSondeRimaste(radice);
 if (rimaste.length > 0) riga(`sonde rimaste da un giro interrotto, tolte: ${rimaste.join(", ")}`);
 
 try {
+  if (soloTipi) {
+    for (const p of porteTsc) await portaTsc(p);
+    riga("ESITO: SOLO TIPI, VERDE — le tre porte di tsc coi loro controlli positivi, non il collaudo: nessuna prova eseguita");
+    log("=== FINE COLLAUDO ===");
+    process.exit(0);
+  }
   await portaElenco();
   await portaSelettori();
   portaCorpus();

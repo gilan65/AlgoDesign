@@ -1,10 +1,11 @@
 {
   // Il nucleo non conosce il DOM: senza la libreria "DOM", usare `document` o `window` in core/
   // e' un errore di compilazione, non una regola da ricordare. I due file di ui/ sono del nucleo per chi lo usa da fuori:
-  // li importa senza l'interfaccia, quindi stanno qui con la loro chiusura.
+  // li importa senza l'interfaccia, quindi stanno qui con la loro chiusura. Lo stesso vale per il punto d'ingresso del
+  // pacchetto per Node, che con quello che importa non deve usare il DOM, Bun o `node:` ("types": [], ereditato).
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "lib": ["ES2023"]
   },
-  "include": ["core", "ui/genera/parole.ts", "ui/dati/righe.ts"]
+  "include": ["core", "entrypoint", "ui/genera/parole.ts", "ui/dati/righe.ts"]
 }

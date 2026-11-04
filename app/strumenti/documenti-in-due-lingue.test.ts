@@ -1,6 +1,6 @@
 // I documenti che esistono in due lingue hanno la stessa forma: la guida per lo studente (`GUIDA-PER-LO-STUDENTE.md` e
-// `STUDENT-GUIDE.md`), la guida per segnalare un malfunzionamento, il README (`LEGGIMI.md` e `README.md`) e i due testi
-// brevi del pacchetto dello strumento a riga di comando (`rilascio/windows/`). Una modifica fatta in una lingua si porta
+// `STUDENT-GUIDE.md`), la guida per segnalare un malfunzionamento, il README (`LEGGIMI.md` e `README.md`) e i testi brevi
+// dei pacchetti dello strumento a riga di comando e del nucleo per Node (`rilascio/windows/`). Una modifica fatta in una lingua si porta
 // nell'altra:
 // questa prova appaia i due testi riga di forma per riga di forma, nello stesso ordine, e il primo punto dove si
 // separano è rosso.
@@ -25,6 +25,7 @@ export const coppie: readonly (readonly [string, string])[] = [
   ["docs/GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md", "docs/GUIDE-TO-REPORTING-A-MALFUNCTION.md"],
   ["LEGGIMI.md", "README.md"],
   ["rilascio/windows/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "rilascio/windows/README-OF-ALGODESIGN-TOOLS.md"],
+  ["rilascio/windows/LEGGIMI-DI-ALGODESIGN-CORE.md", "rilascio/windows/README-OF-ALGODESIGN-CORE.md"],
 ];
 
 /** Un elemento della forma: che cosa è e a che riga del file sta. */
