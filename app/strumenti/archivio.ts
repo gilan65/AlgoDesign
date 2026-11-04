@@ -48,7 +48,7 @@ import { createHash } from "node:crypto";
 import { homedir, tmpdir } from "node:os";
 import { basename, join, relative } from "node:path";
 import { dataConPreposizione, dataMostrata } from "../ui/prodotto";
-import { cartellaDelleLibrerieDiSistema, differenzeDallElenco, documentiDellaRadice, documentiDelPacchetto, elencoDiLinux, guidaAdAccademico, guidaDelloStrumento, fileDelleLicenze, nomiDiLinux, testiDiLinux } from "./elenco-del-pacchetto";
+import { cartellaDelleLibrerieDiSistema, differenzeDallElenco, documentiDellaRadice, documentiDelPacchetto, elencoDiLinux, guidaAdAccademico, guidaDelloStrumento, guidePerSegnalare, fileDelleLicenze, nomiDiLinux, testiDiLinux } from "./elenco-del-pacchetto";
 import { licenzeDiTerzeParti } from "./licenze";
 
 /** La glibc più vecchia su cui l'AppImage deve partire: quella che il testo di Linux promette. */
@@ -326,7 +326,7 @@ async function componi(appimage: string, sistema: LibrerieDiSistema): Promise<vo
     if (rimasto) rosso("CARTELLA", `${sorgente}: «${rimasto[0]}» non sostituito (si sostituiscono solo {{versione}}, {{delData}} e {{date}})`);
     writeFileSync(join(cartella, destinazione), testo);
   }
-  for (const d of [...documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento]) {
+  for (const d of [...documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare]) {
     const sorgente = join(repository, "docs", d);
     if (!existsSync(sorgente)) rosso("CARTELLA", `manca il documento ${sorgente}`);
     const testo = readFileSync(sorgente, "utf8");

@@ -135,7 +135,7 @@ export const en: Dizionario = {
   menuAiuto: "Help",
   segnalaComando: "Save to report a malfunction…",
   segnalaTitolo: "Save to report a malfunction",
-  segnalaFrase: "This is the exact text that will be written to the file. Nothing is sent: you attach the file to the report yourself.",
+  segnalaFrase: "This is the exact text that will be written to the file. Nothing is sent: you attach the file yourself to a report on github.com/gilan65/AlgoDesign/issues/new.",
   segnalaContiene: "It contains the project, the lines read, the console, the outcome and the errors of the application, with the version, the language and the system. It does not contain file paths or your user name.",
   segnalaSalva: "Save…",
   segnalaSalvatoIn: "The file for the report was saved to “{file}”.",

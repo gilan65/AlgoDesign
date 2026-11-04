@@ -164,7 +164,7 @@ export const it = {
   // La finestra con le informazioni del prodotto: versione e data vengono da `ui/prodotto.ts`.
   segnalaComando: "Salva per segnalare un malfunzionamento…",
   segnalaTitolo: "Salva per segnalare un malfunzionamento",
-  segnalaFrase: "Questo è il testo esatto che sarà scritto nel file. Nulla viene inviato: il file lo alleghi tu alla segnalazione.",
+  segnalaFrase: "Questo è il testo esatto che sarà scritto nel file. Nulla viene inviato: il file lo alleghi tu a una segnalazione su github.com/gilan65/AlgoDesign/issues/new.",
   segnalaContiene: "Contiene il progetto, le righe lette, la console, l'esito e gli errori dell'applicazione, con la versione, la lingua e il sistema. Non contiene i percorsi dei file né il nome del tuo utente.",
   segnalaSalva: "Salva…",
   segnalaSalvatoIn: "Il file per la segnalazione è stato salvato in «{file}».",

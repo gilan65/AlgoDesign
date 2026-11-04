@@ -17,6 +17,8 @@ export const elencoDelPacchetto: readonly string[] = [
   "STUDENT-GUIDE.md",
   "GUIDA-AD-ACCADEMICO.md",
   "GUIDA-AD-ALGODESIGN-TOOLS.md",
+  "GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md",
+  "GUIDE-TO-REPORTING-A-MALFUNCTION.md",
   "CHANGELOG.md",
   "LICENSE",
   "LICENSE-DOCS",
@@ -44,6 +46,10 @@ export const guidaAdAccademico = "GUIDA-AD-ACCADEMICO.md";
 /** La guida dello strumento a riga di comando, da `docs/` così com'è: nel pacchetto dell'app (la guida per lo studente la
  * nomina) e in quello dello strumento. Fuori da `documentiDelPacchetto`, che sono le guide della finestra «Guida». */
 export const guidaDelloStrumento = "GUIDA-AD-ALGODESIGN-TOOLS.md";
+
+/** La guida per segnalare un malfunzionamento, nelle due lingue, da `docs/` così com'è: nel pacchetto dell'app, non in
+ * quello dello strumento. Fuori da `documentiDelPacchetto`, che sono le guide della finestra «Guida». */
+export const guidePerSegnalare: readonly string[] = ["GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md", "GUIDE-TO-REPORTING-A-MALFUNCTION.md"];
 
 export type NomiDelPacchetto = {
   versione: string;
@@ -79,6 +85,8 @@ export const elencoDiLinux: readonly string[] = [
   "STUDENT-GUIDE.md",
   "GUIDA-AD-ACCADEMICO.md",
   "GUIDA-AD-ALGODESIGN-TOOLS.md",
+  "GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md",
+  "GUIDE-TO-REPORTING-A-MALFUNCTION.md",
   "CHANGELOG.md",
   "LICENSE",
   "LICENSE-DOCS",
