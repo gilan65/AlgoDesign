@@ -110,9 +110,16 @@ export const Watch = memo(function Watch({
     setPosto(postoDelRiquadro(r, { larghezza: w.width, altezza: Math.min(el.scrollHeight + bordi, (massima * window.innerHeight) / 100) }, { larghezza: window.innerWidth, altezza: window.innerHeight }));
   }, [sotto, datoDelPosto, misure]);
   const valore = (c: DatoNelWatch["elementi"][number]["cella"]) => (
-    <span className={c.nonInizializzata ? stili.senzaValore : stili.valore} data-watch-valore="" data-non-inizializzata={c.nonInizializzata ? "" : undefined}>
-      {c.testo}
-    </span>
+    <>
+      <span className={c.nonInizializzata ? stili.senzaValore : stili.valore} data-watch-valore="" data-non-inizializzata={c.nonInizializzata ? "" : undefined} data-modificata={c.modificata ? "" : undefined}>
+        {c.testo}
+      </span>
+      {c.era !== undefined && (
+        <small className={stili.era} data-watch-era="">
+          {` (${c.era})`}
+        </small>
+      )}
+    </>
   );
   /** Gli elementi di un vettore, o i campi di un record, uno per riga; di una matrice (`colonne`) la griglia, una riga
    * della tabella per riga della matrice, coi numeri delle colonne in cima e quelli delle righe a sinistra; di una tabella

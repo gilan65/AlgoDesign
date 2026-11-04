@@ -484,6 +484,13 @@ function Contenuto({
               {testi.offriCasoDallEsecuzione}
             </label>
           </fieldset>
+          <fieldset className={stili.scelta}>
+            <legend>{testi.riesegui}</legend>
+            <label className={stili.opzione} title={testi.rieseguiDopoUnErroreSuggerimento}>
+              <input type="checkbox" checked={s.rieseguiDopoUnErrore} onChange={(e) => cambia({ rieseguiDopoUnErrore: e.target.checked })} />
+              {testi.rieseguiDopoUnErrore}
+            </label>
+          </fieldset>
         </Tabs.Content>
         <Tabs.Content value="limiti" className={stili.scheda}>
           <p className={stili.spiegazione}>{testi.limitiSpiegazione}</p>

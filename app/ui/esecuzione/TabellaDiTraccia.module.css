@@ -224,6 +224,47 @@
   background: var(--esecuzione-cambiata-corrente);
 }
 
+/* La cella col valore scritto a mano: il suo colore, sopra il livello, l'ambra e la riga corrente; le parole accanto dicono il valore di prima. */
+.scorre td:not(.inFila)[data-modificata],
+.scorre .corrente > td:not(.inFila)[data-modificata] {
+  background: var(--esecuzione-modificata);
+  color: var(--esecuzione-testo);
+  font-weight: 600;
+}
+
+.era {
+  font-weight: 400;
+  font-size: 0.75rem;
+}
+
+/* Il gesto sulla riga corrente: il fuoco si vede, e il campo sta nella cella. */
+.scorre td[data-cella]:focus-visible {
+  outline: 2px solid var(--colore-accento);
+  outline-offset: -2px;
+}
+
+.campo {
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 0px 2px;
+  border: 0px;
+  outline: 2px solid var(--colore-accento);
+  outline-offset: -1px;
+  font: inherit;
+  font-weight: 400;
+  text-align: inherit;
+  color: var(--esecuzione-testo);
+  background: #ffffff;
+}
+
+.campo[aria-invalid="true"] {
+  outline-color: var(--colore-errore);
+}
+
+.nomeNelCampo {
+  margin-right: 0.25rem;
+}
+
 /* Un vettore in fila: la cella si taglia (il testo intero è nel `title`, di cui il suggerimento mostra l'inizio) e non si segna tutta;
    si segna l'elemento cambiato, col colore delle celle cambiate. */
 .inFila {
@@ -256,6 +297,18 @@
 
 .corrente .cambiato {
   background: var(--esecuzione-cambiata-corrente);
+}
+
+/* In fila il segno è sull'elemento scritto a mano, e le parole stanno accanto alla fila, che così non le taglia. */
+.modificato {
+  background: var(--esecuzione-modificata);
+  color: var(--esecuzione-testo);
+  font-weight: 600;
+}
+
+.inFila[data-modificata] > .fila {
+  display: inline-block;
+  vertical-align: bottom;
 }
 
 /* Al posto delle righe non disegnate: niente bordi né sfondo, solo l'altezza. */

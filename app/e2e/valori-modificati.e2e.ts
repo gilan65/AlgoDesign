@@ -1,10 +1,9 @@
-// «Riesegui» con valori modificati a mano: dopo la domanda di salvare, le tre scelte; senza valori modificati non chiede. Il valore si scrive dalla prova, finché la finestra
-// non ha il suo gesto (`ui/esecuzione/modifica-di-prova.ts`).
+// «Riesegui» con valori modificati a mano: dopo la domanda di salvare, le tre scelte; senza valori modificati non chiede. Il valore si scrive col gesto vero.
 //
 // Il programma: `n` letta (riga «5»), `s = 0`, per `i` da 1 a `n`: `s = s + i` (il blocco del punto), scrivi `s`; poi scrivi «fine». Fermi su `s = s + i` al 3° passaggio la
 // console ha «1» e «3»; `s` portata a 100; poi il programma cambia: `s = 10` al posto di `s = 0`.
 //
-// Che cosa NON guarda: l'esito nel nucleo (`core/esecuzione/ripartenza-con-modifiche.test.ts`); il gesto, il colore e le forme della cella.
+// Che cosa NON guarda: l'esito nel nucleo (`core/esecuzione/ripartenza-con-modifiche.test.ts`); il gesto, il colore e le forme della cella (`e2e/valore-a-mano.e2e.ts`).
 import { expect, test, type Page } from "@playwright/test";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
@@ -61,9 +60,6 @@ async function daiIlValore(page: Page, dato: string, valore: string): Promise<vo
 }
 
 async function alTerzoPassaggio(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    window.__modificaDiProva__ = true;
-  });
   await apriVuota(page, { lingua: "it" }, { esempi: { "1 somma.algo": SOMMA } });
   await apriEsempio(page, 0);
   await blocco(page, "b4").click();
@@ -78,9 +74,13 @@ async function alTerzoPassaggio(page: Page): Promise<void> {
   await expect(correnti(page)).toHaveAttribute("data-blocco", "b4");
 }
 
-async function modificaIlValore(page: Page, dato: string, testo: string): Promise<void> {
-  const esito = await page.evaluate(([d, t]) => (window.__modificaDiProva__ as (b: { dato: string; elemento: number }, testo: string) => unknown)({ dato: d!, elemento: 0 }, t!), [dato, testo]);
-  expect(esito).toEqual({ ok: true });
+/** Il doppio clic sulla cella della riga corrente: `n`, `s` e `i` sono le prime tre colonne dopo il numero e la regola. */
+async function modificaIlValore(page: Page, dato: "n" | "s" | "i", testo: string): Promise<void> {
+  await page.locator('table[data-traccia] tr[aria-current="true"] > td').nth(2 + ["n", "s", "i"].indexOf(dato)).dblclick();
+  const campo = page.getByRole("textbox", { name: riempi(it.modificaCampo, { dato }), exact: true });
+  await campo.fill(testo);
+  await campo.press("Enter");
+  await expect(campo).toHaveCount(0);
 }
 
 async function cambiaIlProgramma(page: Page): Promise<void> {

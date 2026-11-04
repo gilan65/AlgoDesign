@@ -166,6 +166,7 @@ export function Console({
           )}
           <input
             ref={campo}
+            data-riga-della-console=""
             value={riga}
             spellCheck={false}
             autoComplete="off"

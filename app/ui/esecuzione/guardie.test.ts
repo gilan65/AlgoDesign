@@ -62,7 +62,8 @@ const APPLICAZIONE: readonly string[] = [
   "scelte.velocitaAnimata, programmaCambiato, campiAperti]",
   "adesso === \"in pausa\" && programmaCambiato ?",
   "animata: !tutti && !programmaCambiato &&",
-  "esegui: programmaCambiato ?",
+  "esegui: programmaCambiato",
+  "!programmaCambiato && tutti === null;", // scrivere un valore a mano dalla tabella
   "valoriDiPrima={programmaCambiato ?",
 ];
 

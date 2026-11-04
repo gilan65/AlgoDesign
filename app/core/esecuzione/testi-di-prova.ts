@@ -99,6 +99,8 @@ export const testiIt: TestiDellaTraccia = {
     csvPerElemento: "CSV per elemento.",
   },
   valoriModificati: "Valori modificati",
+  era: "era {valore}",
+  eraDi: "{nome} era {valore}",
 };
 
 export const testiEn: TestiDellaTraccia = {
@@ -139,4 +141,6 @@ export const testiEn: TestiDellaTraccia = {
     csvPerElemento: "CSV per element.",
   },
   valoriModificati: "Changed values",
+  era: "was {valore}",
+  eraDi: "{nome} was {valore}",
 };

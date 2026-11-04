@@ -83,6 +83,45 @@ for (const [nome, blocco] of [
   });
 }
 
+/** Ogni colore che una cella della tabella o ciò che le sta accanto può avere, per nome: la cella modificata si confronta con ognuno, in ogni tema. */
+const COLORI_DELLA_TABELLA = ["--colore-sfondo", "--colore-riga", "--colore-sopra", "--colore-premuto", "--colore-accento", "--colore-avviso", "--colore-errore", "--colore-riuscito", "--colore-differenza", "--esecuzione-corrente", "--esecuzione-bordo", "--esecuzione-punto", "--esecuzione-cambiata", "--esecuzione-cambiata-corrente", "--traccia-livello-1", "--traccia-livello-2", "--traccia-livello-3", "--traccia-livello-4"] as const;
+/** Sotto questa distanza la cella modificata si confonderebbe: il minimo misurato sul colore scelto (70, dal giallo della riga corrente) con un margine. */
+const DISTANZA_DELLA_MODIFICATA = 40;
+
+/** I colori troppo vicini a quello della cella modificata. */
+const troppoVicini = (colore: string, delTema: (v: string) => string) => COLORI_DELLA_TABELLA.filter((v) => distanza(colore, delTema(v)) < DISTANZA_DELLA_MODIFICATA);
+
+for (const [nome, blocco] of [
+  ["chiaro", chiaro],
+  ["scuro", scuro],
+] as const) {
+  test(`la cella modificata, tema ${nome}: lontana da ogni colore della tabella, per elementi, e il testo si legge`, () => {
+    const delTema = (v: string) => variabile(blocco, v, chiaro);
+    const colore = delTema("--esecuzione-modificata");
+    const distanze = COLORI_DELLA_TABELLA.map((v) => `${v} ${Math.round(distanza(colore, delTema(v)))}`);
+    console.log(`[tema ${nome}] ${colore}: ${distanze.join(", ")}; testo ${Math.round(contrasto(delTema("--esecuzione-testo"), colore) * 10) / 10}:1; colori confrontati ${COLORI_DELLA_TABELLA.length}`);
+    expect(troppoVicini(colore, delTema)).toEqual([]);
+    expect(contrasto(delTema("--esecuzione-testo"), colore)).toBeGreaterThanOrEqual(4.5);
+  });
+}
+
+test("l'elenco dei colori copre ogni variabile usata dalla tabella e dal watch: una tinta nuova in quei fogli è rossa finché non sta qui", () => {
+  const foglio = readFileSync(join(import.meta.dir, "TabellaDiTraccia.module.css"), "utf8") + readFileSync(join(import.meta.dir, "Watch.module.css"), "utf8");
+  const usate = [...new Set([...foglio.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]!))].filter((v) => /^--(colore|esecuzione|traccia)-/.test(v));
+  const fuori = usate.filter((v) => v !== "--esecuzione-modificata" && v !== "--esecuzione-testo" && v !== "--colore-testo" && !(COLORI_DELLA_TABELLA as readonly string[]).includes(v));
+  console.log(`variabili di colore nei due fogli: ${usate.length}`);
+  expect(usate.length).toBeGreaterThan(5);
+  expect(usate).toContain("--esecuzione-modificata");
+  expect(fuori).toEqual([]);
+});
+
+test("controllo positivo: un colore uguale all'ambra, o al giallo, è troppo vicino", () => {
+  const delTema = (v: string) => variabile(chiaro, v);
+  expect(troppoVicini(delTema("--esecuzione-cambiata"), delTema)).toContain("--esecuzione-cambiata");
+  expect(troppoVicini("#fff59e", delTema)).toContain("--esecuzione-corrente");
+  expect(troppoVicini("#a3e635", delTema)).toEqual([]);
+});
+
 test("controllo positivo: le misure distinguono uno sfondo sbagliato", () => {
   // Un livello giallo come l'ambra, uno scuro col testo scuro, due livelli uguali: tre rossi.
   expect(distanza("#fde68a", "#fbe58c")).toBeLessThan(40);
