@@ -142,6 +142,25 @@ export function nomiDelloStrumento(testoDelPackageJson: string): { versione: str
   };
 }
 
+/** Le voci al primo livello del pacchetto del nucleo per Node (`pacchetto.ts`): il file da caricare, i due testi brevi e le due
+ * licenze. Nessun file delle licenze di terze parti: il pacchetto non contiene moduli di altri, e il metafile del build lo prova
+ * (`conformita-del-nucleo.ts`). */
+export const elencoDelNucleo: readonly string[] = ["algodesign-core.cjs", "LEGGIMI.md", "README.md", "LICENSE", "LICENSE-DOCS"];
+
+/** I testi brevi del pacchetto del nucleo, letti dalla cartella di `--testi` coi segnaposto sostituiti: il nome nella cartella e
+ * quello dentro il pacchetto. */
+export const testiDelNucleo: Readonly<Record<string, string>> = {
+  "LEGGIMI-DI-ALGODESIGN-CORE.md": "LEGGIMI.md",
+  "README-OF-ALGODESIGN-CORE.md": "README.md",
+};
+
+/** I nomi del pacchetto del nucleo, dal testo di `package.json`, con la stessa regola della versione dell'app. Il nome dello zip
+ * non dice il sistema: lo stesso file gira dovunque ci sia Node. */
+export function nomiDelNucleo(testoDelPackageJson: string): { versione: string; cartella: string; zip: string; cartellaNelloZip: string } {
+  const { versione } = nomiDelPacchetto(testoDelPackageJson);
+  return { versione, cartella: `${versione}-core`, zip: `AlgoDesign-Core-${versione}.zip`, cartellaNelloZip: `AlgoDesign-Core-${versione}` };
+}
+
 /** Le differenze fra le voci trovate e l'elenco, nei due versi: «manca X», «in più X». Vuoto se coincidono. */
 export function differenzeDallElenco(trovate: readonly string[], elenco: readonly string[] = elencoDelPacchetto): string[] {
   return [...elenco.filter((v) => !trovate.includes(v)).map((v) => `manca ${v}`), ...trovate.filter((v) => !elenco.includes(v)).map((v) => `in più ${v}`)];

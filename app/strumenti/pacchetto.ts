@@ -1,5 +1,6 @@
 // Il pacchetto della release, solo Windows: `bun run pacchetto --testi <cartella> [--prova [--senza-build]]`. Compone
-// due archivi dallo stesso albero: quello di AlgoDesign (1–6) e quello aggiuntivo dello strumento a riga di comando (7–10).
+// tre archivi dallo stesso albero: quello di AlgoDesign (1–6), quello aggiuntivo dello strumento a riga di comando (7–10) e
+// quello del nucleo per Node (11–13).
 //
 // 1. ALBERO: il commit da cui nasce il pacchetto. Con file modificati o nuovi rispetto al commit, o con un commit che non
 //    ha l'etichetta `v<versione>`, è rosso, se non con `--prova`: il pacchetto si dice allora di prova, non è una
@@ -57,13 +58,22 @@
 //    `stampa` su un progetto del corpus, senza e con `--linguaggi`, scrive le stesse pagine, byte per byte, della stessa riga con Bun.
 //    Le tracce: i nomi nuovi al primo livello di %APPDATA%, %LOCALAPPDATA%, %TEMP% (e %TMP%, se è un'altra cartella)
 //    intorno ai soli avvii dell'eseguibile; controllo positivo, l'eseguibile che scrive la sua uscita in %TEMP%.
+// 11. NUCLEO: il file per Node (`costruisciIlNucleo`, `conformita-del-nucleo.ts`): CommonJS, nessun import, ogni modulo del
+//    metafile al suo posto per nome (una libreria di altri vorrebbe la sua licenza), nessun percorso della macchina nei byte.
+//    La cartella `dist/<versione>-core/` con le voci di `elencoDelNucleo`: i due testi brevi da `--testi` e le due licenze
+//    dalla radice; il confronto nei due versi col controllo positivo.
+// 12. ZIP DEL NUCLEO: `dist/AlgoDesign-Core-<versione>.zip`, con dentro la cartella `AlgoDesign-Core-<versione>`, con le prove
+//    di 6 e l'impronta accanto.
+// 13. PROVA DEL NUCLEO: lo zip estratto in una cartella con spazi nel nome, il file caricato da lì sotto Node con un PATH senza
+//    Bun: le cinque esportazioni per elementi, e su tutto il corpus gli esiti di ciò che i sorgenti danno sotto Bun.
 //
 // Una cartella o uno zip della stessa versione si sostituiscono, ma la cartella solo se contiene le voci dell'elenco e
 // `data` è vuota (chi ha avviato il programma da lì ci trova le sue preferenze: si cancellano a mano).
 //
 // Che cosa NON guarda:
 // - che l'eseguibile di AlgoDesign parta e funzioni: lo prova `bun run prova-portabile`; dello strumento, solo ciò che
-//   dice 10 (il lettore lo provano le sue prove);
+//   dice 10 (il lettore lo provano le sue prove); del nucleo per Node, ciò che dice 13 (i rami a mano e le mutazioni stanno in
+//   `conformita-del-nucleo.test.ts`);
 // - delle tracce dello strumento, le scritture dentro cartelle che c'erano già nelle tre radici, e il registro;
 // - che i testi per l'utente dicano il vero: si leggono;
 // - ciò che le licenze non guardano (scritto in `licenze.ts`);
@@ -78,20 +88,24 @@ import { createHash } from "node:crypto";
 import { homedir, tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { delCorpus } from "../ui/genera/attesi-di-accademico";
+import { costruisciIlNucleo, esportazioniAttese, fileDelNucleo, latoAtteso, latoOttenuto, nodeDellaToolchain, verdetto } from "./conformita-del-nucleo";
 import { dataConPreposizione, dataMostrata } from "../ui/prodotto";
 import {
   differenzeDallElenco,
   documentiDellaRadice,
   documentiDelPacchetto,
   elencoDelloStrumento,
+  elencoDelNucleo,
   elencoDelPacchetto,
   fileDelleLicenze,
   guidaAdAccademico,
   guidaDelloStrumento,
   guidePerSegnalare,
   nomiDelloStrumento,
+  nomiDelNucleo,
   nomiDelPacchetto,
   testiDelloStrumento,
+  testiDelNucleo,
   testiDelPacchetto,
 } from "./elenco-del-pacchetto";
 import { licenzeDelloStrumento, licenzeDiTerzeParti } from "./licenze";
@@ -104,7 +118,7 @@ const senzaBuild = altri.includes("--senza-build");
 const prova = altri.includes("--prova");
 // Senza build l'eseguibile non è legato al commit: solo per provare lo strumento.
 if (cartellaTesti === undefined || cartellaTesti.startsWith("--") || altri.some((a) => a !== "--senza-build" && a !== "--prova") || new Set(altri).size !== altri.length || (senzaBuild && !prova)) {
-  console.error(`uso: pacchetto --testi <cartella con ${[...testiDelPacchetto, ...Object.keys(testiDelloStrumento)].join(", ")}> [--prova [--senza-build]] (ricevuti: ${JSON.stringify(argomenti)})`);
+  console.error(`uso: pacchetto --testi <cartella con ${[...testiDelPacchetto, ...Object.keys(testiDelloStrumento), ...Object.keys(testiDelNucleo)].join(", ")}> [--prova [--senza-build]] (ricevuti: ${JSON.stringify(argomenti)})`);
   process.exit(2);
 }
 
@@ -154,6 +168,9 @@ const nomiS = nomiDelloStrumento(testoDelPackageJson);
 const cartellaDelloStrumento = join(dist, nomiS.cartella);
 const zipDelloStrumento = join(dist, nomiS.zip);
 const eseguibileS = "algodesign-tools.exe";
+const nomiN = nomiDelNucleo(testoDelPackageJson);
+const cartellaDelNucleo = join(dist, nomiN.cartella);
+const zipDelNucleo = join(dist, nomiN.zip);
 const delData = dataConPreposizione(dataDiRilascio, "it");
 
 /** Lo stato dell'albero: il commit e le righe di `git status`. */
@@ -348,7 +365,7 @@ async function componi(rilascio: string): Promise<void> {
   if (!lstatSync(cartellaTesti!, { throwIfNoEntry: false })?.isDirectory()) rosso("CARTELLA", `--testi ${cartellaTesti}: non è una cartella`);
   // I testi tracciati dal repository: con l'albero pulito sono quelli del commit, e non una copia rimasta fuori (le note
   // di una versione di prima nelle cartelle di lavoro hanno gli stessi segnaposto e passerebbero).
-  const sorgenti = [...testiDelPacchetto, ...Object.keys(testiDelloStrumento)].map((t) => resolve(cartellaTesti!, t));
+  const sorgenti = [...testiDelPacchetto, ...Object.keys(testiDelloStrumento), ...Object.keys(testiDelNucleo)].map((t) => resolve(cartellaTesti!, t));
   const tracciati = await esegui(["git", "-C", repository, "ls-files", "--full-name", "--", ...sorgenti]);
   const elencati = new Set(tracciati.out.split("\n").map((r) => r.trim()).filter((r) => r !== "").map((r) => resolve(repository, r).toLowerCase()));
   const nonTracciati = sorgenti.filter((s) => !elencati.has(s.toLowerCase()));
@@ -644,6 +661,66 @@ async function provaLoStrumento(): Promise<void> {
   }
 }
 
+/** 11. Il file per Node, in una cartella temporanea nuova, e la cartella del pacchetto del nucleo. */
+async function componiIlNucleo(): Promise<void> {
+  const C = "NUCLEO";
+  const build = mkdtempSync(join(tmpdir(), "algodesign-nucleo-"));
+  try {
+    const fatto = join(build, fileDelNucleo);
+    let moduli: readonly string[] = [];
+    try {
+      moduli = (await costruisciIlNucleo(fatto)).moduli;
+    } catch (e) {
+      rosso(C, (e as Error).message);
+    }
+    sgombra(C, cartellaDelNucleo, elencoDelNucleo);
+    mkdirSync(cartellaDelNucleo, { recursive: true });
+    cpSync(fatto, join(cartellaDelNucleo, fileDelNucleo));
+    cpSync(join(repository, "LICENSE"), join(cartellaDelNucleo, "LICENSE"));
+    cpSync(join(repository, "LICENSE-DOCS"), join(cartellaDelNucleo, "LICENSE-DOCS"));
+    for (const [sorgente, destinazione] of Object.entries(testiDelNucleo)) writeFileSync(join(cartellaDelNucleo, destinazione), testoConISegnaposto(C, sorgente));
+    const trovate = voci(cartellaDelNucleo);
+    const sonda = confrontoConLElenco(C, trovate, elencoDelNucleo);
+    riga(`${C}: VERDE | ${relative(repository, cartellaDelNucleo)} con le ${trovate.length} voci dell'elenco (${trovate.join(", ")}) | ${fileDelNucleo} ${statSync(fatto).size} byte, sha256 ${impronta(fatto)}, ${moduli.length} moduli del repository, nessun import | controllo positivo acceso (${sonda})`);
+  } finally {
+    rmSync(build, { recursive: true, force: true });
+  }
+}
+
+/** 13. Il pacchetto del nucleo estratto dallo zip, caricato da lì sotto Node senza Bun sul percorso, contro i sorgenti sotto Bun. */
+async function provaIlNucleo(): Promise<void> {
+  const C = "PROVA DEL NUCLEO";
+  const base = mkdtempSync(join(tmpdir(), "algodesign-nucleo-prova-"));
+  try {
+    const cartellaDiProva = join(base, "prova del nucleo");
+    mkdirSync(cartellaDiProva);
+    const x = await esegui([tar, "-x", "-f", zipDelNucleo, "-C", cartellaDiProva]);
+    if (x.codice !== 0) rosso(C, `l'estrazione esce ${x.codice} (dettaglio nel log)`);
+    const estratto = join(cartellaDiProva, nomiN.cartellaNelloZip, fileDelNucleo);
+    const conBun = (process.env.PATH ?? process.env.Path ?? "").split(";").filter((d) => d !== "" && existsSync(join(d, "bun.exe")));
+    const senzaBun = (process.env.PATH ?? process.env.Path ?? "").split(";").filter((d) => d !== "" && !existsSync(join(d, "bun.exe")));
+    if (conBun.length === 0) rosso(C, "nel PATH di questo processo nessuna cartella ha bun.exe: la prova «senza Bun» non toglierebbe nulla");
+    const corpus = join(radice, "casi");
+    try {
+      const attesi = await latoAtteso(corpus, join(base, "attesi.json"));
+      const { esportazioni, esiti } = await latoOttenuto(nodeDellaToolchain(), estratto, corpus, join(base, "ottenuto.json"), { PATH: senzaBun.join(";"), Path: undefined });
+      if (esportazioni.join() !== esportazioniAttese.join()) rosso(C, `le esportazioni sono ${esportazioni.join(", ")} invece di ${esportazioniAttese.join(", ")}`);
+      const differenze = verdetto(attesi, esiti);
+      // Il rilevatore sa dire «diversa»: lo stesso verdetto con un esito tolto.
+      const [prima] = Object.keys(esiti);
+      const sonda = verdetto(attesi, Object.fromEntries(Object.entries(esiti).filter(([k]) => k !== prima)));
+      if (sonda.join() !== `solo negli attesi: ${prima}`) rosso(C, `controllo positivo SPENTO: con un esito tolto il verdetto dice ${JSON.stringify(sonda)}`);
+      if (differenze.length > 0) rosso(C, `${differenze.length} differenze dai sorgenti: ${differenze.slice(0, 5).join("; ")}`);
+      riga(`${C}: VERDE | estratto in «${relative(base, estratto)}», PATH senza le ${conBun.length} cartelle con bun.exe | esportazioni ${esportazioni.join(", ")} | ${Object.keys(esiti).length} esiti uguali a quelli dei sorgenti sotto Bun | controllo positivo acceso (${sonda[0]})`);
+    } catch (e) {
+      if (e instanceof Rosso) throw e;
+      rosso(C, (e as Error).message);
+    }
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+}
+
 riga(`PACCHETTO di AlgoDesign ${nomi.versione}${prova ? " (di prova)" : ""} — inizio ${new Date().toISOString()} | log ${fileLog}`);
 try {
   if (process.platform !== "win32") rosso("SISTEMA", `il pacchetto per Windows si compone su Windows, non su ${process.platform}`);
@@ -663,8 +740,12 @@ try {
   await alberoUguale(prima, "lo strumento");
   const shaS = await comprimi({ clausola: "ZIP DELLO STRUMENTO", cartella: cartellaDelloStrumento, zip: zipDelloStrumento, nomeDelloZip: nomiS.zip, cartellaNelloZip: nomiS.cartellaNelloZip, elenco: elencoDelloStrumento });
   await provaLoStrumento();
+  await componiIlNucleo();
+  await alberoUguale(prima, "il nucleo per Node");
+  const shaN = await comprimi({ clausola: "ZIP DEL NUCLEO", cartella: cartellaDelNucleo, zip: zipDelNucleo, nomeDelloZip: nomiN.zip, cartellaNelloZip: nomiN.cartellaNelloZip, elenco: elencoDelNucleo });
+  await provaIlNucleo();
   riga(
-    `ESITO: ${prova ? `VERDE, DI PROVA${senzaBuild ? ", SENZA BUILD" : ""}` : "VERDE"} | ${relative(repository, cartella)} con AlgoDesign.exe sha256 ${impronta(join(cartella, "AlgoDesign.exe"))} | ${nomi.zip} sha256 ${sha} | ${nomiS.zip} sha256 ${shaS} | da ${descritto}`,
+    `ESITO: ${prova ? `VERDE, DI PROVA${senzaBuild ? ", SENZA BUILD" : ""}` : "VERDE"} | ${relative(repository, cartella)} con AlgoDesign.exe sha256 ${impronta(join(cartella, "AlgoDesign.exe"))} | ${nomi.zip} sha256 ${sha} | ${nomiS.zip} sha256 ${shaS} | ${nomiN.zip} sha256 ${shaN} | da ${descritto}`,
   );
 } catch (e) {
   riga(e instanceof Rosso ? e.message : `ERRORE: ${e instanceof Error ? (e.stack ?? e.message) : String(e)}`);

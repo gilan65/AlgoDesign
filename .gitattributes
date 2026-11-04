@@ -9,6 +9,9 @@
 # I progetti di AlgoDesign sono testo JSON in UTF-8.
 *.algo text eol=lf
 
+# Il lato di una prova che gira sotto Node, senza compilazione.
+*.cjs text eol=lf
+
 # File binari: quelli di oggi e quelli che una release o una guida con le figure possono portare.
 *.png binary
 *.jpg binary

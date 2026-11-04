@@ -18,7 +18,7 @@
 //   pacchetto, quando lo compone (rosso se diverse), non qui;
 // - che la data della versione sia quella vera del rilascio: si cambia a mano, insieme alla versione.
 import { expect, test } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { createElement } from "react";
 import { act, render } from "@testing-library/react";
@@ -27,7 +27,7 @@ import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
 import { nomeApplicazione } from "../core/applicazione";
 import { FinestraInformazioni } from "./finestre/FinestraInformazioni";
-import { elencoDelloStrumento, elencoDelPacchetto, elencoDiLinux, guidaAdAccademico, guidaDelloStrumento, nomiDelloStrumento, nomiDelPacchetto } from "../strumenti/elenco-del-pacchetto";
+import { elencoDelloStrumento, elencoDelNucleo, elencoDelPacchetto, elencoDiLinux, guidaAdAccademico, guidaDelloStrumento, nomiDelloStrumento, nomiDelNucleo, nomiDelPacchetto, testiDelNucleo } from "../strumenti/elenco-del-pacchetto";
 import { politicaDelProdotto } from "../strumenti/politica";
 import { dataConPreposizione, dataDellaVersione, dataMostrata, versione, versioneDiProva } from "./prodotto";
 
@@ -113,6 +113,18 @@ test("i nomi del pacchetto dello strumento seguono la versione; l'eseguibile ha 
   // La guida ad «Accademico» e quella dello strumento stanno in ogni pacchetto, e quello dello strumento ha le licenze come quello dell'app.
   for (const g of [guidaAdAccademico, guidaDelloStrumento]) for (const elenco of [elencoDelPacchetto, elencoDelloStrumento, elencoDiLinux]) expect(elenco).toContain(g);
   expect(elencoDelloStrumento.filter((v) => v.startsWith("LICEN")).sort()).toEqual(elencoDelPacchetto.filter((v) => v.startsWith("LICEN")).sort());
+});
+
+test("i nomi del pacchetto del nucleo seguono la versione, e i suoi testi brevi diventano quelli dell'elenco", () => {
+  const n = nomiDelNucleo(file()["package.json"]!);
+  expect(n).toEqual({ versione, cartella: `${versione}-core`, zip: `AlgoDesign-Core-${versione}.zip`, cartellaNelloZip: `AlgoDesign-Core-${versione}` });
+  // Controllo positivo: un'altra versione cambia tutti i nomi.
+  expect(nomiDelNucleo(JSON.stringify({ version: "9.9.9-prova" }))).toEqual({ versione: "9.9.9-prova", cartella: "9.9.9-prova-core", zip: "AlgoDesign-Core-9.9.9-prova.zip", cartellaNelloZip: "AlgoDesign-Core-9.9.9-prova" });
+  // Le destinazioni dei testi brevi stanno nell'elenco, e ogni testo è nella cartella dei testi di Windows.
+  expect(Object.values(testiDelNucleo).filter((d) => !elencoDelNucleo.includes(d))).toEqual([]);
+  expect(Object.keys(testiDelNucleo).filter((t) => !existsSync(join(app, "..", "rilascio", "windows", t)))).toEqual([]);
+  // Il nome dello zip non deve entrare nella raccolta della release, che ne vuole uno solo: `AlgoDesign-*-windows-x64.zip`.
+  expect(n.zip.endsWith("-windows-x64.zip")).toBe(false);
 });
 
 /** Il nome dell'app in ogni punto dove è scritto, letto dai testi dati; `null` se il punto non lo dice. */
@@ -206,6 +218,11 @@ test("il registro delle modifiche comincia dalla versione dei file e dalla sua d
   const zipDelloStrumento = (t: string) => [...t.matchAll(/AlgoDesign-Tools-[^\s`]*-windows\.zip/g)].map((m) => m[0]);
   const zip = nomiDelloStrumento(file()["package.json"]!).zip;
   expect(readme.map((r) => [r.nome, zipDelloStrumento(readFileSync(join(radice, r.nome), "utf8"))])).toEqual(readme.map((r) => [r.nome, [zip]]));
+  // Lo stesso per lo zip del nucleo per Node.
+  const zipDelNucleo = (t: string) => [...t.matchAll(/AlgoDesign-Core-[^\s`]*\.zip/g)].map((m) => m[0]);
+  const delNucleo = nomiDelNucleo(file()["package.json"]!).zip;
+  expect(readme.map((r) => [r.nome, zipDelNucleo(readFileSync(join(radice, r.nome), "utf8"))])).toEqual(readme.map((r) => [r.nome, [delNucleo]]));
+  expect(zipDelNucleo("vedi `AlgoDesign-Core-0.5.0-beta.1.zip`.")).toEqual(["AlgoDesign-Core-0.5.0-beta.1.zip"]);
   // Lo stesso nelle due guide che lo nominano: il pacchetto le pretende, e qui si vede senza comporlo.
   const guide = [guidaAdAccademico, guidaDelloStrumento].map((g) => join("docs", g));
   expect(guide.map((g) => [g, zipDelloStrumento(readFileSync(join(radice, g), "utf8"))])).toEqual(guide.map((g) => [g, [zip]]));
