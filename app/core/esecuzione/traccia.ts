@@ -359,6 +359,10 @@ export interface TestiDellaTraccia extends TestiDelDisegno {
   };
   /** L'intestazione della colonna del CSV coi valori scritti a mano. */
   readonly valoriModificati: string;
+  /** Accanto a un valore scritto a mano, quello di prima: un modello con `{valore}`. */
+  readonly era: string;
+  /** Lo stesso in una cella con più valori: un modello con `{nome}` e `{valore}`. */
+  readonly eraDi: string;
 }
 
 // ------------------------------------------------------------------- la tabella come si mostra
@@ -424,10 +428,33 @@ export interface CellaDiUnValore {
   readonly cambiata: boolean;
   /** Mostra un valore scritto a mano su questa riga. */
   readonly modificata?: true;
+  /** Le parole accanto al valore scritto a mano, col valore di prima: stanno fuori da `testo`, e quindi dal CSV. */
+  readonly era?: string;
   /** Nella colonna di un vettore in fila: il testo a pezzi (uniti, sono `testo`), coi pezzi degli elementi cambiati
-   * segnati. */
-  readonly pezzi?: readonly { readonly testo: string; readonly cambiato: boolean }[];
+   * segnati, e quelli degli elementi scritti a mano. */
+  readonly pezzi?: readonly { readonly testo: string; readonly cambiato: boolean; readonly modificato?: true }[];
 }
+
+/** Un valore che una cella della riga corrente mostra, per scriverlo a mano: dov'è, il suo nome, il testo da proporre (come lo accetta una lettura) e se è una costante. */
+export interface ElementoDellaCella extends BersaglioDiUnValore {
+  readonly nome: string;
+  readonly testo: string;
+  readonly costante: boolean;
+}
+
+/** Che cosa offre una cella della riga corrente: i suoi valori; una colonna della posizione, che non è un dato; nulla (la condizione, lo scritto, una funzione non attiva). */
+export type BersagliDiUnaCella = { readonly genere: "valori"; readonly elementi: readonly ElementoDellaCella[] } | { readonly genere: "posizione"; readonly nome: string } | { readonly genere: "nessuno" };
+
+/** Il testo di un valore come lo accetta una lettura, per riscriverlo: il reale col punto e tutte le cifre, mai quello della cella; nessun valore, campo vuoto. */
+const testoNelCampo = (v: Valore | undefined): string => {
+  if (v === undefined) return "";
+  if (v.tipo !== "real") return testoDelValore(v, 0);
+  if (!Number.isFinite(v.v)) return "";
+  if (Object.is(v.v, -0)) return "-0";
+  const testo = String(v.v);
+  // Una lettura vuole i decimali davanti all'esponente: «1e+21» non è valida, «1.0e+21» sì.
+  return testo.includes("e") && !testo.includes(".") ? testo.replace("e", ".0e") : testo;
+};
 
 /** Ciò che il watch mostra di un dato: il nome, il tipo della vista dei dati e i valori della riga corrente della
  * tabella, uno per elemento (uno solo se il dato non è un vettore), col nome della colonna; per un parametro per
@@ -499,7 +526,12 @@ interface DatoMostrato {
   readonly colonne?: number;
   /** I campi col loro tipo, se è un record. */
   readonly campi?: readonly { readonly nome: string; readonly tipo: string }[];
+  readonly costante: boolean;
 }
+
+/** Una colonna per scriverci un valore: di quale dato (`chiamata`: la funzione che si può chiamare, nessuna per la radice; `d`: il dato fra i suoi) e quali elementi mostra; o una
+ * colonna della posizione. */
+type CellaDelDato = { readonly genere: "valori"; readonly chiamata?: number; readonly d: number; readonly elementi: readonly number[] } | { readonly genere: "posizione" };
 
 /**
  * La tabella di traccia di un progetto come la vede l'utente, nella sua lingua, col separatore dei decimali e la
@@ -507,7 +539,7 @@ interface DatoMostrato {
  * per prime. Le righe delle azioni si calcolano una volta: ogni comando ne aggiunge alcune, e quelle già viste
  * restano le stesse.
  */
-const nessunSegno: ReadonlySet<Valore> = new Set();
+const nessunSegno: ReadonlyMap<Valore, { readonly nome: string; readonly prima: Valore | undefined }> = new Map();
 
 export class TabellaMostrata {
   readonly colonne: readonly ColonnaDiUnValore[];
@@ -533,8 +565,10 @@ export class TabellaMostrata {
   /** La radice è una funzione eseguita da sola che richiama sé stessa: le sue chiamate oltre la prima sono fra quelle
    * della fotografia, e il suo gruppo mostra la più profonda, come quello di una funzione chiamata. */
   readonly #radiceDelGiro: boolean;
-  /** I valori scritti a mano sulla riga che si sta componendo: ogni cella che ne mostra uno ha il segno. */
-  #segnati: ReadonlySet<Valore> = nessunSegno;
+  /** I valori scritti a mano sulla riga che si sta componendo, ognuno col suo nome e il valore di prima: ogni cella che ne mostra uno ha il segno. */
+  #segnati = nessunSegno;
+  /** Per ogni colonna, che cosa mostra. */
+  readonly #celleDelleColonne: readonly CellaDelDato[];
 
   /** `ripetuto`: come la regola del valore iniziale di un vettore mostra il valore ripetuto, come il suo blocco; `cicli`:
    * le forme dei cicli nel disegno, che danno la regola di un evento di un ciclo e le colonne della posizione (modi
@@ -624,8 +658,9 @@ export class TabellaMostrata {
     const mostrato = (d: Dato): DatoMostrato => {
       const campi = campiDelRecord(d, p);
       // Un record, o una tabella (un vettore di record: i suoi record).
-      if (campi !== undefined) return { nome: d.name, tipo: d.record!, campi: campi.map((c) => ({ nome: c.name, tipo: testi.tipi[c.type] })), ...(d.size !== undefined ? { elementi: d.size } : {}) };
-      return { nome: d.name, tipo: testi.tipi[d.type as Tipo], ...(d.size !== undefined ? { elementi: d.size } : {}), ...(d.columns !== undefined ? { colonne: d.columns } : {}) };
+      const costante = d.constant === true;
+      if (campi !== undefined) return { nome: d.name, tipo: d.record!, costante, campi: campi.map((c) => ({ nome: c.name, tipo: testi.tipi[c.type] })), ...(d.size !== undefined ? { elementi: d.size } : {}) };
+      return { nome: d.name, tipo: testi.tipi[d.type as Tipo], costante, ...(d.size !== undefined ? { elementi: d.size } : {}), ...(d.columns !== undefined ? { colonne: d.columns } : {}) };
     };
     this.#dati = datiDi(principale).map(mostrato);
     this.#comuni = comuni.length;
@@ -683,6 +718,58 @@ export class TabellaMostrata {
         return g;
       }),
     ];
+    const celleDi = (dati: readonly DatoMostrato[], n: number, chiamata?: number): CellaDelDato[] => [
+      ...dati.flatMap((d, k) => this.#elementiDelleCelle(d).map((elementi): CellaDelDato => ({ genere: "valori", ...(chiamata !== undefined ? { chiamata } : {}), d: k, elementi }))),
+      ...Array.from({ length: n }, (): CellaDelDato => ({ genere: "posizione" })),
+    ];
+    this.#celleDelleColonne = [...celleDi(this.#dati, this.#posizioni), ...this.#chiamate.flatMap((dati, k) => celleDi(dati, this.#posizioniDelleChiamate[k]!, k))];
+  }
+
+  /** Per ogni colonna di un dato nella forma della tabella, gli elementi che mostra: le stesse forme di `#valoriDeiDati`, e una prova le appaia per elementi. */
+  #elementiDelleCelle(d: DatoMostrato): readonly (readonly number[])[] {
+    const da = (i: number, a: number) => Array.from({ length: a - i }, (_, k) => i + k);
+    /** Una colonna per gruppo di `passo` elementi, fino al tetto; gli altri in una colonna sola. */
+    const aGruppi = (gruppi: number, passo: number) => [
+      ...Array.from({ length: Math.min(gruppi, tettoDelleColonne) }, (_, i) => da(i * passo, (i + 1) * passo)),
+      ...(gruppi > tettoDelleColonne ? [da(tettoDelleColonne * passo, gruppi * passo)] : []),
+    ];
+    /** Una colonna per elemento; con il tetto, i primi e una colonna per gli altri. */
+    const aUnoAUno = (tutti: number) => (this.forma === "per-elemento" ? Array.from({ length: tutti }, (_, i) => [i]) : aGruppi(tutti, 1));
+    const n = d.elementi;
+    if (d.campi !== undefined && n !== undefined) {
+      const campi = d.campi.length;
+      if (this.formaDelleTabelle === "per-campo") return Array.from({ length: campi }, (_, j) => Array.from({ length: n }, (_, i) => i * campi + j));
+      return this.formaDelleTabelle === "per-record" ? aGruppi(n, campi) : aUnoAUno(n * campi);
+    }
+    if (d.campi !== undefined) return d.campi.map((_, i) => [i]);
+    if (n !== undefined && d.colonne !== undefined) {
+      if (this.formaDelleMatrici === "in-fila") return [da(0, n * d.colonne)];
+      return this.formaDelleMatrici === "per-riga" ? aGruppi(n, d.colonne) : aUnoAUno(n * d.colonne);
+    }
+    if (n === undefined) return [[0]];
+    return this.forma === "in-fila" ? [da(0, n)] : aUnoAUno(n);
+  }
+
+  /** Che cosa mostra la cella `cella` della riga corrente, cioè dove va un valore scritto a mano: la chiamata più profonda di una funzione, quella che il suo gruppo mostra. */
+  bersagli(t: Traccia, cella: number): BersagliDiUnaCella {
+    const f = t.righe.at(-1)?.dati ?? t.valoriIniziali;
+    const c = this.#celleDelleColonne[cella];
+    if (f === undefined || c === undefined) return { genere: "nessuno" };
+    if (c.genere === "posizione") return { genere: "posizione", nome: this.colonne[cella]!.nome };
+    const { chiamata: k, d } = c;
+    const dato = (k === undefined ? this.#dati : this.#chiamate[k]!)[d]!;
+    let valori: readonly (Valore | undefined)[];
+    if (k === undefined) {
+      const jr = this.#livelloDellaRadice(f);
+      valori = jr >= 0 && d >= this.#comuni ? f.chiamate![jr]!.valori[d - this.#comuni]! : f.valori[d]!;
+    } else {
+      const j = this.#livelloDi(f, k);
+      if (j < 0) return { genere: "nessuno" };
+      valori = f.chiamate![j]!.valori[d]!;
+    }
+    const costante = dato.costante || (k === undefined && d < this.#comuni);
+    const funzione = k === undefined ? {} : { funzione: this.#idDelleChiamate[k]! };
+    return { genere: "valori", elementi: c.elementi.map((elemento) => ({ ...funzione, dato: dato.nome, elemento, nome: nomeDelValore(dato, elemento), testo: testoNelCampo(valori[elemento]), costante })) };
   }
 
   /** Il progetto ha funzioni che si possono chiamare, o la radice richiama sé stessa: le righe hanno un livello, e la
@@ -852,16 +939,36 @@ export class TabellaMostrata {
   }
 
   #cella(v: Valore | undefined, cambiata: boolean): CellaDiUnValore {
-    return { testo: this.#valore(v), nonInizializzata: v === undefined, cambiata, ...(this.#segnato(v) ? { modificata: true as const } : {}) };
+    const segno = v === undefined ? undefined : this.#segnati.get(v);
+    return { testo: this.#valore(v), nonInizializzata: v === undefined, cambiata, ...(segno !== undefined ? { modificata: true as const, era: this.#testi.era.replace("{valore}", () => this.#valore(segno.prima)) } : {}) };
   }
 
   #segnato(v: Valore | undefined): boolean {
     return v !== undefined && this.#segnati.has(v);
   }
 
-  /** Compone una riga coi segni dei valori scritti a mano su di lei. */
+  /** Il segno di una cella con più valori: le parole coi nomi degli elementi scritti a mano. */
+  #segnoDi(elementi: readonly (Valore | undefined)[]): { modificata?: true; era?: string } {
+    const voci = elementi.flatMap((v) => {
+      const s = v === undefined ? undefined : this.#segnati.get(v);
+      return s === undefined ? [] : [this.#testi.eraDi.replace("{nome}", () => s.nome).replace("{valore}", () => this.#valore(s.prima))];
+    });
+    return voci.length === 0 ? {} : { modificata: true, era: voci.join(fraGliElementi) };
+  }
+
+  /** Compone una riga coi segni dei valori scritti a mano su di lei. Un valore scritto due volte: quello di prima è il primo (fra le due il programma non ha fatto nulla). */
   #conISegni<T>(modifiche: readonly ModificaDellaRiga[] | undefined, componi: () => T): T {
-    this.#segnati = modifiche === undefined || modifiche.length === 0 ? nessunSegno : new Set(modifiche.map((m) => m.valore));
+    if (modifiche === undefined || modifiche.length === 0) this.#segnati = nessunSegno;
+    else {
+      const primi = new Map<string, Valore | undefined>();
+      const segnati = new Map<Valore, { readonly nome: string; readonly prima: Valore | undefined }>();
+      for (const m of modifiche) {
+        const chiave = JSON.stringify([m.funzione ?? null, m.dato, m.elemento]);
+        if (!primi.has(chiave)) primi.set(chiave, m.prima);
+        segnati.set(m.valore, { nome: this.#nomeDiUnaModifica(m), prima: primi.get(chiave) });
+      }
+      this.#segnati = segnati;
+    }
     try {
       return componi();
     } finally {
@@ -986,7 +1093,7 @@ export class TabellaMostrata {
       const primi = (tutti ? elementi : elementi.slice(0, tettoDelleColonne)).map((v, i) => di(this.#cella(v, c?.[i] === true), n === undefined ? undefined : i));
       if (tutti) return primi;
       const altri = elementi.slice(tettoDelleColonne);
-      return [...primi, dato.nome === iniziale ? this.#altriIniziali(nomeDegliAltri(dato.nome, n), this.#elenco(altri)) : this.#altri(elementi, c, tettoDelleColonne, (i) => `${dato.nome}[${i}]`)];
+      return [...primi, dato.nome === iniziale ? this.#altriIniziali(nomeDegliAltri(dato.nome, n), this.#elenco(altri), altri) : this.#altri(elementi, c, tettoDelleColonne, (i) => `${dato.nome}[${i}]`)];
     });
   }
 
@@ -1016,7 +1123,7 @@ export class TabellaMostrata {
         return this.#elenco(elementi.slice(da, da + colonne));
       });
       const altra = iniziale
-        ? this.#altriIniziali(nomeDegliAltri(dato.nome, righe), partiDellElenco(altre, righe - tettoDelleColonne, this.#testi))
+        ? this.#altriIniziali(nomeDegliAltri(dato.nome, righe), partiDellElenco(altre, righe - tettoDelleColonne, this.#testi), elementi.slice(tettoDelleColonne * colonne))
         : this.#altri(elementi, c, tettoDelleColonne * colonne, (i) => nomeDiUnElemento(dato.nome, i, colonne));
       return [...prime, altra];
     }
@@ -1027,7 +1134,7 @@ export class TabellaMostrata {
     return [
       ...primi,
       iniziale
-        ? this.#altriIniziali(nomeDegliAltriDellaMatrice(dato.nome, righe, colonne), this.#elenco(altri))
+        ? this.#altriIniziali(nomeDegliAltriDellaMatrice(dato.nome, righe, colonne), this.#elenco(altri), altri)
         : this.#altri(elementi, c, tettoDelleColonne, (i) => nomeDiUnElemento(dato.nome, i, colonne)),
     ];
   }
@@ -1062,7 +1169,7 @@ export class TabellaMostrata {
         return this.#elenco(elementi.slice(da, da + campi));
       });
       const altro = iniziale
-        ? this.#altriIniziali(nomeDegliAltri(dato.nome, record), partiDellElenco(altri, record - tettoDelleColonne, this.#testi))
+        ? this.#altriIniziali(nomeDegliAltri(dato.nome, record), partiDellElenco(altri, record - tettoDelleColonne, this.#testi), elementi.slice(tettoDelleColonne * campi))
         : this.#altri(elementi, c, tettoDelleColonne * campi, (i) => nomeDelValore(dato, i));
       return [...primi, altro];
     }
@@ -1070,7 +1177,7 @@ export class TabellaMostrata {
     const primi = (tutti ? elementi : elementi.slice(0, tettoDelleColonne)).map((v, i) => di(this.#cella(v, c?.[i] === true), (r) => nomeDelValore({ ...dato, nome: r }, i)));
     if (tutti) return primi;
     const altri = elementi.slice(tettoDelleColonne);
-    return [...primi, iniziale ? this.#altriIniziali(nomeDegliAltriDellaTabella(dato), this.#elenco(altri)) : this.#altri(elementi, c, tettoDelleColonne, (i) => nomeDelValore(dato, i))];
+    return [...primi, iniziale ? this.#altriIniziali(nomeDegliAltriDellaTabella(dato), this.#elenco(altri), altri) : this.#altri(elementi, c, tettoDelleColonne, (i) => nomeDelValore(dato, i))];
   }
 
   /** I primi valori (al più `ELEMENTI_SCRITTI`) di un elenco come li scrive la tabella, fra graffe con quanti ne restano: la
@@ -1084,38 +1191,37 @@ export class TabellaMostrata {
   }
 
   /** La colonna degli altri (`colonna` il suo nome) nella riga del valore iniziale: tutti cambiati, nell'elenco tagliato
-   * come nel blocco; non uno per uno, che in un vettore di mille elementi sarebbero 990. */
-  #altriIniziali(colonna: string, elenco: readonly ParteDelTesto[]): CellaDiUnValore {
-    return { testo: `${colonna} ← ${elenco.map((p) => p.testo).join("")}`, nonInizializzata: false, cambiata: true };
+   * come nel blocco; non uno per uno, che in un vettore di mille elementi sarebbero 990. `elementi`: quegli altri, per il segno di uno scritto a mano. */
+  #altriIniziali(colonna: string, elenco: readonly ParteDelTesto[], elementi: readonly (Valore | undefined)[]): CellaDiUnValore {
+    return { testo: `${colonna} ← ${elenco.map((p) => p.testo).join("")}`, nonInizializzata: false, cambiata: true, ...this.#segnoDi(elementi) };
   }
 
   /** La colonna degli altri: gli elementi da `da` cambiati con l'azione, col nome (`nomeDi`) e il nuovo valore. */
   #altri(elementi: readonly (Valore | undefined)[], cambiati: readonly boolean[] | undefined, da: number, nomeDi: (i: number) => string): CellaDiUnValore {
     const voci: string[] = [];
     let cambiata = false;
-    let modificata = false;
     for (let i = da; i < elementi.length; i++) {
       const cambiato = cambiati?.[i] === true;
-      const segnato = this.#segnato(elementi[i]);
-      if (cambiato || segnato) voci.push(`${nomeDi(i)} ${this.#valore(elementi[i])}`);
+      if (cambiato || this.#segnato(elementi[i])) voci.push(`${nomeDi(i)} ${this.#valore(elementi[i])}`);
       cambiata ||= cambiato;
-      modificata ||= segnato;
     }
-    return { testo: voci.join(fraGliElementi), nonInizializzata: false, cambiata, ...(modificata ? { modificata: true as const } : {}) };
+    return { testo: voci.join(fraGliElementi), nonInizializzata: false, cambiata, ...this.#segnoDi(elementi.slice(da)) };
   }
 
-  /** Il vettore in fila (con `colonne`, la matrice, le righe separate): gli elementi fermi fra due cambiati stanno in un
-   * pezzo solo, così ogni pezzo è segnato o no. */
+  /** Il vettore in fila (con `colonne`, la matrice, le righe separate): gli elementi fermi fra due cambiati (o scritti a
+   * mano) stanno in un pezzo solo, così ogni pezzo è segnato o no. */
   #inFila(elementi: readonly (Valore | undefined)[], cambiati?: readonly boolean[], colonne?: number): CellaDiUnValore {
-    const pezzi: { testo: string; cambiato: boolean }[] = [];
+    const pezzi: { testo: string; cambiato: boolean; modificato?: true }[] = [];
     let fermo = "";
     elementi.forEach((v, i) => {
       if (i > 0) fermo += colonne !== undefined && i % colonne === 0 ? fraLeRighe : fraGliElementi;
       const testo = v === undefined ? senzaValore : this.#valore(v);
-      if (cambiati?.[i] !== true) fermo += testo;
+      const cambiato = cambiati?.[i] === true;
+      const segnato = this.#segnato(v);
+      if (!cambiato && !segnato) fermo += testo;
       else {
         if (fermo !== "") pezzi.push({ testo: fermo, cambiato: false });
-        pezzi.push({ testo, cambiato: true });
+        pezzi.push({ testo, cambiato, ...(segnato ? { modificato: true as const } : {}) });
         fermo = "";
       }
     });
@@ -1124,7 +1230,7 @@ export class TabellaMostrata {
       testo: pezzi.map((p) => p.testo).join(""),
       nonInizializzata: elementi.every((v) => v === undefined),
       cambiata: pezzi.some((p) => p.cambiato),
-      ...(elementi.some((v) => this.#segnato(v)) ? { modificata: true as const } : {}),
+      ...this.#segnoDi(elementi),
       pezzi,
     };
   }

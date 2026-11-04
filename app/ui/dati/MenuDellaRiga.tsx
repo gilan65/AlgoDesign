@@ -60,6 +60,8 @@ export function MenuDellaRiga({
 export interface VoceNelPunto {
   readonly chiave: string;
   readonly testo: string;
+  /** Accanto al testo, in fondo alla voce: il valore di un elemento. */
+  readonly nota?: string;
   readonly azione: (() => void) | undefined;
 }
 
@@ -117,9 +119,10 @@ export function MenuNelPunto({
 
   return (
     <div ref={menu} role="menu" aria-label={nome} className={stili.elenco} style={posizione ?? { left: 0, top: 0, visibility: "hidden" }} onKeyDown={tasto}>
-      {voci.map(({ chiave, testo, azione }) => (
+      {voci.map(({ chiave, testo, nota, azione }) => (
         <button key={chiave} type="button" role="menuitem" tabIndex={-1} className={stili.voce} aria-disabled={azione ? undefined : true} data-voce={chiave} onClick={azione}>
           {testo}
+          {nota !== undefined && <span className={stili.nota}>{` ${nota}`}</span>}
         </button>
       ))}
     </div>

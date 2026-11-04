@@ -84,6 +84,16 @@
   font-family: var(--carattere-codice);
 }
 
+/* Il valore scritto a mano: lo stesso colore della sua cella nella tabella, e le parole col valore di prima. */
+[data-watch-valore][data-modificata] {
+  background: var(--esecuzione-modificata);
+  color: var(--esecuzione-testo);
+}
+
+.era {
+  font-size: 0.8em;
+}
+
 /* «non inizializzata»: come nella tabella di traccia, in corsivo e attenuato. */
 .senzaValore {
   font-style: italic;

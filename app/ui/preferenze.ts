@@ -108,6 +108,8 @@ export interface Scelte {
   readonly domandaNellaLettura: boolean;
   /** A esecuzione finita, il comando che la salva come caso d'uso: nella console e nella scheda dei casi. */
   readonly offriCasoDallEsecuzione: boolean;
+  /** Dopo un errore che ha fermato il programma, col programma cambiato, «Riesegui» con le stesse letture. */
+  readonly rieseguiDopoUnErrore: boolean;
   /** Nella guida per lo studente, la ricerca sopra il testo. */
   readonly ricercaNellaGuida: boolean;
   /** La finestra della guida si sposta dal titolo e si ridimensiona dall'angolo; altrimenti sta fissa a destra. */
@@ -150,6 +152,7 @@ export const scelteIniziali: Scelte = {
   chiusuraAutomatica: true,
   domandaNellaLettura: false,
   offriCasoDallEsecuzione: true,
+  rieseguiDopoUnErrore: false,
   ricercaNellaGuida: true,
   guidaSpostabile: false,
   pulsanteDeiRecord: false,
@@ -310,6 +313,7 @@ export function preferenzeDa(file: unknown): { lingua: Lingua | undefined; scelt
       chiusuraAutomatica: typeof f.chiusuraAutomatica === "boolean" ? f.chiusuraAutomatica : scelteIniziali.chiusuraAutomatica,
       domandaNellaLettura: typeof f.domandaNellaLettura === "boolean" ? f.domandaNellaLettura : scelteIniziali.domandaNellaLettura,
       offriCasoDallEsecuzione: typeof f.offriCasoDallEsecuzione === "boolean" ? f.offriCasoDallEsecuzione : scelteIniziali.offriCasoDallEsecuzione,
+      rieseguiDopoUnErrore: typeof f.rieseguiDopoUnErrore === "boolean" ? f.rieseguiDopoUnErrore : scelteIniziali.rieseguiDopoUnErrore,
       ricercaNellaGuida: typeof f.ricercaNellaGuida === "boolean" ? f.ricercaNellaGuida : scelteIniziali.ricercaNellaGuida,
       guidaSpostabile: typeof f.guidaSpostabile === "boolean" ? f.guidaSpostabile : scelteIniziali.guidaSpostabile,
       pulsanteDeiRecord: typeof f.pulsanteDeiRecord === "boolean" ? f.pulsanteDeiRecord : scelteIniziali.pulsanteDeiRecord,
@@ -354,6 +358,7 @@ export function fileDa(lingua: Lingua, s: Scelte): Record<string, unknown> {
     chiusuraAutomatica: s.chiusuraAutomatica,
     domandaNellaLettura: s.domandaNellaLettura,
     offriCasoDallEsecuzione: s.offriCasoDallEsecuzione,
+    rieseguiDopoUnErrore: s.rieseguiDopoUnErrore,
     ricercaNellaGuida: s.ricercaNellaGuida,
     guidaSpostabile: s.guidaSpostabile,
     pulsanteDeiRecord: s.pulsanteDeiRecord,

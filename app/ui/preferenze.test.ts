@@ -47,6 +47,8 @@ const tutte = {
   chiusuraAutomatica: false,
   domandaNellaLettura: true,
   offriCasoDallEsecuzione: false,
+  // Il predefinito è spenta: qui accesa, perché il ritorno si veda.
+  rieseguiDopoUnErrore: true,
   // I valori diversi dai predefiniti (la ricerca accesa, la guida fissa), perché il ritorno si veda.
   ricercaNellaGuida: false,
   guidaSpostabile: true,
@@ -121,6 +123,7 @@ const rotti: Record<string, readonly unknown[]> = {
   chiusuraAutomatica: ["no", 0, null],
   domandaNellaLettura: ["sì", 1, null],
   offriCasoDallEsecuzione: ["no", 0, null],
+  rieseguiDopoUnErrore: ["no", 0, null],
   ricercaNellaGuida: ["sì", 1, null],
   guidaSpostabile: ["no", 0, null],
   pulsanteDeiRecord: ["sì", 1, null],
@@ -140,7 +143,9 @@ test("un campo rotto scarta lui solo: gli altri restano", () => {
     }
   // Ogni campo del file ha le sue prove (i limiti hanno la loro).
   expect(Object.keys(rotti).sort()).toEqual(Object.keys(tutte).filter((k) => k !== "limiti").sort());
-  expect(provati).toBe(133);
+  // Il conto viene dall'elenco stesso: ogni prova di ogni campo è stata fatta.
+  expect(provati).toBe(Object.values(rotti).reduce((n, v) => n + v.length, 0));
+  expect(provati).toBeGreaterThan(Object.keys(rotti).length);
 });
 
 test("un limite rotto scarta lui solo, e un oggetto dei limiti rotto li scarta tutti e tre", () => {
@@ -260,6 +265,8 @@ test("la chiusura automatica di parentesi e virgolette: accesa di partenza e in 
 });
 
 test("il comando che salva un'esecuzione come caso d'uso: acceso di partenza e in un file scritto prima che la scelta esistesse; ogni valore torna uguale", () => {
+  expect(scelteIniziali.rieseguiDopoUnErrore).toBe(false);
+  expect(preferenzeDa({ lingua: "it" }).scelte.rieseguiDopoUnErrore).toBe(false);
   expect(scelteIniziali.offriCasoDallEsecuzione).toBe(true);
   expect(preferenzeDa({ lingua: "it" }).scelte.offriCasoDallEsecuzione).toBe(true);
   for (const v of [true, false]) expect(fileDa("it", preferenzeDa({ offriCasoDallEsecuzione: v }).scelte).offriCasoDallEsecuzione).toBe(v);

@@ -34,6 +34,11 @@
 // vuota alta quanto loro: mille righe disegnate in un colpo alla fine di «tutto insieme» fermavano la finestra più di un secondo
 // (misurato: 1,1 s con un vettore in fila, 1,9 s con un vettore di stringhe lunghe in WebKit). Senza un motore che
 // disegna (nessuna altezza) le righe si disegnano tutte.
+//
+// Un valore si scrive a mano sulla riga corrente, quando chi chiama passa `gesto`: col doppio clic o, dalla tastiera, con Tab, le frecce di lato e Invio. Il campo sta nella cella e
+// propone il valore come lo accetta una lettura (lo dà il nucleo, `bersagli`); una cella con più valori apre prima l'elenco dei suoi elementi. Invio e il clic fuori confermano, Esc
+// annulla, lo stesso testo è come annullare, un valore rifiutato lascia il campo aperto. La cella modificata ha il suo colore e, accanto al valore, quello di prima: solo sulla riga
+// della modifica. Un ascoltatore solo sul corpo della tabella: le righe non ne hanno, e quelle sopra la corrente non hanno né il segno del gesto né il giro del Tab.
 import {
   memo,
   useLayoutEffect,
@@ -48,10 +53,11 @@ import {
   type ReactElement,
   type SetStateAction,
 } from "react";
-import type { RigaMostrata, TabellaMostrata, TestiDellaTraccia, Traccia } from "../../core/esecuzione/traccia";
+import type { BersagliDiUnaCella, ElementoDellaCella, RigaMostrata, TabellaMostrata, TestiDellaTraccia, Traccia } from "../../core/esecuzione/traccia";
 import type { Dizionario } from "../../i18n/it";
 import { dizionari, riempi, type Lingua } from "../../i18n/lingue";
 import { MenuNelPunto } from "../dati/MenuDellaRiga";
+import { tastoDellEsecuzione } from "./tasti";
 import { testiDelDisegno } from "../disegno/testi";
 import type { ColonneFerme } from "../preferenze";
 import {
@@ -107,6 +113,8 @@ export function testiDellaTraccia(lingua: Lingua): TestiDellaTraccia {
       csvPerElemento: d.tracciaCsvPerElemento,
     },
     valoriModificati: d.tracciaValoriModificati,
+    era: d.tracciaEra,
+    eraDi: d.tracciaEraDi,
   };
 }
 
@@ -137,6 +145,8 @@ export function pezziDisegnati<P extends { readonly testo: string }>(pezzi: read
   }
   return disegnati;
 }
+/** I caratteri del valore di un elemento nell'elenco di una cella. */
+const CARATTERI_NELL_ELENCO = 24;
 /** Di quanto si muove il puntatore prima che la pressione su un'intestazione diventi un trascinamento, in px. */
 const SOGLIA_DEL_TRASCINAMENTO = 5;
 /** Vicino al bordo dello scorrimento, durante un trascinamento la tabella scorre di tanto a ogni movimento, in px. */
@@ -170,11 +180,103 @@ type CellaMostrata =
 export const SFONDI_DEI_LIVELLI = 4;
 export const sfondoDelLivello = (livello: number): number | undefined => (livello === 0 ? undefined : ((livello - 1) % SFONDI_DEI_LIVELLI) + 1);
 
+/** Il gesto sulla riga corrente: che cosa offre una cella, come si scrive un valore (`false` se è rifiutato, e chi lo fa lo dice), che cosa dire quando una cella non si modifica, e
+ * dove va il fuoco a campo chiuso, se non alla cella (una lettura aperta lo vuole nella sua riga). */
+export interface GestoDellaCella {
+  readonly bersagli: (cella: number) => BersagliDiUnaCella;
+  readonly scrivi: (e: ElementoDellaCella, testo: string) => boolean;
+  readonly noCostante: (nome: string) => void;
+  readonly noPosizione: (nome: string) => void;
+  /** Nell'esecuzione di un caso d'uso i valori non si modificano: il doppio clic lo dice, e basta. */
+  readonly noNelCaso?: () => void;
+  readonly alCampoAperto: () => void;
+  readonly riprendi?: () => void;
+}
+
+/** Il campo aperto in una cella: chi dice il valore e se è stato rifiutato. */
+interface CampoAperto {
+  readonly cella: number;
+  readonly elemento: ElementoDellaCella;
+  readonly rifiutato: boolean;
+  /** Una cella con più valori: il nome dell'elemento davanti al campo. */
+  readonly conUnNome: boolean;
+}
+
+/** Il campo nella cella: nasce col testo selezionato. Invio e il clic fuori confermano, Esc annulla; un tasto dell'esecuzione conferma prima, e un rifiuto lo ferma. */
+function CampoDellaCella({
+  campo,
+  testi,
+  conferma,
+  annulla,
+}: {
+  campo: CampoAperto;
+  testi: Dizionario;
+  conferma: (testo: string, torna: boolean) => boolean;
+  annulla: () => void;
+}): ReactElement {
+  const input = useRef<HTMLInputElement>(null);
+  // Chiuso da Invio, Esc o un tasto: il clic fuori non conferma di nuovo.
+  const chiuso = useRef(false);
+  useLayoutEffect(() => {
+    input.current?.focus();
+    input.current?.select();
+  }, []);
+  const { elemento } = campo;
+  return (
+    <>
+      {campo.conUnNome && <span className={stili.nomeNelCampo}>{elemento.nome}</span>}
+      <input
+        ref={input}
+        className={stili.campo}
+        defaultValue={elemento.testo}
+        size={Math.max(6, Math.min(elemento.testo.length + 1, 40))}
+        spellCheck={false}
+        autoComplete="off"
+        aria-label={riempi(testi.modificaCampo, { dato: elemento.nome })}
+        aria-invalid={campo.rifiutato ? "true" : undefined}
+        // Il doppio clic dentro il campo seleziona una parola, e non riapre nulla.
+        onDoubleClick={(e) => e.stopPropagation()}
+        onBlur={(e) => {
+          if (!chiuso.current) conferma(e.currentTarget.value, false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            e.stopPropagation();
+            chiuso.current = conferma(e.currentTarget.value, true);
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            e.stopPropagation();
+            chiuso.current = true;
+            annulla();
+          } else if (tastoDellEsecuzione(e) !== null) {
+            // Il valore prima; se è andato bene il tasto prosegue fino a chi ascolta la finestra.
+            chiuso.current = conferma(e.currentTarget.value, false);
+            if (!chiuso.current) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }
+        }}
+      />
+    </>
+  );
+}
+
+/** Le parole accanto a un valore scritto a mano. */
+const Era = ({ c }: { c: { readonly era?: string } }) => (c.era === undefined ? null : <small className={stili.era} data-era="">{` (${c.era})`}</small>);
+
 const Riga = memo(function Riga({
   riga,
   corrente,
   indice,
   celle,
+  gesto,
+  cellaNelGiro,
+  campo,
+  testi,
+  conferma,
+  annulla,
 }: {
   riga: RigaMostrata;
   corrente: boolean;
@@ -182,8 +284,20 @@ const Riga = memo(function Riga({
   indice?: number;
   /** Le colonne dopo la regola, nell'ordine mostrato. */
   celle: readonly CellaMostrata[];
+  /** Sulla riga corrente, se i valori si possono scrivere: il suggerimento sulle celle. */
+  gesto?: { readonly suggerimento: string | undefined } | undefined;
+  /** La cella che il Tab raggiunge. */
+  cellaNelGiro?: number | undefined;
+  campo?: CampoAperto | null | undefined;
+  testi?: Dizionario;
+  conferma?: (testo: string, torna: boolean) => boolean;
+  annulla?: () => void;
 }): ReactElement {
   const n = riga.valori.length;
+  /** Ciò che la cella `i` ha per il gesto. */
+  const delGesto = (i: number) => (gesto === undefined ? {} : { "data-cella": i, tabIndex: i === cellaNelGiro ? 0 : -1 });
+  const conCampo = (i: number) => campo?.cella === i;
+  const ilCampo = (i: number) => <CampoDellaCella key={`#campo ${i} ${campo!.elemento.elemento}`} campo={campo!} testi={testi!} conferma={conferma!} annulla={annulla!} />;
   return (
     <tr
       data-riga={riga.numero}
@@ -203,7 +317,7 @@ const Riga = memo(function Riga({
           // Un gruppo chiuso: «⋯» se la sua funzione è attiva, segnato se un suo valore è cambiato con l'azione.
           const attiva = m.attiva === undefined || riga.attive[m.attiva] === true;
           return (
-            <td key={`#chiuso ${m.chiuso}`} className={stili.chiuso} data-chiuso={m.chiuso} data-cambiata={m.celle.some((i) => riga.valori[i]!.cambiata) ? "" : undefined}>
+            <td key={`#chiuso ${m.chiuso}`} className={stili.chiuso} data-chiuso={m.chiuso} data-cambiata={m.celle.some((i) => riga.valori[i]!.cambiata) ? "" : undefined} data-modificata={m.celle.some((i) => riga.valori[i]!.modificata) ? "" : undefined}>
               {attiva ? "⋯" : ""}
             </td>
           );
@@ -227,31 +341,54 @@ const Riga = memo(function Riga({
             key={i}
             className={c.nonInizializzata ? `${stili.inFila} ${stili.vuota}` : stili.inFila}
             style={stile}
-            title={c.testo}
+            title={gesto?.suggerimento === undefined ? c.testo : `${c.testo}\n${gesto.suggerimento}`}
             data-cambiata={c.cambiata ? "" : undefined}
+            data-modificata={c.modificata ? "" : undefined}
             data-non-inizializzata={c.nonInizializzata ? "" : undefined}
+            {...delGesto(i)}
           >
-            <div className={stili.fila}>
-              {pezziDisegnati(c.pezzi).map((p, k) =>
-                p.cambiato ? (
-                  <mark key={k} className={stili.cambiato} data-cambiato="">
-                    {p.testo}
-                  </mark>
-                ) : (
-                  p.testo
-                ),
-              )}
-            </div>
+            {conCampo(i) ? (
+              ilCampo(i)
+            ) : (
+              <>
+                <div className={stili.fila}>
+                  {pezziDisegnati(c.pezzi).map((p, k) =>
+                    p.modificato ? (
+                      <mark key={k} className={stili.modificato} data-modificato="">
+                        {p.testo}
+                      </mark>
+                    ) : p.cambiato ? (
+                      <mark key={k} className={stili.cambiato} data-cambiato="">
+                        {p.testo}
+                      </mark>
+                    ) : (
+                      p.testo
+                    ),
+                  )}
+                </div>
+                <Era c={c} />
+              </>
+            )}
           </td>
         ) : (
           <td
             key={i}
             className={c.nonInizializzata ? `${stili.valore} ${stili.vuota}` : stili.valore}
             style={stile}
+            title={gesto?.suggerimento}
             data-cambiata={c.cambiata ? "" : undefined}
+            data-modificata={c.modificata ? "" : undefined}
             data-non-inizializzata={c.nonInizializzata ? "" : undefined}
+            {...delGesto(i)}
           >
-            {c.testo}
+            {conCampo(i) ? (
+              ilCampo(i)
+            ) : (
+              <>
+                {c.testo}
+                <Era c={c} />
+              </>
+            )}
           </td>
         );
       })}
@@ -313,6 +450,7 @@ export const TabellaDiTraccia = memo(function TabellaDiTraccia({
   ferme,
   disposizione,
   disponi,
+  gesto,
 }: {
   tabella: TabellaMostrata;
   traccia: Traccia;
@@ -334,6 +472,8 @@ export const TabellaDiTraccia = memo(function TabellaDiTraccia({
   /** Come l'utente ha disposto le colonne, e come cambiarlo. */
   disposizione: Disposizione;
   disponi: Dispatch<SetStateAction<Disposizione>>;
+  /** Scrivere un valore sulla riga corrente; nessuno quando non si può (in corso, a esecuzione finita, col programma cambiato). */
+  gesto?: GestoDellaCella | undefined;
 }): ReactElement {
   const ridisegni = useRef(0);
   ridisegni.current += 1;
@@ -464,6 +604,89 @@ export const TabellaDiTraccia = memo(function TabellaDiTraccia({
     riprendi.current = null;
   });
   const conIlFuoco = colConIlFuoco === REGOLA || mostrate.some((m) => m.chiave === colConIlFuoco) ? colConIlFuoco : REGOLA;
+
+  // ------------------------------------------------------------------ scrivere un valore sulla riga corrente
+
+  const [campo, setCampo] = useState<CampoAperto | null>(null);
+  const [elencoDi, setElencoDi] = useState<{ cella: number; colonna: string; elementi: readonly ElementoDellaCella[]; x: number; y: number } | null>(null);
+  // Un campo vale per la riga in cui è nato, e per un gesto che c'è ancora.
+  const campoDellaRiga = useRef(ultima);
+  if (campo !== null && (campoDellaRiga.current !== ultima || gesto === undefined)) setCampo(null);
+  if (elencoDi !== null && gesto === undefined) setElencoDi(null);
+  // La cella che il Tab raggiunge: la prima con dei valori, finché le frecce non ne scelgono un'altra.
+  const celleConIlGesto = useMemo(() => celle.flatMap((m) => ("cella" in m && m.cella < tabella.colonne.length ? [m.cella] : [])), [celle, tabella]);
+  const [cellaScelta, setCellaScelta] = useState<number | null>(null);
+  const cellaNelGiro = gesto === undefined || gesto.noNelCaso ? undefined : cellaScelta !== null && celleConIlGesto.includes(cellaScelta) ? cellaScelta : celleConIlGesto[0];
+  const senzaSuggerimento = gesto?.noNelCaso !== undefined;
+  const delGesto = useMemo(() => (gesto === undefined ? undefined : { suggerimento: senzaSuggerimento ? undefined : testi.modificaSuggerimento }), [gesto === undefined, senzaSuggerimento, testi]);
+  const laCella = (i: number) => contenitore.current?.querySelector<HTMLElement>(`tr[aria-current="true"] td[data-cella="${i}"]`) ?? null;
+  /** A campo chiuso il fuoco torna alla cella, o dove chi chiama vuole. */
+  const riprendiIlFuoco = (i: number) => {
+    if (gesto?.riprendi) gesto.riprendi();
+    else requestAnimationFrame(() => laCella(i)?.focus());
+  };
+  function apriLaCella(i: number): void {
+    if (!gesto) return;
+    if (gesto.noNelCaso) {
+      gesto.noNelCaso();
+      return;
+    }
+    const b = gesto.bersagli(i);
+    if (b.genere === "nessuno") return;
+    if (b.genere === "posizione") {
+      gesto.noPosizione(b.nome);
+      return;
+    }
+    const primo = b.elementi[0]!;
+    if (primo.costante) {
+      gesto.noCostante(primo.nome);
+      return;
+    }
+    gesto.alCampoAperto();
+    setCellaScelta(i);
+    if (b.elementi.length === 1) {
+      campoDellaRiga.current = ultima;
+      setCampo({ cella: i, elemento: primo, rifiutato: false, conUnNome: false });
+    } else {
+      const r = laCella(i)?.getBoundingClientRect();
+      setElencoDi({ cella: i, colonna: tabella.colonne[i]!.nome, elementi: b.elementi, x: r?.left ?? 0, y: r?.bottom ?? 0 });
+    }
+  }
+  /** Il valore scritto nel campo: lo stesso testo è come annullare. `torna`: il fuoco torna alla cella. */
+  function confermaIlCampo(testo: string, torna: boolean): boolean {
+    if (campo === null || !gesto) return true;
+    const { cella: i, elemento } = campo;
+    if (testo !== elemento.testo && !gesto.scrivi(elemento, testo)) {
+      setCampo({ ...campo, rifiutato: true });
+      return false;
+    }
+    setCampo(null);
+    if (torna) riprendiIlFuoco(i);
+    return true;
+  }
+  function annullaIlCampo(): void {
+    if (campo === null) return;
+    const i = campo.cella;
+    setCampo(null);
+    riprendiIlFuoco(i);
+  }
+  /** I tasti su una cella della riga corrente: le frecce di lato alla vicina, Invio apre il campo. */
+  function tastoSullaCella(e: KeyboardEvent<HTMLElement>): void {
+    const td = (e.target as HTMLElement).closest<HTMLElement>("td[data-cella]");
+    if (!td || (e.target as HTMLElement).tagName === "INPUT" || !gesto) return;
+    const i = Number(td.dataset.cella);
+    if (e.key === "Enter") apriLaCella(i);
+    else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      const k = celleConIlGesto.indexOf(i) + (e.key === "ArrowLeft" ? -1 : 1);
+      const vicina = celleConIlGesto[k];
+      if (vicina !== undefined) {
+        setCellaScelta(vicina);
+        laCella(vicina)?.focus();
+      }
+    } else return;
+    e.preventDefault();
+    e.stopPropagation();
+  }
 
   const larghezzaDi = (chiave: string) => disposizione.larghezze[chiave] ?? intestazione(chiave)?.getBoundingClientRect().width ?? LARGHEZZA_MINIMA;
   const cambiaLarghezza = (chiave: string, w: number) => disponi((d) => (d.larghezze[chiave] === limitata(w) ? d : { ...d, larghezze: { ...d.larghezze, [chiave]: limitata(w) } }));
@@ -734,11 +957,36 @@ export const TabellaDiTraccia = memo(function TabellaDiTraccia({
               {voci.map((v) => (v.genere === "colonna" && (!conGruppi || bloccoDi(v.m, conGruppi) !== undefined) ? intestazioneDi(v.m) : null))}
             </tr>
           </thead>
-          <tbody>
+          <tbody
+            onDoubleClick={(e) => {
+              const td = (e.target as HTMLElement).closest<HTMLElement>('tr[aria-current="true"] > td[data-cella]');
+              if (!td) return;
+              // Il doppio clic ha selezionato una parola della cella: il segno blu non resta sotto il campo o sull'elenco.
+              window.getSelection()?.removeAllRanges();
+              apriLaCella(Number(td.dataset.cella));
+            }}
+            onKeyDown={tastoSullaCella}
+          >
             {inParte && da > 0 && <RigaVuota altezza={da * altezzaDellaRiga.current} colonne={colonne} />}
-            {(inParte ? righe.slice(da, a) : righe).map((r, k) => (
-              <Riga key={r.chiave} riga={r} corrente={r.chiave === ultima} indice={inParte ? da + k + 2 : undefined} celle={celle} />
-            ))}
+            {(inParte ? righe.slice(da, a) : righe).map((r, k) =>
+              r.chiave === ultima ? (
+                <Riga
+                  key={r.chiave}
+                  riga={r}
+                  corrente
+                  indice={inParte ? da + k + 2 : undefined}
+                  celle={celle}
+                  gesto={delGesto}
+                  cellaNelGiro={cellaNelGiro}
+                  campo={campo}
+                  testi={testi}
+                  conferma={confermaIlCampo}
+                  annulla={annullaIlCampo}
+                />
+              ) : (
+                <Riga key={r.chiave} riga={r} corrente={false} indice={inParte ? da + k + 2 : undefined} celle={celle} />
+              ),
+            )}
             {inParte && a < righe.length && <RigaVuota altezza={(righe.length - a) * altezzaDellaRiga.current} colonne={colonne} />}
           </tbody>
         </table>
@@ -750,6 +998,28 @@ export const TabellaDiTraccia = memo(function TabellaDiTraccia({
         chiudi={(torna) => {
           if (torna && menu) riprendi.current = menu.chiave;
           setMenu(null);
+        }}
+      />
+      <MenuNelPunto
+        dove={elencoDi}
+        nome={elencoDi ? riempi(testi.modificaElenco, { colonna: elencoDi.colonna }) : ""}
+        voci={
+          elencoDi?.elementi.map((e) => ({
+            chiave: String(e.elemento),
+            testo: e.nome,
+            nota: e.testo === "" ? "–" : e.testo.length > CARATTERI_NELL_ELENCO ? `${e.testo.slice(0, CARATTERI_NELL_ELENCO)}…` : e.testo,
+            azione: () => {
+              const i = elencoDi.cella;
+              setElencoDi(null);
+              campoDellaRiga.current = ultima;
+              setCampo({ cella: i, elemento: e, rifiutato: false, conUnNome: true });
+            },
+          })) ?? []
+        }
+        chiudi={(torna) => {
+          const i = elencoDi?.cella;
+          setElencoDi(null);
+          if (torna && i !== undefined) riprendiIlFuoco(i);
         }}
       />
     </div>

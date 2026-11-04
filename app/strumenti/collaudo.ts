@@ -1243,6 +1243,7 @@ const proveAttesePerSpec: Record<string, number> = {
   "tabella.e2e.ts": 9,
   "trascina.e2e.ts": 4,
   "valori-iniziali.e2e.ts": 4,
+  "valore-a-mano.e2e.ts": 25,
   "valori-modificati.e2e.ts": 8,
   "watch.e2e.ts": 7,
 };

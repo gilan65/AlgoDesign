@@ -28,7 +28,7 @@ import {
 } from "../core/modifica/funzioni";
 import { fermatoDaUnPunto } from "../core/esecuzione/controllore";
 import { Esecuzione, type Comando, type LivelloDellaPila } from "../core/esecuzione/esecuzione";
-import { Riesecuzione, type EsitoDellaRipartenza } from "../core/esecuzione/ripartenza";
+import { Riesecuzione, siRipartiDa, type EsitoDellaRipartenza } from "../core/esecuzione/ripartenza";
 import type { Origine, Riga } from "../core/interprete/interprete";
 import { csv, TabellaMostrata, type ChiamataNelWatch, type DatoNelWatch, type Traccia } from "../core/esecuzione/traccia";
 import { annulla, applica, inizia, nomiDiPrima, ripeti, siAnnulla, siRipete, type Cronologia } from "../core/modifica/cronologia";
@@ -117,10 +117,9 @@ import { perSegnalare, type PerSegnalare } from "./segnalazione";
 import { Barretta } from "./esecuzione/Barretta";
 import { Console } from "./esecuzione/Console";
 import { DoveSei } from "./esecuzione/DoveSei";
-import { esponiLaModificaDiProva } from "./esecuzione/modifica-di-prova";
-import { paroleDelMotivo } from "./esecuzione/riesecuzione";
+import { paroleDelMotivo, paroleDelRifiuto } from "./esecuzione/riesecuzione";
 import { colonneMostrate, disposizioneIniziale } from "./esecuzione/colonne";
-import { sfondoDelLivello, TabellaDiTraccia, testiDellaTraccia } from "./esecuzione/TabellaDiTraccia";
+import { sfondoDelLivello, TabellaDiTraccia, testiDellaTraccia, type GestoDellaCella } from "./esecuzione/TabellaDiTraccia";
 import { Watch } from "./esecuzione/Watch";
 import { conPunti, puntiDi, senzaPunti } from "./esecuzione/punti";
 import { azioneDelTasto, tastoDellEsecuzione, type Azione, type Situazione, type TastoDellEsecuzione } from "./esecuzione/tasti";
@@ -666,7 +665,7 @@ export function Applicazione({
   // Una riesecuzione in corso, fino allo stesso passaggio: per la finestra è un comando in corso, sull'esecuzione di prima, che resta quella mostrata finché
   // l'esito non c'è.
   const [riparte, setRiparte] = useState<Riesecuzione<CasoDiUnaFunzione> | null>(null);
-  const daAnnunciare = useRef<{ readonly es: Esecuzione<CasoDiUnaFunzione>; readonly esito: EsitoDellaRipartenza } | null>(null);
+  const daAnnunciare = useRef<{ readonly es: Esecuzione<CasoDiUnaFunzione>; readonly esito: EsitoDellaRipartenza; readonly dopoUnErrore: boolean } | null>(null);
   const statoEs = riparte ? IN_CORSO : esecuzione?.stato;
   const situazione: Situazione = riparte ? "in corso" : situazioneDi(esecuzione);
   // Un'esecuzione aperta, in qualunque stato tranne la fine: i segni sul flowchart, e i comandi dei casi d'uso, che la farebbero perdere.
@@ -679,7 +678,10 @@ export function Applicazione({
   const stessoProgrammaDellEsecuzione = useMemo(() => esecuzione !== null && stessoProgramma(esecuzione.progetto, progetto) && JSON.stringify(esecuzione.limiti) === JSON.stringify(limiti), [esecuzione, progetto, limiti]);
   // In pausa, col programma cambiato dopo la pausa: proseguire andrebbe avanti su quello di prima, che non è più quello disegnato; si riesegue.
   const programmaCambiato = statoEs?.genere === "pausa" && !stessoProgrammaDellEsecuzione;
-  const situazioneDeiTasti: Situazione = programmaCambiato ? "modificata" : situazione;
+  // Dopo un errore che ha fermato il programma, col programma cambiato e l'opzione delle Impostazioni attiva: si riesegue con le stesse righe. Un caso d'uso ha già le sue.
+  const statoFinale = statoEs?.genere === "finita" ? statoEs : undefined;
+  const rieseguibile = scelte.rieseguiDopoUnErrore && statoFinale?.errore !== undefined && esecuzione?.caso === undefined && !stessoProgrammaDellEsecuzione;
+  const situazioneDeiTasti: Situazione = programmaCambiato ? "modificata" : rieseguibile ? "dopo un errore" : situazione;
   const composto = esecuzione !== null && situazione === "finita" ? casoDallEsecuzione(esecuzione) : ({ ok: false, motivo: "non finita" } as const);
   const dallUltima: { readonly motivo: string } | { readonly caso: Extract<DallEsecuzione, { ok: true }>; readonly radice: string | undefined } | undefined = !scelte.offriCasoDallEsecuzione
     ? undefined
@@ -721,7 +723,8 @@ export function Applicazione({
   // uguale finisce con lo stesso conto della prima, e col conto rimasto dalla prima la tabella non si ridisegnava più.
   const versioneMostrata = useRef<{ readonly es: Esecuzione<CasoDiUnaFunzione>; readonly versione: number } | null>(null);
   if (esecuzione && (statoEs?.genere !== "in corso" || versioneMostrata.current?.es !== esecuzione))
-    versioneMostrata.current = { es: esecuzione, versione: esecuzione.passi + esecuzione.traccia.tolte + esecuzione.traccia.righe.length };
+    // I valori scritti a mano cambiano la riga corrente senza un'azione: senza contarli la tabella e il watch resterebbero ai valori di prima.
+    versioneMostrata.current = { es: esecuzione, versione: esecuzione.passi + esecuzione.traccia.tolte + esecuzione.traccia.righe.length + esecuzione.modifiche.length };
   const versioneDellaTabella = versioneMostrata.current?.versione ?? 0;
   const separatori = separatoriDelCsv(scelte, lingua);
   const tabellaMostrata = useMemo(
@@ -742,6 +745,35 @@ export function Applicazione({
         : null,
     [esecuzione, lingua, separatori.decimali, scelte.formaDeiVettori, scelte.formaDelleMatrici, scelte.formaDelleTabelle, valoreRipetuto, formeDeiCicli],
   );
+  // Scrivere un valore a mano dalla tabella: in pausa e in attesa di una riga, mai col programma cambiato (andrebbe su un'esecuzione che non si può proseguire); in un caso d'uso
+  // il gesto dice soltanto che lì non si può.
+  const siScriveUnValore = esecuzione !== null && (statoEs?.genere === "pausa" || statoEs?.genere === "chiede") && !programmaCambiato && tutti === null;
+  const inAttesaDiUnaRiga = statoEs?.genere === "chiede";
+  const gestoDellaCella = useMemo((): GestoDellaCella | undefined => {
+    const es = esecuzione;
+    const t = tabellaMostrata;
+    if (!siScriveUnValore || !es || !t) return undefined;
+    const noCostante = (dato: string) => setAvviso(riempi(testi.modificaCostante, { dato }));
+    const noPosizione = (dato: string) => setAvviso(riempi(testi.modificaPosizione, { dato }));
+    return {
+      bersagli: (cella) => t.bersagli(es.traccia, cella),
+      scrivi: (e, testo) => {
+        const esito = es.modifica(e, testo);
+        if (esito.ok) {
+          setAvviso(riempi(testi.modificaFatta, { dato: e.nome, valore: testo, prima: e.testo === "" ? testi.tracciaNonInizializzata : e.testo }));
+          ridisegna();
+          return true;
+        }
+        setAvviso(riempi(testi[paroleDelRifiuto[esito.motivo]], { testo, dato: e.nome }));
+        return false;
+      },
+      noCostante,
+      noPosizione,
+      ...(es.caso !== undefined ? { noNelCaso: () => setAvviso(testi.modificaNelCaso) } : {}),
+      alCampoAperto: () => setAnimata(false),
+      ...(inAttesaDiUnaRiga ? { riprendi: () => document.querySelector<HTMLElement>("[data-riga-della-console]")?.focus() } : {}),
+    };
+  }, [siScriveUnValore, inAttesaDiUnaRiga, esecuzione, tabellaMostrata, testi]);
   // «Dove sei»: la pila delle chiamate del nucleo, come la tabella all'ultima fermata durante un comando in corso (di
   // un'esecuzione appena cominciata, la sua).
   const pilaMostrata = useRef<{ readonly es: Esecuzione<CasoDiUnaFunzione>; readonly pila: readonly LivelloDellaPila[] } | null>(null);
@@ -1795,12 +1827,12 @@ export function Applicazione({
     if (c) seNonSiPerdeNulla(() => chiediDeiValori(c.presente), c.presente, true);
   }
   function chiediDeiValori(p: Progetto): void {
-    if (esecuzione?.stato.genere === "pausa" && esecuzione.modifiche.length > 0) setFinestra({ genere: "valori modificati", p });
+    if (esecuzione && siRipartiDa(esecuzione.stato) && esecuzione.modifiche.length > 0) setFinestra({ genere: "valori modificati", p });
     else rieseguiIl(p, "togli");
   }
   function rieseguiIl(p: Progetto, valori: "tieni" | "togli"): void {
     const es = esecuzione;
-    if (es?.stato.genere !== "pausa") return;
+    if (!es || !siRipartiDa(es.stato)) return;
     const { funzione, caso: casoDiAllora } = es;
     // Lo stesso caso d'uso, per nome, com'è adesso; quello di allora, se è stato cancellato.
     const caso = casoDiAllora && (casiDella(p, funzione).find((x) => x.name === casoDiAllora.name) ?? casoDiAllora);
@@ -1809,17 +1841,18 @@ export function Applicazione({
     setAvviso(null);
     setRiparte(new Riesecuzione<CasoDiUnaFunzione>(es, p, limiti, { righeLunghe: righeLungheDi(scelte), controllo: controlla(p, limiti), ...(funzione !== undefined ? { funzione } : {}), ...(caso ? { caso } : {}) }, valori));
   }
-  /** L'esito di una riesecuzione. Il blocco cancellato e il progetto con errori non portano a nulla da mostrare: la pausa di prima resta, e si può correggere e riprovare. */
+  /** L'esito di una riesecuzione. Il blocco cancellato e il progetto con errori non portano a nulla da mostrare: la pausa di prima, o l'esecuzione fermata dall'errore, resta, e si può correggere e riprovare. */
   function concludiLaRiesecuzione(r: Riesecuzione<CasoDiUnaFunzione>, esito: EsitoDellaRipartenza): void {
     setRiparte(null);
     const es = r.esecuzione;
+    const dopoUnErrore = esecuzione?.stato.genere === "finita";
     if (es === undefined || (!esito.ritrovato && esito.motivo === "non_parte")) {
       if (es !== undefined) registrazione?.tieniAccanto(es, erroriDellApp().voci);
-      setAvviso(esito.ritrovato ? null : testi[paroleDelMotivo[esito.motivo]]);
+      setAvviso(esito.ritrovato ? null : dopoUnErrore ? (esito.motivo === "non_parte" ? testi.rieseguiNonParteDopoErrore : testi.rieseguiNonRiuscitaDopoErrore) : testi[paroleDelMotivo[esito.motivo]]);
       return;
     }
     registrazione?.apri(es, erroriDellApp().voci);
-    daAnnunciare.current = { es, esito };
+    daAnnunciare.current = { es, esito, dopoUnErrore };
     setEsecuzione(es);
   }
   /** «Ferma»: la colonna si chiude, la vista dei dati si riapre, il progetto si modifica di nuovo. */
@@ -2314,15 +2347,6 @@ export function Applicazione({
     return () => cancelAnimationFrame(fotogramma);
   }, [esecuzione, giro]);
 
-  // Scrivere un valore a mano dalle prove, finché la finestra non ha il suo gesto.
-  useEffect(() => {
-    esponiLaModificaDiProva((b, testo) => {
-      const esito = esecuzione?.modifica(b, testo);
-      ridisegna();
-      return esito;
-    });
-  }, [esecuzione]);
-
   // Una riesecuzione avanza a fette, come un comando in corso: «Ferma» e la chiusura rispondono anche con un programma lungo o diventato senza fine.
   useEffect(() => {
     const r = riparte;
@@ -2333,7 +2357,7 @@ export function Applicazione({
       } catch (e) {
         annotaErrore("riesecuzione non riuscita", e);
         setRiparte(null);
-        setAvviso(testi.rieseguiNonRiuscita);
+        setAvviso(esecuzione?.stato.genere === "finita" ? testi.rieseguiNonRiuscitaDopoErrore : testi.rieseguiNonRiuscita);
         return;
       }
       if (r.esito !== undefined) concludiLaRiesecuzione(r, r.esito);
@@ -2352,6 +2376,7 @@ export function Applicazione({
     if (esito.ritrovato) {
       const quanti = esito.righeAvanzate;
       const avanzate = quanti === 1 ? testi.rieseguiAvanzataUna : riempi(testi.rieseguiAvanzateMolte, { n: quanti.toLocaleString(lingua) });
+      if (d.dopoUnErrore) setAvviso((a) => (a === null ? testi.rieseguiAlloStessoErrore : `${testi.rieseguiAlloStessoErrore} ${a}`));
       if (quanti > 0) setAvviso((a) => (a === null ? avanzate : `${a} ${avanzate}`));
     } else {
       const motivo = testi[paroleDelMotivo[esito.motivo]];
@@ -2437,7 +2462,7 @@ export function Applicazione({
       // prima che la finestra si ridisegni (un tasto tenuto premuto), e il comando di prima è già in corso.
       else if (tasto !== null) {
         const adesso = riparte ? "in corso" : situazioneDi(esecuzione);
-        fai(azioneDelTasto(adesso === "in pausa" && programmaCambiato ? "modificata" : adesso, tasto));
+        fai(azioneDelTasto(adesso === "in pausa" && programmaCambiato ? "modificata" : adesso === "finita" && rieseguibile ? "dopo un errore" : adesso, tasto));
       }
       else if (delFile === "stampa") {
         if (stampaDisponibile) apriLaStampa();
@@ -3569,7 +3594,11 @@ export function Applicazione({
   const stati: Stati = {
     registra: { testo: registrazione === null ? testi.registraAttiva : testi.registraDisattiva },
     funzione: { suggerimento: testi.comandoFunzioneSuggerimento },
-    esegui: programmaCambiato ? { testo: testi.riesegui, suggerimento: suggerimento("esegui", testi.rieseguiSuggerimento, testi) } : { testo: situazione === "in pausa" ? testi.continua : testi.esegui },
+    esegui: programmaCambiato
+      ? { testo: testi.riesegui, suggerimento: suggerimento("esegui", testi.rieseguiSuggerimento, testi) }
+      : rieseguibile
+        ? { testo: testi.riesegui, suggerimento: suggerimento("esegui", testi.rieseguiDopoErroreSuggerimento, testi) }
+        : { testo: situazione === "in pausa" ? testi.continua : testi.esegui },
     entra: { suggerimento: suggerimento("entra", testi.entraSuggerimento, testi) },
     esci: { suggerimento: suggerimento("esci", testi.esciSuggerimento, testi) },
     animata: animata ? { premuto: true, icona: "pausaAnimata", suggerimento: testi.animataInCorso } : { premuto: false },
@@ -4055,7 +4084,7 @@ export function Applicazione({
                   className={stili.tracciaNellaColonna}
                   style={altezzaTabella === null ? undefined : { height: altezzaTabella }}
                 >
-                  {tabellaMostrata && <TabellaDiTraccia tabella={tabellaMostrata} traccia={esecuzione.traccia} versione={versioneDellaTabella} visibile={conTabella && !conCodice} spiegazione={spiegazione} valoriDiPrima={programmaCambiato ? testi.valoriDiPrima : undefined} testi={testi} lingua={lingua} ferme={scelte.colonneFerme} disposizione={disposizione} disponi={setDisposizione} />}
+                  {tabellaMostrata && <TabellaDiTraccia tabella={tabellaMostrata} traccia={esecuzione.traccia} versione={versioneDellaTabella} visibile={conTabella && !conCodice} spiegazione={spiegazione} valoriDiPrima={programmaCambiato ? testi.valoriDiPrima : undefined} testi={testi} lingua={lingua} ferme={scelte.colonneFerme} disposizione={disposizione} disponi={setDisposizione} gesto={gestoDellaCella} />}
                 </div>
               )}
               {esecuzione && conTabella && !conCodice && <Divisore pannello={pannelloTabella} larghezza={altezzaTabella} cambia={setAltezzaTabella} nome={testi.altezzaTabella} controlla={idTabella} orizzontale />}

@@ -11,9 +11,16 @@
   border: 1px solid var(--disegno-bordo);
   border-radius: 6px;
   box-shadow: 0px 4px 14px rgb(0 0 0 / 0.18);
-  /* Un elenco lungo (le chiamate nascoste di «Dove sei») scorre dentro la finestra. */
+  /* Un elenco lungo (le chiamate nascoste di «Dove sei», gli elementi di una cella) scorre dentro la finestra. */
   max-height: calc(100vh - 1rem);
   overflow-y: auto;
+}
+
+/* Il valore accanto al nome di un elemento. */
+.nota {
+  float: right;
+  margin-left: 1.5rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .voce {

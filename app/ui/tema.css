@@ -35,6 +35,8 @@
   /* Nella tabella di traccia, la cella cambiata con l'azione: ambra fuori dalla riga corrente, più carica dentro. */
   --esecuzione-cambiata: #fde68a;
   --esecuzione-cambiata-corrente: #fbbf24;
+  /* La cella col valore scritto a mano: un lime acceso, lontano dal giallo e dall'ambra e uguale nei due temi; lo misura una prova (`ui/esecuzione/sfondi.test.ts`). */
+  --esecuzione-modificata: #8cff00;
   /* Nella tabella di traccia, le righe dei livelli di chiamata (1, 2, 3, 4, poi di nuovo 1…): tinte fredde, lontane
      dall'ambra della cella cambiata; nel codice, la riga della chiamata che apre il livello. Il contrasto lo misura una
      prova (`ui/esecuzione/sfondi.test.ts`). */
