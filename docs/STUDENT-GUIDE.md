@@ -237,6 +237,8 @@ When the project has no errors you run it:
 
 With procedures and functions there are also **Step in** (F11) and **Step out** (Shift+F11), to enter a call and leave it: §9.
 
+**Correcting during a pause.** While paused, the flowchart, the data and the test cases can be changed. If the change alters the program, “Continue” becomes **Rerun** (F5) and “Values from before the change” appears above the table: Rerun, after asking whether to save, runs the changed program again with the same reads, without typing them again, and stops at the same pass of the same block, with the values recalculated. If it can't get there, the message says why. Undo, back to the earlier program, brings “Continue” back.
+
 At the start, on the right of the flowchart a panel opens with the **trace table** above and the **console** below, and the current block is highlighted in yellow with an orange border. When the program reads a data item, at the bottom of the console there is the line where you type the value: type it and press **Enter**. A value that does not fit (letters instead of a number) is pointed out, and the same read is repeated.
 
 The **trace table** has one row per action: the number, the rule, the value of each data item after the action (the changed value is highlighted, “uninitialized” where there is no value yet), the outcome of the condition and what is written or read. The first row is “Start”; then each initial value has its own row. “Export the table…” (Project menu) writes it to a CSV file that opens with a spreadsheet.

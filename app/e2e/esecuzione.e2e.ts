@@ -14,8 +14,8 @@
 //   attese, contate dall'atteso del riferimento.
 // - La console: un valore non valido lo dice e la stessa lettura si richiede; «Ferma» chiude la colonna e
 //   riapre la vista dei dati.
-// - Sola lettura: in pausa il doppio clic non apre i campi, Canc non cancella, i «+» non ci sono, la vista dei
-//   dati non si modifica e i comandi di modifica sono spenti; «Ferma» li riaccende.
+// - Sola lettura: in attesa di una riga il doppio clic non apre i campi, Canc non cancella, i «+» non ci sono, la vista dei
+//   dati non si modifica e i comandi di modifica sono spenti; «Ferma» li riaccende. In pausa si modifica: `e2e/riesegui.e2e.ts`.
 // - La corsa che non blocca: con un ciclo lento in corso (oltre un minuto prima del tetto dei passi) la pagina
 //   risponde, «Ferma» arriva entro la soglia e la chiusura della finestra chiede entro la soglia; un ciclo che
 //   arriva al tetto dei passi si ferma con l'errore sul blocco, agli ausili e nella console.
@@ -289,14 +289,19 @@ test("un valore non valido nella console lo dice e la lettura si richiede; «Fer
   await expect(avviso(page)).toHaveText(it.annuncioFermata);
 });
 
-test("in esecuzione flowchart e dati sono in sola lettura: niente campi, niente Canc, niente «+», comandi di modifica spenti; «Ferma» li riaccende", async ({ page }) => {
+test("in attesa di una riga flowchart e dati sono in sola lettura: niente campi, niente Canc, niente «+», comandi di modifica spenti; «Ferma» li riaccende", async ({ page }) => {
   await apri(page, { lingua: "it" });
   const flowchart = page.getByRole("group", { name: `${it.flowchart}: ${RIFERIMENTO}`, exact: true });
   const piu = flowchart.locator("[data-punto]");
   const prima = await piu.count();
   expect(prima).toBeGreaterThan(0);
+  // In pausa i «+» ci sono: la sola lettura comincia con la lettura.
   await page.keyboard.press("F10");
   await expect(statoDi(page)).toHaveText(riempi(it.statoInPausa, { n: "1" }));
+  await expect(piu).toHaveCount(prima);
+  await blocco(page, "b3").click();
+  await page.keyboard.press("F5");
+  await expect(statoDi(page)).toHaveText(riempi(it.statoChiede, { dato: "n" }));
   await expect(piu).toHaveCount(0);
   await blocco(page, "b10").dblclick();
   await expect(page.getByRole("form")).toHaveCount(0);
@@ -732,6 +737,23 @@ const coseAperte: { nome: string; funzioni?: true; apri: (page: Page) => Promise
     },
   },
   {
+    nome: "la domanda di salvare prima di rieseguire",
+    apri: async (page) => {
+      await page.keyboard.press("F10");
+      await expect(statoDi(page)).toHaveText(riempi(it.statoInPausa, { n: "1" }));
+      await blocco(page, "b1").click();
+      await page.keyboard.press("Delete");
+      await page.keyboard.press("F5");
+      return page.getByRole("alertdialog");
+    },
+    // Chiusa, si torna al programma di allora: lo stesso F5 prosegue, invece di richiedere.
+    chiudi: async (page) => {
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("alertdialog")).toHaveCount(0);
+      await page.keyboard.press("Control+z");
+    },
+  },
+  {
     nome: "l'elenco delle procedure e delle funzioni",
     funzioni: true,
     apri: async (page) => {
@@ -777,7 +799,7 @@ test("con ogni cosa aperta che la finestra guarda, F5 non fa partire l'esecuzion
   }
   console.log(`[${info.project.name}] F5 con una cosa aperta: ${coseAperte.length} casi, diversi ${esiti.length}`);
   expect(esiti, "F5 ha fatto partire l'esecuzione con una cosa aperta").toEqual([]);
-  expect(coseAperte.length).toBe(12);
+  expect(coseAperte.length).toBe(13);
 });
 
 test("le scorciatoie dei file valgono col fuoco in un campo; Canc su un «+» non cancella; Ctrl+Z col menu di un dato aperto non annulla", async ({ page }) => {

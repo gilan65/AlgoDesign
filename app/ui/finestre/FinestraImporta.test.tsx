@@ -517,7 +517,7 @@ test("la cartella delle librerie scelta nelle Impostazioni arriva al guscio: nel
   });
 });
 
-test("durante l'esecuzione «Salva come libreria…» è spento come le Proprietà e «Importa…»; fermata, torna", async () => {
+test("in pausa «Salva come libreria…», le Proprietà e «Importa…» ci sono, perché il progetto si modifica; fermata, restano", async () => {
   await avvia();
   const spente = async () => {
     await clic(document.querySelector('[data-menu="progetto"]')!);
@@ -536,7 +536,7 @@ test("durante l'esecuzione «Salva come libreria…» è spento come le Propriet
   await aspetta("fermata", () => document.querySelector('[aria-current="step"]') === null);
   const ferma = await spente();
   expect({ inPausa, ferma }).toEqual({
-    inPausa: ["salvaComeLibreria true", "proprieta true", "importa true", "salva false"],
+    inPausa: ["salvaComeLibreria false", "proprieta false", "importa false", "salva false"],
     ferma: ["salvaComeLibreria false", "proprieta false", "importa false", "salva false"],
   });
 });

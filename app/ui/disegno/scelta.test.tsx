@@ -2,7 +2,7 @@
 // (la sequenza principale: un commento, un «ripeti», un'assegnazione, un «mentre» con dentro un «se» e un «se») e col
 // file delle domande prima delle letture, con l'opzione della domanda nel blocco di Lettura accesa:
 // - Maiusc+clic sceglie i blocchi fra il primo e il cliccato; un blocco dentro un ciclo porta la scelta al ciclo; il
-//   messaggio dice quanti; un clic senza Maiusc torna a un blocco solo; durante l'esecuzione Maiusc+clic sceglie un
+//   messaggio dice quanti; un clic senza Maiusc torna a un blocco solo; in attesa di una riga Maiusc+clic sceglie un
 //   blocco solo;
 // - Maiusc+↓ e Maiusc+↑ allargano e stringono la scelta dal blocco scelto, col fuoco che lo segue; dentro un campo no;
 // - Taglia, Incolla, Copia, Elimina, Spazio con Invio su un «+», e il menu del tasto destro agiscono su tutti i blocchi
@@ -287,10 +287,16 @@ test("il riquadro intorno ai blocchi scelti: con la casella e più di un blocco;
   expect([scelti().length, riquadro()]).toEqual([3, null]);
 });
 
-test("durante l'esecuzione Maiusc+clic sceglie un blocco solo (per il suo punto di interruzione)", async () => {
+test("in pausa Maiusc+clic allarga la scelta, come quando si modifica; in attesa di una riga sceglie un blocco solo (per il suo punto di interruzione)", async () => {
   await apriLaFinestra();
   await tasto(document.body, "F10");
-  await aspetta("in esecuzione", () => (document.querySelector("[data-stato-esecuzione]")?.textContent ?? testi.statoPronto) !== testi.statoPronto);
+  await aspetta("in pausa", () => (document.querySelector("[data-stato-esecuzione]")?.textContent ?? testi.statoPronto) !== testi.statoPronto);
+  await clic("b2");
+  await clic("b7", true);
+  expect(scelti().length).toBeGreaterThan(1);
+  const inAttesa = () => /^Aspetta/.test(document.querySelector("[data-stato-esecuzione]")?.textContent ?? "");
+  for (let giri = 0; giri < 20 && !inAttesa(); giri++) await tasto(document.body, "F10");
+  await aspetta("in attesa di una riga", inAttesa);
   await clic("b2");
   await clic("b7", true);
   expect(scelti()).toEqual(["b7"]);

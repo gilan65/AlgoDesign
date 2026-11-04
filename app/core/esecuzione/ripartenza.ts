@@ -220,3 +220,50 @@ export class Ripartenza<C extends CasoDiUnaFunzione> {
     else this.#esito = { ritrovato: false, motivo: fermata };
   }
 }
+
+/** Il gesto intero, da una pausa di `da`: il punto ricavato dal progetto di allora, poi un'esecuzione nuova del progetto `p` fino a quel punto, tutto a fette.
+ * `da` non cambia. Finché non c'è l'esito l'esecuzione nuova è a metà e non si mostra; col posto cancellato non c'è affatto. */
+export class Riesecuzione<C extends CasoDiUnaFunzione> {
+  #ripartenza: Ripartenza<C> | undefined;
+  #esito: EsitoDellaRipartenza | undefined;
+  readonly #ricerca: RicercaDelPunto<C>;
+  readonly #da: Esecuzione<C>;
+  readonly #progetto: Progetto;
+  readonly #limiti: Tetti;
+  readonly #opzioni: OpzioniDellEsecuzione<C>;
+
+  constructor(da: Esecuzione<C>, p: Progetto, limiti: Tetti, opzioni: OpzioniDellEsecuzione<C>) {
+    this.#ricerca = new RicercaDelPunto(da);
+    this.#da = da;
+    this.#progetto = p;
+    this.#limiti = limiti;
+    this.#opzioni = opzioni;
+  }
+
+  get esito(): EsitoDellaRipartenza | undefined {
+    return this.#esito;
+  }
+
+  /** L'esecuzione nuova, a esito arrivato; nessuna col posto cancellato: nulla è stato eseguito. */
+  get esecuzione(): Esecuzione<C> | undefined {
+    return this.#esito === undefined || (!this.#esito.ritrovato && this.#esito.motivo === "posto_cancellato") ? undefined : this.#ripartenza?.esecuzione;
+  }
+
+  fetta(orologio: () => number, durata: number): void {
+    if (this.#esito !== undefined) return;
+    const punto = this.#ricerca.punto;
+    if (punto === undefined) {
+      this.#ricerca.fetta(orologio, durata);
+      return;
+    }
+    const { funzione } = this.#opzioni;
+    // La funzione eseguita da sola non c'è più: anche il posto, e un'esecuzione senza radice non si comincia.
+    if (funzione !== undefined && !this.#progetto.functions.some((f) => f.id === funzione)) {
+      this.#esito = { ritrovato: false, motivo: "posto_cancellato" };
+      return;
+    }
+    this.#ripartenza ??= new Ripartenza<C>(this.#progetto, this.#limiti, this.#opzioni, this.#da.righeDate, punto);
+    this.#ripartenza.fetta(orologio, durata);
+    this.#esito = this.#ripartenza.esito;
+  }
+}

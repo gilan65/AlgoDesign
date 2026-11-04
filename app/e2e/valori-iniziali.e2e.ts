@@ -260,7 +260,7 @@ test("dalla vista dei dati al blocco: la dimensione, la forma, il file aperto", 
 });
 
 // Il dato letto prima di avere un valore: l'avviso nella riga di stato e sul blocco che legge, col comando che apre il
-// valore iniziale del dato nella vista dei dati (nei due modi), spento durante l'esecuzione. ATTESO SCRITTO A MANO:
+// valore iniziale del dato nella vista dei dati (nei due modi), acceso anche in pausa. ATTESO SCRITTO A MANO:
 // «somma» senza valore iniziale è letta dalla somma nel ciclo (b2) e dalla scrittura (b4): due avvisi, un dato.
 const senzaValore: Funzione = {
   id: "f1",
@@ -320,7 +320,7 @@ for (const modo of ["scheda", "celle"] as const)
     await campo.press("Enter");
     await expect(stato).toContainText(it.statoNessuno);
     await expect(flowchart.locator('[data-segno="avviso"]')).toHaveCount(0);
-    // Annullato, gli avvisi tornano; durante l'esecuzione (che parte: è un avviso) il comando è spento.
+    // Annullato, gli avvisi tornano; in pausa (l'esecuzione parte: è un avviso) il comando c'è, perché il progetto si modifica.
     // (Il pulsante della barra: nelle celle il fuoco è ancora nel campo, dove Ctrl+Z è quello del campo.)
     await page.getByRole("banner").getByRole("button", { name: it.annulla, exact: true }).click();
     await expect(stato).toContainText(riempi(it.statoAvvisi, { n: "2" }));
@@ -330,5 +330,5 @@ for (const modo of ["scheda", "celle"] as const)
     const mostra = stato.getByRole("button", { name: it.statoMostra, exact: true });
     if ((await mostra.count()) > 0) await mostra.click();
     await expect(comandi).toHaveCount(2);
-    for (const c of await comandi.all()) await expect(c).toBeDisabled();
+    for (const c of await comandi.all()) await expect(c).toBeEnabled();
   });

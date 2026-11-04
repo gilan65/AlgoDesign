@@ -8,7 +8,7 @@ import { expect, test } from "bun:test";
 import { tetti } from "../controllo/controllo";
 import type { Blocco, CasoDiUnaFunzione, Progetto } from "../progetto/modello";
 import { Esecuzione, type OpzioniDellEsecuzione } from "./esecuzione";
-import { RicercaDelPunto, Ripartenza, type EsitoDellaRipartenza, type PuntoDellaPausa } from "./ripartenza";
+import { RicercaDelPunto, Riesecuzione, Ripartenza, type EsitoDellaRipartenza, type PuntoDellaPausa } from "./ripartenza";
 import { puntoDi, senzaOrologio, statoDi, type Es } from "./ripartenza-di-prova";
 
 /** Il programma della tabella: `n` letta, poi per `i` da 1 a `n` la somma in `s`, scritta. */
@@ -61,6 +61,14 @@ function fermaSu(p: Progetto, blocco: string, passaggio: number, righe: readonly
     else if (s.genere === "chiede") es.inserisci(righe[k++]!);
     else throw new Error(`pausa non raggiunta: ${s.genere}`);
   }
+}
+
+/** Sulla prima azione della funzione eseguita da sola. */
+function fermaSu2(p: Progetto, funzione: string): Es {
+  const es: Es = new Esecuzione<CasoDiUnaFunzione>(p, tetti, { funzione });
+  es.comanda("dentro");
+  for (let giri = 0; es.stato.genere === "in corso" && giri < 1000; giri++) es.fetta(senzaOrologio, 0);
+  return es;
 }
 
 function riparti(p: Progetto, da: Es, punto: PuntoDellaPausa = puntoDi(da), opzioni: OpzioniDellEsecuzione<CasoDiUnaFunzione> = {}): { readonly es: Es; readonly esito: EsitoDellaRipartenza | undefined } {
@@ -284,4 +292,70 @@ test("la ricerca del punto a fette non cambia l'esecuzione da cui parte", () => 
   for (let fette = 0; r.punto === undefined && fette < 10_000; fette++) r.fetta(() => (adesso += 1), 3);
   expect(r.punto).toMatchObject({ blocco: "b4", occorrenza: 3 });
   expect(JSON.stringify(statoDi(da))).toBe(prima);
+});
+
+// ---------------------------------------------------------------------- dalla pausa, in un gesto solo
+
+/** Una riesecuzione fino alla fine, una fetta alla volta, con un massimo di giri: quante fette ci sono volute. */
+function riesegui(da: Es, p: Progetto, opzioni: OpzioniDellEsecuzione<CasoDiUnaFunzione> = {}, durata = Infinity): { readonly r: Riesecuzione<CasoDiUnaFunzione>; readonly fette: number } {
+  const r = new Riesecuzione<CasoDiUnaFunzione>(da, p, tetti, opzioni);
+  let fette = 0;
+  while (r.esito === undefined && fette < 100_000) {
+    r.fetta(senzaOrologio, durata);
+    fette++;
+  }
+  return { r, fette };
+}
+
+test("la riesecuzione senza modifiche porta allo stesso stato, e l'esecuzione di partenza non cambia", () => {
+  const p = programma();
+  const da = fermaSu(p, "b4", 3, ["5"]);
+  const prima = statoDi(da);
+  const { r } = riesegui(da, p);
+  expect(r.esito).toEqual({ ritrovato: true, righeAvanzate: 0 });
+  expect(Bun.deepEquals(statoDi(r.esecuzione!), prima, true)).toBe(true);
+  expect(Bun.deepEquals(statoDi(da), prima, true)).toBe(true);
+});
+
+test("la riesecuzione con una modifica ricalcola i valori allo stesso passaggio", () => {
+  const da = fermaSu(programma(), "b4", 3, ["5"]);
+  const { r } = riesegui(da, programma(conBlocco("b2", (b) => ({ ...b, value: "100" }))(corpo())));
+  expect(r.esito).toEqual({ ritrovato: true, righeAvanzate: 0 });
+  expect(r.esecuzione!.stato).toMatchObject({ genere: "pausa", blocco: "b4" });
+  expect(r.esecuzione!.console.map((v) => v.testo)).toEqual(["5", "101", "103"]);
+});
+
+test("il blocco del punto cancellato: si dice, e non c'è un'esecuzione da mostrare", () => {
+  const da = fermaSu(programma(), "b4", 3, ["5"]);
+  const { r } = riesegui(da, programma(conBlocco("b4", () => undefined)(corpo())));
+  expect(r.esito).toEqual({ ritrovato: false, motivo: "posto_cancellato" });
+  expect(r.esecuzione).toBeUndefined();
+});
+
+test("la funzione eseguita da sola, cancellata: è un posto cancellato, e non si comincia un'esecuzione senza radice", () => {
+  const f = { id: "f1", kind: "procedure", name: "somma", data: [], body: [{ id: "c1", kind: "write", values: ['"x"'], newline: true }], end: { id: "c9" } };
+  const con = { ...programma(), functions: [...programma().functions, f] } as unknown as Progetto;
+  const da = fermaSu2(con, "f1");
+  const { r } = riesegui(da, programma(), { funzione: "f1" });
+  expect(r.esito).toEqual({ ritrovato: false, motivo: "posto_cancellato" });
+  expect(r.esecuzione).toBeUndefined();
+});
+
+test("un programma che non parte più: si dice, con l'esecuzione che non parte", () => {
+  const da = fermaSu(programma(), "b4", 3, ["5"]);
+  const { r } = riesegui(da, programma(conBlocco("b2", (b) => ({ ...b, value: "non si legge +" }))(corpo())));
+  expect(r.esito).toEqual({ ritrovato: false, motivo: "non_parte" });
+  expect(r.esecuzione!.stato.genere).toBe("non parte");
+});
+
+test("a fette: con la durata zero chi chiama torna più volte, prima di conoscere l'esito", () => {
+  const da = fermaSu(programma(), "b4", 3, ["5"]);
+  const { r, fette } = riesegui(da, programma(), {}, 0);
+  expect(r.esito).toEqual({ ritrovato: true, righeAvanzate: 0 });
+  expect(fette).toBeGreaterThan(1);
+});
+
+test("una riesecuzione si chiede solo da una pausa", () => {
+  const p = programma();
+  expect(() => new Riesecuzione<CasoDiUnaFunzione>(new Esecuzione<CasoDiUnaFunzione>(p, tetti, {}), p, tetti, {})).toThrow();
 });

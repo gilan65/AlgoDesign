@@ -264,3 +264,12 @@
   border: 0px;
   background: transparent;
 }
+
+/* La tabella è del programma di prima della modifica: lo dice il testo, il colore è solo un richiamo. */
+.valoriDiPrima {
+  margin: 0.25rem 0;
+  padding: 0.15rem 0.5rem;
+  border-left: 4px solid var(--colore-avviso);
+  background: color-mix(in srgb, var(--colore-avviso) 15%, transparent);
+  font-size: 0.85rem;
+}

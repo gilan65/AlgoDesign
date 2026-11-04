@@ -306,6 +306,7 @@ export const TabellaDiTraccia = memo(function TabellaDiTraccia({
   versione,
   visibile,
   spiegazione,
+  valoriDiPrima,
   testi,
   lingua,
   ferme,
@@ -323,6 +324,8 @@ export const TabellaDiTraccia = memo(function TabellaDiTraccia({
   /** La riga che dice che cosa si vede dei vettori e che cosa ha il CSV (del nucleo); nessuna se ogni elemento ha la
    * sua colonna. */
   spiegazione: string | undefined;
+  /** La tabella è del programma di prima di una modifica: la riga che lo dice. */
+  valoriDiPrima?: string | undefined;
   testi: Dizionario;
   lingua: Lingua;
   /** Le colonne che restano ferme scorrendo di lato (scelta delle Impostazioni). */
@@ -663,6 +666,11 @@ export const TabellaDiTraccia = memo(function TabellaDiTraccia({
   return (
     <div className={stili.tabella} data-ridisegni={ridisegni.current}>
       <h2 className={stili.titolo}>{testi.tabellaDiTraccia}</h2>
+      {valoriDiPrima !== undefined && (
+        <p className={stili.valoriDiPrima} data-valori-di-prima="">
+          {valoriDiPrima}
+        </p>
+      )}
       {spiegazione !== undefined && (
         <p className={stili.tolte} data-spiega>
           {spiegazione}

@@ -65,6 +65,11 @@ export class InRegistrazione {
     this.aggiungi(fotografiaDi(es, errori, errori));
   }
 
+  /** Una riesecuzione che non parte: si tiene com'è, e l'aperta resta aperta, perché la sua pausa non è finita. */
+  tieniAccanto(es: Esecuzione<CasoDiUnaFunzione>, errori: Errori): void {
+    this.aggiungi(fotografiaDi(es, errori, errori));
+  }
+
   /** Quante esecuzioni avrebbe il file, adesso. */
   get numero(): number {
     return Math.min(this.tenute.length + (this.aperta === null ? 0 : 1), tettoDelleEsecuzioni);

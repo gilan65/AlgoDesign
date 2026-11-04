@@ -19,8 +19,8 @@
 // con tutto il suo contenuto (un `se` coi suoi rami, un ciclo col suo corpo) segue il puntatore. Nessuna
 // animazione: la copia si sposta col puntatore, senza transizioni.
 //
-// Durante l'esecuzione il flowchart è in sola lettura (niente «+», niente trascinamento né campi; i blocchi si
-// scelgono ancora, per i punti di interruzione). Il blocco prima del quale l'esecuzione è in pausa ha nel
+// In corso e in attesa di una riga il flowchart è in sola lettura (niente «+», niente trascinamento né campi; i blocchi si
+// scelgono ancora, per i punti di interruzione); in pausa si modifica. Il blocco prima del quale l'esecuzione è in pausa ha nel
 // disegno il bordo arancione, l'interno giallo e la punta della linea che entra grande e arancione, e nello strato
 // `aria-current="step"` (la fine, che non è una voce dello strato, ha allora un elemento suo). In pausa sulla ripresa
 // dell'azione di un blocco, dopo il ritorno da una funzione chiamata nella sua espressione, l'azione è a metà: niente
@@ -247,8 +247,8 @@ function Nomi({ nomi, interazione, blocco }: { nomi: readonly NomeNelDisegno[] |
             data-watch-funzione={n.chiamata ? n.dato : undefined}
             onPointerOver={(ev) => interazione.punta?.({ dato: n.dato, elemento: ev.currentTarget, ...chiamata })}
             onPointerOut={() => interazione.punta?.(null)}
-            // Il clic sul nome è del watch; durante l'esecuzione solo suo (il blocco non prende il fuoco né la scelta), a
-            // corsa finita il blocco li prende anche lui: il progetto si modifica di nuovo, e un blocco si sceglie per
+            // Il clic sul nome è del watch; in sola lettura solo suo (il blocco non prende il fuoco né la scelta), in pausa e a
+            // corsa finita il blocco li prende anche lui: il progetto si modifica, e un blocco si sceglie per
             // copiarlo o cancellarlo dove capita il clic.
             onMouseDown={interazione.ferma && interazione.solaLettura ? (ev) => ev.preventDefault() : undefined}
             onClick={

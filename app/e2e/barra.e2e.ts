@@ -271,9 +271,9 @@ test("il menu «Progetto» si apre col clic e dalla tastiera, Esc lo chiude e il
 
 test("una voce non disponibile si raggiunge dalla tastiera e non fa nulla, né col tasto né col clic", async ({ page }) => {
   await apri(page, { lingua: "it" });
-  // Durante l'esecuzione le proprietà non si modificano.
-  await page.keyboard.press("F10");
-  await expect(page.locator("[data-stato-esecuzione]")).toHaveText(riempi(it.statoInPausa, { n: "1" }));
+  // In attesa di una riga le proprietà non si modificano.
+  await page.keyboard.press("F5");
+  await expect(page.locator("[data-stato-esecuzione]")).toHaveText(riempi(it.statoChiede, { dato: "n" }));
   await pulsanteDelMenu(page).focus();
   await page.keyboard.press("Enter");
   await fuocoNelMenu(page);
@@ -281,7 +281,7 @@ test("una voce non disponibile si raggiunge dalla tastiera e non fa nulla, né c
   await expect(voce).toHaveAttribute("aria-disabled", "true");
   // Controllo positivo: le altre voci sono disponibili.
   await expect(menu(page).getByRole("menuitem", { name: it.salva, exact: true })).not.toHaveAttribute("aria-disabled", "true");
-  // Il progetto si chiude e si esce anche in pausa; si stampa, e la tabella e il flowchart si esportano: le ultime cinque voci
+  // Il progetto si chiude e si esce anche in attesa; si stampa, e la tabella e il flowchart si esportano: le ultime cinque voci
   // sono disponibili, quelle prima no.
   await expect(menu(page).getByRole("menuitem", { name: it.esportaTabella, exact: true })).not.toHaveAttribute("aria-disabled", "true");
   await page.keyboard.press("End");
@@ -298,7 +298,7 @@ test("una voce non disponibile si raggiunge dalla tastiera e non fa nulla, né c
   await page.keyboard.press("ArrowUp");
   await expect(evidenziata(page)).toHaveAttribute("data-comando", "esportaFlowchart");
   await expect(evidenziata(page)).not.toHaveAttribute("aria-disabled", "true");
-  // Durante l'esecuzione non si creano, non si gestiscono e non si importano procedure e funzioni, e non si aggiunge un
+  // In attesa di una riga non si creano, non si gestiscono e non si importano procedure e funzioni, e non si aggiunge un
   // record: le voci prima sono spente anche loro.
   for (const comando of ["importa", "funzioni", "nuovaFunzione", "aggiungiRecord", "proprieta"]) {
     await page.keyboard.press("ArrowUp");
