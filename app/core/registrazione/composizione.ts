@@ -11,9 +11,9 @@
 // finestra gli mostra prima di salvare.
 
 import type { Tetti } from "../controllo/controllo";
-import type { Esecuzione, RigaData, RigheLunghe, Stato, VoceDellaConsole } from "../esecuzione/esecuzione";
+import type { Esecuzione, ModificaFatta, RigaData, RigheLunghe, Stato, VoceDellaConsole } from "../esecuzione/esecuzione";
 import type { CasoDiUnaFunzione } from "../progetto/modello";
-import type { ErroreDellApp, EsecuzioneRegistrata, EsitoDelFile, EsitoRegistrato, FaseDelFile, LimitiDelFile, Registrazione, RigaDellaConsole, RigaLetta, RigheLungheDelFile, Sistema } from "./formato";
+import type { ErroreDellApp, EsecuzioneRegistrata, EsitoDelFile, EsitoRegistrato, FaseDelFile, LimitiDelFile, ModificaDelFile, Registrazione, RigaDellaConsole, RigaLetta, RigheLungheDelFile, Sistema } from "./formato";
 import { formatoDellaRegistrazione } from "./formato";
 import type { Lingua } from "../../i18n/lingue";
 
@@ -24,6 +24,8 @@ const righeLungheDelFile = (r: RigheLunghe): RigheLungheDelFile => ({ characters
 const fasiDelFile = { inizio: "start", condizione: "condition", passo: "step", elemento: "item" } as const satisfies Record<string, FaseDelFile>;
 
 const rigaLetta = (v: RigaData): RigaLetta => ({ data: v.data, ...(v.text !== undefined ? { text: v.text } : {}), ...(v.each === true ? { each: true as const } : {}), ...(v.rifiutata ? { rejected: true as const } : {}) });
+
+const modificaDelFile = (m: ModificaFatta): ModificaDelFile => ({ advances: m.avanzamenti, ...(m.funzione !== undefined ? { function: m.funzione } : {}), data: m.dato, element: m.elemento, text: m.testo });
 
 function rigaDellaConsole(v: VoceDellaConsole): RigaDellaConsole {
   const taglio = "tagliata" in v && v.tagliata === true ? { cut: true as const } : {};
@@ -98,6 +100,7 @@ export function fotografa(es: Esecuzione<CasoDiUnaFunzione>): Fotografia {
       project: es.progetto,
       ...(es.funzione !== undefined ? { function: es.funzione } : {}),
       ...(es.caso !== undefined ? { test_case: es.caso } : { reads: righeLette(es) }),
+      ...(es.modifiche.length > 0 ? { changes: es.modifiche.map(modificaDelFile) } : {}),
       ...esitoRegistrato(es),
     },
   };

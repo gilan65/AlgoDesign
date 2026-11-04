@@ -39,6 +39,11 @@
 // scrive il programma; le celle con il separatore, le virgolette o un a capo fra virgolette (RFC 4180); un a capo
 // scritto dal programma col segno del disegno. UTF-8 col BOM (senza, Excel non legge le lettere accentate), righe
 // chiuse da CR LF.
+//
+// Un valore scritto a mano sta nella riga corrente, cioè l'ultima chiusa (la riga 0 prima della prima azione finita): la riga prende la fotografia nuova, e la riga
+// dopo non segna un cambio falso; le righe prima restano come sono. Il segno (`modificata`) va alla cella che mostra quel valore, riconosciuto per identità: così un
+// parametro per riferimento e il dato di chi chiama si segnano insieme, in ogni forma, e solo su quella riga. Il CSV ha allora in fondo la colonna dei valori
+// modificati, una voce per valore con quello di prima e quello nuovo: le celle restano numeri che un foglio di calcolo somma.
 
 import {
   campiDellaCopia,
@@ -57,9 +62,15 @@ import {
   type ValoreRipetuto,
 } from "../disegno/impaginazione";
 import { funzioniDelGiro } from "../controllo/controllo";
-import { funzioniChiamabili, testoDelValore, type FaseDelCiclo, type Fotografia, type FotografiaDiUnaChiamata, type Origine, type Restituito, type Valore } from "../interprete/interprete";
+import { funzioniChiamabili, testoDelValore, type BersaglioDiUnValore, type FaseDelCiclo, type Fotografia, type FotografiaDiUnaChiamata, type Origine, type Restituito, type Valore } from "../interprete/interprete";
 import { livelliDellePosizioni, nomiDeiVettori, nomiDelleMatrici, quantePosizioni } from "../progetto/copia";
 import { opzioniPredefinite, type Blocco, type Dato, type Funzione, type Progetto, type Tipo } from "../progetto/modello";
+
+/** Un valore scritto a mano in una riga: dov'è, quello che c'era e quello nuovo. */
+export interface ModificaDellaRiga extends BersaglioDiUnValore {
+  readonly prima: Valore | undefined;
+  readonly valore: Valore;
+}
 
 export interface Riga {
   /** L'azione: per una ripresa, quella che riprende. */
@@ -99,6 +110,8 @@ export interface Riga {
   readonly letto?: string;
   /** Solo in una ripresa: il valore che la funzione chiamata ha appena restituito. */
   readonly restituito?: Restituito;
+  /** I valori scritti a mano mentre questa era la riga corrente, nell'ordine. */
+  readonly modifiche?: readonly ModificaDellaRiga[];
 }
 
 /** Ciò che una riga ha dall'evento che la apre: una ripresa lo copia dall'azione che riprende. */
@@ -152,6 +165,7 @@ export const righeTenute = 1000;
 
 export class Traccia {
   #iniziali: Fotografia | undefined;
+  #modificheIniziali: readonly ModificaDellaRiga[] = [];
   #ultimi: Fotografia | undefined;
   #tenute: Riga[] = [];
   /** Le righe chiuse, e le azioni cominciate: una ripresa è una riga ma non un'azione. */
@@ -166,6 +180,22 @@ export class Traccia {
   /** I valori prima della prima azione (la riga 0, «Inizio»). */
   get valoriIniziali(): Fotografia | undefined {
     return this.#iniziali;
+  }
+
+  /** I valori scritti a mano sulla riga 0. */
+  get modificheIniziali(): readonly ModificaDellaRiga[] {
+    return this.#modificheIniziali;
+  }
+
+  /** Un valore scritto a mano: la riga corrente prende la fotografia nuova, e la riga dopo si confronta con questa. */
+  modifica(dati: Fotografia, m: ModificaDellaRiga): void {
+    this.#ultimi = dati;
+    const n = this.#tenute.length - 1;
+    const r = this.#tenute[n];
+    if (r === undefined) {
+      this.#iniziali = dati;
+      this.#modificheIniziali = [...this.#modificheIniziali, m];
+    } else this.#tenute[n] = { ...r, dati, modifiche: [...(r.modifiche ?? []), m] };
   }
 
   /** Le righe delle azioni già fatte, le ultime `massimo`. */
@@ -327,6 +357,8 @@ export interface TestiDellaTraccia extends TestiDelDisegno {
     readonly csvUguale: string;
     readonly csvPerElemento: string;
   };
+  /** L'intestazione della colonna del CSV coi valori scritti a mano. */
+  readonly valoriModificati: string;
 }
 
 // ------------------------------------------------------------------- la tabella come si mostra
@@ -390,6 +422,8 @@ export interface CellaDiUnValore {
   readonly testo: string;
   readonly nonInizializzata: boolean;
   readonly cambiata: boolean;
+  /** Mostra un valore scritto a mano su questa riga. */
+  readonly modificata?: true;
   /** Nella colonna di un vettore in fila: il testo a pezzi (uniti, sono `testo`), coi pezzi degli elementi cambiati
    * segnati. */
   readonly pezzi?: readonly { readonly testo: string; readonly cambiato: boolean }[];
@@ -441,6 +475,8 @@ export interface RigaMostrata {
   readonly attive: readonly boolean[];
   readonly condizione: string;
   readonly scrive: string;
+  /** I valori scritti a mano su questa riga, come li dice il CSV: vuoto se nessuno. */
+  readonly modificati: string;
 }
 
 /** Le colonne della radice (i suoi dati, poi le posizioni dei suoi `per ogni`) o di una funzione che si può chiamare (il suo
@@ -471,6 +507,8 @@ interface DatoMostrato {
  * per prime. Le righe delle azioni si calcolano una volta: ogni comando ne aggiunge alcune, e quelle già viste
  * restano le stesse.
  */
+const nessunSegno: ReadonlySet<Valore> = new Set();
+
 export class TabellaMostrata {
   readonly colonne: readonly ColonnaDiUnValore[];
   /** La radice, poi una funzione che si può chiamare dopo l'altra: tutte le colonne, ognuna in un gruppo. */
@@ -495,6 +533,8 @@ export class TabellaMostrata {
   /** La radice è una funzione eseguita da sola che richiama sé stessa: le sue chiamate oltre la prima sono fra quelle
    * della fotografia, e il suo gruppo mostra la più profonda, come quello di una funzione chiamata. */
   readonly #radiceDelGiro: boolean;
+  /** I valori scritti a mano sulla riga che si sta componendo: ogni cella che ne mostra uno ha il segno. */
+  #segnati: ReadonlySet<Valore> = nessunSegno;
 
   /** `ripetuto`: come la regola del valore iniziale di un vettore mostra il valore ripetuto, come il suo blocco; `cicli`:
    * le forme dei cicli nel disegno, che danno la regola di un evento di un ciclo e le colonne della posizione (modi
@@ -710,6 +750,11 @@ export class TabellaMostrata {
    * funzione, per una funzione che non è attiva o prima della prima azione. */
   watch(t: Traccia, dato: string, funzione?: string, livello?: number): DatoNelWatch | undefined {
     const ultima = t.righe.at(-1);
+    return this.#conISegni(ultima === undefined ? t.modificheIniziali : ultima.modifiche, () => this.#watch(t, dato, funzione, livello));
+  }
+
+  #watch(t: Traccia, dato: string, funzione?: string, livello?: number): DatoNelWatch | undefined {
+    const ultima = t.righe.at(-1);
     const f = ultima?.dati ?? t.valoriIniziali;
     if (f === undefined) return undefined;
     if ((funzione === undefined || funzione === this.radice) && this.#radiceDelGiro) return this.#watchDellaRadice(f, ultima, dato, livello);
@@ -807,7 +852,39 @@ export class TabellaMostrata {
   }
 
   #cella(v: Valore | undefined, cambiata: boolean): CellaDiUnValore {
-    return { testo: this.#valore(v), nonInizializzata: v === undefined, cambiata };
+    return { testo: this.#valore(v), nonInizializzata: v === undefined, cambiata, ...(this.#segnato(v) ? { modificata: true as const } : {}) };
+  }
+
+  #segnato(v: Valore | undefined): boolean {
+    return v !== undefined && this.#segnati.has(v);
+  }
+
+  /** Compone una riga coi segni dei valori scritti a mano su di lei. */
+  #conISegni<T>(modifiche: readonly ModificaDellaRiga[] | undefined, componi: () => T): T {
+    this.#segnati = modifiche === undefined || modifiche.length === 0 ? nessunSegno : new Set(modifiche.map((m) => m.valore));
+    try {
+      return componi();
+    } finally {
+      this.#segnati = nessunSegno;
+    }
+  }
+
+  /** I valori scritti a mano come li dice il CSV: una voce per valore, dal primo all'ultimo se è stato scritto più volte (fra le due il programma non ha fatto nulla). */
+  #vociDelleModifiche(modifiche: readonly ModificaDellaRiga[] | undefined): string {
+    const voci = new Map<string, { readonly m: ModificaDellaRiga; readonly prima: Valore | undefined }>();
+    for (const m of modifiche ?? []) {
+      const chiave = JSON.stringify([m.funzione ?? null, m.dato, m.elemento]);
+      voci.set(chiave, { m, prima: voci.has(chiave) ? voci.get(chiave)!.prima : m.prima });
+    }
+    return [...voci.values()].map(({ m, prima }) => `${this.#nomeDiUnaModifica(m)}: ${this.#valore(prima)} → ${this.#valore(m.valore)}`).join(fraGliElementi);
+  }
+
+  /** Il nome di un valore scritto a mano, col nome della funzione davanti se non è della radice. */
+  #nomeDiUnaModifica(m: ModificaDellaRiga): string {
+    const k = m.funzione === undefined || m.funzione === this.radice ? -1 : this.#idDelleChiamate.indexOf(m.funzione);
+    const dato = (k < 0 ? this.#dati : this.#chiamate[k]!).find((d) => d.nome === m.dato)!;
+    const nome = nomeDelValore(dato, m.elemento);
+    return k < 0 ? nome : `${this.gruppi.find((g) => g.funzione === m.funzione)!.nome!} › ${nome}`;
   }
 
   /** Le celle di una riga, nella forma della tabella, poi quelle della posizione, poi i gruppi delle funzioni che si
@@ -1015,8 +1092,16 @@ export class TabellaMostrata {
   /** La colonna degli altri: gli elementi da `da` cambiati con l'azione, col nome (`nomeDi`) e il nuovo valore. */
   #altri(elementi: readonly (Valore | undefined)[], cambiati: readonly boolean[] | undefined, da: number, nomeDi: (i: number) => string): CellaDiUnValore {
     const voci: string[] = [];
-    if (cambiati) for (let i = da; i < elementi.length; i++) if (cambiati[i]) voci.push(`${nomeDi(i)} ${this.#valore(elementi[i])}`);
-    return { testo: voci.join(fraGliElementi), nonInizializzata: false, cambiata: voci.length > 0 };
+    let cambiata = false;
+    let modificata = false;
+    for (let i = da; i < elementi.length; i++) {
+      const cambiato = cambiati?.[i] === true;
+      const segnato = this.#segnato(elementi[i]);
+      if (cambiato || segnato) voci.push(`${nomeDi(i)} ${this.#valore(elementi[i])}`);
+      cambiata ||= cambiato;
+      modificata ||= segnato;
+    }
+    return { testo: voci.join(fraGliElementi), nonInizializzata: false, cambiata, ...(modificata ? { modificata: true as const } : {}) };
   }
 
   /** Il vettore in fila (con `colonne`, la matrice, le righe separate): gli elementi fermi fra due cambiati stanno in un
@@ -1039,6 +1124,7 @@ export class TabellaMostrata {
       testo: pezzi.map((p) => p.testo).join(""),
       nonInizializzata: elementi.every((v) => v === undefined),
       cambiata: pezzi.some((p) => p.cambiato),
+      ...(elementi.some((v) => this.#segnato(v)) ? { modificata: true as const } : {}),
       pezzi,
     };
   }
@@ -1046,7 +1132,9 @@ export class TabellaMostrata {
   /** La riga 0, «Inizio», coi valori prima della prima azione; nessuna prima della prima azione. */
   iniziale(t: Traccia): RigaMostrata | undefined {
     const f = t.valoriIniziali;
-    return f === undefined ? undefined : { numero: 0, chiave: 0, ripresa: false, livello: 0, regola: this.#testi.inizio, valori: this.#celle({ dati: f }), attive: this.#attive(f), condizione: "", scrive: "" };
+    if (f === undefined) return undefined;
+    const modifiche = t.modificheIniziali;
+    return { numero: 0, chiave: 0, ripresa: false, livello: 0, regola: this.#testi.inizio, valori: this.#conISegni(modifiche, () => this.#celle({ dati: f })), attive: this.#attive(f), condizione: "", scrive: "", modificati: this.#vociDelleModifiche(modifiche) };
   }
 
   riga(r: Riga): RigaMostrata {
@@ -1059,10 +1147,11 @@ export class TabellaMostrata {
         ripresa: r.ripresa === true,
         livello: r.livello,
         regola: this.#regola(r),
-        valori: this.#celle(r),
+        valori: this.#conISegni(r.modifiche, () => this.#celle(r)),
         attive: this.#attive(r.dati),
         condizione: r.condizione === undefined ? "" : r.condizione ? testi.vero : testi.falso,
         scrive: r.letto !== undefined ? testi.letto + r.letto : (r.scrive ?? "").replaceAll("\n", testi.aCapo),
+        modificati: this.#vociDelleModifiche(r.modifiche),
       };
       this.#fatte.set(r, m);
     }
@@ -1123,7 +1212,7 @@ const numeroNegativo = /^-\d+(?:[.,]\d+)?$/;
  * di calcolo leggerebbe come una formula (comincia con `=`, `+`, `-`, `@`, una tabulazione o un ritorno a capo, e
  * non è un numero) comincia con un apostrofo, che la fa leggere come testo; come le virgolette, è la forma del file, non
  * il contenuto della cella. Excel e LibreOffice Calc aprono la cella come testo e mostrano l'apostrofo davanti (lo dice
- * il README); senza l'apostrofo la calcolerebbero come formula.
+ * il README); senza l'apostrofo la calcolerebbero come formula. Con valori scritti a mano, in fondo la colonna che li dice.
  */
 export function csv(t: Traccia, tabella: TabellaMostrata, forma: FormaDelCsv, campo: string, ordine?: readonly number[]): string {
   const fonte = forma === "uguale" ? tabella : tabella.conForma("per-elemento", "per-elemento", "per-elemento");
@@ -1135,7 +1224,9 @@ export function csv(t: Traccia, tabella: TabellaMostrata, forma: FormaDelCsv, ca
   };
   const livello = (x: string) => (fonte.conChiamate ? [x] : []);
   const nome = (c: ColonnaDiUnValore) => (c.funzione === undefined ? c.nome : `${c.funzione} › ${c.nome}`);
-  const intestazione = [testi.numero, ...livello(testi.livello), testi.regola, ...disposte([...fonte.colonne.map((c) => `${nome(c)} (${c.tipo})`), testi.condizione, testi.scrive])];
-  const righe = [intestazione, ...fonte.righe(t).map((r) => [String(r.numero), ...livello(String(r.livello)), r.regola, ...disposte([...r.valori.map((v) => v.testo), r.condizione, r.scrive])])];
+  const mostrate = fonte.righe(t);
+  const modificati = (x: string) => (mostrate.some((r) => r.modificati !== "") ? [x] : []);
+  const intestazione = [testi.numero, ...livello(testi.livello), testi.regola, ...disposte([...fonte.colonne.map((c) => `${nome(c)} (${c.tipo})`), testi.condizione, testi.scrive]), ...modificati(testi.valoriModificati)];
+  const righe = [intestazione, ...mostrate.map((r) => [String(r.numero), ...livello(String(r.livello)), r.regola, ...disposte([...r.valori.map((v) => v.testo), r.condizione, r.scrive]), ...modificati(r.modificati)])];
   return `\u{feff}${righe.map((r) => r.map(cella).join(campo)).join("\r\n")}\r\n`;
 }

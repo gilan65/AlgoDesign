@@ -18,7 +18,8 @@ import { join } from "node:path";
 import { apri, leggi } from "../progetto/formato";
 import { tetti } from "../controllo/controllo";
 import { codiciErrore, type Progetto } from "../progetto/modello";
-import { esegui, stampaReale, testoDelValore, type Passo, type Restituito } from "./interprete";
+import { controlla } from "../controllo/controllo";
+import { esegui, eseguiDopoIlControllo, stampaReale, testoDelValore, type BersaglioDiUnValore, type Passo, type PortaDeiValori, type Restituito } from "./interprete";
 
 // Censimento dei 20 codici d'errore dell'interprete, con dove si provano: «qui» (dal corpus o da una
 // prova registrata col codice), gli altri dichiarati col loro posto. Quelli
@@ -861,6 +862,84 @@ const fotografieAttese: { nome: string; ottieni: (es: Esegui) => string[]; attes
 /** Le fotografie attese che un interprete non dà. */
 const fotografieSbagliate = (es: Esegui): string[] => fotografieAttese.flatMap((a) => (JSON.stringify(a.ottieni(es)) === JSON.stringify(a.atteso) ? [] : [a.nome]));
 
+// Un valore scritto a mano, a generatore fermo: fino all'evento del blocco, poi la scrittura, poi fino alla fine. L'atteso è il motivo o ciò che il programma scrive dopo.
+type Scrive = typeof eseguiDopoIlControllo;
+
+const intero1 = (name: string, resto: Record<string, unknown> = {}) => ({ name, type: "integer", ...resto });
+const prog = (dati: readonly unknown[], corpo: readonly unknown[], funzioni: readonly unknown[] = []): Progetto =>
+  ({ format: "algodesign", schema_version: 2, metadata: { name: "Prova" }, functions: [{ id: "f0", kind: "main", data: dati, body: corpo, end: { id: "b99" } }, ...funzioni] }) as unknown as Progetto;
+const scrivi1 = (id: string, ...values: string[]) => ({ id, kind: "write", values, newline: true });
+const assegna1 = (id: string, target: string, value: string) => ({ id, kind: "assignment", target, value });
+
+function conUnaScrittura(s: Scrive, p: Progetto, blocco: string, passaggio: number, b: BersaglioDiUnValore, testo: string): { motivo?: string; prima?: unknown; output: string } {
+  const porta: PortaDeiValori = {};
+  const g = s(p, controlla(p, tetti), undefined, porta);
+  let output = "";
+  let visti = 0;
+  let motivo: string | undefined;
+  let prima: unknown;
+  let scritta = false;
+  for (let r = g.next(); !r.done; r = g.next()) {
+    const x: Passo = r.value;
+    if ("scrive" in x) output += x.scrive;
+    if (!scritta && "evento" in x && x.evento === blocco && ++visti === passaggio) {
+      scritta = true;
+      const esito = porta.scrivi!(b, testo);
+      if (esito.ok) prima = esito.prima;
+      else motivo = esito.motivo;
+    }
+  }
+  return { ...(motivo !== undefined ? { motivo } : {}), ...(prima !== undefined ? { prima } : {}), output };
+}
+
+const scrittureAttese: readonly { readonly nome: string; readonly ottieni: (s: Scrive) => unknown; readonly atteso: unknown }[] = (() => {
+  const semplice = prog([intero1("a"), intero1("k", { constant: true, initial: "3" }), { name: "v", type: "integer", size: 2, initial: { each: "0" } }, { name: "t", type: "string", max_length: 3 }], [assegna1("b1", "a", "7"), scrivi1("b2", "a", "v[1]")]);
+  const riferimento = prog([intero1("a")], [assegna1("b1", "a", "7"), { id: "b2", kind: "call", callee: "p", arguments: ["a"] }, scrivi1("b3", "a")], [
+    { id: "f1", kind: "procedure", name: "p", data: [intero1("x", { parameter: "reference" })], body: [scrivi1("b4", "x")], end: { id: "b5" } },
+  ]);
+  const ricorsione = prog([], [{ id: "b1", kind: "call", callee: "r", arguments: ["1"] }], [
+    {
+      id: "f1",
+      kind: "procedure",
+      name: "r",
+      data: [intero1("n", { parameter: "value" })],
+      body: [{ id: "b2", kind: "if", condition: "n > 0", then: [{ id: "b3", kind: "call", callee: "r", arguments: ["n - 1"] }], else: [] }, scrivi1("b4", "n")],
+      end: { id: "b5" },
+    },
+  ]);
+  const fermo = { blocco: "b2", passaggio: 1 };
+  const voci: readonly (readonly [string, Progetto, string, number, BersaglioDiUnValore, string, unknown])[] = [
+    ["un dato: vale da lì in poi", semplice, fermo.blocco, fermo.passaggio, { dato: "a", elemento: 0 }, "5", { prima: { tipo: "integer", v: 7 }, output: "50\n" }],
+    ["un elemento: solo quello", semplice, fermo.blocco, fermo.passaggio, { dato: "v", elemento: 1 }, "8", { prima: { tipo: "integer", v: 0 }, output: "78\n" }],
+    ["un valore non valido", semplice, fermo.blocco, fermo.passaggio, { dato: "a", elemento: 0 }, "abc", { motivo: "non_valido", output: "70\n" }],
+    ["una stringa troppo lunga non ferma", semplice, fermo.blocco, fermo.passaggio, { dato: "t", elemento: 0 }, "abcd", { motivo: "troppo_lungo", output: "70\n" }],
+    ["una costante", semplice, fermo.blocco, fermo.passaggio, { dato: "k", elemento: 0 }, "4", { motivo: "costante", output: "70\n" }],
+    ["una posizione che non c'è", semplice, fermo.blocco, fermo.passaggio, { dato: "v", elemento: 2 }, "1", { motivo: "elemento_sconosciuto", output: "70\n" }],
+    ["un dato che non c'è", semplice, fermo.blocco, fermo.passaggio, { dato: "z", elemento: 0 }, "1", { motivo: "dato_sconosciuto", output: "70\n" }],
+    ["una funzione non attiva", riferimento, "b2", 1, { funzione: "f1", dato: "x", elemento: 0 }, "1", { motivo: "funzione_non_attiva", output: "7\n7\n" }],
+    ["un riferimento: la cella di chi chiama", riferimento, "b4", 1, { funzione: "f1", dato: "x", elemento: 0 }, "5", { prima: { tipo: "integer", v: 7 }, output: "5\n5\n" }],
+    ["la chiamata più profonda", ricorsione, "b4", 1, { funzione: "f1", dato: "n", elemento: 0 }, "9", { prima: { tipo: "integer", v: 0 }, output: "9\n1\n" }],
+  ];
+  return voci.map(([nome, p, blocco, passaggio, b, testo, atteso]) => ({ nome, ottieni: (s: Scrive) => conUnaScrittura(s, p, blocco, passaggio, b, testo), atteso }));
+})();
+
+/** Le scritture a mano che un interprete non fa come atteso: anche una che esce con un'eccezione. */
+const scrittureSbagliate = (s: Scrive): string[] =>
+  scrittureAttese.flatMap((a) => {
+    try {
+      return JSON.stringify(a.ottieni(s)) === JSON.stringify(a.atteso) ? [] : [a.nome];
+    } catch {
+      return [a.nome];
+    }
+  });
+
+describe("un valore scritto a mano, a generatore fermo", () => {
+  for (const a of scrittureAttese)
+    test(a.nome, () => {
+      expect(a.ottieni(eseguiDopoIlControllo)).toEqual(a.atteso as never);
+    });
+});
+
 /** Le sequenze attese che un interprete non dà. */
 const sequenzeSbagliate = (es: Esegui): string[] => sequenzeAttese.flatMap((s) => (JSON.stringify(passiDi(es, s.progetto, s.radice, s.righe)) === JSON.stringify(s.atteso) ? [] : [s.nome]));
 
@@ -1074,6 +1153,12 @@ const mutazioni: Record<string, [string, string]> = {
     '          yield evento(b.id, "passo");\n          scriviIn(contatore, 0, intero((leggiDa(contatore, 0) as Numero).v + passo));',
     '          scriviIn(contatore, 0, intero((leggiDa(contatore, 0) as Numero).v + passo));\n          yield evento(b.id, "passo");',
   ],
+  // L'ingresso per scrivere un valore a mano.
+  "scrittura a mano nella prima chiamata e non nella più profonda": ["const chiamata = pila.findLast((c) => c.funzione.id === nome);", "const chiamata = pila.find((c) => c.funzione.id === nome);"],
+  "scrittura a mano che non scrive": ["      scriviIn(c, elemento, valore);\n      return { ok: true, dati: fotografia(), prima, valore };", "      return { ok: true, dati: fotografia(), prima, valore };"],
+  "scrittura a mano su una costante": ['      if (chiamata.funzione.data[k]!.constant === true) return { ok: false, motivo: "costante" };\n', ""],
+  "scrittura a mano troppo lunga che ferma il programma": ["const valore = convertiRiga(testo, pezzo);", "const valore = convertiRiga(testo, { ...pezzo, max_length: 1_000_000 });"],
+  "scrittura a mano fuori dalla cella": ['if (!Number.isInteger(elemento) || elemento < 0 || elemento >= c.valori.length) return { ok: false, motivo: "elemento_sconosciuto" };', ""],
 };
 
 if (process.env[variabileDelleMutazioni] === "1") describe("mutazioni: le primitive di JavaScript e le regole sbagliate fanno rosso il corpus o le sequenze", () => {
@@ -1089,8 +1174,8 @@ if (process.env[variabileDelleMutazioni] === "1") describe("mutazioni: le primit
           const file = join(cartellaTemporanea, "mutante.ts");
           const mutato = da === "" ? sorgente : sorgente.replace(da, a);
           writeFileSync(file, mutato.replaceAll('from "../', `from "${nucleo}/`).replaceAll('from "./', `from "${nucleo}/interprete/`));
-          const mutante: { esegui: Esegui } = await import(file);
-          const rossi = [...corpus(mutante.esegui).sbagliati.map((s) => s.caso), ...potenzeSbagliate(mutante.esegui), ...sequenzeSbagliate(mutante.esegui), ...fotografieSbagliate(mutante.esegui)];
+          const mutante: { esegui: Esegui; eseguiDopoIlControllo: Scrive } = await import(file);
+          const rossi = [...corpus(mutante.esegui).sbagliati.map((s) => s.caso), ...potenzeSbagliate(mutante.esegui), ...sequenzeSbagliate(mutante.esegui), ...fotografieSbagliate(mutante.esegui), ...scrittureSbagliate(mutante.eseguiDopoIlControllo)];
           console.log(`mutazione ${nome}: rossi ${rossi.length} [${rossi.join(", ")}]`);
           if (da === "") expect(rossi).toEqual([]);
           else expect(rossi.length).toBeGreaterThan(0);

@@ -930,6 +930,8 @@ test("ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, c
     EliminaFunzione: ["funzioni.e2e.ts", "eliminaFunzioneTitoloF"],
     // Il testo per una segnalazione: vuole un'esecuzione ferma. Lì il fuoco e Esc si provano.
     FinestraSegnala: ["segnala.e2e.ts", "segnalaTitolo"],
+    // Che cosa fare dei valori modificati: vuole una pausa con un valore modificato e il programma cambiato. Lì il fuoco e Esc si provano.
+    ValoriModificati: ["valori-modificati.e2e.ts", "valoriTitolo"],
   };
   const ui = fileURLToPath(new URL("../ui/", import.meta.url));
   const componenti = (readdirSync(ui, { recursive: true }) as string[])

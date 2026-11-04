@@ -117,6 +117,7 @@ import { perSegnalare, type PerSegnalare } from "./segnalazione";
 import { Barretta } from "./esecuzione/Barretta";
 import { Console } from "./esecuzione/Console";
 import { DoveSei } from "./esecuzione/DoveSei";
+import { esponiLaModificaDiProva } from "./esecuzione/modifica-di-prova";
 import { paroleDelMotivo } from "./esecuzione/riesecuzione";
 import { colonneMostrate, disposizioneIniziale } from "./esecuzione/colonne";
 import { sfondoDelLivello, TabellaDiTraccia, testiDellaTraccia } from "./esecuzione/TabellaDiTraccia";
@@ -170,6 +171,7 @@ import { FinestraFunzioni } from "./funzioni/FinestraFunzioni";
 import { frasiDeiGiri } from "./funzioni/giri";
 import { Schede } from "./funzioni/Schede";
 import { ConfermaModifiche } from "./finestre/ConfermaModifiche";
+import { ValoriModificati } from "./finestre/ValoriModificati";
 import { ConfermaSostituzione } from "./finestre/ConfermaSostituzione";
 import { ConfermaTogli, type DaTogliere } from "./finestre/ConfermaTogli";
 import { FinestraErrori, type VoceDiErrore } from "./finestre/FinestraErrori";
@@ -309,6 +311,8 @@ type Aperta =
   | { readonly genere: "esempi" }
   | { readonly genere: "togli"; readonly cosa: DaTogliere }
   | { readonly genere: "modifiche"; readonly poi: () => void; readonly perRieseguire?: boolean }
+  /** Che cosa fare dei valori modificati a mano, prima di rieseguire il progetto `p`. */
+  | { readonly genere: "valori modificati"; readonly p: Progetto }
   | { readonly genere: "sostituire"; readonly percorso: string; readonly risposta: (sostituisci: boolean) => void }
   /** L'avviso del nome del file, prima della finestra del sistema per salvare. */
   | { readonly genere: "nome"; readonly chiesto: NomeDaChiedere; readonly risposta: (nome: string | null) => void }
@@ -680,7 +684,7 @@ export function Applicazione({
   const dallUltima: { readonly motivo: string } | { readonly caso: Extract<DallEsecuzione, { ok: true }>; readonly radice: string | undefined } | undefined = !scelte.offriCasoDallEsecuzione
     ? undefined
     : !composto.ok
-      ? { motivo: composto.motivo === "output perso" ? testi.casoDallEsecuzioneOutputPerso : testi.casoDallEsecuzioneNonFinita }
+      ? { motivo: composto.motivo === "output perso" ? testi.casoDallEsecuzioneOutputPerso : composto.motivo === "valori modificati" ? testi.casoDallEsecuzioneValoriModificati : testi.casoDallEsecuzioneNonFinita }
       : !stessoProgrammaDellEsecuzione
         ? { motivo: testi.casoDallEsecuzioneCambiato }
         : { caso: composto, radice: esecuzione!.funzione };
@@ -1785,11 +1789,16 @@ export function Applicazione({
     setAvviso(null);
     ridisegna();
   }
-  /** «Riesegui»: col programma cambiato, un'esecuzione nuova fino allo stesso passaggio, senza ribattere le letture; prima, se serve, la domanda di salvare. */
+  /** «Riesegui»: col programma cambiato, un'esecuzione nuova fino allo stesso passaggio, senza ribattere le letture; prima, se serve, la domanda di salvare, poi, con
+   * valori modificati a mano, che cosa farne. */
   function riesegui(c: Cronologia | null = confermaIApertiCampi()): void {
-    if (c) seNonSiPerdeNulla(() => rieseguiIl(c.presente), c.presente, true);
+    if (c) seNonSiPerdeNulla(() => chiediDeiValori(c.presente), c.presente, true);
   }
-  function rieseguiIl(p: Progetto): void {
+  function chiediDeiValori(p: Progetto): void {
+    if (esecuzione?.stato.genere === "pausa" && esecuzione.modifiche.length > 0) setFinestra({ genere: "valori modificati", p });
+    else rieseguiIl(p, "togli");
+  }
+  function rieseguiIl(p: Progetto, valori: "tieni" | "togli"): void {
     const es = esecuzione;
     if (es?.stato.genere !== "pausa") return;
     const { funzione, caso: casoDiAllora } = es;
@@ -1798,7 +1807,7 @@ export function Applicazione({
     setElencoSu(null);
     setSpostando(null);
     setAvviso(null);
-    setRiparte(new Riesecuzione<CasoDiUnaFunzione>(es, p, limiti, { righeLunghe: righeLungheDi(scelte), controllo: controlla(p, limiti), ...(funzione !== undefined ? { funzione } : {}), ...(caso ? { caso } : {}) }));
+    setRiparte(new Riesecuzione<CasoDiUnaFunzione>(es, p, limiti, { righeLunghe: righeLungheDi(scelte), controllo: controlla(p, limiti), ...(funzione !== undefined ? { funzione } : {}), ...(caso ? { caso } : {}) }, valori));
   }
   /** L'esito di una riesecuzione. Il blocco cancellato e il progetto con errori non portano a nulla da mostrare: la pausa di prima resta, e si può correggere e riprovare. */
   function concludiLaRiesecuzione(r: Riesecuzione<CasoDiUnaFunzione>, esito: EsitoDellaRipartenza): void {
@@ -2304,6 +2313,15 @@ export function Applicazione({
     });
     return () => cancelAnimationFrame(fotogramma);
   }, [esecuzione, giro]);
+
+  // Scrivere un valore a mano dalle prove, finché la finestra non ha il suo gesto.
+  useEffect(() => {
+    esponiLaModificaDiProva((b, testo) => {
+      const esito = esecuzione?.modifica(b, testo);
+      ridisegna();
+      return esito;
+    });
+  }, [esecuzione]);
 
   // Una riesecuzione avanza a fette, come un comando in corso: «Ferma» e la chiusura rispondono anche con un programma lungo o diventato senza fine.
   useEffect(() => {
@@ -4246,6 +4264,25 @@ export function Applicazione({
           else nellaCartella(() => togliGruppo(cosa.gruppo.nome, cartellaScelta));
         }}
         rinuncia={() => setFinestra({ genere: "esempi" })}
+      />
+      <ValoriModificati
+        aperta={finestra?.genere === "valori modificati"}
+        testi={testi}
+        tieni={() => {
+          const p = finestra?.genere === "valori modificati" ? finestra.p : null;
+          setFinestra(null);
+          if (p) rieseguiIl(p, "tieni");
+        }}
+        ricalcola={() => {
+          const p = finestra?.genere === "valori modificati" ? finestra.p : null;
+          setFinestra(null);
+          if (p) rieseguiIl(p, "togli");
+        }}
+        reinserisci={() => {
+          setFinestra(null);
+          avvia("continua");
+        }}
+        rinuncia={() => setFinestra(null)}
       />
       <ConfermaModifiche
         aperta={finestra?.genere === "modifiche"}

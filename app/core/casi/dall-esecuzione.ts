@@ -8,7 +8,8 @@
 // - un'esecuzione non finita (prima della prima azione, in pausa, in corso, in attesa di una riga): «Ferma» la toglie;
 // - l'esecuzione di un caso d'uso, che il caso ce l'ha già;
 // - una console che ha perso righe, o ne ha tenuta una dalla fine: senza caso l'output si tiene solo lì, e il caso non
-//   sarebbe quello dell'esecuzione.
+//   sarebbe quello dell'esecuzione;
+// - un'esecuzione con valori modificati a mano: rieseguendo il caso nessuno riotterrebbe il suo atteso.
 // Un'esecuzione che parte non ha errori statici: l'atteso non ne ha mai uno.
 //
 // Che cosa NON guarda: se il programma è cambiato dopo la fine (lo dice `stessoProgramma`, a chi tiene il progetto di
@@ -18,7 +19,7 @@ import type { Esecuzione } from "../esecuzione/esecuzione";
 import type { Atteso, CasoDiUnaFunzione, Progetto, VoceDiUnaFunzione } from "../progetto/modello";
 import { comeTesto } from "./esito";
 
-export type SenzaCaso = "non finita" | "caso" | "output perso";
+export type SenzaCaso = "non finita" | "caso" | "output perso" | "valori modificati";
 
 /** Le voci e l'atteso del caso che riproduce `es`, o perché non si compone. */
 export type DallEsecuzione = { readonly ok: true; readonly inputs: readonly VoceDiUnaFunzione[]; readonly expected: Atteso } | { readonly ok: false; readonly motivo: SenzaCaso };
@@ -27,6 +28,7 @@ export function casoDallEsecuzione(es: Esecuzione<CasoDiUnaFunzione>): DallEsecu
   const s = es.stato;
   if (s.genere !== "finita") return { ok: false, motivo: "non finita" };
   if (es.caso !== undefined) return { ok: false, motivo: "caso" };
+  if (es.modifiche.length > 0) return { ok: false, motivo: "valori modificati" };
   const righe = es.console;
   // L'output è fatto delle sole righe scritte: una riga letta o non valida tenuta dalla fine non gli toglie nulla.
   if (es.consoleTolte > 0 || righe.some((v) => v.genere === "scrive" && "tagliata" in v && v.tagliata === true)) return { ok: false, motivo: "output perso" };

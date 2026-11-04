@@ -13,6 +13,9 @@
 // quelli del programma, né che il caso eseguito sia uno di quelli del progetto (si porta con sé le voci e l'atteso).
 // Le regole che lo schema non sa dire: la funzione eseguita che esiste nel progetto, la chiave ripetuta, una posizione degli errori dell'app
 // che l'elenco non ha.
+//
+// Un valore scritto a mano in un'esecuzione non sta nel progetto né nelle letture: lo porta `changes`, col punto in cui è stato scritto, e il campo c'è solo se ce n'è uno,
+// così un file senza modifiche resta uguale byte per byte. Nell'esecuzione di un caso d'uso non ce ne sono: il lettore e lo schema lo rifiutano.
 
 import { codiciErrore, codiciErroreStatico, modalita, type CasoDiUnaFunzione, type CodiceErrore, type CodiceErroreStatico, type Progetto, type Segnalazione } from "../progetto/modello";
 import {
@@ -113,10 +116,21 @@ export interface EsitoRegistrato {
   readonly outcome: EsitoDelFile;
 }
 
+/** Un valore scritto a mano: gli avanzamenti dicono il punto, il testo è quello dato. `function`: nessuna per la radice. */
+export interface ModificaDelFile {
+  readonly advances: number;
+  readonly function?: string;
+  readonly data: string;
+  readonly element: number;
+  readonly text: string;
+}
+
 /** Con le righe date alle letture, o nel modo caso con il caso, che ha le sue voci. */
 export type EsecuzioneRegistrata = EsitoRegistrato & {
   readonly project: Progetto;
   readonly function?: string;
+  /** I valori scritti a mano, nell'ordine; assente se nessuno. */
+  readonly changes?: readonly ModificaDelFile[];
   /** I limiti e le righe lunghe di questa esecuzione, se non sono quelli scritti in cima al file. */
   readonly limits?: LimitiDelFile;
   readonly long_lines?: RigheLungheDelFile;
@@ -210,6 +224,8 @@ const campiDellEsito: Readonly<Record<EsitoDelFile["kind"], Campi>> = {
 
 const rigaLetta = conOggetto({ data: campo(stringa), text: facoltativo(stringa), each: facoltativo(vero), rejected: facoltativo(vero) });
 
+const modificaDelFile = conOggetto({ advances: campo(almeno(0)), function: facoltativo(stringa), data: campo(stringa), element: campo(almeno(0)), text: campo(stringa) });
+
 const limitiDelFile = conOggetto({ vector_elements: campo(almeno(1)), string_length: campo(almeno(1)), string_vector_characters: campo(almeno(1)) });
 const righeLungheDelFile = conOggetto({ characters: campo(almeno(1)), mode: campo(uno(["wrap", "tail"])) });
 
@@ -221,6 +237,7 @@ const campiDellEsecuzione: Campi = {
   app_errors_during: facoltativo(elenco(almeno(0))),
   test_case: facoltativo(casoDiUnaFunzione),
   reads: facoltativo(elenco(rigaLetta)),
+  changes: facoltativo(elenco(modificaDelFile, true)),
   console: campo(elenco(perGeneri(campiDellaConsole))),
   console_removed: campo(almeno(0)),
   advances: campo(almeno(0)),
@@ -234,6 +251,7 @@ const esecuzione = lettore(
     if (letta === undefined) return undefined;
     const conCaso = Object.hasOwn(letta, "test_case");
     if (conCaso && Object.hasOwn(letta, "reads")) segnala(c, sotto(p, "reads"), "field_not_allowed");
+    if (conCaso && Object.hasOwn(letta, "changes")) segnala(c, sotto(p, "changes"), "field_not_allowed");
     const nelFile = eOggetto(v) && Object.hasOwn(v, "reads");
     if (!conCaso && !nelFile) segnala(c, sotto(p, "reads"), "missing_field");
     const progetto = letta.project as Progetto | undefined;
@@ -243,7 +261,7 @@ const esecuzione = lettore(
   {
     ...schemaDiCampi(campiDellEsecuzione),
     if: { type: "object", properties: { test_case: {} }, required: ["test_case"] },
-    then: { not: { type: "object", properties: { reads: {} }, required: ["reads"] } },
+    then: { allOf: [{ not: { type: "object", properties: { reads: {} }, required: ["reads"] } }, { not: { type: "object", properties: { changes: {} }, required: ["changes"] } }] },
     else: { type: "object", properties: { reads: {} }, required: ["reads"] },
   },
 );

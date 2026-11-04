@@ -9,7 +9,13 @@
 // - Non ritrovato: il posto cancellato (senza eseguire nulla), il progetto che non parte, il programma finito prima, una riga che manca o che è per
 //   un altro dato, una riga la cui accettazione è cambiata. Si ferma lì e il motivo lo dice: l'esecuzione resta in quello stato.
 //
-// `GuidaDelleRighe` è il punto solo che dà le righe a un'esecuzione guidata: la usa anche la riproduzione di una registrazione.
+// - I valori scritti a mano: la ricerca del punto li ripete sempre allo stesso numero di avanzamenti (il progetto è quello di allora), o una modifica che ha cambiato il
+//   cammino non ritroverebbe la pausa; e ricava per ognuno il suo punto. La ripartenza li riapplica lì, se chi la chiama li tiene: in una pausa il posto più l'occorrenza,
+//   in attesa di una riga quante righe sono state date. Si ferma lì se il dato non c'è più o non accetta il valore; arrivata alla pausa con una modifica non applicata, si
+//   ferma alla pausa: in tutti e due i casi il motivo lo dice.
+//
+// `GuidaDelleRighe` è il punto solo che dà le righe a un'esecuzione guidata: la usa anche la riproduzione di una registrazione. `RipetizioneDelleModifiche` è il punto solo
+// che ripete i valori scritti a mano allo stesso numero di avanzamenti, usato anche dalla riproduzione.
 //
 // Che cosa NON guarda: i valori di prima accanto a quelli nuovi, le colonne della tabella e i punti su un blocco cancellato, che sono della finestra;
 // un'esecuzione ferma in attesa di una riga, che non è una pausa.
@@ -18,7 +24,7 @@ import type { Tetti } from "../controllo/controllo";
 import { senzaValore, type Riga } from "../interprete/interprete";
 import type { CasoDiUnaFunzione, Progetto, VoceDiUnaFunzione } from "../progetto/modello";
 import type { Comando } from "./controllore";
-import { Esecuzione, funzioneDelBlocco, type OpzioniDellEsecuzione, type RigaData, type Stato } from "./esecuzione";
+import { Esecuzione, funzioneDelBlocco, type EsitoDellaModifica, type ModificaFatta, type OpzioniDellEsecuzione, type RigaData, type Stato } from "./esecuzione";
 
 const comeRiga = (v: VoceDiUnaFunzione): Exclude<Riga, undefined> => {
   const testo = v.text ?? senzaValore;
@@ -90,6 +96,48 @@ export class GuidaDelleRighe<C extends CasoDiUnaFunzione, M> {
   }
 }
 
+/** I valori scritti a mano ripetuti allo stesso numero di avanzamenti, sullo stesso progetto: si chiama `ripeti` a ogni giro di una guida con «dentro», che passa da ogni
+ * punto. */
+export class RipetizioneDelleModifiche<C extends CasoDiUnaFunzione> {
+  #fatte = 0;
+  #rifiuto: Extract<EsitoDellaModifica, { ok: false }>["motivo"] | undefined;
+  readonly #es: Esecuzione<C>;
+  readonly #modifiche: readonly ModificaFatta[];
+
+  constructor(es: Esecuzione<C>, modifiche: readonly ModificaFatta[]) {
+    this.#es = es;
+    this.#modifiche = modifiche;
+  }
+
+  /** Perché una è stata rifiutata: da lì non si ripete più nulla. */
+  get rifiuto(): Extract<EsitoDellaModifica, { ok: false }>["motivo"] | undefined {
+    return this.#rifiuto;
+  }
+
+  /** La prima non ripetuta, se c'è. */
+  get mancante(): ModificaFatta | undefined {
+    return this.#modifiche[this.#fatte];
+  }
+
+  /** `prima`, a ognuna che sta per essere ripetuta. */
+  ripeti(prima?: (m: ModificaFatta) => void): void {
+    for (let m = this.mancante; this.#rifiuto === undefined && m !== undefined && m.avanzamenti === this.#es.avanzamenti; m = this.mancante) {
+      prima?.(m);
+      const esito = this.#es.modifica(m, m.testo);
+      if (esito.ok) this.#fatte++;
+      else this.#rifiuto = esito.motivo;
+    }
+  }
+}
+
+/** Dove un valore scritto a mano si riapplica: una pausa, col suo posto e l'occorrenza, o l'attesa di una riga, con le righe date fin lì. */
+export type PuntoDellaModifica = { readonly posto: string; readonly occorrenza: number } | { readonly righe: number };
+
+export interface ModificaDaRiapplicare {
+  readonly modifica: ModificaFatta;
+  readonly punto: PuntoDellaModifica;
+}
+
 /** Il punto di una pausa. */
 export interface PuntoDellaPausa {
   /** Il posto, da confrontare (`postoDi`). */
@@ -110,10 +158,12 @@ export const postoDi = (s: Pausa): string => JSON.stringify([s.blocco, s.dato ??
 /** Il punto della pausa di `da`, ricavato rieseguendo il progetto di allora con le stesse righe. `da` non cambia. */
 export class RicercaDelPunto<C extends CasoDiUnaFunzione> {
   #punto: PuntoDellaPausa | undefined;
-  #visti = 0;
   readonly #guida: GuidaDelleRighe<C, "arrivata">;
   readonly #copia: Esecuzione<C>;
   readonly #pausa: Pausa;
+  readonly #ripetizione: RipetizioneDelleModifiche<C>;
+  readonly #visti = new Map<string, number>();
+  readonly #daRiapplicare: ModificaDaRiapplicare[] = [];
 
   constructor(da: Esecuzione<C>) {
     const s = da.stato;
@@ -127,18 +177,26 @@ export class RicercaDelPunto<C extends CasoDiUnaFunzione> {
       ...(da.caso !== undefined ? { caso: da.caso } : {}),
     });
     this.#copia = copia;
-    const posto = postoDi(s);
     const fino = da.avanzamenti;
-    this.#guida = new GuidaDelleRighe<C, "arrivata">(copia, da.righeDate, "dentro", () => {
+    this.#ripetizione = new RipetizioneDelleModifiche(copia, da.modifiche);
+    const guida: GuidaDelleRighe<C, "arrivata"> = new GuidaDelleRighe<C, "arrivata">(copia, da.righeDate, "dentro", () => {
       const c = copia.stato;
-      if (c.genere === "pausa" && postoDi(c) === posto) this.#visti++;
+      const posto = c.genere === "pausa" ? postoDi(c) : undefined;
+      if (posto !== undefined) this.#visti.set(posto, (this.#visti.get(posto) ?? 0) + 1);
+      this.#ripetizione.ripeti((modifica) => this.#daRiapplicare.push({ modifica, punto: posto !== undefined ? { posto, occorrenza: this.#visti.get(posto)! } : { righe: guida.date } }));
       return copia.avanzamenti >= fino ? "arrivata" : undefined;
     });
+    this.#guida = guida;
   }
 
   /** Il punto, quando la ricerca è finita. */
   get punto(): PuntoDellaPausa | undefined {
     return this.#punto;
+  }
+
+  /** I valori scritti a mano col loro punto, quando la ricerca è finita. */
+  get modifiche(): readonly ModificaDaRiapplicare[] {
+    return this.#daRiapplicare;
   }
 
   fetta(orologio: () => number, durata: number): void {
@@ -149,12 +207,13 @@ export class RicercaDelPunto<C extends CasoDiUnaFunzione> {
     const s = this.#pausa;
     const c = this.#copia.stato;
     // L'esecuzione è deterministica: se non torna è un difetto dell'app, e non si riparte da un punto falso.
-    if (fermata !== "arrivata" || c.genere !== "pausa" || postoDi(c) !== postoDi(s)) throw new Error(`la pausa non si ritrova: ${fermata}, ${c.genere}`);
-    this.#punto = { posto: postoDi(s), blocco: s.blocco, ...(s.dato !== undefined ? { dato: s.dato } : {}), ...(s.funzione !== undefined ? { funzione: s.funzione } : {}), occorrenza: this.#visti };
+    const rifiuto = this.#ripetizione.rifiuto;
+    if (fermata !== "arrivata" || c.genere !== "pausa" || postoDi(c) !== postoDi(s) || rifiuto !== undefined || this.#ripetizione.mancante !== undefined) throw new Error(`la pausa non si ritrova: ${fermata}, ${c.genere}, ${rifiuto ?? "nessun rifiuto"}`);
+    this.#punto = { posto: postoDi(s), blocco: s.blocco, ...(s.dato !== undefined ? { dato: s.dato } : {}), ...(s.funzione !== undefined ? { funzione: s.funzione } : {}), occorrenza: this.#visti.get(postoDi(s))! };
   }
 }
 
-export type MotivoDelNonRitrovato = "posto_cancellato" | "non_parte" | "finito_prima" | "riga_mancante" | "riga_per_un_altro_dato" | "riga_non_ammessa" | "riga_ora_rifiutata" | "riga_ora_valida";
+export type MotivoDelNonRitrovato = "posto_cancellato" | "non_parte" | "finito_prima" | "riga_mancante" | "riga_per_un_altro_dato" | "riga_non_ammessa" | "riga_ora_rifiutata" | "riga_ora_valida" | "modifica_persa" | "modifica_rifiutata";
 
 /** `righeAvanzate`: quante righe date non sono servite per arrivare (una lettura tolta): si dichiarano, non sono un errore. */
 export type EsitoDellaRipartenza = { readonly ritrovato: true; readonly righeAvanzate: number } | { readonly ritrovato: false; readonly motivo: MotivoDelNonRitrovato };
@@ -171,10 +230,11 @@ function postoPresente(p: Progetto, punto: PuntoDellaPausa): boolean {
 export class Ripartenza<C extends CasoDiUnaFunzione> {
   readonly esecuzione: Esecuzione<C>;
   #esito: EsitoDellaRipartenza | undefined;
-  readonly #guida: GuidaDelleRighe<C, "arrivata" | "riga_ora_rifiutata" | "riga_ora_valida"> | undefined;
+  readonly #guida: GuidaDelleRighe<C, "arrivata" | "riga_ora_rifiutata" | "riga_ora_valida" | "modifica_persa" | "modifica_rifiutata"> | undefined;
   readonly #righe: readonly RigaData[];
 
-  constructor(p: Progetto, limiti: Tetti, opzioni: OpzioniDellEsecuzione<C>, righe: readonly RigaData[], punto: PuntoDellaPausa) {
+  /** `modifiche`: i valori scritti a mano da riapplicare, ognuno al suo punto. */
+  constructor(p: Progetto, limiti: Tetti, opzioni: OpzioniDellEsecuzione<C>, righe: readonly RigaData[], punto: PuntoDellaPausa, modifiche: readonly ModificaDaRiapplicare[] = []) {
     const es = new Esecuzione<C>(p, limiti, opzioni);
     this.esecuzione = es;
     this.#righe = righe;
@@ -183,9 +243,10 @@ export class Ripartenza<C extends CasoDiUnaFunzione> {
       this.#guida = undefined;
       return;
     }
-    let visti = 0;
+    const visti = new Map<string, number>();
+    const daFare = [...modifiche];
     let confrontate = 0;
-    const guida = new GuidaDelleRighe<C, "arrivata" | "riga_ora_rifiutata" | "riga_ora_valida">(es, righe, "dentro", () => {
+    const guida = new GuidaDelleRighe<C, "arrivata" | "riga_ora_rifiutata" | "riga_ora_valida" | "modifica_persa" | "modifica_rifiutata">(es, righe, "dentro", () => {
       // Una riga data si sa se è stata accettata al primo avanzamento dopo.
       if (confrontate < guida.date) {
         const date = es.righeDate;
@@ -196,7 +257,17 @@ export class Ripartenza<C extends CasoDiUnaFunzione> {
         }
       }
       const s = es.stato;
-      return s.genere === "pausa" && postoDi(s) === punto.posto && ++visti === punto.occorrenza ? "arrivata" : undefined;
+      const posto = s.genere === "pausa" ? postoDi(s) : undefined;
+      if (posto !== undefined) visti.set(posto, (visti.get(posto) ?? 0) + 1);
+      for (let k = 0; k < daFare.length && (posto !== undefined || s.genere === "chiede"); ) {
+        const { modifica: m, punto: dove } = daFare[k]!;
+        const qui = "righe" in dove ? posto === undefined && dove.righe === guida.date : dove.posto === posto && dove.occorrenza === visti.get(posto);
+        if (!qui) k++;
+        else if (es.modifica(m, m.testo).ok) daFare.splice(k, 1);
+        else return "modifica_rifiutata";
+      }
+      if (posto !== punto.posto || visti.get(posto) !== punto.occorrenza) return undefined;
+      return daFare.length > 0 ? "modifica_persa" : "arrivata";
     });
     this.#guida = guida;
   }
@@ -222,7 +293,8 @@ export class Ripartenza<C extends CasoDiUnaFunzione> {
 }
 
 /** Il gesto intero, da una pausa di `da`: il punto ricavato dal progetto di allora, poi un'esecuzione nuova del progetto `p` fino a quel punto, tutto a fette.
- * `da` non cambia. Finché non c'è l'esito l'esecuzione nuova è a metà e non si mostra; col posto cancellato non c'è affatto. */
+ * `da` non cambia. Finché non c'è l'esito l'esecuzione nuova è a metà e non si mostra; col posto cancellato non c'è affatto. `valori`: i valori scritti a mano in `da` si
+ * riapplicano allo stesso punto («tieni»), o no («togli»). */
 export class Riesecuzione<C extends CasoDiUnaFunzione> {
   #ripartenza: Ripartenza<C> | undefined;
   #esito: EsitoDellaRipartenza | undefined;
@@ -231,13 +303,15 @@ export class Riesecuzione<C extends CasoDiUnaFunzione> {
   readonly #progetto: Progetto;
   readonly #limiti: Tetti;
   readonly #opzioni: OpzioniDellEsecuzione<C>;
+  readonly #valori: "tieni" | "togli";
 
-  constructor(da: Esecuzione<C>, p: Progetto, limiti: Tetti, opzioni: OpzioniDellEsecuzione<C>) {
+  constructor(da: Esecuzione<C>, p: Progetto, limiti: Tetti, opzioni: OpzioniDellEsecuzione<C>, valori: "tieni" | "togli" = "togli") {
     this.#ricerca = new RicercaDelPunto(da);
     this.#da = da;
     this.#progetto = p;
     this.#limiti = limiti;
     this.#opzioni = opzioni;
+    this.#valori = valori;
   }
 
   get esito(): EsitoDellaRipartenza | undefined {
@@ -262,7 +336,7 @@ export class Riesecuzione<C extends CasoDiUnaFunzione> {
       this.#esito = { ritrovato: false, motivo: "posto_cancellato" };
       return;
     }
-    this.#ripartenza ??= new Ripartenza<C>(this.#progetto, this.#limiti, this.#opzioni, this.#da.righeDate, punto);
+    this.#ripartenza ??= new Ripartenza<C>(this.#progetto, this.#limiti, this.#opzioni, this.#da.righeDate, punto, this.#valori === "tieni" ? this.#ricerca.modifiche : []);
     this.#ripartenza.fetta(orologio, durata);
     this.#esito = this.#ripartenza.esito;
   }
