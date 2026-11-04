@@ -54,12 +54,18 @@ export function postoDelModulo(modulo: string): string | undefined {
 export const importDel = (testo: string): string[] => new Bun.Transpiler({ loader: "js" }).scanImports(testo).map((i) => i.path);
 
 /** Ciò che nei byte non deve esserci: i percorsi della macchina e Bun. */
-export const stringheVietate = (): readonly string[] => {
-  const barra = String.fromCharCode(92);
-  return [homedir(), homedir().replaceAll(barra, "/"), radice, radice.replaceAll(barra, "/"), `C:${barra}`, "C:/", "bun:", "Bun."];
+const barra = String.fromCharCode(92);
+
+/** Un percorso della macchina nel testo, comunque scritto: con le barre semplici, raddoppiate come in una stringa di JavaScript o in avanti, e con qualunque disco maiuscolo o minuscolo. */
+export const percorsoVietato = (percorso: string, testo: string): boolean => {
+  const comune = (t: string) => t.toLowerCase().replaceAll(barra + barra, "/").replaceAll(barra, "/");
+  return comune(testo).includes(comune(percorso));
 };
 
-export const vietateNel = (testo: string): string[] => stringheVietate().filter((v) => testo.includes(v));
+const percorsiDellaMacchina = (): readonly string[] => [homedir(), radice];
+const stringheVietate: readonly string[] = [`C:${barra}`, "C:/", "bun:", "Bun."];
+
+export const vietateNel = (testo: string): string[] => [...percorsiDellaMacchina().filter((p) => percorsoVietato(p, testo)), ...stringheVietate.filter((v) => testo.includes(v))];
 
 /** I problemi del pacchetto costruito, per riga intera: vuoto se va bene. */
 export function problemiDelPacchetto(testo: string, moduli: readonly string[]): string[] {

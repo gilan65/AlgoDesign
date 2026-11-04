@@ -217,11 +217,15 @@ function CampoDellaCella({
   const input = useRef<HTMLInputElement>(null);
   // Chiuso da Invio, Esc o un tasto: il clic fuori non conferma di nuovo.
   const chiuso = useRef(false);
+  // Ciò che il campo ha davvero alla nascita: un campo di testo toglie gli a capo, e il valore senza a capo non è un valore scritto da chi guarda.
+  const allaNascita = useRef<string | null>(null);
   useLayoutEffect(() => {
+    allaNascita.current = input.current?.value ?? null;
     input.current?.focus();
     input.current?.select();
   }, []);
   const { elemento } = campo;
+  const scritto = (valore: string) => (valore === allaNascita.current ? elemento.testo : valore);
   return (
     <>
       {campo.conUnNome && <span className={stili.nomeNelCampo}>{elemento.nome}</span>}
@@ -237,13 +241,13 @@ function CampoDellaCella({
         // Il doppio clic dentro il campo seleziona una parola, e non riapre nulla.
         onDoubleClick={(e) => e.stopPropagation()}
         onBlur={(e) => {
-          if (!chiuso.current) conferma(e.currentTarget.value, false);
+          if (!chiuso.current) conferma(scritto(e.currentTarget.value), false);
         }}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
             e.stopPropagation();
-            chiuso.current = conferma(e.currentTarget.value, true);
+            chiuso.current = conferma(scritto(e.currentTarget.value), true);
           } else if (e.key === "Escape") {
             e.preventDefault();
             e.stopPropagation();
@@ -251,7 +255,7 @@ function CampoDellaCella({
             annulla();
           } else if (tastoDellEsecuzione(e) !== null) {
             // Il valore prima; se è andato bene il tasto prosegue fino a chi ascolta la finestra.
-            chiuso.current = conferma(e.currentTarget.value, false);
+            chiuso.current = conferma(scritto(e.currentTarget.value), false);
             if (!chiuso.current) {
               e.preventDefault();
               e.stopPropagation();

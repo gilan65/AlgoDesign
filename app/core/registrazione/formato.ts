@@ -160,7 +160,7 @@ export interface Registrazione {
   readonly limits: LimitiDelFile;
   readonly long_lines: RigheLungheDelFile;
   readonly app_errors: readonly ErroreDellApp[];
-  /** Le voci diverse che non sono entrate perché l'elenco era pieno. */
+  /** Quante volte un errore non è entrato perché l'elenco era pieno: le occorrenze, non i testi diversi. */
   readonly app_errors_lost: number;
   /** Le esecuzioni più vecchie che non ci sono, perché chi registra ne tiene un numero fisso. */
   readonly executions_lost: number;

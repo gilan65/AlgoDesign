@@ -12,7 +12,7 @@
 // contenuto (una voce tradotta male resta verde).
 //
 // I collegamenti relativi di questi documenti portano a un file che c'è; quelli dei due README sono scritti qui per
-// elementi. Che cosa NON guarda: gli indirizzi internet, e i nomi di file fra apici inversi senza un collegamento.
+// elementi. Che cosa NON guarda: gli indirizzi internet, le ancore dopo il `#` (una rotta resta verde), e i nomi di file fra apici inversi senza un collegamento.
 
 import { expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";

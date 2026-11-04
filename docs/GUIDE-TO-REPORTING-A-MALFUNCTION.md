@@ -56,9 +56,9 @@ The file is a text, and it contains:
 - the errors of the application;
 - the version of AlgoDesign, the language, the operating system and the five values of the Settings that can change the result.
 
-It does not contain file paths, your user name or the other Settings.
+File paths and your user name are removed from the errors of the application, and of the Settings there are only those five values. What you wrote in the project and in the console stays as it is.
 
-**A report is public.** Anyone can read it and download the file, even without an account, and only the owner of the repository can delete it. So before saving, read the text in the window again. If the project has your name in the author field, personal data in the notes or in the strings, or work you do not want to show, make a copy with **Save as**, remove from it what you do not want to publish, check that the malfunction is still there and save the file from that copy. A smaller program that shows the same malfunction is also the easiest to fix.
+**A report is public.** Anyone can read it and download the file, even without an account, and only the owner of the repository can delete it. So before saving, read the text in the window again. If the project has your name in the author field, personal data in the notes or in the strings, or work you do not want to show, make a copy with **Save as**, remove from it what you do not want to publish, run it again with F5, check that the malfunction is still there and save the file from that copy: the file carries the project as it was when the run started. A smaller program that shows the same malfunction is also the easiest to fix.
 
 ## 6. The second file: repeating the malfunction while recording
 

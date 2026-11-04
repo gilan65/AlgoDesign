@@ -56,9 +56,9 @@ Il file è un testo, e contiene:
 - gli errori dell'applicazione;
 - la versione di AlgoDesign, la lingua, il sistema operativo e i cinque valori delle Impostazioni che possono cambiare il risultato.
 
-Non contiene i percorsi dei file, il nome del tuo utente né le altre Impostazioni.
+Dagli errori dell'applicazione sono tolti i percorsi dei file e il nome del tuo utente, e delle Impostazioni ci sono solo quei cinque valori. Ciò che hai scritto nel progetto e nella console resta com'è.
 
-**Una segnalazione è pubblica.** Chiunque può leggerla e scaricare il file, anche senza un account, e solo il proprietario del repository può cancellarla. Prima di salvare, quindi, rileggi il testo nella finestra. Se il progetto ha il tuo nome nel campo dell'autore, dati personali nelle note o nelle stringhe, o un lavoro che non vuoi mostrare, fai una copia con **Salva con nome**, togli da lì ciò che non vuoi pubblicare, controlla che il malfunzionamento ci sia ancora e salva il file da quella copia. Un programma più piccolo che mostra lo stesso malfunzionamento è anche il più facile da correggere.
+**Una segnalazione è pubblica.** Chiunque può leggerla e scaricare il file, anche senza un account, e solo il proprietario del repository può cancellarla. Prima di salvare, quindi, rileggi il testo nella finestra. Se il progetto ha il tuo nome nel campo dell'autore, dati personali nelle note o nelle stringhe, o un lavoro che non vuoi mostrare, fai una copia con **Salva con nome**, togli da lì ciò che non vuoi pubblicare, eseguila di nuovo con F5, controlla che il malfunzionamento ci sia ancora e salva il file da quella copia: il file porta il progetto di quando l'esecuzione è partita. Un programma più piccolo che mostra lo stesso malfunzionamento è anche il più facile da correggere.
 
 ## 6. Il secondo file: ripetere il malfunzionamento registrando
 

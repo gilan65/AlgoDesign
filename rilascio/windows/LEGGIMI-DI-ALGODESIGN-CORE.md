@@ -26,7 +26,7 @@ if (aperto.ok) {
 - `controlla(progetto)` dà il controllo statico del progetto, con gli errori e gli avvisi.
 - `genera(progetto, linguaggio, lingua)` dà il codice del progetto, o il motivo per cui non si può generare. Il linguaggio è `pseudocodice`, `python`, `c`, `accademico` o `typescript` e la lingua è `it` o `en`: un altro valore è un'eccezione col suo nome.
 - `leggiAccademico(testo, opzioni, libreria)` dà il flowchart che un testo in «Accademico» descrive, o la riga e il motivo per cui non si legge. Le opzioni e la libreria si possono omettere.
-- `aggiungiAllaLibreria(dove, letto, rinomina)` aggiunge ciò che è stato letto a una libreria aperta, o a una nuova se `dove` è `{ nome }`. Il risultato porta il `testo` del file da scrivere.
+- `aggiungiAllaLibreria(dove, letto, rinomina)` aggiunge ciò che è stato letto a una libreria aperta, o a una nuova se `dove` è `{ nome }`. Con `ok: true` il risultato porta il `testo` del file da scrivere. Con `ok: false` porta `conflitti`, se un nome c'è già e `rinomina` è falso, oppure `rifiuto`, se il nome della libreria nuova non va o `dove` non è una libreria. Con `rinomina` vero un nome già usato prende `_2`.
 
 ## Licenza
 

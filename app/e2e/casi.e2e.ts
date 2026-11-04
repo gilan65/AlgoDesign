@@ -183,6 +183,25 @@ test("coi campi di un caso aperti, il tasto destro su una riga sotto apre il men
   await expect(righe.nth(3).getByRole("checkbox")).not.toBeChecked();
 });
 
+test("un caso che finisce dopo una pausa in cui è stato eliminato il caso sopra: resta scelto il caso eseguito, non quello che ha preso il suo posto", async ({ page }) => {
+  await apriICasi(page, quattro);
+  const righe = page.locator("tr[data-caso]");
+  await expect(righe).toHaveCount(4);
+  await page.locator('tr[data-caso="1"] [data-esegui-caso="passo"]').click();
+  await expect(page.locator("[data-stato-esecuzione]")).toHaveText(/^In pausa/);
+  await page.getByRole("banner").getByRole("button", { name: it.pannelloDati, exact: true }).click();
+  await page.getByRole("tab", { name: /^Casi d'uso \(\d+\)$/ }).click();
+  await righe.nth(0).locator("[data-nome-caso]").click({ button: "right" });
+  await page.getByRole("menu", { name: riempi(it.menuDelCaso, { nome: "uno" }), exact: true }).getByRole("menuitem", { name: it.menuElimina, exact: true }).click();
+  await page.getByRole("alertdialog", { name: riempi(it.eliminaCasoTitolo, { nome: "uno" }), exact: true }).getByRole("button", { name: it.eliminaConferma, exact: true }).click();
+  await expect(righe).toHaveCount(3);
+  await page.keyboard.press("F5");
+  await expect(page.locator("[data-stato-esecuzione]")).toHaveText(new RegExp(`^${it.statoFinita}`));
+  await expect(righe.nth(0).locator("[data-nome-caso]")).toHaveText("due");
+  await expect(righe.nth(0)).toHaveAttribute("aria-current", "true");
+  await expect(page.locator('tr[data-caso][aria-current="true"]')).toHaveCount(1);
+});
+
 /** Duecento righe scritte, col caso che le attende tutte. */
 const duecento = JSON.stringify({
   format: "algodesign",

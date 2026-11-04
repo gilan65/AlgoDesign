@@ -6,10 +6,11 @@
 // riproduce sull'altro).
 
 import { expect, test } from "bun:test";
-import { userInfo } from "node:os";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir, userInfo } from "node:os";
 import { join } from "node:path";
 import Ajv2020 from "ajv/dist/2020";
-import { alterata, contestoDiProva, percorsiEProfilo, registrazioneDi, tuttoIlPercorso } from "../../strumenti/registrazioni-del-corpus";
+import { alterata, cartellaDelleRegistrazioni, contestoDiProva, percorsiEProfilo, registrazioneDi, tuttoIlPercorso } from "../../strumenti/registrazioni-del-corpus";
 import { fileDa, scelteIniziali } from "../../ui/preferenze";
 import { tetti } from "../controllo/controllo";
 import { Esecuzione, righeLunghePredefinite } from "../esecuzione/esecuzione";
@@ -320,4 +321,21 @@ test("le regole che lo schema non sa dire le rifiuta solo il lettore: la funzion
   const aperta = apriRegistrazione(testo);
   expect(aperta.ok ? [] : aperta.errori).toEqual([{ percorso: "language", motivo: "duplicate_key" }]);
   expect(apriRegistrazione("non è json")).toEqual({ ok: false, errori: [{ percorso: "", motivo: "invalid_json" }] });
+});
+
+test("lo strumento fra due computer vuota solo una cartella sua: nuova, vuota o coi soli file che scrive", () => {
+  const base = mkdtempSync(join(tmpdir(), "registrazioni-"));
+  try {
+    expect(cartellaDelleRegistrazioni(join(base, "non c'è"))).toBe(true);
+    const sua = join(base, "sua");
+    mkdirSync(sua);
+    expect(cartellaDelleRegistrazioni(sua)).toBe(true);
+    writeFileSync(join(sua, "elenco.json"), "[]");
+    writeFileSync(join(sua, "00000.txt"), "");
+    expect(cartellaDelleRegistrazioni(sua)).toBe(true);
+    writeFileSync(join(sua, "altro.algo"), "");
+    expect(cartellaDelleRegistrazioni(sua)).toBe(false);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
 });

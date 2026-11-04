@@ -5,7 +5,8 @@
 // - `programmaCambiato`: in pausa, col programma cambiato dopo la pausa.
 //
 // Che cosa NON guarda: che il gesto faccia davvero ciò che la guardia dice (`e2e/riesegui.e2e.ts`, gesto per gesto nei quattro stati); le definizioni delle tre costanti,
-// provate da quella stessa spec; una guardia scritta con altri nomi: le guardie sono queste perché lo stato si legge da qui.
+// provate da quella stessa spec; una guardia scritta con altri nomi: le guardie sono queste perché lo stato si legge da qui; un gesto nuovo scritto senza nessuna guardia, che
+// qui resta verde (lo vede quella spec, solo se è fra i suoi gesti).
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 
