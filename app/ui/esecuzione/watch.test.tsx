@@ -437,7 +437,7 @@ test("a esecuzione finita il watch c'è finché il progetto è quello eseguito: 
 
 // ------------------------------------------------------------------------------- come si chiude
 
-test("un clic sul nome ferma il riquadro: resta lasciando il nome, segue l'esecuzione, non sceglie il blocco; ×, Esc, un altro clic e «Ferma» lo chiudono", async () => {
+test("un clic sul nome ferma il riquadro: resta lasciando il nome, segue l'esecuzione, in pausa sceglie anche il blocco; ×, Esc, un altro clic e «Ferma» lo chiudono", async () => {
   await apriLaFinestra("riferimento-media-voti.algo", riferimento);
   const input = [...inputDelRiferimento];
   await premi("F10");
@@ -456,7 +456,7 @@ test("un clic sul nome ferma il riquadro: resta lasciando il nome, segue l'esecu
   expect({ fermo: fermo()?.getAttribute("role"), valori: valoriDelFermo(), scelto: document.querySelector('[data-blocco="b7"]')?.getAttribute("aria-pressed") }).toEqual({
     fermo: "dialog",
     valori: ["non inizializzata"],
-    scelto: "false",
+    scelto: "true",
   });
   // Avanti fino a dopo «i ← 0»: il riquadro fermo segue la riga corrente.
   for (let k = 0; k < 40 && valoriDelFermo()[0] !== "0"; k++) {

@@ -237,6 +237,8 @@ Quando il progetto non ha errori lo si esegue:
 
 Con le procedure e le funzioni ci sono anche **Entra** (F11) ed **Esci** (Maiusc+F11), per entrare in una chiamata e uscirne: il §9.
 
+**Correggere in pausa.** Fermi in pausa, il flowchart, i dati e i casi d'uso si modificano. Se la modifica cambia il programma, «Continua» diventa **Riesegui** (F5) e sopra la tabella compare «Valori di prima della modifica»: Riesegui, dopo aver chiesto se salvare, riesegue il programma modificato con le stesse letture, senza riscriverle, e si ferma allo stesso passaggio dello stesso blocco, con i valori ricalcolati. Se non ci arriva, l'avviso dice perché. Annulla, fino al programma di prima, riporta «Continua».
+
 All'avvio, a destra del flowchart si apre una colonna con la **tabella di traccia** sopra e la **console** sotto, e il blocco corrente è evidenziato in giallo con il bordo arancione. Quando il programma legge un dato, in fondo alla console c'è la riga dove scrivere il valore: scrivilo e premi **Invio**. Un valore che non va bene (lettere al posto di un numero) lo dice, e la stessa lettura si ripete.
 
 La **tabella di traccia** ha una riga per azione: il numero, la regola, il valore di ogni dato dopo l'azione (il valore cambiato è evidenziato, «non inizializzata» dove non c'è ancora un valore), l'esito della condizione e ciò che si scrive o si legge. La prima riga è «Inizio»; poi ogni valore iniziale ha la sua riga. «Esporta la tabella…» (menu Progetto) la scrive in un file CSV che si apre con un foglio di calcolo.

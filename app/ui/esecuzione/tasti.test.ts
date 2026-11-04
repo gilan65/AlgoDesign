@@ -29,6 +29,7 @@ test("F5, F10, F11, Maiusc+F11, Maiusc+F5 e F9 sono i tasti dell'esecuzione; con
 const atteso: Record<Situazione, Record<TastoDellEsecuzione, Azione>> = {
   ferma: { F5: "esegui", F10: "passo", F11: "passo", "Maiusc+F11": "nulla", "Maiusc+F5": "nulla", F9: "punto" },
   "in pausa": { F5: "continua", F10: "un passo", F11: "entra", "Maiusc+F11": "esci", "Maiusc+F5": "ferma", F9: "punto" },
+  modificata: { F5: "riesegui", F10: "nulla", F11: "nulla", "Maiusc+F11": "nulla", "Maiusc+F5": "ferma", F9: "punto" },
   "in corso": { F5: "nulla", F10: "nulla", F11: "nulla", "Maiusc+F11": "nulla", "Maiusc+F5": "ferma", F9: "punto" },
   chiede: { F5: "nulla", F10: "nulla", F11: "nulla", "Maiusc+F11": "nulla", "Maiusc+F5": "ferma", F9: "punto" },
   finita: { F5: "esegui", F10: "passo", F11: "passo", "Maiusc+F11": "nulla", "Maiusc+F5": "ferma", F9: "punto" },
@@ -42,5 +43,5 @@ test("la tabella tasto → comando coincide con l'atteso in ogni situazione, voc
   const dellApp = SITUAZIONI.flatMap((s) => TASTI.map((k) => `${s} · ${k} → ${azioneDelTasto(s, k)}`)).sort();
   const scritte = voci(atteso);
   // Le voci dell'app che l'atteso non ha, e quelle dell'atteso che l'app non ha, coi conteggi accanto.
-  expect({ app: dellApp.length, mancanti: scritte.filter((v) => !dellApp.includes(v)), inPiu: dellApp.filter((v) => !scritte.includes(v)) }).toEqual({ app: 30, mancanti: [], inPiu: [] });
+  expect({ app: dellApp.length, mancanti: scritte.filter((v) => !dellApp.includes(v)), inPiu: dellApp.filter((v) => !scritte.includes(v)) }).toEqual({ app: 36, mancanti: [], inPiu: [] });
 });

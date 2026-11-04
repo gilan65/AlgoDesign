@@ -28,6 +28,7 @@ import {
 } from "../core/modifica/funzioni";
 import { fermatoDaUnPunto } from "../core/esecuzione/controllore";
 import { Esecuzione, type Comando, type LivelloDellaPila } from "../core/esecuzione/esecuzione";
+import { Riesecuzione, type EsitoDellaRipartenza } from "../core/esecuzione/ripartenza";
 import type { Origine, Riga } from "../core/interprete/interprete";
 import { csv, TabellaMostrata, type ChiamataNelWatch, type DatoNelWatch, type Traccia } from "../core/esecuzione/traccia";
 import { annulla, applica, inizia, nomiDiPrima, ripeti, siAnnulla, siRipete, type Cronologia } from "../core/modifica/cronologia";
@@ -116,6 +117,7 @@ import { perSegnalare, type PerSegnalare } from "./segnalazione";
 import { Barretta } from "./esecuzione/Barretta";
 import { Console } from "./esecuzione/Console";
 import { DoveSei } from "./esecuzione/DoveSei";
+import { paroleDelMotivo } from "./esecuzione/riesecuzione";
 import { colonneMostrate, disposizioneIniziale } from "./esecuzione/colonne";
 import { sfondoDelLivello, TabellaDiTraccia, testiDellaTraccia } from "./esecuzione/TabellaDiTraccia";
 import { Watch } from "./esecuzione/Watch";
@@ -229,6 +231,9 @@ function situazioneDi(es: Esecuzione<CasoDiUnaFunzione> | null): Situazione {
   return s === undefined ? "ferma" : s === "pausa" || s === "pronta" ? "in pausa" : s === "in corso" ? "in corso" : s === "chiede" ? "chiede" : "finita";
 }
 
+/** Lo stato mostrato durante una riesecuzione. */
+const IN_CORSO: Esecuzione<CasoDiUnaFunzione>["stato"] = { genere: "in corso" };
+
 /** Quanto dura una fetta dell'esecuzione: una per fotogramma, poi la finestra torna a rispondere. */
 const DURATA_DELLA_FETTA = 8;
 /** La riga della ripresa nella tabella di traccia dice anche il valore che la funzione chiamata ha restituito. */
@@ -303,7 +308,7 @@ type Aperta =
   | { readonly genere: "progetto"; readonly nuovo: boolean }
   | { readonly genere: "esempi" }
   | { readonly genere: "togli"; readonly cosa: DaTogliere }
-  | { readonly genere: "modifiche"; readonly poi: () => void }
+  | { readonly genere: "modifiche"; readonly poi: () => void; readonly perRieseguire?: boolean }
   | { readonly genere: "sostituire"; readonly percorso: string; readonly risposta: (sostituisci: boolean) => void }
   /** L'avviso del nome del file, prima della finestra del sistema per salvare. */
   | { readonly genere: "nome"; readonly chiesto: NomeDaChiedere; readonly risposta: (nome: string | null) => void }
@@ -654,15 +659,23 @@ export function Applicazione({
   // console ed errore vengono dall'`Esecuzione`.
   const [esecuzione, setEsecuzione] = useState<Esecuzione<CasoDiUnaFunzione> | null>(null);
   const [giro, ridisegna] = useReducer((n: number) => n + 1, 0);
-  const statoEs = esecuzione?.stato;
-  const situazione = situazioneDi(esecuzione);
-  // Durante l'esecuzione (e durante «Esegui tutti») flowchart, dati e casi sono in sola lettura; a esecuzione finita si
-  // modificano di nuovo.
+  // Una riesecuzione in corso, fino allo stesso passaggio: per la finestra è un comando in corso, sull'esecuzione di prima, che resta quella mostrata finché
+  // l'esito non c'è.
+  const [riparte, setRiparte] = useState<Riesecuzione<CasoDiUnaFunzione> | null>(null);
+  const daAnnunciare = useRef<{ readonly es: Esecuzione<CasoDiUnaFunzione>; readonly esito: EsitoDellaRipartenza } | null>(null);
+  const statoEs = riparte ? IN_CORSO : esecuzione?.stato;
+  const situazione: Situazione = riparte ? "in corso" : situazioneDi(esecuzione);
+  // Un'esecuzione aperta, in qualunque stato tranne la fine: i segni sul flowchart, e i comandi dei casi d'uso, che la farebbero perdere.
   const inEsecuzione = situazione === "in pausa" || situazione === "in corso" || situazione === "chiede" || tutti !== null;
+  // In corso, in attesa di una riga e durante «Esegui tutti» flowchart, dati e casi sono in sola lettura; in pausa e a esecuzione finita si modificano.
+  const soloLettura = situazione === "in corso" || situazione === "chiede" || tutti !== null;
   // Il caso d'uso dall'ultima esecuzione: nessun comando con la casella delle Impostazioni spenta; se no il caso (della
   // radice dell'esecuzione), o il motivo per cui non c'è. Il programma (o i limiti) cambiato dopo la fine non lo dà più:
   // il caso non sarebbe di quel programma; un caso d'uso cambiato sì, e Annulla fino al programma di allora lo riporta.
   const stessoProgrammaDellEsecuzione = useMemo(() => esecuzione !== null && stessoProgramma(esecuzione.progetto, progetto) && JSON.stringify(esecuzione.limiti) === JSON.stringify(limiti), [esecuzione, progetto, limiti]);
+  // In pausa, col programma cambiato dopo la pausa: proseguire andrebbe avanti su quello di prima, che non è più quello disegnato; si riesegue.
+  const programmaCambiato = statoEs?.genere === "pausa" && !stessoProgrammaDellEsecuzione;
+  const situazioneDeiTasti: Situazione = programmaCambiato ? "modificata" : situazione;
   const composto = esecuzione !== null && situazione === "finita" ? casoDallEsecuzione(esecuzione) : ({ ok: false, motivo: "non finita" } as const);
   const dallUltima: { readonly motivo: string } | { readonly caso: Extract<DallEsecuzione, { ok: true }>; readonly radice: string | undefined } | undefined = !scelte.offriCasoDallEsecuzione
     ? undefined
@@ -829,7 +842,7 @@ export function Applicazione({
   // Il watch legge i nomi nel disegno del progetto eseguito: a esecuzione finita, modificato il progetto, si spegne
   // (Annulla fino al progetto eseguito lo riaccende). In ogni scheda: i valori sono quelli della funzione mostrata, se è
   // attiva (il programma principale è la radice solo se non si esegue da sola una procedura o una funzione).
-  const progettoEseguito = esecuzione !== null && progetto === esecuzione.progetto;
+  const progettoEseguito = esecuzione !== null && (progetto === esecuzione.progetto || (pausa !== undefined && stessoProgrammaDellEsecuzione));
   const funzioneDelWatch = nelProgramma && esecuzione?.funzione === undefined ? undefined : mostrata.id;
   const nomiNelDisegno = useMemo(
     () =>
@@ -1640,7 +1653,7 @@ export function Applicazione({
   const giroDi = useCallback((f: Funzione): string | undefined => giri.diFunzione.get(f.id), [giri]);
   /** Apre una finestra delle funzioni, dopo aver confermato i campi aperti. */
   function apriLaFinestra(f: Aperta): void {
-    if (inEsecuzione || !confermaIApertiCampi()) return;
+    if (soloLettura || !confermaIApertiCampi()) return;
     setMenuDellaFunzione(null);
     setFinestra(f);
   }
@@ -1698,7 +1711,7 @@ export function Applicazione({
   /** La copia subito dopo l'originale, aperta nella sua scheda. */
   function duplicaLaFunzione(id: string): void {
     setMenuDellaFunzione(null);
-    if (inEsecuzione) return;
+    if (soloLettura) return;
     const c = confermaIApertiCampi();
     if (!c) return;
     const nuova = idDellaFunzioneNuova(c.presente);
@@ -1716,6 +1729,7 @@ export function Applicazione({
   function fai(azione: Azione): void {
     if (azione !== "punto" && azione !== "nulla") setAnimata(false);
     if (azione === "esegui") avvia("continua");
+    else if (azione === "riesegui") riesegui();
     else if (azione === "passo") avvia("sopra");
     else if (azione === "continua") prosegui("continua");
     else if (azione === "un passo") prosegui("sopra");
@@ -1760,15 +1774,51 @@ export function Applicazione({
   function prosegui(comando: Comando): void {
     const s = esecuzione?.stato.genere;
     if (s !== "pausa" && s !== "pronta") return;
+    // In pausa i campi possono essere aperti: si confermano, e se cambiano il programma quello di prima non va avanti.
+    const c = confermaIApertiCampi();
+    if (!c) return;
+    if (!stessoProgramma(esecuzione!.progetto, c.presente)) {
+      if (comando === "continua") riesegui(c);
+      return;
+    }
     esecuzione!.comanda(comando);
     setAvviso(null);
     ridisegna();
+  }
+  /** «Riesegui»: col programma cambiato, un'esecuzione nuova fino allo stesso passaggio, senza ribattere le letture; prima, se serve, la domanda di salvare. */
+  function riesegui(c: Cronologia | null = confermaIApertiCampi()): void {
+    if (c) seNonSiPerdeNulla(() => rieseguiIl(c.presente), c.presente, true);
+  }
+  function rieseguiIl(p: Progetto): void {
+    const es = esecuzione;
+    if (es?.stato.genere !== "pausa") return;
+    const { funzione, caso: casoDiAllora } = es;
+    // Lo stesso caso d'uso, per nome, com'è adesso; quello di allora, se è stato cancellato.
+    const caso = casoDiAllora && (casiDella(p, funzione).find((x) => x.name === casoDiAllora.name) ?? casoDiAllora);
+    setElencoSu(null);
+    setSpostando(null);
+    setAvviso(null);
+    setRiparte(new Riesecuzione<CasoDiUnaFunzione>(es, p, limiti, { righeLunghe: righeLungheDi(scelte), controllo: controlla(p, limiti), ...(funzione !== undefined ? { funzione } : {}), ...(caso ? { caso } : {}) }));
+  }
+  /** L'esito di una riesecuzione. Il blocco cancellato e il progetto con errori non portano a nulla da mostrare: la pausa di prima resta, e si può correggere e riprovare. */
+  function concludiLaRiesecuzione(r: Riesecuzione<CasoDiUnaFunzione>, esito: EsitoDellaRipartenza): void {
+    setRiparte(null);
+    const es = r.esecuzione;
+    if (es === undefined || (!esito.ritrovato && esito.motivo === "non_parte")) {
+      if (es !== undefined) registrazione?.tieniAccanto(es, erroriDellApp().voci);
+      setAvviso(esito.ritrovato ? null : testi[paroleDelMotivo[esito.motivo]]);
+      return;
+    }
+    registrazione?.apri(es, erroriDellApp().voci);
+    daAnnunciare.current = { es, esito };
+    setEsecuzione(es);
   }
   /** «Ferma»: la colonna si chiude, la vista dei dati si riapre, il progetto si modifica di nuovo. */
   function ferma(): void {
     setAnimata(false);
     if (esecuzione === null) return;
     const inCorso = inEsecuzione;
+    setRiparte(null);
     registrazione?.chiudi(erroriDellApp().voci);
     setEsecuzione(null);
     setAperto(true);
@@ -1965,7 +2015,7 @@ export function Applicazione({
   /** «Esporta il flowchart»: la finestra con le scelte dell'ultima esportazione della sessione (prima si confermano i
    * campi aperti, come per i comandi dei file). */
   function apriLEsportazione(): void {
-    if (!inEsecuzione && !confermaIApertiCampi()) return;
+    if (!soloLettura && !confermaIApertiCampi()) return;
     setMenuDellaFunzione(null);
     setFinestra({ genere: "esporta" });
   }
@@ -1974,7 +2024,7 @@ export function Applicazione({
    * della sessione (prima si confermano i campi aperti, come per i comandi dei file). */
   const stampaDisponibile = situazione !== "in corso" && tutti === null;
   function apriLaStampa(): void {
-    if (!inEsecuzione && !confermaIApertiCampi()) return;
+    if (!soloLettura && !confermaIApertiCampi()) return;
     setMenuDellaFunzione(null);
     setFinestra({ genere: "stampa" });
   }
@@ -2177,7 +2227,7 @@ export function Applicazione({
 
   /** «Salva per segnalare…»: il testo si fotografa qui, una volta sola. Prima si confermano i campi aperti, come per i comandi dei file. */
   function apriLaSegnalazione(): void {
-    if (!inEsecuzione && !confermaIApertiCampi()) return;
+    if (!soloLettura && !confermaIApertiCampi()) return;
     setMenuDellaFunzione(null);
     try {
       setFinestra({ genere: "segnala", segnalazione: perSegnalare(lingua, esecuzione, registrazione) });
@@ -2220,7 +2270,7 @@ export function Applicazione({
 
   /** Il comando di un pulsante della barra: ciò che fa il suo tasto in questa situazione; assente se nulla. */
   const comandoDelTasto = (t: TastoDellEsecuzione) => {
-    const a = azioneDelTasto(situazione, t);
+    const a = azioneDelTasto(situazioneDeiTasti, t);
     return a === "nulla" ? undefined : () => fai(a);
   };
   const statoInParole = tutti
@@ -2255,6 +2305,42 @@ export function Applicazione({
     return () => cancelAnimationFrame(fotogramma);
   }, [esecuzione, giro]);
 
+  // Una riesecuzione avanza a fette, come un comando in corso: «Ferma» e la chiusura rispondono anche con un programma lungo o diventato senza fine.
+  useEffect(() => {
+    const r = riparte;
+    if (!r) return;
+    const fotogramma = requestAnimationFrame(() => {
+      try {
+        r.fetta(() => performance.now(), DURATA_DELLA_FETTA);
+      } catch (e) {
+        annotaErrore("riesecuzione non riuscita", e);
+        setRiparte(null);
+        setAvviso(testi.rieseguiNonRiuscita);
+        return;
+      }
+      if (r.esito !== undefined) concludiLaRiesecuzione(r, r.esito);
+      else ridisegna();
+    });
+    return () => cancelAnimationFrame(fotogramma);
+  }, [riparte, giro]);
+
+  // L'esecuzione nuova di una riesecuzione è nella finestra (la tabella è la sua): l'annuncio di sempre, col motivo davanti se non è arrivata al passaggio.
+  useEffect(() => {
+    const d = daAnnunciare.current;
+    if (d === null || d.es !== esecuzione) return;
+    daAnnunciare.current = null;
+    annuncia(d.es);
+    const { esito } = d;
+    if (esito.ritrovato) {
+      const quanti = esito.righeAvanzate;
+      const avanzate = quanti === 1 ? testi.rieseguiAvanzataUna : riempi(testi.rieseguiAvanzateMolte, { n: quanti.toLocaleString(lingua) });
+      if (quanti > 0) setAvviso((a) => (a === null ? avanzate : `${a} ${avanzate}`));
+    } else {
+      const motivo = testi[paroleDelMotivo[esito.motivo]];
+      setAvviso((a) => (a === null ? motivo : `${motivo} ${a}`));
+    }
+  }, [esecuzione]);
+
   // «Esegui tutti» avanza a fette, una per fotogramma, come un comando in corso; alla fine gli esiti restano legati al
   // progetto eseguito, e l'avviso dice quanti casi sono raggiunti.
   useEffect(() => {
@@ -2281,7 +2367,8 @@ export function Applicazione({
     const es = esecuzione;
     if (!animata || !es) return;
     const s = es.stato.genere;
-    if (s === "finita" || s === "non parte") {
+    // Con una modifica cominciata l'animata si ferma: andrebbe avanti sul programma di prima, e chiuderebbe i campi aperti.
+    if (s === "finita" || s === "non parte" || programmaCambiato || campiAperti) {
       setAnimata(false);
       return;
     }
@@ -2294,7 +2381,7 @@ export function Applicazione({
       subito.current ? 0 : durataDelPasso[scelte.velocitaAnimata],
     );
     return () => clearTimeout(t);
-  }, [animata, esecuzione, giro, scelte.velocitaAnimata]);
+  }, [animata, esecuzione, giro, scelte.velocitaAnimata, programmaCambiato, campiAperti]);
 
   // I tasti della finestra. Con una finestra aperta (anche l'elenco dei blocchi, il menu di un dato, la
   // conferma prima di cancellare un dato) nessuno di questi tasti fa nulla. Altrimenti:
@@ -2302,7 +2389,7 @@ export function Applicazione({
   //   campo: un'esecuzione comincia dopo aver confermato i campi aperti, come fanno i comandi dei file;
   // - le scorciatoie dei file valgono anche col fuoco in un campo (prima confermano i campi aperti);
   // - Annulla e Ripeti, tranne che dentro un campo di testo (lì il tasto resta del motore), con dei campi
-  //   aperti (di un blocco, la scheda o le celle di un dato) e durante l'esecuzione: lì il progetto non si tocca.
+  //   aperti (di un blocco, la scheda o le celle di un dato) e in sola lettura: lì il progetto non si tocca.
   // Una finestra o un menu aperti: i tasti globali e le voci del menu del Mac tacciono. Il menu di un dato tiene il
   // suo stato dentro di sé: lo si trova nel documento.
   const conUnaFinestra = () =>
@@ -2330,11 +2417,14 @@ export function Applicazione({
       }
       // La situazione letta adesso dal nucleo, non quella dell'ultimo disegno: un secondo tasto può arrivare
       // prima che la finestra si ridisegni (un tasto tenuto premuto), e il comando di prima è già in corso.
-      else if (tasto !== null) fai(azioneDelTasto(situazioneDi(esecuzione), tasto));
+      else if (tasto !== null) {
+        const adesso = riparte ? "in corso" : situazioneDi(esecuzione);
+        fai(azioneDelTasto(adesso === "in pausa" && programmaCambiato ? "modificata" : adesso, tasto));
+      }
       else if (delFile === "stampa") {
         if (stampaDisponibile) apriLaStampa();
       } else if (delFile !== null) comandiDelProgetto[delFile]();
-      else if (comando !== null && !nelCampo(e.target) && !campiAperti && !inEsecuzione) {
+      else if (comando !== null && !nelCampo(e.target) && !campiAperti && !soloLettura) {
         e.preventDefault();
         passo(comando);
       }
@@ -2392,7 +2482,7 @@ export function Applicazione({
    * tasto Menu o Maiusc+F10 aprono il suo menu, Ctrl+V incolla sul «+» che ha il fuoco, Spazio su un blocco comincia a spostarlo (Invio su un «+» lo
    * rilascia), Esc annulla lo spostamento o toglie la selezione. Col fuoco su un «+» Canc non tocca il blocco
    * scelto prima. Sul blocco del valore iniziale di un dato Invio apre i suoi campi e Canc chiede se toglierlo (non
-   * per una costante); niente spostamento, Taglia, Copia. Durante l'esecuzione resta solo Esc. */
+   * per una costante); niente spostamento, Taglia, Copia. In sola lettura resta solo Esc. */
   function tastoSulFlowchart(e: ReactKeyboardEvent): void {
     const ctrl = (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey;
     const tasto = e.key.toLowerCase();
@@ -2410,7 +2500,7 @@ export function Applicazione({
       watchDaTastiera(conIlWatch);
       return;
     }
-    if (inEsecuzione) {
+    if (soloLettura) {
       if (e.key === "Escape" && qualcosaScelto) {
         setSelezionato(null);
         e.preventDefault();
@@ -2880,7 +2970,7 @@ export function Applicazione({
   function dallEsitoNellAtteso(indice: number, operazione: (indice: number, esito: EsitoDelCaso, funzione?: string) => Operazione, annuncio: (esito: EsitoDelCaso) => string): void {
     const caso = casi[indice];
     const esito = caso ? segniDeiCasi[indice]?.esito : undefined;
-    if (!caso || !esito || inEsecuzione) return;
+    if (!caso || !esito || soloLettura) return;
     // L'annuncio dopo il passo (che toglie quello di prima): l'atteso è cambiato, anche se il pallino lo dice solo a chi
     // lo vede.
     if (modifica(operazione(indice, esito, funzioneDeiCasi))) setAvviso(riempi(annuncio(esito), { nome: caso.name || testi.casoSenzaNome }));
@@ -2945,6 +3035,7 @@ export function Applicazione({
     setSelezionati(new Set());
     setAvviso(null);
     if (esecuzione) setAperto(true);
+    setRiparte(null);
     registrazione?.chiudi(erroriDellApp().voci);
     setEsecuzione(null);
   }
@@ -3050,8 +3141,8 @@ export function Applicazione({
 
   /** Il gesto `poi`, dopo aver chiesto che cosa fare delle modifiche non salvate (se ce ne sono) del progetto
    * `p` (quello mostrato, o quello appena uscito dalla conferma dei campi). */
-  function seNonSiPerdeNulla(poi: () => void, p: Progetto = progetto): void {
-    if (testoCompleto(p) !== documento.riferimento) setFinestra({ genere: "modifiche", poi });
+  function seNonSiPerdeNulla(poi: () => void, p: Progetto = progetto, perRieseguire = false): void {
+    if (testoCompleto(p) !== documento.riferimento) setFinestra({ genere: "modifiche", poi, perRieseguire });
     else poi();
   }
 
@@ -3198,17 +3289,17 @@ export function Applicazione({
     esciDallApp,
     salva: confermatiPoi((p) => void salvaIl(false, p)),
     salvaConNome: confermatiPoi((p) => void salvaIl(true, p)),
-    // Il segno della libreria è una modifica: durante l'esecuzione no, come le proprietà.
-    salvaComeLibreria: inEsecuzione
+    // Il segno della libreria è una modifica: in sola lettura no, come le proprietà.
+    salvaComeLibreria: soloLettura
       ? undefined
       : () => {
           const c = confermaIApertiCampi();
           if (c) void salvaComeLibreria(c);
         },
-    // Durante l'esecuzione le proprietà non si modificano.
-    proprieta: inEsecuzione ? undefined : () => setFinestra({ genere: "progetto", nuovo: false }),
+    // In sola lettura le proprietà non si modificano.
+    proprieta: soloLettura ? undefined : () => setFinestra({ genere: "progetto", nuovo: false }),
     // Procedure e funzioni: la finestra di una nuova (dal pulsante solo una funzione) e quella di tutte.
-    ...(inEsecuzione
+    ...(soloLettura
       ? {}
       : {
           funzione: () => apriLaFinestra({ genere: "funzione", modo: { modo: "nuova", soloFunzione: true } }),
@@ -3405,9 +3496,9 @@ export function Applicazione({
     registra: registrazione === null ? attivaLaRegistrazione : disattivaLaRegistrazione,
     ...((esecuzione !== null || (registrazione?.numero ?? 0) > 0) && situazione !== "in corso" && tutti === null ? { segnala: apriLaSegnalazione } : {}),
     guida: () => (guidaAperta ? document.querySelector<HTMLElement>("[data-finestra-guida] article")?.focus() : setGuidaAperta(true)),
-    ...(siAnnulla(cronologia) && !inEsecuzione ? { annulla: () => passo("annulla") } : {}),
-    ...(siRipete(cronologia) && !inEsecuzione ? { ripeti: () => passo("ripeti") } : {}),
-    ...(scelto !== null && !inEsecuzione
+    ...(siAnnulla(cronologia) && !soloLettura ? { annulla: () => passo("annulla") } : {}),
+    ...(siRipete(cronologia) && !soloLettura ? { ripeti: () => passo("ripeti") } : {}),
+    ...(scelto !== null && !soloLettura
       ? {
           taglia: () => {
             copiaIl(scelto);
@@ -3418,14 +3509,14 @@ export function Applicazione({
         }
       : {}),
     // Il valore iniziale scelto si toglie (chiedendo), tranne quello di una costante; non si taglia né si copia.
-    ...(sceltoValore !== null && !inEsecuzione && siToglie(rigaScelta) ? { elimina: () => chiediDiTogliere(sceltoValore) } : {}),
+    ...(sceltoValore !== null && !soloLettura && siToglie(rigaScelta) ? { elimina: () => chiediDiTogliere(sceltoValore) } : {}),
     // Durante «Esegui tutti» un'esecuzione non comincia, e «Ferma» ferma i casi.
     esegui: tutti ? undefined : comandoDelTasto("F5"),
     passo: tutti ? undefined : comandoDelTasto("F10"),
     entra: tutti ? undefined : comandoDelTasto("F11"),
     esci: tutti ? undefined : comandoDelTasto("Maiusc+F11"),
     // «Animata» la mette in pausa quando c'è; altrimenti la comincia, tranne durante «tutto insieme».
-    animata: !tutti && (animata || situazione !== "in corso") ? alternaLAnimata : undefined,
+    animata: !tutti && !programmaCambiato && (animata || situazione !== "in corso") ? alternaLAnimata : undefined,
     // La velocità si sceglie dal suo menu (lo stato del comando): sempre disponibile.
     velocita: () => {},
     ferma: tutti ? fermaTutti : comandoDelTasto("Maiusc+F5"),
@@ -3460,7 +3551,7 @@ export function Applicazione({
   const stati: Stati = {
     registra: { testo: registrazione === null ? testi.registraAttiva : testi.registraDisattiva },
     funzione: { suggerimento: testi.comandoFunzioneSuggerimento },
-    esegui: { testo: situazione === "in pausa" ? testi.continua : testi.esegui },
+    esegui: programmaCambiato ? { testo: testi.riesegui, suggerimento: suggerimento("esegui", testi.rieseguiSuggerimento, testi) } : { testo: situazione === "in pausa" ? testi.continua : testi.esegui },
     entra: { suggerimento: suggerimento("entra", testi.entraSuggerimento, testi) },
     esci: { suggerimento: suggerimento("esci", testi.esciSuggerimento, testi) },
     animata: animata ? { premuto: true, icona: "pausaAnimata", suggerimento: testi.animataInCorso } : { premuto: false },
@@ -3616,7 +3707,7 @@ export function Applicazione({
     if (id !== undefined) azione(id);
   };
   const vociDelMenuDellaFunzione =
-    funzioneDelMenu === undefined || inEsecuzione
+    funzioneDelMenu === undefined || soloLettura
       ? []
       : [
           { chiave: "apri", testo: testi.menuApri, azione: funzioneDelMenu.id === mostrata.id ? undefined : sullaFunzione((id) => void mostra(id)) },
@@ -3711,7 +3802,7 @@ export function Applicazione({
                 costantiComuni={comuniMostrate}
                 records={progetto.records}
                 segniDeiRecord={segniDeiRecord}
-                modificaRecord={inEsecuzione ? undefined : {
+                modificaRecord={soloLettura ? undefined : {
                   inModifica: recordInModifica,
                   apri: apriRecord,
                   cambia: (bozza) => setRecordInModifica((m) => (m ? { ...m, bozza } : m)),
@@ -3722,11 +3813,11 @@ export function Applicazione({
                   sposta: (i, verso) => suUnRecord(spostaRecord(i, verso), i + verso),
                   candidato: candidatoDelRecord,
                 }}
-                aggiungiRecord={!inEsecuzione && ((progetto.records ?? []).length > 0 || scelte.pulsanteDeiRecord) ? aggiungiUnRecord : undefined}
+                aggiungiRecord={!soloLettura && ((progetto.records ?? []).length > 0 || scelte.pulsanteDeiRecord) ? aggiungiUnRecord : undefined}
                 testi={testi}
                 valori={valoriMostrati}
                 segni={segni}
-                modifica={inEsecuzione ? undefined : {
+                modifica={soloLettura ? undefined : {
                   modo: modoDati,
                   inModifica: datoInModifica?.comune ? null : datoInModifica,
                   apri: (i) => apriDato(i),
@@ -3745,7 +3836,7 @@ export function Applicazione({
                     if (i === datoNuovo) setNuovo(null);
                   },
                 }}
-                modificaComuni={inEsecuzione || !comuniModificabili ? undefined : {
+                modificaComuni={soloLettura || !comuniModificabili ? undefined : {
                   modo: modoDati,
                   inModifica: datoInModifica?.comune ? datoInModifica : null,
                   apri: (i) => apriDato(i, undefined, true),
@@ -3785,7 +3876,7 @@ export function Applicazione({
                 }}
                 scelto={casoScelto}
                 scegli={setCasoScelto}
-                modifica={inEsecuzione ? undefined : {
+                modifica={soloLettura ? undefined : {
                   inModifica: casoInModifica,
                   apri: apriCaso,
                   cambia: (indice, bozza) => setCasoInModifica({ indice, bozza }),
@@ -3804,7 +3895,7 @@ export function Applicazione({
                 eseguiCaso={!inEsecuzione ? eseguiUnCaso : undefined}
                 dallEsecuzione={dallUltima && ("caso" in dallUltima ? { salva: salvaLEsecuzione } : { motivo: dallUltima.motivo })}
                 dallEsito={
-                  !inEsecuzione
+                  !soloLettura
                     ? {
                         attendiErrore: (i) => dallEsitoNellAtteso(i, attendiErrore, () => testi.annuncioAttendiErrore),
                         togliErrore: (i) => dallEsitoNellAtteso(i, (k, _, f) => togliErroreAtteso(k, f), () => testi.annuncioTogliErrore),
@@ -3851,8 +3942,8 @@ export function Applicazione({
             struttura,
             selezionati: blocchiScelti,
             riquadroDellaScelta,
-            // Maiusc+clic allarga la scelta; durante l'esecuzione si sceglie un blocco solo (per il suo punto di interruzione).
-            scegli: (id, allarga) => (allarga && !inEsecuzione ? estendiA(id) : setSelezionato(id)),
+            // Maiusc+clic allarga la scelta; in sola lettura si sceglie un blocco solo (per il suo punto di interruzione).
+            scegli: (id, allarga) => (allarga && !soloLettura ? estendiA(id) : setSelezionato(id)),
             attiva: (posto, elemento) => (inMovimento ? spostaIn(inMovimento.id, posto, inMovimento.ancora ?? null) : setElencoSu({ posto, elemento })),
             perSpostare,
             sposta: spostaIn,
@@ -3861,7 +3952,7 @@ export function Applicazione({
               const b = trova(progetto, id);
               if (b) apriCampi(b);
             },
-            ...(inEsecuzione ? {} : { menu: (chi: { readonly id: string } | { readonly valore: string }, x: number, y: number) => setMenuDelBlocco({ chi, x, y }) }),
+            ...(soloLettura ? {} : { menu: (chi: { readonly id: string } | { readonly valore: string }, x: number, y: number) => setMenuDelBlocco({ chi, x, y }) }),
             // Nel riquadro di un «per» le parti disegnate aprono i campi del ciclo; in quello di un «per ogni» non fanno
             // nulla (la posizione e l'elemento preso non sono campi dello studente).
             apriParte: (id) => {
@@ -3874,7 +3965,7 @@ export function Applicazione({
             apriRestituisce,
             segnati,
             descrizioni,
-            solaLettura: inEsecuzione,
+            solaLettura: soloLettura,
             corrente,
             faseCorrente,
             campoCorrente,
@@ -3946,7 +4037,7 @@ export function Applicazione({
                   className={stili.tracciaNellaColonna}
                   style={altezzaTabella === null ? undefined : { height: altezzaTabella }}
                 >
-                  {tabellaMostrata && <TabellaDiTraccia tabella={tabellaMostrata} traccia={esecuzione.traccia} versione={versioneDellaTabella} visibile={conTabella && !conCodice} spiegazione={spiegazione} testi={testi} lingua={lingua} ferme={scelte.colonneFerme} disposizione={disposizione} disponi={setDisposizione} />}
+                  {tabellaMostrata && <TabellaDiTraccia tabella={tabellaMostrata} traccia={esecuzione.traccia} versione={versioneDellaTabella} visibile={conTabella && !conCodice} spiegazione={spiegazione} valoriDiPrima={programmaCambiato ? testi.valoriDiPrima : undefined} testi={testi} lingua={lingua} ferme={scelte.colonneFerme} disposizione={disposizione} disponi={setDisposizione} />}
                 </div>
               )}
               {esecuzione && conTabella && !conCodice && <Divisore pannello={pannelloTabella} larghezza={altezzaTabella} cambia={setAltezzaTabella} nome={testi.altezzaTabella} controlla={idTabella} orizzontale />}
@@ -4021,8 +4112,8 @@ export function Applicazione({
         }
         zoom={{ scala, azioni, stati }}
         lingua={{ attuale: lingua, scegli: scegliLingua }}
-        daiUnValore={inEsecuzione ? undefined : daiUnValore}
-        sostituisciConOut={inEsecuzione ? undefined : sostituisciConOut}
+        daiUnValore={soloLettura ? undefined : daiUnValore}
+        sostituisciConOut={soloLettura ? undefined : sostituisciConOut}
         vai={(v) => {
           // La voce di un'altra procedura o funzione mostra prima la sua scheda.
           if (v.funzione !== undefined && v.funzione !== mostrata.id && !mostra(v.funzione)) return;
@@ -4158,6 +4249,7 @@ export function Applicazione({
       />
       <ConfermaModifiche
         aperta={finestra?.genere === "modifiche"}
+        perRieseguire={finestra?.genere === "modifiche" && finestra.perRieseguire === true}
         nome={nomeDelProgetto}
         testi={testi}
         salva={() => {

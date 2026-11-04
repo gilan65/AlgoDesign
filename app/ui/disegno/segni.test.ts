@@ -23,8 +23,8 @@
 // - i segni dei blocchi che l'impaginazione non disegna (un ciclo chiuso non disegna le sue parti);
 // - i colori e la leggibilità dei segni sopra lo sfondo: solo che non coprano nulla;
 // - che la punta si veda nei motori (il disegno vero lo prova `e2e/esecuzione.e2e.ts` dagli attributi);
-// - la punta contro i «+»: c'è un blocco corrente solo in esecuzione, quando il flowchart è in sola lettura e i «+»
-//   non si disegnano.
+// - la punta e il «↩» contro i «+»: in pausa ci sono insieme, ma i «+» compaiono solo col puntatore del mouse sul disegno e si
+//   disegnano sopra (il conto è in `ostacoli`).
 
 import { expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
@@ -174,7 +174,8 @@ function ostacoli(d: Disegno, id: string, s: Segno, entrata?: P, inEsecuzione = 
   });
   for (const r of d.riquadri) if (!(suo && r.blocco === id) && lati(angoli(r.bordo)).some(([a, b]) => toccaSegmento(s, a, b))) fuori.push(`il bordo del riquadro di ${r.blocco}`);
   for (const u of d.ricongiungimenti) if (tocca(s, angoli({ x: u.centro.x - u.raggio, y: u.centro.y - u.raggio, larghezza: 2 * u.raggio, altezza: 2 * u.raggio }))) fuori.push("un punto di unione");
-  // Durante l'esecuzione i «+» non ci sono (sola lettura), e solo allora c'è un blocco corrente: per la punta non contano.
+  // In pausa i «+» ci sono, come il blocco corrente, ma per la punta e per il «↩» non contano: compaiono solo col puntatore del mouse sul disegno, stanno sopra e si
+  // cliccano. Misurato: su 53984 blocchi la punta tocca un «+» in 1856 casi, il «↩» in 20611.
   if (!inEsecuzione) for (const p of d.punti) if (tocca(s, angoli({ x: p.x - PIU / 2, y: p.y - PIU / 2, larghezza: PIU, altezza: PIU }))) fuori.push("un «+»");
   const v = "cerchio" in s ? [{ x: s.cerchio.x - s.raggio, y: s.cerchio.y - s.raggio }, { x: s.cerchio.x + s.raggio, y: s.cerchio.y + s.raggio }] : s.triangolo;
   if (v.some((q) => q.x < 0 || q.y < 0 || q.x > d.larghezza || q.y > d.altezza)) fuori.push("il bordo del disegno");
@@ -243,7 +244,7 @@ test("la punta del blocco corrente non tocca nulla del disegno oltre alla linea 
 }, 150_000);
 
 test("il «↩» della ripresa non tocca nulla del disegno e ci sta dentro, su ogni blocco che si esegue, in ogni albero", () => {
-  // La ripresa c'è solo in esecuzione (i «+» non ci sono) e su un blocco che chiama una funzione in un'espressione: qui su
+  // La ripresa c'è solo in esecuzione (i «+» non contano: `ostacoli`) e su un blocco che chiama una funzione in un'espressione: qui su
   // ogni blocco che si esegue, che è più largo. Il riquadro del glifo è quello che `ripresa` dichiara.
   const difetti: string[] = [];
   const specie = new Map<string, number>();

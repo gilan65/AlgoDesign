@@ -5,7 +5,7 @@
 //   diventa quello scelto; dalla tastiera Maiusc+F10 sul blocco, Esc lo chiude e torna sul blocco;
 // - sul blocco del valore iniziale di un dato solo Elimina, che chiede di toglierlo;
 // - sul Mac le voci coi tasti del Mac (⌘X, ⌘C, ⌫), e ⌫ sul blocco lo toglie (fuori dal Mac no);
-// - durante un'esecuzione il menu non si apre;
+// - in pausa il menu si apre, in sola lettura no (`e2e/riesegui.e2e.ts`, gesto per gesto);
 // - il doppio clic su una parte disegnata del riquadro di un «per» apre i campi del ciclo; in quello di un «per ogni» no.
 //
 // Che cosa NON guarda: dove il menu si apre (nel punto del clic: la cornice è quella del menu della riga, provata coi
@@ -178,7 +178,7 @@ test("sul Mac le voci hanno i tasti del Mac e ⌫ sul blocco lo toglie; fuori da
   expect(navigator.userAgent).not.toContain("Macintosh");
 });
 
-test("durante un'esecuzione il tasto destro su un blocco non apre il menu", async () => {
+test("in pausa il tasto destro su un blocco apre il menu, perché il progetto si modifica", async () => {
   await apriLaParola();
   await act(async () => {
     fireEvent.keyDown(document.body, { key: "F10" });
@@ -190,7 +190,7 @@ test("durante un'esecuzione il tasto destro su un blocco non apre il menu", asyn
   expect(document.querySelector("[data-stato-esecuzione]")?.textContent ?? "manca lo stato").not.toBe(it.statoPronto);
   expect(document.querySelector("[data-stato-esecuzione]")?.outerHTML ?? null).not.toBeNull();
   await tastoDestro(blocco("b4")!);
-  expect(html(menu())).toBeNull();
+  expect(html(menu())).not.toBeNull();
 });
 
 test("il doppio clic su una parte disegnata del riquadro di un «per» apre i campi del ciclo; in quello di un «per ogni» no", async () => {

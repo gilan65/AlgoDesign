@@ -205,7 +205,7 @@ test("un vettore di 1000 elementi: un clic sul nome ferma il riquadro, che prend
   await expect(fermo).toBeVisible();
   await expect(fermo).toHaveCount(1);
   // A corsa finita il clic sul nome sceglie anche il blocco (il progetto si modifica di nuovo: lo si copia o si cancella
-  // cliccandolo dove capita); durante l'esecuzione no (la prova qui sotto).
+  // cliccandolo dove capita), e così in pausa (la prova qui sotto).
   const b2 = page.locator('[data-blocco="b2"]').first();
   expect(await b2.getAttribute("aria-pressed")).toBe("true");
   const f = (await fermo.boundingBox())!;
@@ -339,18 +339,18 @@ const lunghiEVettori = JSON.stringify({
   ],
 });
 
-test("il riquadro fermo: una stringa lunga si scorre di lato, cambiando dato lo scorrimento riparte, la finestra più bassa lo rimette dentro; durante l'esecuzione il clic sul nome non sceglie il blocco", async ({ page }) => {
+test("il riquadro fermo: una stringa lunga si scorre di lato, cambiando dato lo scorrimento riparte, la finestra più bassa lo rimette dentro; in pausa il clic sul nome sceglie anche il blocco", async ({ page }) => {
   await apriVuota(page, { lingua: "it" }, { esempi: { "1 lunghi.algo": lunghiEVettori } });
   await apriEsempio(page, 0);
   const fermo = page.locator("[data-watch][data-watch-fermo]");
-  // Durante l'esecuzione (in pausa sulla prima azione) il clic sul nome ferma il riquadro e non sceglie il blocco.
+  // In pausa sulla prima azione il clic sul nome ferma il riquadro e sceglie il blocco: il progetto si modifica.
   await page.getByRole("region", { name: it.vistaFlowchart, exact: true }).click({ position: { x: 5, y: 5 } });
   await page.keyboard.press("F10");
   await expect(statoDi(page)).toHaveText(riempi(it.statoInPausa, { n: "1" }));
   await scorrimentoFinito(page);
   await nome(page, "b2", "v").click();
   await expect(fermo).toBeVisible();
-  expect(await page.locator('[data-blocco="b2"]').first().getAttribute("aria-pressed")).not.toBe("true");
+  expect(await page.locator('[data-blocco="b2"]').first().getAttribute("aria-pressed")).toBe("true");
   await page.keyboard.press("Escape");
   await page.keyboard.press("F5");
   await expect(statoDi(page)).toHaveText(it.statoFinita);

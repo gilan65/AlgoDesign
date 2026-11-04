@@ -93,6 +93,16 @@ test("un'esecuzione che non parte si registra, dopo quella che c'era", () => {
   expect(r.numero).toBe(2);
 });
 
+test("una riesecuzione che non parte si registra e l'aperta resta aperta: la pausa non è finita, e continua a contare com'è al momento di salvare", () => {
+  const r = new InRegistrazione(finita(programma("Prima"), "5"), nessuno);
+  const ferma = new Esecuzione(cheNonParte(), tetti, { tabella: false });
+  r.tieniAccanto(ferma, nessuno);
+  expect(r.numero).toBe(2);
+  expect(fileDi(r).executions.map((x) => x.outcome.kind)).toEqual(["not_started", "finished"]);
+  r.chiudi(nessuno);
+  expect(r.numero).toBe(2);
+});
+
 test(`si tengono le ultime ${tettoDelleEsecuzioni} e il file dice quante ne mancano: l'aperta compresa`, () => {
   const r = new InRegistrazione(null, nessuno);
   const quante = tettoDelleEsecuzioni + 2;
