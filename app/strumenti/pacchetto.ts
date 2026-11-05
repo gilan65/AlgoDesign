@@ -65,7 +65,8 @@
 // 12. ZIP DEL NUCLEO: `dist/AlgoDesign-Core-<versione>.zip`, con dentro la cartella `AlgoDesign-Core-<versione>`, con le prove
 //    di 6 e l'impronta accanto.
 // 13. PROVA DEL NUCLEO: lo zip estratto in una cartella con spazi nel nome, il file caricato da lì sotto Node con un PATH senza
-//    Bun: le cinque esportazioni per elementi, e su tutto il corpus gli esiti di ciò che i sorgenti danno sotto Bun.
+//    Bun: le cinque esportazioni per elementi, e su tutto il corpus gli esiti di ciò che i sorgenti danno sotto Bun. Se Node
+//    cade all'uscita (0xC0000409) il suo lato si ripete una volta sola, e la riga lo dice; ogni altra uscita è un rosso subito.
 //
 // Una cartella o uno zip della stessa versione si sostituiscono, ma la cartella solo se contiene le voci dell'elenco e
 // `data` è vuota (chi ha avviato il programma da lì ci trova le sue preferenze: si cancellano a mano).
@@ -88,7 +89,7 @@ import { createHash } from "node:crypto";
 import { homedir, tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { delCorpus } from "../ui/genera/attesi-di-accademico";
-import { costruisciIlNucleo, esportazioniAttese, fileDelNucleo, latoAtteso, latoOttenuto, nodeDellaToolchain, verdetto } from "./conformita-del-nucleo";
+import { costruisciIlNucleo, esportazioniAttese, fileDelNucleo, latoAtteso, latoOttenutoConUnTentativoInPiu, nodeDellaToolchain, verdetto } from "./conformita-del-nucleo";
 import { dataConPreposizione, dataMostrata } from "../ui/prodotto";
 import {
   differenzeDallElenco,
@@ -703,7 +704,7 @@ async function provaIlNucleo(): Promise<void> {
     const corpus = join(radice, "casi");
     try {
       const attesi = await latoAtteso(corpus, join(base, "attesi.json"));
-      const { esportazioni, esiti } = await latoOttenuto(nodeDellaToolchain(), estratto, corpus, join(base, "ottenuto.json"), { PATH: senzaBun.join(";"), Path: undefined });
+      const { esportazioni, esiti } = await latoOttenutoConUnTentativoInPiu(nodeDellaToolchain(), estratto, corpus, join(base, "ottenuto.json"), { PATH: senzaBun.join(";"), Path: undefined }, (r) => riga(`${C}: ${r}`));
       if (esportazioni.join() !== esportazioniAttese.join()) rosso(C, `le esportazioni sono ${esportazioni.join(", ")} invece di ${esportazioniAttese.join(", ")}`);
       const differenze = verdetto(attesi, esiti);
       // Il rilevatore sa dire «diversa»: lo stesso verdetto con un esito tolto.

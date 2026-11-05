@@ -4,13 +4,15 @@
 # dello zip); quello di Linux compone l'archivio con `strumenti/archivio.ts` (l'AppImage su Ubuntu 22.04, la glibc più
 # vecchia fra le immagini, gli stessi controlli più le librerie di Ubuntu dentro l'AppImage coi loro copyright). Ognuno
 # estrae il suo archivio in una cartella con spazi, avvia il programma una volta (resta vivo per 20 s, fotografia dello
-# schermo) e carica gli artefatti. Non pubblica nulla: la release si crea a parte dagli artefatti scaricati.
+# schermo) e carica gli artefatti. Non pubblica nulla: la release si crea a parte dagli artefatti scaricati. Gli artefatti
+# durano 7 giorni: lo spazio incluso è poco, e la copia che dura è la release.
 #
 # Con «prove» acceso (una volta per release) corrono anche, sull'archivio di Linux della stessa corsa o sul sorgente:
 # - le prove dell'interfaccia nel WebKit di Playwright per Linux (il progetto `webkit-anteprima`, `strumenti/webkit.ts`);
 # - la prova sul prodotto dell'AppImage col WebKitGTK di Ubuntu 22.04 (`strumenti/linux/prova-ci.ts`): lingua,
 #   esecuzione, vettore di 1000 elementi, suggerimento fotografato, memoria, tracce fuori da `data/`;
-# - il test differenziale col gcc e il clang di Ubuntu 24.04 (`bun run differenziale`, con gli avvisi attesi).
+# - il test differenziale col gcc e il clang di Ubuntu 24.04 (`bun run differenziale`, con gli avvisi attesi), due volte:
+#   col Python del servizio e col Python 3.11, la versione più vecchia per cui il codice generato è dichiarato.
 #
 # Da un'etichetta `v<versione>` il pacchetto è una release; da un ramo è un pacchetto di prova (`--prova`), con lo
 # stesso contenuto e lo stesso nome, nella cartella `dist/prova/` del runner.
@@ -80,10 +82,13 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force uscita | Out-Null
           $cartella = if ("${{ github.ref_type }}" -eq "tag") { "dist" } else { "dist/prova" }
-          $zip = @(Get-ChildItem "$cartella/AlgoDesign-*-windows-x64.zip")
-          "zip trovati: $($zip.Count)"
-          if ($zip.Count -ne 1) { exit 1 }
-          Copy-Item $zip[0].FullName, "$($zip[0].FullName).sha256" uscita/
+          # I tre pacchetti, ognuno atteso per nome dalla versione: uno che manca è rosso e si nomina.
+          $versione = (Get-Content -Raw app/package.json | ConvertFrom-Json).version
+          $attesi = @("AlgoDesign-$versione-windows-x64.zip", "AlgoDesign-Tools-$versione-windows.zip", "AlgoDesign-Core-$versione.zip")
+          $mancanti = @($attesi | ForEach-Object { $_; "$_.sha256" } | Where-Object { -not (Test-Path -LiteralPath (Join-Path $cartella $_)) })
+          if ($mancanti.Count -gt 0) { "ROSSO: in ${cartella} mancano: $($mancanti -join ', ')"; exit 1 }
+          foreach ($nome in $attesi) { Copy-Item -LiteralPath (Join-Path $cartella $nome), (Join-Path $cartella "$nome.sha256") -Destination uscita/ }
+          "raccolti: $($attesi -join ', ')"
           Copy-Item app/.collaudo/pacchetto-*.log uscita/
           # Il commit da cui nasce il pacchetto, con il ramo o l'etichetta e la corsa.
           "commit $(git rev-parse HEAD)`nref ${{ github.ref }}`ncorsa ${{ github.run_id }}" | Out-File -FilePath uscita/commit.txt -Encoding utf8
@@ -116,6 +121,7 @@ jobs:
           name: windows
           path: uscita/
           if-no-files-found: error
+          retention-days: 7
 
   linux:
     if: contains(inputs.piattaforme || 'windows', 'linux')
@@ -183,6 +189,7 @@ jobs:
           name: linux
           path: uscita/
           if-no-files-found: error
+          retention-days: 7
 
   webkit-linux:
     if: inputs.prove && contains(inputs.piattaforme || 'windows', 'linux')
@@ -219,6 +226,7 @@ jobs:
           path: |
             app/.collaudo/webkit-*
             app/.collaudo/playwright/
+          retention-days: 7
 
   prodotto-linux:
     if: inputs.prove && contains(inputs.piattaforme || 'windows', 'linux')
@@ -261,6 +269,7 @@ jobs:
         with:
           name: prodotto-linux
           path: uscita-prodotto/
+          retention-days: 7
 
   differenziale-linux:
     if: inputs.prove && contains(inputs.piattaforme || 'windows', 'linux')
@@ -286,6 +295,13 @@ jobs:
           clang --version | head -1
           python3 --version
 
+      # Solo il percorso: il Python del servizio resta quello del PATH per il primo giro.
+      - uses: actions/setup-python@v5
+        id: python311
+        with:
+          python-version: "3.11"
+          update-environment: false
+
       - name: Test differenziale
         run: |
           mkdir -p ../uscita-differenziale
@@ -294,8 +310,22 @@ jobs:
           echo "exit ${codice}"
           exit "${codice}"
 
+      # Anche dopo un rosso del primo giro: i due esiti si leggono insieme. La riga della toolchain dice quale Python ha corso.
+      - name: Test differenziale col Python 3.11
+        if: "!cancelled()"
+        env:
+          ALGODESIGN_PYTHON: ${{ steps.python311.outputs.python-path }}
+        run: |
+          mkdir -p ../uscita-differenziale
+          bun run differenziale > ../uscita-differenziale/differenziale-python-3.11.log 2>&1 && codice=0 || codice=$?
+          tail -40 ../uscita-differenziale/differenziale-python-3.11.log
+          echo "exit ${codice}"
+          grep -q "Python da variabile ALGODESIGN_PYTHON: python 3\.11\." ../uscita-differenziale/differenziale-python-3.11.log || { echo "ROSSO: questo giro non ha corso col Python 3.11"; exit 1; }
+          exit "${codice}"
+
       - uses: actions/upload-artifact@v5
         if: always()
         with:
           name: differenziale-linux
           path: uscita-differenziale/
+          retention-days: 7

@@ -4,7 +4,8 @@
 //
 // Un lato che non scrive il suo file è un FERMO, non un rosso: non si è potuto misurare. Un'eccezione non catturata esce 1, e si
 // leggerebbe come una differenza; Node può anche cadere all'uscita dopo aver scritto tutto (0xC0000409, misurato due volte),
-// e quella riga ha il suo nome.
+// e quella riga ha il suo nome. Il pacchetto, che dovrebbe ricostruire tutto, ripete il lato di Node una volta sola e solo su
+// quel codice (`conUnTentativoInPiu`): ogni altra uscita, e una differenza vera, restano rosse al primo colpo.
 //
 // Che cosa NON guarda:
 // - che il codice generato sia giusto: si confrontano testi e oggetti, nessun programma generato viene eseguito (lo fa il
@@ -15,7 +16,7 @@
 // - uno specificatore calcolato a run time: il parser e il metafile vedono quelli scritti;
 // - un `import type` dentro il punto d'ingresso: non arriva nei byte, e lo guarda la porta dei tipi del nucleo.
 
-import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { esecutoreDel, trovaToolchain } from "./esecutori";
@@ -106,13 +107,35 @@ export type Esiti = Readonly<Record<string, unknown>>;
 /** Node caduto all'uscita, dopo aver scritto l'esito (0xC0000409): Bun può dare il codice con o senza segno. */
 export const caduteAllUscita = (codice: number): boolean => codice >>> 0 === 0xc0000409;
 
-/** Esegue un lato: i dati nel file dato. Un lato che non lo scrive è un fermo. */
-async function lato(nome: string, comando: readonly string[], uscita: string, ambiente: Record<string, string | undefined>): Promise<unknown> {
+/** Come è finito il processo di un lato. */
+export type FineDelLato = { readonly codice: number; readonly err: string };
+
+async function lancia(comando: readonly string[], ambiente: Record<string, string | undefined>): Promise<FineDelLato> {
   const p = Bun.spawn({ cmd: [...comando], cwd: radice, stdout: "pipe", stderr: "pipe", env: { ...process.env, ...ambiente } });
   const [, err, codice] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text(), p.exited]);
+  return { codice, err };
+}
+
+/** I dati di un lato finito. Un lato che non scrive il suo file è un fermo. */
+function datiDelLato(nome: string, { codice, err }: FineDelLato, uscita: string): unknown {
   if (caduteAllUscita(codice)) throw new Error(`FERMO: ${nome}: Node è caduto all'uscita (${codice}), non si è misurato nulla: rifalla`);
   if (codice !== 0 || !existsSync(uscita)) throw new Error(`FERMO: ${nome} esce ${codice} e non si è misurato nulla: ${err.trim().slice(0, 600)}`);
   return JSON.parse(readFileSync(uscita, "utf8"));
+}
+
+/** Esegue un lato: i dati nel file dato. */
+const lato = async (nome: string, comando: readonly string[], uscita: string, ambiente: Record<string, string | undefined>): Promise<unknown> => datiDelLato(nome, await lancia(comando, ambiente), uscita);
+
+/** Un lato che può ripetersi una volta sola, se esce col codice della caduta di Node e con nessun altro. Il file del primo giro
+ * si toglie: conta solo ciò che scrive il giro che finisce bene. Il ritentativo si dice con l'errore intero di Node. */
+export async function conUnTentativoInPiu(nome: string, giro: () => Promise<FineDelLato>, uscita: string, avvisa: (riga: string) => void): Promise<unknown> {
+  const primo = await giro();
+  if (!caduteAllUscita(primo.codice)) return datiDelLato(nome, primo, uscita);
+  avvisa(`${nome}: Node è caduto all'uscita (${primo.codice}), secondo e ultimo tentativo; il suo errore: ${JSON.stringify(primo.err)}`);
+  rmSync(uscita, { force: true });
+  const secondo = await giro();
+  if (caduteAllUscita(secondo.codice)) throw new Error(`FERMO: ${nome}: Node è caduto all'uscita due volte di seguito (${secondo.codice}), non si è misurato nulla; l'ultimo errore: ${JSON.stringify(secondo.err)}`);
+  return datiDelLato(nome, secondo, uscita);
 }
 
 /** Gli attesi: i sorgenti sotto Bun, in un processo loro. */
@@ -122,6 +145,10 @@ export const latoAtteso = async (corpus: string, uscita: string): Promise<Esiti>
 /** L'ottenuto: il pacchetto sotto Node, in un processo suo. */
 export const latoOttenuto = async (node: string, pacchetto: string, corpus: string, uscita: string, ambiente: Record<string, string | undefined> = {}): Promise<{ readonly esportazioni: readonly string[]; readonly esiti: Esiti }> =>
   (await lato("il lato dell'ottenuto", [node, join(radice, "strumenti", "conformita-ottenuto.cjs"), pacchetto, corpus, uscita], uscita, ambiente)) as { esportazioni: string[]; esiti: Esiti };
+
+/** L'ottenuto col tentativo in più, per il pacchetto. */
+export const latoOttenutoConUnTentativoInPiu = async (node: string, pacchetto: string, corpus: string, uscita: string, ambiente: Record<string, string | undefined>, avvisa: (riga: string) => void): Promise<{ readonly esportazioni: readonly string[]; readonly esiti: Esiti }> =>
+  (await conUnTentativoInPiu("il lato dell'ottenuto", () => lancia([node, join(radice, "strumenti", "conformita-ottenuto.cjs"), pacchetto, corpus, uscita], ambiente), uscita, avvisa)) as { esportazioni: string[]; esiti: Esiti };
 
 /** Il verdetto, una riga intera per ogni differenza: elementi nei due versi, ogni combinazione come oggetto intero. */
 export function verdetto(attesi: Esiti, ottenuto: Esiti): string[] {
