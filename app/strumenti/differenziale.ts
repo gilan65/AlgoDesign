@@ -57,8 +57,11 @@
 //
 // La toolchain di ogni esecutore (variabile d'ambiente, impostazione locale, PATH) è descritta in `esecutori.ts`. Un
 // eseguibile indicato che non risponde a `--version` è un PROBLEMA, come una toolchain senza nessun eseguibile; una
-// famiglia che manca (il C senza clang) la dice la riga della toolchain, e il caso corre con le macchine che ci sono
-// (il collaudo le richiede tutte). I processi partono con la cartella del loro eseguibile in testa al PATH.
+// famiglia che manca (il C senza clang) la dice la riga della toolchain, e il caso corre con le macchine che ci sono. I
+// processi partono con la cartella del loro eseguibile in testa al PATH.
+//
+// Ogni esecutore che il registro richiede, e ogni altro trovato, che ha corso zero casi su un confronto non vuoto è un
+// PROBLEMA col suo nome: `0/0` non è un verde. Vale per una famiglia che manca, come per una macchina fuori dal registro.
 //
 // Un generatore che cresce un gruppo di costrutti per volta (oggi il TypeScript) dice di un progetto il primo costrutto
 // che non sa ancora scrivere: la riga `NON ANCORA <linguaggio> <file>: <costrutto>`, e gli esecutori di quel linguaggio
@@ -106,7 +109,7 @@ import { apri } from "../core/progetto/formato";
 import { usaIRecord, usaLeMatrici, usaLeTabelle, type Atteso, type CasoDiUnaFunzione, type Funzione, type Progetto } from "../core/progetto/modello";
 import { paroleDelloPseudocodice } from "../ui/genera/parole";
 import { casiDelProgetto, esclusi, ottenutoDaiTesti, type ControlloCheParte } from "./casi-del-confronto";
-import { ambienteDi, appaia, esecutoreDel, esecutori as tuttiGliEsecutori, lingueDelCodice as lingue, nomeDellaMacchina, trovaToolchain, type Esecutore, type Macchina } from "./esecutori";
+import { ambienteDi, appaia, esecutoreDel, esecutori as tuttiGliEsecutori, esecutoriRichiesti, esecutoriSenzaCasi, lingueDelCodice as lingue, nomeDellaMacchina, trovaToolchain, type Esecutore, type Macchina } from "./esecutori";
 import { scriviDopoIlDifferenziale } from "./guida-delle-prove";
 import { righeDellEsito } from "./righe-dei-casi";
 import { differenzaDalTypeScript, differenzaDellaProvenienza } from "./senza-tipi";
@@ -494,6 +497,7 @@ for (const d of daConfrontare)
   }
 const n = daConfrontare.length;
 if (n === 0) problemi.push("nessun caso nel confronto");
+else for (const e of esecutoriSenzaCasi(esecutoriRichiesti(linguaggi, tuttiGliEsecutori), corsiPer)) problemi.push(`esecutore ${e}: nessun caso corso, su ${n} nel confronto`);
 // I casi per tipo: quelli dei progetti che usano i record (fra loro quelli che usano le tabelle) e quelli che usano le
 // matrici, contati a parte perché si vedano.
 const verdiConOgni = (casi: readonly { id: string }[]) => casi.filter((d) => esecutori.every((e) => risultati.get(`${e} ${d.id}`)?.genere === "verde")).length;

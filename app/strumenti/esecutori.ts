@@ -17,8 +17,9 @@
 // stesse macchine la eseguono, e un esecutore del differenziale ha la forma davanti (`js-node it`). L'esecutore dice come
 // si tolgono le annotazioni dal TypeScript (`togliITipi`), per il confronto che fa il differenziale.
 //
-// Un esecutore ha una o più FAMIGLIE della sua toolchain (il C: gcc e clang), tutte richieste: il collaudo è rosso se ne
-// manca una, il differenziale lo dice nella riga della toolchain e corre con quelle che trova. Ogni eseguibile trovato
+// Un esecutore ha una o più FAMIGLIE della sua toolchain (il C: gcc e clang), tutte richieste: se ne manca una il
+// differenziale lo dice nella riga della toolchain, corre con quelle che trova ed è rosso, perché gli esecutori di quella
+// famiglia hanno corso zero casi (`esecutoriSenzaCasi`). Ogni eseguibile trovato
 // è una macchina, chiamata come la sua famiglia (`gcc`; un secondo gcc `gcc-2`); un esecutore del differenziale è una
 // macchina in una lingua del codice (`gcc it`).
 //
@@ -222,6 +223,11 @@ export function esecutoriRichiesti(registro: readonly VoceDelRegistro[], tutti: 
       [undefined, v.formaSenzaTipi?.id].flatMap((forma, k) => (k > 0 && forma === undefined ? [] : (esecutoreDel(v.id, tutti)?.famiglie ?? []).flatMap((f) => lingueDelCodice.map((l) => `${nomeDellaMacchina(f, forma)} ${l}`)))),
     ),
   ];
+}
+
+/** Gli esecutori richiesti, o che hanno un conteggio, con zero casi corsi: `0/0` non è un verde. */
+export function esecutoriSenzaCasi(richiesti: readonly string[], corsi: ReadonlyMap<string, number>): string[] {
+  return [...new Set([...richiesti, ...corsi.keys()])].filter((e) => (corsi.get(e) ?? 0) === 0);
 }
 
 /** Quanti programmi avvisano compilati, sommati sugli esecutori dei linguaggi da eseguire. */

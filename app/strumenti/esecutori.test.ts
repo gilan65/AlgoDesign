@@ -19,6 +19,7 @@ import {
   esecutoreDel,
   esecutori,
   esecutoriRichiesti,
+  esecutoriSenzaCasi,
   eseguitiDel,
   programmiConAvvisiAttesi,
   type Esecutore,
@@ -26,6 +27,25 @@ import {
 } from "./esecutori";
 
 const senzaIlC = linguaggi.filter((v) => v.id !== "c");
+
+describe("un esecutore con zero casi", () => {
+  const corsi = (voci: readonly (readonly [string, number])[]) => new Map(voci);
+  test("nessuno se ognuno ha corso", () => {
+    expect(esecutoriSenzaCasi(["interprete", "gcc it"], corsi([["interprete", 3], ["gcc it", 3]]))).toEqual([]);
+  });
+  test("richiesto e assente dai conteggi: una famiglia che manca", () => {
+    expect(esecutoriSenzaCasi(["interprete", "clang it"], corsi([["interprete", 3]]))).toEqual(["clang it"]);
+  });
+  test("presente con zero, richiesto o trovato in più", () => {
+    expect(esecutoriSenzaCasi(["gcc it"], corsi([["gcc it", 0]]))).toEqual(["gcc it"]);
+    expect(esecutoriSenzaCasi(["gcc it"], corsi([["gcc it", 1], ["gcc-2 it", 0]]))).toEqual(["gcc-2 it"]);
+  });
+  test("tutti gli esecutori che il registro richiede, senza nessun conteggio", () => {
+    const richiesti = esecutoriRichiesti(linguaggi, esecutori);
+    expect(richiesti.length).toBeGreaterThan(1);
+    expect(esecutoriSenzaCasi(richiesti, corsi([]))).toEqual(richiesti);
+  });
+});
 
 describe("il registro e gli esecutori", () => {
   test("ogni linguaggio da eseguire ha il suo esecutore, e ogni esecutore la sua voce", () => {
