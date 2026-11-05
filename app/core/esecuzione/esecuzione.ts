@@ -65,6 +65,34 @@ export function funzioneDelBlocco(p: Progetto, id: string): string | undefined {
   return p.functions.find((f) => f.id === id || f.end.id === id || dentro(f.body))?.id;
 }
 
+/** Il blocco `id` del progetto, se c'è. */
+function bloccoDi(p: Progetto, id: string): Blocco | undefined {
+  const cerca = (bs: readonly Blocco[]): Blocco | undefined => {
+    for (const b of bs) {
+      const t = b.id === id ? b : b.kind === "if" ? (cerca(b.then) ?? cerca(b.else)) : "body" in b ? cerca(b.body) : undefined;
+      if (t !== undefined) return t;
+    }
+    return undefined;
+  };
+  for (const f of p.functions) {
+    const t = cerca(f.body);
+    if (t !== undefined) return t;
+  }
+  return undefined;
+}
+
+/** Il nome di ciò che una lettura chiede, come la console lo scrive: un parametro della funzione eseguita da sola
+ * (`funzione`) chiesto elemento per elemento (una matrice coi due indici) e campo per campo (`t[0].nome`); in una Lettura
+ * (`lettura`, il blocco) il nome che il blocco scrive, prima dell'indice o del campo, che per un parametro per riferimento
+ * non è quello del dato di chi chiama. */
+export function nomeDellaRichiesta(p: Progetto, funzione: string | undefined, chiede: { readonly dato: string; readonly elemento?: number; readonly campo?: string }, lettura: Blocco | undefined): string {
+  const colonne = p.functions.find((f) => f.id === funzione)?.data.find((d) => d.name === chiede.dato)?.columns;
+  const indici = (k: number) => (colonne === undefined || colonne < 1 ? `[${k}]` : `[${Math.floor(k / colonne)}][${k % colonne}]`);
+  const nome = `${chiede.dato}${chiede.elemento !== undefined ? indici(chiede.elemento) : ""}${chiede.campo !== undefined ? `.${chiede.campo}` : ""}`;
+  const scritto = lettura?.kind === "read" ? lettura.target.split(/[[.]/)[0]!.trim() : undefined;
+  return scritto === undefined || scritto === chiede.dato ? nome : scritto;
+}
+
 export type Stato =
   /** Prima della prima azione. */
   | { readonly genere: "pronta" }
@@ -88,12 +116,13 @@ export type Stato =
 
 /** Una riga della console; una scritta senza `aCapo` è l'ultima, ancora aperta, o è stata chiusa da una lettura, o
  * continua nella seguente (una riga lunga andata a capo da sola). `tagliata`: ne restano solo gli ultimi caratteri.
- * `senzaValore`: un parametro per riferimento della funzione eseguita da sola arrivato senza un valore (nessun testo). */
+ * `senzaValore`: un parametro per riferimento della funzione eseguita da sola arrivato senza un valore (nessun testo).
+ * `nome`: ciò che la console chiedeva, quando non è il solo `dato` (`nomeDellaRichiesta`); `dato` resta il nome del nucleo, quello del file. */
 export type VoceDellaConsole =
   | { readonly genere: "scrive"; readonly testo: string; readonly aCapo: boolean; readonly tagliata?: true }
   | { readonly genere: "letto"; readonly dato: string; readonly testo: string; readonly tagliata?: true }
-  | { readonly genere: "senzaValore"; readonly dato: string; readonly testo: "" }
-  | { readonly genere: "nonValido"; readonly dato: string; readonly testo: string; readonly tagliata?: true };
+  | { readonly genere: "senzaValore"; readonly dato: string; readonly nome?: string; readonly testo: "" }
+  | { readonly genere: "nonValido"; readonly dato: string; readonly nome?: string; readonly testo: string; readonly tagliata?: true };
 
 /** Un livello della pila delle chiamate: la funzione (il suo `id`, anche del programma principale), il blocco dell'ultima
  * azione a quel livello e, in un ciclo `per` o `per ogni`, la sua parte (un `per` che chiama dai suoi limiti, nella
@@ -162,6 +191,8 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
   /** La riga da dare alla lettura in corso, e il dato che la chiede. */
   #riga: Riga;
   #chiesto = "";
+  /** Il nome di ciò che si chiede, per la console, se non è `#chiesto`. */
+  #nomeChiesto: { readonly nome?: string } = {};
   #nonValido = false;
   /** Nel modo caso: quante voci sono state consegnate, l'output tenuto fino a `#tettoDellOutput` e se ne è rimasto
    * fuori qualcosa. Senza caso il tetto non c'è: l'output non si tiene (la regola sta qui sola). */
@@ -435,10 +466,10 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
       this.#leggi(scritta);
       if (libera) this.#lette.push({ data: this.#chiesto, text: scritta, ...(typeof riga === "object" ? { each: true } : {}) });
     } else if (typeof scritta === "string") {
-      this.#aggiungi({ genere: "nonValido", dato: this.#chiesto, ...this.#laFine(scritta) });
+      this.#aggiungi({ genere: "nonValido", dato: this.#chiesto, ...this.#nomeChiesto, ...this.#laFine(scritta) });
       if (libera) this.#lette.push({ data: this.#chiesto, text: scritta, ...(typeof riga === "object" ? { each: true } : {}), rifiutata: true });
     } else if (scritta === senzaValore) {
-      this.#aggiungi({ genere: "senzaValore", dato: this.#chiesto, testo: "" });
+      this.#aggiungi({ genere: "senzaValore", dato: this.#chiesto, ...this.#nomeChiesto, testo: "" });
       if (libera) this.#lette.push({ data: this.#chiesto, ...(typeof riga === "object" ? { each: true } : {}) });
     }
     return r;
@@ -552,6 +583,8 @@ export class Esecuzione<C extends CasoDiUnaFunzione = CasoDUso> {
       else this.#nonValido = true;
     } else {
       this.#chiesto = x.chiedi;
+      const nome = nomeDellaRichiesta(this.progetto, this.funzione, { dato: x.chiedi, ...(x.elemento !== undefined ? { elemento: x.elemento } : {}), ...(x.campo !== undefined ? { campo: x.campo } : {}) }, bloccoDi(this.progetto, this.#bloccoCorrente));
+      this.#nomeChiesto = nome === x.chiedi ? {} : { nome };
       const caso = this.caso;
       if (caso === undefined) {
         this.#stato = {

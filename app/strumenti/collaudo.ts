@@ -1130,16 +1130,20 @@ async function portaElenco(): Promise<void> {
   const problemi = problemiDegliSpec(elencate, progetti, suDisco);
   if (problemi.length > 0) rosso("elenco", `spec o prove diversi dall'atteso: ${problemi.join("; ")}`);
   const sonde = sondeDegliSpec("elenco", elencate, progetti, suDisco);
-  // Le prove fuori da un bersaglio, per titolo; il controllo positivo dichiara fuori un'altra prova dello stesso spec.
+  // Le prove fuori da un bersaglio, per titolo, in ogni spec. Il controllo positivo, due sonde da una prova vera del bersaglio del build (anche con nessuna
+  // dichiarata): tolta dal suo progetto e non dichiarata, deve dirla «non dichiarata»; dichiarata e presente, «dichiarata fuori». Ognuna col suo titolo.
   const escluse = problemiDelleEscluse(prove);
   if (escluse.length > 0) rosso("elenco", `prove fuori da un bersaglio diverse da quelle dichiarate: ${escluse.join("; ")}`);
-  const [specFuori, fuori] = Object.entries(proveFuoriDalBersaglio)[0]!;
-  const altraProva = prove.find((p) => p.file === specFuori && !fuori.titoli.some((t) => p.titolo.startsWith(t)))!.titolo;
-  const sondaEscluse = problemiDelleEscluse(prove, { [specFuori]: { ...fuori, titoli: [altraProva] } });
-  if (!sondaEscluse.some((p) => p.includes("non dichiarate")) || !sondaEscluse.some((p) => p.includes("dichiarate fuori")))
-    rosso("elenco", `controllo positivo delle prove fuori da un bersaglio SPENTO: ${JSON.stringify(sondaEscluse)}`);
+  const unaVera = prove.find((p) => p.progetto.endsWith("-anteprima"))!;
+  const bersaglioDellaVera = unaVera.progetto.slice(unaVera.progetto.indexOf("-") + 1);
+  const sondeDelleEscluse = [
+    { ramo: "tolta e non dichiarata", attesa: `${JSON.stringify([unaVera.titolo])} non dichiarate`, problemi: problemiDelleEscluse(prove.filter((p) => p !== unaVera), {}) },
+    { ramo: "dichiarata e presente", attesa: `${JSON.stringify([unaVera.titolo])} dichiarate fuori`, problemi: problemiDelleEscluse(prove, { [unaVera.file]: { bersaglio: bersaglioDellaVera, prove: 1, titoli: [unaVera.titolo], ragione: "sonda" } }) },
+  ];
+  for (const s of sondeDelleEscluse)
+    if (!s.problemi.some((p) => p.includes(s.attesa))) rosso("elenco", `controllo positivo delle prove fuori da un bersaglio SPENTO sul ramo «${s.ramo}»: ${JSON.stringify(s.problemi)}`);
   riga(
-    `PORTA elenco: VERDE | modo ${modo}: progetti ${progetti.join(", ")} | ${prove.length} prove elencate (${progetti.map((p) => `${p} ${prove.filter((x) => x.progetto === p).length}`).join(", ")}), spec come l'atteso, le prove fuori da un bersaglio per titolo (${Object.values(proveFuoriDalBersaglio).flatMap((x) => x.titoli).length}; controllo positivo acceso: ${sondaEscluse.length} problemi con un'altra prova dichiarata) | controllo positivo dei progetti acceso sui due rami (${sondeDelModo.map((s) => s.ramo).join("; ")}) | controllo positivo degli spec acceso sui tre rami (${sonde})`,
+    `PORTA elenco: VERDE | modo ${modo}: progetti ${progetti.join(", ")} | ${prove.length} prove elencate (${progetti.map((p) => `${p} ${prove.filter((x) => x.progetto === p).length}`).join(", ")}), spec come l'atteso, le prove fuori da un bersaglio per titolo (${Object.values(proveFuoriDalBersaglio).flatMap((x) => x.titoli).length}; controllo positivo acceso sui due rami: ${sondeDelleEscluse.map((s) => `${s.ramo} ${s.problemi.length}`).join(", ")}) | controllo positivo dei progetti acceso sui due rami (${sondeDelModo.map((s) => s.ramo).join("; ")}) | controllo positivo degli spec acceso sui tre rami (${sonde})`,
   );
 }
 
@@ -1276,43 +1280,37 @@ const proveAttesePerSpec: Record<string, number> = {
   "tabella.e2e.ts": 9,
   "trascina.e2e.ts": 4,
   "valori-iniziali.e2e.ts": 4,
-  "valore-a-mano.e2e.ts": 26,
+  "valore-a-mano.e2e.ts": 33,
   "valori-modificati.e2e.ts": 8,
   "watch.e2e.ts": 7,
 };
 
 /** Le prove che un bersaglio (`sviluppo`, `anteprima`: la fine del nome del progetto) non corre, per spec: quelle con
  * l'etichetta che `playwright.config.ts` esclude da quel bersaglio, per un difetto noto che lì le fa fallire a
- * intermittenza. Non sono prove saltate: per quel bersaglio non ci sono, e l'atteso le toglie, nei suoi progetti soli. */
-const proveFuoriDalBersaglio: Readonly<Record<string, { bersaglio: string; prove: number; titoli: readonly string[]; ragione: string }>> = {
-  "progetto-file.e2e.ts": {
-    bersaglio: "anteprima",
-    prove: 1,
-    titoli: ["ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto,"],
-    ragione: "«ogni finestra trattiene il fuoco»: nella corsa intera, sul build di produzione, il menu che si chiude riprende il fuoco per un istante mentre la finestra aperta da lui lo prende",
-  },
-};
+ * intermittenza. Non sono prove saltate: per quel bersaglio non ci sono, e l'atteso le toglie, nei suoi progetti soli. Oggi nessuna: la
+ * prova del fuoco nelle finestre, l'ultima, è tornata sul build quando il menu chiuso è diventato `inert`. */
+const proveFuoriDalBersaglio: Readonly<Record<string, { bersaglio: string; prove: number; titoli: readonly string[]; ragione: string }>> = {};
 
-/** Le prove che mancano davvero da un bersaglio, per titolo: per ogni progetto di quel bersaglio, quelle che lo stesso
- * motore ha sull'altro e lui no, confrontate con l'inizio dei titoli dichiarati. Il conto per spec non basta: l'etichetta
- * spostata su un'altra prova dello stesso spec lascia il numero uguale. */
+/** Le prove che mancano davvero da un bersaglio, per titolo, in OGNI spec: per ogni progetto, quelle che lo stesso motore ha sull'altro bersaglio e lui no,
+ * confrontate con l'inizio dei titoli dichiarati per quel bersaglio (nessuno, se lo spec non ne dichiara). Il conto per spec non basta: l'etichetta spostata su
+ * un'altra prova dello stesso spec lascia il numero uguale. */
 function problemiDelleEscluse(prove: readonly ProvaPlaywright[], fuoriDalBersaglio = proveFuoriDalBersaglio): string[] {
   const problemi: string[] = [];
+  const progetti = [...new Set(prove.map((p) => p.progetto))];
+  const motore = (progetto: string) => progetto.slice(0, progetto.indexOf("-"));
   const titoliDi = (f: string, progetto: string) => new Set(prove.filter((p) => p.file === f && p.progetto === progetto).map((p) => p.titolo));
-  for (const [f, fuori] of Object.entries(fuoriDalBersaglio))
-    for (const progetto of new Set(prove.map((p) => p.progetto))) {
-      if (!progetto.endsWith(`-${fuori.bersaglio}`)) continue;
-      const altri = [...new Set(prove.map((p) => p.progetto))].filter((x) => x !== progetto && x.startsWith(progetto.slice(0, -fuori.bersaglio.length)));
-      for (const altro of altri) {
+  for (const f of new Set(prove.map((p) => p.file)))
+    for (const progetto of progetti)
+      for (const altro of progetti.filter((x) => x !== progetto && motore(x) === motore(progetto))) {
+        const fuori = Object.hasOwn(fuoriDalBersaglio, f) ? fuoriDalBersaglio[f]! : undefined;
+        const dichiarate = fuori !== undefined && progetto.endsWith(`-${fuori.bersaglio}`) ? fuori.titoli : [];
         const qui = titoliDi(f, progetto);
         const mancanti = [...titoliDi(f, altro)].filter((t) => !qui.has(t));
-        const attese = (t: string) => fuori.titoli.some((inizio) => t.startsWith(inizio));
-        const fuoriPosto = mancanti.filter((t) => !attese(t));
-        const assenti = fuori.titoli.filter((inizio) => !mancanti.some((t) => t.startsWith(inizio)));
-        if (fuoriPosto.length > 0 || assenti.length > 0)
-          problemi.push(`${f} su ${progetto} rispetto a ${altro}: mancano ${JSON.stringify(fuoriPosto)} non dichiarate, ci sono ${JSON.stringify(assenti)} dichiarate fuori`);
+        const fuoriPosto = mancanti.filter((t) => !dichiarate.some((inizio) => t.startsWith(inizio)));
+        const assenti = dichiarate.filter((inizio) => !mancanti.some((t) => t.startsWith(inizio)));
+        if (fuoriPosto.length > 0) problemi.push(`${f} su ${progetto} rispetto a ${altro}: mancano ${JSON.stringify(fuoriPosto)} non dichiarate`);
+        if (assenti.length > 0) problemi.push(`${f} su ${progetto} rispetto a ${altro}: ci sono ${JSON.stringify(assenti)} dichiarate fuori`);
       }
-    }
   return problemi;
 }
 

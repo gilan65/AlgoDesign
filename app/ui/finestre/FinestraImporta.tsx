@@ -420,7 +420,7 @@ function CheCosa({ sorgente, cambiaSorgente, progetto, prossimo, limiti, testi, 
             <ul className={stili.elenco}>{voci.map(voce)}</ul>
             {datiCheUrtano.map((d) => (
               <p key={`${d.funzione}/${d.dato}`} className={stili.avvisoDelCampo}>
-                {riempi(d.con === "costante" ? testi.importaUrtaCostante : testi.importaUrtaFunzione, { dato: d.dato, funzione: d.funzione })}
+                {riempi(d.con === "costante" ? testi.importaUrtaCostante : d.con === "funzione" ? testi.importaUrtaFunzione : testi.importaUrtaRecord, { dato: d.dato, funzione: d.funzione })}
               </p>
             ))}
             {dopoConErrori && <p className={stili.avvisoDelCampo}>{testi.importaDopoErrori}</p>}

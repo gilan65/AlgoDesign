@@ -19,7 +19,7 @@
 //
 // Il foglio: A4, coi margini dove stanno l'intestazione (sopra) e il piè di pagina (sotto). Ogni margine è occupato,
 // anche da uno spazio che non si vede: il motore aggiunge le sue intestazioni (data, titolo, indirizzo) nei margini che
-// la pagina lascia liberi (misurato sulla WebView2 in DataDesign). Le regole si scrivono in un foglio di stile costruito
+// la pagina lascia liberi (misurato sulla WebView2). Le regole si scrivono in un foglio di stile costruito
 // dal CSSOM, non in un `<style>`: la politica di sicurezza dei contenuti dell'app (`style-src 'self'`) lo fermerebbe, e i
 // fogli uscirebbero tutti verticali e senza intestazioni (misurato in Chromium).
 //

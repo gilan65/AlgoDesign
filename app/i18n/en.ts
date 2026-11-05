@@ -268,6 +268,7 @@ export const en: Dizionario = {
   importaCostanteSostituita: "The program will use the new value: its results may change.",
   importaUrtaCostante: "The data item “{dato}” of “{funzione}” has the name of a shared constant of the program: after the import it is an error, to fix by renaming the data item.",
   importaUrtaFunzione: "The data item “{dato}” of “{funzione}” has the name of a procedure or function of the program: after the import it is an error, to fix by renaming the data item.",
+  importaUrtaRecord: "The data item “{dato}” of “{funzione}” has the name of a record of the program: after the import it is an error, to fix by renaming the data item.",
   importaConCasi: "with their use cases ({n})",
   importaNiente: "Nothing goes in: everything is already in the program.",
   importaDopoErrori: "After the import the program has errors to fix: the test cases do not run until you fix them.",

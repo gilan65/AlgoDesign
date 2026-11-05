@@ -201,7 +201,7 @@ export function idDellaFunzioneNuova(p: Progetto): string {
 /** La funzione col genere e le proprietà date: una funzione ha il tipo restituito, il valore predefinito (omesso se è
  * quello del tipo, e sempre per un vettore) e ciò che restituisce (vuoto, se prima non c'era); una procedura nessuno dei
  * tre. La dimensione di un vettore restituito, le colonne e la lunghezza massima, non date, restano alla funzione (la
- * lunghezza solo a una funzione che resta stringa, le colonne solo a una che resta un vettore di un tipo semplice). */
+ * lunghezza solo a una funzione che resta stringa, le colonne solo a una che resta un vettore di un tipo semplice; a un record solo date). */
 function conProprieta(f: Funzione, pr: Proprieta): Funzione {
   const { return_type: _t, return_record: recordDi, return_size: dimensioneDi, return_columns: colonneDi, return_max_length: lunghezzaDi, default_result: _d, ...resto } = f;
   const { return_value, ...fine } = f.end;
@@ -217,16 +217,20 @@ function conProprieta(f: Funzione, pr: Proprieta): Funzione {
     return { ...resto, kind: "procedure", end: fine, ...casi };
   }
   const return_size = pr.dimensione === undefined ? dimensioneDi : (pr.dimensione ?? undefined);
-  // Un record restituito non ha valore predefinito né lunghezza: il nome del record dato, o quello di prima.
-  if ((pr.tipo ?? f.return_type) === "record")
+  // Un record restituito non ha valore predefinito né lunghezza: il nome del record dato, o quello di prima. Le colonne date restano, come per un dato: una matrice di
+  // record è un errore che il controllo dice (`matrice_di_record`), non una tabella fatta in silenzio; non date, non passano da un altro tipo.
+  if ((pr.tipo ?? f.return_type) === "record") {
+    const return_columns = return_size !== undefined && typeof pr.colonne === "number" ? pr.colonne : undefined;
     return {
       ...resto,
       kind: "function",
       return_type: "record",
       return_record: pr.record ?? recordDi ?? "",
       ...(return_size !== undefined ? { return_size } : {}),
+      ...(return_columns !== undefined ? { return_columns } : {}),
       end: { ...fine, return_value: return_value ?? "" },
     };
+  }
   const tipo = (pr.tipo ?? f.return_type ?? "integer") as TipoRestituito;
   const return_max_length = pr.lunghezza === undefined ? lunghezzaDi : (pr.lunghezza ?? undefined);
   const return_columns = return_size === undefined ? undefined : pr.colonne === undefined ? colonneDi : (pr.colonne ?? undefined);

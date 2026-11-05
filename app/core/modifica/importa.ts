@@ -70,11 +70,11 @@ export interface VoceDellImportazione {
   readonly casiEliminati?: number;
 }
 
-/** Un dato interno di ciò che entra col nome di una costante comune o di una procedura o funzione del programma. */
+/** Un dato interno di ciò che entra col nome di una costante comune, di una procedura o funzione o di un record del programma. */
 export interface DatoCheUrta {
   readonly funzione: string;
   readonly dato: string;
-  readonly con: "costante" | "funzione";
+  readonly con: "costante" | "funzione" | "record";
 }
 
 export interface Riepilogo {
@@ -281,7 +281,10 @@ function analizza(p: Progetto, s: Progetto, spuntate: readonly string[], scelte:
     return [{ r, voce: { ...base, stato: "rinominato", proposto: proponi(r.name) } as VoceDellImportazione }];
   });
   const datiCheUrtano: DatoCheUrta[] = entrano.flatMap(({ f }) =>
-    f.data.flatMap((d): DatoCheUrta[] => (comuniDelProgramma.has(d.name) ? [{ funzione: f.name!, dato: d.name, con: "costante" }] : delProgramma.has(d.name) ? [{ funzione: f.name!, dato: d.name, con: "funzione" }] : [])),
+    f.data.flatMap((d): DatoCheUrta[] => {
+      const con = comuniDelProgramma.has(d.name) ? "costante" : delProgramma.has(d.name) ? "funzione" : recordDelProgramma.has(d.name) ? "record" : undefined;
+      return con === undefined ? [] : [{ funzione: f.name!, dato: d.name, con }];
+    }),
   );
   const identicheDelProgramma = new Map([...identiche].map((f) => [f, delProgramma.get(f.name!)!] as const));
   return {

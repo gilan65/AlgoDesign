@@ -14,11 +14,11 @@ const motori = [
   { nome: "chromium", dispositivo: devices["Desktop Chrome"] },
   { nome: "webkit", dispositivo: { ...devices["Desktop Safari"], userAgent: webkitDiLinux } },
 ];
-// Le prove con l'etichetta `@solo-sviluppo` non corrono sul build di produzione: lì falliscono a intermittenza per un difetto noto
-// non ancora risolto (lo dice la prova); il collaudo le conta fuori da quel bersaglio, per nome (`proveFuoriDalBersaglio`).
-const bersagli = [
+// Un bersaglio può escludere le prove con un'etichetta (`escluse`, una regex: `grepInvert`) per un difetto noto che lì le fa fallire a intermittenza; il collaudo
+// le conta fuori da quel bersaglio, per nome (`proveFuoriDalBersaglio`). Oggi nessuna.
+const bersagli: readonly { nome: string; url: string; comando: string; escluse?: RegExp }[] = [
   { nome: "sviluppo", url: `http://127.0.0.1:${portaSviluppo}`, comando: "bun ./strumenti/dev.ts" },
-  { nome: "anteprima", url: `http://127.0.0.1:${portaAnteprima}`, comando: "bun ./strumenti/anteprima.ts", escluse: /@solo-sviluppo/ },
+  { nome: "anteprima", url: `http://127.0.0.1:${portaAnteprima}`, comando: "bun ./strumenti/anteprima.ts" },
 ];
 
 // I margini di tempo, una regola sola: il limite di una prova è almeno QUATTRO volte la sua durata più lunga misurata
@@ -40,7 +40,7 @@ export default defineConfig({
   testMatch: "**/*.e2e.ts",
   outputDir: ".collaudo/playwright",
   projects: motori.flatMap((m) =>
-    bersagli.map((b) => ({ name: `${m.nome}-${b.nome}`, use: { ...m.dispositivo, baseURL: b.url }, ...("escluse" in b ? { grepInvert: b.escluse } : {}) })),
+    bersagli.map((b) => ({ name: `${m.nome}-${b.nome}`, use: { ...m.dispositivo, baseURL: b.url }, ...(b.escluse !== undefined ? { grepInvert: b.escluse } : {}) })),
   ),
   // Mai riusare un server già acceso: sarebbe quello di un giro vecchio, e nessuno lo saprebbe.
   webServer: bersagli.map((b) => ({ command: b.comando, url: b.url, reuseExistingServer: false })),

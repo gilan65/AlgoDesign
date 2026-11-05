@@ -46,7 +46,8 @@ export function Console({
   /** Il dato di cui il programma aspetta il valore, se lo aspetta; `volta` cambia a ogni richiesta. Per un parametro
    * della funzione eseguita da sola, `parametro` (`riferimento`: può arrivare senza valore) ed `elemento` per un vettore. */
   chiede: { readonly dato: string; readonly di?: string; readonly volta: number; readonly parametro?: "valore" | "riferimento"; readonly elemento?: number; readonly campo?: string } | null;
-  inserisci: (riga: Exclude<Riga, undefined>) => void;
+  /** `false` se la riga non è stata data (un valore rifiutato nella tabella la trattiene). */
+  inserisci: (riga: Exclude<Riga, undefined>) => boolean;
   /** A esecuzione finita: la riga della fine o dell'errore (col testo breve), e la spiegazione dell'errore, che si apre con
    * «Spiegazione»: ciò che è successo, quando dice più del breve, e il suggerimento. */
   fine: { readonly testo: string; readonly errore: boolean; readonly accaduto?: string; readonly suggerimento?: string; readonly esito?: { readonly testo: string; readonly raggiunto: boolean } } | null;
@@ -107,12 +108,12 @@ export function Console({
             </span>
           ) : v.genere === "senzaValore" ? (
             <span key={tolte + i} className={stili.senzaValore} data-arrivato-senza-valore="">
-              {riempi(testi.consoleArrivatoSenzaValore, { dato: v.dato })}
+              {riempi(testi.consoleArrivatoSenzaValore, { dato: v.nome ?? v.dato })}
               {"\n"}
             </span>
           ) : (
             <span key={tolte + i} className={stili.nonValido}>
-              {riempi(testi.consoleNonValido, { testo: `${v.tagliata ? "…" : ""}${v.testo}`, dato: v.dato })}
+              {riempi(testi.consoleNonValido, { testo: `${v.tagliata ? "…" : ""}${v.testo}`, dato: v.nome ?? v.dato })}
               {"\n"}
             </span>
           ),
@@ -174,8 +175,8 @@ export function Console({
             onKeyDown={(tasto) => {
               if (tasto.key !== "Enter") return;
               tasto.preventDefault();
-              inserisci(riga);
-              setRiga("");
+              // Un valore rifiutato nella tabella trattiene la riga: resta scritta.
+              if (inserisci(riga)) setRiga("");
             }}
           />
         </label>
