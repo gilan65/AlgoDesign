@@ -1160,6 +1160,46 @@ describe("la console a righe: le ultime righe, quante ne sono state tolte", () =
     expect(scritto(e)).toBe("abc\nd\ne5\n\n");
   });
 
+  test("una riga non valida nomina ciò che la console chiedeva: il campo, l'elemento, il nome della Lettura; il dato del file resta quello del nucleo", () => {
+    const voto = { name: "Voto", fields: [{ name: "nome", type: "string" }, { name: "voto", type: "integer" }] };
+    const funzione = (data: Json[], body: Json[] = []) => {
+      const esito = leggi({
+        format: "algodesign",
+        schema_version: 2,
+        metadata: { name: "prova" },
+        records: [voto],
+        functions: [{ id: "f1", kind: "main", data: [], body: [], end: { id: "fine" } }, { id: "f2", kind: "procedure", name: "p", data, body, end: { id: "b9" } }],
+      });
+      if (!esito.ok) throw new Error(JSON.stringify(esito.errori));
+      return new Esecuzione(esito.progetto, tetti, { funzione: "f2" });
+    };
+    const nonValide = (e: Esecuzione) => e.console.filter((v) => v.genere === "nonValido");
+    const t = funzione([{ name: "t", type: "record", record: "Voto", size: 2, parameter: "value" }]);
+    finoAllaFine(t, "continua", ["anna", "abc"]);
+    expect(nonValide(t)).toEqual([{ genere: "nonValido", dato: "t", nome: "t[0].voto", testo: "abc" }]);
+    const m = funzione([{ name: "m", type: "integer", size: 2, columns: 2, parameter: "value" }]);
+    finoAllaFine(m, "continua", ["1", "x"]);
+    expect(nonValide(m)).toEqual([{ genere: "nonValido", dato: "m", nome: "m[0][1]", testo: "x" }]);
+    // Il parametro per riferimento letto nella procedura: la Lettura dice `x`, il nucleo il dato di chi chiama.
+    const esito = leggi({
+      format: "algodesign",
+      schema_version: 2,
+      metadata: { name: "prova" },
+      functions: [
+        { id: "f1", kind: "main", data: [{ name: "a", type: "integer", initial: "0" }], body: [{ id: "b1", kind: "call", callee: "p", arguments: ["a"] }], end: { id: "fine" } },
+        { id: "f2", kind: "procedure", name: "p", data: [{ name: "x", type: "integer", parameter: "reference" }], body: [{ id: "b2", kind: "read", target: "x" }], end: { id: "b9" } },
+      ],
+    });
+    if (!esito.ok) throw new Error(JSON.stringify(esito.errori));
+    const r = new Esecuzione(esito.progetto, tetti);
+    finoAllaFine(r, "continua", ["no", "3"]);
+    expect(nonValide(r)).toEqual([{ genere: "nonValido", dato: "a", nome: "x", testo: "no" }]);
+    // Il controllo positivo: una Lettura del suo dato non ha un nome in più.
+    const n = new Esecuzione(progetto([{ name: "n", type: "integer" }], [{ id: "b1", kind: "read", target: "n" }]), tetti);
+    finoAllaFine(n, "continua", ["x", "5"]);
+    expect(nonValide(n)).toEqual([{ genere: "nonValido", dato: "n", testo: "x" }]);
+  });
+
   test("le scritture consecutive restano righe distinte, una per a capo", () => {
     const p = progetto([{ name: "n", type: "integer", initial: "0" }], [
       { id: "b1", kind: "while", condition: "n < 3", body: [{ id: "b2", kind: "write", values: ['"ciao"'], newline: true }, { id: "b3", kind: "assignment", target: "n", value: "n + 1" }] },

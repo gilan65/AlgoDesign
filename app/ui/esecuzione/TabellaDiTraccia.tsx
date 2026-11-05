@@ -191,6 +191,9 @@ export interface GestoDellaCella {
   readonly noNelCaso?: () => void;
   readonly alCampoAperto: () => void;
   readonly riprendi?: () => void;
+  /** Un valore rifiutato resta nel campo: chi prosegue chiama prima `trattiene`, che riporta il fuoco nel campo, ripete il rifiuto e dice `true` se il valore non va ancora
+   * (`null` quando il campo rifiutato non c'è più). «Ferma» non lo chiama. */
+  readonly trattieni: (trattiene: (() => boolean) | null) => void;
 }
 
 /** Il campo aperto in una cella: chi dice il valore e se è stato rifiutato. */
@@ -202,17 +205,23 @@ interface CampoAperto {
   readonly conUnNome: boolean;
 }
 
-/** Il campo nella cella: nasce col testo selezionato. Invio e il clic fuori confermano, Esc annulla; un tasto dell'esecuzione conferma prima, e un rifiuto lo ferma. */
+/** Il campo nella cella: nasce col testo selezionato. Invio e il clic fuori confermano, Esc annulla; un tasto dell'esecuzione conferma prima, e un rifiuto lo ferma, tranne «Ferma». */
 function CampoDellaCella({
   campo,
   testi,
   conferma,
   annulla,
+  trattieni,
+  tenuto,
 }: {
   campo: CampoAperto;
   testi: Dizionario;
   conferma: (testo: string, torna: boolean) => boolean;
   annulla: () => void;
+  trattieni: GestoDellaCella["trattieni"];
+  /** Il testo scritto nel campo, tenuto dalla tabella: in una tabella lunga la riga corrente che esce dalla parte disegnata smonta il campo, e quando ci torna il testo è
+   * ancora quello (`null` finché non si scrive). */
+  tenuto: { current: string | null };
 }): ReactElement {
   const input = useRef<HTMLInputElement>(null);
   // Chiuso da Invio, Esc o un tasto: il clic fuori non conferma di nuovo.
@@ -220,12 +229,35 @@ function CampoDellaCella({
   // Ciò che il campo ha davvero alla nascita: un campo di testo toglie gli a capo, e il valore senza a capo non è un valore scritto da chi guarda.
   const allaNascita = useRef<string | null>(null);
   useLayoutEffect(() => {
-    allaNascita.current = input.current?.value ?? null;
-    input.current?.focus();
-    input.current?.select();
+    const i = input.current;
+    // Una volta sola: al secondo giro dell'effetto (React in sviluppo) il campo può avere già il testo ripreso.
+    allaNascita.current ??= i?.value ?? null;
+    if (i && tenuto.current !== null) {
+      // Di ritorno nella parte disegnata: il testo scritto, col cursore in fondo; il fuoco solo se nessun altro l'ha preso intanto.
+      i.value = tenuto.current;
+      if (document.activeElement === document.body || document.activeElement === null) i.focus();
+      return;
+    }
+    i?.focus();
+    i?.select();
   }, []);
   const { elemento } = campo;
   const scritto = (valore: string) => (valore === allaNascita.current ? elemento.testo : valore);
+  // Col valore rifiutato un comando che prosegue non va avanti da nessun canale (il clic fuori lascia il campo senza fuoco): torna qui e lo ripete. Nel layout, perché il clic
+  // su un pulsante arriva subito dopo il blur che ha rifiutato.
+  const ultimaConferma = useRef(conferma);
+  ultimaConferma.current = conferma;
+  useLayoutEffect(() => {
+    if (!campo.rifiutato) return;
+    trattieni(() => {
+      const i = input.current;
+      if (!i) return false;
+      i.focus();
+      chiuso.current = ultimaConferma.current(scritto(i.value), false);
+      return !chiuso.current;
+    });
+    return () => trattieni(null);
+  }, [campo.rifiutato]);
   return (
     <>
       {campo.conUnNome && <span className={stili.nomeNelCampo}>{elemento.nome}</span>}
@@ -238,6 +270,9 @@ function CampoDellaCella({
         autoComplete="off"
         aria-label={riempi(testi.modificaCampo, { dato: elemento.nome })}
         aria-invalid={campo.rifiutato ? "true" : undefined}
+        onChange={(e) => {
+          tenuto.current = e.currentTarget.value;
+        }}
         // Il doppio clic dentro il campo seleziona una parola, e non riapre nulla.
         onDoubleClick={(e) => e.stopPropagation()}
         onBlur={(e) => {
@@ -254,9 +289,10 @@ function CampoDellaCella({
             chiuso.current = true;
             annulla();
           } else if (tastoDellEsecuzione(e) !== null) {
-            // Il valore prima; se è andato bene il tasto prosegue fino a chi ascolta la finestra.
+            // Il valore prima; se è andato bene il tasto prosegue fino a chi ascolta la finestra. «Ferma» passa anche col valore rifiutato, come il clic sul suo pulsante:
+            // il campo vive solo in pausa e in attesa di una riga, dove Maiusc+F5 ferma sempre.
             chiuso.current = conferma(scritto(e.currentTarget.value), false);
-            if (!chiuso.current) {
+            if (!chiuso.current && tastoDellEsecuzione(e) !== "Maiusc+F5") {
               e.preventDefault();
               e.stopPropagation();
             }
@@ -281,6 +317,8 @@ const Riga = memo(function Riga({
   testi,
   conferma,
   annulla,
+  trattieni,
+  tenuto,
 }: {
   riga: RigaMostrata;
   corrente: boolean;
@@ -296,12 +334,14 @@ const Riga = memo(function Riga({
   testi?: Dizionario;
   conferma?: (testo: string, torna: boolean) => boolean;
   annulla?: () => void;
+  trattieni?: GestoDellaCella["trattieni"] | undefined;
+  tenuto?: { current: string | null };
 }): ReactElement {
   const n = riga.valori.length;
   /** Ciò che la cella `i` ha per il gesto. */
   const delGesto = (i: number) => (gesto === undefined ? {} : { "data-cella": i, tabIndex: i === cellaNelGiro ? 0 : -1 });
   const conCampo = (i: number) => campo?.cella === i;
-  const ilCampo = (i: number) => <CampoDellaCella key={`#campo ${i} ${campo!.elemento.elemento}`} campo={campo!} testi={testi!} conferma={conferma!} annulla={annulla!} />;
+  const ilCampo = (i: number) => <CampoDellaCella key={`#campo ${i} ${campo!.elemento.elemento}`} campo={campo!} testi={testi!} conferma={conferma!} annulla={annulla!} trattieni={trattieni!} tenuto={tenuto!} />;
   return (
     <tr
       data-riga={riga.numero}
@@ -612,6 +652,21 @@ export const TabellaDiTraccia = memo(function TabellaDiTraccia({
   // ------------------------------------------------------------------ scrivere un valore sulla riga corrente
 
   const [campo, setCampo] = useState<CampoAperto | null>(null);
+  // Il testo scritto nel campo aperto, che resta se la riga corrente esce dalla parte disegnata: si azzera a ogni campo nuovo.
+  const testoNelCampo = useRef<string | null>(null);
+  // Col valore rifiutato la tabella trattiene i comandi che proseguono: lo chiede al campo, che riprende il fuoco e ripete il rifiuto; se il campo non è disegnato (la riga
+  // corrente fuori dalla parte disegnata) ripete il rifiuto da sé.
+  const delCampo = useRef<(() => boolean) | null>(null);
+  const registraIlCampo = useRef((t: (() => boolean) | null) => {
+    delCampo.current = t;
+  }).current;
+  const rifiutato = campo?.rifiutato === true;
+  useLayoutEffect(() => {
+    if (!gesto || !rifiutato || campo === null) return;
+    const { elemento } = campo;
+    gesto.trattieni(() => (delCampo.current ? delCampo.current() : !gesto.scrivi(elemento, testoNelCampo.current ?? elemento.testo)));
+    return () => gesto.trattieni(null);
+  }, [gesto, rifiutato, campo]);
   const [elencoDi, setElencoDi] = useState<{ cella: number; colonna: string; elementi: readonly ElementoDellaCella[]; x: number; y: number } | null>(null);
   // Un campo vale per la riga in cui è nato, e per un gesto che c'è ancora.
   const campoDellaRiga = useRef(ultima);
@@ -650,6 +705,7 @@ export const TabellaDiTraccia = memo(function TabellaDiTraccia({
     setCellaScelta(i);
     if (b.elementi.length === 1) {
       campoDellaRiga.current = ultima;
+      testoNelCampo.current = null;
       setCampo({ cella: i, elemento: primo, rifiutato: false, conUnNome: false });
     } else {
       const r = laCella(i)?.getBoundingClientRect();
@@ -985,6 +1041,8 @@ export const TabellaDiTraccia = memo(function TabellaDiTraccia({
                   campo={campo}
                   testi={testi}
                   conferma={confermaIlCampo}
+                  trattieni={registraIlCampo}
+                  tenuto={testoNelCampo}
                   annulla={annullaIlCampo}
                 />
               ) : (
@@ -1016,6 +1074,7 @@ export const TabellaDiTraccia = memo(function TabellaDiTraccia({
               const i = elencoDi.cella;
               setElencoDi(null);
               campoDellaRiga.current = ultima;
+              testoNelCampo.current = null;
               setCampo({ cella: i, elemento: e, rifiutato: false, conUnNome: true });
             },
           })) ?? []

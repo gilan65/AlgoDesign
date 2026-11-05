@@ -27,7 +27,7 @@ import {
   type Proprieta,
 } from "../core/modifica/funzioni";
 import { fermatoDaUnPunto } from "../core/esecuzione/controllore";
-import { Esecuzione, type Comando, type LivelloDellaPila } from "../core/esecuzione/esecuzione";
+import { Esecuzione, nomeDellaRichiesta, type Comando, type LivelloDellaPila } from "../core/esecuzione/esecuzione";
 import { Riesecuzione, siRipartiDa, type EsitoDellaRipartenza } from "../core/esecuzione/ripartenza";
 import type { Origine, Riga } from "../core/interprete/interprete";
 import { csv, TabellaMostrata, type ChiamataNelWatch, type DatoNelWatch, type Traccia } from "../core/esecuzione/traccia";
@@ -749,6 +749,8 @@ export function Applicazione({
   // il gesto dice soltanto che lì non si può.
   const siScriveUnValore = esecuzione !== null && (statoEs?.genere === "pausa" || statoEs?.genere === "chiede") && !programmaCambiato && tutti === null;
   const inAttesaDiUnaRiga = statoEs?.genere === "chiede";
+  // Il campo della tabella con un valore rifiutato: un comando che prosegue lo chiama prima, e non va avanti se il valore non va ancora (lo dice il campo).
+  const trattenuto = useRef<(() => boolean) | null>(null);
   const gestoDellaCella = useMemo((): GestoDellaCella | undefined => {
     const es = esecuzione;
     const t = tabellaMostrata;
@@ -771,6 +773,9 @@ export function Applicazione({
       noPosizione,
       ...(es.caso !== undefined ? { noNelCaso: () => setAvviso(testi.modificaNelCaso) } : {}),
       alCampoAperto: () => setAnimata(false),
+      trattieni: (t) => {
+        trattenuto.current = t;
+      },
       ...(inAttesaDiUnaRiga ? { riprendi: () => document.querySelector<HTMLElement>("[data-riga-della-console]")?.focus() } : {}),
     };
   }, [siScriveUnValore, inAttesaDiUnaRiga, esecuzione, tabellaMostrata, testi]);
@@ -848,14 +853,10 @@ export function Applicazione({
   };
   const chiesta = ((): { readonly nome: string; readonly di?: string } | null => {
     if (statoEs?.genere !== "chiede" || !esecuzione) return null;
-    // Un parametro chiesto elemento per elemento (un vettore; una matrice riga dopo riga, coi due indici), campo per campo
-    // (un record) o record per record e campo per campo (una tabella: l'elemento e il campo insieme, `t[0].nome`).
-    const colonne = esecuzione.progetto.functions.find((f) => f.id === esecuzione.funzione)?.data.find((d) => d.name === statoEs.dato)?.columns;
-    const indici = (k: number) => (colonne === undefined || colonne < 1 ? `[${k}]` : `[${Math.floor(k / colonne)}][${k % colonne}]`);
-    const campo = statoEs.campo !== undefined ? `.${statoEs.campo}` : "";
-    const nome = `${statoEs.dato}${statoEs.elemento !== undefined ? indici(statoEs.elemento) : ""}${campo}`;
+    // Il nome della richiesta come lo dice il nucleo, anche nella riga di un valore non valido (`nomeDellaRichiesta`).
     const l = pila.at(-1);
     const b = l === undefined ? undefined : trova(esecuzione.progetto, l.blocco);
+    const nome = nomeDellaRichiesta(esecuzione.progetto, esecuzione.funzione, statoEs, b);
     // Il dato della Lettura: il nome prima dell'indice di un elemento o del campo di un record.
     const scritto = b?.kind === "read" ? b.target.split(/[[.]/)[0]!.trim() : undefined;
     if (scritto === undefined || scritto === statoEs.dato) return { nome };
@@ -1810,6 +1811,8 @@ export function Applicazione({
   function prosegui(comando: Comando): void {
     const s = esecuzione?.stato.genere;
     if (s !== "pausa" && s !== "pronta") return;
+    // Un valore rifiutato nella tabella ferma il comando, come il tasto premuto nel suo campo.
+    if (trattenuto.current?.()) return;
     // In pausa i campi possono essere aperti: si confermano, e se cambiano il programma quello di prima non va avanti.
     const c = confermaIApertiCampi();
     if (!c) return;
@@ -1868,10 +1871,12 @@ export function Applicazione({
   }
   /** Il valore scritto nella console per la lettura che l'esecuzione aspetta (per un parametro anche nessun valore, o lo
    * stesso a ogni elemento). */
-  function inserisciNellaConsole(riga: Exclude<Riga, undefined>): void {
-    if (esecuzione?.stato.genere !== "chiede") return;
+  function inserisciNellaConsole(riga: Exclude<Riga, undefined>): boolean {
+    if (esecuzione?.stato.genere !== "chiede") return false;
+    if (trattenuto.current?.()) return false;
     esecuzione.inserisci(riga);
     ridisegna();
+    return true;
   }
   /** Ciò che l'avviso dice quando un comando si ferma: la pausa, la fine o l'errore; la lettura la dice la
    * console, sopra la riga dove si scrive (l'avviso tace). A esecuzione finita la vista dei dati si riapre. */

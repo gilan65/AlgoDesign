@@ -567,6 +567,9 @@ export class TabellaMostrata {
   readonly #radiceDelGiro: boolean;
   /** I valori scritti a mano sulla riga che si sta componendo, ognuno col suo nome e il valore di prima: ogni cella che ne mostra uno ha il segno. */
   #segnati = nessunSegno;
+  /** Mentre si compongono le celle di un dato, il nome di ogni suo elemento scritto a mano: un parametro per riferimento è lo stesso valore della cella di chi chiama, e lì
+   * il nome è quello di chi chiama, non della modifica. */
+  #nomiNelDato: ReadonlyMap<Valore, string> | undefined;
   /** Per ogni colonna, che cosa mostra. */
   readonly #celleDelleColonne: readonly CellaDelDato[];
 
@@ -951,7 +954,7 @@ export class TabellaMostrata {
   #segnoDi(elementi: readonly (Valore | undefined)[]): { modificata?: true; era?: string } {
     const voci = elementi.flatMap((v) => {
       const s = v === undefined ? undefined : this.#segnati.get(v);
-      return s === undefined ? [] : [this.#testi.eraDi.replace("{nome}", () => s.nome).replace("{valore}", () => this.#valore(s.prima))];
+      return s === undefined ? [] : [this.#testi.eraDi.replace("{nome}", () => (v !== undefined && this.#nomiNelDato?.get(v)) || s.nome).replace("{valore}", () => this.#valore(s.prima))];
     });
     return voci.length === 0 ? {} : { modificata: true, era: voci.join(fraGliElementi) };
   }
@@ -1012,7 +1015,7 @@ export class TabellaMostrata {
       const n = this.#posizioniDelleChiamate[k]!;
       if (c === undefined) return [...dati.flatMap((d) => Array.from({ length: this.#colonneDi(d) }, vuota)), ...Array.from({ length: n }, vuota)];
       return [
-        ...this.#valoriDeiDati(dati, c.valori, r.chiamateCambiate?.[j], r.funzione === this.#idDelleChiamate[k] ? r.dato : undefined, c.riferimenti),
+        ...this.#valoriDeiDati(dati, c.valori, r.chiamateCambiate?.[j], r.funzione === this.#idDelleChiamate[k] ? r.dato : undefined, c.riferimenti, this.#idDelleChiamate[k]),
         ...posizioni(n, c.posizioni, r.posizioniDelleChiamate?.[j]),
       ];
     });
@@ -1078,23 +1081,34 @@ export class TabellaMostrata {
     cambiati?: readonly (readonly boolean[])[],
     iniziale?: string,
     riferimenti?: readonly (string | undefined)[],
+    funzione?: string,
   ): CellaDiUnValore[] {
+    const davanti = funzione === undefined ? "" : `${this.gruppi.find((g) => g.funzione === funzione)!.nome!} › `;
     return valori.flatMap((elementi, d) => {
-      const c = cambiati?.[d];
       const dato = dati[d]!;
-      const n = dato.elementi;
-      const rif = riferimenti?.[d];
-      const di = (cella: CellaDiUnValore, i?: number): CellaDiUnValore => (rif === undefined ? cella : { ...cella, testo: `${cella.testo} (${i === undefined ? rif : nomeDelValore({ ...dato, nome: rif }, i)})` });
-      if (dato.campi !== undefined && n !== undefined) return this.#valoriDellaTabella(dato, n, dato.campi.length, elementi, c, dato.nome === iniziale, rif);
-      if (dato.campi !== undefined) return elementi.map((v, i) => di(this.#cella(v, c?.[i] === true), i));
-      if (n !== undefined && dato.colonne !== undefined) return this.#valoriDellaMatrice(dato, n, dato.colonne, elementi, c, dato.nome === iniziale, rif);
-      if (n !== undefined && this.forma === "in-fila") return [di(this.#inFila(elementi, c))];
-      const tutti = n === undefined || this.forma === "per-elemento" || n <= tettoDelleColonne;
-      const primi = (tutti ? elementi : elementi.slice(0, tettoDelleColonne)).map((v, i) => di(this.#cella(v, c?.[i] === true), n === undefined ? undefined : i));
-      if (tutti) return primi;
-      const altri = elementi.slice(tettoDelleColonne);
-      return [...primi, dato.nome === iniziale ? this.#altriIniziali(nomeDegliAltri(dato.nome, n), this.#elenco(altri), altri) : this.#altri(elementi, c, tettoDelleColonne, (i) => `${dato.nome}[${i}]`)];
+      if (this.#segnati.size === 0) return this.#celleDelDato(dato, elementi, cambiati?.[d], iniziale, riferimenti?.[d]);
+      this.#nomiNelDato = new Map(elementi.flatMap((v, i) => (v !== undefined && this.#segnati.has(v) ? [[v, davanti + nomeDelValore(dato, i)] as const] : [])));
+      try {
+        return this.#celleDelDato(dato, elementi, cambiati?.[d], iniziale, riferimenti?.[d]);
+      } finally {
+        this.#nomiNelDato = undefined;
+      }
     });
+  }
+
+  /** Le celle di un dato: `c` i suoi elementi cambiati, `iniziale` il dato della riga del valore iniziale, `rif` il dato di chi chiama se è un parametro per riferimento. */
+  #celleDelDato(dato: DatoMostrato, elementi: Fotografia["valori"][number], c: readonly boolean[] | undefined, iniziale: string | undefined, rif: string | undefined): CellaDiUnValore[] {
+    const n = dato.elementi;
+    const di = (cella: CellaDiUnValore, i?: number): CellaDiUnValore => (rif === undefined ? cella : { ...cella, testo: `${cella.testo} (${i === undefined ? rif : nomeDelValore({ ...dato, nome: rif }, i)})` });
+    if (dato.campi !== undefined && n !== undefined) return this.#valoriDellaTabella(dato, n, dato.campi.length, elementi, c, dato.nome === iniziale, rif);
+    if (dato.campi !== undefined) return elementi.map((v, i) => di(this.#cella(v, c?.[i] === true), i));
+    if (n !== undefined && dato.colonne !== undefined) return this.#valoriDellaMatrice(dato, n, dato.colonne, elementi, c, dato.nome === iniziale, rif);
+    if (n !== undefined && this.forma === "in-fila") return [di(this.#inFila(elementi, c))];
+    const tutti = n === undefined || this.forma === "per-elemento" || n <= tettoDelleColonne;
+    const primi = (tutti ? elementi : elementi.slice(0, tettoDelleColonne)).map((v, i) => di(this.#cella(v, c?.[i] === true), n === undefined ? undefined : i));
+    if (tutti) return primi;
+    const altri = elementi.slice(tettoDelleColonne);
+    return [...primi, dato.nome === iniziale ? this.#altriIniziali(nomeDegliAltri(dato.nome, n), this.#elenco(altri), altri) : this.#altri(elementi, c, tettoDelleColonne, (i) => `${dato.nome}[${i}]`)];
   }
 
   /** Le celle di una matrice di `righe` × `colonne` nella sua forma: una per riga coi valori in fila (oltre il tetto, le

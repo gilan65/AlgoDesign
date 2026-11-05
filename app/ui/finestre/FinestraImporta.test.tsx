@@ -302,6 +302,7 @@ const COSTANTI = JSON.stringify({
   format: "algodesign",
   schema_version: 2,
   metadata: { name: "costanti" },
+  records: [{ name: "voto", fields: [{ name: "valore", type: "integer" }] }],
   shared_constants: [
     { name: "K", type: "integer", constant: true, initial: "2" },
     { name: "LIMITE", type: "integer", constant: true, initial: "10" },
@@ -337,6 +338,7 @@ const CON_ALTRE_OPZIONI = JSON.stringify({
       data: [
         { name: "LIMITE", type: "integer", initial: "1" },
         { name: "stampa", type: "integer", initial: "1" },
+        { name: "voto", type: "integer", initial: "1" },
       ],
       body: [],
       end: { id: "b3", return_value: "LIMITE + stampa" },
@@ -369,9 +371,13 @@ test("le opzioni diverse (coi casi che entrano), la costante sostituita, i dati 
     riempi(testi.importaRiempimentoDiverso, { programma: testi.importaLoSpazio, sorgente: riempi(testi.importaIlCarattere, { carattere: "*" }), nome: "altre-opzioni" }),
     riempi(testi.importaPilaDiversa, { programma: "500", sorgente: "10", nome: "altre-opzioni" }),
   ]);
-  // I dati di «urta» col nome della costante e della procedura del programma.
+  // I dati di «urta» col nome della costante, della procedura e del record del programma.
   const testo = () => finestra()!.textContent!;
-  expect([testo().includes(riempi(testi.importaUrtaCostante, { dato: "LIMITE", funzione: "urta" })), testo().includes(riempi(testi.importaUrtaFunzione, { dato: "stampa", funzione: "urta" }))]).toEqual([true, true]);
+  expect([
+    testo().includes(riempi(testi.importaUrtaCostante, { dato: "LIMITE", funzione: "urta" })),
+    testo().includes(riempi(testi.importaUrtaFunzione, { dato: "stampa", funzione: "urta" })),
+    testo().includes(riempi(testi.importaUrtaRecord, { dato: "voto", funzione: "urta" })),
+  ]).toEqual([true, true, true]);
   // La costante in conflitto: rinominata nessun avviso sul valore; sostituita, l'avviso.
   expect(voci()).toEqual(["f:f2", "f:f3", "c:K"]);
   expect(testoDellaVoce("c:K").includes(testi.importaCostanteSostituita)).toBe(false);

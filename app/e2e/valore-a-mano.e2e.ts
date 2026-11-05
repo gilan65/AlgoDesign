@@ -197,6 +197,52 @@ test("il clic fuori conferma il valore; se è rifiutato il campo resta", async (
   await expect(avviso(page)).toHaveText(riempi(it.modificaNonValido, { testo: "abc", dato: "s" }));
 });
 
+// «Ferma» col valore rifiutato nel campo: dalla tastiera come col clic, l'esecuzione si ferma e il valore non si scrive.
+for (const [canale, ferma] of [
+  ["Maiusc+F5 dal campo", (page: Page) => campoDi(page, "s").press("Shift+F5")],
+  ["il clic su «Ferma»", (page: Page) => barra(page, it.ferma).click()],
+] as const) {
+  test(`col valore rifiutato nel campo, ${canale} ferma l'esecuzione`, async ({ page }) => {
+    await alTerzoPassaggio(page);
+    await cella(page, COL.s).dblclick();
+    await campoDi(page, "s").fill("abc");
+    await campoDi(page, "s").press("Enter");
+    await expect(campoDi(page, "s")).toHaveAttribute("aria-invalid", "true");
+    await ferma(page);
+    await expect(statoDi(page)).toHaveText(it.statoPronto);
+    await expect(page.locator("table[data-traccia]")).toHaveCount(0);
+  });
+}
+
+// Dopo un clic fuori rifiutato il campo resta, senza il fuoco: un comando che prosegue non va avanti da nessun canale, il fuoco torna nel campo e la riga di stato ripete il rifiuto;
+// corretto il valore, lo stesso comando lo scrive e prosegue.
+for (const [canale, prosegui] of [
+  ["F5", (page: Page) => page.keyboard.press("F5")],
+  ["F10", (page: Page) => page.keyboard.press("F10")],
+  ["il clic su «Continua»", (page: Page) => barra(page, it.continua).click()],
+] as const) {
+  test(`dopo il clic fuori col valore rifiutato, ${canale} non prosegue e torna al campo`, async ({ page }) => {
+    await alTerzoPassaggio(page);
+    await cella(page, COL.s).dblclick();
+    await campoDi(page, "s").fill("abc");
+    await page.getByRole("heading", { name: it.tabellaDiTraccia, exact: true }).click();
+    await expect(campoDi(page, "s")).toBeVisible();
+    await expect(campoDi(page, "s")).not.toBeFocused();
+    await prosegui(page);
+    await expect(campoDi(page, "s")).toBeFocused();
+    await expect(avviso(page)).toHaveText(riempi(it.modificaNonValido, { testo: "abc", dato: "s" }));
+    await expect(scritte(page)).toHaveCount(2);
+    await expect(correnti(page)).toHaveAttribute("data-blocco", "b4");
+    await expect(statoDi(page)).toHaveText(riempi(it.statoInPausa, { n: "13" }));
+    // Il controllo positivo: col valore buono lo stesso comando prosegue.
+    await campoDi(page, "s").fill("7");
+    await page.getByRole("heading", { name: it.tabellaDiTraccia, exact: true }).click();
+    await expect(campoDi(page, "s")).toHaveCount(0);
+    await prosegui(page);
+    await expect(statoDi(page)).not.toHaveText(riempi(it.statoInPausa, { n: "13" }));
+  });
+}
+
 test("dalla tastiera: Tab raggiunge una cella della riga corrente, le frecce passano alle altre, Invio apre il campo; il suggerimento dice il gesto", async ({ page }) => {
   await alTerzoPassaggio(page);
   const nelGiro = page.locator('table[data-traccia] tbody td[tabindex="0"]');
@@ -240,6 +286,50 @@ test("in attesa di una riga: la lettura sbagliata si corregge, la modifica si ag
   await expect(page.getByRole("form")).toHaveCount(0);
   await daiLaRiga(page, "b", "2");
   await expect(scritte(page)).toHaveText(["42"]);
+});
+
+test("in attesa di una riga col valore rifiutato nella tabella: Invio nella console non prosegue, la riga resta scritta e il fuoco torna al campo", async ({ page }) => {
+  await aprilo(page, progetto([intero("a"), intero("b")], [{ id: "b1", kind: "read", target: "a" }, { id: "b2", kind: "read", target: "b" }, scrivi("b3", "a + b")]));
+  await page.keyboard.press("F5");
+  await daiLaRiga(page, "a", "1");
+  await expect(rigaDi(page, "b")).toBeFocused();
+  await cella(page, 0).dblclick();
+  await campoDi(page, "a").fill("abc");
+  await campoDi(page, "a").press("Enter");
+  await expect(campoDi(page, "a")).toHaveAttribute("aria-invalid", "true");
+  await rigaDi(page, "b").fill("2");
+  await rigaDi(page, "b").press("Enter");
+  await expect(campoDi(page, "a")).toBeFocused();
+  await expect(avviso(page)).toHaveText(riempi(it.modificaNonValido, { testo: "abc", dato: "a" }));
+  await expect(rigaDi(page, "b")).toHaveValue("2");
+  await expect(scritte(page)).toHaveCount(0);
+  // Il controllo positivo: corretto il valore, la riga si dà.
+  await campoDi(page, "a").fill("40");
+  await campoDi(page, "a").press("Enter");
+  await rigaDi(page, "b").press("Enter");
+  await expect(scritte(page)).toHaveText(["42"]);
+});
+
+test("in una tabella lunga il campo aperto che esce dalla parte disegnata con la rotella, e poi ci torna, ha ancora il testo scritto", async ({ page }) => {
+  // 150 giri: oltre 200 righe, la tabella ne disegna solo una parte.
+  await aprilo(page, progetto([intero("s"), intero("i")], [assegna("b1", "s", "0"), { id: "b2", kind: "for", counter: "i", from: "1", to: "150", body: [assegna("b3", "s", "s + i")] }, assegna("b4", "s", "s + 1")]));
+  await blocco(page, "b4").click();
+  await page.keyboard.press("F9");
+  await page.keyboard.press("F5");
+  await expect(correnti(page)).toHaveAttribute("data-blocco", "b4");
+  await cella(page, 0).dblclick();
+  await campoDi(page, "s").fill("777");
+  const riquadro = page.locator("table[data-traccia]").locator("xpath=..");
+  const box = (await riquadro.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  for (let k = 0; k < 40; k++) await page.mouse.wheel(0, -600);
+  // La riga corrente non è più disegnata, e il campo con lei.
+  await expect(page.locator('table[data-traccia] tr[aria-current="true"]')).toHaveCount(0);
+  await expect(campoDi(page, "s")).toHaveCount(0);
+  for (let k = 0; k < 60; k++) await page.mouse.wheel(0, 600);
+  await expect(campoDi(page, "s")).toHaveValue("777");
+  await campoDi(page, "s").press("Enter");
+  await expect(cella(page, 0)).toHaveText("777 (era 11325)");
 });
 
 test("una costante e una posizione: nessun campo, la riga di stato dice perché; la riga 0 prima della prima azione finita si modifica", async ({ page }) => {

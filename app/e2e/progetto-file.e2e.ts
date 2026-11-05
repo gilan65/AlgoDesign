@@ -833,11 +833,10 @@ async function fuoriDalla(page: Page, f: Locator, tasto: string, volte: number, 
   return { fuori, tornato };
 }
 
-// Solo sul server di sviluppo (`@solo-sviluppo`): sul build di produzione, nella corsa intera del collaudo, una finestra aperta da
-// una voce del menu «Progetto» vede a intermittenza il fuoco entrare per un istante nel menu che si sta chiudendo (un
-// `focusin` sul contenuto del menu pochi millisecondi dopo che la finestra l'ha preso, e subito di nuovo nella finestra).
-// Da sola è verde anche lì. È un difetto noto, non risolto: la prova resta sul bersaglio dove è stabile.
-test("ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, conferma delle modifiche, procedura o funzione nuova, «Procedure e funzioni…», «Importa procedure e funzioni…», «Esporta il flowchart…», «Stampa…», Informazioni, conferma prima di togliere un esempio) trattiene il fuoco e si chiude con Esc; i giri appaiati coi componenti della finestra", { tag: "@solo-sviluppo" }, async ({ page }, info) => {
+// Anche sul build di produzione: lì, sotto carico, una finestra aperta da una voce del menu «Progetto» vedeva a intermittenza il fuoco entrare per un istante nel menu che si
+// chiudeva (un `focusin` sul suo contenuto pochi millisecondi dopo che la finestra l'aveva preso: il fotogramma in cui il menu dà il fuoco al contenuto arrivava dopo la
+// finestra). Il contenuto del menu chiuso ora è `inert` (`ui/Barra.tsx`): la prova di nuovo sui due bersagli, 0 entrate fuori in 1560 finestre, 1 in 260 prima.
+test("ogni finestra (Proprietà, Impostazioni, Esempi, errori, Nuovo progetto, conferma delle modifiche, procedura o funzione nuova, «Procedure e funzioni…», «Importa procedure e funzioni…», «Esporta il flowchart…», «Stampa…», Informazioni, conferma prima di togliere un esempio) trattiene il fuoco e si chiude con Esc; i giri appaiati coi componenti della finestra", async ({ page }, info) => {
   test.setTimeout(150_000);
   await apriVuota(page, { lingua: "it" }, { file: { "C:\\rotto.algo": "{" } });
   const giri: [string, () => Promise<void>, () => Locator][] = [

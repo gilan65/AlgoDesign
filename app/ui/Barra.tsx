@@ -12,7 +12,7 @@
 // prova dei disegni c'è solo il gruppo dell'applicazione.
 import { Menu } from "@ark-ui/react/menu";
 import { Portal } from "@ark-ui/react/portal";
-import { useRef, type FocusEvent, type ReactElement } from "react";
+import { useRef, useState, type FocusEvent, type ReactElement } from "react";
 import { flushSync } from "react-dom";
 import type { Dizionario } from "../i18n/it";
 import stili from "./Barra.module.css";
@@ -169,10 +169,14 @@ const MENU = {
 function MenuDeiComandi({ menu, testi, azioni, stati }: { menu: keyof typeof MENU; testi: Dizionario; azioni: Azioni; stati: Stati }): ReactElement {
   const pulsante = useRef<HTMLButtonElement>(null);
   const { testo, icona, voci } = MENU[menu];
+  // Chiuso, il contenuto che sparisce è `inert`: non riceve nemmeno per un istante il fuoco che Ark gli dà al fotogramma dopo una voce scelta (all'apertura e a ogni voce
+  // sotto il puntatore del mouse), quando la finestra aperta dalla voce l'ha già preso. Restituirlo (`fuocoAChiLAveva`) lo riportava indietro, ma dopo esserci entrato.
+  const [aperto, setAperto] = useState(false);
   return (
     <Menu.Root
       lazyMount
       unmountOnExit
+      onOpenChange={(d) => setAperto(d.open)}
       onSelect={(d) => {
         const azione = azioni[d.value as IdComando];
         if (azione)
@@ -197,7 +201,7 @@ function MenuDeiComandi({ menu, testi, azioni, stati }: { menu: keyof typeof MEN
       </Menu.Trigger>
       <Portal>
         <Menu.Positioner className={stili.posizione}>
-          <Menu.Content className={stili.tendina} onFocus={fuocoAChiLAveva}>
+          <Menu.Content className={stili.tendina} onFocus={fuocoAChiLAveva} inert={!aperto}>
             {voci.map((v, i) => {
               if (v === "—") return <Menu.Separator key={`linea-${i}`} className={stili.linea} />;
               const c: Comando = catalogo[v];

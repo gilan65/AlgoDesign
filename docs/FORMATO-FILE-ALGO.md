@@ -82,7 +82,7 @@ senza campi si apre, e il progetto non parte.
 | Campo | Tipo | Obbligatorio | Valori e regole |
 |---|---|---|---|
 | `name` | `string` | sì | il nome del record, con le regole dei nomi dell'app; mai quello di un altro record, di un dato, di una procedura o di una funzione, né il nome di un tipo |
-| `fields` | `array` | sì | i campi, nell'ordine in cui il valore iniziale li elenca; almeno uno, coi nomi tutti diversi |
+| `fields` | `array` | sì | i campi, nell'ordine in cui il valore iniziale li elenca; almeno uno, coi nomi tutti diversi; nessun limite sul numero dei campi né sui caratteri dei campi stringa in tutto: il limite delle Impostazioni vale sul totale di una tabella (un dato con `size`), non su un record solo |
 
 ### Un campo di un record — `records[].fields[]`
 

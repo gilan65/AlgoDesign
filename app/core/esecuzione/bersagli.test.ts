@@ -300,6 +300,36 @@ test("in fila: il segno è sul pezzo dell'elemento e le parole hanno il suo nome
   expect(segnata.era).toBe(`v[${tettoDelleColonne}] era 0`);
 });
 
+test("un parametro per riferimento scritto a mano: la cella con più valori di chi chiama dice il nome del suo elemento, quella della funzione il suo, e il CSV la funzione", () => {
+  const p = programma(
+    [intero("v", { size: 4, initial: zero }), intero("w", { size: 2, initial: zero })],
+    [{ id: "b1", kind: "call", callee: "p", arguments: ["v[3]", "w"] }, assegna("b2", "v[0]", "1")],
+    {},
+    [
+      {
+        id: "f1",
+        kind: "procedure",
+        name: "p",
+        data: [intero("x", { parameter: "reference" }), intero("u", { parameter: "reference", size: 2 }), intero("c")],
+        body: [assegna("b4", "c", "1"), assegna("b5", "c", "2")],
+        end: { id: "b6" },
+      },
+    ],
+  );
+  const t = tabella(p, "in-fila");
+  const es = fermaSu(p, "b5");
+  expect(es.modifica({ funzione: "f1", dato: "x", elemento: 0 }, "9")).toEqual({ ok: true });
+  expect(es.modifica({ funzione: "f1", dato: "u", elemento: 1 }, "5")).toEqual({ ok: true });
+  const r = t.righe(es.traccia).at(-1)!;
+  const di = (funzione: string | undefined, nome: string) => r.valori[t.colonne.findIndex((c) => c.funzione === funzione && c.nome === nome)]!;
+  expect(di(undefined, "v").era).toBe("v[3] era 0");
+  expect(di(undefined, "w").era).toBe("w[1] era 0");
+  // Nel gruppo della funzione il nome del suo parametro, con la funzione davanti, come prima.
+  expect(di("p", "u").era).toBe("p › u[1] era 0");
+  // Il controllo positivo: il CSV elenca le modifiche come sono state fatte, coi nomi della funzione.
+  expect(r.modificati).toBe("p › x: 0 → 9 · p › u[1]: 0 → 5");
+});
+
 test("il watch ha le stesse parole: un dato semplice e l'elemento di un vettore", () => {
   const p = programma([intero("a", { initial: "1" }), intero("v", { size: 2, initial: zero })], [assegna("b1", "a", "3"), assegna("b2", "a", "4")]);
   const t = tabella(p);

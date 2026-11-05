@@ -355,6 +355,14 @@ describe("conflitti", () => {
     ]);
   });
 
+  test("un dato interno col nome di un record del programma entra com'è, e il riepilogo lo dice", () => {
+    const senza = programma({ dati: [] });
+    const p = progetto({ ...JSON.parse(salva(senza)), records: [{ name: "n", fields: [{ name: "a", type: "integer" }] }] });
+    expect(riepilogoDellImportazione(p, libreria, ["f3"]).datiCheUrtano).toEqual([{ funzione: "doppio", dato: "n", con: "record" }]);
+    // Il controllo positivo: senza il record nulla urta.
+    expect(riepilogoDellImportazione(senza, libreria, ["f3"]).datiCheUrtano).toEqual([]);
+  });
+
   test("un nome scelto non valido, già usato o scelto due volte è rifiutato", () => {
     const p = programma({ costanti: [K("3")], funzioni: [doppioUguale] });
     const prova = (f: string, k: string) => importa(libreria, ["f4"], { conCasi: false, scelte: new Map([["f:f3", { come: "rinomina", nome: f }], ["c:K", { come: "rinomina", nome: k }]]) })(p, 10);

@@ -308,6 +308,7 @@ export const it = {
   importaCostanteSostituita: "Il programma userà il valore nuovo: i suoi risultati possono cambiare.",
   importaUrtaCostante: "Il dato «{dato}» di «{funzione}» ha il nome di una costante comune del programma: dopo l'importazione è un errore, da correggere rinominando il dato.",
   importaUrtaFunzione: "Il dato «{dato}» di «{funzione}» ha il nome di una procedura o funzione del programma: dopo l'importazione è un errore, da correggere rinominando il dato.",
+  importaUrtaRecord: "Il dato «{dato}» di «{funzione}» ha il nome di un record del programma: dopo l'importazione è un errore, da correggere rinominando il dato.",
   importaConCasi: "con i loro casi d'uso ({n})",
   importaNiente: "Non entra niente: è già tutto nel programma.",
   importaDopoErrori: "Dopo l'importazione il programma ha errori da correggere: i casi d'uso non si eseguono finché non li correggi.",
