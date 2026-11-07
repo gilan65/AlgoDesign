@@ -21,8 +21,9 @@
 //    file di copyright; i testi delle licenze comuni di Ubuntu a cui i copyright rimandano. Rosso se un pacchetto non ha
 //    il copyright, se le licenze comuni mancano, se una libreria non ha un pacchetto e non è una cache dei moduli.
 // 6. CARTELLA: `dist/<versione>-linux/` alla radice del repository (`dist/prova/…` con `--prova`), con le voci di
-//    `elencoDiLinux`; i testi per l'utente dalla cartella di `--testi` coi segnaposto sostituiti (un `{{` rimasto è
-//    rosso); le due guide per lo studente, la guida ad «Accademico» e quella dello strumento da `docs/`, i due README e il registro delle modifiche dalla radice, così come sono (come per
+//    `elencoDiLinux`; i testi per l'utente dalla cartella di `--testi` coi segnaposto sostituiti (un segnaposto rimasto
+//    è rosso, col rilevatore di `segnaposto.ts`, lo stesso di Windows: il valore di una matrice nelle guide non lo è); le
+//    due guide per lo studente, la guida ad «Accademico» e quella dello strumento da `docs/`, i due README e il registro delle modifiche dalla radice, così come sono (come per
 //    Windows); le licenze
 //    di terze parti per `x86_64-unknown-linux-gnu` con `licenze.ts`. Le voci, al primo livello e nella cartella delle
 //    librerie di sistema, si confrontano con l'atteso nei due versi; controllo positivo: lo stesso confronto, con una
@@ -85,6 +86,7 @@ import {
 import { licenzeDelloStrumento, licenzeDiTerzeParti } from "./licenze";
 import { permessiDiversi } from "./permessi";
 import { provaDelloStrumento } from "./prova-dello-strumento";
+import { segnapostoRimasto, sondaDeiSegnaposto, sostituisci } from "./segnaposto";
 
 /** La glibc più vecchia su cui l'AppImage deve partire: quella che il testo di Linux promette. */
 const glibcPromessa = "2.34";
@@ -357,26 +359,9 @@ async function componi(appimage: string, sistema: LibrerieDiSistema): Promise<vo
   if (registro.includes("SEGNAPOSTO")) rosso("CARTELLA", "CHANGELOG.md ha un SEGNAPOSTO rimasto");
   writeFileSync(join(cartella, "CHANGELOG.md"), registro);
   const delData = dataConPreposizione(dataDiRilascio, "it");
-  for (const [sorgente, destinazione] of Object.entries(testiDiLinux)) {
-    const da = join(cartellaTesti!, sorgente);
-    if (!existsSync(da)) rosso("CARTELLA", `manca il testo ${da}`);
-    const testo = readFileSync(da, "utf8").replaceAll("{{versione}}", nomi.versione).replaceAll("{{delData}}", delData).replaceAll("{{date}}", dataMostrata(dataDiRilascio, "en"));
-    const rimasto = /\{\{[^}]*\}\}?/.exec(testo);
-    if (rimasto) rosso("CARTELLA", `${sorgente}: «${rimasto[0]}» non sostituito (si sostituiscono solo {{versione}}, {{delData}} e {{date}})`);
-    writeFileSync(join(cartella, destinazione), testo);
-  }
-  for (const d of [...documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare]) {
-    const sorgente = join(repository, "docs", d);
-    if (!existsSync(sorgente)) rosso("CARTELLA", `manca il documento ${sorgente}`);
-    const testo = readFileSync(sorgente, "utf8");
-    if (testo.includes("{{")) rosso("CARTELLA", `${relative(repository, sorgente)}: un «{{» nel documento, che si copia così com'è`);
-    writeFileSync(join(cartella, d), testo);
-  }
-  for (const d of documentiDellaRadice) {
-    const testo = readFileSync(join(repository, d), "utf8");
-    if (testo.includes("{{")) rosso("CARTELLA", `${d}: un «{{» nel documento, che si copia così com'è`);
-    writeFileSync(join(cartella, d), testo);
-  }
+  for (const [sorgente, destinazione] of Object.entries(testiDiLinux)) writeFileSync(join(cartella, destinazione), testoDaiTesti("CARTELLA", sorgente));
+  for (const d of [...documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", join("docs", d)));
+  for (const d of documentiDellaRadice) writeFileSync(join(cartella, d), documento("CARTELLA", d));
   const l = await licenzeDiTerzeParti(["x86_64-unknown-linux-gnu"], nomi.versione, esegui, rosso);
   writeFileSync(join(cartella, fileDelleLicenze), l.testo);
   writeFileSync(join(librerie, "pacchetti-di-sistema.txt"), sistema.pacchetti);
@@ -496,13 +481,32 @@ async function eseguibileDelloStrumento(): Promise<{ exe: string; moduli: string
   return { exe, moduli: ingressi, build };
 }
 
+/** Il rilevatore dei segnaposto (`segnaposto.ts`, lo stesso di Windows) sulle sue sonde: rosso se sbaglia. */
+function sondaDelRilevatore(clausola: string): void {
+  const sbaglia = sondaDeiSegnaposto();
+  if (sbaglia !== null) rosso(clausola, sbaglia);
+}
+
 /** Un testo per l'utente dalla cartella di `--testi`, coi segnaposto sostituiti: uno rimasto è rosso. */
 function testoDaiTesti(clausola: string, sorgente: string): string {
   const da = join(cartellaTesti!, sorgente);
   if (!existsSync(da)) rosso(clausola, `manca il testo ${da}`);
-  const testo = readFileSync(da, "utf8").replaceAll("{{versione}}", nomi.versione).replaceAll("{{delData}}", dataConPreposizione(dataDiRilascio, "it")).replaceAll("{{date}}", dataMostrata(dataDiRilascio, "en"));
-  const rimasto = /\{\{[^}]*\}\}?/.exec(testo);
-  if (rimasto) rosso(clausola, `${sorgente}: «${rimasto[0]}» non sostituito (si sostituiscono solo {{versione}}, {{delData}} e {{date}})`);
+  const testo = sostituisci(readFileSync(da, "utf8"), { versione: nomi.versione, delData: dataConPreposizione(dataDiRilascio, "it"), date: dataMostrata(dataDiRilascio, "en") });
+  sondaDelRilevatore(clausola);
+  const rimasto = segnapostoRimasto(testo);
+  if (rimasto !== null) rosso(clausola, `${sorgente}: «${rimasto}» non sostituito (si sostituiscono solo {{versione}}, {{delData}} e {{date}})`);
+  return testo;
+}
+
+/** Un documento del repository (dalla radice) che si copia così com'è: un segnaposto è rosso; il valore di una matrice
+ * (`{{1, 2}, {3, 4}}`) no. */
+function documento(clausola: string, percorso: string): string {
+  const sorgente = join(repository, percorso);
+  if (!existsSync(sorgente)) rosso(clausola, `manca il documento ${sorgente}`);
+  const testo = readFileSync(sorgente, "utf8");
+  sondaDelRilevatore(clausola);
+  const rimasto = segnapostoRimasto(testo);
+  if (rimasto !== null) rosso(clausola, `${percorso}: «${rimasto}», un segnaposto nel documento, che si copia così com'è`);
   return testo;
 }
 
@@ -519,8 +523,7 @@ function componiLoStrumento(exe: string, moduli: readonly string[]): void {
   for (const f of ["LICENSE", "LICENSE-DOCS"]) cpSync(join(repository, f), join(cartellaDelloStrumento, f));
   for (const [sorgente, destinazione] of Object.entries(testiDelloStrumento)) writeFileSync(join(cartellaDelloStrumento, destinazione), testoDaiTesti(C, sorgente));
   for (const g of [guidaAdAccademico, guidaDelloStrumento]) {
-    const guida = readFileSync(join(repository, "docs", g), "utf8");
-    if (guida.includes("{{")) rosso(C, `${g}: un «{{» nel documento, che si copia così com'è`);
+    const guida = documento(C, join("docs", g));
     if (!guida.includes(nomiS.archivio)) rosso(C, `${g} non dice il nome dell'archivio dello strumento per Linux, «${nomiS.archivio}»`);
     writeFileSync(join(cartellaDelloStrumento, g), guida);
   }

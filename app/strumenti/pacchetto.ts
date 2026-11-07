@@ -111,6 +111,7 @@ import {
 } from "./elenco-del-pacchetto";
 import { licenzeDelloStrumento, licenzeDiTerzeParti } from "./licenze";
 import { provaDelloStrumento } from "./prova-dello-strumento";
+import { segnapostoRimasto, sondaDeiSegnaposto as sondaComune } from "./segnaposto";
 
 const argomenti = process.argv.slice(2);
 const posTesti = argomenti.indexOf("--testi");
@@ -312,13 +313,11 @@ function percorsi(eseguibileDaLeggere: string, clausola = "PERCORSI", quale = "n
 /** Le voci al primo livello di una cartella, con la barra in coda per le cartelle. */
 const voci = (dir: string) => readdirSync(dir, { withFileTypes: true }).map((v) => (v.isDirectory() ? `${v.name}/` : v.name)).sort();
 
-/** Un segnaposto: un nome fra due graffe doppie (`{{versione}}`). Il valore iniziale di una matrice o di una tabella
- * scritto in una guida (`{{1, 2}, {3, 4}}`, `{{"Anna", 7}}`) non lo è. */
-const segnaposto = /\{\{\s*[A-Za-z_]\w*\s*\}\}/;
-/** Il rilevatore dei segnaposto nei due versi: rosso se non vede un segnaposto o se vede il valore di una matrice. */
+/** Il rilevatore dei segnaposto nei due versi (`segnaposto.ts`, lo stesso di Linux): rosso se non vede un segnaposto o se
+ * vede il valore di una matrice. */
 function sondaDeiSegnaposto(clausola: string): void {
-  const visti = ["{{versione}}", "{{ data }}", "{{1, 2}, {3, 4}}", '{{"Anna", 7}, {"Bruno", 8}}'].map((t) => segnaposto.test(t));
-  if (JSON.stringify(visti) !== JSON.stringify([true, true, false, false])) rosso(clausola, `il rilevatore dei segnaposto sbaglia sulle sue sonde: ${JSON.stringify(visti)}`);
+  const sbaglia = sondaComune();
+  if (sbaglia !== null) rosso(clausola, sbaglia);
 }
 
 /** Un testo per l'utente dalla cartella di `--testi`, con `{{versione}}`, `{{delData}}` e `{{date}}` sostituiti: un segnaposto rimasto
@@ -328,8 +327,8 @@ function testoConISegnaposto(clausola: string, t: string): string {
   if (!existsSync(sorgente)) rosso(clausola, `manca il testo ${sorgente}`);
   const testo = readFileSync(sorgente, "utf8").replaceAll("{{versione}}", nomi.versione).replaceAll("{{delData}}", delData).replaceAll("{{date}}", dataMostrata(dataDiRilascio, "en"));
   sondaDeiSegnaposto(clausola);
-  const rimasto = segnaposto.exec(testo);
-  if (rimasto) rosso(clausola, `${t}: «${rimasto[0]}» non sostituito (si sostituiscono solo {{versione}}, {{delData}} e {{date}})`);
+  const rimasto = segnapostoRimasto(testo);
+  if (rimasto !== null) rosso(clausola, `${t}: «${rimasto}» non sostituito (si sostituiscono solo {{versione}}, {{delData}} e {{date}})`);
   return testo;
 }
 
@@ -339,8 +338,8 @@ function documento(clausola: string, d: string): string {
   if (!existsSync(sorgente)) rosso(clausola, `manca il documento ${sorgente}`);
   const testo = readFileSync(sorgente, "utf8");
   sondaDeiSegnaposto(clausola);
-  const rimasto = segnaposto.exec(testo);
-  if (rimasto) rosso(clausola, `${relative(repository, sorgente)}: «${rimasto[0]}», un segnaposto nel documento, che si copia così com'è`);
+  const rimasto = segnapostoRimasto(testo);
+  if (rimasto !== null) rosso(clausola, `${relative(repository, sorgente)}: «${rimasto}», un segnaposto nel documento, che si copia così com'è`);
   return testo;
 }
 
@@ -386,8 +385,8 @@ async function componi(rilascio: string): Promise<void> {
   for (const d of [...documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", d));
   for (const d of documentiDellaRadice) {
     const testo = readFileSync(join(repository, d), "utf8");
-    const rimasto = segnaposto.exec(testo);
-    if (rimasto) rosso("CARTELLA", `${d}: «${rimasto[0]}», un segnaposto nel documento, che si copia così com'è`);
+    const rimasto = segnapostoRimasto(testo);
+    if (rimasto !== null) rosso("CARTELLA", `${d}: «${rimasto}», un segnaposto nel documento, che si copia così com'è`);
     if (!testo.includes(`AlgoDesign-${nomi.versione}`)) rosso("CARTELLA", `${d} non dice la cartella della versione, «AlgoDesign-${nomi.versione}»`);
     writeFileSync(join(cartella, d), testo);
   }

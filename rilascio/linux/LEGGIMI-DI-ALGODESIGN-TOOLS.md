@@ -20,7 +20,7 @@ Non serve installarlo e non serve AlgoDesign per usarlo (serve per aprire la lib
 ./algodesign-tools stampa esercizio.algo
 ```
 
-I file si danno col loro percorso, fra virgolette se ha degli spazi, o si copiano nella stessa cartella. I due comandi sono spiegati nella guida ad `algodesign-tools`, `GUIDA-AD-ALGODESIGN-TOOLS.md`, in questa cartella; le opzioni, gli esempi e ciò che stampa `accademico` nel capitolo 6 della guida ad «Accademico», `GUIDA-AD-ACCADEMICO.md`. Le due guide scrivono i comandi come su Windows, `.\algodesign-tools`: su Linux si scrive `./algodesign-tools`, e il resto della riga non cambia. Lo strumento scrive solo i file che il comando produce e i suoi messaggi sono in italiano.
+I file si danno col loro percorso, fra virgolette se ha degli spazi, o si copiano nella stessa cartella. I due comandi sono spiegati nella guida ad `algodesign-tools`, `GUIDA-AD-ALGODESIGN-TOOLS.md`, in questa cartella; le opzioni, gli esempi e ciò che stampa `accademico` nel capitolo 6 della guida ad «Accademico», `GUIDA-AD-ACCADEMICO.md`. Le due guide scrivono i comandi come su Windows, `.\algodesign-tools`: su Linux si scrive `./algodesign-tools` e il resto della riga non cambia. Lo strumento scrive solo i file che il comando produce e i suoi messaggi sono in italiano.
 
 **Se il terminale risponde «Permesso negato»**, il file ha perso il permesso di esecuzione, per esempio perché è stato copiato da una chiavetta: `chmod +x algodesign-tools`.
 
