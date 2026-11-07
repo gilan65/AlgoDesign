@@ -6,7 +6,7 @@ This guide is for people who use AlgoDesign, see something wrong and want to rep
 
 1. Right after the malfunction, without pressing Stop and without closing AlgoDesign: **Help** menu, **Save to report a malfunction…**, then **Save…** (§4).
 2. If the malfunction can be repeated: **Turn on execution recording**, repeat what you did and save again (§6).
-3. Open https://github.com/gilan65/AlgoDesign/issues/new, write what you did and **what you expected**, attach the file and send (§7).
+3. Open https://github.com/gilan65/AlgoDesign/issues/new, write what you did and **what you expected**, attach the file and press **Create** (§7).
 
 AlgoDesign sends nothing on its own: it does not connect to the internet, and the file stays on your computer until you attach it.
 
@@ -75,10 +75,10 @@ Recording is only in memory: nothing is written to disk until you save. Saving d
 ## 7. The report on GitHub
 
 1. Open https://github.com/gilan65/AlgoDesign/issues/new in the browser and sign in with your account.
-2. In the title field (**Title**) write in one line what happens: “The trace table shows 8 where the program writes 7”, not “It doesn't work”.
-3. In the description box write what you did, what you expected and what happened (the example is below).
-4. Attach the file: drag it into the description box, or use the command to add a file below the box. GitHub accepts `.txt` files up to 25 MB, and the AlgoDesign file fits. If a screenshot helps to understand, attach it the same way.
-5. Read it again and confirm with the button at the bottom of the form. The report gets a number and a page of its own.
+2. In the **Add a title** field write in one line what happens: “The trace table shows 8 where the program writes 7”, not “It doesn't work”.
+3. In the **Add a description** box write what you did, what you expected and what happened (the example is below).
+4. Attach the file: drag it into the description box, or click **Paste, drop, or click to add files**, below the box, and choose it. A line with the name of the file appears in the box: wait for it before going on. GitHub accepts `.txt` files up to 25 MB, and the AlgoDesign file fits. If a screenshot helps to understand, attach it the same way.
+5. Read it again and confirm with the **Create** button at the bottom of the form. The report gets a number and a page of its own.
 
 An example of a description:
 
