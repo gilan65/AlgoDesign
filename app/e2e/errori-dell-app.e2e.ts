@@ -193,6 +193,9 @@ test("un errore nel disegno, in un fotogramma, in una promessa e nel guscio sono
 
 test("un difetto a ogni fotogramma è una voce sola che conta, e un errore dopo si vede ancora", async ({ page }, info) => {
   await apriVuota(page, { lingua: "it" });
+  // L'app montata prima del tasto: `apriVuota` non la aspetta, e sulla macchina della CI F10 arrivava prima dei gestori
+  // (la riga di stato restava «Pronto», due corse su tre nel WebKit per Linux).
+  await expect(page.locator("[data-stato-esecuzione]")).toHaveText(it.statoPronto);
   // Il comando c'è con un'esecuzione ferma.
   await page.keyboard.press("F10");
   await expect(page.locator("[data-stato-esecuzione]")).not.toHaveText(it.statoPronto);

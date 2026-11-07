@@ -470,7 +470,10 @@ export async function costruisci(
     const [primo] = campi[0]!;
     await aspetta(campo(dove, primo), `il campo «${primo}» del blocco «${nomeBlocco(b)}»`);
     for (const [i, [nome, testo]] of campi.entries()) {
-      if (i > 0 && b.kind === "write") await dove.getByRole("button", { name: t.aggiungiValore, exact: true }).click();
+      // Dalla tastiera, non col mouse: sulla macchina della CI il clic si perdeva (il pulsante col fuoco, cioè la pressione
+      // arrivata, e nessun valore nuovo: il bersaglio spostato prima del rilascio), una o due prove per corsa nel WebKit per
+      // Linux. Lo spazio attiva il pulsante dov'è.
+      if (i > 0 && b.kind === "write") await dove.getByRole("button", { name: t.aggiungiValore, exact: true }).press(" ");
       await aspetta(campo(dove, nome), `il campo «${nome}» del blocco «${nomeBlocco(b)}»`);
       await campo(dove, nome).fill(testo);
     }
