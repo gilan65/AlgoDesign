@@ -2,24 +2,27 @@
 # pacchetto portabile con `bun run pacchetto` (lo zip, la sua impronta e i controlli dello strumento: l'albero, le
 # proprietà dell'eseguibile, nessun percorso della macchina nei byte, le voci dell'elenco, le licenze, la doppia lettura
 # dello zip); quello di Linux compone l'archivio con `strumenti/archivio.ts` (l'AppImage su Ubuntu 22.04, la glibc più
-# vecchia fra le immagini, gli stessi controlli più le librerie di Ubuntu dentro l'AppImage coi loro copyright). Ognuno
-# estrae il suo archivio in una cartella con spazi, avvia il programma una volta (resta vivo per 20 s, fotografia dello
-# schermo) e carica gli artefatti. Non pubblica nulla: la release si crea a parte dagli artefatti scaricati. Gli artefatti
+# vecchia fra le immagini, gli stessi controlli più le librerie di Ubuntu dentro l'AppImage coi loro copyright, e
+# l'archivio dello strumento a riga di comando, provato estratto). Ognuno estrae il suo archivio in una cartella con
+# spazi, avvia il programma una volta (resta vivo per 20 s, fotografia dello schermo) e carica gli artefatti. Non pubblica nulla: la release si crea a parte dagli artefatti scaricati. Gli artefatti
 # durano 7 giorni: lo spazio incluso è poco, e la copia che dura è la release.
 #
 # Con «prove» acceso (una volta per release) corrono anche, sull'archivio di Linux della stessa corsa o sul sorgente:
-# - le prove dell'interfaccia nel WebKit di Playwright per Linux (il progetto `webkit-anteprima`, `strumenti/webkit.ts`);
+# - le prove dell'interfaccia nel WebKit di Playwright per Linux (il progetto `webkit-anteprima`, `strumenti/webkit.ts`),
+#   con un processo solo, la misura del canvas più grande di quel motore (`strumenti/misura-del-canvas.ts`) e le righe
+#   della barra in Chromium per Linux (`e2e/barra.e2e.ts`);
 # - la prova sul prodotto dell'AppImage col WebKitGTK di Ubuntu 22.04 (`strumenti/linux/prova-ci.ts`): lingua,
-#   esecuzione, vettore di 1000 elementi, suggerimento fotografato, memoria, tracce fuori da `data/`;
+#   esecuzione, vettore di 1000 elementi, suggerimento fotografato, memoria, tracce fuori da `data/`; e le due misure del
+#   motore, il canvas e la stampa (`window.print()` fotografata);
 # - il test differenziale col gcc e il clang di Ubuntu 24.04 (`bun run differenziale`, con gli avvisi attesi), due volte:
 #   col Python del servizio e col Python 3.11, la versione più vecchia per cui il codice generato è dichiarato.
 #
 # Da un'etichetta `v<versione>` il pacchetto è una release; da un ramo è un pacchetto di prova (`--prova`), con lo
 # stesso contenuto e lo stesso nome, nella cartella `dist/prova/` del runner.
 #
-# Fino a quando il repository è privato i minuti delle Actions sono contati: il pacchetto per Windows si compone sul PC
-# di sviluppo con lo stesso strumento (`bun run pacchetto`), le versioni di prova escono solo per Windows, e questo
-# workflow non si lancia. Windows e Linux, con le prove, corrono qui quando il repository sarà pubblico.
+# Fino a quando il repository è privato il calcolo e lo spazio delle Actions sono contati: ogni corsa si chiede, col
+# consumo del mese guardato prima; il pacchetto per Windows si compone anche sul PC con lo stesso strumento (`bun run
+# pacchetto`).
 #
 # Che cosa NON guarda: che il programma per Windows faccia ciò che deve oltre ad aprirsi e restare vivo (lo provano le
 # clausole della prova sul prodotto, sul pacchetto scaricato, e il controllo a ogni invio); che la finestra disegni
@@ -157,10 +160,15 @@ jobs:
         run: |
           mkdir -p uscita
           if [ "${{ github.ref_type }}" = "tag" ]; then cartella=dist; else cartella=dist/prova; fi
-          trovati=$(find "${cartella}" -maxdepth 1 -name 'AlgoDesign-*-linux-x64.tar.gz')
-          echo "archivi trovati: ${trovati}"
-          test "$(echo "${trovati}" | grep -c .)" -eq 1
-          cp "${trovati}" "${trovati}.sha256" uscita/
+          # I due archivi, ognuno atteso per nome dalla versione: uno che manca è rosso e si nomina.
+          versione=$(jq -r .version app/package.json)
+          mancanti=""
+          for nome in "AlgoDesign-${versione}-linux-x64.tar.gz" "AlgoDesign-Tools-${versione}-linux-x64.tar.gz"; do
+            for f in "${nome}" "${nome}.sha256"; do test -f "${cartella}/${f}" || mancanti="${mancanti} ${f}"; done
+            test -f "${cartella}/${nome}" && cp "${cartella}/${nome}" "${cartella}/${nome}.sha256" uscita/
+          done
+          if [ -n "${mancanti}" ]; then echo "ROSSO: in ${cartella} mancano:${mancanti}"; exit 1; fi
+          echo "raccolti: $(ls uscita | tr '\n' ' ')"
           cp app/.collaudo/archivio-*.log uscita/
           # Il commit da cui nasce l'archivio, con il ramo o l'etichetta e la corsa.
           printf 'commit %s\nref %s\ncorsa %s\n' "$(git rev-parse HEAD)" "${{ github.ref }}" "${{ github.run_id }}" > uscita/commit.txt
@@ -170,8 +178,9 @@ jobs:
         run: |
           dove="${RUNNER_TEMP}/prova con spazi"
           mkdir -p "${dove}"
-          tar -xzf uscita/AlgoDesign-*-linux-x64.tar.gz -C "${dove}"
-          cd "${dove}"/AlgoDesign-*/
+          versione=$(jq -r .version app/package.json)
+          tar -xzf "uscita/AlgoDesign-${versione}-linux-x64.tar.gz" -C "${dove}"
+          cd "${dove}/AlgoDesign-${versione}/"
           Xvfb :99 -screen 0 1280x800x24 &
           sleep 2
           # Senza FUSE l'AppImage si estrae e parte da lì; l'avvio con FUSE lo prova `verifica.yml`.
@@ -194,7 +203,8 @@ jobs:
   webkit-linux:
     if: inputs.prove && contains(inputs.piattaforme || 'windows', 'linux')
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    # Con un processo solo le prove durano circa il doppio che con due.
+    timeout-minutes: 90
     defaults:
       run:
         working-directory: app
@@ -214,8 +224,25 @@ jobs:
           # Le misure delle prove che dipendono dal carattere (le righe della barra) sono quelle di DejaVu Sans.
           echo "carattere di sistema: $(fc-match system-ui)"
 
+      # Un processo solo: con due, sui due processori della macchina, le prove di tempo e di trascinamento uscivano rosse
+      # a intermittenza (una diversa ogni volta).
       - name: Prove dell'interfaccia in WebKit
-        run: bun ./strumenti/webkit.ts --progetto webkit-anteprima --processi 2
+        run: bun ./strumenti/webkit.ts --progetto webkit-anteprima --processi 1
+
+      # Una misura, non una prova: il canvas più grande che questo motore disegna e da cui dà il PNG.
+      - name: Misura del canvas in WebKit
+        if: "!cancelled()"
+        run: set -o pipefail; bun ./strumenti/misura-del-canvas.ts --motore webkit | tee .collaudo/webkit-canvas.log
+
+      # Le righe della barra su Linux sono misurate nel WebKit; qui le stesse prove in Chromium per Linux, sul build che
+      # `webkit.ts` ha appena fatto e col carattere di questa macchina. Il log va nell'artefatto; l'uscita di Playwright in
+      # una cartella sua, perché la corsa svuota la propria e quella del WebKit si perderebbe.
+      - name: Righe della barra in Chromium per Linux
+        if: "!cancelled()"
+        run: |
+          set -o pipefail
+          ./node_modules/.bin/playwright install --with-deps chromium
+          bun --bun playwright test e2e/barra.e2e.ts --project=chromium-anteprima --workers 1 --retries 0 --reporter=line --output .collaudo/playwright-barra-chromium | tee .collaudo/webkit-barra-chromium.log
 
       - uses: actions/upload-artifact@v5
         if: always()
@@ -240,7 +267,7 @@ jobs:
       - name: Schermo virtuale, pilota di WebKitGTK, fotografie e lingue del sistema
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends webkit2gtk-driver xvfb imagemagick locales
+          sudo apt-get install -y --no-install-recommends webkit2gtk-driver xvfb imagemagick x11-utils locales
           sudo locale-gen it_IT.UTF-8 en_US.UTF-8
 
       - name: Rust, tauri-driver e Bun
@@ -262,7 +289,7 @@ jobs:
 
       - name: Prova sul prodotto
         working-directory: app
-        run: bun ./strumenti/linux/prova-ci.ts --archivio "$(find ../archivio -maxdepth 1 -name 'AlgoDesign-*-linux-x64.tar.gz')" --uscita ../uscita-prodotto
+        run: bun ./strumenti/linux/prova-ci.ts --archivio "../archivio/AlgoDesign-$(jq -r .version package.json)-linux-x64.tar.gz" --uscita ../uscita-prodotto
 
       - uses: actions/upload-artifact@v5
         if: always()

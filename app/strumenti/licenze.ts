@@ -225,7 +225,7 @@ export async function licenzeDiTerzeParti(
  *
  * Che cosa NON guarda: che la pagina elenchi tutto ciò che Bun collega (si riporta ciò che Bun dichiara); i testi delle
  * altre licenze che la pagina nomina col solo nome (MIT, BSD, Apache 2.0, zlib…). */
-export function licenzeDelloStrumento(versione: string, moduli: readonly string[], rosso: Rosso): { testo: string; bun: string; testi: number } {
+export function licenzeDelloStrumento(versione: string, moduli: readonly string[], rosso: Rosso, eseguibile = "algodesign-tools.exe"): { testo: string; bun: string; testi: number } {
   const tipi = join(radice, "node_modules", "bun-types");
   const versioneDeiTipi: unknown = JSON.parse(readFileSync(join(tipi, "package.json"), "utf8")).version;
   if (versioneDeiTipi !== Bun.version) rosso("LICENZE DELLO STRUMENTO", `bun-types ${String(versioneDeiTipi)} e Bun ${Bun.version}: la pagina della licenza non sarebbe quella di Bun che compila`);
@@ -240,7 +240,7 @@ export function licenzeDelloStrumento(versione: string, moduli: readonly string[
     titolo,
     "=".repeat(titolo.length),
     "",
-    `algodesign-tools.exe è il codice di AlgoDesign (${moduli.length} moduli, licenza MIT nel file LICENSE) dentro`,
+    `${eseguibile} è il codice di AlgoDesign (${moduli.length} moduli, licenza MIT nel file LICENSE) dentro`,
     `Bun ${Bun.version}, il programma che lo esegue. Bun è distribuito con licenza MIT e porta con sé librerie di altri,`,
     "ognuna con la sua licenza: sono elencate nella pagina della licenza di Bun, che segue così come Bun la pubblica, in",
     "inglese. Dopo la pagina ci sono i testi interi delle due licenze LGPL che nomina.",

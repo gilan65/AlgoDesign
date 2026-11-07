@@ -31,11 +31,29 @@
 //    `tar` del sistema (proprietario 0, nomi in ordine). Riletto due volte, col `tar` (estratto in una cartella
 //    temporanea) e con il modulo `tarfile` di Python (un lettore diverso da quello che lo ha scritto): le voci sono quelle
 //    della cartella, ogni file ha la sua impronta, l'AppImage è 0755, `data/` c'è ed è vuota. Accanto, `<archivio>.sha256`.
+//    I permessi li fissa il `tar` (`--mode`), non la umask della macchina: cartelle 0755, file 0644, l'eseguibile 0755; la
+//    lettura con Python li pretende voce per voce, col controllo positivo (una cartella a 0777 messa al posto di una letta
+//    si vede).
+// 8. STRUMENTO: l'eseguibile a sé dello strumento a riga di comando (`bun build --compile ./strumenti/algodesign-tools.ts`,
+//    senza la lettura di `.env` e di `bunfig.toml` della cartella di avvio), in una cartella temporanea nuova. I moduli del
+//    metafile tutti del repository, fuori da `node_modules`; nei byte nessuno dei percorsi di 3, con lo stesso rilevatore e
+//    lo stesso controllo positivo. Su Linux un eseguibile non ha proprietà né icona: quelle di Windows qui non ci sono.
+// 9. CARTELLA DELLO STRUMENTO: `dist/<versione>-tools-linux/` (`dist/prova/…` con `--prova`) con le voci di
+//    `elencoDelloStrumentoDiLinux`: i due testi brevi da `--testi`, coi segnaposto sostituiti; la guida ad «Accademico» e
+//    quella dello strumento da `docs/`, rosse se non dicono il nome dell'archivio dello strumento per Linux; le due licenze
+//    e quelle di terze parti dello strumento (`licenze.ts`). Il confronto nei due versi col controllo positivo.
+// 10. ARCHIVIO DELLO STRUMENTO: `dist/AlgoDesign-Tools-<versione>-linux-x64.tar.gz`, con dentro la cartella
+//    `AlgoDesign-Tools-<versione>`, con le prove di 7 e l'impronta accanto.
+// 11. PROVA DELLO STRUMENTO (`prova-dello-strumento.ts`, la stessa di Windows): l'archivio estratto col `tar` in una
+//    cartella con uno spazio nel nome, l'eseguibile avviato da lì con un PATH senza Bun; le tracce al primo livello della
+//    casa, di `~/.config`, `~/.local/share`, `~/.cache` (quelle che ci sono) e della cartella temporanea.
 //
 // Che cosa NON guarda:
 // - che l'AppImage parta e funzioni: lo provano l'avvio di prova e la prova sul prodotto del workflow, e su macchine
 //   pulite `verifica.yml`;
 // - che i testi per l'utente dicano il vero: si leggono;
+// - dello strumento, ciò che 11 non dice (il lettore e la stampa li provano le loro prove), né le scritture dentro cartelle
+//   che c'erano già nelle radici delle tracce;
 // - che i file di copyright di Ubuntu dicano tutte le licenze di una libreria: si riportano come Ubuntu li distribuisce;
 // - le librerie che l'AppImage chiede al sistema senza portarle (la grafica di base, FUSE): le misura `verifica.yml`;
 // - i file ignorati da git che entrano nel build (`node_modules`, la cache di Cargo), come per Windows;
@@ -46,10 +64,27 @@
 import { appendFileSync, chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { homedir, tmpdir } from "node:os";
-import { basename, join, relative } from "node:path";
+import { basename, delimiter, isAbsolute, join, relative, resolve } from "node:path";
 import { dataConPreposizione, dataMostrata } from "../ui/prodotto";
-import { cartellaDelleLibrerieDiSistema, differenzeDallElenco, documentiDellaRadice, documentiDelPacchetto, elencoDiLinux, guidaAdAccademico, guidaDelloStrumento, guidePerSegnalare, fileDelleLicenze, nomiDiLinux, testiDiLinux } from "./elenco-del-pacchetto";
-import { licenzeDiTerzeParti } from "./licenze";
+import {
+  cartellaDelleLibrerieDiSistema,
+  differenzeDallElenco,
+  documentiDellaRadice,
+  documentiDelPacchetto,
+  elencoDelloStrumentoDiLinux,
+  elencoDiLinux,
+  guidaAdAccademico,
+  guidaDelloStrumento,
+  guidePerSegnalare,
+  fileDelleLicenze,
+  nomiDelloStrumentoDiLinux,
+  nomiDiLinux,
+  testiDelloStrumento,
+  testiDiLinux,
+} from "./elenco-del-pacchetto";
+import { licenzeDelloStrumento, licenzeDiTerzeParti } from "./licenze";
+import { permessiDiversi } from "./permessi";
+import { provaDelloStrumento } from "./prova-dello-strumento";
 
 /** La glibc più vecchia su cui l'AppImage deve partire: quella che il testo di Linux promette. */
 const glibcPromessa = "2.34";
@@ -109,6 +144,10 @@ const dist = prova ? join(repository, "dist", "prova") : join(repository, "dist"
 const cartella = join(dist, nomi.cartella);
 const archivio = join(dist, nomi.archivio);
 const cartellaDelleAppImage = join(radice, "shell", "target", "release", "bundle", "appimage");
+const nomiS = nomiDelloStrumentoDiLinux(testoDelPackageJson);
+const cartellaDelloStrumento = join(dist, nomiS.cartella);
+const archivioDelloStrumento = join(dist, nomiS.archivio);
+const eseguibileS = "algodesign-tools";
 
 /** Lo stato dell'albero: il commit e le righe di `git status`. */
 async function statoDellAlbero(): Promise<{ commit: string; modificati: string[] }> {
@@ -191,17 +230,17 @@ async function estrai(appimage: string): Promise<string> {
   return contenuto;
 }
 
-/** 3. I percorsi della macchina nei byte del programma. */
-function percorsi(contenuto: string): void {
-  const programma = readFileSync(join(contenuto, "usr", "bin", "algodesign"));
+/** 3. I percorsi della macchina nei byte del programma (e, in 8, dello strumento). */
+function percorsi(file: string, clausola = "PERCORSI", quale = "nel programma"): void {
+  const programma = readFileSync(file);
   const trovati = percorsiDellaMacchina.map((p) => ({ ...p, n: occorrenze(programma, p.percorso) })).filter((p) => p.n > 0);
   const deps = join(radice, "shell", "target", "release", "deps");
   const sonde = existsSync(deps) ? readdirSync(deps).filter((f) => /^tokio-[0-9a-f]+\.d$/.test(f)).map((f) => join(deps, f)).sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs) : [];
   const sonda = sonde[0];
   const acceso = sonda === undefined ? 0 : occorrenze(readFileSync(sonda), cartellaDiCargo.percorso);
-  if (acceso === 0) rosso("PERCORSI", `controllo positivo SPENTO: nessuna occorrenza della cartella di Cargo in ${sonda ?? "(nessun file delle dipendenze di tokio)"}`);
-  if (trovati.length > 0) rosso("PERCORSI", `il programma contiene ${trovati.map((p) => `${p.nome} (${p.percorso}) ${p.n} volte`).join(", ")}`);
-  riga(`PERCORSI: VERDE | nel programma (${programma.length} byte) nessuno di ${percorsiDellaMacchina.map((p) => `${p.nome} (${p.percorso})`).join(", ")} | controllo positivo acceso (${acceso} occorrenze della cartella di Cargo in ${relative(radice, sonda!)})`);
+  if (acceso === 0) rosso(clausola, `controllo positivo SPENTO: nessuna occorrenza della cartella di Cargo in ${sonda ?? "(nessun file delle dipendenze di tokio)"}`);
+  if (trovati.length > 0) rosso(clausola, `${quale} ci sono ${trovati.map((p) => `${p.nome} (${p.percorso}) ${p.n} volte`).join(", ")}`);
+  riga(`${clausola}: VERDE | ${quale} (${programma.length} byte) nessuno di ${percorsiDellaMacchina.map((p) => `${p.nome} (${p.percorso})`).join(", ")} | controllo positivo acceso (${acceso} occorrenze della cartella di Cargo in ${relative(radice, sonda!)})`);
 }
 
 /** Confronto di due versioni a numeri separati da punti. */
@@ -344,7 +383,7 @@ async function componi(appimage: string, sistema: LibrerieDiSistema): Promise<vo
   writeFileSync(join(librerie, "versioni-dei-pacchetti.txt"), sistema.versioni);
   for (const [p, c] of sistema.copyright) cpSync(c, join(librerie, `${p}.copyright`), { dereference: true });
   cpSync(sistema.comuni, join(librerie, "licenze-comuni"), { recursive: true, dereference: true });
-  for (const f of fileDi(cartella)) chmodSync(join(cartella, f), f === "AlgoDesign.AppImage" ? 0o755 : 0o644);
+  permessi(cartella, "AlgoDesign.AppImage");
 
   const trovate = voci(cartella);
   const controllo = confrontoAcceso(trovate, elencoDiLinux, "primo livello");
@@ -362,30 +401,45 @@ async function componi(appimage: string, sistema: LibrerieDiSistema): Promise<vo
   );
 }
 
-/** 7. L'archivio, le due letture e l'impronta. */
-async function comprimi(): Promise<string> {
+/** I permessi della cartella composta: le cartelle 0755, i file 0644, l'eseguibile 0755 (l'archivio li fissa da sé). */
+function permessi(dir: string, eseguibile: string): void {
+  chmodSync(dir, 0o755);
+  for (const v of readdirSync(dir, { recursive: true, withFileTypes: true }) as import("node:fs").Dirent[]) {
+    const p = join(v.parentPath, v.name);
+    if (v.isDirectory()) chmodSync(p, 0o755);
+    else if (v.isFile()) chmodSync(p, relative(dir, p) === eseguibile ? 0o755 : 0o644);
+  }
+}
+
+/** Che cosa comprimere: la cartella composta, l'archivio, la cartella che deve nascere estraendolo, l'eseguibile (0755) e
+ * se c'è `data/`, vuota. */
+type DaComprimere = { clausola: string; cartella: string; archivio: string; nomeDellArchivio: string; cartellaNellArchivio: string; eseguibile: string; conDati: boolean };
+
+/** 7 e 10. L'archivio, le due letture, i permessi e l'impronta. */
+async function comprimi({ clausola, cartella, archivio, nomeDellArchivio, cartellaNellArchivio, eseguibile, conDati }: DaComprimere): Promise<string> {
   for (const f of [archivio, `${archivio}.sha256`]) rmSync(f, { force: true });
   const copia = mkdtempSync(join(tmpdir(), "algodesign-copia-"));
   try {
-    cpSync(cartella, join(copia, nomi.cartellaNellArchivio), { recursive: true });
-    const t = await esegui(["tar", "--sort=name", "--owner=0", "--group=0", "--numeric-owner", "-czf", archivio, nomi.cartellaNellArchivio], copia);
-    if (t.codice !== 0 || !existsSync(archivio)) rosso("ARCHIVIO", `tar esce ${t.codice} (dettaglio nel log)`);
+    cpSync(cartella, join(copia, cartellaNellArchivio), { recursive: true });
+    // I permessi nell'archivio non dipendono dalla umask né da come la copia li ha portati: cartelle ed eseguibili 0755, file 0644.
+    const t = await esegui(["tar", "--sort=name", "--owner=0", "--group=0", "--numeric-owner", "--mode=u=rwX,go=rX", "-czf", archivio, cartellaNellArchivio], copia);
+    if (t.codice !== 0 || !existsSync(archivio)) rosso(clausola, `tar esce ${t.codice} (dettaglio nel log)`);
   } finally {
     rmSync(copia, { recursive: true, force: true });
   }
-  const attesi = new Map(fileDi(cartella).map((f) => [`${nomi.cartellaNellArchivio}/${f}`, impronta(join(cartella, f))]));
+  const attesi = new Map(fileDi(cartella).map((f) => [`${cartellaNellArchivio}/${f}`, impronta(join(cartella, f))]));
   const estratta = mkdtempSync(join(tmpdir(), "algodesign-tar-"));
   try {
     const x = await esegui(["tar", "-xzf", archivio, "-C", estratta]);
-    if (x.codice !== 0) rosso("ARCHIVIO", `l'estrazione esce ${x.codice} (dettaglio nel log)`);
-    if (voci(estratta).join("|") !== `${nomi.cartellaNellArchivio}/`) rosso("ARCHIVIO", `estratto, dà ${JSON.stringify(voci(estratta))} invece della sola cartella ${nomi.cartellaNellArchivio}`);
-    const dentro = join(estratta, nomi.cartellaNellArchivio);
-    const letti = new Map(fileDi(dentro).map((f) => [`${nomi.cartellaNellArchivio}/${f}`, impronta(join(dentro, f))]));
+    if (x.codice !== 0) rosso(clausola, `l'estrazione esce ${x.codice} (dettaglio nel log)`);
+    if (voci(estratta).join("|") !== `${cartellaNellArchivio}/`) rosso(clausola, `estratto, dà ${JSON.stringify(voci(estratta))} invece della sola cartella ${cartellaNellArchivio}`);
+    const dentro = join(estratta, cartellaNellArchivio);
+    const letti = new Map(fileDi(dentro).map((f) => [`${cartellaNellArchivio}/${f}`, impronta(join(dentro, f))]));
     const diversi = differenzeDallElenco([...letti.keys()], [...attesi.keys()]);
     const altreImpronte = [...attesi].filter(([f, h]) => letti.has(f) && letti.get(f) !== h).map(([f]) => f);
-    if (diversi.length > 0 || altreImpronte.length > 0) rosso("ARCHIVIO", `estratto col tar: ${[...diversi, ...altreImpronte.map((f) => `diverso ${f}`)].slice(0, 10).join(", ")}`);
-    if ((statSync(join(dentro, "AlgoDesign.AppImage")).mode & 0o777) !== 0o755) rosso("ARCHIVIO", "estratta col tar, l'AppImage non è 0755");
-    if (!existsSync(join(dentro, "data")) || readdirSync(join(dentro, "data")).length > 0) rosso("ARCHIVIO", "estratto col tar, data/ manca o non è vuota");
+    if (diversi.length > 0 || altreImpronte.length > 0) rosso(clausola, `estratto col tar: ${[...diversi, ...altreImpronte.map((f) => `diverso ${f}`)].slice(0, 10).join(", ")}`);
+    if ((statSync(join(dentro, eseguibile)).mode & 0o777) !== 0o755) rosso(clausola, `estratto col tar, ${eseguibile} non è 0755`);
+    if (conDati && (!existsSync(join(dentro, "data")) || readdirSync(join(dentro, "data")).length > 0)) rosso(clausola, "estratto col tar, data/ manca o non è vuota");
   } finally {
     rmSync(estratta, { recursive: true, force: true });
   }
@@ -398,20 +452,124 @@ async function comprimi(): Promise<string> {
     "        print(m.name, 'd' if m.isdir() else 'f' if m.isfile() else 'altro', oct(m.mode & 0o777), h, sep='\\t')",
   ].join("\n");
   const p = await esegui(["python3", "-c", lettore, archivio]);
-  if (p.codice !== 0) rosso("ARCHIVIO", `la lettura con Python esce ${p.codice} (dettaglio nel log)`);
+  if (p.codice !== 0) rosso(clausola, `la lettura con Python esce ${p.codice} (dettaglio nel log)`);
   const lette = p.out.split("\n").filter((r) => r !== "").map((r) => r.split("\t") as [string, string, string, string]);
   const fileLetti = new Map(lette.filter((r) => r[1] === "f").map((r) => [r[0], r[3]]));
   const altro = lette.filter((r) => r[1] === "altro").map((r) => r[0]);
   const cartelleLette = lette.filter((r) => r[1] === "d").map((r) => r[0]);
   const diversiConPython = differenzeDallElenco([...fileLetti.keys()], [...attesi.keys()]);
   const impronteDiverse = [...attesi].filter(([f, h]) => fileLetti.has(f) && fileLetti.get(f) !== h).map(([f]) => f);
-  const modo = lette.find((r) => r[0] === `${nomi.cartellaNellArchivio}/AlgoDesign.AppImage`)?.[2];
-  if (diversiConPython.length > 0 || impronteDiverse.length > 0 || altro.length > 0 || modo !== "0o755" || !cartelleLette.includes(`${nomi.cartellaNellArchivio}/data`))
-    rosso("ARCHIVIO", `letto con Python: ${JSON.stringify({ diversi: diversiConPython.slice(0, 10), impronteDiverse, altro, modoDellAppImage: modo, data: cartelleLette.includes(`${nomi.cartellaNellArchivio}/data`) })}`);
+  const nomeDellEseguibile = `${cartellaNellArchivio}/${eseguibile}`;
+  const modi = lette.map((r) => [r[0], r[1], r[2]] as const);
+  const permessiSbagliati = permessiDiversi(modi, nomeDellEseguibile);
+  // Controllo positivo: lo stesso rilevatore, con la prima cartella letta messa a 0777, la dice.
+  const primaCartella = modi.find((r) => r[1] === "d");
+  const sonda = primaCartella === undefined ? [] : permessiDiversi([...modi.filter((r) => r !== primaCartella), [primaCartella[0], "d", "0o777"]], nomeDellEseguibile);
+  if (primaCartella === undefined || sonda.length !== permessiSbagliati.length + 1) rosso(clausola, `controllo positivo dei permessi SPENTO: con una cartella a 0777 il rilevatore dice ${JSON.stringify(sonda.slice(0, 3))}`);
+  if (diversiConPython.length > 0 || impronteDiverse.length > 0 || altro.length > 0 || permessiSbagliati.length > 0 || (conDati && !cartelleLette.includes(`${cartellaNellArchivio}/data`)))
+    rosso(clausola, `letto con Python: ${JSON.stringify({ diversi: diversiConPython.slice(0, 10), impronteDiverse, altro, permessi: permessiSbagliati.slice(0, 10), data: conDati ? cartelleLette.includes(`${cartellaNellArchivio}/data`) : "non attesa" })}`);
   const sha = impronta(archivio);
-  writeFileSync(`${archivio}.sha256`, `${sha}  ${nomi.archivio}\n`);
-  riga(`ARCHIVIO: VERDE | ${relative(repository, archivio)} ${statSync(archivio).size} byte; estratto col tar e letto con Python: la cartella ${nomi.cartellaNellArchivio}/, gli stessi ${attesi.size} file con le stesse impronte, l'AppImage 0755, data/ vuota (${lette.length} voci lette) | sha256 ${sha} in ${nomi.archivio}.sha256`);
+  writeFileSync(`${archivio}.sha256`, `${sha}  ${nomeDellArchivio}\n`);
+  riga(
+    `${clausola}: VERDE | ${relative(repository, archivio)} ${statSync(archivio).size} byte; estratto col tar e letto con Python: la cartella ${cartellaNellArchivio}/, gli stessi ${attesi.size} file con le stesse impronte, ${eseguibile} 0755, le ${cartelleLette.length} cartelle 0755 e gli altri file 0644${conDati ? ", data/ vuota" : ""} (${lette.length} voci lette; controllo positivo dei permessi acceso) | sha256 ${sha} in ${nomeDellArchivio}.sha256`,
+  );
   return sha;
+}
+
+/** 8. L'eseguibile a sé dello strumento, in una cartella temporanea nuova: il build, i moduli, i percorsi. */
+async function eseguibileDelloStrumento(): Promise<{ exe: string; moduli: string[]; build: string }> {
+  const build = mkdtempSync(join(tmpdir(), "algodesign-strumento-"));
+  const exe = join(build, eseguibileS);
+  const metafile = join(build, "metafile.json");
+  const b = await esegui([process.execPath, "build", "--compile", "./strumenti/algodesign-tools.ts", "--outfile", exe, `--metafile=${metafile}`, "--no-compile-autoload-dotenv", "--no-compile-autoload-bunfig"]);
+  if (b.codice !== 0 || !existsSync(exe)) rosso("STRUMENTO", `bun build --compile esce ${b.codice}${existsSync(exe) ? " (l'eseguibile c'è, ma non vale)" : ""} (dettaglio nel log)`);
+  // I moduli dentro l'eseguibile: tutti del repository, nessuno da `node_modules` (una libreria di altri vorrebbe la sua licenza).
+  const ingressi = Object.keys((JSON.parse(readFileSync(metafile, "utf8")) as { inputs: Record<string, unknown> }).inputs);
+  const altrui = ingressi.filter((m) => {
+    const assoluto = resolve(radice, m);
+    return m.includes("node_modules") || isAbsolute(relative(radice, assoluto)) || relative(radice, assoluto).startsWith("..");
+  });
+  if (ingressi.length === 0) rosso("STRUMENTO", "il metafile del build non ha moduli: il controllo dei moduli non ha visto nulla");
+  if (altrui.length > 0) rosso("STRUMENTO", `nell'eseguibile moduli che non sono del repository (vorrebbero la loro licenza): ${altrui.join(", ")}`);
+  riga(`STRUMENTO: VERDE | ${eseguibileS} ${statSync(exe).size} byte, Bun ${Bun.version}, ${ingressi.length} moduli tutti del repository (${ingressi.filter((m) => m.startsWith("core/")).length} del nucleo), sha256 ${impronta(exe)}`);
+  percorsi(exe, "STRUMENTO: PERCORSI", `in ${eseguibileS}`);
+  return { exe, moduli: ingressi, build };
+}
+
+/** Un testo per l'utente dalla cartella di `--testi`, coi segnaposto sostituiti: uno rimasto è rosso. */
+function testoDaiTesti(clausola: string, sorgente: string): string {
+  const da = join(cartellaTesti!, sorgente);
+  if (!existsSync(da)) rosso(clausola, `manca il testo ${da}`);
+  const testo = readFileSync(da, "utf8").replaceAll("{{versione}}", nomi.versione).replaceAll("{{delData}}", dataConPreposizione(dataDiRilascio, "it")).replaceAll("{{date}}", dataMostrata(dataDiRilascio, "en"));
+  const rimasto = /\{\{[^}]*\}\}?/.exec(testo);
+  if (rimasto) rosso(clausola, `${sorgente}: «${rimasto[0]}» non sostituito (si sostituiscono solo {{versione}}, {{delData}} e {{date}})`);
+  return testo;
+}
+
+/** 9. La cartella dello strumento. */
+function componiLoStrumento(exe: string, moduli: readonly string[]): void {
+  const C = "CARTELLA DELLO STRUMENTO";
+  if (existsSync(cartellaDelloStrumento)) {
+    const estranee = differenzeDallElenco(voci(cartellaDelloStrumento), elencoDelloStrumentoDiLinux).filter((d) => d.startsWith("in più"));
+    if (estranee.length > 0) rosso(C, `${cartellaDelloStrumento} c'è già e contiene altro (${estranee.join(", ")}): non la cancello`);
+    rmSync(cartellaDelloStrumento, { recursive: true });
+  }
+  mkdirSync(cartellaDelloStrumento, { recursive: true });
+  cpSync(exe, join(cartellaDelloStrumento, eseguibileS));
+  for (const f of ["LICENSE", "LICENSE-DOCS"]) cpSync(join(repository, f), join(cartellaDelloStrumento, f));
+  for (const [sorgente, destinazione] of Object.entries(testiDelloStrumento)) writeFileSync(join(cartellaDelloStrumento, destinazione), testoDaiTesti(C, sorgente));
+  for (const g of [guidaAdAccademico, guidaDelloStrumento]) {
+    const guida = readFileSync(join(repository, "docs", g), "utf8");
+    if (guida.includes("{{")) rosso(C, `${g}: un «{{» nel documento, che si copia così com'è`);
+    if (!guida.includes(nomiS.archivio)) rosso(C, `${g} non dice il nome dell'archivio dello strumento per Linux, «${nomiS.archivio}»`);
+    writeFileSync(join(cartellaDelloStrumento, g), guida);
+  }
+  const l = licenzeDelloStrumento(nomiS.versione, moduli, rosso, eseguibileS);
+  writeFileSync(join(cartellaDelloStrumento, fileDelleLicenze), l.testo);
+  permessi(cartellaDelloStrumento, eseguibileS);
+  const trovate = voci(cartellaDelloStrumento);
+  const sonda = confrontoAcceso(trovate, elencoDelloStrumentoDiLinux, "lo strumento");
+  const differenze = differenzeDallElenco(trovate, elencoDelloStrumentoDiLinux);
+  if (differenze.length > 0) rosso(C, `le voci non sono quelle dell'elenco: ${differenze.join(", ")}`);
+  riga(`${C}: VERDE | ${relative(repository, cartellaDelloStrumento)} con le ${trovate.length} voci dell'elenco (${trovate.join(", ")}) | licenze di terze parti: Bun ${l.bun}, ${l.testi} testi, ${Buffer.byteLength(l.testo)} byte | controllo positivo acceso (${sonda})`);
+}
+
+/** 11. Lo strumento estratto dal suo archivio in una cartella con spazi e avviato senza Bun sul percorso. */
+async function provaLoStrumento(): Promise<void> {
+  const C = "PROVA DELLO STRUMENTO";
+  const base = mkdtempSync(join(tmpdir(), "algodesign-prova-"));
+  try {
+    const cartellaDiProva = join(base, "prova dello strumento");
+    mkdirSync(cartellaDiProva);
+    const x = await esegui(["tar", "-xzf", archivioDelloStrumento, "-C", cartellaDiProva]);
+    if (x.codice !== 0) rosso(C, `l'estrazione esce ${x.codice} (dettaglio nel log)`);
+    const dentro = join(cartellaDiProva, nomiS.cartellaNellArchivio);
+    const lavoro = join(cartellaDiProva, "i testi");
+    mkdirSync(lavoro);
+    // Il PATH senza le cartelle che hanno Bun: lo strumento non deve averne bisogno.
+    const cartelle = (process.env.PATH ?? "").split(delimiter).filter((d) => d !== "");
+    const conBun = cartelle.filter((d) => existsSync(join(d, "bun")));
+    const casa = homedir();
+    const candidate: Record<string, string> = { casa, "~/.config": join(casa, ".config"), "~/.local/share": join(casa, ".local", "share"), "~/.cache": join(casa, ".cache"), tmp: tmpdir() };
+    // La casa e la cartella temporanea sempre; le altre se ci sono (una che nasce si vede nella casa o in `~/.local`).
+    const radiciDelleTracce = Object.fromEntries(Object.entries(candidate).filter(([n, c]) => n === "casa" || n === "tmp" || existsSync(c)));
+    const visto = await provaDelloStrumento({
+      clausola: C,
+      exe: join(dentro, eseguibileS),
+      lavoro,
+      ambiente: { ...process.env, PATH: cartelle.filter((d) => !conBun.includes(d)).join(delimiter) },
+      cartelleConBun: conBun.length,
+      radiciDelleTracce,
+      temporanea: "tmp",
+      radice,
+      esegui: (cmd) => esegui(cmd),
+      rosso,
+      log,
+    });
+    riga(`${C}: VERDE | estratto in «${relative(base, dentro)}», ${visto}`);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
 }
 
 riga(`ARCHIVIO di AlgoDesign ${nomi.versione} per ${piattaforma}${prova ? " (di prova)" : ""} — inizio ${new Date().toISOString()} | log ${fileLog}`);
@@ -423,7 +581,7 @@ try {
   const contenuto = await estrai(appimage);
   let sistema: LibrerieDiSistema;
   try {
-    percorsi(contenuto);
+    percorsi(join(contenuto, "usr", "bin", "algodesign"));
     await glibc(contenuto);
     sistema = await librerieDiSistema(contenuto);
   } finally {
@@ -431,8 +589,17 @@ try {
   }
   await componi(appimage, sistema);
   await alberoUguale(prima, "le licenze e la cartella");
-  const sha = await comprimi();
-  riga(`ESITO: ${prova ? "VERDE, DI PROVA" : "VERDE"} | ${relative(repository, cartella)} con AlgoDesign.AppImage sha256 ${impronta(join(cartella, "AlgoDesign.AppImage"))} | ${nomi.archivio} sha256 ${sha} | da ${descritto}`);
+  const sha = await comprimi({ clausola: "ARCHIVIO", cartella, archivio, nomeDellArchivio: nomi.archivio, cartellaNellArchivio: nomi.cartellaNellArchivio, eseguibile: "AlgoDesign.AppImage", conDati: true });
+  const s = await eseguibileDelloStrumento();
+  try {
+    componiLoStrumento(s.exe, s.moduli);
+  } finally {
+    rmSync(s.build, { recursive: true, force: true });
+  }
+  await alberoUguale(prima, "lo strumento");
+  const shaS = await comprimi({ clausola: "ARCHIVIO DELLO STRUMENTO", cartella: cartellaDelloStrumento, archivio: archivioDelloStrumento, nomeDellArchivio: nomiS.archivio, cartellaNellArchivio: nomiS.cartellaNellArchivio, eseguibile: eseguibileS, conDati: false });
+  await provaLoStrumento();
+  riga(`ESITO: ${prova ? "VERDE, DI PROVA" : "VERDE"} | ${relative(repository, cartella)} con AlgoDesign.AppImage sha256 ${impronta(join(cartella, "AlgoDesign.AppImage"))} | ${nomi.archivio} sha256 ${sha} | ${nomiS.archivio} sha256 ${shaS} | da ${descritto}`);
 } catch (e) {
   riga(e instanceof Rosso ? e.message : `ERRORE: ${e instanceof Error ? (e.stack ?? e.message) : String(e)}`);
   riga("ESITO: ROSSO");

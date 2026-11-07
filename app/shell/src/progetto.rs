@@ -374,8 +374,21 @@ pub fn togli_gruppo_da(cartella: &Path, gruppo: &str) -> Result<(), ErroreDelFil
     })
 }
 
+/// L'estensione del filtro, senza il punto e con le due forme di ogni lettera (`algo` → `[aA][lL][gG][oO]`). Il filtro di
+/// GTK confronta i nomi tenendo conto delle maiuscole (`*.algo` non mostra «media.ALGO», che AlgoDesign apre); con le
+/// due forme il modello di GTK (`*.[aA][lL][gG][oO]`) le prende tutte. Su Windows il filtro non guarda le maiuscole, e
+/// le parentesi non si scrivono.
+pub fn estensione_senza_maiuscole(estensione: &str) -> String {
+    estensione
+        .trim_start_matches('.')
+        .chars()
+        .map(|c| if c.is_ascii_alphabetic() { format!("[{}{}]", c.to_ascii_lowercase(), c.to_ascii_uppercase()) } else { c.to_string() })
+        .collect()
+}
+
 fn finestra_del_file(finestra: &tauri::WebviewWindow, filtro: &str, estensione: &str, cartella: Option<&str>, portabile: &CartellaPortabile) -> rfd::FileDialog {
-    let dialogo = rfd::FileDialog::new().add_filter(filtro, &[estensione.trim_start_matches('.')]).set_parent(finestra);
+    let nel_filtro = if cfg!(target_os = "linux") { estensione_senza_maiuscole(estensione) } else { estensione.trim_start_matches('.').to_string() };
+    let dialogo = rfd::FileDialog::new().add_filter(filtro, &[nel_filtro.as_str()]).set_parent(finestra);
     match partenza(cartella, portabile.0.as_deref()) {
         Some(c) => dialogo.set_directory(c),
         None => dialogo,
@@ -544,6 +557,15 @@ pub fn alla_chiusura(finestra: &tauri::Window, evento: &tauri::WindowEvent) {
 mod prove {
     use super::*;
     use crate::cartella_di_prova;
+
+    #[test]
+    fn l_estensione_del_filtro_ha_le_due_forme_di_ogni_lettera() {
+        assert_eq!(estensione_senza_maiuscole(ALGO), "[aA][lL][gG][oO]");
+        assert_eq!(estensione_senza_maiuscole(".csv"), "[cC][sS][vV]");
+        // Le cifre restano come sono, e senza il punto davanti il risultato è lo stesso.
+        assert_eq!(estensione_senza_maiuscole("mp3"), "[mM][pP]3");
+        assert_eq!(estensione_senza_maiuscole("algo"), estensione_senza_maiuscole(".algo"));
+    }
 
     #[test]
     fn il_testo_torna_con_gli_stessi_byte() {

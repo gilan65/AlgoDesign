@@ -31,6 +31,13 @@
 //   basso degli ultimi 60 s, sale al più di 100 MB sopra il valore a 10 s. Il picco si scrive e non ferma: in WebKit
 //   la memoria si libera a dente di sega.
 //
+// Sulla macchina della CI il giro senza `data` fa in più due misure, che non fermano (dopo il controllo positivo delle
+// tracce, che lì non guarda le voci fuori da `data/`: una scrittura del dialogo di stampa non sporca il giro portabile):
+// - CANVAS: la misura più grande di un canvas che WebKitGTK disegna e da cui dà il PNG (`misura-del-canvas.ts`);
+// - STAMPA: `window.print()` nel WebKitGTK del programma; dopo cinque secondi le finestre nuove dello schermo virtuale
+//   (`xwininfo`) e la fotografia. Se il dialogo di stampa si apre lo dicono i nomi e la fotografia; la stampa vera su un
+//   desktop non si guarda qui.
+//
 // Il pilota è un client WebDriver W3C minimo (fetch) verso tauri-driver, che passa a WebKitWebDriver.
 
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmdirSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -40,6 +47,7 @@ import { basename, join } from "node:path";
 import { SOGLIA_MS } from "../../e2e/risposta";
 import { vettoreRiempito } from "../../e2e/vettore-riempito";
 import { dizionari, linguaDelSistema, nomiLingue, riempi, type Lingua } from "../../i18n/lingue";
+import { misuraDelCanvas, rigaDellaMisura } from "../misura-del-canvas";
 
 const giro = process.argv[2];
 if (giro !== "base" && giro !== "portabile" && giro !== "senza-data") {
@@ -486,6 +494,45 @@ async function giroSenzaDati(): Promise<void> {
   await attendiFile(join(configurazione, "preferenze.json"), opposta, "TRACCE (controllo positivo)");
   await chiudi(sessione);
   console.log(`SENZA DATA: preferenza «${opposta}» scritta in ${configurazione}`);
+  if (uscita !== undefined) await misureDelMotore();
+}
+
+/** Le finestre dello schermo virtuale con un nome, da `xwininfo -root -tree`: una per riga, senza l'identificativo. */
+async function finestreConUnNome(): Promise<string[]> {
+  const x = Bun.spawn(["xwininfo", "-display", ":99", "-root", "-tree"], { stdout: "pipe", stderr: "pipe" });
+  const [out, codice] = await Promise.all([new Response(x.stdout).text(), x.exited]);
+  if (codice !== 0) rosso("STAMPA", `xwininfo esce ${codice}`);
+  return out
+    .split("\n")
+    .map((r) => /^\s*0x[0-9a-f]+ "([^"]*)"/.exec(r)?.[1])
+    .filter((n): n is string => n !== undefined && n !== "");
+}
+
+/** CANVAS e STAMPA, nel WebKitGTK del programma: misure, non clausole. */
+async function misureDelMotore(): Promise<void> {
+  const sessione = await avvia();
+  await wd("POST", `/session/${sessione}/timeouts`, { script: 300_000 });
+  const m = await wd("POST", `/session/${sessione}/execute/async`, {
+    script: `const fatto = arguments[arguments.length - 1]; (${misuraDelCanvas.toString()})().then(fatto, (e) => fatto({ errore: String(e) }));`,
+    args: [],
+  });
+  if (typeof m?.lato !== "number") rosso("CANVAS", `la misura non ha dato numeri: ${JSON.stringify(m)}`);
+  console.log(rigaDellaMisura("WebKitGTK del programma", m));
+
+  const prima = await finestreConUnNome();
+  await script(sessione, "setTimeout(() => window.print(), 0); return true;");
+  await Bun.sleep(5_000);
+  const dopo = await finestreConUnNome();
+  const nuove = dopo.filter((n) => !prima.includes(n));
+  const foto = join(uscita!, "stampa-webkitgtk.png");
+  const scatto = Bun.spawn(["import", "-display", ":99", "-window", "root", foto], { stdout: "ignore", stderr: "ignore" });
+  await scatto.exited;
+  console.log(`STAMPA: FOTOGRAFATO | dopo window.print() ${nuove.length} finestre nuove con un nome (${nuove.map((n) => `«${n}»`).join(", ") || "nessuna"}) su ${dopo.length}; la fotografia in ${existsSync(foto) ? foto : "(non riuscita)"}`);
+  // Il dialogo di stampa può tenere la sessione: la chiusura non lo aspetta più di 15 s, poi il processo si termina.
+  await Promise.race([wd("DELETE", `/session/${sessione}`).catch(() => undefined), Bun.sleep(15_000)]);
+  for (const { pid } of processiApp()) process.kill(pid, "SIGKILL");
+  for (let i = 0; i < 100 && processiApp().length > 0; i++) await Bun.sleep(100);
+  if (processiApp().length > 0) rosso("STAMPA", `dopo la chiusura l'app è ancora in esecuzione:\n${tabellaProcessi()}`);
 }
 
 // ------------------------------------------------------------------------------------------- preparazione
