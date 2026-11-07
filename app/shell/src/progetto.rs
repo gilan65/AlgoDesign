@@ -7,7 +7,9 @@
 //   traccia (il testo lo scrive `scrivi_progetto`); `scegli_file_del_codice`, con in più `estensione` (`.txt`,
 //   `.py`, `.c` o `.ts`: un'altra non apre la finestra e vale `null`), per il codice generato; `scegli_file_dell_immagine`,
 //   con `estensione` `.png` o `.svg`, per il flowchart esportato. Le finestre sono quelle native del sistema (libreria `rfd`), modali sulla
-//   finestra dell'app. Partono da `cartella` (quella del file aperto o dell'ultimo usato, se c'è ancora);
+//   finestra dell'app, e i comandi che le aprono girano fuori dal thread della finestra (`#[tauri::command(async)]`):
+//   su Linux la finestra di `rfd` aspetta il ciclo di GTK, e chiamata da quel thread lo blocca per sempre (la prova
+//   in `main.rs`). Partono da `cartella` (quella del file aperto o dell'ultimo usato, se c'è ancora);
 //   altrimenti, nella versione portabile, dalla cartella dell'eseguibile; altrimenti da dove decide il sistema;
 // - `leggi_progetto` con `percorso` → il testo; `scrivi_progetto` con `percorso` e `testo`, scrittura
 //   atomica; `scrivi_byte` con `percorso` e `byte` (i byte in base64, per il PNG), allo stesso modo. Un errore arriva come `{ genere, dettaglio }`: `non_testo` (il file non è UTF-8) o `sistema`
@@ -395,7 +397,7 @@ fn finestra_del_file(finestra: &tauri::WebviewWindow, filtro: &str, estensione: 
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn scegli_file_da_aprire(finestra: tauri::WebviewWindow, filtro: String, cartella: Option<String>, portabile: tauri::State<'_, CartellaPortabile>) -> Option<String> {
     finestra_del_file(&finestra, &filtro, ALGO, cartella.as_deref(), &portabile).pick_file().map(|p| p.to_string_lossy().into_owned())
 }
@@ -407,7 +409,7 @@ fn scegli_dove_salvare(finestra: &tauri::WebviewWindow, proposto: String, filtro
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn scegli_file_da_salvare(
     finestra: tauri::WebviewWindow,
     proposto: String,
@@ -419,7 +421,7 @@ pub fn scegli_file_da_salvare(
 }
 
 /// Dove esportare la tabella di traccia: come «Salva con nome», con `.csv`. Il testo lo scrive `scrivi_progetto`.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn scegli_file_da_esportare(
     finestra: tauri::WebviewWindow,
     proposto: String,
@@ -432,7 +434,7 @@ pub fn scegli_file_da_esportare(
 
 /// Dove salvare il codice generato: come «Salva con nome», con l'estensione del linguaggio, che deve essere una di
 /// `CODICE`. Il testo lo scrive `scrivi_progetto`.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn scegli_file_del_codice(
     finestra: tauri::WebviewWindow,
     proposto: String,
@@ -447,7 +449,7 @@ pub fn scegli_file_del_codice(
 
 /// Dove esportare il flowchart: come «Salva con nome», con l'estensione dell'immagine, che deve essere una di
 /// `IMMAGINE`. L'SVG lo scrive `scrivi_progetto`, il PNG `scrivi_byte`.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn scegli_file_dell_immagine(
     finestra: tauri::WebviewWindow,
     proposto: String,
@@ -510,7 +512,7 @@ pub fn scrivi_libreria(nome: String, testo: String, scelta: Option<String>, grup
     scrivi_in(&cartella_in_uso(scelta.as_deref(), &cartella.0).0, gruppo.as_deref(), &nome, &testo)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn scegli_cartella(finestra: tauri::WebviewWindow, cartella: Option<String>, portabile: tauri::State<'_, CartellaPortabile>) -> Option<String> {
     let dialogo = rfd::FileDialog::new().set_parent(&finestra);
     let dialogo = match partenza(cartella.as_deref(), portabile.0.as_deref()) {
