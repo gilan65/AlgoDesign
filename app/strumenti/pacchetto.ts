@@ -50,7 +50,8 @@
 //    licenze di terze parti di `licenzeDelloStrumento` (`licenze.ts`). Il confronto nei due versi col controllo positivo.
 // 9. ZIP DELLO STRUMENTO: `dist/AlgoDesign-Tools-<versione>-windows.zip`, con dentro la cartella
 //    `AlgoDesign-Tools-<versione>`, con le prove di 6 e l'impronta accanto.
-// 10. PROVA DELLO STRUMENTO: lo zip estratto in una cartella con uno spazio nel nome, l'eseguibile avviato da lì con un
+// 10. PROVA DELLO STRUMENTO (`prova-dello-strumento.ts`, la stessa di Linux): lo zip estratto in una cartella con uno
+//    spazio nel nome, l'eseguibile avviato da lì con un
 //    PATH senza Bun: `-h` mostra il modo d'uso col nome dell'eseguibile; un'opzione sbagliata esce 2; un testo con un
 //    errore esce 1 col messaggio e la riga, senza scrivere; i testi in «Accademico» dei cinque esempi forniti che ci
 //    stanno (scritti a mano in `ui/genera/attesi-di-accademico.ts`), letti uno dopo l'altro in una sola libreria (`-o`,
@@ -88,7 +89,6 @@ import { appendFileSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, 
 import { createHash } from "node:crypto";
 import { homedir, tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
-import { delCorpus } from "../ui/genera/attesi-di-accademico";
 import { costruisciIlNucleo, esportazioniAttese, fileDelNucleo, latoAtteso, latoOttenutoConUnTentativoInPiu, nodeDellaToolchain, verdetto } from "./conformita-del-nucleo";
 import { dataConPreposizione, dataMostrata } from "../ui/prodotto";
 import {
@@ -110,6 +110,8 @@ import {
   testiDelPacchetto,
 } from "./elenco-del-pacchetto";
 import { licenzeDelloStrumento, licenzeDiTerzeParti } from "./licenze";
+import { provaDelloStrumento } from "./prova-dello-strumento";
+import { segnapostoRimasto, sondaDeiSegnaposto as sondaComune } from "./segnaposto";
 
 const argomenti = process.argv.slice(2);
 const posTesti = argomenti.indexOf("--testi");
@@ -311,13 +313,11 @@ function percorsi(eseguibileDaLeggere: string, clausola = "PERCORSI", quale = "n
 /** Le voci al primo livello di una cartella, con la barra in coda per le cartelle. */
 const voci = (dir: string) => readdirSync(dir, { withFileTypes: true }).map((v) => (v.isDirectory() ? `${v.name}/` : v.name)).sort();
 
-/** Un segnaposto: un nome fra due graffe doppie (`{{versione}}`). Il valore iniziale di una matrice o di una tabella
- * scritto in una guida (`{{1, 2}, {3, 4}}`, `{{"Anna", 7}}`) non lo è. */
-const segnaposto = /\{\{\s*[A-Za-z_]\w*\s*\}\}/;
-/** Il rilevatore dei segnaposto nei due versi: rosso se non vede un segnaposto o se vede il valore di una matrice. */
+/** Il rilevatore dei segnaposto nei due versi (`segnaposto.ts`, lo stesso di Linux): rosso se non vede un segnaposto o se
+ * vede il valore di una matrice. */
 function sondaDeiSegnaposto(clausola: string): void {
-  const visti = ["{{versione}}", "{{ data }}", "{{1, 2}, {3, 4}}", '{{"Anna", 7}, {"Bruno", 8}}'].map((t) => segnaposto.test(t));
-  if (JSON.stringify(visti) !== JSON.stringify([true, true, false, false])) rosso(clausola, `il rilevatore dei segnaposto sbaglia sulle sue sonde: ${JSON.stringify(visti)}`);
+  const sbaglia = sondaComune();
+  if (sbaglia !== null) rosso(clausola, sbaglia);
 }
 
 /** Un testo per l'utente dalla cartella di `--testi`, con `{{versione}}`, `{{delData}}` e `{{date}}` sostituiti: un segnaposto rimasto
@@ -327,8 +327,8 @@ function testoConISegnaposto(clausola: string, t: string): string {
   if (!existsSync(sorgente)) rosso(clausola, `manca il testo ${sorgente}`);
   const testo = readFileSync(sorgente, "utf8").replaceAll("{{versione}}", nomi.versione).replaceAll("{{delData}}", delData).replaceAll("{{date}}", dataMostrata(dataDiRilascio, "en"));
   sondaDeiSegnaposto(clausola);
-  const rimasto = segnaposto.exec(testo);
-  if (rimasto) rosso(clausola, `${t}: «${rimasto[0]}» non sostituito (si sostituiscono solo {{versione}}, {{delData}} e {{date}})`);
+  const rimasto = segnapostoRimasto(testo);
+  if (rimasto !== null) rosso(clausola, `${t}: «${rimasto}» non sostituito (si sostituiscono solo {{versione}}, {{delData}} e {{date}})`);
   return testo;
 }
 
@@ -338,8 +338,8 @@ function documento(clausola: string, d: string): string {
   if (!existsSync(sorgente)) rosso(clausola, `manca il documento ${sorgente}`);
   const testo = readFileSync(sorgente, "utf8");
   sondaDeiSegnaposto(clausola);
-  const rimasto = segnaposto.exec(testo);
-  if (rimasto) rosso(clausola, `${relative(repository, sorgente)}: «${rimasto[0]}», un segnaposto nel documento, che si copia così com'è`);
+  const rimasto = segnapostoRimasto(testo);
+  if (rimasto !== null) rosso(clausola, `${relative(repository, sorgente)}: «${rimasto}», un segnaposto nel documento, che si copia così com'è`);
   return testo;
 }
 
@@ -385,8 +385,8 @@ async function componi(rilascio: string): Promise<void> {
   for (const d of [...documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", d));
   for (const d of documentiDellaRadice) {
     const testo = readFileSync(join(repository, d), "utf8");
-    const rimasto = segnaposto.exec(testo);
-    if (rimasto) rosso("CARTELLA", `${d}: «${rimasto[0]}», un segnaposto nel documento, che si copia così com'è`);
+    const rimasto = segnapostoRimasto(testo);
+    if (rimasto !== null) rosso("CARTELLA", `${d}: «${rimasto}», un segnaposto nel documento, che si copia così com'è`);
     if (!testo.includes(`AlgoDesign-${nomi.versione}`)) rosso("CARTELLA", `${d} non dice la cartella della versione, «AlgoDesign-${nomi.versione}»`);
     writeFileSync(join(cartella, d), testo);
   }
@@ -544,13 +544,10 @@ const radiciDelleTracce = (() => {
   if (process.env.TMP !== undefined && resolve(process.env.TMP).toLowerCase() !== resolve(r.TEMP!).toLowerCase()) r.TMP = process.env.TMP;
   return r;
 })();
-const fotografia = () => Object.fromEntries(Object.entries(radiciDelleTracce).map(([n, c]) => [n, new Set(readdirSync(c))]));
-const nomiNuovi = (prima: Record<string, Set<string>>) => Object.entries(radiciDelleTracce).flatMap(([n, c]) => readdirSync(c).filter((x) => !prima[n]!.has(x)).map((x) => `${n}\\${x}`));
 
-/** 10. Lo strumento estratto dallo zip in una cartella con spazi e avviato senza Bun sul percorso. */
+/** 10. Lo strumento estratto dallo zip in una cartella con spazi e avviato senza Bun sul percorso (`prova-dello-strumento.ts`). */
 async function provaLoStrumento(): Promise<void> {
   const C = "PROVA DELLO STRUMENTO";
-  if (Object.values(radiciDelleTracce).some((c) => c === "" || !existsSync(c))) rosso(C, `manca una delle cartelle delle tracce: ${JSON.stringify(radiciDelleTracce)}`);
   const base = mkdtempSync(join(tmpdir(), "algodesign-prova-"));
   try {
     const cartellaDiProva = join(base, "prova dello strumento");
@@ -558,105 +555,25 @@ async function provaLoStrumento(): Promise<void> {
     const x = await esegui([tar, "-x", "-f", zipDelloStrumento, "-C", cartellaDiProva]);
     if (x.codice !== 0) rosso(C, `l'estrazione esce ${x.codice} (dettaglio nel log)`);
     const dentro = join(cartellaDiProva, nomiS.cartellaNelloZip);
-    const exe = join(dentro, eseguibileS);
     const lavoro = join(cartellaDiProva, "i testi");
     mkdirSync(lavoro);
     // Il PATH senza le cartelle che hanno bun.exe: lo strumento non deve averne bisogno.
     const percorso = (process.env.PATH ?? process.env.Path ?? "").split(";").filter((d) => d !== "" && !existsSync(join(d, "bun.exe")));
     const conBun = (process.env.PATH ?? process.env.Path ?? "").split(";").filter((d) => d !== "" && existsSync(join(d, "bun.exe")));
-    const ambiente: Record<string, string | undefined> = { ...process.env, PATH: percorso.join(";"), Path: undefined };
-    const lancia = async (cmd: string[]) => {
-      log(`$ ${cmd.join(" ")} (cwd ${lavoro})`);
-      const p = Bun.spawn({ cmd, cwd: lavoro, env: ambiente, stdout: "pipe", stderr: "pipe" });
-      const [out, err, codice] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text(), p.exited]);
-      const uscita = `${out}${err}`.replace(/\r/g, "").trim();
-      log(`${uscita}\n(exit ${codice})`);
-      return { codice, uscita };
-    };
-    // I testi dei cinque esempi forniti che ci stanno, coi nomi dei file dati, e il testo con un errore alla riga 4.
-    const esempi = ["tappa-1/overflow-fattoriale", "tappa-1/condizione-intero", "tappa-1/condizione-booleano", "tappa-3/tre-livelli", "tappa-4/ricorsione-senza-uscita"];
-    const testi = esempi.map((e) => {
-      const atteso = delCorpus[e];
-      if (atteso === undefined) rosso(C, `manca il testo atteso di ${e} in ui/genera/attesi-di-accademico.ts`);
-      const file = join(lavoro, `${e.split("/")[1]!.replaceAll("-", "_")}.txt`);
-      writeFileSync(file, atteso.it);
-      return file;
+    const visto = await provaDelloStrumento({
+      clausola: C,
+      exe: join(dentro, eseguibileS),
+      lavoro,
+      ambiente: { ...process.env, PATH: percorso.join(";"), Path: undefined },
+      cartelleConBun: conBun.length,
+      radiciDelleTracce,
+      temporanea: "TEMP",
+      radice,
+      esegui: (cmd) => esegui(cmd),
+      rosso,
+      log,
     });
-    const rotto = join(lavoro, "testo con un errore.txt");
-    writeFileSync(rotto, "variable x: integer\nx ← 1\nwhile x < 3 do\n    x = x + 1\nend while\n");
-
-    // Le stesse letture con Bun dal repository: le righe e la libreria di confronto, fuori dalla finestra delle tracce. Le
-    // due librerie hanno lo stesso nome in due cartelle: il nome del file d'uscita è il nome della libreria.
-    const righeDiBun: string[] = [];
-    mkdirSync(join(lavoro, "con bun"));
-    mkdirSync(join(lavoro, "con lo strumento"));
-    const libreriaDiBun = join(lavoro, "con bun", "esercizi.algo");
-    for (const [i, t] of testi.entries()) {
-      const r = await esegui([process.execPath, "./strumenti/algodesign-tools.ts", "accademico", t, ...(i === 0 ? ["-o", libreriaDiBun] : ["-l", libreriaDiBun]), "-r"]);
-      if (r.codice !== 0) rosso(C, `bun ./strumenti/algodesign-tools.ts accademico su ${t} esce ${r.codice} (dettaglio nel log)`);
-      righeDiBun.push(`${r.out}${r.err}`.replace(/\r/g, "").trim().replaceAll(libreriaDiBun, "<libreria>"));
-    }
-
-    const prima = fotografia();
-    const aiuto = await lancia([exe, "accademico", "-h"]);
-    const sbagliata = await lancia([exe, "accademico", "-x"]);
-    const errore = await lancia([exe, "accademico", rotto]);
-    const senzaComando = await lancia([exe]);
-    const stampaSbagliata = await lancia([exe, "stampa", join(lavoro, "non c'e.algo")]);
-    const libreria = join(lavoro, "con lo strumento", "esercizi.algo");
-    const righe: string[] = [];
-    for (const [i, t] of testi.entries()) {
-      const r = await lancia([exe, "accademico", t, ...(i === 0 ? ["-o", libreria] : ["-l", libreria]), "-r"]);
-      if (r.codice !== 0) rosso(C, `lo strumento su ${t} esce ${r.codice}: ${r.uscita}`);
-      righe.push(r.uscita.replaceAll(libreria, "<libreria>"));
-    }
-    // `stampa`: le stesse pagine di Bun, byte per byte, senza `--linguaggi` (le colonne e la pagina di prova) e con, con un
-    // progetto che ha uno spazio nel nome.
-    const progetto = join(lavoro, "il progetto.algo");
-    cpSync(join(radice, "casi", "tappa-3", "tre-livelli.algo"), progetto);
-    const paginaDiBun = join(lavoro, "con bun");
-    const pagineDelloStrumento = join(lavoro, "con lo strumento");
-    const scelte: readonly (readonly string[])[] = [[], ["--linguaggi", "pseudocodice", "c"]];
-    for (const scelta of scelte) {
-      const r = await lancia([exe, "stampa", progetto, ...scelta, "-o", pagineDelloStrumento]);
-      const attese = scelta.length === 0 ? 2 : 1;
-      const scritte = r.uscita.split("\n").filter((x) => x.startsWith("SCRITTO "));
-      if (r.codice !== 0 || scritte.length !== attese) rosso(C, `stampa ${scelta.join(" ")} esce ${r.codice}, con ${scritte.length} pagine scritte invece di ${attese}: «${r.uscita}»`);
-    }
-    const tracce = nomiNuovi(prima);
-    for (const scelta of scelte) {
-      const r = await esegui([process.execPath, "./strumenti/algodesign-tools.ts", "stampa", progetto, ...scelta, "-o", paginaDiBun]);
-      if (r.codice !== 0) rosso(C, `bun ./strumenti/algodesign-tools.ts stampa ${scelta.join(" ")} esce ${r.codice} (dettaglio nel log)`);
-    }
-    const pagine = readdirSync(pagineDelloStrumento).filter((f) => f.endsWith(".html")).sort();
-    const pagineDiBun = readdirSync(paginaDiBun).filter((f) => f.endsWith(".html")).sort();
-    if (!pagine.includes("il progetto (prova).html") || pagine.length !== scelte.length + 1 || pagine.join() !== pagineDiBun.join()) rosso(C, `le pagine sono ${pagine.join(", ")} invece di ${pagineDiBun.join(", ")}, con la pagina di prova`);
-    for (const f of pagine) if (impronta(join(pagineDelloStrumento, f)) !== impronta(join(paginaDiBun, f))) rosso(C, `la pagina «${f}» dello strumento non è quella di bun, byte per byte`);
-    // Controllo positivo, nella stessa finestra: l'uscita scritta in %TEMP% si deve vedere.
-    const marcatore = `algodesign-tools-prova-${process.pid}.algo`;
-    await lancia([exe, "accademico", testi[0]!, "-o", join(radiciDelleTracce.TEMP!, marcatore)]);
-    const acceso = nomiNuovi(prima).includes(`TEMP\\${marcatore}`);
-    rmSync(join(radiciDelleTracce.TEMP!, marcatore), { force: true });
-
-    if (conBun.length === 0) rosso(C, "nel PATH di questo processo nessuna cartella ha bun.exe: la prova «senza Bun» non toglierebbe nulla");
-    if (aiuto.codice !== 0 || !aiuto.uscita.includes("algodesign-tools accademico <testo.txt> [-l libreria.algo]")) rosso(C, `-h esce ${aiuto.codice} senza il modo d'uso col nome dell'eseguibile: «${aiuto.uscita.slice(0, 200)}»`);
-    if (sbagliata.codice !== 2 || !sbagliata.uscita.includes("algodesign-tools accademico <testo.txt>")) rosso(C, `un'opzione sbagliata esce ${sbagliata.codice} senza il modo d'uso`);
-    if (errore.codice !== 1 || !errore.uscita.includes("riga 4") || existsSync(join(lavoro, "testo con un errore.algo"))) rosso(C, `il testo con un errore esce ${errore.codice}: «${errore.uscita}»`);
-    if (senzaComando.codice !== 2) rosso(C, `senza un comando esce ${senzaComando.codice}: «${senzaComando.uscita.slice(0, 200)}»`);
-    if (stampaSbagliata.codice !== 1 || !stampaSbagliata.uscita.startsWith("ERRORE")) rosso(C, `stampa di un file che non c'è esce ${stampaSbagliata.codice}: «${stampaSbagliata.uscita.slice(0, 200)}»`);
-    const diverse = righe.map((r, i) => (r === righeDiBun[i] ? null : `${testi[i]}: «${r}» invece di «${righeDiBun[i]}»`)).filter((d) => d !== null);
-    if (diverse.length > 0) rosso(C, `righe diverse da quelle di bun: ${diverse.join("; ")}`);
-    if (!existsSync(libreria) || impronta(libreria) !== impronta(libreriaDiBun)) {
-      const a = readFileSync(libreria, "utf8").split("\n");
-      const b = readFileSync(libreriaDiBun, "utf8").split("\n");
-      const i = a.findIndex((r, k) => r !== b[k]);
-      rosso(C, `la libreria dello strumento non è quella di bun, byte per byte: prima differenza alla riga ${i + 1}, «${a[i]}» invece di «${b[i]}»`);
-    }
-    if (!acceso) rosso(C, "controllo positivo delle tracce SPENTO: l'uscita scritta in %TEMP% non si vede");
-    if (tracce.length > 0) rosso(C, `lo strumento lascia tracce: ${tracce.join(", ")}`);
-    riga(
-      `${C}: VERDE | estratto in «${relative(base, dentro)}», PATH senza le ${conBun.length} cartelle con bun.exe | -h esce 0 col modo d'uso; -x esce 2; il testo con un errore esce 1 («${errore.uscita}») | ${testi.length} testi in una libreria: righe e libreria (${statSync(libreria).size} byte, sha256 ${impronta(libreria)}) uguali a quelle di bun | stampa: ${pagine.length} pagine uguali a quelle di bun (${pagine.join(", ")}) | tracce fuori dalla cartella 0 in ${Object.keys(radiciDelleTracce).join(", ")}, controllo positivo acceso`,
-    );
+    riga(`${C}: VERDE | estratto in «${relative(base, dentro)}», ${visto}`);
   } finally {
     rmSync(base, { recursive: true, force: true });
   }

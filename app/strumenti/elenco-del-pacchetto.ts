@@ -142,6 +142,17 @@ export function nomiDelloStrumento(testoDelPackageJson: string): { versione: str
   };
 }
 
+/** Le voci al primo livello dell'archivio dello strumento per Linux (`archivio.ts`): le stesse di Windows, con
+ * l'eseguibile senza estensione. */
+export const elencoDelloStrumentoDiLinux: readonly string[] = elencoDelloStrumento.map((v) => (v === "algodesign-tools.exe" ? "algodesign-tools" : v));
+
+/** I nomi dell'archivio dello strumento per Linux, dal testo di `package.json`: la cartella dentro l'archivio è la stessa
+ * di Windows, perché il contenuto per l'utente è lo stesso. */
+export function nomiDelloStrumentoDiLinux(testoDelPackageJson: string): { versione: string; cartella: string; archivio: string; cartellaNellArchivio: string } {
+  const { versione, cartellaNelloZip } = nomiDelloStrumento(testoDelPackageJson);
+  return { versione, cartella: `${versione}-tools-linux`, archivio: `AlgoDesign-Tools-${versione}-linux-x64.tar.gz`, cartellaNellArchivio: cartellaNelloZip };
+}
+
 /** Le voci al primo livello del pacchetto del nucleo per Node (`pacchetto.ts`): il file da caricare, i due testi brevi e le due
  * licenze. Nessun file delle licenze di terze parti: il pacchetto non contiene moduli di altri, e il metafile del build lo prova
  * (`conformita-del-nucleo.ts`). */

@@ -12,7 +12,7 @@
 //    la riga di ciascuna); TRACCE: le voci nuove meno quelle della base, divise da `tracce.ts` (fuori da `data/` solo voci
 //    dell'elenco, nessuna con l'identificatore; dentro `data/` almeno una, o il rilevatore non ha visto l'app);
 // 3. senza-data (`LANG=en_US.UTF-8`, controllo positivo delle tracce): la cartella dell'identificatore sotto la casa,
-//    vista da ENTRAMBI i rilevatori.
+//    vista da ENTRAMBI i rilevatori; poi le due misure del motore, CANVAS e STAMPA (qui si pretende la riga di ciascuna).
 // Le voci nuove di un giro sono quelle che `find -newer <segno>` trova sotto la casa dell'utente, in `/tmp` e nella
 // cartella di prova, dopo un file-segno scritto subito prima del giro.
 //
@@ -151,6 +151,8 @@ try {
   riga(`TRACCE (portabile): VERDE | fuori da data/ solo voci dell'elenco (${r.ammesse.length} + ${r.cartelle.length} cartelle) | dentro data/ ${r.inData.length} voci`);
 
   const senzaData = await giro("senza-data", "en_US.UTF-8");
+  const misure = ["CANVAS: MISURATO", "STAMPA: FOTOGRAFATO"].filter((m) => !righeDelGiro.get("senza-data")!.some((r) => r.startsWith(m)));
+  if (misure.length > 0) rosso("GIRO senza-data", `exit 0 ma senza la riga di ${misure.join(", ")}`);
   const senza = residuo(senzaData.voci, base.voci, senzaData.dati, casa, identificatore);
   descrivi("senza-data", senza);
   const { viste, spente } = controlloPositivo(senza, casa, identificatore);

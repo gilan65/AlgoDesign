@@ -55,22 +55,33 @@ const watch = (page: Page) => page.locator('[role="tooltip"][data-watch]');
 /** Il nome di un dato in un blocco; `valore:x` è il blocco del valore iniziale del dato `x`. */
 const nome = (page: Page, blocco: string, dato: string) =>
   page.locator(`${blocco.startsWith("valore:") ? `[data-iniziale-di="${blocco.slice(7)}"]` : `[data-blocco="${blocco}"]`} [data-watch-dato="${dato}"]`).first();
-/** Lo scorrimento morbido del disegno verso il blocco corrente finito: la posizione uguale per cinque fotogrammi di fila.
- * Sotto carico l'animazione si ferma per qualche fotogramma, Playwright guarda la posizione su due soli, e il clic cadeva
- * dove il nome era prima (misurato nel WebKit per Linux col carattere DejaVu Sans: 20 px più a sinistra, e il clic
- * prendeva il disegno). È una soglia, non la condizione: un'animazione ferma per più di cinque fotogrammi la passa
- * ancora, e il rosso torna come un clic che prende il disegno. */
+/** Lo scorrimento morbido del disegno verso il blocco corrente finito. Sotto carico l'animazione si ferma per qualche
+ * fotogramma, e il clic cadeva dove il nome era prima (misurato nel WebKit per Linux col carattere DejaVu Sans: 20 px più a
+ * sinistra, e il clic prendeva il disegno). La condizione è l'evento `scrollend` del disegno, che Chromium e il WebKit di
+ * Playwright danno alla fine dello scorrimento morbido (misurato): se il disegno ha cominciato a scorrere, si aspetta
+ * lui. Se per cinque fotogrammi di fila non scorre, lo scorrimento non c'è stato (il blocco era già in vista). */
 const scorrimentoFinito = (page: Page) =>
   page.getByRole("region", { name: it.vistaFlowchart, exact: true }).evaluate(
     (tela) =>
       new Promise<void>((fatto) => {
-        let prima = "";
-        let uguali = 0;
+        let scorre = false;
+        let finito = false;
+        const fine = () => {
+          finito = true;
+          tela.removeEventListener("scroll", inizio);
+          tela.removeEventListener("scrollend", fine);
+          fatto();
+        };
+        const inizio = () => {
+          scorre = true;
+        };
+        tela.addEventListener("scroll", inizio);
+        tela.addEventListener("scrollend", fine);
+        let fermi = 0;
         const giro = () => {
-          const ora = `${tela.scrollLeft},${tela.scrollTop}`;
-          uguali = ora === prima ? uguali + 1 : 0;
-          prima = ora;
-          if (uguali >= 5) fatto();
+          if (finito) return;
+          fermi = scorre ? 0 : fermi + 1;
+          if (fermi >= 5) fine();
           else requestAnimationFrame(giro);
         };
         requestAnimationFrame(giro);

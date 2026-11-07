@@ -27,7 +27,21 @@ import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
 import { nomeApplicazione } from "../core/applicazione";
 import { FinestraInformazioni } from "./finestre/FinestraInformazioni";
-import { elencoDelloStrumento, elencoDelNucleo, elencoDelPacchetto, elencoDiLinux, guidaAdAccademico, guidaDelloStrumento, nomiDelloStrumento, nomiDelNucleo, nomiDelPacchetto, testiDelNucleo } from "../strumenti/elenco-del-pacchetto";
+import {
+  elencoDelloStrumento,
+  elencoDelloStrumentoDiLinux,
+  elencoDelNucleo,
+  elencoDelPacchetto,
+  elencoDiLinux,
+  guidaAdAccademico,
+  guidaDelloStrumento,
+  nomiDelloStrumento,
+  nomiDelloStrumentoDiLinux,
+  nomiDelNucleo,
+  nomiDelPacchetto,
+  testiDelloStrumento,
+  testiDelNucleo,
+} from "../strumenti/elenco-del-pacchetto";
 import { politicaDelProdotto } from "../strumenti/politica";
 import { dataConPreposizione, dataDellaVersione, dataMostrata, versione, versioneDiProva } from "./prodotto";
 
@@ -113,6 +127,19 @@ test("i nomi del pacchetto dello strumento seguono la versione; l'eseguibile ha 
   // La guida ad «Accademico» e quella dello strumento stanno in ogni pacchetto, e quello dello strumento ha le licenze come quello dell'app.
   for (const g of [guidaAdAccademico, guidaDelloStrumento]) for (const elenco of [elencoDelPacchetto, elencoDelloStrumento, elencoDiLinux]) expect(elenco).toContain(g);
   expect(elencoDelloStrumento.filter((v) => v.startsWith("LICEN")).sort()).toEqual(elencoDelPacchetto.filter((v) => v.startsWith("LICEN")).sort());
+});
+
+test("l'archivio dello strumento per Linux ha i nomi della versione e le voci di Windows con l'eseguibile senza estensione", () => {
+  expect(nomiDelloStrumentoDiLinux(file()["package.json"]!)).toEqual({ versione, cartella: `${versione}-tools-linux`, archivio: `AlgoDesign-Tools-${versione}-linux-x64.tar.gz`, cartellaNellArchivio: `AlgoDesign-Tools-${versione}` });
+  // Controllo positivo: un'altra versione cambia tutti i nomi.
+  expect(nomiDelloStrumentoDiLinux(JSON.stringify({ version: "9.9.9-prova" }))).toEqual({ versione: "9.9.9-prova", cartella: "9.9.9-prova-tools-linux", archivio: "AlgoDesign-Tools-9.9.9-prova-linux-x64.tar.gz", cartellaNellArchivio: "AlgoDesign-Tools-9.9.9-prova" });
+  // Le stesse voci, per elementi: una sola cambia, l'eseguibile.
+  expect(elencoDelloStrumentoDiLinux.filter((v) => !elencoDelloStrumento.includes(v))).toEqual(["algodesign-tools"]);
+  expect(elencoDelloStrumento.filter((v) => !elencoDelloStrumentoDiLinux.includes(v))).toEqual(["algodesign-tools.exe"]);
+  // I testi brevi dello strumento ci sono nelle due cartelle dei testi, e la cartella dell'archivio dell'app non è presa
+  // dal nome dello strumento (la raccolta li chiede per nome, uno per uno).
+  for (const sistema of ["windows", "linux"]) expect(Object.keys(testiDelloStrumento).filter((t) => !existsSync(join(app, "..", "rilascio", sistema, t)))).toEqual([]);
+  expect(nomiDelloStrumentoDiLinux(file()["package.json"]!).archivio.startsWith(`AlgoDesign-${versione}-`)).toBe(false);
 });
 
 test("i nomi del pacchetto del nucleo seguono la versione, e i suoi testi brevi diventano quelli dell'elenco", () => {
@@ -228,6 +255,11 @@ test("il registro delle modifiche comincia dalla versione dei file e dalla sua d
   expect(guide.map((g) => [g, zipDelloStrumento(readFileSync(join(radice, g), "utf8"))])).toEqual(guide.map((g) => [g, [zip]]));
   // Controllo positivo del rilevatore: un nome con un'altra versione si vede.
   expect(zipDelloStrumento("vedi `AlgoDesign-Tools-0.5.0-beta.1-windows.zip`.")).toEqual(["AlgoDesign-Tools-0.5.0-beta.1-windows.zip"]);
+  // E l'archivio dello strumento per Linux, che `archivio.ts` pretende nelle due guide.
+  const archivioDiLinux = (t: string) => [...t.matchAll(/AlgoDesign-Tools-[^\s`]*-linux-x64\.tar\.gz/g)].map((m) => m[0]);
+  const diLinux = nomiDelloStrumentoDiLinux(file()["package.json"]!).archivio;
+  expect(guide.map((g) => [g, archivioDiLinux(readFileSync(join(radice, g), "utf8"))])).toEqual(guide.map((g) => [g, [diLinux]]));
+  expect(archivioDiLinux("vedi `AlgoDesign-Tools-0.5.0-beta.1-linux-x64.tar.gz`.")).toEqual(["AlgoDesign-Tools-0.5.0-beta.1-linux-x64.tar.gz"]);
 });
 
 test("la data della versione è una data vera, e si legge nelle due lingue", () => {
@@ -271,10 +303,10 @@ test("nei testi del pacchetto la data è scritta solo con i segnaposto che la di
   const nomi = (t: string) => [...t.matchAll(/\{\{([^{}]*)\}\}/g)].map((m) => m[1]!);
   const usati = new Set(testi.flatMap((f) => nomi(readFileSync(join(cartella, f), "utf8"))));
   expect([...usati].sort()).toEqual(["date", "delData", "versione"]);
-  // Il solo testo inglese che dice la data ha {{date}}, gli italiani {{delData}}: i testi di ciascuno, con la cardinalità nel confronto.
+  // I testi inglesi che dicono la data hanno {{date}}, gli italiani {{delData}}: i testi di ciascuno, con la cardinalità nel confronto.
   const conLaData = (n: string) => testi.filter((f) => nomi(readFileSync(join(cartella, f), "utf8")).includes(n)).map((f) => f.replaceAll("\\", "/")).sort();
-  expect(conLaData("date")).toEqual(["windows/README-OF-ALGODESIGN-TOOLS.md"]);
-  expect(conLaData("delData")).toEqual(["linux/ALGODESIGN-PER-LINUX.md", "linux/NOTE-DI-RILASCIO.md", "windows/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "windows/NOTE-DI-RILASCIO.md"]);
+  expect(conLaData("date")).toEqual(["linux/README-OF-ALGODESIGN-TOOLS.md", "windows/README-OF-ALGODESIGN-TOOLS.md"]);
+  expect(conLaData("delData")).toEqual(["linux/ALGODESIGN-PER-LINUX.md", "linux/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "linux/NOTE-DI-RILASCIO.md", "windows/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "windows/NOTE-DI-RILASCIO.md"]);
   // Controllo positivo del rilevatore: un segnaposto vecchio si vede.
   expect(nomi("Versione del {{data}}.")).toEqual(["data"]);
 });

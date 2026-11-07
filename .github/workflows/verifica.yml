@@ -1,25 +1,34 @@
-# La verifica degli archivi di una release, come li riceve chi li usa: scarica, controlla l'impronta, estrae con gli
+# La verifica degli archivi di Linux, come li riceve chi li usa: scarica, controlla le impronte, estrae con gli
 # strumenti del sistema, controlla i permessi, guarda quali librerie l'AppImage chiede al sistema, la avvia per 20 s con
-# FUSE, come un doppio clic, con una fotografia dello schermo. Su Ubuntu 22.04 e 24.04 appena installate, senza WebKit
-# nel sistema: la macchina della build ha i pacchetti di sviluppo, e una libreria che manca a un utente lì c'è.
+# FUSE, come un doppio clic, con una fotografia dello schermo; avvia lo strumento a riga di comando. Su Ubuntu 22.04 e
+# 24.04 appena installate, senza WebKit nel sistema: la macchina della build ha i pacchetti di sviluppo, e una libreria
+# che manca a un utente lì c'è.
+#
+# Gli archivi vengono da una release (`tag`) o, finché una release per Linux non c'è, dall'artefatto `linux` di una corsa
+# di `release` (`corsa`, il suo numero): uno dei due, non entrambi.
 #
 # Che cosa NON guarda: l'interfaccia (nessuna prova la comanda: lo fa la prova sul prodotto del workflow `release`); un
-# desktop vero (niente gestore di finestre, niente GPU); il pacchetto per Windows (lo provano le clausole sul PC, dal
-# pacchetto scaricato) e quello per macOS.
+# desktop vero (niente gestore di finestre, niente GPU); dello strumento, più del suo aiuto e di un testo letto (lo prova
+# `archivio.ts`); il pacchetto per Windows (lo provano le clausole sul PC, dal pacchetto scaricato) e quello per macOS.
 name: verifica
 
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Etichetta della release da verificare"
-        required: true
+        description: "Etichetta della release da verificare (o corsa)"
+        default: ""
+      corsa:
+        description: "Numero di una corsa di release con l'artefatto linux (o tag)"
+        default: ""
       piattaforme:
         description: "Piattaforme da verificare, separate da virgole (linux)"
         default: "linux"
 
 permissions:
   contents: read
+  # Per scaricare l'artefatto di una corsa.
+  actions: read
 
 jobs:
   linux:
@@ -37,18 +46,33 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Scarica e controlla l'impronta
+      - name: Scarica e controlla le impronte
+        env:
+          TAG: ${{ inputs.tag }}
+          CORSA: ${{ inputs.corsa }}
         run: |
-          gh release download "${{ inputs.tag }}" -R "$GITHUB_REPOSITORY" -p '*linux-x64.tar.gz*'
+          if [ -n "${TAG}" ] && [ -z "${CORSA}" ]; then
+            gh release download "${TAG}" -R "$GITHUB_REPOSITORY" -p 'AlgoDesign-*linux-x64.tar.gz*'
+          elif [ -z "${TAG}" ] && [ -n "${CORSA}" ]; then
+            gh run download "${CORSA}" -R "$GITHUB_REPOSITORY" -n linux -D .
+          else
+            echo "ROSSO: serve uno solo fra tag («${TAG}») e corsa («${CORSA}»)"; exit 1
+          fi
           ls -la
-          test "$(find . -maxdepth 1 -name '*linux-x64.tar.gz' | grep -c .)" -eq 1 || { echo "ROSSO: la release non ha un solo archivio per Linux"; exit 1; }
-          sha256sum -c ./*.sha256
+          # Un solo archivio dell'app e uno solo dello strumento, coi nomi della stessa versione.
+          app=$(find . -maxdepth 1 -name 'AlgoDesign-*-linux-x64.tar.gz' ! -name 'AlgoDesign-Tools-*' -printf '%f\n')
+          strumento=$(find . -maxdepth 1 -name 'AlgoDesign-Tools-*-linux-x64.tar.gz' -printf '%f\n')
+          test "$(echo "${app}" | grep -c .)" -eq 1 || { echo "ROSSO: non c'è un solo archivio dell'app: «${app}»"; exit 1; }
+          test "$(echo "${strumento}" | grep -c .)" -eq 1 || { echo "ROSSO: non c'è un solo archivio dello strumento: «${strumento}»"; exit 1; }
+          versione=${app#AlgoDesign-}; versione=${versione%-linux-x64.tar.gz}
+          test "${strumento}" = "AlgoDesign-Tools-${versione}-linux-x64.tar.gz" || { echo "ROSSO: lo strumento «${strumento}» non è della versione ${versione}"; exit 1; }
+          sha256sum -c "${app}.sha256" "${strumento}.sha256"
+          echo "VERSIONE=${versione}" >> "$GITHUB_ENV"
 
       - name: Estrai come chi lo usa
         run: |
-          tar xzf ./*.tar.gz
-          test "$(find . -maxdepth 1 -type d -name 'AlgoDesign-*' | grep -c .)" -eq 1
-          cd AlgoDesign-*/
+          tar xzf "AlgoDesign-${VERSIONE}-linux-x64.tar.gz"
+          cd "AlgoDesign-${VERSIONE}/"
           ls -la
           test -x AlgoDesign.AppImage
           test -d data
@@ -58,7 +82,7 @@ jobs:
       - name: Librerie che l'AppImage chiede al sistema e che su questa macchina pulita mancano
         run: |
           mkdir -p uscita
-          cd AlgoDesign-*/
+          cd "AlgoDesign-${VERSIONE}/"
           ./AlgoDesign.AppImage --appimage-extract > /dev/null
           : > ../uscita/mancanti-prima.txt
           find squashfs-root -type f \( -name 'algodesign' -o -name '*.so*' -o -name 'WebKit*Process' \) | while read -r f; do
@@ -72,7 +96,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ${{ matrix.fuse }} xvfb imagemagick libegl1 libgl1 libgles2 libgbm1 libgl1-mesa-dri fontconfig fonts-dejavu-core
-          cd AlgoDesign-*/
+          cd "AlgoDesign-${VERSIONE}/"
           ./AlgoDesign.AppImage --appimage-extract > /dev/null
           : > ../uscita/mancanti-dopo.txt
           find squashfs-root -type f \( -name 'algodesign' -o -name '*.so*' -o -name 'WebKit*Process' \) | while read -r f; do
@@ -85,7 +109,7 @@ jobs:
 
       - name: Avvio con FUSE, come un doppio clic
         run: |
-          cd AlgoDesign-*/
+          cd "AlgoDesign-${VERSIONE}/"
           Xvfb :99 -screen 0 1280x800x24 &
           sleep 2
           DISPLAY=:99 ./AlgoDesign.AppImage > ../uscita/avvio.log 2>&1 &
@@ -100,6 +124,26 @@ jobs:
           test -d data/webview || { echo "ROSSO: niente in data/: la modalità portabile non è partita"; exit 1; }
           echo "VERDE: avviato con FUSE, vivo dopo 20 s, dati in data/"
           kill "${pid}"
+
+      # Prima di questo passo nessun Bun sulla macchina: lo strumento deve partire da solo.
+      - name: Lo strumento a riga di comando, estratto come chi lo usa
+        run: |
+          dove="prova dello strumento"
+          mkdir -p "${dove}"
+          tar xzf "AlgoDesign-Tools-${VERSIONE}-linux-x64.tar.gz" -C "${dove}"
+          cd "${dove}/AlgoDesign-Tools-${VERSIONE}/"
+          ls -la
+          test -x algodesign-tools || { echo "ROSSO: algodesign-tools non è eseguibile"; exit 1; }
+          if command -v bun > /dev/null; then echo "ROSSO: c'è Bun sulla macchina, la prova non direbbe nulla"; exit 1; fi
+          ./algodesign-tools -h > ../../uscita/strumento-aiuto.txt 2>&1 && codice=0 || codice=$?
+          cat ../../uscita/strumento-aiuto.txt
+          test "${codice}" -eq 0 || { echo "ROSSO: -h esce ${codice}"; exit 1; }
+          grep -q "algodesign-tools accademico <testo.txt>" ../../uscita/strumento-aiuto.txt || { echo "ROSSO: -h senza il modo d'uso col nome dell'eseguibile"; exit 1; }
+          printf 'variable x: integer\nx \xe2\x86\x90 1\n' > "un testo.txt"
+          ./algodesign-tools accademico "un testo.txt" -o "una libreria.algo" > ../../uscita/strumento-accademico.txt 2>&1 && codice=0 || codice=$?
+          cat ../../uscita/strumento-accademico.txt
+          test "${codice}" -eq 0 && test -s "una libreria.algo" || { echo "ROSSO: accademico esce ${codice} senza la libreria"; exit 1; }
+          echo "VERDE: lo strumento parte senza Bun, mostra l'aiuto e scrive una libreria"
 
       - uses: actions/upload-artifact@v5
         if: always()
