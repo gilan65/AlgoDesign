@@ -130,8 +130,12 @@ test("la ricerca: le parole trovate come nel Markdown, Invio porta la successiva
   await expect.poll(inVista).toBe(true);
 });
 
-test("con la preferenza la guida si sposta dal titolo e si allarga dall'angolo; chiusa e riaperta torna lì", async ({ page }) => {
+test("con la preferenza la guida si sposta dal titolo e si allarga dall'angolo; chiusa e riaperta torna lì", async ({ page, browserName }) => {
   await apri(page, { lingua: "it", guidaSpostabile: true });
+  // L'angolo è quello del motore (`resize: both`). Nel WebKit di Playwright per Linux il mouse simulato non lo muove, da
+  // nessun punto e con uno o due pixel per punto (misurato nel container); nel WebKitGTK del programma, col mouse vero,
+  // la guida si allarga (misurato sul desktop di Ubuntu). Lì la prova guarda lo spostamento e la riapertura.
+  const conLAngolo = !(browserName === "webkit" && (await page.evaluate(() => navigator.platform)).startsWith("Linux"));
   await apriLaGuida(page);
   const misura = () => guida(page).evaluate((g) => {
     const r = g.getBoundingClientRect();
@@ -148,11 +152,13 @@ test("con la preferenza la guida si sposta dal titolo e si allarga dall'angolo; 
   await expect.poll(misura).toEqual({ ...prima, x: prima.x - 300, y: prima.y - 30 });
   // Allargata dall'angolo in basso a destra: 120 px.
   const spostata = await misura();
-  await page.mouse.move(spostata.x + spostata.larga - 3, spostata.y + spostata.alta - 3);
-  await page.mouse.down();
-  for (let i = 1; i <= 6; i++) await page.mouse.move(spostata.x + spostata.larga - 3 + 20 * i, spostata.y + spostata.alta - 3);
-  await page.mouse.up();
-  await expect.poll(async () => (await misura()).larga).toBe(spostata.larga + 120);
+  if (conLAngolo) {
+    await page.mouse.move(spostata.x + spostata.larga - 3, spostata.y + spostata.alta - 3);
+    await page.mouse.down();
+    for (let i = 1; i <= 6; i++) await page.mouse.move(spostata.x + spostata.larga - 3 + 20 * i, spostata.y + spostata.alta - 3);
+    await page.mouse.up();
+    await expect.poll(async () => (await misura()).larga).toBe(spostata.larga + 120);
+  }
   const dopo = await misura();
   // Chiusa con Esc e riaperta: lo stesso posto e le stesse misure.
   await guida(page).locator("article").focus();

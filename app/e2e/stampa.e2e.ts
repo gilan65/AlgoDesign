@@ -107,8 +107,16 @@ async function fogliDelNucleo(page: Page, punti = 8, adatta = false, testo: unkn
   return fuori;
 }
 
+/** `page.pdf()` c'è solo in Chromium («PDF generation is only supported for Headless Chromium»): negli altri motori i
+ * fogli del PDF non si leggono, e la prova confronta questa frase da tutte e due le parti (`fogliAttesi`); il resto
+ * della prova corre in ogni motore. */
+const SENZA_PDF = "senza PDF: lo stampa solo Chromium";
+const conIlPdf = (page: Page) => page.context().browser()?.browserType().name() === "chromium";
+const fogliAttesi = (page: Page, versi: readonly string[]) => (conIlPdf(page) ? versi : SENZA_PDF);
+
 /** I versi dei fogli del PDF di Chromium: «v» verticale, «o» orizzontale. */
-async function fogliDelPdf(page: Page): Promise<string[]> {
+async function fogliDelPdf(page: Page): Promise<string[] | typeof SENZA_PDF> {
+  if (!conIlPdf(page)) return SENZA_PDF;
   const pdf = (await page.pdf({ preferCSSPageSize: true, printBackground: true })).toString("latin1");
   return [...pdf.matchAll(/\/MediaBox\s*\[\s*0 0 ([\d.]+) ([\d.]+)\s*\]/g)].map((m) => (Number(m[1]) > Number(m[2]) ? "o" : "v"));
 }
@@ -119,6 +127,12 @@ test("[Stampa] tutte le parti del riferimento della tappa 3: le predefinite, le 
   const prima = await page.evaluate(() => document.adoptedStyleSheets.length);
   await (await voceDelMenu(page, it.stampa)).click();
   await expect(finestra(page)).toBeVisible();
+  // Il consiglio sul PDF del sistema che il motore dichiara: su Linux «Stampa su file» e i limiti del WebKitGTK; l'altro
+  // testo non c'è.
+  const suLinux = (await page.evaluate(() => navigator.userAgent)).includes("Linux");
+  const [consiglio, altro] = suLinux ? [it.stampaConsiglioPdfLinux, it.stampaConsiglioPdf] : [it.stampaConsiglioPdf, it.stampaConsiglioPdfLinux];
+  await expect(finestra(page)).toContainText(consiglio);
+  await expect(finestra(page)).not.toContainText(altro);
   // Le predefinite: tutte le funzioni, di seguito; il flowchart e il codice affiancati; nessuna parte spenta; nessuna
   // casella dei segni. Le sei parti nell'ordine.
   const parti = [it.stampaProgetto, it.stampaDati, it.stampaFlowchart, it.stampaCodice, it.stampaAffiancati, it.stampaCasi];
@@ -209,8 +223,8 @@ test("[Stampa] tutte le parti del riferimento della tappa 3: le predefinite, le 
   await expect(page.locator("#radice")).toBeHidden();
   await expect(page.locator('[data-stampa] [data-parte="casi"]')).toBeVisible();
   const pdf = await fogliDelPdf(page);
-  console.log(`pdf: ${pdf.length} fogli ${pdf.join("")}`);
-  expect(pdf).toEqual(attese.map((a) => a.verso));
+  console.log(`pdf: ${typeof pdf === "string" ? pdf : `${pdf.length} fogli ${pdf.join("")}`}`);
+  expect(pdf).toEqual(fogliAttesi(page, attese.map((a) => a.verso)));
   await page.emulateMedia({ media: "screen" });
   // `afterprint`: la pagina e le sue regole escono.
   await dopoLaStampa(page);
@@ -329,9 +343,11 @@ test("[Ctrl+P] col fuoco in un campo apre la finestra; con un'altra finestra ape
   await stampa(page, 1);
   await page.emulateMedia({ media: "print" });
   const inStampa = await guida.evaluate((g) => getComputedStyle(g).display);
-  const conLaGuida = leggiPdf(await page.pdf({ preferCSSPageSize: true })).pagine.filter((p) => p.righe.some((r) => r.includes(it.guidaTitolo))).length;
+  const conLaGuida = conIlPdf(page)
+    ? leggiPdf(await page.pdf({ preferCSSPageSize: true })).pagine.filter((p) => p.righe.some((r) => r.includes(it.guidaTitolo))).length
+    : SENZA_PDF;
   await page.emulateMedia({ media: null });
-  expect({ inStampa, conLaGuida }).toEqual({ inStampa: "none", conLaGuida: 0 });
+  expect({ inStampa, conLaGuida }).toEqual({ inStampa: "none", conLaGuida: conIlPdf(page) ? 0 : SENZA_PDF });
   await dopoLaStampa(page);
   await guida.locator("article").focus();
   await page.keyboard.press("Escape");
@@ -420,7 +436,7 @@ test("[Stampa] la nota dei flowchart ristretti: ai punti scelti, coi punti del n
   expect({ orizzontale: g.orizzontale, fogli: g.fogli.length }).toEqual({ orizzontale: true, fogli: 1 });
   expect({ regole: (await regole(page)).map((r) => r.verso), sezioni: (await sezioni(page)).map((x) => x.parte) }).toEqual({ regole: ["a4 landscape"], sezioni: ["flowchart"] });
   await page.emulateMedia({ media: "print" });
-  expect(await fogliDelPdf(page)).toEqual(["o"]);
+  expect(await fogliDelPdf(page)).toEqual(fogliAttesi(page, ["o"]));
 });
 
 // Il codice stampato. Le righe del Python del riferimento della tappa 3, contate sul testo generato (`parti.test.ts`): il
@@ -501,7 +517,7 @@ test("[Stampa] gli affiancati in Python: i linguaggi accesi nel menu, per funzio
   const lato = await righeNelLato(page);
   console.log(`righe nel lato: ${JSON.stringify(lato)}`);
   expect({ pre: lato.pre, fuori: lato.fuori, latiStorti: lato.latiStorti }).toEqual({ pre: RIGHE.length + 2, fuori: 0, latiStorti: 0 });
-  expect(await fogliDelPdf(page)).toEqual(attese.map(() => "o"));
+  expect(await fogliDelPdf(page)).toEqual(fogliAttesi(page, attese.map(() => "o")));
 });
 
 test("[Stampa] il codice da solo: verticale, poi orizzontale dalla /MediaBox; ogni procedura e funzione in un foglio nuovo coi numeri veri e la coda in fondo", async ({ page }) => {
@@ -526,7 +542,7 @@ test("[Stampa] il codice da solo: verticale, poi orizzontale dalla /MediaBox; og
   await page.locator("[data-stampa] pre").first().evaluate((p) => {
     p.firstElementChild!.lastElementChild!.textContent = "a\t".repeat(30);
   });
-  expect({ lato: ((l) => l.fuori + l.latiStorti)(await righeNelLato(page)), pdf: await fogliDelPdf(page) }).toEqual({ lato: 0, pdf: ["v", "v"] });
+  expect({ lato: ((l) => l.fuori + l.latiStorti)(await righeNelLato(page)), pdf: await fogliDelPdf(page) }).toEqual({ lato: 0, pdf: fogliAttesi(page, ["v", "v"]) });
   await page.emulateMedia({ media: "screen" });
   await dopoLaStampa(page);
 
@@ -539,7 +555,7 @@ test("[Stampa] il codice da solo: verticale, poi orizzontale dalla /MediaBox; og
   expect(o.sezioni).toEqual(Array(3).fill(["codice", t, ""]));
   expect([o.codice[0]![0], o.codice[2]![1]]).toEqual([1, 111]);
   await page.emulateMedia({ media: "print" });
-  expect({ lato: ((l) => l.fuori + l.latiStorti)(await righeNelLato(page, true)), pdf: await fogliDelPdf(page) }).toEqual({ lato: 0, pdf: ["o", "o", "o"] });
+  expect({ lato: ((l) => l.fuori + l.latiStorti)(await righeNelLato(page, true)), pdf: await fogliDelPdf(page) }).toEqual({ lato: 0, pdf: fogliAttesi(page, ["o", "o", "o"]) });
   await page.emulateMedia({ media: "screen" });
   await dopoLaStampa(page);
 
@@ -554,7 +570,7 @@ test("[Stampa] il codice da solo: verticale, poi orizzontale dalla /MediaBox; og
     codice: [...RIGHE.map(([a, b]) => [a, b]), [61, 111]],
   });
   await page.emulateMedia({ media: "print" });
-  expect(await fogliDelPdf(page)).toEqual(Array(5).fill("v"));
+  expect(await fogliDelPdf(page)).toEqual(fogliAttesi(page, Array(5).fill("v")));
 });
 
 test("[Stampa] un linguaggio che non dà il codice: «Accademico» acceso nel menu, la nota nella finestra, il foglio con la frase e l'elenco intero e poi i flowchart; il codice da solo, il solo foglio", async ({ page }) => {
@@ -595,7 +611,7 @@ test("[Stampa] un linguaggio che non dà il codice: «Accademico» acceso nel me
   });
   expect((await elenco.locator("li").first().textContent())!.startsWith(riempi(testiDelleMancanze.it.rif.breve, { operatore: "" }))).toBe(true);
   await page.emulateMedia({ media: "print" });
-  expect(await fogliDelPdf(page)).toEqual(["v", ...flowchart.flatMap(({ g }) => g.fogli.map(() => (g.orizzontale ? "o" : "v")))]);
+  expect(await fogliDelPdf(page)).toEqual(fogliAttesi(page, ["v", ...flowchart.flatMap(({ g }) => g.fogli.map(() => (g.orizzontale ? "o" : "v")))]));
   await page.emulateMedia({ media: "screen" });
   await dopoLaStampa(page);
 
@@ -606,7 +622,7 @@ test("[Stampa] un linguaggio che non dà il codice: «Accademico» acceso nel me
   expect((await sezioni(page)).map((x) => [x.parte, x.testa])).toEqual([["codice", "parametro-booleano · Codice in Accademico"]]);
   expect(await page.locator("[data-stampa] [data-senza-codice] li").count()).toBe(1);
   await page.emulateMedia({ media: "print" });
-  expect(await fogliDelPdf(page)).toEqual(["v"]);
+  expect(await fogliDelPdf(page)).toEqual(fogliAttesi(page, ["v"]));
   await page.emulateMedia({ media: "screen" });
   await dopoLaStampa(page);
 

@@ -433,7 +433,7 @@ test("«Copia» mette negli appunti il codice mostrato; «Salva…» propone il 
   // «Salva…»: rinuncia nella finestra del sistema, poi un file scelto.
   await clic(pulsanteNelRiquadro(it.codiceSalva), "«Salva…»");
   await giro();
-  expect({ finestre: finestreDelCodice, scritti }).toEqual({ finestre: [{ proposto: "doppio.py", filtro: it.filtroPython, estensione: ".py", cartella: "C:\\prove" }], scritti: [] });
+  expect({ finestre: finestreDelCodice, scritti }).toEqual({ finestre: [{ titolo: it.titoloSalvaCodice, proposto: "doppio.py", filtro: it.filtroPython, estensione: ".py", cartella: "C:\\prove" }], scritti: [] });
   sceltoPerIlCodice = { percorso: "C:\\prove\\doppio.py", sostituire: false };
   await clic(pulsanteNelRiquadro(it.codiceSalva), "«Salva…»");
   await aspetta("l'avviso del salvataggio", () => avviso() === riempi(it.codiceSalvatoIn, { file: "doppio.py" }));
@@ -461,7 +461,7 @@ test("le linguette sono i linguaggi accesi nelle preferenze, nel loro ordine: al
   expect(righe()).toEqual(delGeneratore(c(progettoDoppio, tetti, "it", paroleDelloPseudocodice("it"))));
   await clic(pulsanteNelRiquadro(it.codiceSalva), "«Salva…»");
   await giro();
-  expect(finestreDelCodice).toEqual([{ proposto: "doppio.c", filtro: it.filtroC, estensione: ".c", cartella: "C:\\prove" }]);
+  expect(finestreDelCodice).toEqual([{ titolo: it.titoloSalvaCodice, proposto: "doppio.c", filtro: it.filtroC, estensione: ".c", cartella: "C:\\prove" }]);
 });
 
 /** Un progetto che sta in «Accademico»: un intero e una scrittura. */
@@ -485,8 +485,8 @@ test("«Salva…» dei due linguaggi di testo: lo pseudocodice propone «doppio.
       await giro();
     }
     expect(finestreDelCodice).toEqual([
-      { proposto: "doppio.txt", filtro: t.filtroPseudocodice, estensione: ".txt", cartella: "C:\\prove" },
-      { proposto: `doppio (${t.linguaggioAccademico}).txt`, filtro: t.filtroAccademico, estensione: ".txt", cartella: "C:\\prove" },
+      { titolo: t.titoloSalvaCodice, proposto: "doppio.txt", filtro: t.filtroPseudocodice, estensione: ".txt", cartella: "C:\\prove" },
+      { titolo: t.titoloSalvaCodice, proposto: `doppio (${t.linguaggioAccademico}).txt`, filtro: t.filtroAccademico, estensione: ".txt", cartella: "C:\\prove" },
     ]);
   }
 });

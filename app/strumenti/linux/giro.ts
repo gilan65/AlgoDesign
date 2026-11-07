@@ -31,8 +31,11 @@
 //   basso degli ultimi 60 s, sale al più di 100 MB sopra il valore a 10 s. Il picco si scrive e non ferma: in WebKit
 //   la memoria si libera a dente di sega.
 //
-// Sulla macchina della CI il giro senza `data` fa in più due misure, che non fermano (dopo il controllo positivo delle
-// tracce, che lì non guarda le voci fuori da `data/`: una scrittura del dialogo di stampa non sporca il giro portabile):
+// Sulla macchina della CI il giro senza `data` fa in più una clausola e due misure, dopo il controllo positivo delle
+// tracce, che lì non guarda le voci fuori da `data/` (una scrittura delle finestre di GTK non sporca il giro portabile):
+// - FINESTRA DEL FILE, la clausola: Ctrl+O apre la finestra di GTK (`xwininfo`) e, mentre è aperta, uno script nella
+//   pagina torna entro 5 s; la finestra ha il titolo di «Apri» nella lingua dell'interfaccia; rossa se la finestra non
+//   compare. Le due misure non fermano:
 // - CANVAS: la misura più grande di un canvas che WebKitGTK disegna e da cui dà il PNG (`misura-del-canvas.ts`);
 // - STAMPA: `window.print()` nel WebKitGTK del programma; dopo cinque secondi le finestre nuove dello schermo virtuale
 //   (`xwininfo`) e la fotografia. Se il dialogo di stampa si apre lo dicono i nomi e la fotografia; la stampa vera su un
@@ -494,7 +497,47 @@ async function giroSenzaDati(): Promise<void> {
   await attendiFile(join(configurazione, "preferenze.json"), opposta, "TRACCE (controllo positivo)");
   await chiudi(sessione);
   console.log(`SENZA DATA: preferenza «${opposta}» scritta in ${configurazione}`);
-  if (uscita !== undefined) await misureDelMotore();
+  if (uscita !== undefined) {
+    await finestraDelFile();
+    await misureDelMotore();
+  }
+}
+
+/** Una promessa entro un tempo: il suo valore, o `undefined` se il tempo passa prima. */
+const entro = <T>(ms: number, p: Promise<T>): Promise<{ valore: T } | undefined> =>
+  Promise.race([p.then((valore) => ({ valore })), Bun.sleep(ms).then(() => undefined)]);
+
+/** FINESTRA DEL FILE (clausola): Ctrl+O apre la finestra di GTK, una finestra nuova con un nome (`xwininfo`, come per la
+ *  stampa), e mentre è aperta l'app risponde: uno script nella pagina torna entro 5 s. Coi comandi della finestra del
+ *  file sincroni l'app restava ferma finché la finestra era aperta (visto sul desktop di Ubuntu): questa clausola è
+ *  rossa sul pacchetto di allora. Se la finestra non compare, la clausola non ha provato nulla, ed è rossa. */
+async function finestraDelFile(): Promise<void> {
+  const sessione = await avvia();
+  const prima = await finestreConUnNome();
+  const ctrl = String.fromCharCode(0xe009); // il tasto Ctrl di WebDriver
+  const premuto = await entro(5_000, tasti(sessione, ctrl, "o"));
+  let nuove: string[] = [];
+  for (let i = 0; i < 50 && nuove.length === 0; i++) {
+    await Bun.sleep(200);
+    nuove = (await finestreConUnNome()).filter((n) => !prima.includes(n));
+  }
+  const inizio = performance.now();
+  const risposta = await entro(5_000, script(sessione, "return document.documentElement.lang;"));
+  const ms = Math.round(performance.now() - inizio);
+  const visto = `Ctrl+O ${premuto === undefined ? "non tornato in 5 s" : "tornato"}; finestre nuove con un nome: ${nuove.map((n) => `«${n}»`).join(", ") || "nessuna"}; la pagina ${risposta === undefined ? "non ha risposto in 5 s" : `ha risposto in ${ms} ms («${risposta.valore}»)`}`;
+  // La finestra del file può tenere la sessione: la chiusura non la aspetta più di 15 s, poi il processo si termina.
+  await Promise.race([wd("DELETE", `/session/${sessione}`).catch(() => undefined), Bun.sleep(15_000)]);
+  for (const { pid } of processiApp()) process.kill(pid, "SIGKILL");
+  for (let i = 0; i < 100 && processiApp().length > 0; i++) await Bun.sleep(100);
+  // Prima la risposta: col thread della finestra fermo anche la finestra di GTK può non comparire (misurato sul pacchetto
+  // coi comandi sincroni).
+  if (premuto === undefined || risposta === undefined) rosso("FINESTRA DEL FILE", `dopo Ctrl+O l'app non risponde (${visto})`);
+  if (nuove.length === 0) rosso("FINESTRA DEL FILE", `nessuna finestra nuova dopo Ctrl+O: la clausola non ha provato nulla (${visto})`);
+  // Il titolo nella lingua dell'interfaccia: GTK da solo scrive «Open File».
+  const titolo = (dizionari as Record<string, { titoloApri: string } | undefined>)[String(risposta.valore)]?.titoloApri;
+  if (titolo === undefined || !nuove.includes(titolo)) rosso("FINESTRA DEL FILE", `la finestra non ha il titolo «${titolo ?? "?"}» della lingua «${risposta.valore}» (${visto})`);
+  if (processiApp().length > 0) rosso("FINESTRA DEL FILE", `dopo la chiusura l'app è ancora in esecuzione:\n${tabellaProcessi()}`);
+  console.log(`FINESTRA DEL FILE: VERDE | ${visto}`);
 }
 
 /** Le finestre dello schermo virtuale con un nome, da `xwininfo -root -tree`: una per riga, senza l'identificativo. */

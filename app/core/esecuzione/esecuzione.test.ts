@@ -1229,6 +1229,8 @@ describe("la console a righe: le ultime righe, quante ne sono state tolte", () =
     expect(conCaso.outputTenuto).toBe(74);
   });
 
+  // Il limite suo: 500 000 passi, 0,61 s da sola, da 5,7 a 6,5 s nel collaudo intero (quattro rossi oltre i 5 s di Bun,
+  // senza un difetto); quattro volte la più lunga, ai 30 s.
   test("un ciclo che scrive senza fine: 1000 righe tenute, le altre contate", () => {
     const p = progetto([], [{ id: "b1", kind: "while", condition: "true", body: [{ id: "b2", kind: "write", values: ['"ciao"'], newline: true }] }]);
     const e = new Esecuzione(p, tetti);
@@ -1242,7 +1244,7 @@ describe("la console a righe: le ultime righe, quante ne sono state tolte", () =
       tolte: scritture - 1000,
       tutte: true,
     });
-  });
+  }, 30_000);
 
   // Tre scritture di dieci caratteri senza a capo, poi «xy» con l'a capo: una riga di 32 caratteri.
   const lunga = () =>

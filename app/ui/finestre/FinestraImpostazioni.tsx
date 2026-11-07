@@ -117,7 +117,7 @@ function Contenuto({
   iniziale: { lingua: Lingua; scelte: Scelte };
   esempi: CartellaInUso | null;
   librerie: CartellaInUso | null;
-  scegliCartella: (partenza: string | null) => Promise<string | null>;
+  scegliCartella: (titolo: string, partenza: string | null) => Promise<string | null>;
   conferma: (lingua: Lingua, scelte: Scelte) => void;
   primo: RefObject<HTMLButtonElement | null>;
 }): ReactElement {
@@ -252,7 +252,7 @@ function Contenuto({
             type="button"
             className={stili.comando}
             onClick={() =>
-              void scegliCartella(scelta ?? inUso?.cartella ?? null).then((c) => {
+              void scegliCartella(testi.titoloScegliCartella, scelta ?? inUso?.cartella ?? null).then((c) => {
                 if (c !== null) cambia({ [chiave]: c });
               })
             }
@@ -679,7 +679,7 @@ export function FinestraImpostazioni({
   esempi: CartellaInUso | null;
   librerie: CartellaInUso | null;
   /** La finestra del sistema per scegliere una cartella, da dove parte; `null` se l'utente rinuncia. */
-  scegliCartella: (partenza: string | null) => Promise<string | null>;
+  scegliCartella: (titolo: string, partenza: string | null) => Promise<string | null>;
   conferma: (lingua: Lingua, scelte: Scelte) => void;
   rinuncia: () => void;
 }): ReactElement {

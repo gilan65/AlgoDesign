@@ -104,7 +104,7 @@ function DaSegnalare({ testi, lavoro: l, primo = false, children }: { testi: Diz
     const proposto = riempi(testi.nomeDellaSegnalazione, { nome: senzaVietati(l.nome) || testi.ripiegoDelNomeDelFile });
     let scelto;
     try {
-      scelto = await scegliFileDelCodice(proposto, testi.filtroDellaSegnalazione, ".txt", l.cartella);
+      scelto = await scegliFileDelCodice(testi.titoloSalvaSegnalazione, proposto, testi.filtroDellaSegnalazione, ".txt", l.cartella);
     } catch (e) {
       nonSalvato(proposto, e);
       return;
@@ -206,7 +206,7 @@ function DaSalvare({ testi, lavoro: l }: { testi: Dizionario; lavoro: LavoroDaSa
     const proposto = l.percorso !== null ? nomeDelFile(l.percorso) : `${baseProposta(l.nome, testi.ripiegoDelNomeDelFile)}.algo`;
     let scelto;
     try {
-      scelto = await scegliFileDaSalvare(proposto, testi.filtroDelFile, l.cartella);
+      scelto = await scegliFileDaSalvare(testi.titoloSalvaConNome, proposto, testi.filtroDelFile, l.cartella);
     } catch (e) {
       setErrore({ titolo: riempi(testi.salvaErroreTitolo, { file: proposto }), testo: testoDellErrore(erroreDelFile(e), testi) });
       return;

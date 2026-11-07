@@ -97,7 +97,7 @@ const supporto: Record<Lingua, Record<Supporto, readonly string[]>> = {
       "function fermati(motivo: string): never {",
       '  let riga = "?";',
       '  for (const chiamata of (new Error().stack ?? "").split("\\n")) {',
-      "    const trovata = /^\\s*at main \\(.*:(\\d+):\\d+\\)$/.exec(chiamata);",
+      "    const trovata = /^\\s*(?:at main \\(|main@).*:(\\d+):\\d+\\)?$/.exec(chiamata);",
       "    if (trovata !== null) {",
       "      riga = trovata[1];",
       "      break;",
@@ -397,7 +397,7 @@ const supporto: Record<Lingua, Record<Supporto, readonly string[]>> = {
       "function halt(reason: string): never {",
       '  let line = "?";',
       '  for (const call of (new Error().stack ?? "").split("\\n")) {',
-      "    const found = /^\\s*at main \\(.*:(\\d+):\\d+\\)$/.exec(call);",
+      "    const found = /^\\s*(?:at main \\(|main@).*:(\\d+):\\d+\\)?$/.exec(call);",
       "    if (found !== null) {",
       "      line = found[1];",
       "      break;",
@@ -708,9 +708,11 @@ const chiama: Partial<Record<Supporto, readonly Supporto[]>> = {
 
 /** `fermati` di un programma con procedure o funzioni: la riga è quella della prima cornice di una funzione del programma
  * (`main` e le altre, nell'ordine del progetto), come il Python che risale le cornici; una cornice nativa di Bun
- * (`at map (native:1:11)`) non lo è mai. */
-const fermatiCheRisale = (l: Lingua, delProgramma: readonly string[]): readonly string[] =>
-  supporto[l].fermati.map((r) => r.replace("at main \\(", `at (?:${["main", ...delProgramma].join("|")}) \\((?!native:)`));
+ * (`at map (native:1:11)`) non lo è mai; le due forme della cornice, di V8 e di WebKit e Firefox. */
+const fermatiCheRisale = (l: Lingua, delProgramma: readonly string[]): readonly string[] => {
+  const nomi = ["main", ...delProgramma].join("|");
+  return supporto[l].fermati.map((r) => r.replace("(?:at main \\(|main@)", `(?:at (?:${nomi}) \\((?!native:)|(?:${nomi})@)`));
+};
 
 /** `fermati` di un programma con la ricorsione: salta le prime `cornice` cornici del programma (0 per difetto), come
  * `fermati(motivo, 3)` del Python che parte da una cornice data. */

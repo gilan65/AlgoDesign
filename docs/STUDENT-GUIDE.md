@@ -306,7 +306,7 @@ In PowerShell type `npm.cmd` and `npx.cmd`, not `npm` and `npx`: on a freshly in
 - `media (TypeScript and JavaScript).html`: the two texts in two columns, to print with Ctrl+P on paper or to a PDF;
 - `media (test).html`: the **test page**, which runs the JavaScript in the browser. In the **Input** box write the values before **Run**, one line for each read of the program, and what the program writes appears in **Output**. **Stop** interrupts a program that does not end.
 
-The page is tested in Chromium, the engine of Chrome and Edge. In Firefox and in Safari it is not tested: the line of an error may come out as “?”, with the right reason.
+The page is tested in Chrome, Edge and Firefox. In Safari it is not tested: for the line of an error the page might show “?”, with the right reason.
 
 To run the JavaScript with Node, select with the mouse the code box of the test page (the line numbers do not enter the selection), paste it into a file `media.js` and type `node media.js`.
 

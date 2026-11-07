@@ -105,7 +105,9 @@
 //
 // Un arresto scrive «Errore alla riga N: motivo» sullo standard error ed esce con 1: `fermati` trova la riga nella pila
 // delle chiamate (`new Error().stack`), alla prima chiamata dentro `main` o dentro un'altra funzione del programma, come
-// il Python che risale le cornici; una cornice nativa di Bun (`at map (native:1:11)`) non è mai del programma.
+// il Python che risale le cornici; una cornice nativa di Bun (`at map (native:1:11)`) non è mai del programma. La cornice
+// ha due forme: quella di V8 e di Bun (`at main (…:12:5)`) e quella di WebKit e di Firefox (`main@…:12:5`), che la pagina
+// di prova incontra nel browser.
 //
 // La provenienza delle righe è quella del Python: la riga di un blocco ha quel blocco (la condizione del `ripeti` sulla
 // riga del `while` in fondo; le righe di un `per` e di un `per ogni` anche la loro fase), la dichiarazione di un dato
@@ -1381,13 +1383,16 @@ function funzione(f: Supporto, lingua: LinguaDelCodice, n: Readonly<Record<Suppo
       // Con la ricorsione, `cornice` dice quante cornici del programma saltare (0 per difetto): `entra_nella_ricorsione`
       // salta quella della funzione del giro e prende quella di chi la chiama, come `fermati(motivo, 3)` del Python. Si
       // contano le cornici del programma, non le righe della pila: Bun perde quelle delle chiamate in coda.
-      const cornice = risale === undefined ? "at main \\(" : `at (?:${risale.join("|")}) \\((?!native:)`;
+      // Due forme della cornice: `at main (percorso:riga:colonna)` di V8 (Node, Chromium) e di Bun, `main@percorso:riga:colonna`
+      // di JavaScriptCore (WebKit) e di SpiderMonkey (Firefox), dove la pagina di prova esegue il programma; una cornice
+      // nativa di JavaScriptCore (`map@[native code]`) non ha i numeri, e non è mai del programma.
+      const cornice = risale === undefined ? "(?:at main \\(|main@)" : `(?:at (?:${risale.join("|")}) \\((?!native:)|(?:${risale.join("|")})@)`;
       return [
         s(f),
         `function ${n.fermati}(${k.motivo}${STR}${ricorsione ? `, ${k.cornice}${NUM} = 0` : ""})${a(": never")} {`,
         `  let ${k.riga} = "?";`,
         `  for (const ${k.chiamata} of (new Error().stack ?? "").split("\\n")) {`,
-        `    const ${k.trovata} = /^\\s*${cornice}.*:(\\d+):\\d+\\)$/.exec(${k.chiamata});`,
+        `    const ${k.trovata} = /^\\s*${cornice}.*:(\\d+):\\d+\\)?$/.exec(${k.chiamata});`,
         `    if (${k.trovata} !== null) {`,
         ...(ricorsione ? [`      if (${k.cornice} > 0) {`, `        ${k.cornice}--;`, "        continue;", "      }"] : []),
         `      ${k.riga} = ${k.trovata}[1];`,

@@ -31,9 +31,11 @@
   font-size: 1.05rem;
 }
 
+/* Le due forme: il WebKitGTK di Ubuntu seleziona il testo del titolo trascinato con la sola `user-select`. */
 .spostabile > .titolo {
   cursor: move;
   user-select: none;
+  -webkit-user-select: none;
 }
 
 .corpo {
