@@ -146,19 +146,31 @@ test("ogni tasto del catalogo fa il suo comando", () => {
 test("ogni tasto che la finestra riconosce è scritto nel catalogo sul comando che fa", () => {
   // Tutte le lettere e i tasti funzione, con e senza Ctrl e Maiusc.
   const tasti = [..."abcdefghijklmnopqrstuvwxyz".toUpperCase(), ...Array.from({ length: 12 }, (_, i) => `F${i + 1}`)];
-  const varianti = new Set(["Control+Shift+Z"]);
+  // Le varianti di un tasto del catalogo: Ripeti anche con Ctrl+Maiusc+Z, Stampa anche con Ctrl+Maiusc+P (che nella
+  // WebView2 farebbe stampare il motore con la finestra del sistema).
+  const varianti = new Map([
+    ["Control+Shift+Z", "ripeti"],
+    ["Control+Shift+P", "stampa"],
+  ]);
   const trovati: string[] = [];
   const sbagliati: string[] = [];
   for (const k of tasti)
     for (const mod of ["", "Control+", "Shift+", "Control+Shift+"]) {
       const tasto = `${mod}${k}`;
       const id = riconosciuto(evento(tasto));
-      if (id === null || varianti.has(tasto)) continue;
+      // Una variante che la finestra non riconosce più è rossa come una che fa un altro comando.
+      if (id === null && !varianti.has(tasto)) continue;
+      if (varianti.has(tasto)) {
+        if (varianti.get(tasto) !== id) sbagliati.push(`la variante ${tasto} fa «${id}» invece di «${varianti.get(tasto)}»`);
+        continue;
+      }
+      if (id === null) continue;
       trovati.push(tasto);
       if (catalogo[id].tasto !== tasto) sbagliati.push(`${tasto} fa «${id}», che nel catalogo ha ${catalogo[id].tasto ?? "nessun tasto"}`);
     }
   console.log(`tasti riconosciuti: ${trovati.length} (${trovati.join(", ")})`);
-  expect(trovati.length).toBe(13);
+  // L'elenco, non il conto: un tasto in più e uno in meno danno lo stesso numero.
+  expect(trovati.sort()).toEqual(["Control+N", "Control+O", "Control+P", "Control+S", "Control+Shift+S", "Control+Y", "Control+Z", "F10", "F11", "F5", "F9", "Shift+F11", "Shift+F5"].sort());
   expect(sbagliati).toEqual([]);
 });
 

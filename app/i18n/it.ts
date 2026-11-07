@@ -1148,6 +1148,7 @@ export const it = {
   filtroPng: "Immagine PNG",
   filtroSvg: "Disegno SVG",
   flowchartEsportatoIn: "Flowchart esportato in «{file}».",
+  flowchartEsportatoRidotto: "Flowchart esportato in «{file}» a {larghezza} × {altezza} pixel, meno nitido del solito: è la massima risoluzione possibile in un'immagine PNG",
   esportaFlowchartErroreTitolo: "Il flowchart non si esporta in «{file}»",
   // La stampa: la voce del menu e il pulsante, la finestra e la pagina stampata (le parti sono anche i nomi
   // nell'intestazione dei fogli). {nome} è il nome di una procedura o funzione (o «Programma principale»), {punti} e

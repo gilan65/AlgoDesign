@@ -527,7 +527,7 @@ At first the flowchart and the code side by side are chosen, in the language of 
 
 ### Exporting the flowchart
 
-**Export the flowchart…** exports the flowchart of the tab shown. The window says which flowchart it is and lets you choose the **Format**, **PNG (image)** or **SVG (drawing)**, the **Colors** (in color, in shades of gray, in black and white) and the **Transparent background**; without the box the background is white. **Export…** opens the Windows window to save, with the name of the project and, for a procedure or a function, its name in brackets: for example “media (leggi_numero).png”. The PNG is drawn at twice the size, so that it stays sharp; the SVG can be enlarged as much as you like without losing sharpness. In pause the image has the execution marks: the current block and the breakpoints. The choices stay until AlgoDesign is closed.
+**Export the flowchart…** exports the flowchart of the tab shown. The window says which flowchart it is and lets you choose the **Format**, **PNG (image)** or **SVG (drawing)**, the **Colors** (in color, in shades of gray, in black and white) and the **Transparent background**; without the box the background is white. **Export…** opens the Windows window to save, with the name of the project and, for a procedure or a function, its name in brackets: for example “media (leggi_numero).png”. The PNG is drawn at twice the size, so that it stays sharp; a large flowchart, which has to be reduced to be exported as an image: the status line says the size in pixels. The SVG can be enlarged as much as you like without losing sharpness. In pause the image has the execution marks: the current block and the breakpoints. The choices stay until AlgoDesign is closed.
 
 ## 14. The Settings
 

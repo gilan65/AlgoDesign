@@ -102,7 +102,16 @@
 //      Windows; l'SVG scritto è uguale byte per byte a quello del nucleo col disegno impaginato con la misura del testo
 //      presa dal canvas della WebView2 (`e2e/disegno-nel-motore.ts`); il PNG, decodificato nella pagina, misura il
 //      doppio dell'SVG, ha l'angolo bianco e i pixel del colore dell'inizio e della fine. Controlli positivi: con un
-//      altro colore delle linee l'SVG del nucleo esce diverso; al fattore 1 la misura del PNG è un'altra;
+//      altro colore delle linee l'SVG del nucleo esce diverso; al fattore 1 la misura del PNG è un'altra. Nel log, la
+//      misura del canvas più grande che dà il PNG nella WebView2 (`misura-del-canvas.ts`: una misura, non decide);
+//    - CTRL+MAIUSC+P e DOPO L'ANTEPRIMA, dopo un avviso all'utente (non tocca nulla: la prova prende il primo piano):
+//      col riferimento della tappa 3 e Playwright collegato, Ctrl+Maiusc+P coi tasti veri (`finestra-vera.ps1 <pid>
+//      tasto-vero`), che nel motore è la stampa con la finestra del sistema, arriva alla pagina fermato e apre la finestra
+//      «Stampa» dell'app; nessuna anteprima del motore, la pagina risponde. Un tasto che non arriva si ripete, tre volte.
+//      Controllo positivo dello stesso livello: su `about:blank` lo stesso gesto fa stampare il motore. Poi «Stampa…»
+//      apre l'anteprima di Edge (il bersaglio CDP `edge://print`), Esc vero la chiude, e dopo `afterprint` nel documento
+//      non restano la pagina stampata né le sue regole `@page`. Controllo positivo: nella pagina preparata della
+//      ESPORTA, senza la stampa del motore, il rilevatore le vede;
 //    - STAMPA, con Playwright collegato (stesso avvio): la finestra «Stampa» con le predefinite (gli affiancati nel
 //      linguaggio mostrato, lo pseudocodice di partenza), `window.print` sostituito da un contatore; i fogli preparati
 //      hanno le intestazioni dell'atteso scritto a mano (cinque fogli: il programma principale su due, le altre
@@ -175,6 +184,11 @@
 //   scelte che non sono le predefinite (le provano i motori, `e2e/stampa.e2e.ts`); il contenuto dei fogli oltre
 //   all'intestazione e alle scritte del motore (il disegno e il codice nel PDF si guardano a occhio, nel PDF conservato);
 //   la stampante vera e «Microsoft Print to PDF»; una lingua diversa da quella del sistema;
+// - nella CTRL+MAIUSC+P, Ctrl+Alt+P (misurato una volta sulla WebView2 156: arriva alla pagina e il motore non fa nulla,
+//   né sull'app né su `about:blank`; è AltGr+P, che su certe tastiere scrive) e la stampa del motore dal menu col tasto
+//   destro (l'app lo ferma fuori dai campi); nella DOPO L'ANTEPRIMA, la pagina dopo una stampa FATTA: si guarda dopo
+//   l'anteprima chiusa con Esc (lo stesso `afterprint`), mentre la STAMPA, che salva il PDF, è senza Playwright e non
+//   legge la pagina;
 // - nell'ESPORTA, i tre modi di colore e lo sfondo trasparente (li provano i motori, `e2e/esporta.e2e.ts`), i flowchart
 //   delle altre funzioni, il PNG pixel per pixel (la misura, l'angolo e i pixel di un colore);
 // - le scritture DENTRO cartelle già esistenti nelle radici (una cartella condivisa di Microsoft
@@ -309,6 +323,7 @@ import { SOGLIA_MS } from "../e2e/risposta";
 import { vettoreRiempito } from "../e2e/vettore-riempito";
 import { differenzeDallElenco, elencoDelPacchetto } from "./elenco-del-pacchetto";
 import { finestraVera as finestraDelProcesso, type AzioneDellaFinestra } from "./finestra-vera";
+import { misuraDelCanvas, rigaDellaMisura } from "./misura-del-canvas";
 import { politicaDelProdotto } from "./politica";
 import { direttiveSenzaSonda, provaLaSonda, sonde } from "./sonde-della-politica";
 import { testoDelMessaggio } from "../i18n/codici";
@@ -416,6 +431,8 @@ const clausole: [string, string][] = [
   ["CHIUSURA", "chiusura"],
   ["RICARICA", "ricarica"],
   ["ESPORTA", "flowchart esportato in SVG e PNG"],
+  ["CTRL+MAIUSC+P", "Ctrl+Maiusc+P vero: la stampa dell'app, non quella del motore"],
+  ["DOPO L'ANTEPRIMA", "la pagina stampata tolta dopo l'anteprima del motore"],
   ["STAMPA", "stampa in PDF dall'anteprima, senza Playwright collegato"],
   ["TRACCE (stampa)", "registro intorno alla stampa"],
   ["TRACCE (portabile)", "tracce"],
@@ -507,13 +524,15 @@ function rileva(prima: Fotografia, soglia: Date): Tracce {
   return { conIdentificatore: cartelleIdentificatore(), nuove, modificate };
 }
 
-/** Una voce nuova per il messaggio rosso: dimensione e ora, e il segnale del rumore noto di Chrome. */
+/** Una voce nuova per il messaggio rosso: dimensione e ora, e il segnale del rumore noto: i `.tmp` vuoti che il Chrome
+ * dell'utente crea a ogni avvio di un suo processo, e le coppie `tmp<n>.tmp` di un altro programma che lancia PowerShell
+ * in ciclo (misurato: una coppia al secondo, che dura un attimo, da un banco di prova di un'altra sessione). */
 function descriviVoceNuova(percorso: string): string {
   try {
     const st = statSync(percorso);
     const tipo = st.isDirectory() ? "cartella" : `${st.size} byte`;
-    const chrome = st.isFile() && st.size === 0 && percorso.toLowerCase().endsWith(".tmp");
-    return `${percorso} (${tipo}, ${st.mtime.toISOString()}${chrome ? "; .tmp vuoto: forse Chrome, confronta l'ora con l'avvio dei processi chrome e rilancia" : ""})`;
+    const noto = st.isFile() && percorso.toLowerCase().endsWith(".tmp");
+    return `${percorso} (${tipo}, ${st.mtime.toISOString()}${noto ? "; .tmp: forse Chrome o un altro programma che lancia PowerShell, confronta l'ora con l'avvio dei processi (chrome, powershell) e rilancia con la macchina libera" : ""})`;
   } catch {
     return `${percorso} (sparita prima della lettura)`;
   }
@@ -601,11 +620,14 @@ const vistaDellaFinestra = /^HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\Cu
 // Il rumore che cambia più di rado dei due intervalli a vuoto: OneDrive annota il suo ultimo aggiornamento ogni 2–4
 // minuti, con l'app chiusa. Il Sensore di memoria di Windows gira a orari suoi e annota l'ultimo avvio, l'ultimo errore e lo spazio del giorno, un
 // valore col nome della data (visto due volte: l'ha preso nell'intervallo della stampa, e spariva al rilancio).
-// Il motore degli script di Windows conta il proprio uso per nome del processo (nella stessa chiave powerpnt.exe e wmiprvse.exe), e quello di
-// msedgewebview2.exe lo muove chiunque usi quel runtime: la ricerca di Windows ne tiene aperto uno (misurato, il genitore è SearchHost).
+// Il motore degli script di Windows conta il proprio uso per nome del processo (nella stessa chiave powerpnt.exe e
+// wmiprvse.exe), e quello di msedgewebview2.exe lo può muovere chiunque usi quel runtime: la ricerca di Windows ne tiene
+// aperto uno (il genitore è SearchHost). NON è ammesso: visto cambiare una volta intorno alla stampa, poi misurato fermo
+// per 55 minuti con l'app aperta una ventina di volte e la stampa intera (un campione ogni 15 s); se cambia, il rosso lo
+// dice e si guarda la ricerca di Windows.
 const sensoreDiMemoria = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\StorageSense\\Parameters\\StoragePolicy";
 const usoDegliScript = `HKEY_CURRENT_USER\\Software\\Microsoft\\Windows Script\\Settings\\Telemetry\\msedgewebview2.exe :: "JScript9LegacySetScriptStateStarted"`;
-const rumoreLento = new Set([`HKEY_CURRENT_USER\\Software\\Microsoft\\OneDrive\\Accounts :: "LastUpdate"`, `${sensoreDiMemoria} :: "StoragePoliciesLastFailure"`, `${sensoreDiMemoria} :: "StoragePoliciesLastTrigger"`, usoDegliScript]);
+const rumoreLento = new Set([`HKEY_CURRENT_USER\\Software\\Microsoft\\OneDrive\\Accounts :: "LastUpdate"`, `${sensoreDiMemoria} :: "StoragePoliciesLastFailure"`, `${sensoreDiMemoria} :: "StoragePoliciesLastTrigger"`]);
 const spazioDelGiorno = new RegExp(`^${sensoreDiMemoria.replace(/\\/g, "\\\\")}\\\\SpaceHistory :: "\\d{8}"$`);
 // La firma delle impostazioni del profilo «Default» del runtime WebView2, una chiave che condividono tutti i suoi host:
 // la riscrive l'avvio con un profilo nuovo (`schedule_to_flush_to_disk`, `extensions.settings` tolta) e la stampa in PDF
@@ -2208,7 +2230,14 @@ function fogliAttesi(lingua: Lingua): FoglioAtteso[] {
   );
 }
 
-type DallaPagina = { titolo: string; sezioni: FoglioAtteso[]; linguaggio: string; lato: Awaited<ReturnType<typeof righeNelLato>>; accese: string[]; fogliDelControllo: number };
+type DallaPagina = { titolo: string; sezioni: FoglioAtteso[]; linguaggio: string; lato: Awaited<ReturnType<typeof righeNelLato>>; accese: string[]; fogliDelControllo: number; montata: LaStampata };
+
+/** La pagina stampata nel documento: le sezioni montate (`[data-stampa]`) e le regole `@page` nei fogli adottati. */
+type LaStampata = { sezioni: number; regole: number };
+const laStampata = (): LaStampata => ({
+  sezioni: document.querySelectorAll("[data-stampa]").length,
+  regole: document.adoptedStyleSheets.flatMap((f) => [...f.cssRules]).filter((r) => r.cssText.startsWith("@page")).length,
+});
 
 /** La clausola ESPORTA, e la parte della STAMPA che si legge con Playwright collegato: col riferimento della tappa 3 e le
  * preferenze tolte (i colori predefiniti, non quelli della PREFERENZE), «Esporta il flowchart…» in SVG e in PNG dalla
@@ -2286,6 +2315,8 @@ async function giroDellEsportazione(lingua: Lingua): Promise<DallaPagina> {
     ];
     if (alFattore1.larghezza === attesa.larghezza) rosso("ESPORTA (controllo positivo)", "la misura al fattore 1 è uguale a quella al doppio");
     if (difettiDelPng.length > 0) rosso("ESPORTA", `il PNG: ${difettiDelPng.join("; ")}`);
+    // La misura del canvas più grande che dà il PNG, nella WebView2 del programma: una misura, non una prova.
+    riga(`  ${rigaDellaMisura(`WebView2 ${a.browser.version()}`, await a.pagina.evaluate(misuraDelCanvas))}`);
     verde(
       "ESPORTA",
       `in «${lingua}», «${testi.esportaFlowchart}» del programma principale del riferimento della tappa 3, la finestra del sistema compilata coi messaggi di Windows: l'SVG (${Buffer.byteLength(svg)} byte) uguale byte per byte a quello del nucleo col disegno misurato nel canvas della WebView2 (viewBox ${larghezza} × ${altezza}); il PNG (${png.length} byte) decodificato nella pagina: ${letto.larghezza} × ${letto.altezza} pixel, l'angolo bianco, ${letto.simili} pixel del colore dell'inizio e della fine | controllo positivo: con un altro colore delle linee l'SVG del nucleo è diverso, al fattore 1 il PNG sarebbe ${alFattore1.larghezza} × ${alFattore1.altezza}`,
@@ -2312,10 +2343,13 @@ async function giroDellEsportazione(lingua: Lingua): Promise<DallaPagina> {
     await finestra.getByRole("button", { name: testi.stampa, exact: true }).click();
     await a.pagina.waitForFunction(() => (window as unknown as { __stampe__: number }).__stampe__ === 1, undefined, { timeout: 10_000 });
     const sezioni = await a.pagina.locator("[data-stampa] section").evaluateAll((ss) => ss.map((s) => ({ testa: s.getAttribute("data-testa") ?? "", destra: s.getAttribute("data-destra") ?? "" })));
+    // Il controllo positivo del rilevatore della pagina dopo l'anteprima: senza la stampa del motore non arriva
+    // `afterprint`, e la pagina stampata resta (è il pacchetto che non la toglie).
+    const montata = await a.pagina.evaluate(laStampata);
     await a.pagina.emulateMedia({ media: "print" });
     const lato = await righeNelLato(a.pagina);
     await a.pagina.emulateMedia({ media: null });
-    return { titolo, sezioni, linguaggio, lato, accese, fogliDelControllo: controllo.pagine.length };
+    return { titolo, sezioni, linguaggio, lato, accese, fogliDelControllo: controllo.pagine.length, montata };
   } finally {
     await chiudi(a);
     for (const f of [fileSvg, filePng, progettoFuori]) rmSync(f, { force: true });
@@ -2339,6 +2373,162 @@ async function avvisaLUtente(testo: string): Promise<void> {
   }
 }
 
+/** I bersagli CDP dell'anteprima di stampa del motore (`edge://print`), letti dal browser: la pagina, che l'anteprima
+ * blocca, non serve. */
+async function anteprimeDelMotore(browser: Browser): Promise<string[]> {
+  const s = await browser.newBrowserCDPSession();
+  try {
+    const { targetInfos } = (await s.send("Target.getTargets")) as { targetInfos: { url: string; type: string }[] };
+    return targetInfos.filter((t) => /^(edge|chrome):\/\/print/.test(t.url)).map((t) => `${t.type} ${t.url}`);
+  } finally {
+    await s.detach().catch(() => {});
+  }
+}
+
+type StatoDellaStampa = LaStampata & { visti: string[]; beforeprint: number; afterprint: number; finestra: string | null };
+
+/** Gli ascoltatori della clausola, dopo quelli dell'app (a bolla sulla `window`): i tasti con Ctrl arrivati, fermati o
+ * no, e `beforeprint` e `afterprint`. Si rimettono a ogni documento nuovo. */
+async function ascoltaLaStampa(p: Page): Promise<void> {
+  await p.evaluate(() => {
+    const w = window as unknown as { __tasti__: string[]; __prima__: number; __dopo__: number };
+    w.__tasti__ = [];
+    w.__prima__ = 0;
+    w.__dopo__ = 0;
+    addEventListener("keydown", (e: KeyboardEvent) => {
+      if (e.ctrlKey) w.__tasti__.push(`${e.shiftKey ? "Ctrl+Maiusc+" : "Ctrl+"}${e.key.toUpperCase()}${e.defaultPrevented ? " fermato" : " passato"}`);
+    });
+    addEventListener("beforeprint", () => w.__prima__++);
+    addEventListener("afterprint", () => w.__dopo__++);
+  });
+}
+
+/** Lo stato della pagina entro 5 s, o `null` se non risponde (l'anteprima del motore, o la sua finestra di stampa del
+ * sistema, la blocca). */
+async function statoDellaStampa(p: Page): Promise<StatoDellaStampa | null> {
+  const letto = p
+    .evaluate(() => {
+      const w = window as unknown as { __tasti__?: string[]; __prima__?: number; __dopo__?: number };
+      const titolo = document.querySelector('[role="dialog"]')?.getAttribute("aria-labelledby");
+      return {
+        sezioni: document.querySelectorAll("[data-stampa]").length,
+        regole: document.adoptedStyleSheets.flatMap((f) => [...f.cssRules]).filter((r) => r.cssText.startsWith("@page")).length,
+        visti: w.__tasti__ ?? [],
+        beforeprint: w.__prima__ ?? 0,
+        afterprint: w.__dopo__ ?? 0,
+        finestra: titolo ? (document.getElementById(titolo)?.textContent ?? null) : null,
+      };
+    })
+    .catch(() => null);
+  return Promise.race([letto, Bun.sleep(5_000).then(() => null)]);
+}
+
+/** I tasti veri col primo piano (`finestra-vera.ps1 <pid> tasto-vero`); se non partono, la clausola è rossa. */
+async function tastiVeri(pid: number, tasti: "ctrl+shift+p" | "esc", clausola: string): Promise<void> {
+  const esito = await finestraVera(pid, "tasto-vero", tasti);
+  if (esito !== "inviato") rosso(clausola, `i tasti veri «${tasti}» non sono partiti: ${esito}`);
+}
+
+/** Le clausole CTRL+MAIUSC+P e DOPO L'ANTEPRIMA, coi tasti veri (primo piano: l'utente è avvisato e non tocca nulla).
+ * Col riferimento della tappa 3 e Playwright collegato:
+ * - Ctrl+Maiusc+P, che nel motore è la stampa con la finestra del sistema (la pagina così com'è), arriva alla pagina
+ *   fermato e apre la finestra «Stampa» dell'app; nessuna anteprima del motore, la pagina risponde, nessun
+ *   `beforeprint`. Un tasto che non arriva alla pagina si ripete (tre volte), poi è rosso. Controllo positivo dello
+ *   stesso livello, alla fine: lo stesso gesto su `about:blank` (nessun fermo) fa stampare il motore (la pagina non
+ *   risponde o l'anteprima c'è);
+ * - «Stampa…» della finestra apre l'anteprima di Edge (un bersaglio `edge://print`); Esc vero la chiude; dopo, `afterprint`
+ *   è arrivato e nel documento non restano la pagina stampata né le sue regole `@page`. Controllo positivo del
+ *   rilevatore: senza la stampa del motore (la pagina preparata della ESPORTA) le vede. */
+async function giroDeiTastiDellaStampa(lingua: Lingua, pagina: DallaPagina): Promise<void> {
+  const testi = dizionari[lingua];
+  if (pagina.montata.sezioni === 0 || pagina.montata.regole === 0)
+    rosso("DOPO L'ANTEPRIMA (controllo positivo)", `con la pagina preparata e senza la stampa del motore il rilevatore non la vede: ${JSON.stringify(pagina.montata)}`);
+  rmSync(join(dati, "preferenze.json"), { force: true });
+  writeFileSync(progettoFuori, testoDellaStampa);
+  await avvisaLUtente(
+    "Prova sul prodotto: i tasti della stampa.\n\nDopo «OK» si apre AlgoDesign e la prova preme da sé alcuni tasti (Ctrl+Maiusc+P, Esc) portando " +
+      "la finestra in primo piano. Non toccare tastiera e mouse finché AlgoDesign non si chiude (circa un minuto): poi arriva l'avviso della stampa.",
+  );
+  const a = await avvia([progettoFuori]);
+  try {
+    const aperto = riempi(testi.apertoIl, { file: nomeProgetto });
+    if ((await attendiLoStato(a.pagina, aperto)) !== aperto) rosso("CTRL+MAIUSC+P", `il progetto non si è aperto: la riga di stato non dice ${visibile(aperto)}`);
+
+    // Ctrl+Maiusc+P sull'app.
+    let dopoIlTasto: StatoDellaStampa | null = null;
+    let tentativi = 0;
+    while (tentativi < 3 && !dopoIlTasto?.visti.some((v) => v.startsWith("Ctrl+Maiusc+P"))) {
+      tentativi++;
+      await ascoltaLaStampa(a.pagina);
+      await tastiVeri(a.proc.pid, "ctrl+shift+p", "CTRL+MAIUSC+P");
+      await Bun.sleep(3_000);
+      const anteprime = await anteprimeDelMotore(a.browser);
+      dopoIlTasto = await statoDellaStampa(a.pagina);
+      if (dopoIlTasto === null || anteprime.length > 0)
+        rosso("CTRL+MAIUSC+P", `al tentativo ${tentativi} il motore stampa: ${dopoIlTasto === null ? "la pagina non risponde in 5 s (la finestra di stampa del sistema)" : `anteprime ${JSON.stringify(anteprime)}`}`);
+    }
+    const arrivati = dopoIlTasto!.visti;
+    if (!arrivati.some((v) => v.startsWith("Ctrl+Maiusc+P"))) rosso("CTRL+MAIUSC+P", `il tasto non è arrivato alla pagina in ${tentativi} tentativi (tasti visti ${JSON.stringify(arrivati)}): un gesto non eseguito non è un verde`);
+    const difetti = [
+      ...(arrivati.includes("Ctrl+Maiusc+P passato") ? ["arrivato alla pagina e non fermato"] : []),
+      ...(dopoIlTasto!.finestra !== testi.stampaTitolo ? [`la finestra aperta è ${visibile(dopoIlTasto!.finestra ?? undefined)} invece di «${testi.stampaTitolo}»`] : []),
+      ...(dopoIlTasto!.beforeprint > 0 ? [`${dopoIlTasto!.beforeprint} beforeprint`] : []),
+    ];
+    if (difetti.length > 0) rosso("CTRL+MAIUSC+P", `${difetti.join("; ")} (tasti visti ${JSON.stringify(arrivati)})`);
+    await a.pagina.keyboard.press("Escape");
+
+    // La pagina dopo l'anteprima del motore.
+    await ascoltaLaStampa(a.pagina);
+    await a.pagina.keyboard.press("Control+p");
+    await a.pagina.getByRole("dialog", { name: testi.stampaTitolo, exact: true }).getByRole("button", { name: testi.stampa, exact: true }).click();
+    let anteprime: string[] = [];
+    for (let i = 0; i < 40 && anteprime.length === 0; i++) {
+      await Bun.sleep(250);
+      anteprime = await anteprimeDelMotore(a.browser);
+    }
+    if (anteprime.length === 0) rosso("DOPO L'ANTEPRIMA", "dopo «Stampa…» l'anteprima del motore non si è aperta in 10 s");
+    const aperte = anteprime.length;
+    let chiusa: StatoDellaStampa | null = null;
+    for (let i = 0; i < 3 && (chiusa === null || anteprime.length > 0); i++) {
+      await tastiVeri(a.proc.pid, "esc", "DOPO L'ANTEPRIMA");
+      await Bun.sleep(2_000);
+      anteprime = await anteprimeDelMotore(a.browser);
+      chiusa = await statoDellaStampa(a.pagina);
+    }
+    if (chiusa === null || anteprime.length > 0) rosso("DOPO L'ANTEPRIMA", `Esc non chiude l'anteprima del motore: anteprime ${JSON.stringify(anteprime)}, la pagina ${chiusa === null ? "non risponde" : "risponde"}`);
+    if (chiusa!.afterprint === 0 || chiusa!.sezioni > 0 || chiusa!.regole > 0)
+      rosso("DOPO L'ANTEPRIMA", `chiusa l'anteprima: afterprint ${chiusa!.afterprint}, sezioni della pagina stampata ${chiusa!.sezioni}, regole @page ${chiusa!.regole} (attesi 1 o più, 0, 0)`);
+
+    // Il controllo positivo di Ctrl+Maiusc+P, allo stesso livello: su una pagina senza il fermo il motore stampa.
+    await a.pagina.goto("about:blank");
+    let stampa = "";
+    let arrivatoSulVuoto = false;
+    for (let i = 0; i < 3 && stampa === ""; i++) {
+      await ascoltaLaStampa(a.pagina);
+      await tastiVeri(a.proc.pid, "ctrl+shift+p", "CTRL+MAIUSC+P (controllo positivo)");
+      await Bun.sleep(3_000);
+      const sulVuoto = await anteprimeDelMotore(a.browser);
+      const s = await statoDellaStampa(a.pagina);
+      if (s === null) stampa = "la pagina non risponde (la finestra di stampa del sistema)";
+      else if (sulVuoto.length > 0) stampa = `anteprime ${JSON.stringify(sulVuoto)}`;
+      else arrivatoSulVuoto ||= s.visti.some((v) => v.startsWith("Ctrl+Maiusc+P"));
+    }
+    if (stampa === "")
+      rosso("CTRL+MAIUSC+P (controllo positivo)", `su about:blank, senza il fermo, Ctrl+Maiusc+P ${arrivatoSulVuoto ? "arriva alla pagina ma il motore non stampa" : "non arriva"}: la clausola non vedrebbe il difetto`);
+    verde(
+      "CTRL+MAIUSC+P",
+      `in «${lingua}», coi tasti veri e il primo piano (${tentativi} ${tentativi === 1 ? "tentativo" : "tentativi"}): arrivato alla pagina fermato (${JSON.stringify(arrivati)}), la finestra «${testi.stampaTitolo}» dell'app aperta, nessuna anteprima del motore, la pagina risponde, nessun beforeprint | controllo positivo dello stesso livello: su about:blank lo stesso gesto fa stampare il motore (${stampa})`,
+    );
+    verde(
+      "DOPO L'ANTEPRIMA",
+      `«${testi.stampa}» col riferimento della tappa 3: ${aperte} anteprima del motore aperta, chiusa con Esc vero; dopo, afterprint ${chiusa!.afterprint}, nessuna sezione della pagina stampata e nessuna regola @page nel documento | controllo positivo: senza la stampa del motore il rilevatore vede ${pagina.montata.sezioni} pagina stampata e ${pagina.montata.regole} regole @page`,
+    );
+  } finally {
+    await chiudi(a);
+    rmSync(progettoFuori, { force: true });
+  }
+}
+
 /** La clausola STAMPA senza Playwright collegato e la TRACCE (stampa): il profilo della WebView tolto (un profilo
  * nuovo: la sua prima stampa scrive cose che le altre non scrivono), le preferenze tolte, l'avviso all'utente; poi la
  * prima fotografia del registro, l'avvio SENZA la porta di debug col riferimento della tappa 3, la seconda fotografia ad
@@ -2356,6 +2546,8 @@ async function giroDellaStampa(lingua: Lingua, pagina: DallaPagina): Promise<Set
   const tutte = ["indirizzo", "data", "titolo", "numero"];
   const spente = tutte.filter((s) => !pagina.accese.includes(s));
   if (spente.length > 0) rosso("STAMPA (controllo positivo)", `il PDF del motore con le sue intestazioni (${pagina.fogliDelControllo} fogli, titolo ${visibile(pagina.titolo)}): il rilevatore non vede ${spente.join(", ")}`);
+  // Prima del profilo nuovo e della prima fotografia del registro: i tasti veri della stampa.
+  await giroDeiTastiDellaStampa(lingua, pagina);
 
   if (existsSync(pdfStampato)) rosso("STAMPA", `${pdfStampato} c'è già prima della stampa`);
   await cancella(join(dati, "webview"));
@@ -2433,8 +2625,8 @@ async function giroDellaStampa(lingua: Lingua, pagina: DallaPagina): Promise<Set
   log(`  registro, all'avvio: ${elenco(avvio)}`);
   log(`  registro, con la stampa: ${elenco(stampa)}`);
   log(`  registro, rumore: ${elenco(rumore)}`);
-  const condivise = fuori.some((c) => c.includes("\\Software\\Microsoft\\EdgeWebView\\"))
-    ? " — fra questi una chiave di EdgeWebView, condivisa con gli altri host WebView2 (per esempio la ricerca di Windows, SearchHost.exe): rilancia, e se ricompare non è il rumore"
+  const condivise = fuori.some((c) => c.includes("\\Software\\Microsoft\\EdgeWebView\\") || c === usoDegliScript)
+    ? " — fra questi una chiave condivisa con gli altri host WebView2 (EdgeWebView, o il conto d'uso degli script di msedgewebview2.exe; per esempio la ricerca di Windows, SearchHost.exe): rilancia, e se ricompare non è il rumore"
     : "";
   if (fuori.length > 0) rosso("TRACCE (stampa)", `registro dell'utente cambiato intorno alla stampa, fuori dal rumore e dalle voci ammesse: ${elenco(fuori)}${condivise}`);
   const firma = ammessi.filter((c) => dellaStampa.has(c));
@@ -2488,6 +2680,7 @@ async function sondaDelRegistro(rumore: Set<string>): Promise<void> {
       `${sensoreDiMemoria}\\SpaceHistory :: "Altro"`,
       `${sensoreDiMemoria}\\Altro :: "20261103"`,
       `HKEY_CURRENT_USER\\Software\\Microsoft\\Windows Script\\Settings\\Telemetry\\msedgewebview2.exe :: "Altro"`,
+      usoDegliScript,
       `HKEY_CURRENT_USER\\Software\\Microsoft\\Windows Script\\Settings\\Telemetry\\algodesign.exe :: "JScript9LegacySetScriptStateStarted"`,
       `${viste}\\W32:0000000000FC087E :: "0"`,
       `${viste}\\Altro :: <chiave aggiunta>`,

@@ -1009,6 +1009,7 @@ export const en: Dizionario = {
   filtroPng: "PNG image",
   filtroSvg: "SVG drawing",
   flowchartEsportatoIn: "Flowchart exported to “{file}”.",
+  flowchartEsportatoRidotto: "Flowchart exported to “{file}” at {larghezza} × {altezza} pixels, less sharp than usual: it is the highest resolution possible in a PNG image",
   esportaFlowchartErroreTitolo: "The flowchart is not exported to “{file}”",
   stampa: "Print…",
   chiudiProgetto: "Close",

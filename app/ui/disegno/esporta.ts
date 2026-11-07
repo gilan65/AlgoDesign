@@ -8,7 +8,9 @@
 // sfondo è bianco, non quello della finestra: l'immagine finisce su una pagina bianca e non deve vedersi come un riquadro.
 //
 // Il PNG: l'SVG del nucleo in un'immagine `blob:` (la politica di sicurezza dei contenuti ammette `img-src blob:`),
-// disegnata su un canvas al doppio della misura del disegno (`fattore`), arrotondata in su al pixel.
+// disegnata su un canvas al doppio della misura del disegno (`fattore`), arrotondata in su al pixel; se il motore non dà il
+// PNG a quella misura (un flowchart enorme, oltre l'area del canvas), alla misura piena, a metà, a un quarto
+// (`FATTORI_DEL_PNG`), e chi esporta dice la misura uscita.
 //
 // CHE COSA NON GUARDA:
 // - le regole dentro altri `@media` o `@supports` (il tema non ne ha per queste variabili);
@@ -142,28 +144,59 @@ export const nomeDellImmagine = (base: string, funzione: string | null) => (funz
 /** La misura in pixel del PNG di un disegno largo `larghezza` e alto `altezza`. */
 export const misuraDelPng = (larghezza: number, altezza: number, fattore = FATTORE_DEL_PNG) => ({ larghezza: Math.ceil(larghezza * fattore), altezza: Math.ceil(altezza * fattore) });
 
-/** I byte del PNG dell'SVG: l'immagine `blob:` disegnata sul canvas `fattore` volte più grande; `sfondo` riempie prima il
- * canvas (il pixel in più dell'arrotondamento), `null` lo lascia trasparente. */
-export async function pngDallSvg(svg: string, larghezza: number, altezza: number, sfondo: string | null, fattore = FATTORE_DEL_PNG): Promise<Uint8Array> {
+/** I fattori del ripiego, nell'ordine: il doppio, poi la misura piena, la metà, un quarto. Il canvas del motore non dà il
+ * PNG oltre un'area (misurata: 16384 × 16384 pixel in Chromium, nella WebView2 e nel WebKitGTK; il lato fino a 65535 in
+ * Chromium e nella WebView2): un flowchart che al doppio non ci entra esce più piccolo, invece dell'errore. Non dipende
+ * dai limiti misurati, che sul Mac non lo sono: si prova, e si scende. */
+export const FATTORI_DEL_PNG: readonly number[] = [FATTORE_DEL_PNG, 1, 0.5, 0.25];
+
+/** Il primo fattore per cui `prova` dà un risultato, col risultato; `null` se nessuno lo dà. */
+export async function primoFattore<T>(fattori: readonly number[], prova: (fattore: number) => Promise<T | null>): Promise<{ fattore: number; risultato: T } | null> {
+  for (const fattore of fattori) {
+    const risultato = await prova(fattore);
+    if (risultato !== null) return { fattore, risultato };
+  }
+  return null;
+}
+
+/** Il PNG dell'SVG e la misura in pixel con cui è uscito. */
+export interface PngDellSvg {
+  byte: Uint8Array;
+  fattore: number;
+  larghezza: number;
+  altezza: number;
+}
+
+/** I byte del PNG dell'SVG: l'immagine `blob:` disegnata sul canvas `fattore` volte più grande (il primo dei `fattori` per
+ * cui il motore dà il PNG); `sfondo` riempie prima il canvas (il pixel in più dell'arrotondamento), `null` lo lascia
+ * trasparente. Nessun fattore: l'errore. */
+export async function pngDallSvg(svg: string, larghezza: number, altezza: number, sfondo: string | null, fattori: readonly number[] = FATTORI_DEL_PNG): Promise<PngDellSvg> {
   const indirizzo = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
   try {
     const immagine = new Image();
     immagine.src = indirizzo;
     await immagine.decode();
-    const misura = misuraDelPng(larghezza, altezza, fattore);
-    const canvas = document.createElement("canvas");
-    canvas.width = misura.larghezza;
-    canvas.height = misura.altezza;
-    const contesto = canvas.getContext("2d");
-    if (!contesto) throw new Error("il canvas non disegna");
-    if (sfondo !== null) {
-      contesto.fillStyle = sfondo;
-      contesto.fillRect(0, 0, misura.larghezza, misura.altezza);
-    }
-    contesto.drawImage(immagine, 0, 0, larghezza * fattore, altezza * fattore);
-    const png = await new Promise<Blob | null>((fatto) => canvas.toBlob(fatto, "image/png"));
-    if (!png) throw new Error("il canvas non dà il PNG");
-    return new Uint8Array(await png.arrayBuffer());
+    const trovato = await primoFattore(fattori, async (fattore) => {
+      const misura = misuraDelPng(larghezza, altezza, fattore);
+      const canvas = document.createElement("canvas");
+      canvas.width = misura.larghezza;
+      canvas.height = misura.altezza;
+      // Oltre il limite il motore può non tenere la misura, non dare il contesto o non dare il PNG.
+      if (canvas.width !== misura.larghezza || canvas.height !== misura.altezza) return null;
+      const contesto = canvas.getContext("2d");
+      if (!contesto) return null;
+      if (sfondo !== null) {
+        contesto.fillStyle = sfondo;
+        contesto.fillRect(0, 0, misura.larghezza, misura.altezza);
+      }
+      contesto.drawImage(immagine, 0, 0, larghezza * fattore, altezza * fattore);
+      const png = await new Promise<Blob | null>((fatto) => canvas.toBlob(fatto, "image/png"));
+      canvas.width = 0;
+      canvas.height = 0;
+      return png && png.size > 0 ? { byte: new Uint8Array(await png.arrayBuffer()), ...misura } : null;
+    });
+    if (!trovato) throw new Error(`il canvas non dà il PNG nemmeno a ${fattori.at(-1)} volte la misura del disegno`);
+    return { fattore: trovato.fattore, ...trovato.risultato };
   } finally {
     URL.revokeObjectURL(indirizzo);
   }

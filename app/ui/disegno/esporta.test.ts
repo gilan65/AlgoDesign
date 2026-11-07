@@ -14,7 +14,7 @@ import type { Disegno } from "../../core/disegno/impaginazione";
 import { it as testiIt } from "../../i18n/it";
 import { en as testiEn } from "../../i18n/en";
 import { baseProposta } from "../nomi";
-import { misuraDelPng, nomeDellImmagine, tavolozzaDellaCarta, type RegolaDelTema } from "./esporta";
+import { FATTORI_DEL_PNG, misuraDelPng, nomeDellImmagine, primoFattore, tavolozzaDellaCarta, type RegolaDelTema } from "./esporta";
 
 // ------------------------------------------------------------------------------------- i nomi
 
@@ -44,6 +44,23 @@ test("il PNG misura il doppio del disegno, arrotondato in su al pixel; col fatto
   expect(misuraDelPng(180.5, 121.25)).toEqual({ larghezza: 361, altezza: 243 });
   expect(misuraDelPng(180.5, 121.25, 1)).toEqual({ larghezza: 181, altezza: 122 });
   expect(misuraDelPng(180.5, 121.25, 1)).not.toEqual(misuraDelPng(180.5, 121.25));
+});
+
+test("il ripiego del PNG: il doppio, poi la misura piena, la metà, un quarto; il primo che riesce, nell'ordine; nessuno, null", async () => {
+  expect(FATTORI_DEL_PNG).toEqual([2, 1, 0.5, 0.25]);
+  const provati: number[] = [];
+  const soloSotto = (soglia: number) => async (f: number) => {
+    provati.push(f);
+    return f <= soglia ? `png a ${f}` : null;
+  };
+  expect(await primoFattore(FATTORI_DEL_PNG, soloSotto(2))).toEqual({ fattore: 2, risultato: "png a 2" });
+  expect(provati).toEqual([2]);
+  provati.length = 0;
+  expect(await primoFattore(FATTORI_DEL_PNG, soloSotto(0.5))).toEqual({ fattore: 0.5, risultato: "png a 0.5" });
+  expect(provati).toEqual([2, 1, 0.5]);
+  provati.length = 0;
+  expect(await primoFattore(FATTORI_DEL_PNG, soloSotto(0.1))).toBeNull();
+  expect(provati).toEqual([2, 1, 0.5, 0.25]);
 });
 
 // ------------------------------------------------------------------------------------- la tavolozza della carta
