@@ -6,7 +6,8 @@
 // (`informazioniFile`, `informazioniDocumenti`): `ui/prodotto.test.ts` li appaia nei due versi, e un nome diverso qui
 // la fa rossa finché non cambiano anche loro.
 
-/** Le voci al primo livello della cartella del pacchetto; `data/` è una cartella (vuota: l'avvio portabile). */
+/** Le voci al primo livello della cartella del pacchetto; `data/` è una cartella (vuota: l'avvio portabile), `img/` quella
+ * delle figure delle guide. */
 export const elencoDelPacchetto: readonly string[] = [
   "AlgoDesign.exe",
   "data/",
@@ -15,6 +16,9 @@ export const elencoDelPacchetto: readonly string[] = [
   "NOTE-DI-RILASCIO.md",
   "GUIDA-PER-LO-STUDENTE.md",
   "STUDENT-GUIDE.md",
+  "PER-COMINCIARE.md",
+  "GETTING-STARTED.md",
+  "img/",
   "GUIDA-AD-ACCADEMICO.md",
   "GUIDA-AD-ALGODESIGN-TOOLS.md",
   "GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md",
@@ -24,6 +28,20 @@ export const elencoDelPacchetto: readonly string[] = [
   "LICENSE-DOCS",
   "LICENZE-DI-TERZE-PARTI.txt",
 ];
+
+/** La guida «per cominciare», nelle due lingue, da `docs/` così com'è, con le sue figure: nel pacchetto dell'app e
+ * nell'archivio di Linux, non in quello dello strumento. Fuori da `documentiDelPacchetto`, che sono le guide della
+ * finestra «Guida». */
+export const guidePerCominciare: readonly string[] = ["PER-COMINCIARE.md", "GETTING-STARTED.md"];
+
+/** La cartella delle figure delle guide, `docs/img/`, copiata intera accanto alle guide: i collegamenti delle guide
+ * valgono uguali nel repository e nel pacchetto. */
+export const cartellaDelleFigure = "img";
+
+/** Le figure che un testo Markdown cita (`![…](img/…)`), coi percorsi relativi alla cartella del testo. */
+export function figureCitate(testo: string): string[] {
+  return [...testo.matchAll(/!\[[^\]]*\]\(([^)\s]+)\)/g)].map((m) => m[1]!);
+}
 
 /** Il file delle licenze di terze parti: con l'estensione, perché Windows lo apra con un doppio clic. */
 export const fileDelleLicenze = "LICENZE-DI-TERZE-PARTI.txt";
@@ -83,6 +101,9 @@ export const elencoDiLinux: readonly string[] = [
   "NOTE-DI-RILASCIO.md",
   "GUIDA-PER-LO-STUDENTE.md",
   "STUDENT-GUIDE.md",
+  "PER-COMINCIARE.md",
+  "GETTING-STARTED.md",
+  "img/",
   "GUIDA-AD-ACCADEMICO.md",
   "GUIDA-AD-ALGODESIGN-TOOLS.md",
   "GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md",

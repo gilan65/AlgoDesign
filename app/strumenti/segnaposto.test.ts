@@ -5,11 +5,11 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { documentiDellaRadice, documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento, guidePerSegnalare } from "./elenco-del-pacchetto";
+import { documentiDellaRadice, documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento, guidePerCominciare, guidePerSegnalare } from "./elenco-del-pacchetto";
 import { segnapostoRimasto, sondaDeiSegnaposto, sostituisci } from "./segnaposto";
 
 const repository = join(import.meta.dir, "..", "..");
-const copiati = [...[...documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare].map((d) => join("docs", d)), ...documentiDellaRadice];
+const copiati = [...[...documentiDelPacchetto, ...guidePerCominciare, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare].map((d) => join("docs", d)), ...documentiDellaRadice];
 
 test("il rilevatore vede i segnaposto e non i valori delle matrici", () => {
   expect(sondaDeiSegnaposto()).toBeNull();

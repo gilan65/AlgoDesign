@@ -1,6 +1,6 @@
 # AlgoDesign: student guide
 
-This guide explains how to use AlgoDesign to design an algorithm, test it and see it translated into code. How to download and start the program is in the `README.md` file.
+This guide explains how to use AlgoDesign to design an algorithm, test it and see it translated into code. How to download and start the program is in the `README.md` file; on Linux also in the `ALGODESIGN-PER-LINUX.md` file (in Italian), next to the program.
 
 ## 1. The idea: first the data, then the rules
 
@@ -23,7 +23,7 @@ Every command can also be given from the keyboard: Tab moves from one element to
 
 ## 3. The first project, step by step
 
-As an example, a program that reads a whole number and writes whether it is even or odd.
+As an example, a program that reads a whole number and writes whether it is even or odd. The same example, with a figure for each step, is in the getting started guide, `GETTING-STARTED.md`, which in the package is next to the program, in the repository in the `docs` folder.
 
 ### The project
 
@@ -299,6 +299,8 @@ Node runs the file without checking its types. If you want the check, ask `tsc`.
 
 In PowerShell type `npm.cmd` and `npx.cmd`, not `npm` and `npx`: on a freshly installed Windows those stop with an error about running scripts. With the zip, `npx.cmd` has to find Node: first type `$env:PATH = "D:\node;$env:PATH"`, which lasts as long as the PowerShell window stays open; then the commands are the same. If a folder higher up contains a `package.json` file, the packages end up there and Node also writes a warning (`MODULE_TYPELESS_PACKAGE_JSON`): the program still works.
 
+**On Linux** the commands are typed in the terminal, in the folder of the file, and without `.cmd`: `npm` and `npx` instead of `npm.cmd` and `npx.cmd`. To read the values from a file, `node media.ts < ingresso.txt` is enough.
+
 ### JavaScript and the `algodesign-tools` tool
 
 **JavaScript** is the same program as the TypeScript without the types, line by line: it is not one more language and it has no tab. It is shown by `algodesign-tools`, the command-line tool of AlgoDesign, in a separate package, explained in its guide, `GUIDA-AD-ALGODESIGN-TOOLS.md` (in Italian). From the folder of the tool, `.\algodesign-tools stampa media.algo --lingua en` writes two HTML pages, which open with a double click:
@@ -307,6 +309,8 @@ In PowerShell type `npm.cmd` and `npx.cmd`, not `npm` and `npx`: on a freshly in
 - `media (test).html`: the **test page**, which runs the JavaScript in the browser. In the **Input** box write the values before **Run**, one line for each read of the program, and what the program writes appears in **Output**. **Stop** interrupts a program that does not end.
 
 The page is tested in Chrome, Edge and Firefox. In Safari it is not tested: for the line of an error the page might show “?”, with the right reason.
+
+**On Linux** the tool is in its archive for Linux and starts from the terminal, in its folder, with `./algodesign-tools stampa media.algo`. If a double click on an HTML page opens it in a text editor, right-click the page, choose “Open With” and then the browser.
 
 To run the JavaScript with Node, select with the mouse the code box of the test page (the line numbers do not enter the selection), paste it into a file `media.js` and type `node media.js`.
 
@@ -524,6 +528,8 @@ At first the flowchart and the code side by side are chosen, in the language of 
 ### A PDF
 
 **Print…**, at the bottom of the window, opens the Edge print window, the Windows component that draws the AlgoDesign window: there you choose the printer and see the sheets as they will come out. To get a PDF choose the destination **Save as PDF**, then **Save**, and write the file name in the Windows window. On the sheets there are only the AlgoDesign header and footer, not the date, the title and the address that Edge adds to web pages.
+
+**On Linux** **Print…** opens the print window of the system. To get a PDF choose the destination **Print to File**: the proposed name is `output.pdf`, to be changed. All sheets are printed in the orientation chosen in that window, without the header and the footer, as the AlgoDesign “Print” window also says.
 
 ### Exporting the flowchart
 

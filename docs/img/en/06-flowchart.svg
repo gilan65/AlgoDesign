@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 556.3974609375 428" width="556.3974609375" height="428" font-family="system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" font-size="15" font-weight="normal">
+<defs><marker id="disegno-punta" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6470"/></marker></defs>
+<rect data-fondo="" x="0" y="0" width="556.3974609375" height="428" fill="#ffffff"/>
+<polyline data-connettore="flusso" points="436.418701171875,179 464.418701171875,179 464.418701171875,244" fill="none" stroke="#5b6470" stroke-width="1.5" marker-end="url(#disegno-punta)"/>
+<polyline data-connettore="flusso" points="117.525146484375,179 89.525146484375,179 89.525146484375,244" fill="none" stroke="#5b6470" stroke-width="1.5" marker-end="url(#disegno-punta)"/>
+<polyline data-connettore="flusso" points="464.418701171875,273 464.418701171875,309 281.971923828125,309" fill="none" stroke="#5b6470" stroke-width="1.5" marker-end="url(#disegno-punta)"/>
+<polyline data-connettore="flusso" points="89.525146484375,273 89.525146484375,309 271.971923828125,309" fill="none" stroke="#5b6470" stroke-width="1.5" marker-end="url(#disegno-punta)"/>
+<polyline data-connettore="flusso" points="276.971923828125,314 276.971923828125,373" fill="none" stroke="#5b6470" stroke-width="1.5" marker-end="url(#disegno-punta)"/>
+<polyline data-connettore="flusso" points="276.971923828125,49 276.971923828125,85" fill="none" stroke="#5b6470" stroke-width="1.5" marker-end="url(#disegno-punta)"/>
+<polyline data-connettore="flusso" points="276.971923828125,114 276.971923828125,150" fill="none" stroke="#5b6470" stroke-width="1.5" marker-end="url(#disegno-punta)"/>
+<g data-forma="inizio" data-id="f1">
+<rect x="235.222900390625" y="20" width="83.498046875" height="29" rx="14.5" ry="14.5" fill="#cfd2d6" stroke="#3d4a5c" stroke-width="1.5"/>
+<text data-testo="" fill="#1d1d1b" text-anchor="middle" dominant-baseline="central"><tspan x="276.971923828125" y="34.5" text-anchor="middle" dominant-baseline="central">Start</tspan></text>
+</g>
+<g data-forma="lettura" data-id="b2">
+<polygon points="222.26806640625,85 345.67578125,85 331.67578125,114 208.26806640625,114" fill="#d9f0df" stroke="#3d4a5c" stroke-width="1.5"/>
+<text data-testo="" fill="#1d1d1b" text-anchor="middle" dominant-baseline="central"><tspan x="276.971923828125" y="99.5" text-anchor="middle" dominant-baseline="central">read number</tspan></text>
+</g>
+<g data-forma="scrittura" data-id="b4">
+<polygon points="406.43994140625,244 536.3974609375,244 522.3974609375,273 392.43994140625,273" fill="#c9e0fd" stroke="#3d4a5c" stroke-width="1.5"/>
+<text data-testo="" fill="#1d1d1b" text-anchor="middle" dominant-baseline="central"><tspan x="464.418701171875" y="258.5" text-anchor="middle" dominant-baseline="central">write &quot;even&quot; ↵</tspan></text>
+</g>
+<g data-forma="scrittura" data-id="b5">
+<polygon points="34,244 159.05029296875,244 145.05029296875,273 20,273" fill="#c9e0fd" stroke="#3d4a5c" stroke-width="1.5"/>
+<text data-testo="" fill="#1d1d1b" text-anchor="middle" dominant-baseline="central"><tspan x="89.525146484375" y="258.5" text-anchor="middle" dominant-baseline="central">write &quot;odd&quot; ↵</tspan></text>
+</g>
+<g data-forma="condizione" data-id="b3">
+<polygon points="276.971923828125,150 436.418701171875,179 276.971923828125,208 117.525146484375,179" fill="#fcd2b0" stroke="#3d4a5c" stroke-width="1.5"/>
+<text data-testo="" fill="#1d1d1b" text-anchor="middle" dominant-baseline="central"><tspan x="276.971923828125" y="179" text-anchor="middle" dominant-baseline="central">number mod 2 == 0</tspan></text>
+</g>
+<g data-forma="fine" data-id="b1">
+<rect x="238.01708984375" y="373" width="77.90966796875" height="29" rx="14.5" ry="14.5" fill="#cfd2d6" stroke="#3d4a5c" stroke-width="1.5"/>
+<text data-testo="" fill="#1d1d1b" text-anchor="middle" dominant-baseline="central"><tspan x="276.971923828125" y="387.5" text-anchor="middle" dominant-baseline="central">End</tspan></text>
+</g>
+<text data-etichetta="vero" x="442.418701171875" y="166.5" fill="#1f7a4d" dominant-baseline="central">True</text>
+<text data-etichetta="falso" x="79.239990234375" y="166.5" fill="#b4462f" dominant-baseline="central">False</text>
+<circle data-unione="" cx="276.971923828125" cy="309" r="5" fill="#ffffff" stroke="#5b6470" stroke-width="1.6"/>
+</svg>

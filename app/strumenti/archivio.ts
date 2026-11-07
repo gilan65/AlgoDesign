@@ -67,6 +67,7 @@ import { createHash } from "node:crypto";
 import { homedir, tmpdir } from "node:os";
 import { basename, delimiter, isAbsolute, join, relative, resolve } from "node:path";
 import { dataConPreposizione, dataMostrata } from "../ui/prodotto";
+import { copiaLeFigure } from "./figure-delle-guide";
 import {
   cartellaDelleLibrerieDiSistema,
   differenzeDallElenco,
@@ -76,6 +77,7 @@ import {
   elencoDiLinux,
   guidaAdAccademico,
   guidaDelloStrumento,
+  guidePerCominciare,
   guidePerSegnalare,
   fileDelleLicenze,
   nomiDelloStrumentoDiLinux,
@@ -360,8 +362,10 @@ async function componi(appimage: string, sistema: LibrerieDiSistema): Promise<vo
   writeFileSync(join(cartella, "CHANGELOG.md"), registro);
   const delData = dataConPreposizione(dataDiRilascio, "it");
   for (const [sorgente, destinazione] of Object.entries(testiDiLinux)) writeFileSync(join(cartella, destinazione), testoDaiTesti("CARTELLA", sorgente));
-  for (const d of [...documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", join("docs", d)));
+  for (const d of [...documentiDelPacchetto, ...guidePerCominciare, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", join("docs", d)));
   for (const d of documentiDellaRadice) writeFileSync(join(cartella, d), documento("CARTELLA", d));
+  const figure = copiaLeFigure(repository, cartella);
+  if (figure.differenze.length > 0) rosso("CARTELLA", `le figure delle guide: ${figure.differenze.join(", ")}`);
   const l = await licenzeDiTerzeParti(["x86_64-unknown-linux-gnu"], nomi.versione, esegui, rosso);
   writeFileSync(join(cartella, fileDelleLicenze), l.testo);
   writeFileSync(join(librerie, "pacchetti-di-sistema.txt"), sistema.pacchetti);
@@ -382,7 +386,7 @@ async function componi(appimage: string, sistema: LibrerieDiSistema): Promise<vo
   if (readdirSync(join(cartella, "data")).length > 0) rosso("CARTELLA", "data non è vuota");
   if ((statSync(join(cartella, "AlgoDesign.AppImage")).mode & 0o777) !== 0o755) rosso("CARTELLA", "l'AppImage non ha i permessi 0755");
   riga(
-    `CARTELLA: VERDE | ${relative(repository, cartella)} con le ${trovate.length} voci dell'elenco (${trovate.join(", ")}) | ${cartellaDelleLibrerieDiSistema}/ con ${nelleLibrerie.length} voci (${sistema.copyright.size} copyright, ${fileDi(join(librerie, "licenze-comuni")).length} licenze comuni) | testi ${delData} | licenze di terze parti: ${l.js} librerie JavaScript, ${l.rust} Rust, ${l.testi} testi, ${Buffer.byteLength(l.testo)} byte | controllo positivo acceso (${controllo})`,
+    `CARTELLA: VERDE | ${relative(repository, cartella)} con le ${trovate.length} voci dell'elenco (${trovate.join(", ")}) | ${cartellaDelleLibrerieDiSistema}/ con ${nelleLibrerie.length} voci (${sistema.copyright.size} copyright, ${fileDi(join(librerie, "licenze-comuni")).length} licenze comuni) | testi ${delData} | figure delle guide: ${figure.copiate} copiate, ${figure.citate} citate | licenze di terze parti: ${l.js} librerie JavaScript, ${l.rust} Rust, ${l.testi} testi, ${Buffer.byteLength(l.testo)} byte | controllo positivo acceso (${controllo})`,
   );
 }
 

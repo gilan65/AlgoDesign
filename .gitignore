@@ -5,8 +5,9 @@
 /strumenti/
 
 # Sottocartelle di docs/: materiale locale, mai versionato.
-# Manuali e guide si versionano direttamente in docs/.
+# Manuali e guide si versionano direttamente in docs/; le loro figure in docs/img/.
 /docs/*/
+!/docs/img/
 
 # I pacchetti delle release (cartella per versione, zip e impronta)
 /dist/
