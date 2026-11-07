@@ -12,6 +12,9 @@
 # Il lato di una prova che gira sotto Node, senza compilazione.
 *.cjs text eol=lf
 
+# Le figure delle guide disegnate come SVG: testo.
+*.svg text eol=lf
+
 # File binari: quelli di oggi e quelli che una release o una guida con le figure possono portare.
 *.png binary
 *.jpg binary

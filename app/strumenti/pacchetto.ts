@@ -91,6 +91,7 @@ import { homedir, tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { costruisciIlNucleo, esportazioniAttese, fileDelNucleo, latoAtteso, latoOttenutoConUnTentativoInPiu, nodeDellaToolchain, verdetto } from "./conformita-del-nucleo";
 import { dataConPreposizione, dataMostrata } from "../ui/prodotto";
+import { copiaLeFigure, fileDi } from "./figure-delle-guide";
 import {
   differenzeDallElenco,
   documentiDellaRadice,
@@ -101,6 +102,7 @@ import {
   fileDelleLicenze,
   guidaAdAccademico,
   guidaDelloStrumento,
+  guidePerCominciare,
   guidePerSegnalare,
   nomiDelloStrumento,
   nomiDelNucleo,
@@ -382,7 +384,7 @@ async function componi(rilascio: string): Promise<void> {
   if (registro.includes("SEGNAPOSTO")) rosso("CARTELLA", "CHANGELOG.md ha un SEGNAPOSTO rimasto");
   writeFileSync(join(cartella, "CHANGELOG.md"), registro);
   for (const t of testiDelPacchetto) writeFileSync(join(cartella, t), testoConISegnaposto("CARTELLA", t));
-  for (const d of [...documentiDelPacchetto, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", d));
+  for (const d of [...documentiDelPacchetto, ...guidePerCominciare, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", d));
   for (const d of documentiDellaRadice) {
     const testo = readFileSync(join(repository, d), "utf8");
     const rimasto = segnapostoRimasto(testo);
@@ -390,6 +392,8 @@ async function componi(rilascio: string): Promise<void> {
     if (!testo.includes(`AlgoDesign-${nomi.versione}`)) rosso("CARTELLA", `${d} non dice la cartella della versione, «AlgoDesign-${nomi.versione}»`);
     writeFileSync(join(cartella, d), testo);
   }
+  const figure = copiaLeFigure(repository, cartella);
+  if (figure.differenze.length > 0) rosso("CARTELLA", `le figure delle guide: ${figure.differenze.join(", ")}`);
   const l = await licenzeDiTerzeParti(["x86_64-pc-windows-msvc"], nomi.versione, esegui, rosso);
   writeFileSync(join(cartella, fileDelleLicenze), l.testo);
 
@@ -397,7 +401,7 @@ async function componi(rilascio: string): Promise<void> {
   const sonda = confrontoConLElenco("CARTELLA", trovate, elencoDelPacchetto);
   if (readdirSync(join(cartella, "data")).length > 0) rosso("CARTELLA", "data non è vuota");
   riga(
-    `CARTELLA: VERDE | ${relative(repository, cartella)} con le ${trovate.length} voci dell'elenco (${trovate.join(", ")}) | testi ${delData} | licenze di terze parti: ${l.js} librerie JavaScript, ${l.rust} Rust, ${l.testi} testi, ${Buffer.byteLength(l.testo)} byte | controllo positivo acceso (${sonda})`,
+    `CARTELLA: VERDE | ${relative(repository, cartella)} con le ${trovate.length} voci dell'elenco (${trovate.join(", ")}) | testi ${delData} | figure delle guide: ${figure.copiate} copiate, ${figure.citate} citate | licenze di terze parti: ${l.js} librerie JavaScript, ${l.rust} Rust, ${l.testi} testi, ${Buffer.byteLength(l.testo)} byte | controllo positivo acceso (${sonda})`,
   );
 }
 
@@ -426,7 +430,13 @@ async function comprimi({ clausola, cartella, zip, nomeDelloZip, cartellaNelloZi
     const dentro = join(estratta, cartellaNelloZip);
     const differenze = differenzeDallElenco(voci(dentro), elenco);
     if (differenze.length > 0) rosso(clausola, `le voci estratte non sono quelle dell'elenco: ${differenze.join(", ")}`);
-    const diverse = elenco.filter((v) => !v.endsWith("/") && impronta(join(dentro, v)) !== impronta(join(cartella, v)));
+    // Tutti i file, anche nelle cartelle del pacchetto (le figure delle guide), nei due versi.
+    const composti = fileDi(cartella);
+    const estratti = fileDi(dentro);
+    const diverse = [
+      ...composti.filter((v) => !estratti.includes(v) || impronta(join(dentro, v)) !== impronta(join(cartella, v))),
+      ...estratti.filter((v) => !composti.includes(v)).map((v) => `${v} (in più)`),
+    ];
     if (diverse.length > 0) rosso(clausola, `file estratti diversi da quelli della cartella: ${diverse.join(", ")}`);
     if (conDati && readdirSync(join(dentro, "data")).length > 0) rosso(clausola, "data estratta non è vuota");
   } finally {
@@ -444,8 +454,11 @@ async function comprimi({ clausola, cartella, zip, nomeDelloZip, cartellaNelloZi
   if (n.codice !== 0) rosso(clausola, `la lettura con .NET esce ${n.codice} (dettaglio nel log)`);
   const lette = new Map(n.out.replace(/\r/g, "").split("\n").filter((r) => r !== "").map((r) => r.split("\t") as [string, string]));
   const radiceNelloZip = `${cartellaNelloZip}/`;
-  const attese = new Map(elenco.filter((v) => !v.endsWith("/")).map((v) => [`${radiceNelloZip}${v}`, impronta(join(cartella, v))]));
-  const cartelleAmmesse = [radiceNelloZip, ...elenco.filter((v) => v.endsWith("/")).map((v) => `${radiceNelloZip}${v}`)];
+  const composti = fileDi(cartella);
+  const attese = new Map(composti.map((v) => [`${radiceNelloZip}${v}`, impronta(join(cartella, v))]));
+  // Le cartelle dell'elenco e quelle dentro di loro (le figure delle guide per lingua).
+  const sottocartelle = composti.flatMap((f) => f.split("/").slice(0, -1).map((_, i, parti) => `${parti.slice(0, i + 1).join("/")}/`));
+  const cartelleAmmesse = [radiceNelloZip, ...[...elenco.filter((v) => v.endsWith("/")), ...sottocartelle].map((v) => `${radiceNelloZip}${v}`)];
   const fuori = [...lette.keys()].filter((v) => !attese.has(v) && !cartelleAmmesse.includes(v));
   const mancanti = [...attese.keys()].filter((v) => !lette.has(v));
   const diverseConNet = [...attese].filter(([v, h]) => lette.has(v) && lette.get(v) !== h).map(([v]) => v);

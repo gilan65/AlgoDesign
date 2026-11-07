@@ -1,6 +1,6 @@
 # AlgoDesign: guida per lo studente
 
-Questa guida spiega come si usa AlgoDesign per progettare un algoritmo, provarlo e vederlo tradotto in codice. Come si scarica e si avvia il programma è nel file `LEGGIMI.md`.
+Questa guida spiega come si usa AlgoDesign per progettare un algoritmo, provarlo e vederlo tradotto in codice. Come si scarica e si avvia il programma è nel file `LEGGIMI.md`; su Linux anche nel file `ALGODESIGN-PER-LINUX.md`, accanto al programma.
 
 ## 1. L'idea: prima i dati, poi le regole
 
@@ -23,7 +23,7 @@ Ogni comando si dà anche da tastiera: Tab porta da un elemento all'altro, Invio
 
 ## 3. Il primo progetto, passo per passo
 
-Come esempio, un programma che legge un numero intero e scrive se è pari o dispari.
+Come esempio, un programma che legge un numero intero e scrive se è pari o dispari. Lo stesso esempio, con le figure di ogni passo, è nella guida «per cominciare», `PER-COMINCIARE.md`, che nel pacchetto sta accanto al programma, nel repository nella cartella `docs`.
 
 ### Il progetto
 
@@ -299,6 +299,8 @@ Node esegue il file senza controllarne i tipi. Chi vuole il controllo lo chiede 
 
 In PowerShell si scrive `npm.cmd` e `npx.cmd`, non `npm` e `npx`: su un Windows appena installato questi ultimi si fermano con un errore sull'esecuzione di script. Con lo zip, `npx.cmd` deve trovare Node: prima si scrive `$env:PATH = "D:\node;$env:PATH"`, che vale finché la finestra di PowerShell resta aperta; poi i comandi sono gli stessi. Se in una cartella più in alto c'è un file `package.json`, i pacchetti finiscono lì e Node scrive anche un avviso (`MODULE_TYPELESS_PACKAGE_JSON`): il programma funziona lo stesso.
 
+**Su Linux** i comandi si scrivono nel terminale, nella cartella del file, e senza `.cmd`: `npm` e `npx` al posto di `npm.cmd` e `npx.cmd`. Per leggere i valori da un file basta `node media.ts < ingresso.txt`.
+
 ### Il JavaScript e lo strumento `algodesign-tools`
 
 Il **JavaScript** è lo stesso programma del TypeScript senza i tipi, riga per riga: non è un linguaggio in più e non ha una linguetta. Lo mostra `algodesign-tools`, lo strumento a riga di comando di AlgoDesign, in un pacchetto a parte, spiegato nella sua guida, `GUIDA-AD-ALGODESIGN-TOOLS.md`. Dalla cartella dello strumento, `.\algodesign-tools stampa media.algo` scrive due pagine HTML, che si aprono con un doppio clic:
@@ -307,6 +309,8 @@ Il **JavaScript** è lo stesso programma del TypeScript senza i tipi, riga per r
 - `media (prova).html`: la **pagina di prova**, che esegue il JavaScript nel browser. Nella casella **Input** si scrivono i valori prima di **Esegui**, una riga per ogni lettura del programma; ciò che il programma scrive compare in **Output**. **Ferma** interrompe un programma che non finisce.
 
 La pagina è provata in Chrome, in Edge e in Firefox. In Safari non è provata: per la riga di un errore la pagina potrebbe mostrare «?», col motivo giusto.
+
+**Su Linux** lo strumento è nel suo archivio per Linux e si avvia dal terminale, nella sua cartella, con `./algodesign-tools stampa media.algo`. Se il doppio clic su una pagina HTML la apre in un editor di testo, fai clic sulla pagina col tasto destro, scegli «Apri con» e poi il browser.
 
 Per eseguire il JavaScript con Node, seleziona col mouse il riquadro del codice della pagina di prova (i numeri di riga non entrano nella selezione), incollalo in un file `media.js` e scrivi `node media.js`.
 
@@ -524,6 +528,8 @@ Di partenza sono scelti il flowchart e il codice affiancati, nel linguaggio dell
 ### Un PDF
 
 **Stampa…**, in fondo alla finestra, apre la finestra di stampa di Edge, il componente di Windows che disegna la finestra di AlgoDesign: lì si sceglie la stampante e si vedono i fogli come usciranno. Per avere un PDF scegli la destinazione **Salva come PDF**, poi **Salva**, e scrivi il nome del file nella finestra di Windows. Sui fogli ci sono solo l'intestazione e il piè di pagina di AlgoDesign, non la data, il titolo e l'indirizzo che Edge aggiunge alle pagine web.
+
+**Su Linux** «Stampa…» apre la finestra di stampa del sistema. Per avere un PDF scegli la destinazione **Stampa su file**: il nome proposto è `output.pdf`, da cambiare. I fogli si stampano tutti nel verso scelto in quella finestra, senza l'intestazione e senza il piè di pagina, come dice anche la finestra «Stampa» di AlgoDesign.
 
 ### Esportare il flowchart
 

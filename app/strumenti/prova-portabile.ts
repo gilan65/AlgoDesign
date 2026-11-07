@@ -367,7 +367,9 @@ const cartellaProva = join(radiceProva, "prova portabile");
 // Dal pacchetto la cartella di prova è la copia della cartella del pacchetto: l'eseguibile ha il suo nome, e accanto
 // ci sono i file del pacchetto.
 const nomeEseguibile = pacchetto === undefined ? "algodesign.exe" : "AlgoDesign.exe";
-const accantoAmmessi = pacchetto === undefined ? [nomeEseguibile] : elencoDelPacchetto.filter((v) => !v.endsWith("/"));
+// Dal pacchetto, accanto all'eseguibile ci sono anche le sue cartelle (le figure delle guide), senza la barra finale.
+const vociDelPacchetto = elencoDelPacchetto.filter((v) => v !== "data/");
+const accantoAmmessi = pacchetto === undefined ? [nomeEseguibile] : vociDelPacchetto.map((v) => v.replace(/\/$/, ""));
 const eseguibile = join(cartellaProva, nomeEseguibile);
 const dati = join(cartellaProva, "data");
 // Il progetto della clausola FILE, fuori da `data\`, e il suo contenuto di partenza (un file del corpus).
@@ -945,10 +947,15 @@ function marcatore(giro: string): { soglia: Date; prima: Fotografia } {
 function estraneeAllaProva(): string[] {
   if (!existsSync(cartellaProva)) return [];
   // L'eseguibile e i file del pacchetto, di una prova fatta in un modo o nell'altro (Windows non bada alle maiuscole).
-  const dellaProva = new Set(["algodesign.exe", ...elencoDelPacchetto.filter((v) => !v.endsWith("/")).map((v) => v.toLowerCase())]);
+  const dellaProva = new Set(["algodesign.exe", ...vociDelPacchetto.map((v) => v.replace(/\/$/, "").toLowerCase())]);
+  const cartelleDelPacchetto = new Set(vociDelPacchetto.filter((v) => v.endsWith("/")).map((v) => v.slice(0, -1).toLowerCase()));
   const scritti = [nomeProgetto, `${nomeEsportata}.csv`, `${nomeDellaSegnalazione}.txt`, `${nomeDellImmagineEsportata}.svg`, `${nomeDellImmagineEsportata}.png`, basename(pdfStampato)];
   const estranee = readdirSync(cartellaProva).filter((v) => !dellaProva.has(v.toLowerCase()) && v !== "data" && !scritti.includes(v));
-  for (const v of readdirSync(cartellaProva).filter((v) => dellaProva.has(v.toLowerCase()))) if (!lstatSync(join(cartellaProva, v)).isFile()) estranee.push(`${v} (non è un file)`);
+  for (const v of readdirSync(cartellaProva).filter((v) => dellaProva.has(v.toLowerCase()))) {
+    const cartella = cartelleDelPacchetto.has(v.toLowerCase());
+    const voce = lstatSync(join(cartellaProva, v));
+    if (cartella ? !voce.isDirectory() : !voce.isFile()) estranee.push(`${v} (non è ${cartella ? "una cartella" : "un file"})`);
+  }
   if (existsSync(progettoFuori) && !lstatSync(progettoFuori).isFile()) estranee.push(`${nomeProgetto} (non è un file)`);
   if (existsSync(dati)) {
     if (!lstatSync(dati).isDirectory()) estranee.push("data (non è una cartella)");
