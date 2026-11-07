@@ -11,7 +11,7 @@ Non serve installarlo e non serve AlgoDesign per usarlo (serve per aprire la lib
 
 ## Come si usa
 
-1. Estrai l'archivio dove preferisci (con il gestore dei file, tasto destro → «Estrai qui», oppure con `tar xzf AlgoDesign-Tools-{{versione}}-linux-x64.tar.gz`): nasce la cartella `AlgoDesign-Tools-{{versione}}`.
+1. Estrai l'archivio dove preferisci: con il gestore dei file, tasto destro → «Estrai», nasce la cartella `AlgoDesign-Tools-{{versione}}-linux-x64` con dentro la cartella `AlgoDesign-Tools-{{versione}}`; dal terminale, con `tar xzf AlgoDesign-Tools-{{versione}}-linux-x64.tar.gz`, nasce solo la seconda.
 2. Apri il terminale in quella cartella (nel gestore dei file, tasto destro nella cartella → «Apri nel terminale», oppure `cd AlgoDesign-Tools-{{versione}}`).
 3. Scrivi `./algodesign-tools -h` per l'aiuto, oppure, per esempio:
 
