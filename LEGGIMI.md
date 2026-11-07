@@ -4,7 +4,7 @@
 
 **Progettare algoritmi con i flowchart, eseguirli passo passo e tradurli in pseudocodice, Python, C e TypeScript.**
 
-Versione 0.7.0-beta.3 dell'1 novembre 2026, per Windows 10 e 11 a 64 bit.
+Versione 0.7.0-beta.3 dell'1 novembre 2026, per Windows 10 e 11 a 64 bit e per Linux a 64 bit; la versione per macOS è in arrivo.
 
 AlgoDesign è un ambiente didattico per chi impara a programmare: prima si progetta e si prova l'algoritmo come flowchart, poi si guarda come lo stesso ragionamento diventa codice. È un'applicazione **locale e leggera**: funziona senza internet, senza installarla e senza diritti di amministratore.
 
@@ -30,19 +30,21 @@ AlgoDesign separa i due compiti: prima si **progetta** l'algoritmo come flowchar
 
 Tipi e regole sono quelli del linguaggio C, con in più un tipo stringa, perché il passaggio dal flowchart al codice sia naturale. Il codice generato, però, è fatto per essere letto e non controlla i calcoli che escono dalle regole (un intero fuori dal suo intervallo, una divisione intera per zero, un indice fuori dal vettore e pochi altri, elencati nelle note di rilascio): AlgoDesign li ferma sempre, il Python, il C e il TypeScript generati no e su quei calcoli possono dare risultati diversi fra loro.
 
-Come si usa AlgoDesign è nella **guida per lo studente**, `GUIDA-PER-LO-STUDENTE.md` (in inglese `STUDENT-GUIDE.md`): nel pacchetto sta accanto al programma, nel repository nella cartella `docs`. Dentro AlgoDesign la guida si apre dal menu **Aiuto**, «Guida per lo studente», nella lingua dell'interfaccia. Come si usa «Accademico» per allenarsi alle Selezioni è nella **guida ad «Accademico»**, `GUIDA-AD-ACCADEMICO.md`; lo strumento a riga di comando nella **guida ad `algodesign-tools`**, `GUIDA-AD-ALGODESIGN-TOOLS.md`. Stanno accanto alla guida per lo studente. Le novità di ogni versione sono nel registro delle modifiche, `CHANGELOG.md`.
+Per cominciare, la **guida «per cominciare»**, [`PER-COMINCIARE.md`](docs/PER-COMINCIARE.md) (in inglese [`GETTING-STARTED.md`](docs/GETTING-STARTED.md)), accompagna la scrittura del primo algoritmo, passo per passo, con le figure della finestra. Come si usa AlgoDesign è nella **guida per lo studente**, `GUIDA-PER-LO-STUDENTE.md` (in inglese `STUDENT-GUIDE.md`): nel pacchetto sta accanto al programma, nel repository nella cartella `docs`. Dentro AlgoDesign la guida si apre dal menu **Aiuto**, «Guida per lo studente», nella lingua dell'interfaccia. Come si usa «Accademico» per allenarsi alle Selezioni è nella **guida ad «Accademico»**, `GUIDA-AD-ACCADEMICO.md`; lo strumento a riga di comando nella **guida ad `algodesign-tools`**, `GUIDA-AD-ALGODESIGN-TOOLS.md`. Stanno accanto alla guida per lo studente. Le novità di ogni versione sono nel registro delle modifiche, `CHANGELOG.md`.
 
 ## Scaricare e avviare
 
-Le versioni beta si scaricano dalla pagina del progetto.
+AlgoDesign si scarica dalla pagina delle release, https://github.com/gilan65/AlgoDesign/releases: per Windows lo zip `AlgoDesign-0.7.0-beta.3-windows-x64.zip`, per Linux l'archivio `AlgoDesign-0.7.0-beta.3-linux-x64.tar.gz`, ognuno con la sua impronta, il file `.sha256` accanto. La versione per macOS è in arrivo.
 
-1. Scarica lo zip e, se vuoi, controllane l'impronta: il file `.sha256` accanto allo zip contiene il suo codice SHA-256, che in PowerShell si calcola con `Get-FileHash <nome dello zip>` (PowerShell lo scrive in maiuscolo, il file in minuscolo: le lettere maiuscole e minuscole non contano).
-2. Estrai lo zip dove preferisci (il Desktop, una cartella dei documenti, una chiavetta): nasce la cartella `AlgoDesign-0.7.0-beta.3`.
-3. Apri la cartella e fai doppio clic su `AlgoDesign.exe`.
+**Il nucleo per Node.** C'è anche un pacchetto per tutti i sistemi, `AlgoDesign-Core-0.7.0-beta.3.zip`, con la sua impronta: `algodesign-core.cjs` è il nucleo di AlgoDesign in un solo file, senza interfaccia, per aprire, controllare e tradurre in codice i progetti da un'altra applicazione con Node. Non serve per usare AlgoDesign. Come si usa lo dice il `LEGGIMI.md` del pacchetto.
+
+### Su Windows
+
+1. Scarica lo zip e, se vuoi, controllane l'impronta: il file `.sha256` contiene il suo codice SHA-256, che in PowerShell si calcola con `Get-FileHash <nome dello zip>` (PowerShell lo scrive in maiuscolo, il file in minuscolo: le lettere maiuscole e minuscole non contano).
+2. Estrai lo zip dove preferisci (il Desktop, una cartella dei documenti, una chiavetta): con «Estrai tutto» di Esplora file nasce una cartella col nome dello zip, con dentro la cartella `AlgoDesign-0.7.0-beta.3`.
+3. Apri la cartella `AlgoDesign-0.7.0-beta.3` e fai doppio clic su `AlgoDesign.exe`.
 
 **Lo strumento a riga di comando.** Accanto allo zip di AlgoDesign c'è un pacchetto a parte, `AlgoDesign-Tools-0.7.0-beta.3-windows.zip`, con la sua impronta: `algodesign-tools.exe` ha due comandi. `accademico` legge un testo scritto in «Accademico» e ne fa una libreria di AlgoDesign, da aprire ed eseguire passo passo; `stampa` scrive da un progetto una pagina da stampare con due testi di codice affiancati e una pagina che prova il JavaScript nel browser. Si usa da PowerShell; come, lo dicono il `LEGGIMI.md` del pacchetto e la guida ad `algodesign-tools`, che il pacchetto porta con sé.
-
-**Il nucleo per Node.** C'è anche un terzo pacchetto, `AlgoDesign-Core-0.7.0-beta.3.zip`, con la sua impronta: `algodesign-core.cjs` è il nucleo di AlgoDesign in un solo file, senza interfaccia, per aprire, controllare e tradurre in codice i progetti da un'altra applicazione con Node. Non serve per usare AlgoDesign. Come si usa lo dice il `LEGGIMI.md` del pacchetto.
 
 **L'avviso di Windows al primo avvio.** AlgoDesign non è firmato digitalmente, e Windows avvisa quando si avvia un programma non firmato scaricato da internet. Se compare la finestra «Windows ha protetto il PC», scegli «Ulteriori informazioni» e poi «Esegui comunque». Per evitarla, prima di estrarre lo zip apri le sue Proprietà (tasto destro sullo zip), segna «Sblocca» in basso nella scheda «Generale» e conferma con «OK».
 
@@ -54,12 +56,33 @@ Le versioni beta si scaricano dalla pagina del progetto.
 
 Windows stesso, invece, annota nel registro dell'utente alcune cose anche per un programma portabile: le sue finestre per aprire e salvare un file, o per scegliere una cartella, ricordano gli ultimi file e cartelle usati (anche il PDF di una stampa); l'elenco dei programmi avviati ricorda il percorso di `AlgoDesign.exe`; il componente WebView2 ricorda quando è stato usato e, con la stampa, annota una firma delle sue impostazioni. Sono tracce di Windows, non di AlgoDesign.
 
+### Su Linux
+
+1. Scarica l'archivio e, se vuoi, controllane l'impronta: nel terminale, `sha256sum <nome dell'archivio>` calcola il codice da confrontare con il file `.sha256`.
+2. Estrai l'archivio dove preferisci: con il gestore dei file, tasto destro → «Estrai», nasce una cartella col nome dell'archivio, con dentro la cartella `AlgoDesign-0.7.0-beta.3`; dal terminale, con `tar xzf <nome dell'archivio>`, nasce solo la seconda.
+3. Apri la cartella `AlgoDesign-0.7.0-beta.3` e fai doppio clic su `AlgoDesign.AppImage`, un'AppImage che si avvia senza installarla e senza diritti di amministratore.
+
+Anche su Linux AlgoDesign è portabile, con la cartella `data` accanto all'AppImage. Come si avvia, che cosa fare se l'AppImage non parte (il permesso di esecuzione, la libreria FUSE, la finestra bianca) e che cosa su Linux è diverso da Windows, come la stampa, è nel file `ALGODESIGN-PER-LINUX.md` dentro l'archivio. Lo strumento a riga di comando per Linux è in un archivio a parte, `AlgoDesign-Tools-0.7.0-beta.3-linux-x64.tar.gz`, e si usa dal terminale con `./algodesign-tools`.
+
 ## Requisiti
+
+Su Windows:
 
 - **Windows 10 o Windows 11 a 64 bit.**
 - **Microsoft Edge WebView2**, il componente di Windows che disegna la finestra di AlgoDesign: senza, AlgoDesign non si apre. È già presente su Windows 11 e, quasi sempre, su Windows 10 aggiornato. Per controllare se c'è: nelle Impostazioni di Windows, «App», poi «App installate» (su Windows 10 «App e funzionalità»), cerca «WebView2»: la voce è «Microsoft Edge WebView2 Runtime». Se manca, si scarica gratis dal sito di Microsoft, https://developer.microsoft.com/microsoft-edge/webview2/, nella parte «Evergreen». Si può installare anche senza diritti di amministratore: in quel caso, secondo Microsoft, vale per il solo utente che lo installa.
 - **Nessuna installazione e nessun diritto di amministratore**: AlgoDesign funziona anche con un utente senza diritti, da una cartella qualunque o da una chiavetta.
 - **Spazio su disco**: circa 20 MB (il programma è di 9 MB, i dati della finestra nella cartella `data` crescono fino a una decina di MB).
+
+Su Linux:
+
+- **Linux a 64 bit su processore Intel o AMD** (x86_64), non ARM.
+- **Una distribuzione uscita dal 2022 in poi**, con la libreria di sistema glibc 2.34 o più recente: per esempio Ubuntu 22.04, Linux Mint 21, Debian 12, Fedora 35 o successivi.
+- Un desktop grafico (GNOME, KDE, Cinnamon, XFCE…).
+- **Nessuna installazione e nessun diritto di amministratore**, salvo la libreria FUSE sui sistemi che non l'hanno.
+- **Spazio su disco**: circa 100 MB (l'AppImage è di 82 MB).
+
+Su tutti e due:
+
 - Uno schermo di almeno 960 × 600 punti: la finestra non si stringe sotto quella misura.
 - Non serve una connessione a internet.
 
@@ -71,7 +94,11 @@ Una cella che comincia con `=`, `+`, `-` o `@` e non è un numero (per esempio u
 
 ## Da sapere
 
-- Questa versione è solo per Windows.
+- **Dove è stata provata** questa versione, sistema per sistema:
+  - **Windows**: Windows 11 Home 26H2, con WebView2 156; l'utente senza diritti di amministratore e le chiavette NTFS, exFAT e FAT32 su una versione precedente, con la stessa cartella `data`. Windows 10 non è stato provato.
+  - **Linux**: Ubuntu 26.04 con il desktop GNOME (Wayland), in una macchina virtuale; l'avvio su Ubuntu 22.04 e 24.04 appena installati; su Ubuntu 24.04, le stesse prove automatiche fatte su Windows, che usano l'applicazione come farebbe una persona. Gli altri desktop e le altre distribuzioni non sono stati provati.
+  - **macOS**: non ancora; la versione è in arrivo.
+- I difetti già conosciuti e non ancora corretti sono nella parte «Difetti noti» delle note di rilascio, `NOTE-DI-RILASCIO.md`, accanto al programma.
 - Non sono provati lo spegnimento o il riavvio di Windows con modifiche non salvate (prima conviene salvare) e un file trascinato sulla finestra (per aprirlo si usa «Apri»). I tasti del browser che ricaricherebbero la finestra o tornerebbero indietro (F5, Ctrl+R, «Aggiorna» e «Indietro» di certe tastiere, Alt+freccia) AlgoDesign li ferma: F5 esegue il programma.
 - Il codice generato non ha il limite delle azioni: un ciclo che non finisce, che AlgoDesign ferma dopo un milione di azioni, nel Python, nel C e nel TypeScript generati va fermato a mano.
 

@@ -39,6 +39,7 @@ import {
   nomiDelloStrumentoDiLinux,
   nomiDelNucleo,
   nomiDelPacchetto,
+  nomiDiLinux,
   testiDelloStrumento,
   testiDelNucleo,
 } from "../strumenti/elenco-del-pacchetto";
@@ -260,6 +261,30 @@ test("il registro delle modifiche comincia dalla versione dei file e dalla sua d
   const diLinux = nomiDelloStrumentoDiLinux(file()["package.json"]!).archivio;
   expect(guide.map((g) => [g, archivioDiLinux(readFileSync(join(radice, g), "utf8"))])).toEqual(guide.map((g) => [g, [diLinux]]));
   expect(archivioDiLinux("vedi `AlgoDesign-Tools-0.5.0-beta.1-linux-x64.tar.gz`.")).toEqual(["AlgoDesign-Tools-0.5.0-beta.1-linux-x64.tar.gz"]);
+  // Nei due README anche i nomi da scaricare dalla pagina delle release (lo zip dell'app per Windows, l'archivio dell'app e
+  // quello dello strumento per Linux) e la cartella che nasce estraendo: ogni nome scritto è quello della versione, e
+  // almeno uno.
+  const delReadme = (t: string) => ({
+    zip: [...t.matchAll(/AlgoDesign-[0-9][^\s`]*-windows-x64\.zip/g)].map((m) => m[0]),
+    archivio: [...t.matchAll(/AlgoDesign-[0-9][^\s`]*-linux-x64\.tar\.gz/g)].map((m) => m[0]),
+    strumento: [...t.matchAll(/AlgoDesign-Tools-[^\s`]*-linux-x64\.tar\.gz/g)].map((m) => m[0]),
+    // Fra apici inversi e senza il sistema nel nome: lo zip e l'archivio hanno il loro rilevatore.
+    cartella: [...t.matchAll(/`(AlgoDesign-[0-9][^\s`]*)`/g)].map((m) => m[1]!).filter((n) => !/-(windows|linux)-/.test(n)),
+  });
+  const pacchetto = nomiDelPacchetto(file()["package.json"]!);
+  const attesi = { zip: [pacchetto.zip], archivio: [nomiDiLinux(file()["package.json"]!).archivio], strumento: [diLinux], cartella: [pacchetto.cartellaNelloZip] };
+  for (const r of readme) {
+    const trovati = delReadme(readFileSync(join(radice, r.nome), "utf8"));
+    expect([r.nome, Object.fromEntries(Object.entries(trovati).map(([k, v]) => [k, [...new Set(v)]]))]).toEqual([r.nome, attesi]);
+    for (const v of Object.values(trovati)) expect(v.length).toBeGreaterThan(0);
+  }
+  // Controllo positivo: i nomi di un'altra versione si vedono, e non si confondono fra loro.
+  expect(delReadme("`AlgoDesign-0.5.0-beta.1-windows-x64.zip`, `AlgoDesign-0.5.0-beta.1-linux-x64.tar.gz`, `AlgoDesign-Tools-0.5.0-beta.1-linux-x64.tar.gz`, `AlgoDesign-0.5.0-beta.1`")).toEqual({
+    zip: ["AlgoDesign-0.5.0-beta.1-windows-x64.zip"],
+    archivio: ["AlgoDesign-0.5.0-beta.1-linux-x64.tar.gz"],
+    strumento: ["AlgoDesign-Tools-0.5.0-beta.1-linux-x64.tar.gz"],
+    cartella: ["AlgoDesign-0.5.0-beta.1"],
+  });
 });
 
 test("la data della versione è una data vera, e si legge nelle due lingue", () => {

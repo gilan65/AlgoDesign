@@ -11,7 +11,7 @@ It needs no installation, and AlgoDesign is not needed to use it (it is needed t
 
 ## How to use it
 
-1. Extract the archive wherever you like (with the file manager, right-click → “Extract Here”, or with `tar xzf AlgoDesign-Tools-{{versione}}-linux-x64.tar.gz`): the folder `AlgoDesign-Tools-{{versione}}` is created.
+1. Extract the archive wherever you like: with the file manager, right-click → “Extract”, the folder `AlgoDesign-Tools-{{versione}}-linux-x64` is created, with the folder `AlgoDesign-Tools-{{versione}}` inside; from the terminal, with `tar xzf AlgoDesign-Tools-{{versione}}-linux-x64.tar.gz`, only the second one is created.
 2. Open a terminal in that folder (in the file manager, right-click inside the folder → “Open in Terminal”, or `cd AlgoDesign-Tools-{{versione}}`).
 3. Type `./algodesign-tools -h` for the help or, for example:
 

@@ -105,7 +105,7 @@ test("i collegamenti relativi dei documenti portano a un file che c'è, e quelli
   const rotti = documenti.flatMap((d) => collegamentiRotti(d, leggi(d)).map((c) => `${d}: ${c}`));
   console.log(`collegamenti relativi: ${documenti.map((d) => `${d} ${collegamenti(leggi(d)).length}`).join(", ")}`);
   expect(rotti).toEqual([]);
-  const attesi = ["LICENSE", "LICENSE-DOCS", "docs/GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md", "docs/GUIDE-TO-REPORTING-A-MALFUNCTION.md"];
+  const attesi = ["LICENSE", "LICENSE-DOCS", "docs/PER-COMINCIARE.md", "docs/GETTING-STARTED.md", "docs/GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md", "docs/GUIDE-TO-REPORTING-A-MALFUNCTION.md"];
   expect(collegamenti(leggi("LEGGIMI.md")).sort()).toEqual(["README.md", ...attesi].sort());
   expect(collegamenti(leggi("README.md")).sort()).toEqual(["LEGGIMI.md", ...attesi].sort());
 });

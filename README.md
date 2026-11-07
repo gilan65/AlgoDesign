@@ -4,7 +4,7 @@
 
 **Design algorithms as flowcharts, run them step by step and translate them into pseudocode, Python, C and TypeScript.**
 
-Version 0.7.0-beta.3 of 1 November 2026, for 64-bit Windows 10 and 11.
+Version 0.7.0-beta.3 of 1 November 2026, for 64-bit Windows 10 and 11 and for 64-bit Linux; the macOS version is coming.
 
 AlgoDesign is a teaching environment for people learning to program: first you design and test the algorithm as a flowchart, then you see how the same reasoning becomes code. It is a **local and lightweight** application: it works without internet, without installing it and without administrator rights.
 
@@ -30,19 +30,21 @@ AlgoDesign separates the two tasks: first you **design** the algorithm as a flow
 
 Types and rules are those of the C language, plus a string type, so that the step from the flowchart to the code is natural. The generated code, however, is made to be read and does not check the calculations that break the rules (an integer outside its range, an integer division by zero, an index outside the array and a few others, listed in the release notes): AlgoDesign always stops them, the generated Python, C and TypeScript do not, and on those calculations they may give different results from each other.
 
-How to use AlgoDesign is in the **student guide**, `STUDENT-GUIDE.md` (in Italian `GUIDA-PER-LO-STUDENTE.md`): in the package it sits next to the program, in the repository in the `docs` folder. Inside AlgoDesign the guide opens from the **Help** menu, “Student guide”, in the language of the interface. How to use “Academic” to practise for the selections is in the **guide to “Academic”**, `GUIDA-AD-ACCADEMICO.md`; the command-line tool in the **guide to `algodesign-tools`**, `GUIDA-AD-ALGODESIGN-TOOLS.md`. Both are in Italian, next to the student guide. The news of each version is in the change log, `CHANGELOG.md` (in Italian).
+To begin, the **getting-started guide**, [`GETTING-STARTED.md`](docs/GETTING-STARTED.md) (in Italian [`PER-COMINCIARE.md`](docs/PER-COMINCIARE.md)), walks you through writing your first algorithm, step by step, with pictures of the window. How to use AlgoDesign is in the **student guide**, `STUDENT-GUIDE.md` (in Italian `GUIDA-PER-LO-STUDENTE.md`): in the package it sits next to the program, in the repository in the `docs` folder. Inside AlgoDesign the guide opens from the **Help** menu, “Student guide”, in the language of the interface. How to use “Academic” to practise for the selections is in the **guide to “Academic”**, `GUIDA-AD-ACCADEMICO.md`; the command-line tool in the **guide to `algodesign-tools`**, `GUIDA-AD-ALGODESIGN-TOOLS.md`. Both are in Italian, next to the student guide. The news of each version is in the change log, `CHANGELOG.md` (in Italian).
 
 ## Download and start
 
-The beta versions are downloaded from the project page.
+AlgoDesign is downloaded from the releases page, https://github.com/gilan65/AlgoDesign/releases: for Windows the zip `AlgoDesign-0.7.0-beta.3-windows-x64.zip`, for Linux the archive `AlgoDesign-0.7.0-beta.3-linux-x64.tar.gz`, each with its fingerprint, the `.sha256` file next to it. The macOS version is coming.
 
-1. Download the zip and, if you like, check its fingerprint: the `.sha256` file next to the zip contains its SHA-256 code, which in PowerShell is computed with `Get-FileHash <zip name>` (PowerShell writes it in uppercase, the file in lowercase: upper and lower case do not matter).
-2. Extract the zip wherever you like (the Desktop, a documents folder, a USB stick): the folder `AlgoDesign-0.7.0-beta.3` is created.
-3. Open the folder and double-click `AlgoDesign.exe`.
+**The core for Node.** There is also a package for every system, `AlgoDesign-Core-0.7.0-beta.3.zip`, with its fingerprint: `algodesign-core.cjs` is the core of AlgoDesign in a single file, with no interface, to open, check and translate into code projects from another application with Node. It is not needed to use AlgoDesign. How to use it is told by the `README.md` of the package.
+
+### On Windows
+
+1. Download the zip and, if you like, check its fingerprint: the `.sha256` file contains its SHA-256 code, which in PowerShell is computed with `Get-FileHash <zip name>` (PowerShell writes it in uppercase, the file in lowercase: upper and lower case do not matter).
+2. Extract the zip wherever you like (the Desktop, a documents folder, a USB stick): with “Extract All” in File Explorer a folder with the name of the zip is created, with the folder `AlgoDesign-0.7.0-beta.3` inside.
+3. Open the folder `AlgoDesign-0.7.0-beta.3` and double-click `AlgoDesign.exe`.
 
 **The command-line tool.** Next to the AlgoDesign zip there is a separate package, `AlgoDesign-Tools-0.7.0-beta.3-windows.zip`, with its fingerprint: `algodesign-tools.exe` has two commands. `accademico` reads a text written in “Academic” and turns it into an AlgoDesign library, to open and run step by step; `stampa` writes from a project a page to print with two code texts side by side and a page that tests the JavaScript in the browser. It is used from PowerShell; how is told by the `README.md` of the package and by the guide to `algodesign-tools`, which the package carries.
-
-**The core for Node.** There is also a third package, `AlgoDesign-Core-0.7.0-beta.3.zip`, with its fingerprint: `algodesign-core.cjs` is the core of AlgoDesign in a single file, with no interface, to open, check and translate into code projects from another application with Node. It is not needed to use AlgoDesign. How to use it is told by the `README.md` of the package.
 
 **The Windows warning at the first start.** AlgoDesign is not digitally signed, and Windows warns when a program downloaded from the internet without a signature is started. If the window “Windows protected your PC” appears, choose “More info” and then “Run anyway”. To avoid it, before extracting the zip open its Properties (right-click on the zip), tick “Unblock” at the bottom of the “General” tab and confirm with “OK”.
 
@@ -54,12 +56,33 @@ The beta versions are downloaded from the project page.
 
 Windows itself, instead, records some things in the user registry even for a portable program: its windows to open and save a file, or to choose a folder, remember the last files and folders used (also the PDF of a print); the list of started programs remembers the path of `AlgoDesign.exe`; the WebView2 component remembers when it was used and, with printing, records a signature of its settings. These are traces of Windows, not of AlgoDesign.
 
+### On Linux
+
+1. Download the archive and, if you like, check its fingerprint: in the terminal, `sha256sum <archive name>` computes the code to compare with the `.sha256` file.
+2. Extract the archive wherever you like: with the file manager, right-click → “Extract”, a folder with the name of the archive is created, with the folder `AlgoDesign-0.7.0-beta.3` inside; from the terminal, with `tar xzf <archive name>`, only the second one is created.
+3. Open the folder `AlgoDesign-0.7.0-beta.3` and double-click `AlgoDesign.AppImage`, an AppImage that starts without installing it and without administrator rights.
+
+On Linux too AlgoDesign is portable, with the `data` folder next to the AppImage. How to start it, what to do if the AppImage does not start (the execute permission, the FUSE library, the white window) and what is different on Linux from Windows, such as printing, is in the file `ALGODESIGN-PER-LINUX.md` (in Italian) inside the archive. The command-line tool for Linux is in a separate archive, `AlgoDesign-Tools-0.7.0-beta.3-linux-x64.tar.gz`, and is used from the terminal with `./algodesign-tools`.
+
 ## Requirements
+
+On Windows:
 
 - **64-bit Windows 10 or Windows 11.**
 - **Microsoft Edge WebView2**, the Windows component that draws the AlgoDesign window: without it, AlgoDesign does not open. It is already present on Windows 11 and, almost always, on an updated Windows 10. To check whether it is there: in the Windows Settings, “Apps”, then “Installed apps” (on Windows 10 “Apps & features”), search for “WebView2”: the item is “Microsoft Edge WebView2 Runtime”. If it is missing, it can be downloaded for free from the Microsoft site, https://developer.microsoft.com/microsoft-edge/webview2/, in the “Evergreen” part. It can also be installed without administrator rights: in that case, according to Microsoft, it applies only to the user who installs it.
 - **No installation and no administrator rights**: AlgoDesign also works with a user without rights, from any folder or from a USB stick.
 - **Disk space**: about 20 MB (the program is 9 MB, the window data in the `data` folder grows up to about ten MB).
+
+On Linux:
+
+- **64-bit Linux on an Intel or AMD processor** (x86_64), not ARM.
+- **A distribution released from 2022 onwards**, with the system library glibc 2.34 or newer: for example Ubuntu 22.04, Linux Mint 21, Debian 12, Fedora 35 or later.
+- A graphical desktop (GNOME, KDE, Cinnamon, XFCE…).
+- **No installation and no administrator rights**, except for the FUSE library on the systems that do not have it.
+- **Disk space**: about 100 MB (the AppImage is 82 MB).
+
+On both:
+
 - A screen of at least 960 × 600 points: the window does not shrink below that size.
 - No internet connection is needed.
 
@@ -71,7 +94,11 @@ A cell that starts with `=`, `+`, `-` or `@` and is not a number (for example a 
 
 ## Good to know
 
-- This version is for Windows only.
+- **Where this version was tested**, system by system:
+  - **Windows**: Windows 11 Home 26H2, with WebView2 156; the user without administrator rights and the NTFS, exFAT and FAT32 USB sticks on an earlier version, with the same `data` folder. Windows 10 was not tested.
+  - **Linux**: Ubuntu 26.04 with the GNOME desktop (Wayland), in a virtual machine; the start on freshly installed Ubuntu 22.04 and 24.04; on Ubuntu 24.04, the same automatic tests run on Windows, which use the application as a person would. The other desktops and distributions were not tested.
+  - **macOS**: not yet; the version is coming.
+- The defects already known and not yet fixed are in the part “Difetti noti” (known defects) of the release notes, `NOTE-DI-RILASCIO.md` (in Italian), next to the program.
 - Not tested: shutting down or restarting Windows with unsaved changes (better save first) and a file dragged onto the window (to open it use “Open”). The browser keys that would reload the window or go back (F5, Ctrl+R, “Refresh” and “Back” of some keyboards, Alt+arrow) are stopped by AlgoDesign: F5 runs the program.
 - The generated code has no limit on actions: a loop that does not end, which AlgoDesign stops after a million actions, must be stopped by hand in the generated Python, C and TypeScript.
 
