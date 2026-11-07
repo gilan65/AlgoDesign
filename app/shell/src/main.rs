@@ -207,7 +207,8 @@ mod prove {
     fn definiti(sorgenti: &[&str]) -> Comandi {
         let mut fuori = Comandi::new();
         for s in sorgenti {
-            for (k, _) in s.match_indices("#[tauri::command]") {
+            // L'attributo a inizio riga, con o senza `(async)`: non quello citato in un commento.
+            for (k, _) in s.match_indices("\n#[tauri::command") {
                 let dopo = &s[k..];
                 let nome_da = dopo.find("pub fn ").unwrap() + "pub fn ".len();
                 let aperta = nome_da + dopo[nome_da..].find('(').unwrap();
@@ -323,7 +324,84 @@ mod prove {
         }
         // Oggi ogni argomento ha una parola sola: un comando con un argomento di più parole si confronta col nome che
         // l'interfaccia manda (in camelCase), non con quello scritto nel guscio.
-        let due_parole = "#[tauri::command]\npub fn prova(finestra: tauri::Window, nome_del_file: String, testo: String) {}";
+        let due_parole = "\n#[tauri::command]\npub fn prova(finestra: tauri::Window, nome_del_file: String, testo: String) {}";
         assert_eq!(definiti(&[due_parole]), Comandi::from([("prova".to_owned(), BTreeSet::from(["nomeDelFile".to_owned(), "testo".to_owned()]))]));
+        // Il rilevatore riconosce anche i comandi che girano fuori dal thread della finestra.
+        let fuori = "// `#[tauri::command(async)]` citato non conta\n#[tauri::command(async)]\npub fn prova(finestra: tauri::Window, testo: String) {}";
+        assert_eq!(definiti(&[fuori]), Comandi::from([("prova".to_owned(), BTreeSet::from(["testo".to_owned()]))]));
+    }
+
+    /// Le funzioni al primo livello di un sorgente: nome, attributo sulla riga sopra (o `""`), se è `async fn`, corpo.
+    fn funzioni(s: &str) -> Vec<(String, String, bool, String)> {
+        let mut fuori = vec![];
+        for (k, _) in s.match_indices('\n') {
+            let riga = &s[k + 1..];
+            let (asincrona, dopo) = match ["pub async fn ", "async fn ", "pub fn ", "fn "].iter().find(|p| riga.starts_with(**p)) {
+                Some(p) => (p.contains("async"), &riga[p.len()..]),
+                None => continue,
+            };
+            let aperta = dopo.find('(').unwrap();
+            let nome = dopo[..aperta].split('<').next().unwrap().to_owned();
+            let (_, chiusa) = fino_alla_chiusa(dopo, aperta);
+            let graffa = chiusa + dopo[chiusa..].find('{').unwrap();
+            let (corpo, _) = fino_alla_chiusa(dopo, graffa);
+            let sopra = s[..k].rsplit('\n').next().unwrap().trim().to_owned();
+            let attributo = if sopra.starts_with("#[tauri::command") { sopra } else { String::new() };
+            fuori.push((nome, attributo, asincrona, corpo.to_owned()));
+        }
+        fuori
+    }
+
+    /// I comandi che aprono una finestra del sistema per un file o una cartella (direttamente, o attraverso una funzione
+    /// dello stesso sorgente che la apre), e fra questi quelli che girano sul thread della finestra.
+    fn finestre_del_file(sorgenti: &[&str]) -> (BTreeSet<String>, Vec<String>) {
+        const MOSTRA: [&str; 5] = [".pick_file()", ".pick_files()", ".save_file()", ".pick_folder()", ".pick_folders()"];
+        let (mut con_finestra, mut sincroni) = (BTreeSet::new(), vec![]);
+        for s in sorgenti {
+            let tutte = funzioni(s);
+            let mut aprono: BTreeSet<String> = tutte.iter().filter(|f| MOSTRA.iter().any(|m| f.3.contains(m))).map(|f| f.0.clone()).collect();
+            loop {
+                let prima = aprono.len();
+                let nuove: Vec<String> = tutte.iter().filter(|f| aprono.iter().any(|a| f.3.contains(&format!("{a}(")))).map(|f| f.0.clone()).collect();
+                aprono.extend(nuove);
+                if aprono.len() == prima {
+                    break;
+                }
+            }
+            for (nome, attributo, asincrona, _) in &tutte {
+                if attributo.is_empty() || !aprono.contains(nome) {
+                    continue;
+                }
+                con_finestra.insert(nome.clone());
+                if !asincrona && attributo != "#[tauri::command(async)]" {
+                    sincroni.push(nome.clone());
+                }
+            }
+        }
+        (con_finestra, sincroni)
+    }
+
+    /// Un comando che apre una finestra del sistema per un file o una cartella (libreria `rfd`) gira fuori dal thread
+    /// della finestra: `#[tauri::command(async)]`. Tauri esegue un comando sincrono sul thread principale, quello del
+    /// ciclo di GTK; con il motore `gtk3` la finestra di `rfd` si mette in coda proprio su quel ciclo e poi lo aspetta,
+    /// e su Linux l'app si blocca per sempre (misurato su un desktop GNOME, con «Apri» e con «Salva»). Su Windows non si
+    /// vede, perché la finestra di dialogo di COM fa girare i messaggi da sé.
+    #[test]
+    fn i_comandi_che_aprono_una_finestra_del_file_girano_fuori_dal_thread_della_finestra() {
+        let guscio = [include_str!("progetto.rs"), include_str!("preferenze.rs"), include_str!("menu.rs")];
+        let (con_finestra, sincroni) = finestre_del_file(&guscio);
+        println!("comandi con una finestra del file: {con_finestra:?}; sincroni: {sincroni:?}");
+        assert_eq!(sincroni, Vec::<String>::new(), "comandi sincroni che aprono una finestra del file");
+        // La premessa: il rilevatore trova i comandi delle finestre, confrontati per nome (anche quelli che la aprono
+        // attraverso un'altra funzione, come «Salva con nome»).
+        let attesi = ["scegli_cartella", "scegli_file_da_aprire", "scegli_file_da_esportare", "scegli_file_da_salvare", "scegli_file_del_codice", "scegli_file_dell_immagine"];
+        assert_eq!(con_finestra, attesi.iter().map(|n| n.to_string()).collect::<BTreeSet<_>>());
+        // Controllo positivo, col rilevatore sui due modi: un comando tornato sincrono esce, e uno che apre la finestra
+        // attraverso un'altra funzione anche.
+        for (nome, intestazione) in [("scegli_cartella", "pub fn scegli_cartella("), ("scegli_file_da_salvare", "pub fn scegli_file_da_salvare(")] {
+            let tornato = guscio[0].replacen(&format!("#[tauri::command(async)]\n{intestazione}"), &format!("#[tauri::command]\n{intestazione}"), 1);
+            assert_ne!(tornato, guscio[0], "controllo positivo senza effetto: {nome}");
+            assert_eq!(finestre_del_file(&[&tornato, guscio[1], guscio[2]]).1, vec![nome.to_owned()]);
+        }
     }
 }
