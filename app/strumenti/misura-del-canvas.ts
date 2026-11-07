@@ -7,10 +7,11 @@
 // alla misura trovata, se dà il PNG. Si usa:
 // - nel WebKit di Playwright per Linux (e negli altri motori di Playwright): `bun ./strumenti/misura-del-canvas.ts
 //   --motore <webkit|chromium>`, che scrive una riga `CANVAS: MISURATO | …`;
-// - nel WebKitGTK del programma, dalla prova sul prodotto di Linux (`linux/giro.ts`), attraverso WebDriver.
+// - nel WebKitGTK del programma, dalla prova sul prodotto di Linux (`linux/giro.ts`), attraverso WebDriver;
+// - nella WebView2 del programma, dalla prova sul prodotto di Windows (`prova-portabile.ts`, nella ESPORTA), via CDP.
 //
 // Che cosa NON guarda: la memoria (un canvas al limite può far mancare la memoria a una macchina più piccola), il tempo
-// della codifica, la WebView2 e il WKWebView del Mac (le loro misure si fanno sui loro sistemi).
+// della codifica, il WKWebView del Mac (la sua misura si fa sul Mac).
 
 export interface MisuraDelCanvas {
   lato: number;

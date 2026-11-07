@@ -35,7 +35,7 @@ test("uno script che non stampa l'esito dà «senza esito» col suo errore, e un
 });
 
 test("su un processo senza finestra ogni azione è «NON inviato», mai uno degli esiti riusciti", async () => {
-  for (const [azione, argomento] of [["tasto", "f5"], ["chiudi", undefined], ["coperta", undefined]] as const) {
+  for (const [azione, argomento] of [["tasto", "f5"], ["tasto-vero", "ctrl+shift+p"], ["chiudi", undefined], ["coperta", undefined]] as const) {
     const { esito } = await finestraVera(process.pid, azione, argomento);
     expect(riusciti).not.toContain(esito);
     expect(esito).toStartWith(process.platform === "win32" ? `NON inviato: nessuna finestra visibile del PID ${process.pid}` : "NON inviato: ");

@@ -259,6 +259,36 @@ test("il PNG decodificato misura il doppio dell'SVG e ha i pixel dell'SVG reso a
   expect({ trasparente: trasparente.pixel.slice(0, 4), pieno: png.pixel.slice(0, 4) }).toEqual({ trasparente: [0, 0, 0, 0], pieno: [255, 255, 255, 255] });
   expect(await page.evaluate(() => (window as unknown as { __violazioni__: string[] }).__violazioni__)).toEqual([]);
 });
+
+test("un flowchart che al doppio non entra nel canvas del motore esce a misura piena e la riga di stato lo dice; se non entra nemmeno a un quarto, l'errore", async ({ page }) => {
+  await apriIlProgramma(page);
+  const svg = await svgAtteso(page);
+  const [l, a] = [/width="([\d.]+)"/, /height="([\d.]+)"/].map((r) => Number(r.exec(svg)![1]));
+  const piena = { larghezza: Math.ceil(l!), altezza: Math.ceil(a!) };
+  // Il motore non dà il PNG oltre un'area del canvas (misurata: 16384 × 16384 in Chromium, nella WebView2 e nel WebKitGTK):
+  // qui l'area si abbassa a quella del flowchart a misura piena, così al doppio non entra.
+  const limita = (area: number) =>
+    page.evaluate((area) => {
+      const vero = HTMLCanvasElement.prototype.toBlob;
+      HTMLCanvasElement.prototype.toBlob = function (fatto, ...resto) {
+        if (this.width * this.height > area) return void setTimeout(() => fatto(null));
+        return vero.call(this, fatto, ...resto);
+      };
+    }, area);
+  await limita(piena.larghezza * piena.altezza);
+  await page.evaluate((u) => Object.assign(window.__finzione__, { daEsportareLImmagine: `${u} ridotto` }), USCITA);
+  await esporta(page, { formato: it.esportaFormatoPng });
+  await expect(avviso(page)).toHaveText(riempi(it.flowchartEsportatoRidotto, { file: "uscita ridotto.png", larghezza: String(piena.larghezza), altezza: String(piena.altezza) }));
+  const ridotto = await decodifica(page, (await finzione(page)).byte![`${USCITA} ridotto.png`]!);
+  expect({ larghezza: ridotto.larghezza, altezza: ridotto.altezza }).toEqual(piena);
+  // Nemmeno un pixel: a nessun fattore; la finestra d'errore, nessun file e la riga di stato di prima.
+  await limita(0);
+  await page.evaluate((u) => Object.assign(window.__finzione__, { daEsportareLImmagine: `${u} niente` }), USCITA);
+  await esporta(page);
+  const errore = page.getByRole("alertdialog", { name: riempi(it.esportaFlowchartErroreTitolo, { file: "uscita niente.png" }), exact: true });
+  await expect(errore).toContainText("nemmeno a 0.25 volte");
+  expect((await finzione(page)).byte?.[`${USCITA} niente.png`]).toBeUndefined();
+});
 });
 
 test("in pausa sul punto di interruzione l'immagine ha il blocco corrente, la punta e il punto, e la finestra lo dice", async ({ page }) => {

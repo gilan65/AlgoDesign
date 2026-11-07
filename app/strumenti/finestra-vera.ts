@@ -1,11 +1,11 @@
 // La finestra vera dell'app per la prova sul prodotto (`finestra-vera.ps1`, solo Windows): il messaggio di un tasto o
-// della chiusura, lo stato della finestra (coperta o libera), il nome nella finestra del sistema per salvare. L'esito è
+// della chiusura, i tasti veri col primo piano, lo stato della finestra (coperta o libera), il nome nella finestra del sistema per salvare. L'esito è
 // la prima riga stampata dallo script; ogni guasto dello strumento diventa un esito «NON inviato: <perché>», che chi lo
 // usa confronta con il solo esito atteso («inviato», «chiusura spedita», «libera», «salvato»): un gesto non eseguito
 // non è mai un verde.
 import { join } from "node:path";
 
-export type AzioneDellaFinestra = "tasto" | "chiudi" | "coperta" | "salva" | "salva-dai-figli";
+export type AzioneDellaFinestra = "tasto" | "tasto-vero" | "chiudi" | "coperta" | "salva" | "salva-dai-figli";
 
 export type OpzioniDellaFinestra = {
   /** Dove scrivere il comando e l'uscita (il log della prova). */

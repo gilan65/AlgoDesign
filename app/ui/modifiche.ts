@@ -23,14 +23,17 @@ export function comandoDellaCronologia(e: { key: string; ctrlKey: boolean; metaK
   return null;
 }
 
-/** I comandi dei file dalla tastiera: Ctrl+N, Ctrl+O, Ctrl+S, Ctrl+Maiusc+S e Ctrl+P (anche col tasto Comando). */
+/** I comandi dei file dalla tastiera: Ctrl+N, Ctrl+O, Ctrl+S, Ctrl+Maiusc+S, Ctrl+P e Ctrl+Maiusc+P (anche col tasto
+ * Comando). Ctrl+Maiusc+P nella WebView2 è la stampa del motore con la finestra del sistema, che stamperebbe la finestra
+ * così com'è: qui apre la stampa dell'app, come Ctrl+P. */
 export function comandoDelFile(e: { key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean }): "nuovo" | "apri" | "salva" | "salvaConNome" | "stampa" | null {
   const conIlComando = e.ctrlKey || e.metaKey;
   if (!conIlComando || e.altKey) return null;
   const tasto = e.key.toLowerCase();
   if (tasto === "s") return e.shiftKey ? "salvaConNome" : "salva";
+  if (tasto === "p") return "stampa";
   if (e.shiftKey) return null;
-  return tasto === "n" ? "nuovo" : tasto === "o" ? "apri" : tasto === "p" ? "stampa" : null;
+  return tasto === "n" ? "nuovo" : tasto === "o" ? "apri" : null;
 }
 
 /** I tasti che nel motore ricaricano la pagina: F5 (anche con Ctrl) e Ctrl+R (anche con Maiusc; Cmd su macOS).

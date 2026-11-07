@@ -3,6 +3,10 @@
 #
 #   finestra-vera.ps1 <pid> tasto <tasto>   WM_KEYDOWN e WM_KEYUP alla finestra d'input di WebView2
 #                                           (Chrome_RenderWidgetHostHWND): <tasto> e "f5" o "z"
+#   finestra-vera.ps1 <pid> tasto-vero <tasti>
+#                                           i tasti veri (keybd_event) dopo aver dato il primo piano alla finestra
+#                                           (AttachThreadInput sui due thread, SetForegroundWindow, MAI SetFocus):
+#                                           <tasti> e "ctrl+shift+p" o "esc"; "inviato" solo se il primo piano c'e
 #   finestra-vera.ps1 <pid> chiudi          WM_CLOSE alla finestra: come il clic sulla X o Alt+F4
 #   finestra-vera.ps1 <pid> coperta         se la finestra si vede: le finestre SOPRA di lei (ordine di Windows) che la
 #                                           coprono per intero, visibili, non ridotte a icona, non nascoste da DWM e non
@@ -31,7 +35,10 @@
 # WebView2 (F5 e Ctrl+R non ricaricavano nemmeno il codice che non li fermava); i messaggi di questo strumento
 # invece passano dalla via dei tasti veri (F5 ricaricava quel codice), ma senza i modificatori: Ctrl+R arriva
 # alla pagina come una R. I tasti veri col primo piano portano i modificatori, ma il fuoco della tastiera non
-# entra sempre nella WebView2 (una lettera persa, una pagina che non risponde): per questo qui non ci sono.
+# entra sempre nella WebView2 (una lettera persa, una pagina che non risponde), e rubano la tastiera a chi usa la
+# macchina: ci sono solo per i tasti con Ctrl e Maiusc della stampa ("tasto-vero"), nella parte della prova che vuole
+# gia l'utente davanti al PC, e chi li usa legge nella pagina i keydown arrivati (un tasto che non arriva si ripete).
+# Con SetFocus sulla finestra d'input la pagina non riceve nulla (misurato): qui non c'e.
 param([Parameter(Mandatory)][int]$processo, [Parameter(Mandatory)][string]$azione, [string]$tasto = "")
 # Per "salva" il terzo argomento e il nome del file.
 
@@ -48,6 +55,13 @@ public static class FinestraVera {
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint a, uint b, bool f);
+  [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
+  [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+  [DllImport("user32.dll")] public static extern uint MapVirtualKey(uint code, uint tipo);
   [StructLayout(LayoutKind.Sequential)] public struct Rett { public int Sinistra, Sopra, Destra, Sotto; }
   [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr h, uint cmd);
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out Rett r);
@@ -179,6 +193,31 @@ if ($azione -eq "chiudi") {
   # PostMessage dice se il messaggio e entrato nella coda della finestra: un "no" non e mai "spedita".
   if (-not [FinestraVera]::PostMessage($finestra, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)) { "NON inviato: PostMessage ha rifiutato WM_CLOSE"; exit 0 }
   "chiusura spedita"
+  exit 0
+}
+if ($azione -eq "tasto-vero") {
+  $veri = @{ "ctrl+shift+p" = @(0x11, 0x10, 0x50); "esc" = @(0x1B) }
+  if (-not $veri.ContainsKey($tasto)) { "NON inviato: tasti veri sconosciuti ($tasto)"; exit 2 }
+  $mio = [FinestraVera]::GetCurrentThreadId()
+  $davanti = [FinestraVera]::GetForegroundWindow()
+  $pDavanti = [uint32]0
+  $tDavanti = [FinestraVera]::GetWindowThreadProcessId($davanti, [ref]$pDavanti)
+  $pSuo = [uint32]0
+  $tSuo = [FinestraVera]::GetWindowThreadProcessId($finestra, [ref]$pSuo)
+  [void][FinestraVera]::AttachThreadInput($mio, $tDavanti, $true)
+  [void][FinestraVera]::AttachThreadInput($mio, $tSuo, $true)
+  [void][FinestraVera]::BringWindowToTop($finestra)
+  [void][FinestraVera]::SetForegroundWindow($finestra)
+  [void][FinestraVera]::AttachThreadInput($mio, $tSuo, $false)
+  [void][FinestraVera]::AttachThreadInput($mio, $tDavanti, $false)
+  Start-Sleep -Milliseconds 300
+  # Senza il primo piano i tasti andrebbero a un'altra finestra: non si mandano.
+  if ([FinestraVera]::GetForegroundWindow() -ne $finestra) { "NON inviato: il primo piano non e della finestra del PID $processo"; exit 0 }
+  $c = $veri[$tasto]
+  foreach ($k in $c) { [FinestraVera]::keybd_event([byte]$k, [byte][FinestraVera]::MapVirtualKey($k, 0), 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 30 }
+  [array]::Reverse($c)
+  foreach ($k in $c) { [FinestraVera]::keybd_event([byte]$k, [byte][FinestraVera]::MapVirtualKey($k, 0), 2, [UIntPtr]::Zero); Start-Sleep -Milliseconds 30 }
+  "inviato"
   exit 0
 }
 # Codice virtuale e codice di scansione di ogni tasto.

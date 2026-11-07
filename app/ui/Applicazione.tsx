@@ -196,7 +196,7 @@ import {
   type ScelteDiStampa,
   type Sezione,
 } from "./stampa/parti";
-import { estensioneDel, inBase64, nomeDellImmagine, pngDallSvg, sceltePredefinite as esportazionePredefinita, SFONDO_DELLA_CARTA, tavolozzaDellaPagina, type ScelteDellEsportazione } from "./disegno/esporta";
+import { estensioneDel, FATTORE_DEL_PNG, inBase64, nomeDellImmagine, pngDallSvg, sceltePredefinite as esportazionePredefinita, SFONDO_DELLA_CARTA, tavolozzaDellaPagina, type ScelteDellEsportazione } from "./disegno/esporta";
 import { FinestraImporta, nomiCheEntrano, type DaUnFile } from "./finestre/FinestraImporta";
 import { FinestraGuida, memoriaNuova } from "./finestre/FinestraGuida";
 import { FinestraInformazioni } from "./finestre/FinestraInformazioni";
@@ -2202,14 +2202,21 @@ export function Applicazione({
     if (base === null) return;
     const scelto = await scegliFileDellImmagine(testi.titoloEsportaFlowchart, `${nomeDellImmagine(base, funzione)}${estensione}`, s.formato === "png" ? testi.filtroPng : testi.filtroSvg, estensione, partenza);
     if (scelto === null || (scelto.sostituire && !(await sostituire(scelto.percorso)))) return;
+    // Il PNG più piccolo del doppio (il flowchart non entrava nel canvas del motore): la riga di stato dice la misura.
+    let ridotto: { larghezza: number; altezza: number } | null = null;
     try {
       if (s.formato === "svg") await scriviProgetto(scelto.percorso, svg);
-      else await scriviByte(scelto.percorso, inBase64(await pngDallSvg(svg, larghezza, altezza, s.trasparente ? null : SFONDO_DELLA_CARTA)));
+      else {
+        const png = await pngDallSvg(svg, larghezza, altezza, s.trasparente ? null : SFONDO_DELLA_CARTA);
+        await scriviByte(scelto.percorso, inBase64(png.byte));
+        if (png.fattore !== FATTORE_DEL_PNG) ridotto = { larghezza: png.larghezza, altezza: png.altezza };
+      }
     } catch (e) {
       erroreDiUnFile(testi.esportaFlowchartErroreTitolo, scelto.percorso, e);
       return;
     }
-    setAvviso(riempi(testi.flowchartEsportatoIn, { file: nomeDelFile(scelto.percorso) }));
+    const file = nomeDelFile(scelto.percorso);
+    setAvviso(ridotto ? riempi(testi.flowchartEsportatoRidotto, { file, larghezza: String(ridotto.larghezza), altezza: String(ridotto.altezza) }) : riempi(testi.flowchartEsportatoIn, { file }));
   }
 
   // «Copia» e «Salva…» del codice con funzioni che non cambiano (il riquadro del codice non si ridisegna a ogni fetta):
