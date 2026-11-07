@@ -6,7 +6,7 @@ Questa guida è per chi usa AlgoDesign, vede qualcosa che non va e vuole segnala
 
 1. Subito dopo il malfunzionamento, senza premere Ferma e senza chiudere AlgoDesign: menu **Aiuto**, **Salva per segnalare un malfunzionamento…**, poi **Salva…** (§4).
 2. Se il malfunzionamento si può ripetere: **Attiva la registrazione delle esecuzioni**, ripeti ciò che hai fatto e salva di nuovo (§6).
-3. Apri https://github.com/gilan65/AlgoDesign/issues/new, scrivi che cosa hai fatto e **che cosa ti aspettavi**, allega il file e invia (§7).
+3. Apri https://github.com/gilan65/AlgoDesign/issues/new, scrivi che cosa hai fatto e **che cosa ti aspettavi**, allega il file e premi **Create** (§7).
 
 AlgoDesign non invia nulla da solo: non si collega a internet, e il file resta sul tuo computer finché non lo alleghi tu.
 
@@ -75,10 +75,10 @@ La registrazione sta solo in memoria: nulla è scritto sul disco finché non sal
 ## 7. La segnalazione su GitHub
 
 1. Apri nel browser https://github.com/gilan65/AlgoDesign/issues/new e accedi col tuo account.
-2. Nel campo del titolo (**Title**) scrivi in una riga che cosa succede: «La tabella di traccia mostra 8 dove il programma scrive 7», non «Non funziona».
-3. Nel riquadro della descrizione scrivi che cosa hai fatto, che cosa ti aspettavi e che cosa è successo (l'esempio è qui sotto).
-4. Allega il file: trascinalo nel riquadro della descrizione, oppure usa il comando per aggiungere un file sotto il riquadro. GitHub accetta i file `.txt` fino a 25 MB, e quello di AlgoDesign ci sta. Se un'immagine dello schermo aiuta a capire, allegala allo stesso modo.
-5. Rileggi e conferma col pulsante in fondo al modulo. La segnalazione riceve un numero e una pagina sua.
+2. Nel campo **Add a title** scrivi in una riga che cosa succede: «La tabella di traccia mostra 8 dove il programma scrive 7», non «Non funziona».
+3. Nel riquadro **Add a description** scrivi che cosa hai fatto, che cosa ti aspettavi e che cosa è successo (l'esempio è qui sotto).
+4. Allega il file: trascinalo nel riquadro della descrizione, oppure fai clic su **Paste, drop, or click to add files**, sotto il riquadro, e sceglilo. Nel riquadro compare una riga col nome del file: aspetta che compaia prima di andare avanti. GitHub accetta i file `.txt` fino a 25 MB, e quello di AlgoDesign ci sta. Se un'immagine dello schermo aiuta a capire, allegala allo stesso modo.
+5. Rileggi e conferma col pulsante **Create**, in fondo al modulo. La segnalazione riceve un numero e una pagina sua.
 
 Un esempio di descrizione:
 
