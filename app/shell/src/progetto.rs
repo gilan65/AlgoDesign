@@ -388,9 +388,19 @@ pub fn estensione_senza_maiuscole(estensione: &str) -> String {
         .collect()
 }
 
-fn finestra_del_file(finestra: &tauri::WebviewWindow, filtro: &str, estensione: &str, cartella: Option<&str>, portabile: &CartellaPortabile) -> rfd::FileDialog {
+/// La finestra del file col titolo dell'interfaccia: solo su Linux, dove GTK la intitola in inglese («Open File»); su
+/// Windows il sistema le dà già il titolo nella sua lingua.
+fn col_titolo(dialogo: rfd::FileDialog, titolo: &str) -> rfd::FileDialog {
+    if cfg!(target_os = "linux") {
+        dialogo.set_title(titolo)
+    } else {
+        dialogo
+    }
+}
+
+fn finestra_del_file(finestra: &tauri::WebviewWindow, titolo: &str, filtro: &str, estensione: &str, cartella: Option<&str>, portabile: &CartellaPortabile) -> rfd::FileDialog {
     let nel_filtro = if cfg!(target_os = "linux") { estensione_senza_maiuscole(estensione) } else { estensione.trim_start_matches('.').to_string() };
-    let dialogo = rfd::FileDialog::new().add_filter(filtro, &[nel_filtro.as_str()]).set_parent(finestra);
+    let dialogo = col_titolo(rfd::FileDialog::new(), titolo).add_filter(filtro, &[nel_filtro.as_str()]).set_parent(finestra);
     match partenza(cartella, portabile.0.as_deref()) {
         Some(c) => dialogo.set_directory(c),
         None => dialogo,
@@ -398,12 +408,12 @@ fn finestra_del_file(finestra: &tauri::WebviewWindow, filtro: &str, estensione: 
 }
 
 #[tauri::command(async)]
-pub fn scegli_file_da_aprire(finestra: tauri::WebviewWindow, filtro: String, cartella: Option<String>, portabile: tauri::State<'_, CartellaPortabile>) -> Option<String> {
-    finestra_del_file(&finestra, &filtro, ALGO, cartella.as_deref(), &portabile).pick_file().map(|p| p.to_string_lossy().into_owned())
+pub fn scegli_file_da_aprire(finestra: tauri::WebviewWindow, titolo: String, filtro: String, cartella: Option<String>, portabile: tauri::State<'_, CartellaPortabile>) -> Option<String> {
+    finestra_del_file(&finestra, &titolo, &filtro, ALGO, cartella.as_deref(), &portabile).pick_file().map(|p| p.to_string_lossy().into_owned())
 }
 
-fn scegli_dove_salvare(finestra: &tauri::WebviewWindow, proposto: String, filtro: &str, estensione: &str, cartella: Option<&str>, portabile: &CartellaPortabile) -> Option<FileDaSalvare> {
-    finestra_del_file(finestra, filtro, estensione, cartella, portabile).set_file_name(proposto).save_file().map(|p| {
+fn scegli_dove_salvare(finestra: &tauri::WebviewWindow, titolo: &str, proposto: String, filtro: &str, estensione: &str, cartella: Option<&str>, portabile: &CartellaPortabile) -> Option<FileDaSalvare> {
+    finestra_del_file(finestra, titolo, filtro, estensione, cartella, portabile).set_file_name(proposto).save_file().map(|p| {
         let (percorso, sostituire) = da_salvare(p, estensione);
         FileDaSalvare { percorso: percorso.to_string_lossy().into_owned(), sostituire }
     })
@@ -412,24 +422,26 @@ fn scegli_dove_salvare(finestra: &tauri::WebviewWindow, proposto: String, filtro
 #[tauri::command(async)]
 pub fn scegli_file_da_salvare(
     finestra: tauri::WebviewWindow,
+    titolo: String,
     proposto: String,
     filtro: String,
     cartella: Option<String>,
     portabile: tauri::State<'_, CartellaPortabile>,
 ) -> Option<FileDaSalvare> {
-    scegli_dove_salvare(&finestra, proposto, &filtro, ALGO, cartella.as_deref(), &portabile)
+    scegli_dove_salvare(&finestra, &titolo, proposto, &filtro, ALGO, cartella.as_deref(), &portabile)
 }
 
 /// Dove esportare la tabella di traccia: come «Salva con nome», con `.csv`. Il testo lo scrive `scrivi_progetto`.
 #[tauri::command(async)]
 pub fn scegli_file_da_esportare(
     finestra: tauri::WebviewWindow,
+    titolo: String,
     proposto: String,
     filtro: String,
     cartella: Option<String>,
     portabile: tauri::State<'_, CartellaPortabile>,
 ) -> Option<FileDaSalvare> {
-    scegli_dove_salvare(&finestra, proposto, &filtro, CSV, cartella.as_deref(), &portabile)
+    scegli_dove_salvare(&finestra, &titolo, proposto, &filtro, CSV, cartella.as_deref(), &portabile)
 }
 
 /// Dove salvare il codice generato: come «Salva con nome», con l'estensione del linguaggio, che deve essere una di
@@ -437,6 +449,7 @@ pub fn scegli_file_da_esportare(
 #[tauri::command(async)]
 pub fn scegli_file_del_codice(
     finestra: tauri::WebviewWindow,
+    titolo: String,
     proposto: String,
     filtro: String,
     estensione: String,
@@ -444,7 +457,7 @@ pub fn scegli_file_del_codice(
     portabile: tauri::State<'_, CartellaPortabile>,
 ) -> Option<FileDaSalvare> {
     let estensione = CODICE.into_iter().find(|e| *e == estensione)?;
-    scegli_dove_salvare(&finestra, proposto, &filtro, estensione, cartella.as_deref(), &portabile)
+    scegli_dove_salvare(&finestra, &titolo, proposto, &filtro, estensione, cartella.as_deref(), &portabile)
 }
 
 /// Dove esportare il flowchart: come «Salva con nome», con l'estensione dell'immagine, che deve essere una di
@@ -452,6 +465,7 @@ pub fn scegli_file_del_codice(
 #[tauri::command(async)]
 pub fn scegli_file_dell_immagine(
     finestra: tauri::WebviewWindow,
+    titolo: String,
     proposto: String,
     filtro: String,
     estensione: String,
@@ -459,7 +473,7 @@ pub fn scegli_file_dell_immagine(
     portabile: tauri::State<'_, CartellaPortabile>,
 ) -> Option<FileDaSalvare> {
     let estensione = IMMAGINE.into_iter().find(|e| *e == estensione)?;
-    scegli_dove_salvare(&finestra, proposto, &filtro, estensione, cartella.as_deref(), &portabile)
+    scegli_dove_salvare(&finestra, &titolo, proposto, &filtro, estensione, cartella.as_deref(), &portabile)
 }
 
 #[tauri::command]
@@ -513,8 +527,8 @@ pub fn scrivi_libreria(nome: String, testo: String, scelta: Option<String>, grup
 }
 
 #[tauri::command(async)]
-pub fn scegli_cartella(finestra: tauri::WebviewWindow, cartella: Option<String>, portabile: tauri::State<'_, CartellaPortabile>) -> Option<String> {
-    let dialogo = rfd::FileDialog::new().set_parent(&finestra);
+pub fn scegli_cartella(finestra: tauri::WebviewWindow, titolo: String, cartella: Option<String>, portabile: tauri::State<'_, CartellaPortabile>) -> Option<String> {
+    let dialogo = col_titolo(rfd::FileDialog::new(), &titolo).set_parent(&finestra);
     let dialogo = match partenza(cartella.as_deref(), portabile.0.as_deref()) {
         Some(c) => dialogo.set_directory(c),
         None => dialogo,

@@ -2042,7 +2042,7 @@ export function Applicazione({
     const tolte = es.traccia.tolte;
     const nome = await nomeDaUsare(es.progetto.metadata.name, ".csv", testi.nomeDellaTabella);
     if (nome === null) return;
-    const scelto = await scegliFileDaEsportare(nome, testi.filtroDellaTabella, partenza);
+    const scelto = await scegliFileDaEsportare(testi.titoloEsportaTabella, nome, testi.filtroDellaTabella, partenza);
     if (scelto === null || (scelto.sostituire && !(await sostituire(scelto.percorso)))) return;
     try {
       await scriviProgetto(scelto.percorso, testo);
@@ -2200,7 +2200,7 @@ export function Applicazione({
     const estensione = estensioneDel(s.formato);
     const base = await nomeDaUsare(progetto.metadata.name, estensione);
     if (base === null) return;
-    const scelto = await scegliFileDellImmagine(`${nomeDellImmagine(base, funzione)}${estensione}`, s.formato === "png" ? testi.filtroPng : testi.filtroSvg, estensione, partenza);
+    const scelto = await scegliFileDellImmagine(testi.titoloEsportaFlowchart, `${nomeDellImmagine(base, funzione)}${estensione}`, s.formato === "png" ? testi.filtroPng : testi.filtroSvg, estensione, partenza);
     if (scelto === null || (scelto.sostituire && !(await sostituire(scelto.percorso)))) return;
     try {
       if (s.formato === "svg") await scriviProgetto(scelto.percorso, svg);
@@ -2262,7 +2262,7 @@ export function Applicazione({
     const { estensione } = voceDel(linguaggio);
     const base = await nomeDaUsare(progetto.metadata.name, estensione);
     if (base === null) return;
-    const scelto = await scegliFileDelCodice(`${nomeDelFileDelCodice(base, linguaggio, testi)}${estensione}`, filtro, estensione, partenza);
+    const scelto = await scegliFileDelCodice(testi.titoloSalvaCodice, `${nomeDelFileDelCodice(base, linguaggio, testi)}${estensione}`, filtro, estensione, partenza);
     if (scelto === null || (scelto.sostituire && !(await sostituire(scelto.percorso)))) return;
     try {
       await scriviProgetto(scelto.percorso, testo);
@@ -2304,7 +2304,7 @@ export function Applicazione({
     const torna = () => setFinestra({ genere: "segnala", segnalazione });
     const nome = await nomeDaUsare(progetto.metadata.name, ".txt", testi.nomeDellaSegnalazione);
     if (nome === null) return torna();
-    const scelto = await scegliFileDelCodice(nome, testi.filtroDellaSegnalazione, ".txt", partenza);
+    const scelto = await scegliFileDelCodice(testi.titoloSalvaSegnalazione, nome, testi.filtroDellaSegnalazione, ".txt", partenza);
     if (scelto === null || (scelto.sostituire && !(await sostituire(scelto.percorso)))) return torna();
     setFinestra(null);
     try {
@@ -3230,7 +3230,7 @@ export function Applicazione({
       // Il nome del file legato al progetto, o quello del progetto (l'avviso, se cambia).
       const base = documento.percorso === null ? await nomeDaUsare(p.metadata.name, ".algo") : null;
       if (documento.percorso === null && base === null) return false;
-      const scelto = await scegliFileDaSalvare(documento.percorso !== null ? nomeDelFile(documento.percorso) : `${base}.algo`, testi.filtroDelFile, da);
+      const scelto = await scegliFileDaSalvare(testi.titoloSalvaConNome, documento.percorso !== null ? nomeDelFile(documento.percorso) : `${base}.algo`, testi.filtroDelFile, da);
       if (scelto === null || (scelto.sostituire && !(await sostituire(scelto.percorso)))) return false;
       percorso = scelto.percorso;
     }
@@ -3295,7 +3295,7 @@ export function Applicazione({
   /** «Da un altro file…» nella finestra dell'importazione: il progetto del file scelto, o perché non si apre (con le
    * regole di «Apri»: un file che non si legge, che il lettore rifiuta o che usa la ricorsione). */
   async function sorgenteDaUnFile(): Promise<DaUnFile> {
-    const percorso = await scegliFileDaAprire(testi.filtroDelFile, partenza);
+    const percorso = await scegliFileDaAprire(testi.titoloImporta, testi.filtroDelFile, partenza);
     if (percorso === null) return null;
     const nonSiApre = (motivo: string) => ({ errore: riempi(testi.importaFileNonSiApre, { file: nomeDelFile(percorso), motivo }) });
     let testo: string;
@@ -3312,7 +3312,7 @@ export function Applicazione({
   }
 
   async function apriUnFile(): Promise<void> {
-    const percorso = await scegliFileDaAprire(testi.filtroDelFile, partenza);
+    const percorso = await scegliFileDaAprire(testi.titoloApri, testi.filtroDelFile, partenza);
     if (percorso !== null) await apriIl(percorso);
   }
 

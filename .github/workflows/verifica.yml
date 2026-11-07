@@ -5,7 +5,8 @@
 # che manca a un utente lì c'è.
 #
 # Gli archivi vengono da una release (`tag`) o, finché una release per Linux non c'è, dall'artefatto `linux` di una corsa
-# di `release` (`corsa`, il suo numero): uno dei due, non entrambi.
+# di `release` (`corsa`, il suo numero): uno dei due, non entrambi. Con `sonda` la verifica guasta ciò che ha scaricato
+# (un byte in più nell'archivio dell'app, o l'archivio dello strumento tolto) e deve dire rosso: è il suo controllo positivo.
 #
 # Che cosa NON guarda: l'interfaccia (nessuna prova la comanda: lo fa la prova sul prodotto del workflow `release`); un
 # desktop vero (niente gestore di finestre, niente GPU); dello strumento, più del suo aiuto e di un testo letto (lo prova
@@ -24,6 +25,9 @@ on:
       piattaforme:
         description: "Piattaforme da verificare, separate da virgole (linux)"
         default: "linux"
+      sonda:
+        description: "Il controllo positivo: impronta (un byte in più nell'archivio dell'app) o archivio (quello dello strumento tolto); vuoto per la verifica vera"
+        default: ""
 
 permissions:
   contents: read
@@ -50,6 +54,7 @@ jobs:
         env:
           TAG: ${{ inputs.tag }}
           CORSA: ${{ inputs.corsa }}
+          SONDA: ${{ inputs.sonda }}
         run: |
           if [ -n "${TAG}" ] && [ -z "${CORSA}" ]; then
             gh release download "${TAG}" -R "$GITHUB_REPOSITORY" -p 'AlgoDesign-*linux-x64.tar.gz*'
@@ -58,6 +63,16 @@ jobs:
           else
             echo "ROSSO: serve uno solo fra tag («${TAG}») e corsa («${CORSA}»)"; exit 1
           fi
+          # Il controllo positivo: gli archivi scaricati guastati come li riceverebbe chi li usa; la verifica deve dire rosso.
+          case "${SONDA}" in
+            "") ;;
+            impronta)
+              for f in AlgoDesign-*-linux-x64.tar.gz; do case "$f" in AlgoDesign-Tools-*) ;; *) printf 'x' >> "$f"; echo "SONDA: un byte in più in $f";; esac; done ;;
+            archivio)
+              rm -v AlgoDesign-Tools-*-linux-x64.tar.gz; echo "SONDA: tolto l'archivio dello strumento" ;;
+            *)
+              echo "ROSSO: sonda sconosciuta «${SONDA}»"; exit 1 ;;
+          esac
           ls -la
           # Un solo archivio dell'app e uno solo dello strumento, coi nomi della stessa versione.
           app=$(find . -maxdepth 1 -name 'AlgoDesign-*-linux-x64.tar.gz' ! -name 'AlgoDesign-Tools-*' -printf '%f\n')

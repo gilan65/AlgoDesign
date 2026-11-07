@@ -20,8 +20,11 @@
 // caratteri lo termina la pagina, che altrimenti un programma che scrive senza fine renderebbe inutilizzabile. Un testo vuoto
 // non diventa un messaggio: il tetto non lo conta, e un ciclo di messaggi vuoti bloccherebbe la pagina prima di «Ferma».
 //
-// CHE COSA NON FA: nessun limite di tempo; i browser diversi da Chromium non sono provati (fuori da V8 la forma della pila è
-// un'altra, e la riga esce «?»); un input che non è testo (una casella contiene solo testo).
+// La riga dell'errore viene dalla pila delle chiamate, che `fermati` legge nelle due forme: quella di V8 (Chromium) e quella
+// di WebKit e di Firefox; le prove la guardano in Chromium e nel WebKit per Linux.
+//
+// CHE COSA NON FA: nessun limite di tempo; Firefox non è nelle prove (la sua forma della pila è quella di WebKit, vista
+// una volta a mano); un input che non è testo (una casella contiene solo testo).
 import type { Riga } from "../core/genera/forma";
 import type { Lingua } from "../i18n/lingue";
 

@@ -124,7 +124,9 @@ test("il testo mostrato è byte per byte quello scritto, si riapre e non ha perc
   const riaperta = apriRegistrazione(mostrato);
   if (!riaperta.ok) throw new Error(`riaperta con errori: ${JSON.stringify(riaperta.errori)}`);
   const r = riaperta.registrazione;
-  expect([r.product_version.length > 0, r.language, r.system]).toEqual([true, "it", "windows"]);
+  // Il sistema è quello che il progetto della prova dichiara: Windows per Chromium, Linux per WebKit (`playwright.config.ts`).
+  const sistema = (info.project.use.userAgent ?? "").includes("Windows") ? "windows" : "linux";
+  expect([r.product_version.length > 0, r.language, r.system]).toEqual([true, "it", sistema]);
   expect(r.executions.length).toBe(1);
   expect(r.executions[0]!.project.metadata.name).toBe("riferimento-media-voti");
 

@@ -207,6 +207,15 @@ export const it = {
   // La lingua all'estrema destra della riga di stato: il nome del pulsante, seguito dalla lingua scelta.
   linguaDellInterfaccia: "Lingua dell'interfaccia",
   filtroDelFile: "Progetti AlgoDesign",
+  // Il titolo delle finestre del file su Linux (GTK le intitola in inglese): il nome del comando che le apre.
+  titoloApri: "Apri",
+  titoloSalvaConNome: "Salva con nome",
+  titoloImporta: "Importa procedure e funzioni",
+  titoloEsportaTabella: "Esporta la tabella",
+  titoloEsportaFlowchart: "Esporta il flowchart",
+  titoloSalvaCodice: "Salva il codice",
+  titoloSalvaSegnalazione: "Salva il file per la segnalazione",
+  titoloScegliCartella: "Scegli una cartella",
   progettoSenzaNome: "Senza nome",
   progettoNuovoTitolo: "Nuovo progetto",
   progettoTitolo: "Proprietà del progetto",
@@ -1172,6 +1181,9 @@ export const it = {
   stampaNumeri: "il numero di pagina",
   stampaData: "la data e l'ora",
   stampaConsiglioPdf: "Per avere un PDF, nella finestra che si apre scegli la destinazione «Salva come PDF».",
+  // Su Linux al posto del consiglio: la finestra di GTK e il WebKitGTK, che non conosce i fogli con un nome né le caselle
+  // del margine.
+  stampaConsiglioPdfLinux: "Per avere un PDF, nella finestra che si apre scegli «Stampa su file». Su Linux i fogli si stampano tutti nel verso scelto in quella finestra, senza l'intestazione e senza il piè di pagina.",
   stampaPagina: "pagina {n} di {m}",
   stampaFoglio: "foglio {n} di {m} del flowchart",
   stampaValori: "Valori scritti nella console",

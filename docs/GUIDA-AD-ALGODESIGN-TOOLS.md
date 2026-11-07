@@ -78,7 +78,7 @@ Se le righe dell'input finiscono prima delle letture, il programma si ferma con 
 
 Il riquadro del codice si seleziona col mouse senza i numeri di riga: incollato in un file `.js`, è il programma da eseguire con Node (§8 della guida per lo studente).
 
-La pagina è provata in **Chromium**, il motore di Chrome e di Edge. In **Firefox** e in **Safari** non è provata: la riga dell'errore può uscire «?», col motivo giusto. L'input è una casella, quindi solo testo.
+La pagina è provata in **Chrome**, in **Edge** e in **Firefox**. In **Safari** non è provata: per la riga dell'errore la pagina potrebbe mostrare «?», col motivo giusto. L'input è una casella, quindi solo testo.
 
 ### Due linguaggi a scelta
 

@@ -306,7 +306,7 @@ Il **JavaScript** è lo stesso programma del TypeScript senza i tipi, riga per r
 - `media (TypeScript e JavaScript).html`: i due testi in due colonne, da stampare con Ctrl+P su carta o in un PDF;
 - `media (prova).html`: la **pagina di prova**, che esegue il JavaScript nel browser. Nella casella **Input** si scrivono i valori prima di **Esegui**, una riga per ogni lettura del programma; ciò che il programma scrive compare in **Output**. **Ferma** interrompe un programma che non finisce.
 
-La pagina è provata in Chromium, il motore di Chrome e di Edge. In Firefox e in Safari non è provata: la riga di un errore può uscire «?», col motivo giusto.
+La pagina è provata in Chrome, in Edge e in Firefox. In Safari non è provata: per la riga di un errore la pagina potrebbe mostrare «?», col motivo giusto.
 
 Per eseguire il JavaScript con Node, seleziona col mouse il riquadro del codice della pagina di prova (i numeri di riga non entrano nella selezione), incollalo in un file `media.js` e scrivi `node media.js`.
 

@@ -20,10 +20,10 @@ export interface ErroreDelFile {
 // Come in `preferenze.ts`: la finzione di Playwright imposta `__TAURI_INTERNALS__` e non `isTauri`.
 const nelGuscio = () => "__TAURI_INTERNALS__" in window;
 
-/** `cartella`: da dove parte la finestra (quella del file aperto o dell'ultimo usato); `null`, la sceglie il
+/** `titolo`: il titolo della finestra del file su Linux (il guscio lo mette solo lì). `cartella`: da dove parte la finestra (quella del file aperto o dell'ultimo usato); `null`, la sceglie il
  * guscio (nella versione portabile la cartella dell'eseguibile). */
-export const scegliFileDaAprire = async (filtro: string, cartella: string | null) =>
-  nelGuscio() ? invoke<string | null>("scegli_file_da_aprire", { filtro, cartella }) : null;
+export const scegliFileDaAprire = async (titolo: string, filtro: string, cartella: string | null) =>
+  nelGuscio() ? invoke<string | null>("scegli_file_da_aprire", { titolo, filtro, cartella }) : null;
 
 /** Il file dove salvare: il percorso scelto, già con «.algo», e se va chiesto all'utente di sostituirlo (il
  * file c'è, e la finestra del sistema non l'ha confermato perché il nome scelto era un altro). Le chiavi le
@@ -33,25 +33,25 @@ export interface FileDaSalvare {
   readonly sostituire: boolean;
 }
 
-export const scegliFileDaSalvare = async (proposto: string, filtro: string, cartella: string | null) =>
-  nelGuscio() ? invoke<FileDaSalvare | null>("scegli_file_da_salvare", { proposto, filtro, cartella }) : null;
+export const scegliFileDaSalvare = async (titolo: string, proposto: string, filtro: string, cartella: string | null) =>
+  nelGuscio() ? invoke<FileDaSalvare | null>("scegli_file_da_salvare", { titolo, proposto, filtro, cartella }) : null;
 
 /** Il file dove esportare la tabella di traccia: come per «Salva con nome», col filtro e l'estensione `.csv`. */
-export const scegliFileDaEsportare = async (proposto: string, filtro: string, cartella: string | null) =>
-  nelGuscio() ? invoke<FileDaSalvare | null>("scegli_file_da_esportare", { proposto, filtro, cartella }) : null;
+export const scegliFileDaEsportare = async (titolo: string, proposto: string, filtro: string, cartella: string | null) =>
+  nelGuscio() ? invoke<FileDaSalvare | null>("scegli_file_da_esportare", { titolo, proposto, filtro, cartella }) : null;
 
 /** Il file dove salvare il codice generato: come per «Salva con nome», col filtro e l'estensione del linguaggio (dal
  * registro dei linguaggi). */
-export const scegliFileDelCodice = async (proposto: string, filtro: string, estensione: EstensioneDelCodice, cartella: string | null) =>
-  nelGuscio() ? invoke<FileDaSalvare | null>("scegli_file_del_codice", { proposto, filtro, estensione, cartella }) : null;
+export const scegliFileDelCodice = async (titolo: string, proposto: string, filtro: string, estensione: EstensioneDelCodice, cartella: string | null) =>
+  nelGuscio() ? invoke<FileDaSalvare | null>("scegli_file_del_codice", { titolo, proposto, filtro, estensione, cartella }) : null;
 
 /** Le estensioni del flowchart esportato (`IMMAGINE` in `shell/src/progetto.rs`). */
 export const estensioniDellImmagine = [".png", ".svg"] as const;
 export type EstensioneDellImmagine = (typeof estensioniDellImmagine)[number];
 
 /** Il file dove esportare il flowchart: come per «Salva con nome», col filtro e l'estensione dell'immagine. */
-export const scegliFileDellImmagine = async (proposto: string, filtro: string, estensione: EstensioneDellImmagine, cartella: string | null) =>
-  nelGuscio() ? invoke<FileDaSalvare | null>("scegli_file_dell_immagine", { proposto, filtro, estensione, cartella }) : null;
+export const scegliFileDellImmagine = async (titolo: string, proposto: string, filtro: string, estensione: EstensioneDellImmagine, cartella: string | null) =>
+  nelGuscio() ? invoke<FileDaSalvare | null>("scegli_file_dell_immagine", { titolo, proposto, filtro, estensione, cartella }) : null;
 
 /** Rifiuta con un `ErroreDelFile`. Scrive i byte com'è (il PNG), in modo atomico: viaggiano in base64. */
 export const scriviByte = (percorso: string, byte: string) => invoke<void>("scrivi_byte", { percorso, byte });
@@ -147,7 +147,7 @@ export async function togliGruppo(gruppo: string, scelta: string | null): Promis
 
 /** La finestra del sistema per scegliere una cartella, che parte da `cartella`; `null` se l'utente rinuncia
  * (e sempre fuori dal guscio). */
-export const scegliCartella = async (cartella: string | null) => (nelGuscio() ? invoke<string | null>("scegli_cartella", { cartella }) : null);
+export const scegliCartella = async (titolo: string, cartella: string | null) => (nelGuscio() ? invoke<string | null>("scegli_cartella", { titolo, cartella }) : null);
 
 export async function segnaModificato(modificato: boolean): Promise<void> {
   if (nelGuscio()) await invoke("segna_modificato", { modificato });

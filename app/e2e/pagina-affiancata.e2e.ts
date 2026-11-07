@@ -157,7 +157,7 @@ test("ogni coppia del registro: sui progetti più difficili ogni riga è nella p
   expect(pagine).toBeGreaterThanOrEqual(coppie.length);
 });
 
-test("il PDF: un foglio A4 orizzontale per ogni sezione, senza fogli in più, sul progetto più lungo", async ({ page }) => {
+test("il PDF: un foglio A4 orizzontale per ogni sezione, senza fogli in più, sul progetto più lungo", async ({ page, browserName }) => {
   test.setTimeout(120_000);
   const q = piuDifficili("python", "c")[0]!;
   for (const nomi of [undefined, ["python", "c"], ["pseudocodice", "typescript"]] as const) {
@@ -165,15 +165,17 @@ test("il PDF: un foglio A4 orizzontale per ogni sezione, senza fogli in più, su
     if (fatta === undefined) throw new Error(q.nome);
     await apriLaPagina(page, fatta.testo);
     const sezioni = await page.locator("section.foglio").count();
+    expect(sezioni).toBeGreaterThan(1);
+    // `page.pdf()` c'è solo in Chromium: negli altri motori la prova si ferma alle sezioni.
+    if (browserName !== "chromium") continue;
     const pdf = (await page.pdf({ preferCSSPageSize: true })).toString("latin1");
     const scatole = [...pdf.matchAll(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/g)].map((m) => [Math.round(Number(m[1])), Math.round(Number(m[2]))]);
-    expect(sezioni).toBeGreaterThan(1);
     expect(scatole.length).toBe(sezioni);
     for (const s of scatole) expect(s).toEqual(A4_ORIZZONTALE);
   }
 });
 
-test("il nome del progetto con caratteri dell'HTML e del CSS non rompe la pagina; lo stile è applicato", async ({ page }) => {
+test("il nome del progetto con caratteri dell'HTML e del CSS non rompe la pagina; lo stile è applicato", async ({ page, browserName }) => {
   const q = progetti.find((x) => x.nome.endsWith("tre-livelli.algo"))!;
   const p: Progetto = { ...q.progetto, metadata: { ...q.progetto.metadata, name: `</style><b>"a'\\` } };
   const fatta = paginaDi(p, ["pseudocodice", "c"]);
@@ -181,5 +183,6 @@ test("il nome del progetto con caratteri dell'HTML e del CSS non rompe la pagina
   await apriLaPagina(page, fatta.testo);
   expect(await page.locator("body b").count()).toBe(0);
   expect(await page.locator("section.foglio").first().evaluate((f) => getComputedStyle(f).breakInside)).toBe("avoid");
-  expect((await page.pdf({ preferCSSPageSize: true })).length).toBeGreaterThan(0);
+  // `page.pdf()` c'è solo in Chromium.
+  if (browserName === "chromium") expect((await page.pdf({ preferCSSPageSize: true })).length).toBeGreaterThan(0);
 });

@@ -36,8 +36,9 @@ export const sonde: readonly Sonda[] = [
   // Per un oggetto la pagina annota l'origine dell'indirizzo, senza la barra finale (misurato in Chromium).
   { nome: "un oggetto da un indirizzo esterno", direttiva: "object-src", attesa: "object-src https://algodesign.invalid" },
   { nome: "un indirizzo di base", direttiva: "base-uri", attesa: `base-uri ${altrove}` },
-  // Il metodo GET aggiunge all'indirizzo i campi del modulo (nessuno): resta il «?».
-  { nome: "un modulo spedito altrove", direttiva: "form-action", attesa: `form-action ${altrove}?` },
+  // Il metodo GET aggiunge all'indirizzo i campi del modulo (nessuno): Chromium annota il «?» rimasto, WebKit no (misurato
+  // nel WebKit per Linux); `provaLaSonda` lo toglie, e i due motori annotano lo stesso indirizzo.
+  { nome: "un modulo spedito altrove", direttiva: "form-action", attesa: `form-action ${altrove}` },
 ];
 
 /** Le differenze fra le direttive della politica (`direttiva valori; …`) e quelle delle sonde, nei due versi. */
@@ -60,7 +61,7 @@ export function provaLaSonda(nome: string): Promise<string> {
       for (const e of aggiunti) e.remove();
       fatto(esito);
     };
-    const vista = (e: SecurityPolicyViolationEvent) => fine(`${e.effectiveDirective} ${e.blockedURI.startsWith("data:") ? "data" : e.blockedURI}`);
+    const vista = (e: SecurityPolicyViolationEvent) => fine(`${e.effectiveDirective} ${e.blockedURI.startsWith("data:") ? "data" : e.blockedURI.replace(/\?$/, "")}`);
     document.addEventListener("securitypolicyviolation", vista);
     setTimeout(() => fine("nessuna violazione"), 2_000);
     const metti = <T extends Element>(e: T, dove: Element = document.body): T => {

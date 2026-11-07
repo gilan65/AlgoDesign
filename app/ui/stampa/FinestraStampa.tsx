@@ -16,6 +16,7 @@ import type { ModoDiColore } from "../../core/disegno/tavolozza";
 import type { Dizionario } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
 import { modiDiColore } from "../disegno/esporta";
+import { sistemaDelMotore } from "../piattaforma";
 import { Descrizione, Finestra, Rinuncia, stili as finestra } from "../finestre/Finestra";
 import { Opzioni } from "../finestre/FinestraImpostazioni";
 import { partiDellaStampa, partiStampate, testoDellaParte, type ParteDellaStampa, type ScelteDiStampa } from "./parti";
@@ -204,7 +205,7 @@ function Scelte({ cosa, iniziali, testi, stampa }: { cosa: DaStampare; iniziali:
           <Casella testo={testi.stampaData} scelta={s.data} cambia={(si) => setS((x) => ({ ...x, data: si }))} />
         </div>
       </fieldset>
-      <Descrizione className={stili.consiglio}>{testi.stampaConsiglioPdf}</Descrizione>
+      <Descrizione className={stili.consiglio}>{sistemaDelMotore() === "linux" ? testi.stampaConsiglioPdfLinux : testi.stampaConsiglioPdf}</Descrizione>
       <div className={finestra.comandi}>
         <Rinuncia type="button" className={finestra.comando}>
           {testi.annullaEsc}

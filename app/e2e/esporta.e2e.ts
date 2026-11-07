@@ -172,6 +172,12 @@ function diversi(a: { pixel: number[] }, b: { pixel: number[] }): number {
   return n;
 }
 
+// Un pixel per punto, come in Chromium: il dispositivo di WebKit ne ha due, e la foto di riferimento misurava il doppio
+// del PNG. Il PNG non dipende dal fattore della pagina: è sempre al doppio dell'SVG. I pixel diversi dal riferimento,
+// misurati: 1,11 % in Chromium su Windows, 1,96 % nel WebKit per Linux (uguale in due giri; 2,01 % con due pixel per punto e
+// la foto ridotta), 15,7 % il PNG a toni di grigio (il controllo positivo). La soglia è il 3 %.
+test.describe("con un pixel per punto", () => {
+test.use({ deviceScaleFactor: 1 });
 test("il PNG decodificato misura il doppio dell'SVG e ha i pixel dell'SVG reso al doppio; nessuna violazione della politica; lo sfondo trasparente", async ({ page }) => {
   test.setTimeout(120_000);
   await apriIlProgramma(page);
@@ -195,6 +201,8 @@ test("il PNG decodificato misura il doppio dell'SVG e ha i pixel dell'SVG reso a
   console.log(`SVG ${l} × ${a}, PNG ${png.larghezza} × ${png.altezza}, atteso ${attesa.larghezza} × ${attesa.altezza}`);
   expect({ larghezza: png.larghezza, altezza: png.altezza }).toEqual(attesa);
 
+  const violazioni = () => page.evaluate(() => (window as unknown as { __violazioni__: string[] }).__violazioni__);
+  const primaDelRiferimento = (await violazioni()).length;
   // Il riferimento: lo stesso SVG nella pagina, al doppio, fotografato dal motore.
   await page.evaluate(
     ({ testo, misura }) => {
@@ -210,12 +218,19 @@ test("il PNG decodificato misura il doppio dell'SVG e ha i pixel dell'SVG reso a
     },
     { testo: svg, misura: attesa },
   );
+  // La foto misura il PNG: con due pixel per punto era il doppio (888 × 1080 contro 444 × 540, misurato nel WebKit per Linux).
   const foto = await page.screenshot({ clip: { x: 0, y: 0, width: attesa.larghezza, height: attesa.altezza } });
   const riferimento = await decodifica(page, foto.toString("base64"));
+  // Il `<style>` dell'SVG messo nella pagina dalla prova: WebKit annota la violazione (`style-src-elem inline`, misurato nel
+  // WebKit per Linux), Chromium no. È della prova, non dell'esportazione: si toglie dal conto, e si stampa.
+  const dellaProva = await page.evaluate((da) => (window as unknown as { __violazioni__: string[] }).__violazioni__.splice(da), primaDelRiferimento);
+  console.log(`violazioni del riferimento messo dalla prova: ${JSON.stringify(dellaProva)}`);
+  expect(dellaProva.every((v) => v === "style-src-elem inline")).toBe(true);
+  expect({ larghezza: riferimento.larghezza, altezza: riferimento.altezza }).toEqual(attesa);
   const n = diversi(png, riferimento);
   const totale = png.pixel.length / 4;
   console.log(`pixel diversi dal riferimento: ${n} su ${totale} (${((n / totale) * 100).toFixed(2)}%)`);
-  expect(n / totale).toBeLessThan(0.02);
+  expect(n / totale).toBeLessThan(0.03);
 
   // Controlli positivi: il PNG a toni di grigio contro lo stesso riferimento; un PNG fatto al fattore 1 nella pagina.
   await page.evaluate((u) => Object.assign(window.__finzione__, { daEsportareLImmagine: `${u} grigio` }), USCITA);
@@ -243,6 +258,7 @@ test("il PNG decodificato misura il doppio dell'SVG e ha i pixel dell'SVG reso a
   const trasparente = await decodifica(page, (await finzione(page)).byte![`${USCITA} trasparente.png`]!);
   expect({ trasparente: trasparente.pixel.slice(0, 4), pieno: png.pixel.slice(0, 4) }).toEqual({ trasparente: [0, 0, 0, 0], pieno: [255, 255, 255, 255] });
   expect(await page.evaluate(() => (window as unknown as { __violazioni__: string[] }).__violazioni__)).toEqual([]);
+});
 });
 
 test("in pausa sul punto di interruzione l'immagine ha il blocco corrente, la punta e il punto, e la finestra lo dice", async ({ page }) => {
