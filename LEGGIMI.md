@@ -150,6 +150,14 @@ Tutti i comandi si danno nella cartella `app/`, dopo `bun install`.
 - Tipi e semantica del **C11**, più un tipo `stringa`.
 - Un progetto è un solo file `.algo`, in JSON: il formato è spiegato campo per campo in `FORMATO-FILE-ALGO.md`, e scritto come JSON Schema in `algo.schema.json`, nella cartella `docs/` del repository del progetto.
 
+## Code signing policy
+
+AlgoDesign 1.0.0 non è firmato digitalmente. Per le prossime versioni è in corso la richiesta di un certificato gratuito a SignPath Foundation. Quando sarà concesso, varrà: Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+
+Autore, revisore e approvatore: [gilan65](https://github.com/gilan65), il proprietario di questo repository, che approva a mano ogni richiesta di firma.
+
+Privacy: AlgoDesign non trasmette alcuna informazione ad altri sistemi in rete, se non su richiesta esplicita di chi lo usa o lo installa.
+
 ## Licenza
 
 © 2026 Giuseppe Lancellotti. Due licenze, a seconda del tipo di contenuto:
