@@ -1,6 +1,6 @@
 # AlgoDesign {{versione}}: note di rilascio
 
-Versione {{delData}}. È la **prima versione stabile** di AlgoDesign e la prima **per Linux** a 64 bit, nella forma portabile: si estrae l'archivio e si avvia `AlgoDesign.AppImage`, senza installarla. Dalla stessa pagina si scarica anche la versione per Windows; quella per macOS è in arrivo. Come si avvia l'applicazione su Linux, i suoi requisiti e ciò che su Linux è diverso da Windows sono nel file `ALGODESIGN-PER-LINUX.md`; la scrittura del primo algoritmo, passo per passo, è nella guida «per cominciare», `PER-COMINCIARE.md` (in inglese `GETTING-STARTED.md`); come si usa l'applicazione è nella guida per lo studente, `GUIDA-PER-LO-STUDENTE.md` (in inglese `STUDENT-GUIDE.md`), che vale anche qui, con gli stessi tasti di Windows.
+Versione {{delData}}. È la **prima versione stabile** di AlgoDesign e la prima **per Linux** a 64 bit, nella forma portabile: si estrae l'archivio e si avvia `AlgoDesign.AppImage`, senza installarla. Dalla stessa pagina si scarica anche la versione per Windows; quella per macOS arriverà con la 1.0.1. Come si avvia l'applicazione su Linux, i suoi requisiti e ciò che su Linux è diverso da Windows sono nel file `ALGODESIGN-PER-LINUX.md`; la scrittura del primo algoritmo, passo per passo, è nella guida «per cominciare», `PER-COMINCIARE.md` (in inglese `GETTING-STARTED.md`); come si usa l'applicazione è nella guida per lo studente, `GUIDA-PER-LO-STUDENTE.md` (in inglese `STUDENT-GUIDE.md`), che vale anche qui, con gli stessi tasti di Windows.
 
 ## Che cosa c'è di nuovo
 
@@ -13,6 +13,7 @@ Rispetto alla versione 0.7.0-beta.3, che era solo per Windows:
 - **La guida «per cominciare»**, `PER-COMINCIARE.md` (in inglese `GETTING-STARTED.md`), con le figure della finestra nella cartella `img`.
 - **Il PNG di un flowchart di grandi dimensioni** esce ridotto, quando supera la misura che la finestra sa disegnare; la riga di stato dice la misura in pixel.
 - **La pagina di prova** dello strumento a riga di comando mostra la riga di un errore anche in Firefox.
+- **Lo strumento a riga di comando legge più testi.** Il comando `accademico` accetta le forme dei testi più vecchi delle Selezioni scolastiche, aggiunge da sé `massimo` e `minimo`, e al posto di un codice d'errore scrive una frase che dice che cosa non va.
 - **Correzioni**: un valore rifiutato nella tabella di traccia trattiene i comandi che proseguono, e «Ferma» ferma sempre; il testo scritto nel campo di una tabella lunga non si perde più; in una cella con più valori il nome accanto a un parametro per riferimento è quello giusto; la console nomina il campo o l'elemento chiesto, non solo il dato; una funzione che restituisce una matrice di record è un errore, come per un dato; importando procedure e funzioni, un dato che ha il nome di un record del programma è segnalato subito.
 
 ## Che cosa c'è
@@ -30,8 +31,15 @@ Rispetto alla versione 0.7.0-beta.3, che era solo per Windows:
 
 ## Che cosa manca
 
-- La versione per macOS, in arrivo.
 - Compilare ed eseguire il codice generato dentro AlgoDesign: il codice si copia o si salva e si prova a parte, con un compilatore C, con Python o con Node.js.
+
+## Cose da fare
+
+Ciò che è previsto per le prossime versioni e che oggi non c'è. Non sono difetti.
+
+- **La versione per macOS**, con la 1.0.1.
+- **In «Accademico» e nello strumento a riga di comando**: le matrici, i tipi `float` e `char`, `SQRT` e `-Infinity`.
+- **Il limite di un milione di azioni e quello dei 1000 elementi di un vettore**: la guida ad «Accademico» spiega come rispondere lo stesso a un esercizio che li supera.
 
 ## Da sapere
 

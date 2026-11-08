@@ -29,6 +29,7 @@ import { aggiungiAllaLibreria, dimensionePredefinita, leggiAccademico, type Nota
 import { progettoNuovo } from "../core/modifica/operazioni";
 import { apri, salva } from "../core/progetto/formato";
 import type { Blocco, Progetto } from "../core/progetto/modello";
+import { testoDellaSegnalazione } from "../i18n/codici";
 
 /** Il modo d'uso, col comando come lo scrive chi lo usa. */
 const modoDUsoDi = (comando: string) => `Legge un testo in «Accademico» e ne fa una libreria di AlgoDesign.
@@ -142,7 +143,7 @@ export function comandoAccademico(argomenti: readonly string[], comando: string)
       dove = n.progetto;
     }
 
-    const letto = leggiAccademico(testo, { procedura, dimensione, rinomina, lingua: "it" }, dove);
+    const letto = leggiAccademico(testo, { procedura, dimensione, rinomina, lingua: "it", vettoriModificati: true }, dove);
     // Riga 0: il nome della procedura del codice fuori dalle funzioni, che non viene dal testo ma dal file o da `-n`.
     if (!letto.ok) ferma(letto.riga === 0 ? `${percorso}: ${letto.motivo}: dagliene un altro con -n` : `${percorso}, riga ${letto.riga}: ${letto.motivo}`);
     const l = letto as Extract<typeof letto, { ok: true }>;
@@ -168,6 +169,26 @@ export function comandoAccademico(argomenti: readonly string[], comando: string)
           return `il nome ${t.nome} è riservato nel flowchart: diventa ${t.nuovo}`;
         case "nome-in-uso":
           return t.dato === true ? `il dato ${t.nome} ha il nome di una procedura o funzione: diventa ${t.nuovo}` : `il nome ${t.nome} c'è già nella libreria: diventa ${t.nuovo}`;
+        case "funzione-aggiunta":
+          return `«${t.nome}» non c'è nel flowchart: diventa la funzione ${t.nuovo}, aggiunta al programma`;
+      }
+    };
+    const forma = (n: Nota): string => {
+      switch (n.forma!) {
+        case "uguale":
+          return "«=» si legge «==»";
+        case "mod":
+          return "«MOD» si legge «mod»";
+        case "output":
+          return "«output» senza tonde si legge «output(…)»";
+        case "intervallo":
+          return "la virgola dell'intervallo si legge come i tre punti: [a ... b)";
+        case "procedure":
+          return "«procedure» si legge «function»: dal 2022 le procedure non esistono più";
+        case "scrivi":
+          return "«SCRIVI» si legge come una scrittura: la forma ufficiale è un «output» per ogni valore";
+        case "lunghezza":
+          return `il vettore ${n.nome} ha la lunghezza scritta nel testo: ${n.valore}`;
       }
     };
     const nota = (n: Nota): string => {
@@ -180,6 +201,12 @@ export function comandoAccademico(argomenti: readonly string[], comando: string)
           return `il vettore ${n.nome} non dice la lunghezza: ne ha ${n.valore}`;
         case "procedura":
           return `il codice fuori dalle funzioni diventa la procedura ${n.nome}`;
+        case "forma":
+          return forma(n);
+        case "dato-della-funzione":
+          return `${n.nome} non è dichiarata: diventa un dato della funzione`;
+        case "riferimento":
+          return `la funzione ${n.funzione} modifica il vettore ${n.nome}: le modifiche si vedono anche fuori dalla funzione, come negli esercizi delle Olimpiadi`;
       }
     };
     const trasformazioni = [...l.trasformazioni, ...aggiunta.rinominate].sort((a, b) => a.riga - b.riga);
@@ -204,12 +231,14 @@ export function comandoAccademico(argomenti: readonly string[], comando: string)
         righe.set(g.end.id, l.rigaDelBlocco.get(f.end.id) ?? 0);
         righe.set(g.id, l.rigaDellaFunzione.get(f.name!) ?? 0);
       }
-      for (const e of c.errori)
+      for (const e of c.errori) {
+        const frase = testoDellaSegnalazione("it", e.code, false, c.fermate.find((f) => f.code === e.code && f.block === e.block)?.fermata).breve;
         console.log(
           libreria !== undefined && !righe.has(e.block) && diPrima.has(e.block)
-            ? `ERRORE ${libreria}: la libreria ha già un errore statico (${e.code}) che non viene dal testo: correggilo nell'app, poi riprova`
-            : `ERRORE ${percorso}${righe.has(e.block) ? `, riga ${righe.get(e.block)}` : ""}: errore statico ${e.code}`,
+            ? `ERRORE ${libreria}: la libreria ha già un errore che non viene dal testo («${frase}»): correggilo nell'app, poi riprova`
+            : `ERRORE ${percorso}${righe.has(e.block) ? `, riga ${righe.get(e.block)}` : ""}: ${frase}`,
         );
+      }
       process.exit(1);
     }
 

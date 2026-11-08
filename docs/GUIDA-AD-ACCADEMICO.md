@@ -6,7 +6,7 @@ Questa guida è per chi si allena alle **Selezioni scolastiche delle Olimpiadi d
 
 Gli esercizi delle Selezioni scolastiche mostrano i programmi in uno pseudocodice con poche parole, tutte inglesi (`variable`, `if … then … else … end if`, `while … do … end while`, `for … in [a ... b) do … end for`, `function … end function`, `return`, `output`), e con pochi tipi: in pratica gli interi e i vettori di interi. «Accademico» è quella sintassi come linguaggio del codice generato di AlgoDesign, accanto agli altri.
 
-È un linguaggio **da leggere**: AlgoDesign non lo esegue e non ha bisogno di un compilatore. Il programma si esegue nel flowchart, e il testo serve a vedere come lo stesso algoritmo si scrive nella forma degli esercizi. Il testo generato è sempre nella sintassi pura, senza parole in più: se un programma usa qualcosa che la sintassi non ha, al posto del testo AlgoDesign dice che cosa manca e dove (§3).
+È un linguaggio **da leggere**: AlgoDesign non lo esegue e non ha bisogno di un compilatore. Il programma si esegue nel flowchart, e il testo serve a vedere come lo stesso algoritmo si scrive nella forma degli esercizi. Il testo generato è nella sintassi pura, senza parole in più, con una sola eccezione: la riga `// Nel testo: …` di un programma portato da un testo scritto in una forma più vecchia (§6). Se un programma usa qualcosa che la sintassi non ha, al posto del testo AlgoDesign dice che cosa manca e dove (§3).
 
 ## 2. Come si attiva
 
@@ -271,13 +271,7 @@ Gli interi delle Olimpiadi **non hanno limite**. Quelli di AlgoDesign vanno da �
 
 ### 5.2 `min` e `max`
 
-Gli esercizi possono usare `min` e `max`, che il flowchart non ha. Lo strumento del §6 si ferma con la riga:
-
-```text
-ERRORE il-minimo.txt, riga 5: «min» non c'è nel flowchart: scrivila come una funzione
-```
-
-Scrivi nel testo una funzione `minimo` (o `massimo`) e usa quella. Nel verso opposto, un dato, una procedura o una funzione del flowchart non può chiamarsi `min` o `max` se il programma deve scriversi in «Accademico» (§3).
+Gli esercizi possono usare `min` e `max`, che danno il minimo e il massimo di due interi e che il flowchart non ha. Lo strumento del §6 aggiunge da sé al programma una funzione `minimo` o `massimo`, con quel nome o col primo libero (`massimo_2`), e le chiamate usano quella: una riga TRASFORMAZIONE lo dice. Lo stesso vale per `MIN` e `MAX`, se il testo non ha una funzione con quel nome. Nel verso opposto, un dato, una procedura o una funzione del flowchart non può chiamarsi `min` o `max` se il programma deve scriversi in «Accademico» (§3).
 
 ### 5.3 L'a capo
 
@@ -286,6 +280,14 @@ Scrivi nel testo una funzione `minimo` (o `massimo`) e usa quella. Nel verso opp
 ### 5.4 I booleani scritti
 
 Nel flowchart una Scrittura di un booleano scrive `true` o `false`; in «Accademico» il booleano è un intero, e si scrive 1 o 0. Dal testo al flowchart ogni dato diventa un intero.
+
+### 5.5 I vettori che una procedura modifica
+
+Negli esercizi una procedura che modifica un vettore ricevuto lo modifica anche per chi l'ha chiamata. Nel flowchart un parametro è una copia, se non è per riferimento: lo strumento del §6 rende per riferimento il vettore che una procedura modifica, anche passandolo a un'altra che lo modifica, e una riga NOTA lo dice. Una funzione che restituisce un valore non può avere un parametro per riferimento: resta per valore, e se modifica il vettore la modifica non si vede fuori. Una procedura con un parametro per riferimento non si scrive in «Accademico»: la linguetta mostra l'elenco di ciò che manca.
+
+### 5.6 Quando il programma si ferma prima della fine
+
+AlgoDesign ferma un programma dopo un milione di azioni e non ammette un vettore di più di 1000 elementi; gli esercizi non hanno questi limiti. Se un esercizio li supera, puoi rispondere lo stesso: prova il programma con valori più piccoli, guarda come cresce il risultato e ricava la risposta. Per esempio, se il programma conta i giri di un ciclo, prova con 500 al posto di 5000 e moltiplica per 10, dopo aver controllato con due o tre valori che il risultato cresca così. `-Infinity` e `Infinity` non esistono nel flowchart: al loro posto scrivi un numero molto grande rispetto ai valori del programma, per esempio `-1000000000`.
 
 ## 6. Dal testo al flowchart: lo strumento `algodesign-tools accademico`
 
@@ -308,7 +310,7 @@ algodesign-tools accademico <testo.txt> [-l libreria.algo] [-o uscita.algo] [-n 
 | `-s` | sostituisce il file d'uscita, se c'è già; senza, lo strumento si ferma |
 | `-h` | mostra l'aiuto |
 
-Il **codice fuori dalle funzioni** diventa una procedura, coi nomi che usa senza dichiararli come parametri: così si prova da sola con F5 sulla sua scheda, dando i valori dei parametri nella console. Una `function` del testo che c'è già, identica, nella libreria non entra di nuovo. Lo strumento accetta anche `−` per il meno, `…` per i tre punti e `int` per `integer`.
+Il **codice fuori dalle funzioni** diventa una procedura, coi nomi che usa senza dichiararli come parametri: così si prova da sola con F5 sulla sua scheda, dando i valori dei parametri nella console. Una `function` del testo che c'è già, identica, nella libreria non entra di nuovo. Lo strumento accetta anche `−` per il meno, `…` per i tre punti, `int` per `integer` e `<=`, `>=`, `!=` per `≤`, `≥`, `≠`. Accetta inoltre le forme dei testi più vecchi: `=` al posto di `==` nelle condizioni di `if` e `while`, `MOD`, `output x` senza tonde, `[a, b)` con la virgola, `procedure … end procedure`, `SCRIVI(a, b, …)` (una Scrittura con tutti i valori, senza a capo) e la lunghezza nel tipo (`integer[10]`). Per ognuna stampa una NOTA con la forma ufficiale, e la riga com'era scritta resta come commento nel flowchart e nella linguetta «Accademico», dove si legge `// Nel testo: …`.
 
 ### Che cosa stampa
 
@@ -318,9 +320,10 @@ Una riga per ogni **trasformazione** (il testo usa qualcosa che il flowchart non
 - lo **scambio** `(a, b) ← (b, a)`: tre assegnazioni con un dato `appoggio`;
 - un **elenco** fuori dai valori iniziali (`v ← [1, 2, 3]` a metà del programma): un'assegnazione per elemento;
 - una **dichiarazione** che non sta in testa: va fra i dati della funzione;
-- con `-r`, un nome già usato o riservato dal flowchart: diventa lo stesso nome con `_2` (o il primo numero libero).
+- `max` e `min`: una funzione `massimo` o `minimo` aggiunta al programma (§5.2);
+- con `-r`, un nome già usato o riservato dal flowchart: diventa lo stesso nome con `_2` (o il primo numero libero). `lunghezza` e `len`, che sono nomi comuni, diventano `lunghezza_2` e `len_2` anche senza `-r`.
 
-Le note dicono che un nome mai dichiarato è diventato un parametro, la lunghezza data a un vettore che non la dice, `int` letto come `integer`, e il nome della procedura del codice fuori dalle funzioni.
+Le note dicono che un nome mai dichiarato è diventato un parametro, la lunghezza data a un vettore che non la dice, `int` letto come `integer`, il nome della procedura del codice fuori dalle funzioni, che un nome assegnato e non dichiarato in una funzione è diventato un suo dato, che un vettore modificato da una procedura è per riferimento (§5.5), che una riga è in una forma più vecchia.
 
 Un esempio. Il testo `conta-pari.txt` ha due funzioni, `conta_pari` e `primo_negativo` (che ha un `return` dentro un ciclo), e quattro righe fuori dalle funzioni che le provano. Il nome del file darebbe alla procedura il nome `conta_pari`, che è già della prima funzione: lo strumento si ferma, e con `-n` le si dà un altro nome.
 
@@ -378,7 +381,7 @@ RESTITUISCE risultato
 
 ### Quando si ferma
 
-Lo strumento non scrive nulla e si ferma, con la riga del testo, se il testo non si legge (una parola sbagliata, `min` o `max`, un'operazione del flowchart come `length` chiamata come una funzione, un `for` che cambia la sua fine o il suo contatore nel corpo, un elenco che legge il vettore che lo riceve), se un nome è già nella libreria e manca `-r`, se la libreria che ne uscirebbe ha errori, o se il file d'uscita c'è già e non è la libreria di `-l` e manca `-s` (e sempre se `-o` è il testo stesso). Il nome della procedura del codice fuori dalle funzioni non si rinomina con `-r`: se c'è già, scegline un altro con `-n`; un dato che ha quel nome, con `-r`, sì.
+Lo strumento non scrive nulla e si ferma, con la riga del testo, se il testo non si legge (una parola sbagliata, la chiamata di una procedura o di una funzione che il testo non definisce, `Infinity` (§5.6), un'operazione del flowchart come `length` chiamata come una funzione, un `for` che cambia la sua fine o il suo contatore nel corpo, un elenco che legge il vettore che lo riceve), se un nome è già nella libreria e manca `-r`, se la libreria che ne uscirebbe ha errori, o se il file d'uscita c'è già e non è la libreria di `-l` e manca `-s` (e sempre se `-o` è il testo stesso). Il nome della procedura del codice fuori dalle funzioni non si rinomina con `-r`: se c'è già, scegline un altro con `-n`; un dato che ha quel nome, con `-r`, sì.
 
 ## 7. Come allenarsi alle Selezioni scolastiche
 

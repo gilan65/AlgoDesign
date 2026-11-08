@@ -43,6 +43,10 @@ export const paroleDiAccademico: readonly string[] = [
   "output", "min", "max", "integer",
 ];
 
+/** Il principio del commento che il lettore mette per conservare una riga scritta in una forma di prima: è il solo commento
+ * che il testo generato riporta, e il lettore lo rilegge. */
+export const prefissoDellaRigaDelTesto = "Nel testo: ";
+
 const rientro = "    ";
 
 const albero = (testo: string): Espressione => {
@@ -475,8 +479,11 @@ function righeDiAccademico(p: Progetto, lingua: LinguaDelCodice): Riga[] {
         case "call":
           return riga(`${b.callee}(${b.arguments.map((x) => e.valore(albero(x)).t).join(", ")})`);
         case "read":
+          // La lettura non ci sta (la verifica la ferma prima).
+          return;
         case "comment":
-          // La lettura non ci sta (la verifica la ferma prima); il commento non si scrive.
+          // Il commento non si scrive, salvo la riga del testo d'origine che il lettore ha conservato (su una riga sola).
+          if (b.text.startsWith(prefissoDellaRigaDelTesto) && !/[\r\n]/.test(b.text)) riga(`// ${b.text}`);
           return;
       }
     };

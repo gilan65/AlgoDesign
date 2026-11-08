@@ -4,7 +4,7 @@
 
 **Design algorithms as flowcharts, run them step by step and translate them into pseudocode, Python, C and TypeScript.**
 
-Version 0.7.0-beta.3 of 1 November 2026, for 64-bit Windows 10 and 11 and for 64-bit Linux; the macOS version is coming.
+Version 0.7.0-beta.3 of 1 November 2026, for 64-bit Windows 10 and 11 and for 64-bit Linux; the macOS version will come with 1.0.1.
 
 AlgoDesign is a teaching environment for people learning to program: first you design and test the algorithm as a flowchart, then you see how the same reasoning becomes code. It is a **local and lightweight** application: it works without internet, without installing it and without administrator rights.
 
@@ -34,7 +34,7 @@ To begin, the **getting-started guide**, [`GETTING-STARTED.md`](docs/GETTING-STA
 
 ## Download and start
 
-AlgoDesign is downloaded from the releases page, https://github.com/gilan65/AlgoDesign/releases: for Windows the zip `AlgoDesign-0.7.0-beta.3-windows-x64.zip`, for Linux the archive `AlgoDesign-0.7.0-beta.3-linux-x64.tar.gz`, each with its fingerprint, the `.sha256` file next to it. The macOS version is coming.
+AlgoDesign is downloaded from the releases page, https://github.com/gilan65/AlgoDesign/releases: for Windows the zip `AlgoDesign-0.7.0-beta.3-windows-x64.zip`, for Linux the archive `AlgoDesign-0.7.0-beta.3-linux-x64.tar.gz`, each with its fingerprint, the `.sha256` file next to it. The macOS version will come with 1.0.1.
 
 **The core for Node.** There is also a package for every system, `AlgoDesign-Core-0.7.0-beta.3.zip`, with its fingerprint: `algodesign-core.cjs` is the core of AlgoDesign in a single file, with no interface, to open, check and translate into code projects from another application with Node. It is not needed to use AlgoDesign. How to use it is told by the `README.md` of the package.
 
@@ -97,7 +97,7 @@ A cell that starts with `=`, `+`, `-` or `@` and is not a number (for example a 
 - **Where this version was tested**, system by system:
   - **Windows**: Windows 11 Home 26H2, with WebView2 156; the user without administrator rights and the NTFS, exFAT and FAT32 USB sticks on an earlier version, with the same `data` folder. Windows 10 was not tested.
   - **Linux**: Ubuntu 26.04 with the GNOME desktop (Wayland), in a virtual machine; the start on freshly installed Ubuntu 22.04 and 24.04; on Ubuntu 24.04, the same automatic tests run on Windows, which use the application as a person would. The other desktops and distributions were not tested.
-  - **macOS**: not yet; the version is coming.
+  - **macOS**: not yet; the version will come with 1.0.1.
 - The defects already known and not yet fixed are in the part “Difetti noti” (known defects) of the release notes, `NOTE-DI-RILASCIO.md` (in Italian), next to the program.
 - Not tested: shutting down or restarting Windows with unsaved changes (better save first) and a file dragged onto the window (to open it use “Open”). The browser keys that would reload the window or go back (F5, Ctrl+R, “Refresh” and “Back” of some keyboards, Alt+arrow) are stopped by AlgoDesign: F5 runs the program.
 - The generated code has no limit on actions: a loop that does not end, which AlgoDesign stops after a million actions, must be stopped by hand in the generated Python, C and TypeScript.

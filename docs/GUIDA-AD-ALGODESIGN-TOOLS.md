@@ -41,7 +41,7 @@ Le opzioni, in breve (che cosa stampa, gli esempi e quando si ferma sono nel §6
 | `-o` | dove scrivere; senza, nella libreria di `-l`, oppure accanto al testo, col suo nome e `.algo` |
 | `-n` | il nome della procedura che porta il codice fuori dalle funzioni; senza, il nome del file |
 | `-d` | la lunghezza di un vettore che il testo non dice; senza, 10 |
-| `-r` | rinomina ciò che ha un nome già usato o riservato dal flowchart, invece di fermarsi |
+| `-r` | rinomina ciò che ha un nome già usato o riservato dal flowchart, invece di fermarsi (`lunghezza` e `len` si rinominano sempre) |
 | `-s` | sostituisce il file d'uscita, se c'è già; senza, lo strumento si ferma |
 | `-h` | mostra l'aiuto |
 
