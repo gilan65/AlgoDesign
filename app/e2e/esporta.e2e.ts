@@ -178,7 +178,7 @@ function diversi(a: { pixel: number[] }, b: { pixel: number[] }): number {
 // la foto ridotta), 15,7 % il PNG a toni di grigio (il controllo positivo). La soglia è il 3 %.
 test.describe("con un pixel per punto", () => {
 test.use({ deviceScaleFactor: 1 });
-test("il PNG decodificato misura il doppio dell'SVG e ha i pixel dell'SVG reso al doppio; nessuna violazione della politica; lo sfondo trasparente", async ({ page }) => {
+test("il PNG decodificato misura il doppio dell'SVG e ha i pixel dell'SVG reso al doppio; nessuna violazione della politica; lo sfondo trasparente", async ({ page, browserName }) => {
   test.setTimeout(120_000);
   await apriIlProgramma(page);
   await page.evaluate(() => {
@@ -230,7 +230,8 @@ test("il PNG decodificato misura il doppio dell'SVG e ha i pixel dell'SVG reso a
   const n = diversi(png, riferimento);
   const totale = png.pixel.length / 4;
   console.log(`pixel diversi dal riferimento: ${n} su ${totale} (${((n / totale) * 100).toFixed(2)}%)`);
-  expect(n / totale).toBeLessThan(0.03);
+  // La soglia per motore: misurati 1,11% in Chromium e 1,96% nel WebKit per Linux.
+  expect(n / totale).toBeLessThan(browserName === "chromium" ? 0.02 : 0.03);
 
   // Controlli positivi: il PNG a toni di grigio contro lo stesso riferimento; un PNG fatto al fattore 1 nella pagina.
   await page.evaluate((u) => Object.assign(window.__finzione__, { daEsportareLImmagine: `${u} grigio` }), USCITA);

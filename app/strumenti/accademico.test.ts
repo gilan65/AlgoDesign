@@ -44,6 +44,13 @@ test("un errore del flowchart che ne esce si dice con la frase dell'app e la rig
   expect(r.righe[0]).not.toMatch(/errore statico|function_with_effect|funzione_scrive/);
 });
 
+test("un errore di un dato dice la causa, come nell'app, non il testo comune a tutti i limiti", () => {
+  const t = scrivi("mille.txt", testo("variable v: integer[1001]", "v[0] ← 1", "output(v[0])"));
+  const r = lancia(t, "-o", join(cartella, "mille.algo"));
+  expect(r.esito).toBe(1);
+  expect(r.righe.at(-1)).toContain("più di 1000");
+});
+
 test("la procedura del codice fuori dalle funzioni col nome di una funzione del testo: fermo, e il messaggio dice -n", () => {
   const t = scrivi("conta.txt", testo("function conta(n: integer) → integer", "    return n", "end function", "", "output(conta(2))"));
   expect(lancia(t, "-o", join(cartella, "conta-1.algo"), "-r")).toEqual({

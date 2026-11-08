@@ -29,7 +29,7 @@ Come esempio, un programma che legge un numero intero e scrive se è pari o disp
 
 Dal menu **Progetto** scegli **Nuovo** (Ctrl+N). Scrivi il nome del progetto, che è obbligatorio, e, se vuoi, l'autore, una descrizione e delle note; conferma con **Crea**. Le stesse informazioni si cambiano dopo con **Proprietà**, che ha anche tre opzioni che cambiano il risultato: quante cifre decimali ha un numero reale scritto (2 se non si dice altro), il carattere che riempie un vettore di caratteri e i posti della pila delle chiamate (§10).
 
-Salva il progetto con **Salva con nome** (Ctrl+Maiusc+S): il file ha l'estensione `.algo`. Da lì in poi **Salva** (Ctrl+S) scrive lo stesso file. Il file prende il nome del progetto; se quel nome ha caratteri che un file non può avere, o è un nome che Windows riserva (come `CON` o `NUL`), prima della finestra di Windows AlgoDesign lo dice e propone un altro nome, che si può cambiare: **Quali nomi si possono usare?** dice le regole.
+Salva il progetto con **Salva con nome** (Ctrl+Maiusc+S): il file ha l'estensione `.algo`. Da lì in poi **Salva** (Ctrl+S) scrive lo stesso file. Il file prende il nome del progetto; se quel nome ha caratteri che un file non può avere, o è un nome che Windows riserva (come `CON` o `NUL`), prima della finestra del sistema AlgoDesign lo dice e propone un altro nome, che si può cambiare: **Quali nomi si possono usare?** dice le regole.
 
 ### I dati
 
@@ -533,7 +533,7 @@ Di partenza sono scelti il flowchart e il codice affiancati, nel linguaggio dell
 
 ### Esportare il flowchart
 
-**Esporta il flowchart…** esporta il flowchart della scheda mostrata. La finestra dice di quale flowchart si tratta e fa scegliere il **Formato**, **PNG (immagine)** o **SVG (disegno)**, i **Colori** (a colori, a toni di grigio, in bianco e nero) e lo **Sfondo trasparente**; senza la casella lo sfondo è bianco. **Esporta…** apre la finestra di Windows per salvare, col nome del progetto e, per una procedura o una funzione, il suo nome fra parentesi: per esempio «media (leggi_numero).png». Il PNG è disegnato al doppio della misura, perché resti nitido; un flowchart di grandi dimensioni, che per essere esportato in un'immagine deve essere ridotto: la riga di stato dice la misura in pixel. L'SVG si ingrandisce quanto si vuole senza perdere nitidezza. In pausa l'immagine ha i segni dell'esecuzione: il blocco corrente e i punti di interruzione. Le scelte restano fino alla chiusura di AlgoDesign.
+**Esporta il flowchart…** esporta il flowchart della scheda mostrata. La finestra dice di quale flowchart si tratta e fa scegliere il **Formato**, **PNG (immagine)** o **SVG (disegno)**, i **Colori** (a colori, a toni di grigio, in bianco e nero) e lo **Sfondo trasparente**; senza la casella lo sfondo è bianco. **Esporta…** apre la finestra del sistema per salvare, col nome del progetto e, per una procedura o una funzione, il suo nome fra parentesi: per esempio «media (leggi_numero).png». Il PNG è disegnato al doppio della misura, perché resti nitido; un flowchart di grandi dimensioni viene ridotto, perché un'immagine PNG ha un limite: la riga di stato dice la misura in pixel. L'SVG si ingrandisce quanto si vuole senza perdere nitidezza. In pausa l'immagine ha i segni dell'esecuzione: il blocco corrente e i punti di interruzione. Le scelte restano fino alla chiusura di AlgoDesign.
 
 ## 14. Le Impostazioni
 

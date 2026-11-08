@@ -20,9 +20,7 @@
 # Da un'etichetta `v<versione>` il pacchetto è una release; da un ramo è un pacchetto di prova (`--prova`), con lo
 # stesso contenuto e lo stesso nome, nella cartella `dist/prova/` del runner.
 #
-# Fino a quando il repository è privato il calcolo e lo spazio delle Actions sono contati: ogni corsa si chiede, col
-# consumo del mese guardato prima; il pacchetto per Windows si compone anche sul PC con lo stesso strumento (`bun run
-# pacchetto`).
+# Il pacchetto per Windows si compone anche sul PC con lo stesso strumento (`bun run pacchetto`).
 #
 # Che cosa NON guarda: che il programma per Windows faccia ciò che deve oltre ad aprirsi e restare vivo (lo provano le
 # clausole della prova sul prodotto, sul pacchetto scaricato, e il controllo a ogni invio); che la finestra disegni

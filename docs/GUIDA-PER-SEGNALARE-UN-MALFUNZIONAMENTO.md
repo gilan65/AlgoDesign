@@ -41,7 +41,7 @@ Il file nasce dall'esecuzione ancora aperta: **non premere Ferma e non chiudere 
 
 1. Dal menu **Aiuto** scegli **Salva per segnalare un malfunzionamento…**. Il comando è spento mentre il programma avanza: aspetta la fine o, con l'Animata, metti in pausa.
 2. Si apre una finestra col **testo esatto** che sarà scritto nel file. Leggilo (§5).
-3. Premi **Salva…**: la finestra di Windows propone il nome «nome del progetto - segnalazione.txt». Scegli dove salvarlo e conferma; un avviso dice che il file è stato salvato.
+3. Premi **Salva…**: la finestra del sistema propone il nome «nome del progetto - segnalazione.txt». Scegli dove salvarlo e conferma; un avviso dice che il file è stato salvato.
 
 Il comando è spento anche durante «Esegui tutti» e quando non c'è un'esecuzione aperta. Se il malfunzionamento è arrivato mentre disegnavi o modificavi i dati, esegui il programma con F5, poi usa il comando: il file porta il progetto com'è adesso. Se il progetto ha errori l'esecuzione non parte: attiva prima la registrazione (§6), poi premi F5, e il comando si accende.
 
@@ -100,7 +100,7 @@ Chi corregge legge la tua frase e riesegue il file, per vedere ciò che hai vist
 
 ## 9. Se qualcosa non va come qui
 
-- **AlgoDesign non si avvia**: il file non c'è, e si segnala lo stesso a parole, con la versione (il nome della cartella estratta dallo zip), Windows 10 o 11 e ciò che compare. Prima guarda i requisiti nel file `LEGGIMI.md`.
+- **AlgoDesign non si avvia**: il file non c'è, e si segnala lo stesso a parole, con la versione (il nome della cartella estratta dall'archivio), il sistema e la sua versione (per esempio Windows 11 o Ubuntu 24.04) e ciò che compare. Prima guarda i requisiti nel file `LEGGIMI.md`.
 - **AlgoDesign non risponde più** e il file non si può salvare: chiudilo, riaprilo e riprova con la registrazione attiva (§6). Se non si ripete, segnalalo a parole.
 - **Il file non si salva**: un messaggio dice perché; scegli un'altra cartella.
 - **Non hai un account GitHub**: dai il file e la frase al tuo docente, o a chi ti ha dato AlgoDesign.

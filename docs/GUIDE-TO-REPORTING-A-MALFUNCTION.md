@@ -41,7 +41,7 @@ The file comes from the run that is still open: **do not press Stop and do not c
 
 1. From the **Help** menu choose **Save to report a malfunction…**. The command is off while the program is advancing: wait for the end or, with Animate, pause.
 2. A window opens with the **exact text** that will be written to the file. Read it (§5).
-3. Press **Save…**: the Windows window suggests the name “project name - report.txt”. Choose where to save it and confirm; a message says that the file was saved.
+3. Press **Save…**: the system window suggests the name “project name - report.txt”. Choose where to save it and confirm; a message says that the file was saved.
 
 The command is also off during “Run all” and when no run is open. If the malfunction came while you were drawing or changing the data, run the program with F5, then use the command: the file carries the project as it is now. If the project has errors the run does not start: first turn on recording (§6), then press F5, and the command turns on.
 
@@ -100,7 +100,7 @@ Whoever fixes it reads your sentence and runs the file again, to see what you sa
 
 ## 9. If something does not go as described here
 
-- **AlgoDesign does not start**: there is no file, and you report it anyway in words, with the version (the name of the folder extracted from the zip), Windows 10 or 11 and what appears. First look at the requirements in the file `README.md`.
+- **AlgoDesign does not start**: there is no file, and you report it anyway in words, with the version (the name of the folder extracted from the archive), the system and its version (for example Windows 11 or Ubuntu 24.04) and what appears. First look at the requirements in the file `README.md`.
 - **AlgoDesign no longer responds** and the file cannot be saved: close it, open it again and try again with recording on (§6). If it does not happen again, report it in words.
 - **The file is not saved**: a message says why; choose another folder.
 - **You do not have a GitHub account**: give the file and the sentence to your teacher, or to whoever gave you AlgoDesign.

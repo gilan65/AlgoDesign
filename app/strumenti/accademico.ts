@@ -44,7 +44,7 @@ const modoDUsoDi = (comando: string) => `Legge un testo in «Accademico» e ne f
   -d dimensione        la lunghezza di un vettore che il testo non dice (senza: ${dimensionePredefinita})
   -r                   rinomina le procedure, le funzioni e i dati del testo che hanno un nome già usato
                        o riservato, invece di fermarsi (non la procedura del codice fuori dalle funzioni:
-                       il suo nome si sceglie con -n)
+                       il suo nome si sceglie con -n; lunghezza e len si rinominano sempre)
   -s                   sostituisce il file d'uscita, se c'è già (senza: si ferma)
   -h                   mostra questo aiuto
 
@@ -204,7 +204,9 @@ export function comandoAccademico(argomenti: readonly string[], comando: string)
         case "forma":
           return forma(n);
         case "dato-della-funzione":
-          return `${n.nome} non è dichiarata: diventa un dato della funzione`;
+          return `${n.nome} non è dichiarata: diventa un dato della funzione${n.fuori === true ? `, diverso dal ${n.nome} del codice fuori dalle funzioni` : ""}`;
+        case "vettore-per-valore":
+          return `la funzione ${n.funzione} modifica il vettore ${n.nome}, ma le modifiche restano dentro la funzione: nel flowchart una funzione che restituisce un valore non può cambiare i vettori di chi la chiama`;
         case "riferimento":
           return `la funzione ${n.funzione} modifica il vettore ${n.nome}: le modifiche si vedono anche fuori dalla funzione, come negli esercizi delle Olimpiadi`;
       }
@@ -232,7 +234,10 @@ export function comandoAccademico(argomenti: readonly string[], comando: string)
         righe.set(g.id, l.rigaDellaFunzione.get(f.name!) ?? 0);
       }
       for (const e of c.errori) {
-        const frase = testoDellaSegnalazione("it", e.code, false, c.fermate.find((f) => f.code === e.code && f.block === e.block)?.fermata).breve;
+        // La causa di un errore di un dato sta fra i dati; sulla funzione stessa, o sulla sua fine, l'errore è sul risultato: come nell'app.
+        const delDato = c.dati.find((d) => d.genere === "errore" && d.code === e.code && d.funzione === e.block);
+        const sulRisultato = delDato === undefined && aggiunta.progetto.functions.some((f) => f.kind === "function" && (f.id === e.block || f.end.id === e.block));
+        const frase = testoDellaSegnalazione("it", e.code, sulRisultato, c.fermate.find((f) => f.code === e.code && f.block === e.block)?.fermata ?? delDato?.fermata).breve;
         console.log(
           libreria !== undefined && !righe.has(e.block) && diPrima.has(e.block)
             ? `ERRORE ${libreria}: la libreria ha già un errore che non viene dal testo («${frase}»): correggilo nell'app, poi riprova`

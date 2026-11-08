@@ -23,8 +23,8 @@
 // La riga dell'errore viene dalla pila delle chiamate, che `fermati` legge nelle due forme: quella di V8 (Chromium) e quella
 // di WebKit e di Firefox; le prove la guardano in Chromium e nel WebKit per Linux.
 //
-// CHE COSA NON FA: nessun limite di tempo; Firefox non è nelle prove (la sua forma della pila è quella di WebKit, vista
-// una volta a mano); un input che non è testo (una casella contiene solo testo).
+// CHE COSA NON FA: nessun limite di tempo; Firefox non è nelle prove di ogni corsa (ci è passata una volta, con una
+// configurazione temporanea di Playwright); un input che non è testo (una casella contiene solo testo).
 import type { Riga } from "../core/genera/forma";
 import type { Lingua } from "../i18n/lingue";
 

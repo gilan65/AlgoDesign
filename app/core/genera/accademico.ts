@@ -1,8 +1,8 @@
 // «Accademico»: la sintassi dello pseudocodice delle Selezioni scolastiche, da leggere. Ha meno costrutti del flowchart
 // (un solo tipo semplice, l'intero, e il vettore di interi: niente record, matrici né tabelle; niente lettura, niente *rif* né *out*, gli operatori
 // aritmetici, di confronto e logici): un progetto si scrive solo se ci sta tutto, altrimenti la verifica dà l'elenco di
-// ciò che manca, tutto insieme e nell'ordine del progetto, ognuno col suo posto. Il testo è sempre puro: nessuna parola
-// che la sintassi non abbia.
+// ciò che manca, tutto insieme e nell'ordine del progetto, ognuno col suo posto. Il testo è puro: nessuna parola che la
+// sintassi non abbia, a parte il commento `// Nel testo: …` (più sotto), che il lettore rilegge come commento.
 //
 // Che cosa si traduce perché ci stia:
 // - il booleano è un intero 0/1: `true` è 1, `false` è 0; in una condizione un booleano `b` è `b == 1` e `not b` è
@@ -18,7 +18,8 @@
 // - il `per ogni` è un `for` sugli indici (`_indice`, `_indice2` dentro un altro), con la sorgente calcolata una volta
 //   in `_sorgente` se è una funzione;
 // - il ripeti è un `while` con l'intero 0/1 «ancora un giro» (`_ancora`, `_ancora2` dentro un altro);
-// - la scrittura è un `output(…)` per valore, e l'a capo non si scrive; il commento non si scrive.
+// - la scrittura è un `output(…)` per valore, e l'a capo non si scrive; il commento non si scrive, tranne quello che
+//   comincia con «Nel testo:» (la riga di un testo più vecchio, come era scritta), che diventa `// Nel testo: …`.
 //
 // I nomi che il testo aggiunge cominciano col trattino basso, che nessun dato può avere, nella lingua dell'interfaccia
 // come quelli del Python e del C; le parole chiave sono in inglese in ogni lingua. Le espressioni si scrivono

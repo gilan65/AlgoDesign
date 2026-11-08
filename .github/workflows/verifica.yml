@@ -81,6 +81,7 @@ jobs:
           test "$(echo "${strumento}" | grep -c .)" -eq 1 || { echo "ROSSO: non c'è un solo archivio dello strumento: «${strumento}»"; exit 1; }
           versione=${app#AlgoDesign-}; versione=${versione%-linux-x64.tar.gz}
           test "${strumento}" = "AlgoDesign-Tools-${versione}-linux-x64.tar.gz" || { echo "ROSSO: lo strumento «${strumento}» non è della versione ${versione}"; exit 1; }
+          if [ -n "${TAG}" ]; then test "${versione}" = "${TAG#v}" || { echo "ROSSO: l'etichetta ${TAG} ha gli archivi della versione ${versione}"; exit 1; }; fi
           sha256sum -c "${app}.sha256" "${strumento}.sha256"
           echo "VERSIONE=${versione}" >> "$GITHUB_ENV"
 

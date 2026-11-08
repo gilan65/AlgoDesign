@@ -21,7 +21,7 @@ Per Linux lo strumento è `algodesign-tools`, nell'archivio `AlgoDesign-Tools-0.
 .\algodesign-tools accademico -h
 ```
 
-Lo strumento non è firmato digitalmente e Windows può avvisare al primo avvio: come procedere è nel `LEGGIMI.md` di AlgoDesign, nel suo pacchetto, ed è lo stesso.
+Lo strumento non è firmato digitalmente: su Windows può comparire un avviso al primo avvio, e come procedere è nel `LEGGIMI.md` di AlgoDesign, nel suo pacchetto, ed è lo stesso.
 
 Chi ha il codice di AlgoDesign e Bun scrive `bun run tools` al posto di `.\algodesign-tools`, dalla cartella `app`; i comandi e le opzioni sono gli stessi.
 

@@ -470,7 +470,8 @@ async function eseguibileDelloStrumento(): Promise<{ exe: string; moduli: string
   const build = mkdtempSync(join(tmpdir(), "algodesign-strumento-"));
   const exe = join(build, eseguibileS);
   const metafile = join(build, "metafile.json");
-  const b = await esegui([process.execPath, "build", "--compile", "./strumenti/algodesign-tools.ts", "--outfile", exe, `--metafile=${metafile}`, "--no-compile-autoload-dotenv", "--no-compile-autoload-bunfig"]);
+  // `baseline`: la versione di Bun che gira anche sui processori senza AVX2.
+  const b = await esegui([process.execPath, "build", "--compile", "--target=bun-linux-x64-baseline", "./strumenti/algodesign-tools.ts", "--outfile", exe, `--metafile=${metafile}`, "--no-compile-autoload-dotenv", "--no-compile-autoload-bunfig"]);
   if (b.codice !== 0 || !existsSync(exe)) rosso("STRUMENTO", `bun build --compile esce ${b.codice}${existsSync(exe) ? " (l'eseguibile c'è, ma non vale)" : ""} (dettaglio nel log)`);
   // I moduli dentro l'eseguibile: tutti del repository, nessuno da `node_modules` (una libreria di altri vorrebbe la sua licenza).
   const ingressi = Object.keys((JSON.parse(readFileSync(metafile, "utf8")) as { inputs: Record<string, unknown> }).inputs);

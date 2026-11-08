@@ -311,7 +311,7 @@ describe("le forme di prima", () => {
     const p = letto(testo("function primo(v: integer[4]) → integer", "    return v[0]", "end function"));
     expect(p.progetto.functions.find((f) => f.name === "primo")!.data.find((d) => d.name === "v")!.size).toBe(4);
     expect(fermo(testo("variable v: integer[3]", "output(1)", "v ← [1, 2]"))).toBe("3: il vettore v è lungo 3, ma l'elenco ha 2 valori");
-    expect(fermo(testo("variable n: integer", "variable v: integer[n]"))).toBe("2: manca la quadra che chiude il tipo del vettore");
+    expect(fermo(testo("variable n: integer", "variable v: integer[n]"))).toBe("2: fra le quadre del tipo ci va un numero, o niente");
     const c = leggiAccademico(testo("variable v: integer[1001]", "output(1)"));
     if (!c.ok) throw new Error(c.motivo);
     expect(erroriStatici(c.progetto).map((e) => e.code)).toEqual(["limit_exceeded"]);
@@ -399,6 +399,31 @@ describe("le forme di prima", () => {
     const conRisultato = letto(testo("function primo(a: integer[]) → integer", "    a[0] ← 9", "    return a[0]", "end function"), { vettoriModificati: true });
     expect(conRisultato.progetto.functions.find((f) => f.name === "primo")!.data[0]!.parameter).toBe("value");
     expect(conRisultato.note.filter((n) => n.specie === "riferimento")).toEqual([]);
+  });
+
+  test("una funzione col risultato che modifica un vettore: la modifica resta dentro, e la nota lo dice", () => {
+    const modifica = testo("function primo(a: integer[]) → integer", "    a[0] ← 9", "    return a[0]", "end function");
+    const delle = (l: Letto) => l.note.filter((n) => n.specie === "vettore-per-valore").map((n) => `${n.funzione}.${n.nome}@${n.riga}`);
+    expect(delle(letto(modifica, { vettoriModificati: true }))).toEqual(["primo.a@2"]);
+    // Il controllo: senza la richiesta nessuna nota; una funzione che il vettore lo legge soltanto, nessuna nota.
+    expect(delle(letto(modifica))).toEqual([]);
+    expect(delle(letto(testo("function legge(c: integer[]) → integer", "    return c[0]", "end function"), { vettoriModificati: true }))).toEqual([]);
+  });
+
+  test("il nome assegnato in una funzione: la nota dice se ne esiste uno uguale nel codice fuori dalle funzioni, che è un altro dato", () => {
+    const delle = (l: Letto) => l.note.filter((n) => n.specie === "dato-della-funzione").map((n) => [n.nome, n.fuori]);
+    const anche = letto(testo("function azzera()", "    cont ← 0", "end function", "variable cont: integer", "cont ← 5", "azzera()", "output(cont)"), { procedura: "prova" });
+    expect(delle(anche)).toEqual([["cont", true]]);
+    const solo = letto(testo("function azzera()", "    solo ← 0", "    output(solo)", "end function", "azzera()"), { procedura: "prova" });
+    expect(delle(solo)).toEqual([["solo", undefined]]);
+  });
+
+  test("due lunghezze scritte nel testo che si contraddicono fermano la lettura, con la riga; uguali, no", () => {
+    expect(fermo(testo("variable T: integer[3]", "T ← [1, 2, 3, 4]", "function f() → integer", "    return T[0]", "end function"))).toBe("2: il vettore T è lungo 3, ma l'elenco ha 4 valori");
+    expect(fermo(testo("function f(v: integer[3]) → integer", "    return v[0]", "end function", "variable w: integer[5]", "variable r: integer", "r ← f(w)"))).toBe("6: il vettore v è lungo 3 e il vettore w è lungo 5: qui devono avere la stessa lunghezza");
+    expect(fermo(testo("function f(v: integer[]) → integer", "    return v[0]", "end function", "variable a: integer[3]", "variable b: integer[5]", "variable r: integer", "r ← f(a)", "r ← f(b)"))).toBe("8: il vettore a è lungo 3 e il vettore b è lungo 5: qui devono avere la stessa lunghezza");
+    const uguali = letto(testo("function f(v: integer[]) → integer", "    return 1", "end function", "variable a: integer[3]", "variable b: integer[3]", "variable r: integer", "r ← f(a)", "r ← f(b)"), { procedura: "prova" });
+    expect(uguali.progetto.functions.find((f) => f.name === "f")!.data[0]!.size).toBe(3);
   });
 
   test("la riga vecchia nella linguetta di «Accademico»: sopra quella ufficiale, riletta uguale; gli altri commenti restano omessi", () => {

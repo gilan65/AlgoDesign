@@ -27,6 +27,7 @@ export const coppie: readonly (readonly [string, string])[] = [
   ["LEGGIMI.md", "README.md"],
   ["rilascio/windows/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "rilascio/windows/README-OF-ALGODESIGN-TOOLS.md"],
   ["rilascio/windows/LEGGIMI-DI-ALGODESIGN-CORE.md", "rilascio/windows/README-OF-ALGODESIGN-CORE.md"],
+  ["rilascio/linux/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "rilascio/linux/README-OF-ALGODESIGN-TOOLS.md"],
 ];
 
 /** Un elemento della forma: che cosa è e a che riga del file sta. */

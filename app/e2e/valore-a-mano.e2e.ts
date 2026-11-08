@@ -243,6 +243,27 @@ for (const [canale, prosegui] of [
   });
 }
 
+// Il campo rifiutato resta nella tabella anche quando la colonna del codice la copre o la tabella è chiusa: il comando che prosegue la riporta in vista, o non ci sarebbe un campo da correggere.
+for (const [come, nascondi] of [
+  ["la colonna del codice", (page: Page) => barra(page, it.pannelloCodice).click()],
+  ["la tabella chiusa", (page: Page) => barra(page, it.pannelloTabella).click()],
+] as const) {
+  test(`col valore rifiutato e ${come}, F10 non prosegue e il campo torna in vista col fuoco`, async ({ page }) => {
+    await alTerzoPassaggio(page);
+    await cella(page, COL.s).dblclick();
+    await campoDi(page, "s").fill("abc");
+    await page.getByRole("heading", { name: it.tabellaDiTraccia, exact: true }).click();
+    await expect(campoDi(page, "s")).not.toBeFocused();
+    await nascondi(page);
+    await expect(campoDi(page, "s")).toHaveCount(0);
+    await page.keyboard.press("F10");
+    await expect(campoDi(page, "s")).toBeFocused();
+    await expect(avviso(page)).toHaveText(riempi(it.modificaNonValido, { testo: "abc", dato: "s" }));
+    await expect(scritte(page)).toHaveCount(2);
+    await expect(statoDi(page)).toHaveText(riempi(it.statoInPausa, { n: "13" }));
+  });
+}
+
 test("dalla tastiera: Tab raggiunge una cella della riga corrente, le frecce passano alle altre, Invio apre il campo; il suggerimento dice il gesto", async ({ page }) => {
   await alTerzoPassaggio(page);
   const nelGiro = page.locator('table[data-traccia] tbody td[tabindex="0"]');

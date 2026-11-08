@@ -60,8 +60,9 @@ AlgoDesign separa i due compiti: prima si **progetta** l'algoritmo come flowchar
 ### Che cosa è stato provato
 
 - **Su un desktop vero**: Ubuntu 26.04 con GNOME (Wayland), in una macchina virtuale con uno schermo di 1280 × 800: l'estrazione col gestore dei file, il doppio clic sull'AppImage, le finestre per aprire e salvare un file, l'esecuzione di un vettore di 1000 elementi con la tabella di traccia «in fila», la stampa su file, l'esportazione del flowchart in PNG, lo strumento a riga di comando nel terminale.
-- **Su Ubuntu 22.04 e 24.04 appena installati**, senza WebKit nel sistema: l'archivio scaricato, l'impronta controllata, l'estrazione con `tar`, l'avvio con FUSE come fa un doppio clic, la finestra disegnata, nulla scritto fuori dalla cartella `data`.
-- **Su Ubuntu 24.04, le stesse prove automatiche fatte su Windows**, che usano l'applicazione come farebbe una persona, e il codice generato in Python e in C confrontato con l'esecuzione in AlgoDesign.
+- **Su Ubuntu 22.04 e 24.04 appena installati**, senza WebKit nel sistema: l'archivio scaricato, l'impronta controllata, l'estrazione con `tar`, l'avvio con FUSE come fa un doppio clic, la finestra disegnata.
+- **Su Ubuntu 22.04, con prove automatiche sull'AppImage**: l'esecuzione di un programma, un vettore di 1000 elementi, la finestra per aprire un file, nulla scritto fuori dalla cartella `data`.
+- **Su Ubuntu 24.04, le prove automatiche dell'interfaccia**, che usano l'applicazione come farebbe una persona, e il codice generato in Python e in C confrontato con l'esecuzione in AlgoDesign.
 
 ### Che cosa è diverso
 
