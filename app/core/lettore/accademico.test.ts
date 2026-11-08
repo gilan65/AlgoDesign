@@ -10,7 +10,7 @@ import { controlla, tetti } from "../controllo/controllo";
 import { accademico } from "../genera/accademico";
 import { testoDelCodice } from "../genera/forma";
 import { progettoNuovo } from "../modifica/operazioni";
-import type { CasoDiUnaFunzione, Progetto } from "../progetto/modello";
+import type { Blocco, CasoDiUnaFunzione, Progetto } from "../progetto/modello";
 import { aggiungiAllaLibreria, leggiAccademico, type Lettura } from "./accademico";
 
 const testo = (...righe: string[]) => righe.join("\n") + "\n";
@@ -186,9 +186,8 @@ describe("gli errori, con la riga", () => {
     expect(errore(testo("variable x: integer", "if x > 0 then", "end while"))).toBe("3: «end while» senza il suo «while» (è aperto un «if»)");
     expect(errore(testo("output(y)"))).toBe("1: y non è dichiarata");
   });
-  test("ciò che il flowchart non ha: un nome col trattino basso, min e max, un for che cambia la sua fine", () => {
+  test("ciò che il flowchart non ha: un nome col trattino basso, un for che cambia la sua fine", () => {
     expect(errore(testo("variable _x: integer", "_x ← 1", "output(_x)"))).toBe("2: _x: un nome col trattino basso non può essere un dato del flowchart");
-    expect(errore(testo("variable a: integer", "a ← min(3, 4)"))).toBe("2: «min» non c'è nel flowchart: scrivila come una funzione");
     expect(errore(testo("variable n: integer", "n ← 3", "for i in [0 ... n) do", "    n ← n − 1", "end for"))).toBe("3: il ciclo cambia n, che dà la fine dell'intervallo: scrivilo con «while»");
   });
   test("un for con un return dentro che cambia la sua fine o il suo indice: lo stesso arresto che senza il return", () => {
@@ -226,9 +225,8 @@ describe("gli errori, con la riga", () => {
       "0: la procedura del codice fuori dalle funzioni, limite, ha il nome di una costante comune del testo",
     );
   });
-  test("il valore che una funzione restituisce in fondo passa dagli stessi controlli: un'operazione del flowchart, min", () => {
+  test("il valore che una funzione restituisce in fondo passa dagli stessi controlli: un'operazione del flowchart", () => {
     expect(errore(testo("function f(v: integer[]) → integer", "    return length(v)", "end function"))).toBe("2: «length» non c'è in «Accademico»: scrivila come una funzione, con un altro nome");
-    expect(errore(testo("function f(a: integer, b: integer) → integer", "    return min(a, b)", "end function"))).toBe("2: «min» non c'è nel flowchart: scrivila come una funzione");
   });
   test("un nome che il flowchart riserva: fermo, o rinominato a richiesta", () => {
     const t = testo("variable length: integer", "length ← 2", "output(length)");
@@ -236,6 +234,184 @@ describe("gli errori, con la riga", () => {
     const l = letto(t, { rinomina: true });
     expect(trasformazioni(l)).toEqual(["nome-riservato@1"]);
     expect(programma(l.progetto)).toBe("2\n");
+  });
+});
+
+describe("le forme di prima", () => {
+  const forme = (l: Letto) => l.note.filter((n) => n.specie === "forma").map((n) => `${n.forma}@${n.riga}`);
+  const inOrdine = (bs: readonly Blocco[]): Blocco[] => bs.flatMap((b) => [b, ...inOrdine(b.kind === "if" ? [...b.then, ...b.else] : "body" in b ? b.body : [])]);
+  const blocchi = (l: Letto, nome?: string) => inOrdine(l.progetto.functions.find((f) => (nome === undefined ? f.kind === "main" : f.name === nome))!.body);
+  const commenti = (l: Letto, nome?: string) => blocchi(l, nome).flatMap((b) => (b.kind === "comment" ? [b.text] : []));
+  const fermo = (t: string, opzioni: Parameters<typeof leggiAccademico>[1] = {}) => {
+    const l = leggiAccademico(t, opzioni);
+    if (l.ok) throw new Error("letto senza errori");
+    return `${l.riga}: ${l.motivo}`;
+  };
+
+  test("l'uguale nelle condizioni di if e while, con la nota e il commento; fuori dalle condizioni resta un errore", () => {
+    const l = letto(testo("variable n: integer", "n ← 1", "if n = 1 then", "    output(n)", "end if", "while n = 1 do", "    n ← 2", "end while"));
+    expect(forme(l)).toEqual(["uguale@3", "uguale@6"]);
+    expect(commenti(l)).toEqual(["Nel testo: if n = 1 then", "Nel testo: while n = 1 do"]);
+    expect(blocchi(l).flatMap((b) => (b.kind === "if" || b.kind === "while" ? [b.condition] : []))).toEqual(["n == 1", "n == 1"]);
+    expect(programma(l.progetto)).toBe("1\n");
+    expect(fermo(testo("variable x: integer", "x = 1"))).toBe("2: l'uguale si scrive «==» (e l'assegnazione «←»)");
+  });
+
+  test("i confronti scritti da tastiera: gli stessi segni, senza nota e nel flowchart con le sue regole", () => {
+    const l = letto(testo("variable a: integer", "a ← 1", "if a <= 1 then", "    output(1)", "end if", "if a >= 2 then", "    output(2)", "end if", "if a != 3 then", "    output(3)", "end if"));
+    expect(forme(l)).toEqual([]);
+    expect(commenti(l)).toEqual([]);
+    expect(blocchi(l).flatMap((b) => (b.kind === "if" ? [b.condition] : []))).toEqual(["a <= 1", "a >= 2", "a != 3"]);
+    expect(programma(l.progetto)).toBe("1\n3\n");
+  });
+
+  test("l'intervallo con la virgola", () => {
+    const l = letto(testo("for i in [1, 4) do", "    output(i)", "end for"));
+    expect(forme(l)).toEqual(["intervallo@1"]);
+    expect(commenti(l)).toEqual(["Nel testo: for i in [1, 4) do"]);
+    expect(programma(l.progetto)).toBe("1\n2\n3\n");
+  });
+
+  test("output senza tonde, con un valore o una stringa; un dato che si chiama output resta un dato", () => {
+    const l = letto(testo("variable t: integer", "t ← 7", "output t", 'output "ciao"', "output t + 1"));
+    expect(forme(l)).toEqual(["output@3", "output@4", "output@5"]);
+    expect(programma(l.progetto)).toBe("7\nciao\n8\n");
+    const d = letto(testo("variable output: integer", "output ← 1", "output ← output + 1"));
+    expect(forme(d)).toEqual([]);
+  });
+
+  test("MOD è un operatore solo dove va un operatore: un dato che si chiama MOD non si tocca", () => {
+    const l = letto(testo("variable x: integer", "x ← 5", "if x MOD 2 == 1 then", "    output(x)", "end if"));
+    expect(forme(l)).toEqual(["mod@3"]);
+    expect(blocchi(l).flatMap((b) => (b.kind === "if" ? [b.condition] : []))).toEqual(["x mod 2 == 1"]);
+    const d = letto(testo("variable MOD: integer", "MOD ← 7", "output(MOD + 1)"));
+    expect([forme(d), programma(d.progetto)]).toEqual([[], "8\n"]);
+    const e = letto(testo("variable MOD: integer", "variable x: integer", "MOD ← 4", "x ← 9 MOD MOD", "output(x)"));
+    expect(programma(e.progetto)).toBe("1\n");
+  });
+
+  test("procedure: coi parametri o senza tonde, con end procedure; un dato che si chiama procedure resta un dato", () => {
+    const l = letto(testo("procedure scrivi_due(n: integer)", "    variable d: integer", "    d ← n × 2", "    output(d)", "end procedure"));
+    expect(forme(l)).toEqual(["procedure@1"]);
+    expect(trasformazioni(l)).toEqual([]);
+    expect(commenti(l, "scrivi_due")).toEqual(["Nel testo: procedure scrivi_due(n: integer)"]);
+    expect(chiama(l.progetto, "scrivi_due", ["n", "4"]).output).toBe("8\n");
+    const s = letto(testo("procedure SALUTA", "    output(1)", "end procedure"));
+    expect(s.progetto.functions.find((f) => f.name === "SALUTA")!.kind).toBe("procedure");
+    expect(fermo(testo("procedure p(n: integer)", "    output(n)", "end function"))).toBe("3: «end function» senza il suo «function» (è aperto un «procedure»)");
+    expect(fermo(testo("procedure p(n: integer)", "    output(n)"))).toBe("3: manca «end procedure»");
+    expect(forme(letto(testo("variable procedure: integer", "procedure ← 1", "output(procedure)")))).toEqual([]);
+  });
+
+  test("la lunghezza scritta nel tipo: letta dal testo, anche per un parametro, e senza la nota sulla lunghezza predefinita", () => {
+    const l = letto(testo("variable v: integer[14]", "v[0] ← 1", "output(v[0])"));
+    expect(l.progetto.functions[0]!.data.find((d) => d.name === "v")!.size).toBe(14);
+    expect(l.note.map((n) => `${n.specie}:${n.forma ?? ""}:${n.nome ?? ""}:${n.valore ?? ""}@${n.riga}`)).toEqual(["forma:lunghezza:v:14@1"]);
+    expect(commenti(l)).toEqual([]);
+    const p = letto(testo("function primo(v: integer[4]) → integer", "    return v[0]", "end function"));
+    expect(p.progetto.functions.find((f) => f.name === "primo")!.data.find((d) => d.name === "v")!.size).toBe(4);
+    expect(fermo(testo("variable v: integer[3]", "output(1)", "v ← [1, 2]"))).toBe("3: il vettore v è lungo 3, ma l'elenco ha 2 valori");
+    expect(fermo(testo("variable n: integer", "variable v: integer[n]"))).toBe("2: manca la quadra che chiude il tipo del vettore");
+    const c = leggiAccademico(testo("variable v: integer[1001]", "output(1)"));
+    if (!c.ok) throw new Error(c.motivo);
+    expect(erroriStatici(c.progetto).map((e) => e.code)).toEqual(["limit_exceeded"]);
+  });
+
+  test("una variabile non dichiarata in una funzione: assegnata è un dato della funzione, solo letta è un errore", () => {
+    const l = letto(testo("function f(a: integer) → integer", "    b ← a + 1", "    return b", "end function"));
+    expect(l.note.map((n) => `${n.specie}:${n.nome}@${n.riga}`)).toEqual(["dato-della-funzione:b@2"]);
+    expect(l.progetto.functions.find((f) => f.name === "f")!.data.map((d) => `${d.name}${d.parameter !== undefined ? " par" : ""}`)).toEqual(["a par", "b"]);
+    expect(chiama(l.progetto, "f", ["a", "4"]).output).toBe("→ 5\n");
+    expect(fermo(testo("function f(a: integer) → integer", "    return a + b", "end function"))).toBe("2: b non è dichiarata");
+    const v = letto(testo("function g() → integer", "    w[0] ← 3", "    return w[0]", "end function"), { dimensione: 2 });
+    expect(v.progetto.functions.find((f) => f.name === "g")!.data.map((d) => `${d.name}[${d.size}]`)).toEqual(["w[2]"]);
+  });
+
+  test("lunghezza e len entrano senza rinomina chiesta, col loro nome e la trasformazione; gli altri nomi riservati fermano ancora", () => {
+    const l = letto(testo("function f(lunghezza: integer) → integer", "    return lunghezza + 1", "end function", "", "len ← f(2)", "output(len)"), { procedura: "prova" });
+    expect(l.trasformazioni.map((t) => `${t.specie} ${t.nome}→${t.nuovo}@${t.riga}`)).toEqual(["nome-riservato lunghezza→lunghezza_2@1", "nome-riservato len→len_2@5"]);
+    expect(chiama(l.progetto, "f", ["lunghezza_2", "4"]).output).toBe("→ 5\n");
+    expect(fermo(testo("variable length: integer", "length ← 2", "output(length)"))).toBe("1: il nome length è riservato nel flowchart (con la rinomina diventa length_2)");
+  });
+
+  test("max e min: la funzione aggiunta, con la trasformazione; il nome preso; quella dell'autore non si tocca", () => {
+    const l = letto(testo("variable a: integer", "a ← max(3, 4)", "output(a)", "output(MIN(3, 4))"));
+    expect(l.trasformazioni.map((t) => `${t.specie} ${t.nome}→${t.nuovo}@${t.riga}`)).toEqual(["funzione-aggiunta max→massimo@2", "funzione-aggiunta MIN→minimo@4"]);
+    expect(l.progetto.functions.filter((f) => f.kind === "function").map((f) => f.name)).toEqual(["massimo", "minimo"]);
+    expect(programma(l.progetto)).toBe("4\n3\n");
+    expect(rigenerato(l.progetto)).toContain("a ← massimo(3, 4)");
+    const preso = letto(testo("variable massimo: integer", "massimo ← max(1, 2)", "output(massimo)"));
+    expect(preso.trasformazioni.map((t) => t.nuovo)).toEqual(["massimo_2"]);
+    expect(programma(preso.progetto)).toBe("2\n");
+    const autore = letto(testo("function MAX(a: integer) → integer", "    return a", "end function", "", "output(MAX(1))"));
+    expect(trasformazioni(autore)).toEqual([]);
+    expect(programma(autore.progetto)).toBe("1\n");
+  });
+
+  test("max in una libreria che ha già la stessa funzione: riusata; una diversa con quel nome: il primo nome libero", () => {
+    const n = progettoNuovo({ name: "prove", library: true });
+    if (!n.ok) throw new Error("nuova");
+    const prima = aggiungiAllaLibreria(n.progetto, letto(testo("x ← max(1, 2)", "output(x)"), { procedura: "uno" }, n.progetto), false);
+    if (!prima.ok) throw new Error("prima");
+    expect(prima.aggiunte).toEqual(["massimo", "uno"]);
+    const ancora = letto(testo("y ← max(5, 6)", "output(y)"), { procedura: "due" }, prima.progetto);
+    expect(ancora.trasformazioni.map((t) => t.nuovo)).toEqual(["massimo"]);
+    const r = aggiungiAllaLibreria(prima.progetto, ancora, false);
+    if (!r.ok) throw new Error("ancora");
+    expect([r.aggiunte, r.identiche]).toEqual([["due"], ["massimo"]]);
+    const diversa = aggiungiAllaLibreria(n.progetto, letto(testo("function massimo(a: integer, b: integer) → integer", "    return a", "end function"), {}, n.progetto), false);
+    if (!diversa.ok) throw new Error("diversa");
+    const altra = letto(testo("z ← max(1, 2)", "output(z)"), { procedura: "tre" }, diversa.progetto);
+    expect(altra.trasformazioni.map((t) => t.nuovo)).toEqual(["massimo_2"]);
+  });
+
+  test("SCRIVI è una scrittura di tutti i valori senza a capo; una funzione dell'autore che si chiama così non si tocca", () => {
+    const l = letto(testo("variable a: integer", "a ← 1", 'SCRIVI("a = ", a, " b = ", 2)', 'SCRIVI("\\n")', 'SCRIVI("fine")'));
+    expect(forme(l)).toEqual(["scrivi@3", "scrivi@4", "scrivi@5"]);
+    expect(commenti(l)[0]).toBe('Nel testo: SCRIVI("a = ", a, " b = ", 2)');
+    expect(programma(l.progetto)).toBe("a = 1 b = 2\nfine");
+    const autore = letto(testo("function SCRIVI(n: integer)", "    output(n)", "end function", "", "SCRIVI(3)"));
+    expect(forme(autore)).toEqual([]);
+    expect(programma(autore.progetto)).toBe("3\n");
+  });
+
+  test("ciò che il testo non definisce: una frase col nome; Infinity dice che cosa scrivere, e dichiarato è un nome riservato come gli altri", () => {
+    expect(fermo(testo("function f() → integer", "    return chiosco()", "end function"))).toBe("2: «chiosco» non è una procedura o una funzione di questo testo: aggiungila al testo con la sua «function»");
+    expect(fermo(testo("chiosco(1)"))).toBe("1: «chiosco» non è una procedura o una funzione di questo testo: aggiungila al testo con la sua «function»");
+    const infinito = "«Infinity» non c'è nel flowchart: scrivi al suo posto un numero molto grande rispetto ai valori del programma, per esempio 1000000000 (con il meno davanti per -Infinity)";
+    expect(fermo(testo("x ← -Infinity", "output(x)"), { procedura: "prova" })).toBe(`1: ${infinito}`);
+    expect(fermo(testo("variable x: integer", "x ← Infinity", "output(x)"))).toBe(`2: ${infinito}`);
+    const dichiarato = testo("variable Infinity: integer", "Infinity ← 2", "output(Infinity)");
+    expect(fermo(dichiarato)).toBe("1: il nome Infinity è riservato nel flowchart (con la rinomina diventa Infinity_2)");
+    expect(programma(letto(dichiarato, { rinomina: true }).progetto)).toBe("2\n");
+  });
+
+  test("il vettore che la funzione modifica: per riferimento solo se chiesto, con la nota, anche attraverso un'altra funzione", () => {
+    const t = testo("function azzera(a: integer[])", "    a[0] ← 0", "end function", "", "function passa(b: integer[])", "    azzera(b)", "end function", "", "function legge(c: integer[]) → integer", "    return c[0]", "end function", "", "variable v: integer[]", "v ← [5, 6]", "passa(v)", "output(v[0])", "output(legge(v))");
+    const senza = letto(t);
+    expect(senza.note.filter((n) => n.specie === "riferimento")).toEqual([]);
+    expect(programma(senza.progetto)).toBe("5\n5\n");
+    const l = letto(t, { vettoriModificati: true });
+    const parametri = (nome: string) => l.progetto.functions.find((f) => f.name === nome)!.data[0]!.parameter;
+    expect(["azzera", "passa", "legge"].map(parametri)).toEqual(["reference", "reference", "value"]);
+    expect(l.note.filter((n) => n.specie === "riferimento").map((n) => `${n.funzione}.${n.nome}@${n.riga}`)).toEqual(["azzera.a@2", "passa.b@6"]);
+    expect(programma(l.progetto)).toBe("0\n0\n");
+    const conRisultato = letto(testo("function primo(a: integer[]) → integer", "    a[0] ← 9", "    return a[0]", "end function"), { vettoriModificati: true });
+    expect(conRisultato.progetto.functions.find((f) => f.name === "primo")!.data[0]!.parameter).toBe("value");
+    expect(conRisultato.note.filter((n) => n.specie === "riferimento")).toEqual([]);
+  });
+
+  test("la riga vecchia nella linguetta di «Accademico»: sopra quella ufficiale, riletta uguale; gli altri commenti restano omessi", () => {
+    const l = letto(testo("variable n: integer", "n ← 1", "if n = 1 then", "    output(n)", "end if"));
+    const generato = rigenerato(l.progetto);
+    expect(generato).toContain("// Nel testo: if n = 1 then\nif n == 1 then\n");
+    const riletto = letto(generato);
+    expect(forme(riletto)).toEqual([]);
+    expect(commenti(riletto)).toEqual(["Nel testo: if n = 1 then"]);
+    expect(rigenerato(riletto.progetto)).toBe(generato);
+    const altro: Progetto = { ...l.progetto, functions: l.progetto.functions.map((f) => (f.kind === "main" ? { ...f, body: [{ id: "c9", kind: "comment", text: "una nota mia" }, ...f.body] } : f)) };
+    expect(rigenerato(altro)).not.toContain("una nota mia");
+    expect(fermo(testo("// una nota", "output(1)"))).toBe("1: «/» non è un valore");
   });
 });
 

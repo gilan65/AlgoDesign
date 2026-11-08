@@ -35,6 +35,15 @@ test("un testo con le sole funzioni non ha procedura: il nome del file non lo fe
   expect(lancia(cifra).esito).toBe(0);
 });
 
+test("un errore del flowchart che ne esce si dice con la frase dell'app e la riga, mai col suo codice", () => {
+  const t = scrivi("scrive.txt", testo("function f() → integer", "    output(1)", "    return 1", "end function"));
+  const r = lancia(t, "-o", join(cartella, "scrive.algo"));
+  expect(r.esito).toBe(1);
+  expect(r.righe.length).toBe(1);
+  expect(r.righe[0]).toMatch(/, riga 2: [A-ZÈ«]/);
+  expect(r.righe[0]).not.toMatch(/errore statico|function_with_effect|funzione_scrive/);
+});
+
 test("la procedura del codice fuori dalle funzioni col nome di una funzione del testo: fermo, e il messaggio dice -n", () => {
   const t = scrivi("conta.txt", testo("function conta(n: integer) → integer", "    return n", "end function", "", "output(conta(2))"));
   expect(lancia(t, "-o", join(cartella, "conta-1.algo"), "-r")).toEqual({
@@ -91,7 +100,7 @@ test("un errore che la libreria aveva già si dice con il nome della libreria, n
   const r = lancia(scrivi("tre.txt", testo("function tre() → integer", "    return 3", "end function")), "-l", lib);
   expect(r.esito).toBe(1);
   expect(r.righe.length).toBeGreaterThan(0);
-  for (const riga of r.righe) expect(riga).toMatch(new RegExp(`^ERRORE ${lib.replaceAll("\\", "\\\\")}: la libreria ha già un errore statico \\(\\w+\\) che non viene dal testo: correggilo nell'app, poi riprova$`));
+  for (const riga of r.righe) expect(riga).toMatch(new RegExp(`^ERRORE ${lib.replaceAll("\\", "\\\\")}: la libreria ha già un errore che non viene dal testo \\(«.+»\\): correggilo nell'app, poi riprova$`));
 });
 
 test("il file che non si scrive, l'opzione che non c'è, l'aiuto", () => {

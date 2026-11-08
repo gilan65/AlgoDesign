@@ -28,19 +28,33 @@
 // con le parentesi delle sue precedenze; il testo scritto si rilegge con l'analizzatore unico, e deve dare lo stesso
 // albero. La scrittura `output(…)` è una scrittura con l'a capo (la sintassi non lo esprime).
 //
+// Le forme di prima della guida di oggi si leggono e si dicono con una nota per riga (`forma`), e la riga com'era scritta
+// resta come commento `Nel testo: …` davanti al blocco che ne nasce (il generatore la riscrive `// Nel testo: …`, e il
+// lettore la rilegge come commento): `=` nelle condizioni di `if` e `while`, `MOD`, `output x`, l'intervallo con la virgola,
+// `procedure`, `SCRIVI`, la lunghezza nel tipo (`integer[10]`: solo la nota). Una parola nuova non è riservata: decide il
+// posto nella riga, e un dato che si chiama `MOD`, `output` o `procedure` resta un dato. `<=`, `>=`, `!=` sono altri modi di
+// scrivere gli stessi segni, come `−` e `…`.
+//
+// `max` e `min` (anche maiuscoli, se l'autore non ha una funzione con quel nome) diventano una funzione aggiunta al
+// programma, `massimo` o `minimo`, o il primo nome libero (una trasformazione). Con `vettoriModificati` un parametro vettore
+// che una procedura modifica, anche passandolo a un'altra che lo modifica, è per riferimento (una nota): il testo generato
+// dall'app non lo chiede, perché lì i parametri sono per valore; una funzione che restituisce un valore resta per valore,
+// perché il flowchart non le ammette un parametro per riferimento.
+//
 // Che cosa NON guarda: la validità del flowchart che esce, che è del controllo statico (chi legge lo controlla e riporta
-// gli errori alla riga con `rigaDelBlocco`); `min` e `max`, che il flowchart non ha (un errore con la riga); un `for`
-// che cambia la fine o il contatore nel corpo (un errore: il flowchart ricalcola la fine a ogni giro); un programma senza
-// funzioni con dichiarazioni in testa che erano costanti comuni (si leggono come dati del programma principale).
+// gli errori alla riga con `rigaDelBlocco`); un `for` che cambia la fine o il contatore nel corpo (un errore: il flowchart
+// ricalcola la fine a ogni giro); un programma senza funzioni con dichiarazioni in testa che erano costanti comuni (si
+// leggono come dati del programma principale); un commento diverso dalla riga del testo, che non si legge.
 
 import { causaDelNome } from "../controllo/controllo";
 import { analizza, paroleChiave as paroleDelFlowchart, type Espressione, type OperatoreBinario } from "../espressioni/analizzatore";
+import { prefissoDellaRigaDelTesto } from "../genera/accademico";
 import type { LinguaDelCodice } from "../genera/nomi";
 import { primoLibero } from "../modifica/identificatori";
 import { importa, riepilogoDellImportazione } from "../modifica/importa";
 import type { Blocco, Dato, Funzione, Progetto } from "../progetto/modello";
 
-export type SpecieDellaTrasformazione = "return" | "dichiarazione" | "scambio" | "elenco" | "nome-riservato" | "nome-in-uso";
+export type SpecieDellaTrasformazione = "return" | "dichiarazione" | "scambio" | "elenco" | "nome-riservato" | "nome-in-uso" | "funzione-aggiunta";
 export interface Trasformazione {
   readonly specie: SpecieDellaTrasformazione;
   readonly riga: number;
@@ -51,13 +65,19 @@ export interface Trasformazione {
   readonly dato?: true;
 }
 
-export type SpecieDellaNota = "int" | "parametro" | "dimensione" | "procedura";
+export type SpecieDellaNota = "int" | "parametro" | "dimensione" | "procedura" | "forma" | "dato-della-funzione" | "riferimento";
+/** Le forme di prima della guida di oggi, che il lettore accetta. */
+export type FormaVecchia = "uguale" | "mod" | "output" | "intervallo" | "procedure" | "scrivi" | "lunghezza";
 export interface Nota {
   readonly specie: SpecieDellaNota;
   readonly riga: number;
   readonly nome?: string;
-  /** Per la dimensione: quella data. */
+  /** Per la dimensione e la lunghezza scritta nel tipo: quella data. */
   readonly valore?: number;
+  /** Per `forma`: quale. */
+  readonly forma?: FormaVecchia;
+  /** Per `riferimento`: la funzione che modifica il vettore. */
+  readonly funzione?: string;
 }
 
 export interface OpzioniDellaLettura {
@@ -71,6 +91,8 @@ export interface OpzioniDellaLettura {
   readonly rinomina?: boolean;
   /** Il nome del progetto che esce. */
   readonly nome?: string;
+  /** Un parametro vettore che la funzione modifica è per riferimento: la modifica si vede fuori, come negli esercizi. */
+  readonly vettoriModificati?: boolean;
 }
 
 export type Lettura =
@@ -108,7 +130,7 @@ type Simbolo = { readonly g: "nome"; readonly v: string } | { readonly g: "inter
 
 /** I segni di «Accademico», col segno del flowchart che il lettore usa per sé (`−` è il meno, `…` i tre punti). */
 const segni: readonly (readonly [string, string])[] = [
-  ["...", "..."], ["…", "..."], ["==", "=="], ["←", "←"], ["→", "→"], ["≠", "!="], ["≤", "<="], ["≥", ">="], ["<", "<"], [">", ">"],
+  ["...", "..."], ["…", "..."], ["==", "=="], ["<=", "<="], [">=", ">="], ["!=", "!="], ["←", "←"], ["→", "→"], ["≠", "!="], ["≤", "<="], ["≥", ">="], ["<", "<"], [">", ">"],
   ["×", "*"], ["/", "/"], ["+", "+"], ["-", "-"], ["−", "-"], ["(", "("], [")", ")"], ["[", "["], ["]", "]"], [",", ","], [":", ":"],
 ];
 
@@ -117,7 +139,7 @@ const inizioDiNome = /^[_a-z]$/i;
 const seguitoDiNome = /^\w$/;
 const cifra = /^\d$/;
 
-function simboli(testo: string, riga: number): Simbolo[] {
+function simboli(testo: string, riga: number, forme: Set<FormaVecchia>): Simbolo[] {
   const fuori: Simbolo[] = [];
   const c = Array.from(testo);
   /** Dove finisce, da `da`, la fila di caratteri che `vale` accetta. */
@@ -138,13 +160,14 @@ function simboli(testo: string, riga: number): Simbolo[] {
       const j = finoA(i, cifra);
       fuori.push({ g: "intero", v: Number(c.slice(i, j).join("")) });
       i = j;
-    } else i = simbolo(c, i, riga, fuori);
+    } else i = simbolo(c, i, riga, fuori, forme);
   }
   return fuori;
 }
 
-/** Una stringa o un segno da `i`: lo aggiunge a `fuori` e dice dove riprendere. */
-function simbolo(c: readonly string[], i: number, riga: number, fuori: Simbolo[]): number {
+/** Una stringa o un segno da `i`: lo aggiunge a `fuori` e dice dove riprendere. L'uguale da solo è un confronto solo nella
+ * condizione di un `if` o di un `while`: altrove può essere un'assegnazione scritta male, e ferma la lettura. */
+function simbolo(c: readonly string[], i: number, riga: number, fuori: Simbolo[], forme: Set<FormaVecchia>): number {
   const x = c[i]!;
   if (x === '"') {
     const codici: number[] = [];
@@ -169,7 +192,15 @@ function simbolo(c: readonly string[], i: number, riga: number, fuori: Simbolo[]
   }
   const resto = c.slice(i).join("");
   const s = segni.find(([da]) => resto.startsWith(da));
-  if (s === undefined) throw new Fermo(riga, x === "=" ? "l'uguale si scrive «==» (e l'assegnazione «←»)" : `il segno «${x}» non si legge`);
+  if (s === undefined) {
+    const prima = fuori[0];
+    if (x === "=" && prima?.g === "nome" && (prima.v === "if" || prima.v === "while")) {
+      forme.add("uguale");
+      fuori.push({ g: "segno", v: "==" });
+      return i + 1;
+    }
+    throw new Fermo(riga, x === "=" ? "l'uguale si scrive «==» (e l'assegnazione «←»)" : `il segno «${x}» non si legge`);
+  }
   fuori.push({ g: "segno", v: s[1] });
   return i + Array.from(s[0]).length;
 }
@@ -184,6 +215,7 @@ class Parole {
   constructor(
     readonly s: readonly Simbolo[],
     readonly riga: number,
+    readonly forme: Set<FormaVecchia>,
   ) {}
   guarda(k = 0): Simbolo | undefined {
     return this.s[this.i + k];
@@ -220,9 +252,12 @@ class Parole {
     let s = sotto();
     for (;;) {
       const op = ops.find((o) => this.e(o));
-      if (op === undefined) return s;
+      // `MOD` è l'operatore solo qui, dopo un valore: altrove è un nome come gli altri.
+      const maiuscolo = op === undefined && ops.includes("mod") && this.e("MOD");
+      if (op === undefined && !maiuscolo) return s;
+      if (maiuscolo) this.forme.add("mod");
       this.i++;
-      s = { genere: "binario", operatore: op as OperatoreBinario, sinistro: s, destro: sotto() };
+      s = { genere: "binario", operatore: (op ?? "mod") as OperatoreBinario, sinistro: s, destro: sotto() };
     }
   }
   private confronto(): Espressione {
@@ -286,7 +321,9 @@ const scritto = (x: Simbolo): string => (x.g === "intero" ? String(x.v) : x.g ==
 // ---------------------------------------------------------------------------------------- le istruzioni
 
 type Istruzione =
-  | { readonly k: "variabile"; readonly riga: number; readonly nome: string; readonly vettore: boolean }
+  | { readonly k: "variabile"; readonly riga: number; readonly nome: string; readonly vettore: boolean; readonly lunghezza?: number }
+  | { readonly k: "commento"; readonly riga: number; readonly testo: string }
+  | { readonly k: "scrivi"; readonly riga: number; readonly valori: readonly Espressione[] }
   | { readonly k: "assegna"; readonly riga: number; readonly bersaglio: Espressione; readonly valore: Espressione; readonly elenco?: readonly Espressione[] }
   | { readonly k: "scambia"; readonly riga: number; readonly a: Espressione; readonly b: Espressione }
   | { readonly k: "chiama"; readonly riga: number; readonly nome: string; readonly argomenti: readonly Espressione[] }
@@ -299,6 +336,13 @@ interface Parametro {
   readonly nome: string;
   readonly vettore: boolean;
   readonly riga: number;
+  readonly lunghezza?: number;
+}
+
+/** Un tipo letto: vettore o no, e la lunghezza se il testo la scrive (`integer[10]`). */
+interface TipoLetto {
+  readonly vettore: boolean;
+  readonly lunghezza?: number;
 }
 
 interface FunzioneLetta {
@@ -307,13 +351,14 @@ interface FunzioneLetta {
   readonly nome: string;
   readonly parametri: readonly Parametro[];
   /** `undefined` per una procedura. */
-  readonly risultato?: { readonly vettore: boolean };
+  readonly risultato?: TipoLetto;
   readonly corpo: readonly Istruzione[];
 }
 
 interface TestoLetto {
   readonly comuni: readonly Istruzione[];
-  readonly funzioni: readonly FunzioneLetta[];
+  /** Si allunga con le funzioni che il lettore aggiunge (`max`, `min`). */
+  readonly funzioni: FunzioneLetta[];
   readonly esterno: readonly Istruzione[];
   readonly note: Nota[];
 }
@@ -332,23 +377,33 @@ function eUnoScambio(w: Parole): boolean {
   return false;
 }
 
-/** Il tipo dopo i due punti: `integer`, `integer[]`, o `int` (una nota). */
-function tipo(w: Parole, note: Nota[]): boolean {
+/** Il tipo dopo i due punti: `integer`, `integer[]`, `integer[10]` (la forma di prima, la lunghezza detta dal testo), o
+ * `int` (una nota). `nome`: ciò che ha quel tipo, per la nota sulla lunghezza. */
+function tipo(w: Parole, note: Nota[], nome: string): TipoLetto {
   const t = w.guarda();
   if (t === undefined || t.g !== "nome" || (t.v !== "integer" && t.v !== "int")) throw new Fermo(w.riga, "il tipo è «integer» o «integer[]»");
   w.i++;
   if (t.v === "int") note.push({ specie: "int", riga: w.riga });
-  if (!w.prendi("[")) return false;
+  if (!w.prendi("[")) return { vettore: false };
+  const n = w.guarda();
+  if (n?.g === "intero") {
+    w.i++;
+    w.vuole("]", "la quadra che chiude il tipo del vettore");
+    note.push({ specie: "forma", forma: "lunghezza", riga: w.riga, nome, valore: n.v });
+    return { vettore: true, lunghezza: n.v };
+  }
   w.vuole("]", "la quadra che chiude il tipo del vettore");
-  return true;
+  return { vettore: true };
 }
 
-/** Il testo in istruzioni: le funzioni, le dichiarazioni e assegnazioni prima della prima funzione, il codice esterno. */
-function leggiIlTesto(testo: string): TestoLetto {
+/** Il testo in istruzioni: le funzioni, le dichiarazioni e assegnazioni prima della prima funzione, il codice esterno.
+ * `scriviDellAutore`: una funzione `SCRIVI` della libreria, che toglie alla parola il suo significato. */
+function leggiIlTesto(testo: string, scriviDellAutore: boolean): TestoLetto {
   const note: Nota[] = [];
   const righe = testo.split(/\r?\n/);
+  const haScrivi = scriviDellAutore || righe.some((r) => /^\s*(function|procedure)\s+SCRIVI\b/.test(r));
   type Aperto =
-    | { genere: "function"; f: Omit<FunzioneLetta, "corpo" | "fine">; corpo: Istruzione[] }
+    | { genere: "function"; parola: "function" | "procedure"; f: Omit<FunzioneLetta, "corpo" | "fine">; corpo: Istruzione[] }
     | { genere: "if"; riga: number; condizione: Espressione; allora: Istruzione[]; altrimenti: Istruzione[]; nellAltro: boolean }
     | { genere: "while"; riga: number; condizione: Espressione; corpo: Istruzione[] }
     | { genere: "for"; riga: number; indice: string; da: Espressione; fino: Espressione; corpo: Istruzione[] };
@@ -365,23 +420,23 @@ function leggiIlTesto(testo: string): TestoLetto {
     if (a.genere === "if") return a.nellAltro ? a.altrimenti : a.allora;
     return a.corpo;
   };
-  const chiudi = (genere: Aperto["genere"], riga: number): Aperto => {
+  /** La parola con cui si è aperta una struttura. */
+  const parolaDi = (a: Aperto): string => (a.genere === "function" ? a.parola : a.genere);
+  const chiudi = (genere: string, riga: number): Aperto => {
     const a = aperti.pop();
-    if (a === undefined || a.genere !== genere) throw new Fermo(riga, `«end ${genere}» senza il suo «${genere}»${a !== undefined ? ` (è aperto un «${a.genere}»)` : ""}`);
+    if (a === undefined || parolaDi(a) !== genere) throw new Fermo(riga, `«end ${genere}» senza il suo «${genere}»${a !== undefined ? ` (è aperto un «${parolaDi(a)}»)` : ""}`);
     return a;
   };
 
-  righe.forEach((r, k) => {
-    const riga = k + 1;
-    const w = new Parole(simboli(r, riga), riga);
-    if (w.finita()) return;
+  /** Una riga non vuota, senza la sua nota e il suo commento. */
+  const leggiLaRiga = (w: Parole, riga: number): void => {
     const prima = w.guarda()!;
     const parola = prima.g === "nome" ? prima.v : undefined;
-    const fineCon = parola !== undefined && /^end(function|if|while|for)$/.test(parola) ? parola.slice(3) : parola === "end" ? (w.guarda(1) as { v?: string } | undefined)?.v : undefined;
+    const fineCon = parola !== undefined && /^end(function|procedure|if|while|for)$/.test(parola) ? parola.slice(3) : parola === "end" ? (w.guarda(1) as { v?: string } | undefined)?.v : undefined;
     if (parola === "end" || fineCon !== undefined) {
       w.i += parola === "end" ? 2 : 1;
       w.fine();
-      if (fineCon !== "function" && fineCon !== "if" && fineCon !== "while" && fineCon !== "for") throw new Fermo(riga, "dopo «end» viene «function», «if», «while» o «for»");
+      if (fineCon !== "function" && fineCon !== "procedure" && fineCon !== "if" && fineCon !== "while" && fineCon !== "for") throw new Fermo(riga, "dopo «end» viene «function», «if», «while» o «for»");
       const a = chiudi(fineCon, riga);
       if (a.genere === "function") funzioni.push({ ...a.f, fine: riga, corpo: a.corpo });
       else if (a.genere === "if") dove().push({ k: "se", riga: a.riga, condizione: a.condizione, allora: a.allora, altrimenti: a.altrimenti });
@@ -389,26 +444,34 @@ function leggiIlTesto(testo: string): TestoLetto {
       else dove().push({ k: "per", riga: a.riga, indice: a.indice, da: a.da, fino: a.fino, corpo: a.corpo });
       return;
     }
-    switch (parola) {
-      case "function": {
-        w.i++;
-        if (aperti.length > 0) throw new Fermo(riga, "una funzione dentro un'altra struttura");
-        const nome = w.nome("il nome della funzione");
+    // `procedure` è la parola di un tempo solo davanti a un nome: `procedure ← 1` è un dato che si chiama così.
+    const dopo = w.guarda(1);
+    const procedura = parola === "procedure" && dopo?.g === "nome" && !paroleChiave.has(dopo.v);
+    if (parola === "function" || procedura) {
+      w.i++;
+      if (aperti.length > 0) throw new Fermo(riga, "una funzione dentro un'altra struttura");
+      const nome = w.nome("il nome della funzione");
+      const parametri: Parametro[] = [];
+      // La procedura di un tempo può non avere le tonde.
+      if (!(procedura && w.finita())) {
         w.vuole("(", "la tonda dei parametri");
-        const parametri: Parametro[] = [];
         if (!w.prendi(")")) {
           do {
             const p = w.nome("il nome di un parametro");
             w.vuole(":", "i due punti prima del tipo");
-            parametri.push({ nome: p, vettore: tipo(w, note), riga });
+            const t = tipo(w, note, p);
+            parametri.push({ nome: p, vettore: t.vettore, riga, ...(t.lunghezza !== undefined ? { lunghezza: t.lunghezza } : {}) });
           } while (w.prendi(","));
           w.vuole(")", "la tonda che chiude i parametri");
         }
-        const risultato = w.prendi("→") ? { vettore: tipo(w, note) } : undefined;
-        w.fine();
-        aperti.push({ genere: "function", f: { riga, nome, parametri, ...(risultato !== undefined ? { risultato } : {}) }, corpo: [] });
-        return;
       }
+      const risultato = !procedura && w.prendi("→") ? tipo(w, note, nome) : undefined;
+      w.fine();
+      if (procedura) w.forme.add("procedure");
+      aperti.push({ genere: "function", parola: procedura ? "procedure" : "function", f: { riga, nome, parametri, ...(risultato !== undefined ? { risultato } : {}) }, corpo: [] });
+      return;
+    }
+    switch (parola) {
       case "if": {
         w.i++;
         const condizione = w.espressione();
@@ -439,7 +502,8 @@ function leggiIlTesto(testo: string): TestoLetto {
         w.vuole("in", "«in» prima dell'intervallo");
         w.vuole("[", "la quadra che apre l'intervallo");
         const da = w.espressione();
-        w.vuole("...", "i tre punti dell'intervallo");
+        if (w.prendi(",")) w.forme.add("intervallo");
+        else w.vuole("...", "i tre punti dell'intervallo");
         const fino = w.espressione();
         w.vuole(")", "la tonda che chiude l'intervallo (l'ultimo è escluso)");
         w.vuole("do", "«do» alla fine della riga");
@@ -451,9 +515,9 @@ function leggiIlTesto(testo: string): TestoLetto {
         w.i++;
         const nome = w.nome("il nome della variabile");
         w.vuole(":", "i due punti prima del tipo");
-        const vettore = tipo(w, note);
+        const t = tipo(w, note, nome);
         w.fine();
-        dove().push({ k: "variabile", riga, nome, vettore });
+        dove().push({ k: "variabile", riga, nome, vettore: t.vettore, ...(t.lunghezza !== undefined ? { lunghezza: t.lunghezza } : {}) });
         return;
       }
       case "return": {
@@ -464,6 +528,26 @@ function leggiIlTesto(testo: string): TestoLetto {
         dove().push({ k: "restituisci", riga, ...(valore !== undefined ? { valore } : {}) });
         return;
       }
+    }
+    // `output x` senza tonde: non se dopo viene la freccia o una quadra, cioè un dato che si chiama `output`.
+    if (parola === "output" && dopo !== undefined && !w.e("(", 1) && !w.e("←", 1) && !w.e("[", 1)) {
+      w.i++;
+      const v = w.espressione();
+      w.fine();
+      w.forme.add("output");
+      dove().push({ k: "chiama", riga, nome: "output", argomenti: [v] });
+      return;
+    }
+    if (parola === "SCRIVI" && !haScrivi && w.e("(", 1)) {
+      w.i += 2;
+      const valori: Espressione[] = [];
+      do valori.push(w.espressione());
+      while (w.prendi(","));
+      w.vuole(")", "la tonda che chiude gli argomenti");
+      w.fine();
+      w.forme.add("scrivi");
+      dove().push({ k: "scrivi", riga, valori });
+      return;
     }
     if (w.e("(") && eUnoScambio(w)) {
       w.i++;
@@ -505,15 +589,36 @@ function leggiIlTesto(testo: string): TestoLetto {
     w.fine();
     if (e.genere !== "chiamata") throw new Fermo(riga, "un'istruzione è un'assegnazione con «←», una chiamata o una struttura");
     dove().push({ k: "chiama", riga, nome: e.nome, argomenti: e.argomenti });
+  };
+
+  righe.forEach((r, k) => {
+    const riga = k + 1;
+    const conservata = new RegExp(`^\\s*// (${prefissoDellaRigaDelTesto}.*)$`).exec(r);
+    if (conservata !== null) {
+      dove().push({ k: "commento", riga, testo: conservata[1]! });
+      return;
+    }
+    const forme = new Set<FormaVecchia>();
+    const w = new Parole(simboli(r, riga, forme), riga, forme);
+    if (w.finita()) return;
+    // Il commento va prima di ciò che la riga aggiunge: una struttura entra nella sequenza solo quando si chiude.
+    const sequenza = dove();
+    const posto = sequenza.length;
+    leggiLaRiga(w, riga);
+    for (const forma of forme) note.push({ specie: "forma", forma, riga });
+    if (forme.size === 0) return;
+    const commento: Istruzione = { k: "commento", riga, testo: `${prefissoDellaRigaDelTesto}${r.trim()}` };
+    const aperta = aperti.at(-1);
+    if (forme.has("procedure") && aperta?.genere === "function") aperta.corpo.push(commento);
+    else sequenza.splice(posto, 0, commento);
   });
-  if (aperti.length > 0) {
-    const a = aperti.at(-1)!;
-    throw new Fermo(righe.length, `manca «end ${a.genere}»`);
-  }
+  if (aperti.length > 0) throw new Fermo(righe.length, `manca «end ${parolaDi(aperti.at(-1)!)}»`);
   if (funzioni.length > 0) {
-    for (const x of primaDelleFunzioni)
+    // Prima delle funzioni non c'è un blocco che porti il commento: resta la nota.
+    const costanti = primaDelleFunzioni.filter((x) => x.k !== "commento");
+    for (const x of costanti)
       if (x.k !== "variabile" && x.k !== "assegna") throw new Fermo(x.riga, "prima delle funzioni stanno solo le costanti comuni: il codice del programma va dopo");
-    comuni.push(...primaDelleFunzioni);
+    comuni.push(...costanti);
   } else esterno.push(...primaDelleFunzioni);
   return { comuni, funzioni, esterno, note };
 }
@@ -583,13 +688,19 @@ const indicizzatiIn = (e: Espressione): string[] => [...(e.genere === "indice" &
 
 /** Le espressioni di un'istruzione (non quelle delle istruzioni dentro). */
 const espressioniDi = (x: Istruzione): readonly Espressione[] =>
-  x.k === "assegna" ? [x.bersaglio, ...(x.elenco ?? [x.valore])] : x.k === "scambia" ? [x.a, x.b] : x.k === "chiama" ? x.argomenti : x.k === "se" || x.k === "mentre" ? [x.condizione] : x.k === "per" ? [x.da, x.fino] : x.k === "restituisci" && x.valore !== undefined ? [x.valore] : [];
+  x.k === "assegna" ? [x.bersaglio, ...(x.elenco ?? [x.valore])] : x.k === "scambia" ? [x.a, x.b] : x.k === "chiama" ? x.argomenti : x.k === "scrivi" ? x.valori : x.k === "se" || x.k === "mentre" ? [x.condizione] : x.k === "per" ? [x.da, x.fino] : x.k === "restituisci" && x.valore !== undefined ? [x.valore] : [];
 const dentroDi = (x: Istruzione): readonly Istruzione[] => (x.k === "se" ? [...x.allora, ...x.altrimenti] : x.k === "mentre" || x.k === "per" ? x.corpo : []);
 const tutte = (xs: readonly Istruzione[]): Istruzione[] => xs.flatMap((x) => [x, ...tutte(dentroDi(x))]);
 
+/** I nomi che un'istruzione assegna da sé (la destinazione, l'indice di un `for`), non quelle che ha dentro. */
+const assegnatiDa = (x: Istruzione): string[] => (x.k === "assegna" ? nomiIn(x.bersaglio).slice(0, 1) : x.k === "scambia" ? [...nomiIn(x.a).slice(0, 1), ...nomiIn(x.b).slice(0, 1)] : x.k === "per" ? [x.indice] : []);
 /** I nomi che un elenco di istruzioni assegna (le destinazioni e gli indici dei `for`). */
-const assegnatiIn = (xs: readonly Istruzione[]): Set<string> =>
-  new Set(tutte(xs).flatMap((x) => (x.k === "assegna" ? nomiIn(x.bersaglio).slice(0, 1) : x.k === "scambia" ? [...nomiIn(x.a).slice(0, 1), ...nomiIn(x.b).slice(0, 1)] : x.k === "per" ? [x.indice] : [])));
+const assegnatiIn = (xs: readonly Istruzione[]): Set<string> => new Set(tutte(xs).flatMap(assegnatiDa));
+/** Le chiamate di un'istruzione, dentro le sue espressioni e quella che è l'istruzione stessa. */
+const chiamateDi = (x: Istruzione): Extract<Espressione, { genere: "chiamata" }>[] => {
+  const dentro = (e: Espressione): Extract<Espressione, { genere: "chiamata" }>[] => [...(e.genere === "chiamata" ? [e] : []), ...sotto(e).flatMap(dentro)];
+  return [...espressioniDi(x).flatMap(dentro), ...(x.k === "chiama" ? [{ genere: "chiamata" as const, nome: x.nome, argomenti: x.argomenti }] : [])];
+};
 
 /** Le istruzioni coi nomi cambiati: i dati con `dati`, le chiamate con `funzioni`. */
 function rinominate(xs: readonly Istruzione[], dati: ReadonlyMap<string, string>, funzioni: ReadonlyMap<string, string>): Istruzione[] {
@@ -614,6 +725,10 @@ function rinominate(xs: readonly Istruzione[], dati: ReadonlyMap<string, string>
     switch (x.k) {
       case "variabile":
         return { ...x, nome: n(x.nome) };
+      case "commento":
+        return x;
+      case "scrivi":
+        return { ...x, valori: x.valori.map(e) };
       case "assegna":
         return { ...x, bersaglio: e(x.bersaglio), valore: e(x.valore), ...(x.elenco !== undefined ? { elenco: x.elenco.map(e) } : {}) };
       case "scambia":
@@ -748,7 +863,7 @@ interface Parte {
   readonly testa?: FunzioneLetta;
   readonly riga: number;
   corpo: readonly Istruzione[];
-  readonly dati: { nome: string; vettore: boolean; riga: number; parametro: boolean; iniziale?: string | readonly string[] }[];
+  readonly dati: { nome: string; vettore: boolean; riga: number; parametro: boolean; iniziale?: string | readonly string[]; lunghezza?: number; riferimento?: boolean }[];
   readonly valore?: Espressione;
   readonly rigaDelValore?: number;
   /** Il dato d'appoggio degli scambi. */
@@ -769,7 +884,7 @@ export function leggiAccademico(testoDaLeggere: string, opzioni: OpzioniDellaLet
 function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: Progetto | undefined): Lettura {
   const lingua = opzioni.lingua ?? "it";
   const dimensione = opzioni.dimensione ?? dimensionePredefinita;
-  const letto = leggiIlTesto(testoDaLeggere);
+  const letto = leggiIlTesto(testoDaLeggere, (libreria?.functions ?? []).some((f) => f.name === "SCRIVI"));
   const note = letto.note;
   const trasformazioni: Trasformazione[] = [];
 
@@ -790,13 +905,14 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
     const causa = causaDelNome(n, nelFile);
     if (causa === undefined) return undefined;
     if (causa.causa !== "nome_riservato" && causa.causa !== "nome_della_libreria") throw new Fermo(riga, `il nome ${n} non si può usare nel flowchart`);
-    if (opzioni.rinomina !== true) throw new Fermo(riga, `il nome ${n} è riservato nel flowchart (con la rinomina diventa ${liberoDa(n, usatiDovunque)})`);
+    if (opzioni.rinomina !== true && !nomiComuniRiservati.has(n)) throw new Fermo(riga, `il nome ${n} è riservato nel flowchart (con la rinomina diventa ${liberoDa(n, usatiDovunque)})`);
     const nuovo = liberoDa(n, usatiDovunque);
     usatiDovunque.add(nuovo);
     trasformazioni.push({ specie: "nome-riservato", riga, nome: n, nuovo });
     return nuovo;
   };
   const funzioniRinominate = new Map<string, string>();
+  aggiungiMassimoEMinimo(letto, nomiDelTesto, dellaLibreria, usatiDovunque, funzioniRinominate, trasformazioni, lingua, libreria);
   for (const f of letto.funzioni) {
     const nuovo = riservato(f.nome, true, f.riga);
     if (nuovo !== undefined) funzioniRinominate.set(f.nome, nuovo);
@@ -882,11 +998,12 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
     for (const p of f?.parametri ?? []) {
       const nuovo = nomeDelDato(p.nome, p.riga);
       if (nuovo !== undefined) dati_.set(p.nome, nuovo);
-      dati.push({ nome: nuovo ?? p.nome, vettore: p.vettore, riga: p.riga, parametro: true });
+      dati.push({ nome: nuovo ?? p.nome, vettore: p.vettore, riga: p.riga, parametro: true, ...(p.lunghezza !== undefined ? { lunghezza: p.lunghezza } : {}) });
     }
-    // Le dichiarazioni: nella testa (le prime istruzioni del corpo) o fuori, che è una trasformazione.
+    // Le dichiarazioni: nella testa (le prime istruzioni del corpo, a parte un commento) o fuori, che è una trasformazione.
     const inTesta = new Set<Istruzione>();
     for (const x of corpoDelTesto) {
+      if (x.k === "commento") continue;
       if (x.k !== "variabile") break;
       inTesta.add(x);
     }
@@ -896,7 +1013,7 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
       if (dati.some((x) => x.nome === (dati_.get(d.nome) ?? d.nome))) throw new Fermo(d.riga, `${d.nome} è dichiarata due volte`);
       const nuovo = nomeDelDato(d.nome, d.riga);
       if (nuovo !== undefined) dati_.set(d.nome, nuovo);
-      dati.push({ nome: nuovo ?? d.nome, vettore: d.vettore, riga: d.riga, parametro: false });
+      dati.push({ nome: nuovo ?? d.nome, vettore: d.vettore, riga: d.riga, parametro: false, ...(d.lunghezza !== undefined ? { lunghezza: d.lunghezza } : {}) });
       if (!inTesta.has(d)) trasformazioni.push({ specie: "dichiarazione", riga: d.riga });
     }
     corpo = rinominate(corpo, dati_, new Map());
@@ -911,26 +1028,37 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
     // I nomi mai dichiarati: parametri della procedura del codice esterno, altrimenti un errore.
     const dichiarati = new Set([...dati.map((d) => d.nome), ...nomiDelleComuni]);
     const nuovi: Parametro[] = [];
+    // Dentro una funzione un nome assegnato e mai dichiarato è un suo dato (un parametro cambierebbe le chiamate).
+    const locali: Parametro[] = [];
+    const assegnati = assegnatiIn(corpo);
     // Un nome mai dichiarato uguale alla procedura stessa: il parametro prende un altro nome, a richiesta.
     const deiNuovi = new Map<string, string>();
     for (const x of tutte(corpo))
       for (const e of espressioniDi(x)) {
         const indicizzati = new Set(indicizzatiIn(e));
         for (const n of nomiIn(e)) {
-          if (dichiarati.has(n) || n.startsWith("_") || nuovi.some((p) => p.nome === (deiNuovi.get(n) ?? n))) continue;
+          if (dichiarati.has(n) || n.startsWith("_") || [...nuovi, ...locali].some((p) => p.nome === (deiNuovi.get(n) ?? n))) continue;
+          if (n === "Infinity") throw new Fermo(x.riga, "«Infinity» non c'è nel flowchart: scrivi al suo posto un numero molto grande rispetto ai valori del programma, per esempio 1000000000 (con il meno davanti per -Infinity)");
           if (eFunzione(n)) throw new Fermo(x.riga, `${n} è una funzione, e si chiama con le tonde`);
-          if (f !== undefined || procedura === undefined) throw new Fermo(x.riga, `${n} non è dichiarata`);
-          if (n === procedura) deiNuovi.set(n, nomeDellaProcedura(n, x.riga));
-          nuovi.push({ nome: deiNuovi.get(n) ?? n, vettore: indicizzati.has(n), riga: x.riga });
+          const locale = f !== undefined && assegnati.has(n);
+          if (!locale && (f !== undefined || procedura === undefined)) throw new Fermo(x.riga, `${n} non è dichiarata`);
+          if (!locale && n === procedura) deiNuovi.set(n, nomeDellaProcedura(n, x.riga));
+          if (nomiComuniRiservati.has(n)) deiNuovi.set(n, riservato(n, false, x.riga)!);
+          (locale ? locali : nuovi).push({ nome: deiNuovi.get(n) ?? n, vettore: indicizzati.has(n), riga: x.riga });
         }
       }
     if (deiNuovi.size > 0) corpo = rinominate(corpo, deiNuovi, new Map());
-    // I parametri nuovi nell'ordine del primo uso, davanti agli altri dati.
-    for (const p of nuovi) {
+    // I parametri nuovi nell'ordine del primo uso, davanti agli altri dati; i dati nuovi dopo.
+    for (const p of [...nuovi, ...locali]) {
       if (causaDelNome(p.nome, false) !== undefined) throw new Fermo(p.riga, `il nome ${p.nome} è riservato nel flowchart: va dichiarato`);
-      note.push({ specie: "parametro", riga: p.riga, nome: p.nome });
+      note.push({ specie: locali.includes(p) ? "dato-della-funzione" : "parametro", riga: p.riga, nome: p.nome });
     }
     dati.unshift(...nuovi.map((p) => ({ nome: p.nome, vettore: p.vettore, riga: p.riga, parametro: true })));
+    dati.push(...locali.map((p) => ({ nome: p.nome, vettore: p.vettore, riga: p.riga, parametro: false })));
+    // Una chiamata di ciò che il testo non definisce: la frase col nome, al posto dell'errore statico senza nome.
+    for (const x of tutte(corpo))
+      for (const c of chiamateDi(x))
+        if (!eFunzione(c.nome) && c.nome !== "output" && !paroleDelFlowchart.has(c.nome)) throw new Fermo(x.riga, `«${c.nome}» non è una procedura o una funzione di questo testo: aggiungila al testo con la sua «function»`);
     // Il return a metà.
     let valore: Espressione | undefined;
     let rigaDelValore: number | undefined;
@@ -1015,8 +1143,49 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
     rigaDellaFunzione.set(procedura, esterno.riga);
   }
 
-  // Le lunghezze dei vettori: i dati, i risultati, gli elenchi, poi i legami (vedi in testa).
+  // I vettori che una funzione modifica, a richiesta: quelli che assegna, poi quelli che passa a una che li modifica.
+  if (opzioni.vettoriModificati === true) {
+    const segna = (parte: Parte, d: Parte["dati"][number], riga: number) => {
+      d.riferimento = true;
+      note.push({ specie: "riferimento", riga, nome: d.nome, funzione: nomiDelleParti.get(parte.chiave)! });
+    };
+    // Solo le procedure: il flowchart non ammette un parametro per riferimento in una funzione che restituisce un valore.
+    const procedure = parti.filter((p) => p.testa?.risultato === undefined);
+    for (const parte of procedure)
+      for (const d of parte.dati.filter((x) => x.parametro && x.vettore)) {
+        const modifica = tutte(parte.corpo).find((x) => assegnatiDa(x).includes(d.nome));
+        if (modifica !== undefined) segna(parte, d, modifica.riga);
+      }
+    for (let cambiato = true; cambiato; ) {
+      cambiato = false;
+      for (const parte of procedure)
+        for (const x of tutte(parte.corpo))
+          for (const c of chiamateDi(x)) {
+            const g = parti.find((p) => p.testa !== undefined && (funzioniRinominate.get(p.testa.nome) ?? p.testa.nome) === c.nome);
+            if (g === undefined) continue;
+            const parametri = g.dati.filter((d) => d.parametro);
+            c.argomenti.forEach((a, i) => {
+              if (a.genere !== "nome" || parametri[i]?.riferimento !== true) return;
+              const d = parte.dati.find((y) => y.nome === a.nome && y.parametro && y.vettore && y.riferimento !== true);
+              if (d === undefined) return;
+              segna(parte, d, x.riga);
+              cambiato = true;
+            });
+          }
+    }
+  }
+
+  // Le lunghezze dei vettori: quelle che il testo dice, poi i dati, i risultati, gli elenchi, poi i legami (vedi in testa).
   const datoDellaParte = (parte: Parte, n: string) => parte.dati.find((d) => d.nome === n);
+  const conLaLunghezzaDelTesto = [...parti, ...(esterno !== undefined ? [esterno] : [])];
+  for (const parte of conLaLunghezzaDelTesto) {
+    for (const d of parte.dati) {
+      if (d.lunghezza === undefined) continue;
+      lunghezze.dai(`d:${parte.chiave}:${d.nome}`, d.lunghezza);
+      if (Array.isArray(d.iniziale) && d.iniziale.length !== d.lunghezza) throw new Fermo(d.riga, `il vettore ${d.nome} è lungo ${d.lunghezza}, ma l'elenco ha ${d.iniziale.length} valori`);
+    }
+    if (parte.testa?.risultato?.lunghezza !== undefined) lunghezze.dai(`r:${nomiDelleParti.get(parte.chiave)}`, parte.testa.risultato.lunghezza);
+  }
   const vettore = (parte: Parte, e: Espressione): string | undefined => {
     if (e.genere === "nome") {
       const d = datoDellaParte(parte, e.nome);
@@ -1054,6 +1223,8 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
     for (const d of parte.dati) if (d.vettore && Array.isArray(d.iniziale)) lunghezze.dai(`d:${parte.chiave}:${d.nome}`, d.iniziale.length);
     for (const x of tutte(parte.corpo))
       if (x.k === "assegna" && x.elenco !== undefined) {
+        const scritta = x.bersaglio.genere === "nome" ? datoDellaParte(parte, x.bersaglio.nome) : undefined;
+        if (scritta?.lunghezza !== undefined && scritta.lunghezza !== x.elenco.length) throw new Fermo(x.riga, `il vettore ${scritta.nome} è lungo ${scritta.lunghezza}, ma l'elenco ha ${x.elenco.length} valori`);
         const v = vettore(parte, x.bersaglio);
         if (v !== undefined) lunghezze.dai(v, x.elenco.length);
       }
@@ -1062,11 +1233,7 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
       if (v !== undefined) lunghezze.uguali(`r:${nomiDelleParti.get(parte.chiave)}`, v);
     }
     for (const x of tutte(parte.corpo)) {
-      const chiamate = espressioniDi(x).flatMap(function tutteLeChiamate(e: Espressione): Extract<Espressione, { genere: "chiamata" }>[] {
-        return [...(e.genere === "chiamata" ? [e] : []), ...sotto(e).flatMap(tutteLeChiamate)];
-      });
-      if (x.k === "chiama") chiamate.push({ genere: "chiamata", nome: x.nome, argomenti: x.argomenti });
-      for (const c of chiamate) {
+      for (const c of chiamateDi(x)) {
         const parametri = parametriDi(c.nome);
         if (parametri === undefined) continue;
         c.argomenti.forEach((a, i) => {
@@ -1110,7 +1277,7 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
       type: "integer",
       ...(d.vettore ? { size: lunghezzaDi(`d:${parte.chiave}:${d.nome}`, d.nome, d.riga) } : {}),
       ...(d.iniziale !== undefined ? { initial: d.iniziale } : {}),
-      ...(d.parametro ? { parameter: "value" as const } : {}),
+      ...(d.parametro ? { parameter: d.riferimento === true ? ("reference" as const) : ("value" as const) } : {}),
     }));
     const risultato = parte.testa?.risultato;
     const fine = { id: id(parte.testa?.fine ?? parte.rigaDelValore ?? parte.riga), ...(parte.valore !== undefined ? { return_value: traduttore.testo(parte.valore, parte.rigaDelValore!) } : {}) };
@@ -1147,6 +1314,59 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
     rigaDelBlocco: righeDelBlocco,
     rigaDellaFunzione,
   };
+}
+
+/** I nomi comuni che il flowchart riserva: si rinominano anche senza la rinomina chiesta. */
+const nomiComuniRiservati: ReadonlySet<string> = new Set(["lunghezza", "len"]);
+
+/** La funzione che il lettore aggiunge per `max` o `min`, come testo. */
+const testoDiMassimoEMinimo = (nome: string, confronto: string, risultato: string): string =>
+  [`function ${nome}(a: integer, b: integer) → integer`, `    variable ${risultato}: integer`, `    if a ${confronto} b then`, `        ${risultato} ← a`, "    else", `        ${risultato} ← b`, "    end if", `    return ${risultato}`, "end function", ""].join("\n");
+
+/** `max` e `min` (anche maiuscoli) dove l'autore non ha una funzione con quel nome: la funzione aggiunta in testa, col primo
+ * nome libero o con quello di una uguale della libreria, e le chiamate rinominate. */
+function aggiungiMassimoEMinimo(letto: TestoLetto, nomiDelTesto: Set<string>, dellaLibreria: ReadonlyMap<string, Funzione>, usatiDovunque: Set<string>, rinominate: Map<string, string>, trasformazioni: Trasformazione[], lingua: LinguaDelCodice, libreria: Progetto | undefined): void {
+  const tutteLeIstruzioni = tutte([...letto.comuni, ...letto.esterno, ...letto.funzioni.flatMap((f) => f.corpo)]);
+  const deiDati = new Set(tutteLeIstruzioni.flatMap((x) => [...espressioniDi(x).flatMap(nomiIn), ...(x.k === "variabile" ? [x.nome] : x.k === "per" ? [x.indice] : [])]));
+  for (const f of letto.funzioni) f.parametri.forEach((p) => deiDati.add(p.nome));
+  const risultato = nomiAggiunti[lingua].risultato;
+  const identica = (nome: string, confronto: string): boolean => {
+    if (libreria === undefined) return false;
+    const sola = leggi(testoDiMassimoEMinimo(nome, confronto, risultato), { lingua }, undefined);
+    if (!sola.ok) return false;
+    const ids = sola.progetto.functions.filter((f) => f.kind !== "main").map((f) => f.id);
+    return riepilogoDellImportazione(libreria, sola.progetto, ids).voci[0]?.stato === "identica";
+  };
+  const scelti = new Map<string, string>();
+  const aggiunte: FunzioneLetta[] = [];
+  const dette = new Set<string>();
+  const usi = tutteLeIstruzioni.flatMap((x) => chiamateDi(x).map((c) => ({ nome: c.nome, riga: x.riga })));
+  for (const { nome: chiamata, riga } of usi) {
+    const genere = chiamata.toLowerCase();
+    if ((genere !== "max" && genere !== "min") || (chiamata !== genere && chiamata !== genere.toUpperCase()) || nomiDelTesto.has(chiamata) || dellaLibreria.has(chiamata)) continue;
+    const base = genere === "max" ? (lingua === "it" ? "massimo" : "maximum") : lingua === "it" ? "minimo" : "minimum";
+    const confronto = genere === "max" ? ">" : "<";
+    if (!scelti.has(genere)) {
+      let k = 1;
+      let scelto: string;
+      for (;;) {
+        scelto = k === 1 ? base : `${base}_${k}`;
+        k++;
+        if (deiDati.has(scelto) || nomiDelTesto.has(scelto)) continue;
+        if (!dellaLibreria.has(scelto) || identica(scelto, confronto)) break;
+      }
+      scelti.set(genere, scelto);
+      usatiDovunque.add(scelto);
+      nomiDelTesto.add(scelto);
+      const f = leggiIlTesto(testoDiMassimoEMinimo(scelto, confronto, risultato), false).funzioni[0]!;
+      aggiunte.push({ ...f, riga, fine: riga });
+    }
+    const nuovo = scelti.get(genere)!;
+    rinominate.set(chiamata, nuovo);
+    if (!dette.has(`${chiamata}@${riga}`)) trasformazioni.push({ specie: "funzione-aggiunta", riga, nome: chiamata, nuovo });
+    dette.add(`${chiamata}@${riga}`);
+  }
+  letto.funzioni.unshift(...aggiunte);
 }
 
 /** Il primo fra `nome`, `nome_2`, `nome_3`… che non è in `usati`, e lo segna. */
@@ -1186,8 +1406,7 @@ class Traduttore {
    * restituisce in fondo). */
   testo(e: Espressione, riga: number): string {
     this.conTrattino(e, riga);
-    const c = chiamateIn(e).find((n) => n === "min" || n === "max" || n === "output");
-    if (c !== undefined) throw new Fermo(riga, c === "output" ? "«output» è un'istruzione, non un valore" : `«${c}» non c'è nel flowchart: scrivila come una funzione`);
+    if (chiamateIn(e).includes("output")) throw new Fermo(riga, "«output» è un'istruzione, non un valore");
     // Un'operazione a parola del flowchart (`length`, `round`…) chiamata come una funzione: il testo non la definisce
     // (una funzione del testo con quel nome è già stata rinominata, o ha fermato la lettura).
     const parola = chiamateIn(e).find((n) => paroleDelFlowchart.has(n));
@@ -1263,6 +1482,10 @@ class Traduttore {
     switch (x.k) {
       case "variabile":
         return [];
+      case "commento":
+        return [{ id: this.id(x.riga), kind: "comment", text: x.testo }];
+      case "scrivi":
+        return [{ id: this.id(x.riga), kind: "write", values: x.valori.map((v) => (v.genere === "stringa" ? testo(v, x.riga) : this.testo(v, x.riga))), newline: false }];
       case "assegna":
         if (x.elenco !== undefined) {
           if (x.bersaglio.genere !== "nome") throw new Fermo(x.riga, "un elenco si assegna a un vettore intero");
@@ -1289,7 +1512,6 @@ class Traduttore {
           const v = x.argomenti[0]!;
           return [{ id: this.id(x.riga), kind: "write", values: [v.genere === "stringa" ? testo(v, x.riga) : this.testo(v, x.riga)], newline: true }];
         }
-        if (x.nome === "min" || x.nome === "max") throw new Fermo(x.riga, `«${x.nome}» non c'è nel flowchart: scrivila come una funzione`);
         if (paroleDelFlowchart.has(x.nome)) throw new Fermo(x.riga, `«${x.nome}» non c'è in «Accademico»: scrivila come una funzione, con un altro nome`);
         return [{ id: this.id(x.riga), kind: "call", callee: x.nome, arguments: x.argomenti.map((a) => this.testo(a, x.riga)) }];
       case "se": {
