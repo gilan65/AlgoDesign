@@ -4,7 +4,7 @@
 
 **Progettare algoritmi con i flowchart, eseguirli passo passo e tradurli in pseudocodice, Python, C e TypeScript.**
 
-Versione 0.7.0-beta.3 dell'1 novembre 2026, per Windows 10 e 11 a 64 bit e per Linux a 64 bit; la versione per macOS arriverà con la 1.0.1.
+Versione 1.0.0 dell'8 novembre 2026, per Windows 10 e 11 a 64 bit e per Linux a 64 bit; la versione per macOS arriverà con la 1.0.1.
 
 AlgoDesign è un ambiente didattico per chi impara a programmare: prima si progetta e si prova l'algoritmo come flowchart, poi si guarda come lo stesso ragionamento diventa codice. È un'applicazione **locale e leggera**: funziona senza internet, senza installarla e senza diritti di amministratore.
 
@@ -34,17 +34,17 @@ Per cominciare, la **guida «per cominciare»**, [`PER-COMINCIARE.md`](docs/PER-
 
 ## Scaricare e avviare
 
-AlgoDesign si scarica dalla pagina delle release, https://github.com/gilan65/AlgoDesign/releases: per Windows lo zip `AlgoDesign-0.7.0-beta.3-windows-x64.zip`, per Linux l'archivio `AlgoDesign-0.7.0-beta.3-linux-x64.tar.gz`, ognuno con la sua impronta, il file `.sha256` accanto. La versione per macOS arriverà con la 1.0.1.
+AlgoDesign si scarica dalla pagina delle release, https://github.com/gilan65/AlgoDesign/releases: per Windows lo zip `AlgoDesign-1.0.0-windows-x64.zip`, per Linux l'archivio `AlgoDesign-1.0.0-linux-x64.tar.gz`, ognuno con la sua impronta, il file `.sha256` accanto. La versione per macOS arriverà con la 1.0.1.
 
-**Il nucleo per Node.** C'è anche un pacchetto per tutti i sistemi, `AlgoDesign-Core-0.7.0-beta.3.zip`, con la sua impronta: `algodesign-core.cjs` è il nucleo di AlgoDesign in un solo file, senza interfaccia, per aprire, controllare e tradurre in codice i progetti da un'altra applicazione con Node. Non serve per usare AlgoDesign. Come si usa lo dice il `LEGGIMI.md` del pacchetto.
+**Il nucleo per Node.** C'è anche un pacchetto per tutti i sistemi, `AlgoDesign-Core-1.0.0.zip`, con la sua impronta: `algodesign-core.cjs` è il nucleo di AlgoDesign in un solo file, senza interfaccia, per aprire, controllare e tradurre in codice i progetti da un'altra applicazione con Node. Non serve per usare AlgoDesign. Come si usa lo dice il `LEGGIMI.md` del pacchetto.
 
 ### Su Windows
 
 1. Scarica lo zip e, se vuoi, controllane l'impronta: il file `.sha256` contiene il suo codice SHA-256, che in PowerShell si calcola con `Get-FileHash <nome dello zip>` (PowerShell lo scrive in maiuscolo, il file in minuscolo: le lettere maiuscole e minuscole non contano).
-2. Estrai lo zip dove preferisci (il Desktop, una cartella dei documenti, una chiavetta): con «Estrai tutto» di Esplora file nasce una cartella col nome dello zip, con dentro la cartella `AlgoDesign-0.7.0-beta.3`.
-3. Apri la cartella `AlgoDesign-0.7.0-beta.3` e fai doppio clic su `AlgoDesign.exe`.
+2. Estrai lo zip dove preferisci (il Desktop, una cartella dei documenti, una chiavetta): con «Estrai tutto» di Esplora file nasce una cartella col nome dello zip, con dentro la cartella `AlgoDesign-1.0.0`.
+3. Apri la cartella `AlgoDesign-1.0.0` e fai doppio clic su `AlgoDesign.exe`.
 
-**Lo strumento a riga di comando.** Accanto allo zip di AlgoDesign c'è un pacchetto a parte, `AlgoDesign-Tools-0.7.0-beta.3-windows.zip`, con la sua impronta: `algodesign-tools.exe` ha due comandi. `accademico` legge un testo scritto in «Accademico» e ne fa una libreria di AlgoDesign, da aprire ed eseguire passo passo; `stampa` scrive da un progetto una pagina da stampare con due testi di codice affiancati e una pagina che prova il JavaScript nel browser. Si usa da PowerShell; come, lo dicono il `LEGGIMI.md` del pacchetto e la guida ad `algodesign-tools`, che il pacchetto porta con sé.
+**Lo strumento a riga di comando.** Accanto allo zip di AlgoDesign c'è un pacchetto a parte, `AlgoDesign-Tools-1.0.0-windows.zip`, con la sua impronta: `algodesign-tools.exe` ha due comandi. `accademico` legge un testo scritto in «Accademico» e ne fa una libreria di AlgoDesign, da aprire ed eseguire passo passo; `stampa` scrive da un progetto una pagina da stampare con due testi di codice affiancati e una pagina che prova il JavaScript nel browser. Si usa da PowerShell; come, lo dicono il `LEGGIMI.md` del pacchetto e la guida ad `algodesign-tools`, che il pacchetto porta con sé.
 
 **L'avviso di Windows al primo avvio.** AlgoDesign non è firmato digitalmente, e Windows avvisa quando si avvia un programma non firmato scaricato da internet. Se compare la finestra «Windows ha protetto il PC», scegli «Ulteriori informazioni» e poi «Esegui comunque». Per evitarla, prima di estrarre lo zip apri le sue Proprietà (tasto destro sullo zip), segna «Sblocca» in basso nella scheda «Generale» e conferma con «OK».
 
@@ -59,10 +59,10 @@ Windows stesso, invece, annota nel registro dell'utente alcune cose anche per un
 ### Su Linux
 
 1. Scarica l'archivio e, se vuoi, controllane l'impronta: nel terminale, `sha256sum <nome dell'archivio>` calcola il codice da confrontare con il file `.sha256`.
-2. Estrai l'archivio dove preferisci: con il gestore dei file, tasto destro → «Estrai», nasce una cartella col nome dell'archivio, con dentro la cartella `AlgoDesign-0.7.0-beta.3`; dal terminale, con `tar xzf <nome dell'archivio>`, nasce solo la seconda.
-3. Apri la cartella `AlgoDesign-0.7.0-beta.3` e fai doppio clic su `AlgoDesign.AppImage`, un'AppImage che si avvia senza installarla e senza diritti di amministratore.
+2. Estrai l'archivio dove preferisci: con il gestore dei file, tasto destro → «Estrai», nasce una cartella col nome dell'archivio, con dentro la cartella `AlgoDesign-1.0.0`; dal terminale, con `tar xzf <nome dell'archivio>`, nasce solo la seconda.
+3. Apri la cartella `AlgoDesign-1.0.0` e fai doppio clic su `AlgoDesign.AppImage`, un'AppImage che si avvia senza installarla e senza diritti di amministratore.
 
-Anche su Linux AlgoDesign è portabile, con la cartella `data` accanto all'AppImage. Come si avvia, che cosa fare se l'AppImage non parte (il permesso di esecuzione, la libreria FUSE, la finestra bianca) e che cosa su Linux è diverso da Windows, come la stampa, è nel file `ALGODESIGN-PER-LINUX.md` dentro l'archivio. Lo strumento a riga di comando per Linux è in un archivio a parte, `AlgoDesign-Tools-0.7.0-beta.3-linux-x64.tar.gz`, e si usa dal terminale con `./algodesign-tools`.
+Anche su Linux AlgoDesign è portabile, con la cartella `data` accanto all'AppImage. Come si avvia, che cosa fare se l'AppImage non parte (il permesso di esecuzione, la libreria FUSE, la finestra bianca) e che cosa su Linux è diverso da Windows, come la stampa, è nel file `ALGODESIGN-PER-LINUX.md` dentro l'archivio. Lo strumento a riga di comando per Linux è in un archivio a parte, `AlgoDesign-Tools-1.0.0-linux-x64.tar.gz`, e si usa dal terminale con `./algodesign-tools`.
 
 ## Requisiti
 

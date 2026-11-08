@@ -2,6 +2,30 @@
 
 Le novità e le correzioni di ogni versione, dalla più recente. Il dettaglio di una versione è nelle sue note di rilascio (`NOTE-DI-RILASCIO.md`); come si usa AlgoDesign è nella guida per lo studente (`GUIDA-PER-LO-STUDENTE.md`).
 
+## 1.0.0, 8 novembre 2026
+
+Prima versione stabile, per Windows e per Linux. La versione per macOS arriverà con la 1.0.1.
+
+### Novità
+
+- **La versione per Linux**: un'AppImage portabile, in un archivio a parte, con lo strumento a riga di comando in un altro archivio.
+- **Correggere in pausa**: fermi in pausa, il flowchart, i dati e i casi d'uso si modificano; «Riesegui» (F5) riesegue il programma modificato con le stesse letture e si ferma allo stesso passaggio dello stesso blocco.
+- **Scrivere un valore a mano**: in pausa, o mentre il programma aspetta una lettura, un doppio clic su una cella della tabella di traccia corregge il valore senza cambiare il programma.
+- **Segnalare un malfunzionamento**: due comandi del menu «Aiuto» salvano in un file di testo ciò che serve a riprodurre un'esecuzione. AlgoDesign non invia nulla da solo: la guida per segnalare un malfunzionamento spiega come allegare il file su GitHub.
+- **La guida «per cominciare»** (`PER-COMINCIARE.md`, in inglese `GETTING-STARTED.md`): il primo algoritmo, passo per passo, con le figure della finestra.
+- **Ctrl+Maiusc+P** apre la finestra «Stampa» di AlgoDesign, come Ctrl+P.
+- **Il PNG di un flowchart di grandi dimensioni** viene salvato ridotto, quando supera la misura che la finestra sa disegnare; la riga di stato dice la misura in pixel.
+- **Lo strumento a riga di comando**: `accademico` accetta le forme dei testi più vecchi delle Selezioni scolastiche, aggiunge da sé `massimo` e `minimo` e al posto di un codice d'errore scrive una frase che dice che cosa non va.
+- **Il nucleo per Node**: un pacchetto a parte, `AlgoDesign-Core-1.0.0.zip`, con il nucleo di AlgoDesign in un solo file, senza interfaccia, per aprire, controllare e tradurre in codice i progetti da un'altra applicazione.
+
+### Correzioni
+
+- Un valore rifiutato nella tabella di traccia trattiene i comandi che proseguono, e «Ferma» ferma sempre.
+- In una tabella di traccia lunga, il testo scritto in un campo c'è ancora quando il campo torna in vista con la rotella.
+- In una cella con più valori il nome accanto a un parametro per riferimento è quello giusto; la console nomina il campo o l'elemento chiesto, non solo il dato.
+- Una funzione che restituisce una matrice di record è un errore, come per un dato; importando procedure e funzioni, un dato che ha il nome di un record del programma è segnalato subito.
+- La pagina di prova dello strumento a riga di comando mostra la riga di un errore anche in Firefox.
+
 ## 0.7.0-beta.3, 1 novembre 2026
 
 Terza versione beta, per Windows.

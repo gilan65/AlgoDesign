@@ -19,7 +19,7 @@ dependencies = [
 
 [[package]]
 name = "algodesign"
-version = "0.7.0-beta.3"
+version = "1.0.0"
 dependencies = [
  "base64 0.22.1",
  "objc2",
