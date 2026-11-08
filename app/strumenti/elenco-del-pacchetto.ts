@@ -174,6 +174,32 @@ export function nomiDelloStrumentoDiLinux(testoDelPackageJson: string): { versio
   return { versione, cartella: `${versione}-tools-linux`, archivio: `AlgoDesign-Tools-${versione}-linux-x64.tar.gz`, cartellaNellArchivio: cartellaNelloZip };
 }
 
+/** Le voci al primo livello dell'archivio del Mac (`archivio.ts`): le stesse di Windows con l'app al posto dell'eseguibile,
+ * più il testo del Mac. Niente `data/`: sul Mac i dati stanno nella Libreria dell'utente, l'app non è portabile. */
+export const elencoDelMac: readonly string[] = elencoDelPacchetto.flatMap((v) => (v === "AlgoDesign.exe" ? ["AlgoDesign.app/", "ALGODESIGN-PER-MAC.md"] : v === "data/" ? [] : [v]));
+
+/** I testi per l'utente del Mac, letti dalla cartella data allo strumento coi segnaposto sostituiti. */
+export const testiDelMac: Readonly<Record<string, string>> = {
+  "ALGODESIGN-PER-MAC.md": "ALGODESIGN-PER-MAC.md",
+  "NOTE-DI-RILASCIO.md": "NOTE-DI-RILASCIO.md",
+};
+
+/** I nomi dell'archivio del Mac, dal testo di `package.json`, con la stessa regola della versione di Windows: una sola app
+ * per i Mac con chip Apple e con processore Intel. */
+export function nomiDelMac(testoDelPackageJson: string): { versione: string; cartella: string; archivio: string; cartellaNellArchivio: string } {
+  const { versione, cartellaNelloZip } = nomiDelPacchetto(testoDelPackageJson);
+  return { versione, cartella: `${versione}-macos`, archivio: `AlgoDesign-${versione}-macos-universal.zip`, cartellaNellArchivio: cartellaNelloZip };
+}
+
+/** Le voci al primo livello dell'archivio dello strumento per il Mac: quelle di Linux. */
+export const elencoDelloStrumentoDelMac: readonly string[] = elencoDelloStrumentoDiLinux;
+
+/** I nomi dell'archivio dello strumento per il Mac, dal testo di `package.json`. */
+export function nomiDelloStrumentoDelMac(testoDelPackageJson: string): { versione: string; cartella: string; archivio: string; cartellaNellArchivio: string } {
+  const { versione, cartellaNelloZip } = nomiDelloStrumento(testoDelPackageJson);
+  return { versione, cartella: `${versione}-tools-macos`, archivio: `AlgoDesign-Tools-${versione}-macos-universal.zip`, cartellaNellArchivio: cartellaNelloZip };
+}
+
 /** Le voci al primo livello del pacchetto del nucleo per Node (`pacchetto.ts`): il file da caricare, i due testi brevi e le due
  * licenze. Nessun file delle licenze di terze parti: il pacchetto non contiene moduli di altri, e il metafile del build lo prova
  * (`conformita-del-nucleo.ts`). */

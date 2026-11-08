@@ -10,7 +10,12 @@
 #
 # Che cosa NON guarda: l'interfaccia (nessuna prova la comanda: lo fa la prova sul prodotto del workflow `release`); un
 # desktop vero (niente gestore di finestre, niente GPU); dello strumento, più del suo aiuto e di un testo letto (lo prova
-# `archivio.ts`); il pacchetto per Windows (lo provano le clausole sul PC, dal pacchetto scaricato) e quello per macOS.
+# `archivio.ts`); il pacchetto per Windows (lo provano le clausole sul PC, dal pacchetto scaricato).
+#
+# Il job del Mac fa la stessa cosa con lo zip per macOS su un macOS 15 appena installato: estrae con `ditto` e con `unzip`,
+# controlla la firma ad hoc, dice che cosa ne pensa Gatekeeper (rifiutata, come atteso: non c'è la firma di Apple), avvia
+# l'app nelle due architetture e lo strumento senza Bun. Non guarda il segno di quarantena di un file scaricato col browser
+# né la finestra di macOS che lo blocca (lo dicono i testi per l'utente).
 name: verifica
 
 on:
@@ -23,7 +28,7 @@ on:
         description: "Numero di una corsa di release con l'artefatto linux (o tag)"
         default: ""
       piattaforme:
-        description: "Piattaforme da verificare, separate da virgole (linux)"
+        description: "Piattaforme da verificare, separate da virgole (linux, macos)"
         default: "linux"
       sonda:
         description: "Il controllo positivo: impronta (un byte in più nell'archivio dell'app) o archivio (quello dello strumento tolto); vuoto per la verifica vera"
@@ -164,5 +169,109 @@ jobs:
         if: always()
         with:
           name: verifica-${{ matrix.os }}
+          path: uscita/
+          retention-days: 7
+
+  macos:
+    if: contains(inputs.piattaforme, 'macos')
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Scarica e controlla le impronte
+        env:
+          TAG: ${{ inputs.tag }}
+          CORSA: ${{ inputs.corsa }}
+          SONDA: ${{ inputs.sonda }}
+        run: |
+          if [ -n "${TAG}" ] && [ -z "${CORSA}" ]; then
+            gh release download "${TAG}" -R "$GITHUB_REPOSITORY" -p 'AlgoDesign-*macos-universal.zip*'
+          elif [ -z "${TAG}" ] && [ -n "${CORSA}" ]; then
+            gh run download "${CORSA}" -R "$GITHUB_REPOSITORY" -n macos -D .
+          else
+            echo "ROSSO: serve uno solo fra tag («${TAG}») e corsa («${CORSA}»)"; exit 1
+          fi
+          # Il controllo positivo: gli archivi scaricati guastati come li riceverebbe chi li usa; la verifica deve dire rosso.
+          case "${SONDA}" in
+            "") ;;
+            impronta)
+              for f in AlgoDesign-*-macos-universal.zip; do case "$f" in AlgoDesign-Tools-*) ;; *) printf 'x' >> "$f"; echo "SONDA: un byte in più in $f";; esac; done ;;
+            archivio)
+              rm -v AlgoDesign-Tools-*-macos-universal.zip; echo "SONDA: tolto l'archivio dello strumento" ;;
+            *)
+              echo "ROSSO: sonda sconosciuta «${SONDA}»"; exit 1 ;;
+          esac
+          ls -la
+          # Un solo archivio dell'app e uno solo dello strumento, coi nomi della stessa versione.
+          app=$(find . -maxdepth 1 -name 'AlgoDesign-*-macos-universal.zip' ! -name 'AlgoDesign-Tools-*' | sed 's|^\./||')
+          strumento=$(find . -maxdepth 1 -name 'AlgoDesign-Tools-*-macos-universal.zip' | sed 's|^\./||')
+          test "$(echo "${app}" | grep -c .)" -eq 1 || { echo "ROSSO: non c'è un solo archivio dell'app: «${app}»"; exit 1; }
+          test "$(echo "${strumento}" | grep -c .)" -eq 1 || { echo "ROSSO: non c'è un solo archivio dello strumento: «${strumento}»"; exit 1; }
+          versione=${app#AlgoDesign-}; versione=${versione%-macos-universal.zip}
+          test "${strumento}" = "AlgoDesign-Tools-${versione}-macos-universal.zip" || { echo "ROSSO: lo strumento «${strumento}» non è della versione ${versione}"; exit 1; }
+          shasum -a 256 -c "${app}.sha256" "${strumento}.sha256"
+          echo "VERSIONE=${versione}" >> "$GITHUB_ENV"
+
+      - name: Estrai come chi lo usa e controlla la firma
+        run: |
+          set -o pipefail
+          mkdir -p uscita "con ditto" "con unzip"
+          ditto -x -k "AlgoDesign-${VERSIONE}-macos-universal.zip" "con ditto"
+          cd "con ditto/AlgoDesign-${VERSIONE}/"
+          ls -la
+          test -x AlgoDesign.app/Contents/MacOS/algodesign
+          test ! -e data
+          codesign --verify --deep --strict --verbose=2 AlgoDesign.app 2>&1 | tee ../../uscita/firma.txt
+          codesign -dv AlgoDesign.app 2>&1 | tee -a ../../uscita/firma.txt
+          grep -q "Signature=adhoc" ../../uscita/firma.txt || { echo "ROSSO: la firma non è quella ad hoc"; exit 1; }
+          lipo -archs AlgoDesign.app/Contents/MacOS/algodesign | tee ../../uscita/architetture.txt
+          grep -q arm64 ../../uscita/architetture.txt && grep -q x86_64 ../../uscita/architetture.txt || { echo "ROSSO: non ci sono le due architetture"; exit 1; }
+          echo "valutazione di Gatekeeper (attesa: rifiutata, l'app non ha la firma di uno sviluppatore registrato):"
+          spctl -a -vv AlgoDesign.app 2>&1 | tee ../../uscita/gatekeeper.txt || true
+          cd ../..
+          unzip -q "AlgoDesign-${VERSIONE}-macos-universal.zip" -d "con unzip"
+          codesign --verify --deep --strict "con unzip/AlgoDesign-${VERSIONE}/AlgoDesign.app" && echo "VERDE: firma valida anche estraendo con unzip"
+
+      - name: Avvio (chip Apple, poi Intel con Rosetta)
+        run: |
+          cd "con ditto/AlgoDesign-${VERSIONE}/"
+          for arch in arm64 x86_64; do
+            arch -"${arch}" AlgoDesign.app/Contents/MacOS/algodesign > "../../uscita/avvio-${arch}.log" 2>&1 &
+            pid=$!
+            sleep 20
+            screencapture -x "../../uscita/schermo-${arch}.png" || echo "fotografia dello schermo non riuscita"
+            kill -0 "${pid}" || { echo "ROSSO (${arch}): il programma non è più vivo dopo 20 s"; cat "../../uscita/avvio-${arch}.log"; exit 1; }
+            echo "VERDE (${arch}): il programma è vivo dopo 20 s"
+            kill "${pid}"
+            sleep 3
+          done
+
+      # Prima di questo passo nessun Bun sulla macchina: lo strumento deve partire da solo.
+      - name: Lo strumento a riga di comando, estratto come chi lo usa
+        run: |
+          dove="prova dello strumento"
+          mkdir -p "${dove}"
+          ditto -x -k "AlgoDesign-Tools-${VERSIONE}-macos-universal.zip" "${dove}"
+          cd "${dove}/AlgoDesign-Tools-${VERSIONE}/"
+          ls -la
+          test -x algodesign-tools || { echo "ROSSO: algodesign-tools non è eseguibile"; exit 1; }
+          if command -v bun > /dev/null; then echo "ROSSO: c'è Bun sulla macchina, la prova non direbbe nulla"; exit 1; fi
+          for arch in arm64 x86_64; do
+            arch -"${arch}" ./algodesign-tools -h > "../../uscita/strumento-aiuto-${arch}.txt" 2>&1 && codice=0 || codice=$?
+            cat "../../uscita/strumento-aiuto-${arch}.txt"
+            test "${codice}" -eq 0 || { echo "ROSSO (${arch}): -h esce ${codice}"; exit 1; }
+            grep -q "algodesign-tools accademico <testo.txt>" "../../uscita/strumento-aiuto-${arch}.txt" || { echo "ROSSO (${arch}): -h senza il modo d'uso col nome dell'eseguibile"; exit 1; }
+          done
+          printf 'variable x: integer\nx \342\206\220 1\n' > "un testo.txt"
+          ./algodesign-tools accademico "un testo.txt" -o "una libreria.algo" > ../../uscita/strumento-accademico.txt 2>&1 && codice=0 || codice=$?
+          cat ../../uscita/strumento-accademico.txt
+          test "${codice}" -eq 0 && test -s "una libreria.algo" || { echo "ROSSO: accademico esce ${codice} senza la libreria"; exit 1; }
+          echo "VERDE: lo strumento parte senza Bun nelle due architetture, mostra l'aiuto e scrive una libreria"
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: verifica-macos
           path: uscita/
           retention-days: 7

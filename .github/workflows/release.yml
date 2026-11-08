@@ -1,4 +1,4 @@
-# La build di release, lanciata a mano, per le piattaforme scelte (Windows e Linux). Il job di Windows compone il
+# La build di release, lanciata a mano, per le piattaforme scelte (Windows, Linux e macOS). Il job di Windows compone il
 # pacchetto portabile con `bun run pacchetto` (lo zip, la sua impronta e i controlli dello strumento: l'albero, le
 # proprietà dell'eseguibile, nessun percorso della macchina nei byte, le voci dell'elenco, le licenze, la doppia lettura
 # dello zip); quello di Linux compone l'archivio con `strumenti/archivio.ts` (l'AppImage su Ubuntu 22.04, la glibc più
@@ -17,6 +17,12 @@
 # - il test differenziale col gcc e il clang di Ubuntu 24.04 (`bun run differenziale`, con gli avvisi attesi), due volte:
 #   col Python del servizio e col Python 3.11, la versione più vecchia per cui il codice generato è dichiarato.
 #
+# Il job del Mac compone con lo stesso `archivio.ts` l'app universale firmata ad hoc e lo strumento a riga di comando; avvia
+# l'app estratta nelle due architetture (Intel attraverso Rosetta), prova l'uscita e i menu coi tasti veri
+# (`strumenti/mac/prova-uscita.sh`, 16 casi confrontati da `esiti-dell-uscita.ts`, con un esito alterato che deve dire rosso)
+# e misura la stampa. Con «prove» acceso corrono anche `cargo test` su APFS e `bun test` sul Mac e, se non è spento
+# «webkit_del_mac», le prove dell'interfaccia nel WebKit di Playwright per il Mac con la misura del canvas.
+#
 # Da un'etichetta `v<versione>` il pacchetto è una release; da un ramo è un pacchetto di prova (`--prova`), con lo
 # stesso contenuto e lo stesso nome, nella cartella `dist/prova/` del runner.
 #
@@ -27,19 +33,24 @@
 # Che cosa NON guarda: che il programma per Windows faccia ciò che deve oltre ad aprirsi e restare vivo (lo provano le
 # clausole della prova sul prodotto, sul pacchetto scaricato, e il controllo a ogni invio); che la finestra disegni
 # qualcosa (le fotografie si guardano); la firma dei programmi (non sono firmati); l'AppImage avviata con FUSE su una
-# macchina pulita (lo fa `verifica.yml`, dalla release); un desktop Linux vero; macOS.
+# macchina pulita (lo fa `verifica.yml`, dalla release); un desktop Linux vero; sul Mac, Gatekeeper all'apertura di un file
+# scaricato, una firma di Apple (non c'è), un Mac vero con processore Intel, la finestra oltre ciò che le fotografie mostrano.
 name: release
 
 on:
   workflow_dispatch:
     inputs:
       piattaforme:
-        description: "Piattaforme da costruire, separate da virgole (windows, linux)"
+        description: "Piattaforme da costruire, separate da virgole (windows, linux, macos)"
         default: "windows"
       prove:
-        description: "Anche le prove di Linux: WebKit, prodotto, differenziale (una volta per release)"
+        description: "Anche le prove di Linux (WebKit, prodotto, differenziale) e del Mac (cargo test, bun test, WebKit), una volta per release"
         type: boolean
         default: false
+      webkit_del_mac:
+        description: "Con «prove» e macos, anche il WebKit del Mac (si spegne per le corse di prova del job)"
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -198,6 +209,192 @@ jobs:
           name: linux
           path: uscita/
           if-no-files-found: error
+          retention-days: 7
+
+  macos:
+    if: contains(inputs.piattaforme || 'windows', 'macos')
+    # Mac con chip Apple; l'app contiene anche la versione Intel, avviata con Rosetta.
+    runs-on: macos-15
+    # Una domanda del sistema che nessuno chiude non tiene il job per ore.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Rust e Bun
+        run: |
+          rustup toolchain install "$RUST_VERSION" --profile minimal
+          rustup default "$RUST_VERSION"
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+          curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}"
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+
+      - name: Dipendenze
+        working-directory: app
+        run: |
+          bun --version
+          bun install --frozen-lockfile
+
+      - name: Archivio
+        working-directory: app
+        run: bun ./strumenti/archivio.ts --piattaforma macos --testi ../rilascio/macos ${{ github.ref_type != 'tag' && '--prova' || '' }}
+
+      - name: Raccolta
+        run: |
+          mkdir -p uscita
+          if [ "${{ github.ref_type }}" = "tag" ]; then cartella=dist; else cartella=dist/prova; fi
+          # I due archivi, ognuno atteso per nome dalla versione: uno che manca è rosso e si nomina.
+          versione=$(jq -r .version app/package.json)
+          mancanti=""
+          for nome in "AlgoDesign-${versione}-macos-universal.zip" "AlgoDesign-Tools-${versione}-macos-universal.zip"; do
+            for f in "${nome}" "${nome}.sha256"; do test -f "${cartella}/${f}" || mancanti="${mancanti} ${f}"; done
+            test -f "${cartella}/${nome}" && cp "${cartella}/${nome}" "${cartella}/${nome}.sha256" uscita/
+          done
+          if [ -n "${mancanti}" ]; then echo "ROSSO: in ${cartella} mancano:${mancanti}"; exit 1; fi
+          echo "raccolti: $(ls uscita | tr '\n' ' ')"
+          cp app/.collaudo/archivio-*.log uscita/
+          sw_vers > uscita/macos-del-runner.txt
+          # Il commit da cui nasce l'archivio, con il ramo o l'etichetta e la corsa.
+          printf 'commit %s\nref %s\ncorsa %s\n' "$(git rev-parse HEAD)" "${{ github.ref }}" "${{ github.run_id }}" > uscita/commit.txt
+          cat uscita/commit.txt
+
+      - name: Avvio di prova (chip Apple, poi Intel con Rosetta)
+        run: |
+          dove="${RUNNER_TEMP}/prova con spazi"
+          mkdir -p "${dove}"
+          versione=$(jq -r .version app/package.json)
+          ditto -x -k "uscita/AlgoDesign-${versione}-macos-universal.zip" "${dove}"
+          app="${dove}/AlgoDesign-${versione}/AlgoDesign.app"
+          echo "APP_DI_PROVA=${app}" >> "$GITHUB_ENV"
+          for arch in arm64 x86_64; do
+            arch -"${arch}" "${app}/Contents/MacOS/algodesign" > "uscita/avvio-macos-${arch}.log" 2>&1 &
+            pid=$!
+            sleep 20
+            screencapture -x "uscita/schermo-macos-${arch}.png" || echo "fotografia dello schermo non riuscita"
+            kill -0 "${pid}" || { echo "ROSSO (${arch}): il programma non è più vivo dopo 20 s"; cat "uscita/avvio-macos-${arch}.log"; exit 1; }
+            echo "VERDE (${arch}): il programma è vivo dopo 20 s"
+            kill "${pid}"
+            sleep 3
+          done
+          # Dove l'app ha scritto fuori dalla sua cartella: le voci della Libreria col suo identificatore.
+          { find "$HOME/Library" -maxdepth 4 -iname '*algodesign*' 2>/dev/null || true; } | sort | tee uscita/voci-nella-libreria.txt
+          echo "voci: $(wc -l < uscita/voci-nella-libreria.txt)"
+
+      - name: Prova dell'uscita e dei menu
+        run: |
+          bash app/strumenti/mac/prova-uscita.sh "${APP_DI_PROVA}" "$PWD/uscita/uscita-mac"
+          cd app
+          bun ./strumenti/mac/esiti-dell-uscita.ts ../uscita/uscita-mac/esiti.txt
+          # Il controllo positivo: lo stesso confronto, con un esito alterato, deve dire rosso. La riga toccata si conta.
+          sed 's/^cmdq: viva/cmdq: morta/' ../uscita/uscita-mac/esiti.txt > ../uscita/uscita-mac/esiti-alterati.txt
+          echo "righe alterate: $(grep -c '^cmdq: morta' ../uscita/uscita-mac/esiti-alterati.txt)"
+          if bun ./strumenti/mac/esiti-dell-uscita.ts ../uscita/uscita-mac/esiti-alterati.txt; then echo "ROSSO: un esito alterato non è stato visto"; exit 1; fi
+          echo "VERDE: l'uscita e i menu come attesi, e un esito alterato è rosso"
+
+      # Una misura, non una prova: che cosa mostra il sistema quando l'app chiede di stampare.
+      - name: Misura della stampa
+        if: "!cancelled()"
+        run: bash app/strumenti/mac/misura-stampa.sh "${APP_DI_PROVA}" "$PWD/uscita/stampa-mac"
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: macos
+          path: uscita/
+          if-no-files-found: error
+          retention-days: 7
+
+  nucleo-macos:
+    if: inputs.prove && contains(inputs.piattaforme || 'windows', 'macos')
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Rust e Bun
+        run: |
+          rustup toolchain install "$RUST_VERSION" --profile minimal
+          rustup default "$RUST_VERSION"
+          curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}"
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+
+      - name: Dipendenze e interfaccia
+        working-directory: app
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+
+      # Una misura, non una prova: come si comporta il disco dove corre `cargo test`.
+      - name: Il disco del Mac
+        run: |
+          mkdir -p uscita-nucleo
+          d=$(mktemp -d)
+          {
+            diskutil info / | grep -E "File System Personality|Volume Name"
+            touch "$d/Aa"; if [ -e "$d/aA" ]; then echo "maiuscole: non distinte"; else echo "maiuscole: distinte"; fi
+            composta=$(printf 'caff\303\250'); scomposta=$(printf 'caffe\314\200')
+            touch "$d/$composta"; if [ -e "$d/$scomposta" ]; then echo "forme Unicode: la stessa"; else echo "forme Unicode: due file"; fi
+            echo "byte del nome letto: $(ls "$d" | grep caff | od -An -tx1 | tr -d '\n')"
+            lungo=$(printf 'a%.0s' $(seq 1 255)); touch "$d/$lungo" && echo "nome di 255 caratteri: scritto"
+            piu=$(printf 'a%.0s' $(seq 1 256)); touch "$d/$piu" 2>/dev/null && echo "nome di 256 caratteri: scritto" || echo "nome di 256 caratteri: rifiutato"
+            larghi=$(printf '\303\250%.0s' $(seq 1 255)); touch "$d/$larghi" 2>/dev/null && echo "nome di 255 lettere accentate: scritto" || echo "nome di 255 lettere accentate: rifiutato"
+          } | tee uscita-nucleo/disco.txt
+
+      - name: Prove del guscio su APFS
+        working-directory: app/shell
+        run: cargo test 2>&1 | tee ../../uscita-nucleo/cargo-test.log; exit "${PIPESTATUS[0]}"
+        shell: bash
+
+      - name: Prove del nucleo e dell'interfaccia
+        if: "!cancelled()"
+        working-directory: app
+        run: bun test 2>&1 | tee ../uscita-nucleo/bun-test.log; exit "${PIPESTATUS[0]}"
+        shell: bash
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: nucleo-macos
+          path: uscita-nucleo/
+          retention-days: 7
+
+  webkit-macos:
+    if: inputs.prove && inputs.webkit_del_mac && contains(inputs.piattaforme || 'windows', 'macos')
+    runs-on: macos-15
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Bun
+        working-directory: .
+        run: |
+          curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}"
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+
+      - name: Dipendenze e WebKit di Playwright
+        run: |
+          bun install --frozen-lockfile
+          ./node_modules/.bin/playwright install webkit
+
+      - name: Prove dell'interfaccia in WebKit
+        run: bun ./strumenti/webkit.ts --progetto webkit-anteprima --processi 1
+
+      # Una misura, non una prova: il canvas più grande che questo motore disegna e da cui dà il PNG.
+      - name: Misura del canvas in WebKit
+        if: "!cancelled()"
+        run: set -o pipefail; bun ./strumenti/misura-del-canvas.ts --motore webkit | tee .collaudo/webkit-canvas.log
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: webkit-macos
+          # `.collaudo` comincia col punto: senza questa riga il caricamento salta i suoi file (misurato).
+          include-hidden-files: true
+          path: |
+            app/.collaudo/webkit-*
+            app/.collaudo/playwright/
           retention-days: 7
 
   webkit-linux:

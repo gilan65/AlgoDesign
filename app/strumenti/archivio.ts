@@ -1,6 +1,7 @@
-// L'archivio della release per Linux: `bun ./strumenti/archivio.ts --piattaforma linux --testi <cartella> [--prova]`, su
-// Linux (la macchina Ubuntu delle GitHub Actions). Il pacchetto per Windows lo compone `pacchetto.ts`, con gli stessi
-// controlli dove hanno senso anche qui.
+// Gli archivi della release per Linux e per il Mac: `bun ./strumenti/archivio.ts --piattaforma <linux|macos> --testi
+// <cartella> [--prova]`, sul sistema dell'archivio (le macchine delle GitHub Actions). Il pacchetto per Windows lo compone
+// `pacchetto.ts`, con gli stessi controlli dove hanno senso anche qui. I numeri qui sotto sono le clausole di Linux; quelle
+// del Mac stanno in fondo a questa testata.
 //
 // 1. ALBERO: il commit da cui nasce l'archivio. Con file modificati o nuovi rispetto al commit, o con un commit che non
 //    ha l'etichetta `v<versione>`, è rosso, se non con `--prova`: l'archivio si dice allora di prova e va in
@@ -60,6 +61,17 @@
 // - i file ignorati da git che entrano nel build (`node_modules`, la cache di Cargo), come per Windows;
 // - nei byte del programma, altri dati della macchina oltre ai percorsi nominati; nelle librerie di Ubuntu, nulla.
 //
+// Sul Mac (`--piattaforma macos`, su macOS) le clausole sono: ALBERO come sopra; BUILD, `bun tauri build --target
+// universal-apple-darwin --bundles app` coi percorsi rimappati, una sola app con la versione di `package.json` nel suo
+// `Info.plist`; FIRMA, la firma ad hoc (`codesign --force --deep --sign -`), verificata, e le due architetture dell'eseguibile
+// (`lipo`); PERCORSI come sopra, sull'eseguibile universale; CARTELLA con le voci di `elencoDelMac` e l'app copiata con `ditto`,
+// che tiene la firma; ARCHIVIO, lo zip fatto da `ditto` e riletto due volte: con `ditto -x -k` (firma ancora valida, stesse
+// voci e impronte, nessun file di attributi del Mac) e con il modulo `zipfile` di Python; STRUMENTO, i due eseguibili
+// (`bun build --compile --target`) uniti con `lipo` e firmati ad hoc; CARTELLA e ARCHIVIO DELLO STRUMENTO come quelli
+// dell'app; PROVA DELLO STRUMENTO con le tracce nelle cartelle del Mac, e il suo avvio nell'architettura Intel.
+// Che cosa NON guarda sul Mac: Gatekeeper all'apertura di un file scaricato col browser (lo misura `verifica.yml`, senza il
+// segno di quarantena); una firma di Apple (non c'è: è una firma ad hoc); un Mac vero con processore Intel.
+//
 // Gli exit code si leggono dal processo avviato (`await proc.exited`), mai attraverso una pipe.
 
 import { appendFileSync, chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -73,6 +85,8 @@ import {
   differenzeDallElenco,
   documentiDellaRadice,
   documentiDelPacchetto,
+  elencoDelMac,
+  elencoDelloStrumentoDelMac,
   elencoDelloStrumentoDiLinux,
   elencoDiLinux,
   guidaAdAccademico,
@@ -80,9 +94,12 @@ import {
   guidePerCominciare,
   guidePerSegnalare,
   fileDelleLicenze,
+  nomiDelloStrumentoDelMac,
   nomiDelloStrumentoDiLinux,
+  nomiDelMac,
   nomiDiLinux,
   testiDelloStrumento,
+  testiDelMac,
   testiDiLinux,
 } from "./elenco-del-pacchetto";
 import { licenzeDelloStrumento, licenzeDiTerzeParti } from "./licenze";
@@ -103,10 +120,11 @@ const cartellaTesti = valore("--testi");
 const conValore = new Set(["--piattaforma", "--testi"]);
 const altri = argomenti.filter((a, i) => !conValore.has(a) && !conValore.has(argomenti[i - 1] ?? ""));
 const prova = altri.includes("--prova");
-if (piattaforma !== "linux" || cartellaTesti === undefined || cartellaTesti.startsWith("--") || altri.some((a) => a !== "--prova") || new Set(altri).size !== altri.length) {
-  console.error(`uso: archivio --piattaforma linux --testi <cartella con ${Object.keys(testiDiLinux).join(", ")}> [--prova] (ricevuti: ${JSON.stringify(argomenti)})`);
+if ((piattaforma !== "linux" && piattaforma !== "macos") || cartellaTesti === undefined || cartellaTesti.startsWith("--") || altri.some((a) => a !== "--prova") || new Set(altri).size !== altri.length) {
+  console.error(`uso: archivio --piattaforma <linux|macos> --testi <cartella con i testi del sistema> [--prova] (ricevuti: ${JSON.stringify(argomenti)})`);
   process.exit(2);
 }
+const suMac = piattaforma === "macos";
 
 const radice = join(import.meta.dir, "..");
 const repository = join(radice, "..");
@@ -142,13 +160,14 @@ async function esegui(cmd: string[], cwd = radice, ambiente: Record<string, stri
 const impronta = (percorso: string) => createHash("sha256").update(readFileSync(percorso)).digest("hex");
 
 const testoDelPackageJson = readFileSync(join(radice, "package.json"), "utf8");
-const nomi = nomiDiLinux(testoDelPackageJson);
+const nomi = suMac ? nomiDelMac(testoDelPackageJson) : nomiDiLinux(testoDelPackageJson);
 const dataDiRilascio: string = JSON.parse(testoDelPackageJson).dataDiRilascio;
 const dist = prova ? join(repository, "dist", "prova") : join(repository, "dist");
 const cartella = join(dist, nomi.cartella);
 const archivio = join(dist, nomi.archivio);
 const cartellaDelleAppImage = join(radice, "shell", "target", "release", "bundle", "appimage");
-const nomiS = nomiDelloStrumentoDiLinux(testoDelPackageJson);
+const nomiS = suMac ? nomiDelloStrumentoDelMac(testoDelPackageJson) : nomiDelloStrumentoDiLinux(testoDelPackageJson);
+const elencoDelloStrumentoDelSistema = suMac ? elencoDelloStrumentoDelMac : elencoDelloStrumentoDiLinux;
 const cartellaDelloStrumento = join(dist, nomiS.cartella);
 const archivioDelloStrumento = join(dist, nomiS.archivio);
 const eseguibileS = "algodesign-tools";
@@ -238,7 +257,7 @@ async function estrai(appimage: string): Promise<string> {
 function percorsi(file: string, clausola = "PERCORSI", quale = "nel programma"): void {
   const programma = readFileSync(file);
   const trovati = percorsiDellaMacchina.map((p) => ({ ...p, n: occorrenze(programma, p.percorso) })).filter((p) => p.n > 0);
-  const deps = join(radice, "shell", "target", "release", "deps");
+  const deps = suMac ? join(radice, "shell", "target", "aarch64-apple-darwin", "release", "deps") : join(radice, "shell", "target", "release", "deps");
   const sonde = existsSync(deps) ? readdirSync(deps).filter((f) => /^tokio-[0-9a-f]+\.d$/.test(f)).map((f) => join(deps, f)).sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs) : [];
   const sonda = sonde[0];
   const acceso = sonda === undefined ? 0 : occorrenze(readFileSync(sonda), cartellaDiCargo.percorso);
@@ -465,13 +484,32 @@ async function comprimi({ clausola, cartella, archivio, nomeDellArchivio, cartel
   return sha;
 }
 
-/** 8. L'eseguibile a sé dello strumento, in una cartella temporanea nuova: il build, i moduli, i percorsi. */
+/** 8. L'eseguibile a sé dello strumento, in una cartella temporanea nuova: il build, i moduli, i percorsi. Sul Mac due
+ * build, uno per architettura, uniti con `lipo` e firmati ad hoc. */
 async function eseguibileDelloStrumento(): Promise<{ exe: string; moduli: string[]; build: string }> {
   const build = mkdtempSync(join(tmpdir(), "algodesign-strumento-"));
   const exe = join(build, eseguibileS);
   const metafile = join(build, "metafile.json");
-  const b = await esegui([process.execPath, "build", "--compile", "./strumenti/algodesign-tools.ts", "--outfile", exe, `--metafile=${metafile}`, "--no-compile-autoload-dotenv", "--no-compile-autoload-bunfig"]);
-  if (b.codice !== 0 || !existsSync(exe)) rosso("STRUMENTO", `bun build --compile esce ${b.codice}${existsSync(exe) ? " (l'eseguibile c'è, ma non vale)" : ""} (dettaglio nel log)`);
+  const compila = (uscita: string, ...altri: string[]) =>
+    esegui([process.execPath, "build", "--compile", ...altri, "./strumenti/algodesign-tools.ts", "--outfile", uscita, `--metafile=${metafile}`, "--no-compile-autoload-dotenv", "--no-compile-autoload-bunfig"]);
+  if (suMac) {
+    const parti = [
+      { arch: "arm64", bersaglio: "bun-darwin-arm64" },
+      { arch: "x86_64", bersaglio: "bun-darwin-x64" },
+    ].map((p) => ({ ...p, file: join(build, `${eseguibileS}-${p.arch}`) }));
+    for (const p of parti) {
+      const b = await compila(p.file, `--target=${p.bersaglio}`);
+      if (b.codice !== 0 || !existsSync(p.file)) rosso("STRUMENTO", `bun build --compile per ${p.arch} esce ${b.codice} (dettaglio nel log)`);
+    }
+    const unito = await esegui(["lipo", "-create", "-output", exe, ...parti.map((p) => p.file)]);
+    if (unito.codice !== 0 || !existsSync(exe)) rosso("STRUMENTO", `lipo esce ${unito.codice} (dettaglio nel log)`);
+    await firmaAdHoc(exe, "STRUMENTO", ["--force", "--sign", "-"]);
+    for (const p of parti) rmSync(p.file);
+    await dueArchitetture(exe, "STRUMENTO");
+  } else {
+    const b = await compila(exe);
+    if (b.codice !== 0 || !existsSync(exe)) rosso("STRUMENTO", `bun build --compile esce ${b.codice}${existsSync(exe) ? " (l'eseguibile c'è, ma non vale)" : ""} (dettaglio nel log)`);
+  }
   // I moduli dentro l'eseguibile: tutti del repository, nessuno da `node_modules` (una libreria di altri vorrebbe la sua licenza).
   const ingressi = Object.keys((JSON.parse(readFileSync(metafile, "utf8")) as { inputs: Record<string, unknown> }).inputs);
   const altrui = ingressi.filter((m) => {
@@ -518,7 +556,7 @@ function documento(clausola: string, percorso: string): string {
 function componiLoStrumento(exe: string, moduli: readonly string[]): void {
   const C = "CARTELLA DELLO STRUMENTO";
   if (existsSync(cartellaDelloStrumento)) {
-    const estranee = differenzeDallElenco(voci(cartellaDelloStrumento), elencoDelloStrumentoDiLinux).filter((d) => d.startsWith("in più"));
+    const estranee = differenzeDallElenco(voci(cartellaDelloStrumento), elencoDelloStrumentoDelSistema).filter((d) => d.startsWith("in più"));
     if (estranee.length > 0) rosso(C, `${cartellaDelloStrumento} c'è già e contiene altro (${estranee.join(", ")}): non la cancello`);
     rmSync(cartellaDelloStrumento, { recursive: true });
   }
@@ -528,15 +566,15 @@ function componiLoStrumento(exe: string, moduli: readonly string[]): void {
   for (const [sorgente, destinazione] of Object.entries(testiDelloStrumento)) writeFileSync(join(cartellaDelloStrumento, destinazione), testoDaiTesti(C, sorgente));
   for (const g of [guidaAdAccademico, guidaDelloStrumento]) {
     const guida = documento(C, join("docs", g));
-    if (!guida.includes(nomiS.archivio)) rosso(C, `${g} non dice il nome dell'archivio dello strumento per Linux, «${nomiS.archivio}»`);
+    if (!guida.includes(nomiS.archivio)) rosso(C, `${g} non dice il nome dell'archivio dello strumento per questo sistema, «${nomiS.archivio}»`);
     writeFileSync(join(cartellaDelloStrumento, g), guida);
   }
   const l = licenzeDelloStrumento(nomiS.versione, moduli, rosso, eseguibileS);
   writeFileSync(join(cartellaDelloStrumento, fileDelleLicenze), l.testo);
   permessi(cartellaDelloStrumento, eseguibileS);
   const trovate = voci(cartellaDelloStrumento);
-  const sonda = confrontoAcceso(trovate, elencoDelloStrumentoDiLinux, "lo strumento");
-  const differenze = differenzeDallElenco(trovate, elencoDelloStrumentoDiLinux);
+  const sonda = confrontoAcceso(trovate, elencoDelloStrumentoDelSistema, "lo strumento");
+  const differenze = differenzeDallElenco(trovate, elencoDelloStrumentoDelSistema);
   if (differenze.length > 0) rosso(C, `le voci non sono quelle dell'elenco: ${differenze.join(", ")}`);
   riga(`${C}: VERDE | ${relative(repository, cartellaDelloStrumento)} con le ${trovate.length} voci dell'elenco (${trovate.join(", ")}) | licenze di terze parti: Bun ${l.bun}, ${l.testi} testi, ${Buffer.byteLength(l.testo)} byte | controllo positivo acceso (${sonda})`);
 }
@@ -548,7 +586,7 @@ async function provaLoStrumento(): Promise<void> {
   try {
     const cartellaDiProva = join(base, "prova dello strumento");
     mkdirSync(cartellaDiProva);
-    const x = await esegui(["tar", "-xzf", archivioDelloStrumento, "-C", cartellaDiProva]);
+    const x = await esegui(suMac ? ["ditto", "-x", "-k", archivioDelloStrumento, cartellaDiProva] : ["tar", "-xzf", archivioDelloStrumento, "-C", cartellaDiProva]);
     if (x.codice !== 0) rosso(C, `l'estrazione esce ${x.codice} (dettaglio nel log)`);
     const dentro = join(cartellaDiProva, nomiS.cartellaNellArchivio);
     const lavoro = join(cartellaDiProva, "i testi");
@@ -557,7 +595,9 @@ async function provaLoStrumento(): Promise<void> {
     const cartelle = (process.env.PATH ?? "").split(delimiter).filter((d) => d !== "");
     const conBun = cartelle.filter((d) => existsSync(join(d, "bun")));
     const casa = homedir();
-    const candidate: Record<string, string> = { casa, "~/.config": join(casa, ".config"), "~/.local/share": join(casa, ".local", "share"), "~/.cache": join(casa, ".cache"), tmp: tmpdir() };
+    const candidate: Record<string, string> = suMac
+      ? { casa, "~/Library": join(casa, "Library"), "~/Library/Application Support": join(casa, "Library", "Application Support"), "~/Library/Caches": join(casa, "Library", "Caches"), tmp: tmpdir() }
+      : { casa, "~/.config": join(casa, ".config"), "~/.local/share": join(casa, ".local", "share"), "~/.cache": join(casa, ".cache"), tmp: tmpdir() };
     // La casa e la cartella temporanea sempre; le altre se ci sono (una che nasce si vede nella casa o in `~/.local`).
     const radiciDelleTracce = Object.fromEntries(Object.entries(candidate).filter(([n, c]) => n === "casa" || n === "tmp" || existsSync(c)));
     const visto = await provaDelloStrumento({
@@ -573,15 +613,174 @@ async function provaLoStrumento(): Promise<void> {
       rosso,
       log,
     });
-    riga(`${C}: VERDE | estratto in «${relative(base, dentro)}», ${visto}`);
+    // L'altra architettura dell'eseguibile universale, attraverso Rosetta: l'aiuto e l'uscita.
+    const intel = suMac ? await esegui(["arch", "-x86_64", join(dentro, eseguibileS), "accademico", "-h"]) : null;
+    if (intel !== null && (intel.codice !== 0 || !`${intel.out}${intel.err}`.includes("algodesign-tools accademico <testo.txt>"))) rosso(C, `nell'architettura Intel -h esce ${intel.codice} (dettaglio nel log)`);
+    riga(`${C}: VERDE | estratto in «${relative(base, dentro)}», ${visto}${intel !== null ? " | l'architettura Intel mostra l'aiuto" : ""}`);
   } finally {
     rmSync(base, { recursive: true, force: true });
   }
 }
 
+/** La firma ad hoc di un eseguibile o di un'app, verificata. */
+async function firmaAdHoc(bersaglio: string, clausola: string, opzioni: readonly string[]): Promise<void> {
+  const f = await esegui(["codesign", ...opzioni, bersaglio]);
+  if (f.codice !== 0) rosso(clausola, `codesign esce ${f.codice} (dettaglio nel log)`);
+  const v = await esegui(["codesign", "--verify", "--strict", "--verbose=2", bersaglio]);
+  if (v.codice !== 0) rosso(clausola, `la verifica della firma esce ${v.codice}: ${v.err.trim()}`);
+}
+
+/** Un eseguibile universale: le due architetture, lette con `lipo`. */
+async function dueArchitetture(file: string, clausola: string): Promise<void> {
+  const l = await esegui(["lipo", "-archs", file]);
+  const archi = l.out.trim().split(/\s+/).sort().join(" ");
+  if (l.codice !== 0 || archi !== "arm64 x86_64") rosso(clausola, `${basename(file)} ha le architetture «${archi}» (lipo esce ${l.codice}) invece di arm64 e x86_64`);
+  riga(`${clausola}: VERDE | ${basename(file)} per arm64 e x86_64`);
+}
+
+/** BUILD e FIRMA del Mac: l'app universale, firmata ad hoc; la cartella delle app svuotata prima. */
+async function costruisciIlMac(): Promise<string> {
+  const cartellaDelleApp = join(radice, "shell", "target", "universal-apple-darwin", "release", "bundle", "macos");
+  rmSync(join(radice, "dist"), { recursive: true, force: true });
+  rmSync(cartellaDelleApp, { recursive: true, force: true });
+  const inizio = Date.now();
+  const flags = percorsiDellaMacchina.map((p) => `--remap-path-prefix=${p.percorso}=${p.al}`).join(String.fromCharCode(0x1f));
+  const b = await esegui([process.execPath, "tauri", "build", "--target", "universal-apple-darwin", "--bundles", "app"], radice, { CARGO_ENCODED_RUSTFLAGS: flags });
+  if (b.codice !== 0) rosso("BUILD", `exit ${b.codice} dopo ${Math.round((Date.now() - inizio) / 1000)} s (dettaglio nel log)`);
+  const prodotte = existsSync(cartellaDelleApp) ? readdirSync(cartellaDelleApp).filter((f) => f.endsWith(".app")).sort() : [];
+  if (prodotte.length !== 1) rosso("BUILD", `exit 0 ma nella cartella delle app, svuotata prima, ${JSON.stringify(prodotte)} invece di una sola`);
+  const app = join(cartellaDelleApp, prodotte[0]!);
+  const letta = await esegui(["/usr/libexec/PlistBuddy", "-c", "Print :CFBundleShortVersionString", join(app, "Contents", "Info.plist")]);
+  if (letta.out.trim() !== nomi.versione) rosso("BUILD", `${prodotte[0]}: l'Info.plist dice la versione «${letta.out.trim()}» invece di ${nomi.versione}`);
+  riga(`BUILD: VERDE | ${prodotte[0]} universale, versione ${nomi.versione} nel suo Info.plist, in ${Math.round((Date.now() - inizio) / 1000)} s`);
+  await firmaAdHoc(app, "FIRMA", ["--force", "--deep", "--sign", "-"]);
+  const eseguibile = join(app, "Contents", "MacOS", "algodesign");
+  await dueArchitetture(eseguibile, "FIRMA");
+  riga(`FIRMA: VERDE | ${prodotte[0]} firmata ad hoc, verificata; sha256 dell'eseguibile ${impronta(eseguibile)}`);
+  return app;
+}
+
+/** La CARTELLA del Mac: l'app copiata con `ditto`, che tiene la firma; gli altri file 0644. */
+async function componiIlMac(app: string): Promise<void> {
+  if (!existsSync(cartellaTesti!) || !statSync(cartellaTesti!).isDirectory()) rosso("CARTELLA", `--testi ${cartellaTesti}: non è una cartella`);
+  if (existsSync(cartella)) {
+    const estranee = differenzeDallElenco(voci(cartella), elencoDelMac).filter((d) => d.startsWith("in più"));
+    if (estranee.length > 0) rosso("CARTELLA", `${cartella} c'è già e contiene altro (${estranee.join(", ")}): non la cancello`);
+    rmSync(cartella, { recursive: true });
+  }
+  mkdirSync(cartella, { recursive: true });
+  const copia = await esegui(["ditto", app, join(cartella, "AlgoDesign.app")]);
+  if (copia.codice !== 0) rosso("CARTELLA", `ditto esce ${copia.codice} (dettaglio nel log)`);
+  for (const f of ["LICENSE", "LICENSE-DOCS"]) cpSync(join(repository, f), join(cartella, f));
+  const registro = readFileSync(join(repository, "CHANGELOG.md"), "utf8");
+  if (!registro.includes(`\n## ${nomi.versione}, `)) rosso("CARTELLA", `CHANGELOG.md non ha la voce «## ${nomi.versione}, »`);
+  if (registro.includes("SEGNAPOSTO")) rosso("CARTELLA", "CHANGELOG.md ha un SEGNAPOSTO rimasto");
+  writeFileSync(join(cartella, "CHANGELOG.md"), registro);
+  for (const [sorgente, destinazione] of Object.entries(testiDelMac)) writeFileSync(join(cartella, destinazione), testoDaiTesti("CARTELLA", sorgente));
+  for (const d of [...documentiDelPacchetto, ...guidePerCominciare, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", join("docs", d)));
+  for (const d of documentiDellaRadice) writeFileSync(join(cartella, d), documento("CARTELLA", d));
+  const figure = copiaLeFigure(repository, cartella);
+  if (figure.differenze.length > 0) rosso("CARTELLA", `le figure delle guide: ${figure.differenze.join(", ")}`);
+  const l = await licenzeDiTerzeParti(["aarch64-apple-darwin", "x86_64-apple-darwin"], nomi.versione, esegui, rosso);
+  writeFileSync(join(cartella, fileDelleLicenze), l.testo);
+  const trovate = voci(cartella);
+  const controllo = confrontoAcceso(trovate, elencoDelMac, "primo livello");
+  const differenze = differenzeDallElenco(trovate, elencoDelMac);
+  if (differenze.length > 0) rosso("CARTELLA", `le voci non sono quelle dell'elenco: ${differenze.join(", ")}`);
+  riga(`CARTELLA: VERDE | ${relative(repository, cartella)} con le ${trovate.length} voci dell'elenco (${trovate.join(", ")}) | figure delle guide: ${figure.copiate} copiate, ${figure.citate} citate | licenze di terze parti: ${l.js} librerie JavaScript, ${l.rust} Rust, ${l.testi} testi, ${Buffer.byteLength(l.testo)} byte | controllo positivo acceso (${controllo})`);
+}
+
+/** Lo ZIP del Mac, dell'app o dello strumento: `ditto` lo fa, `ditto -x -k` e Python lo rileggono. L'eseguibile dentro lo
+ * zip è 0755; lo zip non porta file di attributi del Mac («._*», `__MACOSX`). */
+async function comprimiIlMac({ clausola, cartella, archivio, nomeDellArchivio, cartellaNellArchivio, eseguibile, firmata }: { clausola: string; cartella: string; archivio: string; nomeDellArchivio: string; cartellaNellArchivio: string; eseguibile: string; firmata?: string }): Promise<string> {
+  for (const f of [archivio, `${archivio}.sha256`]) rmSync(f, { force: true });
+  const copia = mkdtempSync(join(tmpdir(), "algodesign-copia-"));
+  try {
+    const dentro = join(copia, cartellaNellArchivio);
+    const c = await esegui(["ditto", cartella, dentro]);
+    if (c.codice !== 0) rosso(clausola, `la copia con ditto esce ${c.codice} (dettaglio nel log)`);
+    const t = await esegui(["ditto", "-c", "-k", "--norsrc", "--keepParent", dentro, archivio]);
+    if (t.codice !== 0 || !existsSync(archivio)) rosso(clausola, `ditto esce ${t.codice} (dettaglio nel log)`);
+  } finally {
+    rmSync(copia, { recursive: true, force: true });
+  }
+  const attesi = new Map(fileDi(cartella).map((f) => [`${cartellaNellArchivio}/${f}`, impronta(join(cartella, f))]));
+  const estratta = mkdtempSync(join(tmpdir(), "algodesign-zip-"));
+  try {
+    const x = await esegui(["ditto", "-x", "-k", archivio, estratta]);
+    if (x.codice !== 0) rosso(clausola, `l'estrazione con ditto esce ${x.codice} (dettaglio nel log)`);
+    if (voci(estratta).join("|") !== `${cartellaNellArchivio}/`) rosso(clausola, `estratto, dà ${JSON.stringify(voci(estratta))} invece della sola cartella ${cartellaNellArchivio}`);
+    const dentro = join(estratta, cartellaNellArchivio);
+    const letti = new Map(fileDi(dentro).map((f) => [`${cartellaNellArchivio}/${f}`, impronta(join(dentro, f))]));
+    const diversi = differenzeDallElenco([...letti.keys()], [...attesi.keys()]);
+    const altreImpronte = [...attesi].filter(([f, h]) => letti.has(f) && letti.get(f) !== h).map(([f]) => f);
+    if (diversi.length > 0 || altreImpronte.length > 0) rosso(clausola, `estratto con ditto: ${[...diversi, ...altreImpronte.map((f) => `diverso ${f}`)].slice(0, 10).join(", ")}`);
+    if ((statSync(join(dentro, eseguibile)).mode & 0o777) !== 0o755) rosso(clausola, `estratto con ditto, ${eseguibile} non è 0755`);
+    if (firmata !== undefined) {
+      const v = await esegui(["codesign", "--verify", "--deep", "--strict", join(dentro, firmata)]);
+      if (v.codice !== 0) rosso(clausola, `estratta con ditto, la firma di ${firmata} non è valida: ${v.err.trim()}`);
+    }
+  } finally {
+    rmSync(estratta, { recursive: true, force: true });
+  }
+  const lettore = [
+    "import hashlib, stat, sys, zipfile",
+    "with zipfile.ZipFile(sys.argv[1]) as z:",
+    "    for i in z.infolist():",
+    "        modo = i.external_attr >> 16",
+    "        tipo = 'd' if i.is_dir() else 'l' if stat.S_ISLNK(modo) else 'f'",
+    "        h = hashlib.sha256(z.read(i)).hexdigest() if tipo == 'f' else '-'",
+    "        print(i.filename.rstrip('/'), tipo, oct(modo & 0o777), h, sep='\\t')",
+  ].join("\n");
+  const p = await esegui(["python3", "-c", lettore, archivio]);
+  if (p.codice !== 0) rosso(clausola, `la lettura con Python esce ${p.codice} (dettaglio nel log)`);
+  const lette = p.out.split("\n").filter((r) => r !== "").map((r) => r.split("\t") as [string, string, string, string]);
+  const fileLetti = new Map(lette.filter((r) => r[1] === "f").map((r) => [r[0], r[3]]));
+  const collegamenti = lette.filter((r) => r[1] === "l").map((r) => r[0]);
+  const dattributi = lette.map((r) => r[0]).filter((n) => n.split("/").some((c) => c.startsWith("._") || c === "__MACOSX"));
+  const diversi = differenzeDallElenco([...fileLetti.keys()], [...attesi.keys()]);
+  const impronteDiverse = [...attesi].filter(([f, h]) => fileLetti.has(f) && fileLetti.get(f) !== h).map(([f]) => f);
+  const nomeDellEseguibile = `${cartellaNellArchivio}/${eseguibile}`;
+  const modoDellEseguibile = lette.find((r) => r[0] === nomeDellEseguibile)?.[2];
+  // Controllo positivo: lo stesso rilevatore degli attributi, con un nome «._x» e uno sotto `__MACOSX`, li dice.
+  const accesi = ["a/._x", "__MACOSX/a", "a/b"].filter((n) => n.split("/").some((c) => c.startsWith("._") || c === "__MACOSX"));
+  if (accesi.length !== 2) rosso(clausola, `controllo positivo dei file di attributi SPENTO: ${JSON.stringify(accesi)}`);
+  if (diversi.length > 0 || impronteDiverse.length > 0 || collegamenti.length > 0 || dattributi.length > 0 || modoDellEseguibile !== "0o755")
+    rosso(clausola, `letto con Python: ${JSON.stringify({ diversi: diversi.slice(0, 10), impronteDiverse: impronteDiverse.slice(0, 10), collegamenti: collegamenti.slice(0, 10), attributi: dattributi.slice(0, 10), eseguibile: modoDellEseguibile })}`);
+  const sha = impronta(archivio);
+  writeFileSync(`${archivio}.sha256`, `${sha}  ${nomeDellArchivio}\n`);
+  riga(`${clausola}: VERDE | ${relative(repository, archivio)} ${statSync(archivio).size} byte; estratto con ditto e letto con Python: la cartella ${cartellaNellArchivio}/, gli stessi ${attesi.size} file con le stesse impronte, ${eseguibile} 0755${firmata !== undefined ? `, ${firmata} con la firma valida` : ""}, nessun file di attributi (${lette.length} voci lette; controllo positivo acceso) | sha256 ${sha} in ${nomeDellArchivio}.sha256`);
+  return sha;
+}
+
+/** Il giro del Mac, con le stesse clausole di Linux dove valgono. */
+async function giroDelMac(): Promise<void> {
+  const { descritto, prima } = await albero();
+  const app = await costruisciIlMac();
+  await alberoUguale(prima, "il build");
+  percorsi(join(app, "Contents", "MacOS", "algodesign"));
+  await componiIlMac(app);
+  await alberoUguale(prima, "le licenze e la cartella");
+  const sha = await comprimiIlMac({ clausola: "ARCHIVIO", cartella, archivio, nomeDellArchivio: nomi.archivio, cartellaNellArchivio: nomi.cartellaNellArchivio, eseguibile: "AlgoDesign.app/Contents/MacOS/algodesign", firmata: "AlgoDesign.app" });
+  const s = await eseguibileDelloStrumento();
+  try {
+    componiLoStrumento(s.exe, s.moduli);
+  } finally {
+    rmSync(s.build, { recursive: true, force: true });
+  }
+  await alberoUguale(prima, "lo strumento");
+  const shaS = await comprimiIlMac({ clausola: "ARCHIVIO DELLO STRUMENTO", cartella: cartellaDelloStrumento, archivio: archivioDelloStrumento, nomeDellArchivio: nomiS.archivio, cartellaNellArchivio: nomiS.cartellaNellArchivio, eseguibile: eseguibileS });
+  await provaLoStrumento();
+  riga(`ESITO: ${prova ? "VERDE, DI PROVA" : "VERDE"} | ${relative(repository, cartella)} con AlgoDesign.app universale | ${nomi.archivio} sha256 ${sha} | ${nomiS.archivio} sha256 ${shaS} | da ${descritto}`);
+}
+
 riga(`ARCHIVIO di AlgoDesign ${nomi.versione} per ${piattaforma}${prova ? " (di prova)" : ""} — inizio ${new Date().toISOString()} | log ${fileLog}`);
 try {
-  if (process.platform !== "linux") rosso("SISTEMA", `l'archivio per Linux si compone su Linux, non su ${process.platform}`);
+  if (process.platform !== (suMac ? "darwin" : "linux")) rosso("SISTEMA", `l'archivio per ${piattaforma} si compone su quel sistema, non su ${process.platform}`);
+  if (suMac) {
+    await giroDelMac();
+    process.exit(0);
+  }
   const { descritto, prima } = await albero();
   const appimage = await costruisci();
   await alberoUguale(prima, "il build");

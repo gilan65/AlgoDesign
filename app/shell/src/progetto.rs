@@ -334,7 +334,8 @@ pub fn togli_gruppo_da(cartella: &Path, gruppo: &str) -> Result<(), ErroreDelFil
     }
     let dentro = cartella.join(gruppo);
     let esempi = esempi_di(&dentro)?;
-    let del_sistema = voci(&dentro, |v, n| v.file_type().is_ok_and(|t| t.is_file()) && DEL_SISTEMA.contains(&n.to_lowercase().as_str()))?;
+    // I file col prefisso «._» sono gli attributi che il Mac scrive accanto a ogni file su una chiavetta che non li conosce.
+    let del_sistema = voci(&dentro, |v, n| v.file_type().is_ok_and(|t| t.is_file()) && (DEL_SISTEMA.contains(&n.to_lowercase().as_str()) || n.starts_with("._")))?;
     let mut altro: Vec<String> = fs::read_dir(&dentro)
         .map_err(di_sistema)?
         .filter_map(|v| v.ok())
@@ -739,6 +740,9 @@ mod prove {
         fs::write(cartella.join("Verifica").join(".DS_Store"), "x").unwrap();
         fs::write(cartella.join("Vuoto").join("Thumbs.db"), "x").unwrap();
         fs::write(cartella.join("Vuoto").join("desktop.ini"), "x").unwrap();
+        // Il Mac, su una chiavetta che non conosce i suoi attributi, accanto a ogni file ne scrive uno col prefisso «._».
+        fs::write(cartella.join("Verifica").join("._a.algo"), "x").unwrap();
+        fs::write(cartella.join("Verifica").join("._.DS_Store"), "x").unwrap();
         togli_gruppo_da(&cartella, "Verifica").unwrap();
         togli_gruppo_da(&cartella, "Vuoto").unwrap();
         assert!(!cartella.join("Verifica").exists() && !cartella.join("Vuoto").exists());
