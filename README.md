@@ -96,7 +96,7 @@ A cell that starts with `=`, `+`, `-` or `@` and is not a number (for example a 
 
 - **Where this version was tested**, system by system:
   - **Windows**: Windows 11 Home 26H2, with WebView2 156; the user without administrator rights and the NTFS, exFAT and FAT32 USB sticks on an earlier version, with the same `data` folder. Windows 10 was not tested.
-  - **Linux**: Ubuntu 26.04 with the GNOME desktop (Wayland), in a virtual machine; the start on freshly installed Ubuntu 22.04 and 24.04; on Ubuntu 24.04, the same automatic tests run on Windows, which use the application as a person would. The other desktops and distributions were not tested.
+  - **Linux**: Ubuntu 26.04 with the GNOME desktop (Wayland), in a virtual machine; the start on freshly installed Ubuntu 22.04 and 24.04; on Ubuntu 22.04 and 24.04, the automatic tests, which use the application as a person would. The other desktops and distributions were not tested.
   - **macOS**: not yet; the version will come with 1.0.1.
 - The defects already known and not yet fixed are in the part “Difetti noti” (known defects) of the release notes, `NOTE-DI-RILASCIO.md` (in Italian), next to the program.
 - Not tested: shutting down or restarting Windows with unsaved changes (better save first) and a file dragged onto the window (to open it use “Open”). The browser keys that would reload the window or go back (F5, Ctrl+R, “Refresh” and “Back” of some keyboards, Alt+arrow) are stopped by AlgoDesign: F5 runs the program.
@@ -135,7 +135,7 @@ All the commands are given in the `app/` folder, after `bun install`.
 | Full test run, with the interface tests in WebKit too | `bun run collaudo --completo` |
 | Comparison of the generated code with the run on the test cases | `bun run differenziale` |
 | Release executable for Windows | `bun tauri build --no-bundle` → `shell/target/release/algodesign.exe` |
-| Release packages for Windows: the one of AlgoDesign, the one of the command-line tool and the one of the core for Node, from the same tree (folders, zips and fingerprints in `dist/` at the root; the first carries this file, `LEGGIMI.md`, the two student guides, the guide to “Academic”, the one to the tool and the two to report a malfunction from `docs/` and the release notes, the second the executable of the tool, the two guides and the two short texts, the third the file for Node, the two short texts and the licenses; the texts are given to the tool) | `bun run pacchetto --testi ../rilascio/windows` (with `--prova` from a tree with changes, in `dist/prova/`) |
+| Release packages for Windows: the one of AlgoDesign, the one of the command-line tool and the one of the core for Node, from the same tree (folders, zips and fingerprints in `dist/` at the root; the first carries this file, `LEGGIMI.md`, the two student guides, the guide to “Academic”, the one to the tool and the two to report a malfunction from `docs/`, the two “getting started” guides with the `img/` folder and the release notes, the second the executable of the tool, the two guides and the two short texts, the third the file for Node, the two short texts and the licenses; the texts are given to the tool) | `bun run pacchetto --testi ../rilascio/windows` (with `--prova` from a tree with changes, in `dist/prova/`) |
 | The JSON Schema of the format, after a change to the file reader | `bun ./strumenti/schema-del-formato.ts` |
 
 ### The tests on the product

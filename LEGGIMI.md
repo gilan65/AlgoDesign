@@ -96,7 +96,7 @@ Una cella che comincia con `=`, `+`, `-` o `@` e non è un numero (per esempio u
 
 - **Dove è stata provata** questa versione, sistema per sistema:
   - **Windows**: Windows 11 Home 26H2, con WebView2 156; l'utente senza diritti di amministratore e le chiavette NTFS, exFAT e FAT32 su una versione precedente, con la stessa cartella `data`. Windows 10 non è stato provato.
-  - **Linux**: Ubuntu 26.04 con il desktop GNOME (Wayland), in una macchina virtuale; l'avvio su Ubuntu 22.04 e 24.04 appena installati; su Ubuntu 24.04, le stesse prove automatiche fatte su Windows, che usano l'applicazione come farebbe una persona. Gli altri desktop e le altre distribuzioni non sono stati provati.
+  - **Linux**: Ubuntu 26.04 con il desktop GNOME (Wayland), in una macchina virtuale; l'avvio su Ubuntu 22.04 e 24.04 appena installati; su Ubuntu 22.04 e 24.04, le prove automatiche, che usano l'applicazione come farebbe una persona. Gli altri desktop e le altre distribuzioni non sono stati provati.
   - **macOS**: non ancora; la versione arriverà con la 1.0.1.
 - I difetti già conosciuti e non ancora corretti sono nella parte «Difetti noti» delle note di rilascio, `NOTE-DI-RILASCIO.md`, accanto al programma.
 - Non sono provati lo spegnimento o il riavvio di Windows con modifiche non salvate (prima conviene salvare) e un file trascinato sulla finestra (per aprirlo si usa «Apri»). I tasti del browser che ricaricherebbero la finestra o tornerebbero indietro (F5, Ctrl+R, «Aggiorna» e «Indietro» di certe tastiere, Alt+freccia) AlgoDesign li ferma: F5 esegue il programma.
@@ -135,7 +135,7 @@ Tutti i comandi si danno nella cartella `app/`, dopo `bun install`.
 | Collaudo completo, coi test dell'interfaccia anche in WebKit | `bun run collaudo --completo` |
 | Confronto del codice generato con l'esecuzione sui casi d'uso | `bun run differenziale` |
 | Eseguibile di release per Windows | `bun tauri build --no-bundle` → `shell/target/release/algodesign.exe` |
-| Pacchetti della release per Windows: quello di AlgoDesign, quello dello strumento a riga di comando e quello del nucleo per Node, dallo stesso albero (cartelle, zip e impronte in `dist/` alla radice; il primo porta questo file, `README.md`, le due guide per lo studente, la guida ad «Accademico», quella dello strumento e le due per segnalare un malfunzionamento da `docs/` e le note di rilascio, il secondo l'eseguibile dello strumento, le due guide e i due testi brevi, il terzo il file per Node, i due testi brevi e le licenze; i testi si danno allo strumento) | `bun run pacchetto --testi ../rilascio/windows` (con `--prova` da un albero con modifiche, in `dist/prova/`) |
+| Pacchetti della release per Windows: quello di AlgoDesign, quello dello strumento a riga di comando e quello del nucleo per Node, dallo stesso albero (cartelle, zip e impronte in `dist/` alla radice; il primo porta questo file, `README.md`, le due guide per lo studente, la guida ad «Accademico», quella dello strumento e le due per segnalare un malfunzionamento da `docs/`, le due guide «per cominciare» con la cartella `img/` e le note di rilascio, il secondo l'eseguibile dello strumento, le due guide e i due testi brevi, il terzo il file per Node, i due testi brevi e le licenze; i testi si danno allo strumento) | `bun run pacchetto --testi ../rilascio/windows` (con `--prova` da un albero con modifiche, in `dist/prova/`) |
 | Lo JSON Schema del formato, dopo un cambio del lettore dei file | `bun ./strumenti/schema-del-formato.ts` |
 
 ### Le prove sul prodotto

@@ -29,7 +29,7 @@ As an example, a program that reads a whole number and writes whether it is even
 
 From the **Project** menu choose **New** (Ctrl+N). Write the name of the project, which is required, and, if you like, the author, a description and some notes; confirm with **Create**. The same information can be changed later with **Properties**, which also has three options that change the result: how many decimal digits a real number has when it is written (2 unless you say otherwise), the character that fills an array of characters and the places of the call stack (§10).
 
-Save the project with **Save as** (Ctrl+Shift+S): the file has the `.algo` extension. From then on **Save** (Ctrl+S) writes the same file. The file takes the name of the project; if that name has characters a file name cannot have, or is a name Windows reserves (such as `CON` or `NUL`), before the Windows dialog AlgoDesign says so and suggests another name, which can be changed: **Which names can be used?** tells the rules.
+Save the project with **Save as** (Ctrl+Shift+S): the file has the `.algo` extension. From then on **Save** (Ctrl+S) writes the same file. The file takes the name of the project; if that name has characters a file name cannot have, or is a name Windows reserves (such as `CON` or `NUL`), before the system dialog AlgoDesign says so and suggests another name, which can be changed: **Which names can be used?** tells the rules.
 
 ### The data
 
@@ -533,7 +533,7 @@ At first the flowchart and the code side by side are chosen, in the language of 
 
 ### Exporting the flowchart
 
-**Export the flowchart…** exports the flowchart of the tab shown. The window says which flowchart it is and lets you choose the **Format**, **PNG (image)** or **SVG (drawing)**, the **Colors** (in color, in shades of gray, in black and white) and the **Transparent background**; without the box the background is white. **Export…** opens the Windows window to save, with the name of the project and, for a procedure or a function, its name in brackets: for example “media (leggi_numero).png”. The PNG is drawn at twice the size, so that it stays sharp; a large flowchart, which has to be reduced to be exported as an image: the status line says the size in pixels. The SVG can be enlarged as much as you like without losing sharpness. In pause the image has the execution marks: the current block and the breakpoints. The choices stay until AlgoDesign is closed.
+**Export the flowchart…** exports the flowchart of the tab shown. The window says which flowchart it is and lets you choose the **Format**, **PNG (image)** or **SVG (drawing)**, the **Colors** (in color, in shades of gray, in black and white) and the **Transparent background**; without the box the background is white. **Export…** opens the system window to save, with the name of the project and, for a procedure or a function, its name in brackets: for example “media (leggi_numero).png”. The PNG is drawn at twice the size, so that it stays sharp; a large flowchart is reduced, because a PNG image has a limit: the status line says the size in pixels. The SVG can be enlarged as much as you like without losing sharpness. In pause the image has the execution marks: the current block and the breakpoints. The choices stay until AlgoDesign is closed.
 
 ## 14. The Settings
 

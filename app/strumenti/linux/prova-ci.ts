@@ -151,7 +151,7 @@ try {
   riga(`TRACCE (portabile): VERDE | fuori da data/ solo voci dell'elenco (${r.ammesse.length} + ${r.cartelle.length} cartelle) | dentro data/ ${r.inData.length} voci`);
 
   const senzaData = await giro("senza-data", "en_US.UTF-8");
-  const misure = ["CANVAS: MISURATO", "STAMPA: FOTOGRAFATO"].filter((m) => !righeDelGiro.get("senza-data")!.some((r) => r.startsWith(m)));
+  const misure = ["FINESTRA DEL FILE: VERDE", "CANVAS: MISURATO", "STAMPA: FOTOGRAFATO"].filter((m) => !righeDelGiro.get("senza-data")!.some((r) => r.startsWith(m)));
   if (misure.length > 0) rosso("GIRO senza-data", `exit 0 ma senza la riga di ${misure.join(", ")}`);
   const senza = residuo(senzaData.voci, base.voci, senzaData.dati, casa, identificatore);
   descrivi("senza-data", senza);

@@ -1808,11 +1808,19 @@ export function Applicazione({
     setAvviso(null);
     return true;
   }
+  /** Un valore rifiutato nella tabella ferma il comando, come il tasto premuto nel suo campo. La tabella torna in vista subito, se il codice la copre o è chiusa: il campo da correggere deve vedersi, e il fuoco non entra in un campo nascosto. */
+  function fermatoDalCampo(): boolean {
+    if (trattenuto.current === null) return false;
+    flushSync(() => {
+      setConCodice(false);
+      setConTabella(true);
+    });
+    return trattenuto.current?.() ?? false;
+  }
   function prosegui(comando: Comando): void {
     const s = esecuzione?.stato.genere;
     if (s !== "pausa" && s !== "pronta") return;
-    // Un valore rifiutato nella tabella ferma il comando, come il tasto premuto nel suo campo.
-    if (trattenuto.current?.()) return;
+    if (fermatoDalCampo()) return;
     // In pausa i campi possono essere aperti: si confermano, e se cambiano il programma quello di prima non va avanti.
     const c = confermaIApertiCampi();
     if (!c) return;
@@ -1873,7 +1881,7 @@ export function Applicazione({
    * stesso a ogni elemento). */
   function inserisciNellaConsole(riga: Exclude<Riga, undefined>): boolean {
     if (esecuzione?.stato.genere !== "chiede") return false;
-    if (trattenuto.current?.()) return false;
+    if (fermatoDalCampo()) return false;
     esecuzione.inserisci(riga);
     ridisegna();
     return true;

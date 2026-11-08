@@ -65,7 +65,7 @@ export interface Trasformazione {
   readonly dato?: true;
 }
 
-export type SpecieDellaNota = "int" | "parametro" | "dimensione" | "procedura" | "forma" | "dato-della-funzione" | "riferimento";
+export type SpecieDellaNota = "int" | "parametro" | "dimensione" | "procedura" | "forma" | "dato-della-funzione" | "riferimento" | "vettore-per-valore";
 /** Le forme di prima della guida di oggi, che il lettore accetta. */
 export type FormaVecchia = "uguale" | "mod" | "output" | "intervallo" | "procedure" | "scrivi" | "lunghezza";
 export interface Nota {
@@ -76,8 +76,10 @@ export interface Nota {
   readonly valore?: number;
   /** Per `forma`: quale. */
   readonly forma?: FormaVecchia;
-  /** Per `riferimento`: la funzione che modifica il vettore. */
+  /** Per `riferimento` e `vettore-per-valore`: la funzione che modifica il vettore. */
   readonly funzione?: string;
+  /** Per `dato-della-funzione`: il codice fuori dalle funzioni ha un dato con lo stesso nome, che è un altro dato. */
+  readonly fuori?: true;
 }
 
 export interface OpzioniDellaLettura {
@@ -392,6 +394,7 @@ function tipo(w: Parole, note: Nota[], nome: string): TipoLetto {
     note.push({ specie: "forma", forma: "lunghezza", riga: w.riga, nome, valore: n.v });
     return { vettore: true, lunghezza: n.v };
   }
+  if (n?.g === "nome") throw new Fermo(w.riga, "fra le quadre del tipo ci va un numero, o niente");
   w.vuole("]", "la quadra che chiude il tipo del vettore");
   return { vettore: true };
 }
@@ -436,7 +439,7 @@ function leggiIlTesto(testo: string, scriviDellAutore: boolean): TestoLetto {
     if (parola === "end" || fineCon !== undefined) {
       w.i += parola === "end" ? 2 : 1;
       w.fine();
-      if (fineCon !== "function" && fineCon !== "procedure" && fineCon !== "if" && fineCon !== "while" && fineCon !== "for") throw new Fermo(riga, "dopo «end» viene «function», «if», «while» o «for»");
+      if (fineCon !== "function" && fineCon !== "procedure" && fineCon !== "if" && fineCon !== "while" && fineCon !== "for") throw new Fermo(riga, "dopo «end» viene «function», «procedure», «if», «while» o «for»");
       const a = chiudi(fineCon, riga);
       if (a.genere === "function") funzioni.push({ ...a.f, fine: riga, corpo: a.corpo });
       else if (a.genere === "if") dove().push({ k: "se", riga: a.riga, condizione: a.condizione, allora: a.allora, altrimenti: a.altrimenti });
@@ -840,17 +843,30 @@ class Lunghezze {
     this.padre.set(k, r);
     return r;
   }
-  uguali(a: string, b: string): void {
+  /** Le radici la cui lunghezza è scritta nel testo, con le parole che la dicono: sono le sole che un contrasto ferma. */
+  private readonly scritta = new Map<string, string>();
+  uguali(a: string, b: string, riga: number): void {
     const ra = this.radice(a);
     const rb = this.radice(b);
     if (ra === rb) return;
-    this.padre.set(ra, rb);
     const va = this.valore.get(ra);
+    const vb = this.valore.get(rb);
+    const sa = this.scritta.get(ra);
+    const sb = this.scritta.get(rb);
+    if (va !== undefined && vb !== undefined && va !== vb && sa !== undefined && sb !== undefined) throw new Fermo(riga, `${sa} è lungo ${va} e ${sb} è lungo ${vb}: qui devono avere la stessa lunghezza`);
+    this.padre.set(ra, rb);
     if (va !== undefined && !this.valore.has(rb)) this.valore.set(rb, va);
+    if (sa !== undefined && !this.scritta.has(rb)) this.scritta.set(rb, sa);
   }
   dai(k: string, n: number): void {
     const r = this.radice(k);
     if (!this.valore.has(r)) this.valore.set(r, n);
+  }
+  /** La lunghezza scritta nel testo, con le parole per dirla in un contrasto. */
+  scrivi(k: string, n: number, parole: string): void {
+    this.dai(k, n);
+    const r = this.radice(k);
+    if (this.valore.get(r) === n) this.scritta.set(r, parole);
   }
   di(k: string): number | undefined {
     return this.valore.get(this.radice(k));
@@ -977,7 +993,9 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
       const v = a !== undefined ? letterale(a) : undefined;
       if (a === undefined || v === undefined) throw new Fermo(d.riga, `${d.nome}, prima delle funzioni, è una costante comune: vuole un numero (o un elenco di numeri) subito dopo`);
       const n = nomiComuni.get(d.nome)!;
-      if (d.vettore) lunghezze.dai(`c:${n}`, (v as readonly string[]).length);
+      if (d.vettore && d.lunghezza !== undefined && (v as readonly string[]).length !== d.lunghezza) throw new Fermo(a.riga, `il vettore ${d.nome} è lungo ${d.lunghezza}, ma l'elenco ha ${(v as readonly string[]).length} valori`);
+      if (d.vettore && d.lunghezza !== undefined) lunghezze.scrivi(`c:${n}`, d.lunghezza, `il vettore ${d.nome}`);
+      else if (d.vettore) lunghezze.dai(`c:${n}`, (v as readonly string[]).length);
       comuni.push({ name: n, type: "integer", ...(d.vettore ? { size: 0 } : {}), constant: true, initial: d.vettore ? v : (v as string) });
     }
     for (const a of assegnate) if (a.bersaglio.genere !== "nome" || !comuniDichiarate.some((d) => d.nome === (a.bersaglio as { nome: string }).nome)) throw new Fermo(a.riga, "prima delle funzioni si assegnano solo le costanti comuni dichiarate");
@@ -1138,6 +1156,10 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
     rigaDellaFunzione.set(n, f.riga);
   }
   const esterno = letto.esterno.length > 0 ? prepara("esterno", undefined, letto.esterno, letto.esterno[0]!.riga) : undefined;
+  // Un nome assegnato in una funzione e mai dichiarato è un suo dato: se c'è anche fuori dalle funzioni è un altro dato, e la nota lo dice.
+  if (esterno !== undefined) note.forEach((n, i) => {
+    if (n.specie === "dato-della-funzione" && esterno.dati.some((d) => d.nome === n.nome)) note[i] = { ...n, fuori: true };
+  });
   if (esterno !== undefined && procedura !== undefined) {
     note.push({ specie: "procedura", riga: esterno.riga, nome: procedura });
     rigaDellaFunzione.set(procedura, esterno.riga);
@@ -1173,6 +1195,12 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
             });
           }
     }
+    // Una funzione che restituisce un valore non riceve per riferimento: la modifica resta dentro, e la nota lo dice.
+    for (const parte of parti.filter((p) => p.testa?.risultato !== undefined))
+      for (const d of parte.dati.filter((x) => x.parametro && x.vettore)) {
+        const modifica = tutte(parte.corpo).find((x) => assegnatiDa(x).includes(d.nome));
+        if (modifica !== undefined) note.push({ specie: "vettore-per-valore", riga: modifica.riga, nome: d.nome, funzione: nomiDelleParti.get(parte.chiave)! });
+      }
   }
 
   // Le lunghezze dei vettori: quelle che il testo dice, poi i dati, i risultati, gli elenchi, poi i legami (vedi in testa).
@@ -1181,10 +1209,10 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
   for (const parte of conLaLunghezzaDelTesto) {
     for (const d of parte.dati) {
       if (d.lunghezza === undefined) continue;
-      lunghezze.dai(`d:${parte.chiave}:${d.nome}`, d.lunghezza);
+      lunghezze.scrivi(`d:${parte.chiave}:${d.nome}`, d.lunghezza, `il vettore ${d.nome}`);
       if (Array.isArray(d.iniziale) && d.iniziale.length !== d.lunghezza) throw new Fermo(d.riga, `il vettore ${d.nome} è lungo ${d.lunghezza}, ma l'elenco ha ${d.iniziale.length} valori`);
     }
-    if (parte.testa?.risultato?.lunghezza !== undefined) lunghezze.dai(`r:${nomiDelleParti.get(parte.chiave)}`, parte.testa.risultato.lunghezza);
+    if (parte.testa?.risultato?.lunghezza !== undefined) lunghezze.scrivi(`r:${nomiDelleParti.get(parte.chiave)}`, parte.testa.risultato.lunghezza, `il risultato di ${nomiDelleParti.get(parte.chiave)}`);
   }
   const vettore = (parte: Parte, e: Espressione): string | undefined => {
     if (e.genere === "nome") {
@@ -1230,7 +1258,7 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
       }
     if (parte.testa?.risultato?.vettore === true && parte.valore !== undefined) {
       const v = vettore(parte, parte.valore);
-      if (v !== undefined) lunghezze.uguali(`r:${nomiDelleParti.get(parte.chiave)}`, v);
+      if (v !== undefined) lunghezze.uguali(`r:${nomiDelleParti.get(parte.chiave)}`, v, parte.riga);
     }
     for (const x of tutte(parte.corpo)) {
       for (const c of chiamateDi(x)) {
@@ -1239,13 +1267,13 @@ function leggi(testoDaLeggere: string, opzioni: OpzioniDellaLettura, libreria: P
         c.argomenti.forEach((a, i) => {
           const p = parametri[i];
           const v = vettore(parte, a);
-          if (p?.vettore === true && v !== undefined) lunghezze.uguali(p.chiave, v);
+          if (p?.vettore === true && v !== undefined) lunghezze.uguali(p.chiave, v, x.riga);
         });
       }
       if (x.k === "assegna" && x.elenco === undefined && x.bersaglio.genere === "nome") {
         const a = vettore(parte, x.bersaglio);
         const b = vettore(parte, x.valore);
-        if (a !== undefined && b !== undefined) lunghezze.uguali(a, b);
+        if (a !== undefined && b !== undefined) lunghezze.uguali(a, b, x.riga);
       }
       // Il `per ogni` del generatore: la sorgente lunga quanto l'intervallo.
       if (x.k === "per" && x.indice.startsWith("_") && x.fino.genere === "intero") {

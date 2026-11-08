@@ -483,6 +483,8 @@ async function eseguibileDelloStrumento(): Promise<{ exe: string; moduli: string
     process.execPath,
     "build",
     "--compile",
+    // La versione di Bun che gira anche sui processori senza AVX2.
+    "--target=bun-windows-x64-baseline",
     "./strumenti/algodesign-tools.ts",
     "--outfile",
     exe,

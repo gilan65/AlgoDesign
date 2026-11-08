@@ -16,6 +16,7 @@
 /app/node_modules/
 /app/dist/
 /app/.collaudo/
+/app/.bun-cache/
 
 # Generati del guscio: compilazione di Cargo e schemi che Tauri riscrive a ogni build
 /app/shell/target/

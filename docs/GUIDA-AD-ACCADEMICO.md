@@ -19,7 +19,7 @@ Le parole di «Accademico» sono in inglese in qualunque lingua dell'interfaccia
 Un programma si scrive in «Accademico» se usa solo ciò che la sintassi ha:
 
 - **i dati**: interi e vettori di interi; i booleani, che diventano interi 0 e 1 (§4.2); le costanti (§4.3) e le costanti comuni;
-- **i blocchi**: assegnazione (anche la copia di un vettore), scrittura, «se», «mentre», «ripeti», «per», «per ogni», la chiamata di una procedura, il commento (che non si scrive, §4.7);
+- **i blocchi**: assegnazione (anche la copia di un vettore), scrittura, «se», «mentre», «ripeti», «per», «per ogni», la chiamata di una procedura, il commento (che non si scrive, tranne il caso del §4.7);
 - **le procedure e le funzioni**, coi parametri per valore e il risultato intero, booleano o vettore di interi, anche ricorsive;
 - **le operazioni** `+`, `-`, `*`, `/`, `mod`, i confronti, `and`, `or`, `not`.
 
@@ -208,7 +208,7 @@ output("somma delle cifre: ")
 output(somma)
 ```
 
-Il **commento** non si scrive: la sintassi non ne ha. Un commento come `// cerco un divisore fra 2 e n - 1` non compare nel testo.
+Il **commento** non si scrive: la sintassi non ne ha. Un commento come `// cerco un divisore fra 2 e n - 1` non compare nel testo. Fa eccezione la riga che lo strumento del §6 conserva da una forma più vecchia: si scrive `// Nel testo: …`, sopra quella ufficiale, e il lettore la rilegge come commento.
 
 ### 4.8 I nomi aggiunti
 
@@ -283,7 +283,7 @@ Nel flowchart una Scrittura di un booleano scrive `true` o `false`; in «Accadem
 
 ### 5.5 I vettori che una procedura modifica
 
-Negli esercizi una procedura che modifica un vettore ricevuto lo modifica anche per chi l'ha chiamata. Nel flowchart un parametro è una copia, se non è per riferimento: lo strumento del §6 rende per riferimento il vettore che una procedura modifica, anche passandolo a un'altra che lo modifica, e una riga NOTA lo dice. Una funzione che restituisce un valore non può avere un parametro per riferimento: resta per valore, e se modifica il vettore la modifica non si vede fuori. Una procedura con un parametro per riferimento non si scrive in «Accademico»: la linguetta mostra l'elenco di ciò che manca.
+Negli esercizi una procedura che modifica un vettore ricevuto lo modifica anche per chi l'ha chiamata. Nel flowchart un parametro è una copia, se non è per riferimento: lo strumento del §6 rende per riferimento il vettore che una procedura modifica, anche passandolo a un'altra che lo modifica, e una riga NOTA lo dice. Una funzione che restituisce un valore non può avere un parametro per riferimento: resta per valore, e se modifica il vettore la modifica non si vede fuori: una riga NOTA lo dice. Una procedura con un parametro per riferimento non si scrive in «Accademico»: la linguetta mostra l'elenco di ciò che manca.
 
 ### 5.6 Quando il programma si ferma prima della fine
 
@@ -306,11 +306,11 @@ algodesign-tools accademico <testo.txt> [-l libreria.algo] [-o uscita.algo] [-n 
 | `-o uscita.algo` | dove scrivere; senza, nella libreria di `-l`, oppure accanto al testo, col suo nome e `.algo` |
 | `-n nome` | il nome della procedura che porta il codice fuori dalle funzioni; senza, il nome del file (`conta-pari.txt` dà `conta_pari`) |
 | `-d dimensione` | la lunghezza di un vettore che il testo non dice; senza, 10 |
-| `-r` | rinomina le procedure, le funzioni e i dati del testo che hanno un nome già usato o riservato dal flowchart, invece di fermarsi |
+| `-r` | rinomina le procedure, le funzioni e i dati del testo che hanno un nome già usato o riservato dal flowchart, invece di fermarsi (`lunghezza` e `len` si rinominano sempre) |
 | `-s` | sostituisce il file d'uscita, se c'è già; senza, lo strumento si ferma |
 | `-h` | mostra l'aiuto |
 
-Il **codice fuori dalle funzioni** diventa una procedura, coi nomi che usa senza dichiararli come parametri: così si prova da sola con F5 sulla sua scheda, dando i valori dei parametri nella console. Una `function` del testo che c'è già, identica, nella libreria non entra di nuovo. Lo strumento accetta anche `−` per il meno, `…` per i tre punti, `int` per `integer` e `<=`, `>=`, `!=` per `≤`, `≥`, `≠`. Accetta inoltre le forme dei testi più vecchi: `=` al posto di `==` nelle condizioni di `if` e `while`, `MOD`, `output x` senza tonde, `[a, b)` con la virgola, `procedure … end procedure`, `SCRIVI(a, b, …)` (una Scrittura con tutti i valori, senza a capo) e la lunghezza nel tipo (`integer[10]`). Per ognuna stampa una NOTA con la forma ufficiale, e la riga com'era scritta resta come commento nel flowchart e nella linguetta «Accademico», dove si legge `// Nel testo: …`.
+Il **codice fuori dalle funzioni** diventa una procedura, coi nomi che usa senza dichiararli come parametri: così si prova da sola con F5 sulla sua scheda, dando i valori dei parametri nella console. Una `function` del testo che c'è già, identica, nella libreria non entra di nuovo. Lo strumento accetta anche `−` per il meno, `…` per i tre punti, `int` per `integer` e `<=`, `>=`, `!=` per `≤`, `≥`, `≠`. Accetta inoltre le forme dei testi più vecchi: `=` al posto di `==` nelle condizioni di `if` e `while`, `MOD`, `output x` senza tonde, `[a, b)` con la virgola, `procedure … end procedure`, `SCRIVI(a, b, …)` (una Scrittura con tutti i valori, senza a capo) e la lunghezza nel tipo (`integer[10]`). Per ognuna stampa una NOTA con la forma ufficiale; la riga com'era scritta resta come commento nel flowchart e nella linguetta «Accademico», dove si legge `// Nel testo: …`, tranne la lunghezza nel tipo, che ha solo la NOTA.
 
 ### Che cosa stampa
 
@@ -323,7 +323,7 @@ Una riga per ogni **trasformazione** (il testo usa qualcosa che il flowchart non
 - `max` e `min`: una funzione `massimo` o `minimo` aggiunta al programma (§5.2);
 - con `-r`, un nome già usato o riservato dal flowchart: diventa lo stesso nome con `_2` (o il primo numero libero). `lunghezza` e `len`, che sono nomi comuni, diventano `lunghezza_2` e `len_2` anche senza `-r`.
 
-Le note dicono che un nome mai dichiarato è diventato un parametro, la lunghezza data a un vettore che non la dice, `int` letto come `integer`, il nome della procedura del codice fuori dalle funzioni, che un nome assegnato e non dichiarato in una funzione è diventato un suo dato, che un vettore modificato da una procedura è per riferimento (§5.5), che una riga è in una forma più vecchia.
+Le note dicono che un nome mai dichiarato è diventato un parametro, la lunghezza data a un vettore che non la dice, `int` letto come `integer`, il nome della procedura del codice fuori dalle funzioni, che un nome assegnato e non dichiarato in una funzione è diventato un suo dato, anche quando un nome uguale nel codice fuori dalle funzioni è un altro dato, che un vettore modificato da una procedura è per riferimento e che uno modificato da una funzione che restituisce un valore resta per valore (§5.5), che una riga è in una forma più vecchia.
 
 Un esempio. Il testo `conta-pari.txt` ha due funzioni, `conta_pari` e `primo_negativo` (che ha un `return` dentro un ciclo), e quattro righe fuori dalle funzioni che le provano. Il nome del file darebbe alla procedura il nome `conta_pari`, che è già della prima funzione: lo strumento si ferma, e con `-n` le si dà un altro nome.
 
@@ -381,7 +381,7 @@ RESTITUISCE risultato
 
 ### Quando si ferma
 
-Lo strumento non scrive nulla e si ferma, con la riga del testo, se il testo non si legge (una parola sbagliata, la chiamata di una procedura o di una funzione che il testo non definisce, `Infinity` (§5.6), un'operazione del flowchart come `length` chiamata come una funzione, un `for` che cambia la sua fine o il suo contatore nel corpo, un elenco che legge il vettore che lo riceve), se un nome è già nella libreria e manca `-r`, se la libreria che ne uscirebbe ha errori, o se il file d'uscita c'è già e non è la libreria di `-l` e manca `-s` (e sempre se `-o` è il testo stesso). Il nome della procedura del codice fuori dalle funzioni non si rinomina con `-r`: se c'è già, scegline un altro con `-n`; un dato che ha quel nome, con `-r`, sì.
+Lo strumento non scrive nulla e si ferma, con la riga del testo, se il testo non si legge (una parola sbagliata, la chiamata di una procedura o di una funzione che il testo non definisce, `Infinity` (§5.6), un'operazione del flowchart come `length` chiamata come una funzione, un `for` che cambia la sua fine o il suo contatore nel corpo, un elenco che legge il vettore che lo riceve, due lunghezze scritte nel testo che si contraddicono), se un nome è già nella libreria e manca `-r`, se la libreria che ne uscirebbe ha errori, o se il file d'uscita c'è già e non è la libreria di `-l` e manca `-s` (e sempre se `-o` è il testo stesso). Il nome della procedura del codice fuori dalle funzioni non si rinomina con `-r`: se c'è già, scegline un altro con `-n`; un dato che ha quel nome, con `-r`, sì.
 
 ## 7. Come allenarsi alle Selezioni scolastiche
 
@@ -408,7 +408,7 @@ Ricorda le differenze del §5: con numeri molto grandi AlgoDesign si ferma dove 
 | «ripeti» | `while` con `_ancora` | §4.6 |
 | «per» | `for … in [a ... b + 1) do`, oppure il `while` equivalente | §4.4 |
 | «per ogni» | `for _indice in [0 ... n) do` con l'elemento nella prima riga | §4.5 |
-| commento | non si scrive | §4.7 |
+| commento | non si scrive, tranne `// Nel testo: …` | §4.7 |
 | procedura, funzione | `function nome(…)`, `function nome(…) → integer`, `return`, `end function` | §4.9 |
 | Lettura, reale, carattere, stringa, *rif*, *out*, operazioni a parola | non ci stanno: l'elenco di ciò che manca | §3 |
 
