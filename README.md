@@ -152,9 +152,7 @@ All the commands are given in the `app/` folder, after `bun install`.
 
 ## Code signing policy
 
-AlgoDesign 1.0.0 is not digitally signed. A free code signing certificate for the next versions is being requested from SignPath Foundation. Once it is granted, this will apply: Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
-
-Committer, reviewer and approver: [gilan65](https://github.com/gilan65), the owner of this repository, who approves every signing request by hand.
+AlgoDesign is not digitally signed. Code signing depends on how widely the project is used, because free certificates for open source software are reserved for projects that are already well known: it will come in a later version, once AlgoDesign is more widely used.
 
 Privacy: this program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.
 
