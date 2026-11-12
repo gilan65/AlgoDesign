@@ -31,6 +31,8 @@ From the **Project** menu choose **New** (Ctrl+N). Write the name of the project
 
 Save the project with **Save as** (Ctrl+Shift+S): the file has the `.algo` extension. From then on **Save** (Ctrl+S) writes the same file. The file takes the name of the project; if that name has characters a file name cannot have, or is a name Windows reserves (such as `CON` or `NUL`), before the system dialog AlgoDesign says so and suggests another name, which can be changed: **Which names can be used?** tells the rules.
 
+A saved project is opened again with **Open** (Ctrl+O). AlgoDesign also opens a project at startup, if it receives the `.algo` file: on Windows by dragging the file onto `AlgoDesign.exe`, or by right-clicking the file, “Open with” and then `AlgoDesign.exe`; from the terminal by writing the file after the name of AlgoDesign, with its path if it is in another folder and in quotes if it has spaces: `.\AlgoDesign.exe "grade average.algo"` in PowerShell on Windows, `./AlgoDesign.AppImage "grade average.algo"` on Linux. Double-clicking a `.algo` file is not enough: AlgoDesign is not installed, and the system does not know that the file is its own.
+
 ### The data
 
 In the “Data” tab press **Add a data item** and fill in the fields:

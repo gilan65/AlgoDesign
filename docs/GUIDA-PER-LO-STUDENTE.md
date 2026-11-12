@@ -31,6 +31,8 @@ Dal menu **Progetto** scegli **Nuovo** (Ctrl+N). Scrivi il nome del progetto, ch
 
 Salva il progetto con **Salva con nome** (Ctrl+Maiusc+S): il file ha l'estensione `.algo`. Da lì in poi **Salva** (Ctrl+S) scrive lo stesso file. Il file prende il nome del progetto; se quel nome ha caratteri che un file non può avere, o è un nome che Windows riserva (come `CON` o `NUL`), prima della finestra del sistema AlgoDesign lo dice e propone un altro nome, che si può cambiare: **Quali nomi si possono usare?** dice le regole.
 
+Un progetto salvato si riapre con **Apri** (Ctrl+O). AlgoDesign apre un progetto anche all'avvio, se riceve il file `.algo`: su Windows trascinando il file sopra `AlgoDesign.exe`, oppure col tasto destro sul file, «Apri con» e poi `AlgoDesign.exe`; dal terminale scrivendo il file dopo il nome di AlgoDesign, col suo percorso se sta in un'altra cartella e fra virgolette se ha degli spazi: `.\AlgoDesign.exe "media voti.algo"` in PowerShell su Windows, `./AlgoDesign.AppImage "media voti.algo"` su Linux. Il doppio clic su un file `.algo` non basta: AlgoDesign non si installa, e il sistema non sa che quel file è suo.
+
 ### I dati
 
 Nella scheda «Dati» premi **Aggiungi un dato** e compila i campi:

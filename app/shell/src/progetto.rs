@@ -88,8 +88,8 @@ pub fn scrivi_da_base64(percorso: &Path, byte: &str) -> Result<(), ErroreDelFile
     scrivi_i_byte(percorso, &decodificati)
 }
 
-/// Il file da aprire all'avvio: il primo argomento, reso assoluto rispetto alla cartella di lavoro. La cartella di
-/// lavoro si chiede solo per un argomento relativo: se non si legge (cancellata, su Linux), un avvio senza argomenti o
+/// Il file da aprire all'avvio: il primo argomento, reso assoluto rispetto alla cartella di partenza
+/// (`cartella_di_partenza`). La cartella si chiede solo per un argomento relativo: se non si legge (cancellata, su Linux), un avvio senza argomenti o
 /// con un percorso assoluto non ne risente, e un argomento relativo si lascia com'è.
 pub fn dall_argomento(argomenti: &[OsString], cartella: impl FnOnce() -> std::io::Result<PathBuf>) -> Option<PathBuf> {
     let primo = PathBuf::from(argomenti.get(1)?);
@@ -100,6 +100,16 @@ pub fn dall_argomento(argomenti: &[OsString], cartella: impl FnOnce() -> std::io
         Ok(c) => c.join(primo),
         Err(_) => primo,
     })
+}
+
+/// La cartella da cui AlgoDesign è stato avviato, contro cui si risolve un argomento relativo. Su Linux l'AppImage porta
+/// la cartella di lavoro dentro di sé (`/tmp/.mount_…/usr`) e lascia quella di partenza nella variabile `OWD`: quando c'è
+/// ed è un percorso assoluto vale quella; altrimenti la cartella di lavoro.
+pub fn cartella_di_partenza(su_linux: bool, variabile: impl Fn(&str) -> Option<OsString>, di_lavoro: impl FnOnce() -> std::io::Result<PathBuf>) -> std::io::Result<PathBuf> {
+    match variabile("OWD").map(PathBuf::from) {
+        Some(partenza) if su_linux && partenza.is_absolute() => Ok(partenza),
+        _ => di_lavoro(),
+    }
 }
 
 /// Il file dove «Salva con nome» scrive.
@@ -645,6 +655,25 @@ mod prove {
         assert_eq!(dall_argomento(&argomenti(&["algodesign.exe"]), mai), None);
         assert_eq!(dall_argomento(&argomenti(&["algodesign.exe", assoluto.to_str().unwrap()]), mai), Some(assoluto));
         assert_eq!(dall_argomento(&argomenti(&["algodesign.exe", "media.algo"]), illeggibile), Some(PathBuf::from("media.algo")));
+    }
+
+    #[test]
+    fn un_argomento_relativo_dall_appimage_si_risolve_dalla_cartella_di_partenza() {
+        let partenza = std::env::temp_dir().join("Prova con spazi");
+        let dentro = PathBuf::from("/tmp/.mount_AlgoDe/usr");
+        let di_lavoro = || Ok(dentro.clone());
+        let con_owd = |nome: &str| (nome == "OWD").then(|| partenza.clone().into_os_string());
+        let senza = |_: &str| None;
+        let argomenti = [OsString::from("AlgoDesign.AppImage"), OsString::from("media voti.algo")];
+        // L'AppImage su Linux: la cartella di partenza è `OWD`, non quella di lavoro.
+        let cartella = cartella_di_partenza(true, con_owd, di_lavoro).unwrap();
+        assert_eq!(cartella, partenza);
+        assert_eq!(dall_argomento(&argomenti, || cartella_di_partenza(true, con_owd, di_lavoro)), Some(partenza.join("media voti.algo")));
+        // Senza `OWD`, o con un `OWD` relativo, vale la cartella di lavoro.
+        assert_eq!(cartella_di_partenza(true, senza, di_lavoro).unwrap(), dentro);
+        assert_eq!(cartella_di_partenza(true, |n: &str| (n == "OWD").then(|| OsString::from("relativa")), di_lavoro).unwrap(), dentro);
+        // Fuori da Linux `OWD` non conta, anche se c'è.
+        assert_eq!(cartella_di_partenza(false, con_owd, di_lavoro).unwrap(), dentro);
     }
 
     /// «Sostituire?» non si chiede per il file scelto, nemmeno quando la sua identità non si legge.
