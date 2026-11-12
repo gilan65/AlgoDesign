@@ -13,7 +13,7 @@ Per Windows lo strumento è `algodesign-tools.exe`, in un pacchetto a parte, `Al
 
 Si usa da **PowerShell**: in Esplora file, nella cartella dello strumento, si scrive `powershell` nella barra dell'indirizzo e si preme Invio (su Windows 11 va bene anche il tasto destro nella cartella, «Apri nel Terminale»). PowerShell non avvia un'applicazione della cartella senza `.\` davanti al nome: si scrive `.\algodesign-tools` negli esempi che seguono. I file si danno col loro percorso, fra virgolette se ha degli spazi, o si copiano nella stessa cartella.
 
-Per Linux lo strumento è `algodesign-tools`, nell'archivio `AlgoDesign-Tools-1.0.0-linux-x64.tar.gz`: si estrae allo stesso modo, si usa dal terminale aperto nella sua cartella e negli esempi si scrive `./algodesign-tools` al posto di `.\algodesign-tools`.
+Per Linux lo strumento è `algodesign-tools`, nell'archivio `AlgoDesign-Tools-1.0.0-linux-x64.tar.gz`: si estrae allo stesso modo, si usa dal terminale aperto nella sua cartella e negli esempi si scrive `./algodesign-tools` al posto di `.\algodesign-tools`. Per il Mac lo strumento è lo stesso, nell'archivio `AlgoDesign-Tools-1.0.0-macos-universal.zip`, e si usa allo stesso modo dal Terminale.
 
 ```sh
 .\algodesign-tools -h

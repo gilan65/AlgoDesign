@@ -330,8 +330,8 @@ test("nei testi del pacchetto la data è scritta solo con i segnaposto che la di
   expect([...usati].sort()).toEqual(["date", "delData", "versione"]);
   // I testi inglesi che dicono la data hanno {{date}}, gli italiani {{delData}}: i testi di ciascuno, con la cardinalità nel confronto.
   const conLaData = (n: string) => testi.filter((f) => nomi(readFileSync(join(cartella, f), "utf8")).includes(n)).map((f) => f.replaceAll("\\", "/")).sort();
-  expect(conLaData("date")).toEqual(["linux/README-OF-ALGODESIGN-TOOLS.md", "windows/README-OF-ALGODESIGN-TOOLS.md"]);
-  expect(conLaData("delData")).toEqual(["linux/ALGODESIGN-PER-LINUX.md", "linux/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "linux/NOTE-DI-RILASCIO.md", "windows/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "windows/NOTE-DI-RILASCIO.md"]);
+  expect(conLaData("date")).toEqual(["linux/README-OF-ALGODESIGN-TOOLS.md", "macos/README-OF-ALGODESIGN-TOOLS.md", "windows/README-OF-ALGODESIGN-TOOLS.md"]);
+  expect(conLaData("delData")).toEqual(["linux/ALGODESIGN-PER-LINUX.md", "linux/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "linux/NOTE-DI-RILASCIO.md", "macos/ALGODESIGN-PER-MAC.md", "macos/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "windows/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "windows/NOTE-DI-RILASCIO.md"]);
   // Controllo positivo del rilevatore: un segnaposto vecchio si vede.
   expect(nomi("Versione del {{data}}.")).toEqual(["data"]);
 });

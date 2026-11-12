@@ -21,6 +21,15 @@ test("Ctrl+Z annulla; Ctrl+Y e Ctrl+Maiusc+Z ripetono; Cmd vale come Ctrl; il re
   expect(comandoDellaCronologia(tasto("c", { ctrl: true }))).toBeNull();
 });
 
+test("sul Mac i comandi dei file vogliono Cmd: Ctrl+N e Ctrl+O nei campi sono del sistema", () => {
+  for (const t of ["n", "o", "s", "p"]) {
+    expect(comandoDelFile(tasto(t, { ctrl: true }), true)).toBeNull();
+    expect(comandoDelFile(tasto(t, { meta: true }), true)).not.toBeNull();
+  }
+  expect(comandoDelFile(tasto("S", { meta: true, shift: true }), true)).toBe("salvaConNome");
+  expect(comandoDelFile(tasto("S", { ctrl: true, shift: true }), true)).toBeNull();
+});
+
 test("Ctrl+N è Nuovo, Ctrl+O è Apri, Ctrl+S è Salva, Ctrl+Maiusc+S è Salva con nome, Ctrl+P e Ctrl+Maiusc+P sono Stampa; Cmd vale come Ctrl; il resto non è dei file", () => {
   expect(comandoDelFile(tasto("n", { ctrl: true }))).toBe("nuovo");
   expect(comandoDelFile(tasto("o", { ctrl: true }))).toBe("apri");
