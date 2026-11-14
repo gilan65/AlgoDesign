@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="t-carattere-stringa"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="s" type="String" array="False" size=""/>
+            <declare name="t" type="String" array="False" size=""/>
+            <declare name="r" type="String" array="False" size=""/>
+            <declare name="i" type="Integer" array="False" size=""/>
+            <assign variable="s" expression="&quot;ciao&quot;"/>
+            <assign variable="t" expression="Char(s, 0)"/>
+            <output expression="&quot;S1 &quot; &amp; t" newline="True"/>
+            <assign variable="t" expression="Char(s, 0) &amp; &quot;x&quot;"/>
+            <output expression="&quot;S2 &quot; &amp; t" newline="True"/>
+            <assign variable="r" expression="&quot;&quot;"/>
+            <for variable="i" start="Len(s) - 1" end="0" direction="dec" step="1">
+                <assign variable="r" expression="r &amp; Char(s, i)"/>
+            </for>
+            <output expression="&quot;S3 &quot; &amp; r" newline="True"/>
+        </body>
+    </function>
+</flowgorithm>

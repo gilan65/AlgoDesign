@@ -1,13 +1,14 @@
 {
   "fatti": {
-    "impronta": "d119b3b72c3f8b4b230ac3e110aa57c186ddef611f8207fba55c00a7fa328e84",
+    "impronta": "dad5178e81235393c26ee70ef58e840bd042d139001f566e00b5468e53077019",
     "file": {
       "tappa-1": 60,
       "tappa-2": 16,
       "tappa-3": 54,
       "tappa-4": 23,
       "tipi": 39,
-      "totale": 192
+      "totale": 192,
+      "casi-flowgorithm": 57
     },
     "tipi": {
       "record": 20,
@@ -30,6 +31,7 @@
       "core/esecuzione/esecuzione.test.ts",
       "core/esecuzione/ripartenza-corpus.test.ts",
       "core/interprete/interprete.test.ts",
+      "core/lettore/casi-flowgorithm.test.ts",
       "core/modifica/funzioni.test.ts",
       "core/modifica/operazioni.test.ts",
       "core/modifica/record.test.ts",
@@ -137,6 +139,14 @@
     "finestra - file delle tappe 1 e 2, quelli che non partono": {
       "file": 76,
       "nonPartono": 3
+    },
+    "flowgorithm - esiti sul corpus": {
+      "converte": 39,
+      "siFerma": 18,
+      "confermatiSuFlowgorithm": 37,
+      "dichiarazioni": 6,
+      "conLaRinomina": 4,
+      "convertonoConLaRinomina": 3
     },
     "genera c - file della tappa 1": 60,
     "genera c - file della tappa 4": 23,

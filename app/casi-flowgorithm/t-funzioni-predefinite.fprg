@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="t-funzioni-predefinite"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="v" type="Integer" array="True" size="5"/>
+            <output expression="&quot;F1 &quot; &amp; Abs(-3) &amp; &quot; &quot; &amp; Abs(-2.5) &amp; &quot; &quot; &amp; Sqrt(16)" newline="True"/>
+            <output expression="&quot;F2 &quot; &amp; Int(-3.7) &amp; &quot; &quot; &amp; Len(&quot;perché&quot;)" newline="True"/>
+            <output expression="&quot;F3 &quot; &amp; ToChar(66) &amp; &quot; &quot; &amp; ToCode(&quot;A&quot;)" newline="True"/>
+            <output expression="&quot;F4 &quot; &amp; pi &amp; &quot; &quot; &amp; π" newline="True"/>
+            <assign variable="v[0]" expression="1"/>
+            <output expression="&quot;F5 &quot; &amp; Size(v) &amp; &quot; &quot; &amp; v[0]" newline="True"/>
+        </body>
+    </function>
+</flowgorithm>

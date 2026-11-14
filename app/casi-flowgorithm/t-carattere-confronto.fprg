@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="t-carattere-confronto"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="s" type="String" array="False" size=""/>
+            <declare name="i" type="Integer" array="False" size=""/>
+            <declare name="n" type="Integer" array="False" size=""/>
+            <assign variable="s" expression="&quot;ciao&quot;"/>
+            <if expression="Char(s, 1) = &quot;i&quot;">
+                <then>
+                    <output expression="&quot;C1 si&quot;" newline="True"/>
+                </then>
+                <else>
+                    <output expression="&quot;C1 no&quot;" newline="True"/>
+                </else>
+            </if>
+            <assign variable="n" expression="0"/>
+            <for variable="i" start="0" end="Len(s) - 1" direction="inc" step="1">
+                <if expression="Char(s, i) = &quot;a&quot; or Char(s, i) = &quot;o&quot;">
+                    <then>
+                        <assign variable="n" expression="n + 1"/>
+                    </then>
+                    <else>
+                    </else>
+                </if>
+            </for>
+            <output expression="&quot;C2 &quot; &amp; n" newline="True"/>
+        </body>
+    </function>
+</flowgorithm>

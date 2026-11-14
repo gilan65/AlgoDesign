@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="n-sin"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <output expression="Sin(0)" newline="True"/>
+        </body>
+    </function>
+</flowgorithm>

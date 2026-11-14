@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="n-funzione-scrive"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <output expression="Doppio(2)" newline="True"/>
+        </body>
+    </function>
+    <function name="Doppio" type="Integer" variable="r">
+        <parameters>
+            <parameter name="x" type="Integer" array="False"/>
+        </parameters>
+        <body>
+            <declare name="r" type="Integer" array="False" size=""/>
+            <output expression="&quot;dentro&quot;" newline="True"/>
+            <assign variable="r" expression="x * 2"/>
+        </body>
+    </function>
+</flowgorithm>

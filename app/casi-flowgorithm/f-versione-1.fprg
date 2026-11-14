@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="1.0">
+    <attributes>
+        <attribute name="name" value="f-versione-1"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare variables="a, i" type="Integer" array="False" size=""/>
+            <assign variable="a" expression="2"/>
+            <output expression="&quot;A &quot; &amp; a"/>
+            <for variable="i" start="1" end="2" step="1">
+                <output expression="i"/>
+            </for>
+        </body>
+    </function>
+</flowgorithm>

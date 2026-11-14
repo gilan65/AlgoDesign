@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="f-crlf"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="a" type="Integer" array="False" size=""/>
+            <declare name="i" type="Integer" array="False" size=""/>
+            <assign variable="a" expression="2"/>
+            <output expression="&quot;A &quot; &amp; a" newline="True"/>
+            <output expression="&quot;B&quot;" newline="False"/>
+            <for variable="i" start="1" end="2" direction="inc" step="1">
+                <output expression="&quot; &quot; &amp; i" newline="False"/>
+            </for>
+            <output expression="&quot;&quot;" newline="True"/>
+        </body>
+    </function>
+</flowgorithm>

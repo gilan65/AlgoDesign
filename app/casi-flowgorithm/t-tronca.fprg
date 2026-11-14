@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="t-tronca"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="n" type="Integer" array="False" size=""/>
+            <assign variable="n" expression="3.7"/>
+            <output expression="&quot;T1 &quot; &amp; n" newline="True"/>
+            <assign variable="n" expression="-3.7"/>
+            <output expression="&quot;T2 &quot; &amp; n" newline="True"/>
+            <assign variable="n" expression="-7 / 2"/>
+            <output expression="&quot;T3 &quot; &amp; n" newline="True"/>
+            <call expression="Mostra(2.5)"/>
+            <output expression="&quot;F &quot; &amp; Meta(5)" newline="True"/>
+        </body>
+    </function>
+    <function name="Meta" type="Integer" variable="r">
+        <parameters>
+            <parameter name="x" type="Real" array="False"/>
+        </parameters>
+        <body>
+            <declare name="r" type="Integer" array="False" size=""/>
+            <assign variable="r" expression="x / 2"/>
+        </body>
+    </function>
+    <function name="Mostra" type="None" variable="">
+        <parameters>
+            <parameter name="x" type="Integer" array="False"/>
+        </parameters>
+        <body>
+            <output expression="&quot;P &quot; &amp; x" newline="True"/>
+        </body>
+    </function>
+</flowgorithm>
