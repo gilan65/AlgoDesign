@@ -22,7 +22,7 @@ import { testiDelleCause } from "../i18n/codici";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
 import { riferimento } from "./albero";
-import { apri, costruisciFinzione } from "./pagina";
+import { apri, costruisciFinzione, sulMacOspite, TASTI_DI_WINDOWS_E_LINUX } from "./pagina";
 
 test.beforeAll(costruisciFinzione);
 test.use({ viewport: { width: 1920, height: 1080 } });
@@ -47,6 +47,7 @@ async function apriIlProgramma(page: Page, salvate: Record<string, unknown> = { 
 }
 
 test("mentre si scrive: la coppia col cursore dentro, la chiusura scavalcata, ⌫, la selezione, AltGr; Ctrl+Z toglie la coppia in un colpo", async ({ page }) => {
+  test.skip(sulMacOspite, TASTI_DI_WINDOWS_E_LINUX);
   await apriIlProgramma(page);
   // Premessa: niente da annullare.
   await expect(nella(page, it.annulla)).toHaveAttribute("aria-disabled", "true");
@@ -126,6 +127,7 @@ test("la causa precisa sotto i campi, nella Spiegazione e nella riga di stato; l
 });
 
 test("il valore iniziale di un vettore: l'elenco fra graffe, la graffa che si chiude da sé, la causa di un elemento", async ({ page }) => {
+  test.skip(sulMacOspite, TASTI_DI_WINDOWS_E_LINUX);
   await apriIlProgramma(page);
   const voce = page.locator('[data-iniziale-di="v"]');
   await voce.dblclick();
@@ -187,6 +189,7 @@ test("la casella spenta: niente si chiude da sé", async ({ page }) => {
 });
 
 test("il testo di un commento non è un'espressione: le parentesi e le virgolette restano sole", async ({ page }) => {
+  test.skip(sulMacOspite, TASTI_DI_WINDOWS_E_LINUX);
   await apriIlProgramma(page);
   await blocco(page, "b1").dblclick();
   const campo = page.getByRole("textbox", { name: it.campoTesto, exact: true });

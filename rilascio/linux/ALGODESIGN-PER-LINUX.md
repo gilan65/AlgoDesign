@@ -37,7 +37,7 @@ AlgoDesign separa i due compiti: prima si **progetta** l'algoritmo come flowchar
 **Se non parte e dal terminale si legge un messaggio su FUSE** (per esempio «dlopen(): error loading libfuse.so.2» o «AppImages require FUSE to run»), al sistema manca la libreria che le AppImage usano per avviarsi. Su un Ubuntu 26.04 con il desktop GNOME, provato, c'è già e non serve nulla. Altrimenti, due strade:
 
 - installarla (serve la password di amministratore): su Ubuntu 22.04 e Linux Mint 21 `sudo apt install libfuse2`, su Ubuntu 24.04 `sudo apt install libfuse2t64`;
-- oppure, senza installare nulla, avviare AlgoDesign dal terminale con `./AlgoDesign.AppImage --appimage-extract-and-run` (si avvia un po' più lentamente).
+- oppure, senza installare nulla, avviare AlgoDesign dal terminale con `./AlgoDesign.AppImage --appimage-extract-and-run` (si avvia un po' più lentamente). Avviato così, il file `.algo` da aprire va scritto col percorso intero, anche se sta nella cartella in cui sei: `./AlgoDesign.AppImage --appimage-extract-and-run "$PWD/media voti.algo"`.
 
 **Se dal terminale si legge «libEGL.so.1: cannot open shared object file»**, manca la libreria grafica di base, che un desktop ha sempre ma un sistema ridotto all'osso no: `sudo apt install libegl1`.
 

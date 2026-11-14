@@ -14,6 +14,7 @@
 // (sotto carico, in WebKit, dopo il primo tasto), il Tab dall'ultimo elemento usciva dalla finestra (misurato sulla
 // conferma prima di togliere un esempio, il cui fuoco iniziale è sull'ultimo pulsante): la finestra lo riporta al
 // primo, e Maiusc+Tab dal primo all'ultimo. Quando la trappola c'è, il tasto arriva già fermato e qui non si tocca.
+// Sul Mac il Tab può non raggiungere l'ultimo elemento (un pulsante): un Tab che lascia il fuoco fuori lo riporta dentro.
 import { Dialog } from "@ark-ui/react/dialog";
 import { Portal } from "@ark-ui/react/portal";
 import { useCallback, useRef, type ReactElement, type ReactNode } from "react";
@@ -154,7 +155,17 @@ export function Finestra({
                 const tutti = daFuoco(contenuto.current);
                 const [daPrimo, daUltimo] = [tutti[0], tutti.at(-1)];
                 const verso = tasto.shiftKey ? (document.activeElement === daPrimo ? daUltimo : null) : document.activeElement === daUltimo ? daPrimo : null;
-                if (!verso) return;
+                if (!verso) {
+                  // Il WebKit del Mac, con la navigazione da tastiera del sistema spenta, col Tab salta i pulsanti: dall'ultimo
+                  // campo il fuoco andava al corpo della pagina, fuori dalla finestra (misurato nel WebKit di Playwright sul
+                  // Mac). Dopo il tasto, un fuoco finito fuori dalla finestra ancora aperta torna dentro.
+                  const radice = contenuto.current;
+                  const ritorno = tasto.shiftKey ? daUltimo : daPrimo;
+                  setTimeout(() => {
+                    if (radice.isConnected && !radice.contains(document.activeElement)) ritorno?.focus();
+                  }, 0);
+                  return;
+                }
                 tasto.preventDefault();
                 verso.focus();
                 return;

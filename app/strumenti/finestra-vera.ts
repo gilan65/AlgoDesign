@@ -24,7 +24,10 @@ export const powershell = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypa
 export async function finestraVera(pid: number, azione: AzioneDellaFinestra, argomento?: string, opzioni: OpzioniDellaFinestra = {}): Promise<{ esito: string; righe: string[] }> {
   const log = opzioni.log ?? (() => undefined);
   const limite = opzioni.limiteMs ?? 30_000;
-  const cmd = [...(opzioni.interprete ?? powershell), opzioni.script ?? join(import.meta.dir, "finestra-vera.ps1"), String(pid), azione, ...(argomento === undefined ? [] : [argomento])];
+  // Lo script parla con le finestre di Windows: altrove (il Mac del servizio ha una PowerShell, e lì lo script dava
+  // «inviato» su un processo senza finestra, misurato) non si chiama.
+  if (opzioni.interprete === undefined && process.platform !== "win32") return { esito: "NON inviato: la finestra vera si pilota solo su Windows", righe: [] };
+  const cmd =[...(opzioni.interprete ?? powershell), opzioni.script ?? join(import.meta.dir, "finestra-vera.ps1"), String(pid), azione, ...(argomento === undefined ? [] : [argomento])];
   log(`$ ${cmd.join(" ")}`);
   let proc: ReturnType<typeof Bun.spawn>;
   try {
