@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="t-divisione"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="a" type="Integer" array="False" size=""/>
+            <declare name="b" type="Integer" array="False" size=""/>
+            <declare name="r" type="Real" array="False" size=""/>
+            <assign variable="a" expression="7"/>
+            <assign variable="b" expression="2"/>
+            <assign variable="r" expression="7.0"/>
+            <output expression="&quot;V1 &quot; &amp; 7 / 2" newline="True"/>
+            <output expression="&quot;V2 &quot; &amp; -7 / 2" newline="True"/>
+            <output expression="&quot;V3 &quot; &amp; 6 / 3" newline="True"/>
+            <output expression="&quot;V4 &quot; &amp; r / 2" newline="True"/>
+            <output expression="&quot;V5 &quot; &amp; a / b" newline="True"/>
+        </body>
+    </function>
+</flowgorithm>

@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="t-procedura"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="v" type="Integer" array="True" size="3"/>
+            <declare name="n" type="Integer" array="False" size=""/>
+            <call expression="Saluta(&quot;Ada&quot;)"/>
+            <assign variable="v[0]" expression="1"/>
+            <call expression="Raddoppia(v)"/>
+            <assign variable="n" expression="5"/>
+            <call expression="Aumenta(n)"/>
+            <output expression="&quot;G &quot; &amp; v[0] &amp; &quot; &quot; &amp; n" newline="True"/>
+        </body>
+    </function>
+    <function name="Aumenta" type="None" variable="">
+        <parameters>
+            <parameter name="x" type="Integer" array="False"/>
+        </parameters>
+        <body>
+            <assign variable="x" expression="x + 1"/>
+        </body>
+    </function>
+    <function name="Raddoppia" type="None" variable="">
+        <parameters>
+            <parameter name="a" type="Integer" array="True"/>
+        </parameters>
+        <body>
+            <assign variable="a[0]" expression="a[0] * 2"/>
+        </body>
+    </function>
+    <function name="Saluta" type="None" variable="">
+        <parameters>
+            <parameter name="nome" type="String" array="False"/>
+        </parameters>
+        <body>
+            <output expression="&quot;ciao &quot; &amp; nome" newline="True"/>
+        </body>
+    </function>
+</flowgorithm>

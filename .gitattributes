@@ -9,6 +9,11 @@
 # I progetti di AlgoDesign sono testo JSON in UTF-8.
 *.algo text eol=lf
 
+# I file di Flowgorithm sono testo XML in UTF-8. Il caso del corpus coi fine riga di Windows resta com'è: senza
+# conversione, o git lo porterebbe a LF e la prova non vedrebbe più il CRLF.
+*.fprg text eol=lf
+/app/casi-flowgorithm/f-crlf.fprg -text
+
 # Il lato di una prova che gira sotto Node, senza compilazione.
 *.cjs text eol=lf
 

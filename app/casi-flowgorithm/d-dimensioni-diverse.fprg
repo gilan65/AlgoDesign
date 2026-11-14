@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="d-dimensioni-diverse"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <if expression="false">
+                <then>
+                    <declare name="v" type="Integer" array="True" size="3"/>
+                    <assign variable="v[0]" expression="3"/>
+                    <output expression="&quot;V &quot; &amp; Size(v) &amp; &quot; &quot; &amp; v[0]" newline="True"/>
+                </then>
+                <else>
+                    <declare name="v" type="Integer" array="True" size="5"/>
+                    <assign variable="v[0]" expression="7"/>
+                    <output expression="&quot;V &quot; &amp; Size(v) &amp; &quot; &quot; &amp; v[0]" newline="True"/>
+                </else>
+            </if>
+        </body>
+    </function>
+</flowgorithm>

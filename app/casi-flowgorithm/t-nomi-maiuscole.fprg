@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="t-nomi-maiuscole"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="Totale" type="Integer" array="False" size=""/>
+            <assign variable="totale" expression="5"/>
+            <output expression="&quot;N1 &quot; &amp; TOTALE" newline="True"/>
+            <assign variable="TotaLE" expression="TOTALE + 1"/>
+            <output expression="&quot;N2 &quot; &amp; totale" newline="True"/>
+            <call expression="saluta()"/>
+        </body>
+    </function>
+    <function name="Saluta" type="None" variable="">
+        <parameters/>
+        <body>
+            <output expression="&quot;N3&quot;" newline="True"/>
+        </body>
+    </function>
+</flowgorithm>

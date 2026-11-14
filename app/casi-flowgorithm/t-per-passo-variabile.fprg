@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="t-per-passo-variabile"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="i" type="Integer" array="False" size=""/>
+            <declare name="p" type="Integer" array="False" size=""/>
+            <assign variable="p" expression="2"/>
+            <output expression="&quot;F5&quot;" newline="False"/>
+            <for variable="i" start="1" end="6" direction="inc" step="p">
+                <output expression="&quot; &quot; &amp; i" newline="False"/>
+            </for>
+            <output expression="&quot;&quot;" newline="True"/>
+            <output expression="&quot;G&quot;" newline="False"/>
+            <for variable="i" start="6" end="1" direction="dec" step="p">
+                <output expression="&quot; &quot; &amp; i" newline="False"/>
+            </for>
+            <output expression="&quot;&quot;" newline="True"/>
+        </body>
+    </function>
+</flowgorithm>

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="t-procedura-riempie"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="w" type="Integer" array="True" size="4"/>
+            <call expression="Riempi(w)"/>
+            <output expression="&quot;R &quot; &amp; w[0] &amp; &quot; &quot; &amp; w[1] &amp; &quot; &quot; &amp; w[2] &amp; &quot; &quot; &amp; w[3]" newline="True"/>
+        </body>
+    </function>
+    <function name="Riempi" type="None" variable="">
+        <parameters>
+            <parameter name="v" type="Integer" array="True"/>
+        </parameters>
+        <body>
+            <declare name="i" type="Integer" array="False" size=""/>
+            <for variable="i" start="0" end="Size(v) - 1" direction="inc" step="1">
+                <assign variable="v[i]" expression="i * i"/>
+            </for>
+        </body>
+    </function>
+</flowgorithm>

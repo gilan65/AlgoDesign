@@ -1,0 +1,487 @@
+{
+  "descrizione": "Il corpus dei file di Flowgorithm scritti da noi: per ogni file l'esito atteso del lettore. «flowgorithm» è l'output confermato su Flowgorithm 4.5 (null: non eseguibile lì, vedi «gemello»); «algodesign» quello dell'interprete sul progetto convertito (i reali coi decimali del progetto).",
+  "file": [
+    {
+      "file": "t-strutture.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "A 3\nB vero\nC 0\nDE\n",
+      "algodesign": "A 3\nB vero\nC 0\nDE\n"
+    },
+    {
+      "file": "t-procedura.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "ciao Ada\nG 2 5\n",
+      "algodesign": "ciao Ada\nG 2 5\n"
+    },
+    {
+      "file": "t-procedura-riempie.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "R 0 1 4 9\n",
+      "algodesign": "R 0 1 4 9\n"
+    },
+    {
+      "file": "t-funzione.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "Q 16\nM 1.5\n",
+      "algodesign": "Q 16\nM 1.50\n"
+    },
+    {
+      "file": "t-funzione-vettore.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "S 15\n",
+      "algodesign": "S 15\n"
+    },
+    {
+      "file": "t-dichiarazione-multipla.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "S 1 2 3\n",
+      "algodesign": "S 1 2 3\n"
+    },
+    {
+      "file": "t-tipi.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "I 7\nR 2.5\nS ciao\nB true\nfalse\n",
+      "algodesign": "I 7\nR 2.50\nS ciao\nB true\nfalse\n"
+    },
+    {
+      "file": "t-per.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "F1 1 2 3 dopo 4\nF2 3 2 1 dopo 0\n",
+      "algodesign": "F1 1 2 3 dopo 4\nF2 3 2 1 dopo 0\n"
+    },
+    {
+      "file": "t-per-passo.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "P 1 4 7 dopo 10\nQ 10 8 6 4 2 dopo 0\n",
+      "algodesign": "P 1 4 7 dopo 10\nQ 10 8 6 4 2 dopo 0\n"
+    },
+    {
+      "file": "t-per-contatore-assegnato.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "F4 1 3 5 dopo 7\n",
+      "algodesign": "F4 1 3 5 dopo 7\n"
+    },
+    {
+      "file": "t-per-passo-variabile.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "F5 1 3 5\nG 6 4 2\n",
+      "algodesign": "F5 1 3 5\nG 6 4 2\n"
+    },
+    {
+      "file": "t-nomi-maiuscole.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "N1 5\nN2 6\nN3\n",
+      "algodesign": "N1 5\nN2 6\nN3\n"
+    },
+    {
+      "file": "t-operatori-uguaglianza.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "U true false true false true true false\n",
+      "algodesign": "U true false true false true true false\n"
+    },
+    {
+      "file": "t-operatori-logici.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "L false true true false false true true true\n",
+      "algodesign": "L false true true false false true true true\n"
+    },
+    {
+      "file": "t-operatori-aritmetici.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "A 1 1 6 3.5 8\n",
+      "algodesign": "A 1 1 6 3.50 8\n"
+    },
+    {
+      "file": "t-divisione.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "V1 3.5\nV2 -3.5\nV3 2\nV4 3.5\nV5 3.5\n",
+      "algodesign": "V1 3.50\nV2 -3.50\nV3 2.00\nV4 3.50\nV5 3.50\n"
+    },
+    {
+      "file": "t-tronca.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "T1 3\nT2 -3\nT3 -3\nP 2\nF 2\n",
+      "algodesign": "T1 3\nT2 -3\nT3 -3\nP 2\nF 2\n"
+    },
+    {
+      "file": "t-potenza.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "P1 0.5\nP2 64\nP3 4\nP4 18\nP5 -8\nP6 1024\n",
+      "algodesign": "P1 0.50\nP2 64.00\nP3 4.00\nP4 18.00\nP5 -8.00\nP6 1024\n"
+    },
+    {
+      "file": "t-unione-scrittura.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "N 5 2.5 true\n33\n",
+      "algodesign": "N 5 2.50 true\n33\n"
+    },
+    {
+      "file": "t-unione-stringhe.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "abcdab\nU xb\n",
+      "algodesign": "abcdab\nU xb\n"
+    },
+    {
+      "file": "t-funzioni-predefinite.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "F1 3 2.5 4\nF2 -3 6\nF3 B 65\nF4 3.14159265358979 3.14159265358979\nF5 5 1\n",
+      "algodesign": "F1 3 2.50 4.00\nF2 -3 6\nF3 B 65\nF4 3.14 3.14\nF5 5 1\n"
+    },
+    {
+      "file": "t-carattere-confronto.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "C1 si\nC2 2\n",
+      "algodesign": "C1 si\nC2 2\n"
+    },
+    {
+      "file": "t-carattere-stringa.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "S1 c\nS2 cx\nS3 oaic\n",
+      "algodesign": "S1 c\nS2 cx\nS3 oaic\n"
+    },
+    {
+      "file": "t-attributi.fprg",
+      "tema": "privacy",
+      "esito": "converte",
+      "flowgorithm": "ok\n",
+      "algodesign": "ok\n",
+      "metadati": {
+        "name": "t-attributi",
+        "author": "Autore di prova",
+        "description": "Una descrizione di prova"
+      }
+    },
+    {
+      "file": "n-sin.fprg",
+      "tema": "non si traduce",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "funzione_senza_equivalente",
+        "nome": "Sin"
+      }
+    },
+    {
+      "file": "n-tostring.fprg",
+      "tema": "non si traduce",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "funzione_senza_equivalente",
+        "nome": "ToString"
+      }
+    },
+    {
+      "file": "n-random.fprg",
+      "tema": "non si traduce",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "funzione_senza_equivalente",
+        "nome": "Random"
+      }
+    },
+    {
+      "file": "n-unione-numero.fprg",
+      "tema": "non si traduce",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "unione_con_un_numero"
+      }
+    },
+    {
+      "file": "n-resto-reale.fprg",
+      "tema": "non si traduce",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "resto_fra_reali"
+      }
+    },
+    {
+      "file": "n-dimensione-calcolata.fprg",
+      "tema": "non si traduce",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "dimensione_calcolata",
+        "nome": "v",
+        "dimensione": "n"
+      }
+    },
+    {
+      "file": "n-funzione-scrive.fprg",
+      "tema": "non si traduce",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "funzione_con_effetto",
+        "nome": "Doppio"
+      }
+    },
+    {
+      "file": "n-funzione-cambia-vettore.fprg",
+      "tema": "non si traduce",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "funzione_con_effetto",
+        "nome": "Primo"
+      }
+    },
+    {
+      "file": "n-intero-grande.fprg",
+      "tema": "non si traduce",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "intero_troppo_grande",
+        "numero": "3000000000"
+      }
+    },
+    {
+      "file": "n-file.fprg",
+      "tema": "non si traduce",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "blocco_senza_equivalente",
+        "elemento": "open"
+      }
+    },
+    {
+      "file": "n-tartaruga.fprg",
+      "tema": "non si traduce",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "blocco_senza_equivalente",
+        "elemento": "forward"
+      }
+    },
+    {
+      "file": "n-non-xml.fprg",
+      "tema": "non si traduce",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "file_non_leggibile"
+      }
+    },
+    {
+      "file": "n-elemento-sconosciuto.fprg",
+      "tema": "non si traduce",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "file_non_leggibile"
+      }
+    },
+    {
+      "file": "n-radice-diversa.fprg",
+      "tema": "non si traduce",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "file_non_leggibile"
+      }
+    },
+    {
+      "file": "d-stesso-tipo.fprg",
+      "tema": "dichiarazioni",
+      "esito": "converte",
+      "flowgorithm": "Y 1\n",
+      "algodesign": "Y 1\n"
+    },
+    {
+      "file": "d-nel-ciclo.fprg",
+      "tema": "dichiarazioni",
+      "esito": "converte",
+      "flowgorithm": "X 10 20 30\n",
+      "algodesign": "X 10 20 30\n"
+    },
+    {
+      "file": "d-tipi-diversi.fprg",
+      "tema": "dichiarazioni",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "dichiarazioni_diverse",
+        "nome": "y",
+        "nuovo": "y_2"
+      },
+      "rinomina": {
+        "esito": "converte",
+        "flowgorithm": "Y 1\n",
+        "algodesign": "Y 1\n",
+        "rinominati": [
+          [
+            "y",
+            "y_2"
+          ]
+        ]
+      }
+    },
+    {
+      "file": "d-dimensioni-diverse.fprg",
+      "tema": "dichiarazioni",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "dichiarazioni_diverse",
+        "nome": "v",
+        "nuovo": "v_2"
+      },
+      "rinomina": {
+        "esito": "converte",
+        "flowgorithm": "V 5 7\n",
+        "algodesign": "V 5 7\n",
+        "rinominati": [
+          [
+            "v",
+            "v_2"
+          ]
+        ]
+      }
+    },
+    {
+      "file": "d-doppia.fprg",
+      "tema": "dichiarazioni",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "dichiarazione_doppia",
+        "nome": "a"
+      },
+      "rinomina": {
+        "esito": "si ferma",
+        "messaggio": {
+          "codice": "dichiarazione_doppia",
+          "nome": "a"
+        }
+      }
+    },
+    {
+      "file": "d-nome-riservato.fprg",
+      "tema": "dichiarazioni",
+      "esito": "si ferma",
+      "messaggio": {
+        "codice": "nome_riservato",
+        "nome": "length",
+        "nuovo": "length_2"
+      },
+      "rinomina": {
+        "esito": "converte",
+        "flowgorithm": "L 4\n",
+        "algodesign": "L 4\n",
+        "rinominati": [
+          [
+            "length",
+            "length_2"
+          ]
+        ]
+      }
+    },
+    {
+      "file": "f-versione-1.fprg",
+      "tema": "formato",
+      "esito": "converte",
+      "flowgorithm": "A 2\n1\n2\n",
+      "algodesign": "A 2\n1\n2\n"
+    },
+    {
+      "file": "f-versione-4.fprg",
+      "tema": "formato",
+      "esito": "converte",
+      "flowgorithm": "A 2\nB 1 2\n",
+      "algodesign": "A 2\nB 1 2\n"
+    },
+    {
+      "file": "f-crlf.fprg",
+      "tema": "formato",
+      "esito": "converte",
+      "flowgorithm": "A 2\nB 1 2\n",
+      "algodesign": "A 2\nB 1 2\n"
+    },
+    {
+      "file": "f-bom.fprg",
+      "tema": "formato",
+      "esito": "converte",
+      "flowgorithm": "A 2\nB 1 2\n",
+      "algodesign": "A 2\nB 1 2\n"
+    },
+    {
+      "file": "f-entita.fprg",
+      "tema": "formato",
+      "esito": "converte",
+      "flowgorithm": "A&B <x> 'q' é\nC D\n",
+      "algodesign": "A&B <x> 'q' é\nC D\n"
+    },
+    {
+      "file": "f-entita-xml.fprg",
+      "tema": "formato",
+      "esito": "converte",
+      "flowgorithm": null,
+      "algodesign": "'q' è\n",
+      "nota": "Flowgorithm 4.5 toglie &apos; e non legge i riferimenti esadecimali (misurato), e non li scrive mai: il lettore di AlgoDesign li legge come l'XML"
+    },
+    {
+      "file": "f-commenti.fprg",
+      "tema": "formato",
+      "esito": "converte",
+      "flowgorithm": "K\n",
+      "algodesign": "K\n"
+    },
+    {
+      "file": "f-apici.fprg",
+      "tema": "formato",
+      "esito": "converte",
+      "flowgorithm": null,
+      "algodesign": "A 2\nB 1 2\n",
+      "gemello": "f-versione-4",
+      "nota": "Flowgorithm 4.5 rifiuta gli attributi fra apici (misurato): il lettore di AlgoDesign li legge come l'XML; l'output è quello del gemello"
+    },
+    {
+      "file": "es-fattoriale.fprg",
+      "tema": "esercizio",
+      "esito": "converte",
+      "flowgorithm": "! 1 1 2 6 24 120\n",
+      "algodesign": "! 1 1 2 6 24 120\n"
+    },
+    {
+      "file": "es-primi.fprg",
+      "tema": "esercizio",
+      "esito": "converte",
+      "flowgorithm": "2 3 5 7 11 13 17 19 23 29 \n",
+      "algodesign": "2 3 5 7 11 13 17 19 23 29 \n"
+    },
+    {
+      "file": "es-media.fprg",
+      "tema": "esercizio",
+      "esito": "converte",
+      "flowgorithm": "Media 3.6\nMassimo 8\n",
+      "algodesign": "Media 3.60\nMassimo 8\n"
+    },
+    {
+      "file": "es-palindroma.fprg",
+      "tema": "esercizio",
+      "esito": "converte",
+      "flowgorithm": "radar true\nciao false\n",
+      "algodesign": "radar true\nciao false\n"
+    },
+    {
+      "file": "es-ordina.fprg",
+      "tema": "esercizio",
+      "esito": "converte",
+      "flowgorithm": "1 2 3 5 8 \n",
+      "algodesign": "1 2 3 5 8 \n"
+    }
+  ]
+}

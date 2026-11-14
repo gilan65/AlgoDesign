@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="es-media"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="v" type="Integer" array="True" size="5"/>
+            <declare name="i" type="Integer" array="False" size=""/>
+            <declare name="somma" type="Integer" array="False" size=""/>
+            <declare name="media" type="Real" array="False" size=""/>
+            <assign variable="v[0]" expression="3"/>
+            <assign variable="v[1]" expression="8"/>
+            <assign variable="v[2]" expression="1"/>
+            <assign variable="v[3]" expression="5"/>
+            <assign variable="v[4]" expression="1"/>
+            <assign variable="somma" expression="0"/>
+            <for variable="i" start="0" end="4" direction="inc" step="1">
+                <assign variable="somma" expression="somma + v[i]"/>
+            </for>
+            <assign variable="media" expression="somma / 5"/>
+            <output expression="&quot;Media &quot; &amp; media" newline="True"/>
+            <output expression="&quot;Massimo &quot; &amp; Massimo(v)" newline="True"/>
+        </body>
+    </function>
+    <function name="Massimo" type="Integer" variable="m">
+        <parameters>
+            <parameter name="v" type="Integer" array="True"/>
+        </parameters>
+        <body>
+            <declare name="m" type="Integer" array="False" size=""/>
+            <declare name="i" type="Integer" array="False" size=""/>
+            <assign variable="m" expression="v[0]"/>
+            <for variable="i" start="1" end="Size(v) - 1" direction="inc" step="1">
+                <if expression="v[i] &gt; m">
+                    <then>
+                        <assign variable="m" expression="v[i]"/>
+                    </then>
+                    <else>
+                    </else>
+                </if>
+            </for>
+        </body>
+    </function>
+</flowgorithm>

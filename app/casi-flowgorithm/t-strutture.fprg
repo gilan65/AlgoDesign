@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="t-strutture"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="k" type="Integer" array="False" size=""/>
+            <assign variable="k" expression="0"/>
+            <do expression="k &lt; 3">
+                <assign variable="k" expression="k + 1"/>
+            </do>
+            <output expression="&quot;A &quot; &amp; k" newline="True"/>
+            <comment text="un commento"/>
+            <if expression="k = 3">
+                <then>
+                    <output expression="&quot;B vero&quot;" newline="True"/>
+                </then>
+                <else>
+                    <output expression="&quot;B falso&quot;" newline="True"/>
+                </else>
+            </if>
+            <while expression="k &gt; 0">
+                <assign variable="k" expression="k - 1"/>
+            </while>
+            <output expression="&quot;C &quot; &amp; k" newline="True"/>
+            <output expression="&quot;D&quot;" newline="False"/>
+            <output expression="&quot;E&quot;" newline="True"/>
+        </body>
+    </function>
+</flowgorithm>

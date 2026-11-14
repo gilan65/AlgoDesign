@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="es-ordina"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value="2026-11-14 06:00:00 PM"/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="v" type="Integer" array="True" size="5"/>
+            <declare name="i" type="Integer" array="False" size=""/>
+            <assign variable="v[0]" expression="5"/>
+            <assign variable="v[1]" expression="3"/>
+            <assign variable="v[2]" expression="8"/>
+            <assign variable="v[3]" expression="1"/>
+            <assign variable="v[4]" expression="2"/>
+            <call expression="Ordina(v)"/>
+            <for variable="i" start="0" end="4" direction="inc" step="1">
+                <output expression="v[i] &amp; &quot; &quot;" newline="False"/>
+            </for>
+            <output expression="&quot;&quot;" newline="True"/>
+        </body>
+    </function>
+    <function name="Ordina" type="None" variable="">
+        <parameters>
+            <parameter name="a" type="Integer" array="True"/>
+        </parameters>
+        <body>
+            <declare name="i, j, t" type="Integer" array="False" size=""/>
+            <for variable="i" start="0" end="Size(a) - 2" direction="inc" step="1">
+                <for variable="j" start="0" end="Size(a) - 2 - i" direction="inc" step="1">
+                    <if expression="a[j] &gt; a[j + 1]">
+                        <then>
+                            <assign variable="t" expression="a[j]"/>
+                            <assign variable="a[j]" expression="a[j + 1]"/>
+                            <assign variable="a[j + 1]" expression="t"/>
+                        </then>
+                        <else>
+                        </else>
+                    </if>
+                </for>
+            </for>
+        </body>
+    </function>
+</flowgorithm>

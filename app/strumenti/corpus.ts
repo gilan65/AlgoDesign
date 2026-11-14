@@ -4,6 +4,7 @@
 // Playwright, che il collaudo esegue per ultima. Qui stanno, una volta sola:
 // - i FATTI del corpus misurati dal disco (i file per cartella; nei tipi i record, le matrici, le tabelle, i progetti con
 //   l'errore statico, quelli che si eseguono senza letture) e l'IMPRONTA del contenuto (ogni `.algo` e `elenco.json`);
+//   anche il corpus dei file di Flowgorithm (`casi-flowgorithm/`: i `.fprg` e il suo `elenco.json`, fuori dal totale);
 // - il CENSIMENTO delle prove che leggono il corpus: i file di prova (`*.test.ts`, `*.test.tsx`) e gli spec di
 //   Playwright (`e2e/*.e2e.ts`) che chiamano `readdirSync` e nominano una cartella del corpus.
 // I fatti dichiarati stanno in `strumenti/conteggi-del-corpus.json`, che SOLO `--conferma` scrive, e solo dopo che le
@@ -43,6 +44,7 @@ import { valoriPrecisi } from "./valori-precisi";
 
 export const radiceDellApp = fileURLToPath(new URL("..", import.meta.url));
 const cartellaDeiCasi = join(radiceDellApp, "casi");
+const cartellaDiFlowgorithm = join(radiceDellApp, "casi-flowgorithm");
 export const fileDeiConteggi = join(radiceDellApp, "strumenti", "conteggi-del-corpus.json");
 
 export interface FattiDelCorpus {
@@ -185,12 +187,16 @@ export function misuraIlCorpus(): FattiDelCorpus {
     }
   }
   h.update(readFileSync(join(cartellaDeiCasi, "elenco.json")));
-  return { impronta: h.digest("hex"), file: { ...file, totale }, tipi };
+  // Il corpus dei file di Flowgorithm: un'altra cartella, coi suoi `.fprg` (fuori dal totale, che conta i `.algo`).
+  const diFlowgorithm = readdirSync(cartellaDiFlowgorithm).filter((f) => f.endsWith(".fprg")).sort();
+  for (const f of diFlowgorithm) h.update(`casi-flowgorithm/${f}\n`).update(readFileSync(join(cartellaDiFlowgorithm, f))).update("\n");
+  h.update(readFileSync(join(cartellaDiFlowgorithm, "elenco.json")));
+  return { impronta: h.digest("hex"), file: { ...file, totale, "casi-flowgorithm": diFlowgorithm.length }, tipi };
 }
 
-/** Vero se il testo di un file di prova percorre una cartella del corpus: chiama `readdirSync` e nomina `casi`, `tipi`
- * o una tappa. */
-export const leggeIlCorpus = (testo: string): boolean => testo.includes("readdirSync(") && /["/]casi["/]|"tipi"|tappa-\d/.test(testo);
+/** Vero se il testo di un file di prova percorre una cartella del corpus: chiama `readdirSync` e nomina `casi`, `tipi`,
+ * una tappa o il corpus dei file di Flowgorithm. */
+export const leggeIlCorpus = (testo: string): boolean => testo.includes("readdirSync(") && /["/]casi["/]|"tipi"|tappa-\d|"casi-flowgorithm"/.test(testo);
 
 /** I file di prova (`*.test.ts`, `*.test.tsx`) e gli spec di Playwright (`e2e/*.e2e.ts`): percorsi relativi ad `app/`,
  * con le barre, in ordine. */
