@@ -101,10 +101,7 @@ const chiave = (p: Prova) => `${p.file} › ${p.titolo}`;
 /** Le prove che il WebKit di Playwright non esegue fuori da Linux (`test.skip(webkitFuoriDaLinux(…), …)`, col perché in
  * `e2e/pagina.ts`; misurate rosse nel WebKit per Windows e per macOS), più quelle del solo Mac (`sulMacOspite`): per
  * sistema, confrontate nei due versi con quelle saltate davvero. Una in più o una che manca è un rosso; su Linux nessuna. */
-const FUORI_DA_LINUX = [
-  "mac.e2e.ts › i tasti con Ctrl come prima, ⌫ non tocca il blocco, nessun menu mandato al guscio",
-  "parametri.e2e.ts › la casella «globale» tolta da una funzione: la finestra nomina chi la usa, poi la costante è un dato della scheda",
-];
+const FUORI_DA_LINUX = ["mac.e2e.ts › i tasti con Ctrl come prima, ⌫ non tocca il blocco, nessun menu mandato al guscio"];
 const SALTATE: Record<string, readonly string[]> = {
   win32: FUORI_DA_LINUX,
   darwin: [

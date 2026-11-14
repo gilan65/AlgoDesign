@@ -78,12 +78,12 @@ const RIGHE_ATTESE_SU_LINUX: Righe = {
   it: { "icone-e-testo": [2, 3, 3], icone: [1, 1, 1], "testo-sotto": [1, 1, 2] },
   en: { "icone-e-testo": [2, 2, 3], icone: [1, 1, 1], "testo-sotto": [1, 1, 1] },
 };
-/** Sul Mac, col carattere di sistema di macOS 15, nel WebKit di Playwright per macOS: le prime nove italiane misurate (a
- * 1280 con testo sotto due righe, una in più che su Windows); le altre come su Windows finché la corsa del Mac non le
- * misura (la prova le stampa tutte prima di fermarsi). */
+/** Sul Mac, col carattere di sistema di macOS 15, misurate nel WebKit di Playwright per macOS sulle diciotto combinazioni
+ * (due corse del Mac del servizio): due cambiano di una riga rispetto a Windows (italiano, testo sotto, a 1280; inglese,
+ * icona e testo, a 1920), e il gruppo di destra resta in prima riga. */
 const RIGHE_ATTESE_SU_MAC: Righe = {
   it: { "icone-e-testo": [2, 2, 3], icone: [1, 1, 1], "testo-sotto": [1, 1, 2] },
-  en: { "icone-e-testo": [1, 2, 2], icone: [1, 1, 1], "testo-sotto": [1, 1, 1] },
+  en: { "icone-e-testo": [2, 2, 2], icone: [1, 1, 1], "testo-sotto": [1, 1, 1] },
 };
 
 /** Un programma senza letture: l'esecuzione arriva alla fine da sola. */

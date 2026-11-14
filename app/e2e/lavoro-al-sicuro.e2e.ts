@@ -243,8 +243,15 @@ const bersagliDelBlocco = [
   ["campo di testo", (p: Page) => testoDelBlocco(p).focus(conTempo)],
   ["pulsante «Aggiungi un valore»", (p: Page) => campiDelBlocco(p).getByRole("button", { name: it.aggiungiValore, exact: true }).focus(conTempo)],
   ["casella «Va a capo»", (p: Page) => casella(p).focus(conTempo)],
-  // In WebKit il clic su una casella non le dà il fuoco: resta sul corpo della pagina, coi campi aperti.
-  ["il corpo della pagina dopo un clic sulla casella", (p: Page) => casella(p).click(conTempo)],
+  // Il fuoco sul corpo della pagina coi campi aperti: nel WebKit del Mac e di Windows lo lasciava il clic sulla casella,
+  // finché l'app non ha dato lei il fuoco al clic (`ui/fuoco-al-clic.ts`); ora si toglie a mano, in ogni motore.
+  [
+    "il corpo della pagina dopo un clic sulla casella",
+    async (p: Page) => {
+      await casella(p).click(conTempo);
+      await p.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    },
+  ],
 ] as const;
 const delBlocco = { aperti: async (p: Page) => (await campiDelBlocco(p).count()) === 1, bersagli: bersagliDelBlocco, apri: apriUnaScrittura };
 const cella = (campo: string) => riempi(it.campoDellaRiga, { campo, n: "1" });
@@ -364,18 +371,6 @@ const bozze: readonly Bozza[] = [
 const finestraErrori = (page: Page) => page.getByRole("alertdialog", { name: riempi(it.apriErroreTitolo, { file: "rotto.algo" }), exact: true });
 const TASTI_DELLA_CRONOLOGIA = ["Control+z", "Control+y", "Control+Shift+z"] as const;
 
-/** Se il clic su un pulsante o su una casella lascia il fuoco sul corpo della pagina: sì nel WebKit di Playwright per
- * Windows (come in Safari su macOS), no in Chromium né nel WebKit per Linux, dove il clic dà il fuoco al controllo
- * (misurato). La piattaforma la dice `navigator.platform` («Win32», «Linux x86_64»): il profilo «Desktop Safari»
- * cambia solo l'user agent. Decide quale premessa le prove si aspettano. */
-async function clicSenzaFuoco(browser: Browser, progetto: string): Promise<boolean> {
-  if (!progetto.startsWith("webkit")) return false;
-  const p = await browser.newPage();
-  const linux = await p.evaluate(() => navigator.platform.startsWith("Linux"));
-  await p.close();
-  return !linux;
-}
-
 test("con dei campi aperti, o una finestra, Ctrl+Z, Ctrl+Y e Ctrl+Maiusc+Z non cambiano il progetto, col fuoco dovunque; chiusi, annullano di nuovo", async ({ browser }, info) => {
   test.setTimeout(480_000);
   const cambiati: string[] = [];
@@ -446,11 +441,8 @@ test("con dei campi aperti, o una finestra, Ctrl+Z, Ctrl+Y e Ctrl+Maiusc+Z non c
   expect(chiusi, "con dei campi aperti un tasto della cronologia li ha chiusi").toEqual([]);
   expect(prove).toBe(60);
   expect(positivi).toBe(26);
-  // Premessa del caso «il corpo della pagina dopo un clic sulla casella»: il fuoco sul corpo c'è solo dove il clic non
-  // dà il fuoco al controllo (il WebKit per Windows).
-  expect(sulCorpo.length, "premessa: il fuoco sul corpo della pagina (6 nel WebKit per Windows, nessuno in Chromium e nel WebKit per Linux)").toBe(
-    (await clicSenzaFuoco(browser, info.project.name)) ? 6 : 0,
-  );
+  // Premessa del caso «il corpo della pagina dopo un clic sulla casella»: il fuoco tolto a mano, in ogni motore.
+  expect(sulCorpo.length, "premessa: il fuoco sul corpo della pagina, 6 volte").toBe(6);
   expect(accesi, "controllo positivo spento: coi campi chiusi Ctrl+Z e Ctrl+Y non cambiano il progetto").toBe(positivi);
 });
 
@@ -846,10 +838,9 @@ test("un clic dentro i campi su un pulsante o sulla casella non li conferma, anc
   }
   console.log(`[${info.project.name}] clic dentro i campi: ${fuochi.join(", ")}; sbagliati ${sbagliati.length}`);
   expect(sbagliati, "un clic dentro i campi li ha confermati").toEqual([]);
-  // Premessa: nel WebKit per Windows il clic lascia il fuoco sul corpo della pagina, in Chromium e nel WebKit per Linux
-  // lo dà al controllo.
-  const sulCorpo = await clicSenzaFuoco(page.context().browser()!, info.project.name);
-  expect(fuochi, "premessa: dove va il fuoco dopo il clic").toEqual([`«Aggiungi un valore» → ${sulCorpo ? "BODY" : "BUTTON"}`, `la casella «Va a capo» → ${sulCorpo ? "BODY" : "INPUT"}`]);
+  // Premessa: il clic dà il fuoco al controllo in ogni motore; nel WebKit del Mac e di Windows lo dà l'app
+  // (`ui/fuoco-al-clic.ts`), che prima lasciava il fuoco sul corpo della pagina.
+  expect(fuochi, "premessa: dove va il fuoco dopo il clic").toEqual(["«Aggiungi un valore» → BUTTON", "la casella «Va a capo» → INPUT"]);
 });
 
 /** Un gesto da tastiera dopo aver scritto nei campi aperti; poi, dove serve, Ctrl+Z o Ctrl+Y; alla fine il
