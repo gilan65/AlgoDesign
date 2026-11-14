@@ -3,9 +3,12 @@
 // l'Invio subito dopo (la riga dei dati con la casella appena cambiata) non arrivava a nessuno (misurato: la conferma di
 // «globale» tolta non compariva). Qui il fuoco va all'elemento cliccato, se il motore non ce l'ha già messo.
 //
-// Nella fase di cattura, quindi PRIMA dei gestori dell'app: un gestore che porta il fuoco altrove (una finestra che si
-// apre e mette il fuoco nel suo primo campo) lo fa dopo, e vince, come in Chromium. Il clic sull'etichetta di una casella
-// dà il fuoco alla casella. Un elemento spento non lo prende.
+// DOPO il clic, quando l'azione del motore (la spunta) e i gestori dell'app sono finiti, e solo se il fuoco è rimasto al
+// corpo della pagina: un gestore che lo porta altrove (una finestra che si apre e mette il fuoco nel suo primo campo)
+// vince, come in Chromium. Dato DURANTE il clic, il fuoco faceva partire i gestori del fuoco a metà del clic: coi campi
+// di un caso aperti, la casella di un'altra riga, ridisegnata dalla conferma dei campi, perdeva la spunta (misurato in
+// Chromium, `e2e/casi.e2e.ts`). Il clic sull'etichetta di una casella dà il fuoco alla casella. Un elemento spento non lo
+// prende.
 //
 // CHE COSA NON GUARDA: i campi di testo (ogni motore dà loro il fuoco al clic); gli elementi resi col tabindex (i blocchi
 // del flowchart hanno i loro gestori del fuoco).
@@ -28,7 +31,11 @@ export function fuocoAlClic(documento: Document = document): () => void {
   const alClic = (e: MouseEvent) => {
     if (e.button !== 0) return;
     const elemento = elementoDelClic(e.target);
-    if (elemento && documento.activeElement !== elemento) elemento.focus({ preventScroll: true });
+    if (!elemento) return;
+    setTimeout(() => {
+      const attivo = documento.activeElement;
+      if (elemento.isConnected && (attivo === null || attivo === documento.body)) elemento.focus({ preventScroll: true });
+    }, 0);
   };
   documento.addEventListener("click", alClic, true);
   return () => documento.removeEventListener("click", alClic, true);
