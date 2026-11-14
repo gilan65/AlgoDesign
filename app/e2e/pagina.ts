@@ -165,3 +165,17 @@ export async function apriEsempio(page: Page, posizione: number): Promise<void> 
   await finestra.getByRole("listitem").nth(posizione).getByRole("button", { name: testi.esempioApri, exact: true }).click();
   await expect(finestra).toBeHidden();
 }
+
+/** Le prove corrono su un Mac (il WebKit di Playwright per macOS, nel job del Mac): alcune non vi si eseguono, ognuna col
+ * suo perché, e `strumenti/webkit.ts` le confronta con l'elenco dichiarato. Fuori dal Mac non si salta nulla. */
+export const sulMacOspite = process.platform === "darwin";
+/** Il WebKit di Playwright fuori da Linux (per Windows e per macOS): lì ⌫ fuori dai campi torna indietro nella cronologia
+ * e il clic su una casella non le dà il fuoco, come nel WebKit del Mac (misurato sui due; il WebKit per Linux no). */
+export const webkitFuoriDaLinux = (motore: string) => motore === "webkit" && process.platform !== "linux";
+/** Il perché: la prova usa i tasti di Windows e di Linux (Ctrl per Annulla, Ripeti e Seleziona tutto, Fine, AltGr, ⌫ fuori
+ * dai campi), che sul Mac fanno altro (⌘, ⌘→, Opzione; ⌫ torna indietro nella cronologia del motore di prova). I tasti
+ * del Mac li provano `mac.e2e.ts` «sul Mac» e la prova dell'uscita sull'app vera. */
+export const TASTI_DI_WINDOWS_E_LINUX = "tasti di Windows e di Linux, che sul Mac fanno altro";
+/** Il perché: sul Mac un clic su una casella o su un pulsante non dà loro il fuoco (WebKit di macOS), e la prova continua
+ * dalla tastiera come se l'avesse (difetto noto del Mac). */
+export const CLIC_SENZA_FUOCO = "sul Mac il clic su una casella non le dà il fuoco";

@@ -78,6 +78,13 @@ const RIGHE_ATTESE_SU_LINUX: Righe = {
   it: { "icone-e-testo": [2, 3, 3], icone: [1, 1, 1], "testo-sotto": [1, 1, 2] },
   en: { "icone-e-testo": [2, 2, 3], icone: [1, 1, 1], "testo-sotto": [1, 1, 1] },
 };
+/** Sul Mac, col carattere di sistema di macOS 15, nel WebKit di Playwright per macOS: le prime nove italiane misurate (a
+ * 1280 con testo sotto due righe, una in più che su Windows); le altre come su Windows finché la corsa del Mac non le
+ * misura (la prova le stampa tutte prima di fermarsi). */
+const RIGHE_ATTESE_SU_MAC: Righe = {
+  it: { "icone-e-testo": [2, 2, 3], icone: [1, 1, 1], "testo-sotto": [1, 1, 2] },
+  en: { "icone-e-testo": [1, 2, 2], icone: [1, 1, 1], "testo-sotto": [1, 1, 1] },
+};
 
 /** Un programma senza letture: l'esecuzione arriva alla fine da sola. */
 const senzaLetture: Funzione = (() => {
@@ -129,6 +136,7 @@ const descrivi = (d: Disposizione) => `barra ${d.altezza.toFixed(0)} px, ${d.rig
 test("i cinque gruppi in ordine; Impostazioni e il menu «Aiuto» nella prima riga a destra, in tre finestre, due lingue e tre presentazioni", async ({ context }, info) => {
   test.setTimeout(120_000);
   let misure = 0;
+  const righeDiverse: string[] = [];
   for (const [lingua, testi] of [["it", it], ["en", en]] as const)
     for (const barra of PRESENTAZIONI) {
       const page = await context.newPage();
@@ -141,8 +149,10 @@ test("i cinque gruppi in ordine; Impostazioni e il menu «Aiuto» nella prima ri
         const d = await disposizione(page);
         console.log(`[${info.project.name}] ${f.larghezza} × ${f.altezza} ${lingua} ${barra}: ${descrivi(d)}`);
         expect(d.gruppi, `${f.larghezza} ${lingua} ${barra}`).toEqual(GRUPPI);
-        const attese = (await page.evaluate(() => navigator.platform.startsWith("Linux"))) ? RIGHE_ATTESE_SU_LINUX : RIGHE_ATTESE;
-        expect(d.righe, `${f.larghezza} ${lingua} ${barra}: ${descrivi(d)}`).toBe(attese[lingua][barra][k]);
+        const sistema = await page.evaluate(() => navigator.platform);
+        const attese = sistema.startsWith("Linux") ? RIGHE_ATTESE_SU_LINUX : sistema.startsWith("Mac") ? RIGHE_ATTESE_SU_MAC : RIGHE_ATTESE;
+        // Le righe diverse si raccolgono tutte: una corsa su un sistema nuovo le misura in un giro solo.
+        if (d.righe !== attese[lingua][barra][k]) righeDiverse.push(`${f.larghezza} ${lingua} ${barra}: ${d.righe} righe invece di ${attese[lingua][barra][k]} (${descrivi(d)})`);
         expect(d.inPrimaRiga, `${f.larghezza} ${lingua} ${barra}: ${descrivi(d)}`).toBe(true);
         expect(d.daDestra, `${f.larghezza} ${lingua} ${barra}`).toBeLessThanOrEqual(1);
         misure++;
@@ -150,6 +160,7 @@ test("i cinque gruppi in ordine; Impostazioni e il menu «Aiuto» nella prima ri
       await page.close();
     }
   expect(misure).toBe(18);
+  expect(righeDiverse, righeDiverse.join("\n")).toEqual([]);
 });
 
 test("a 1920 × 1080 con la presentazione predefinita la barra sta in una riga; con icona e testo a 1280 × 800 in più righe", async ({ page }, info) => {

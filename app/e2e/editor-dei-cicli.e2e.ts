@@ -93,6 +93,12 @@ async function trascina(page: Page, da: Locator, a: Locator): Promise<void> {
   await page.mouse.down();
   await page.mouse.move(sx + 8, sy + 8, { steps: 4 });
   await page.mouse.move(tx, ty, { steps: 10 });
+  // Il bersaglio si rilegge prima di lasciare, come farebbe chi lo guarda: col trascinamento in corso la disposizione può
+  // essersi spostata, e il rilascio cadeva dove il bersaglio non era più (DN-3: il «per ogni» rimasto all'indice 3 invece di
+  // andare a 0, due volte nel WebKit per Linux della CI).
+  await dueGiri(page);
+  const ora = await a.boundingBox();
+  if (ora) await page.mouse.move(ora.x + ora.width / 2, ora.y + ora.height / 2, { steps: 2 });
   await page.mouse.up();
   await dueGiri(page);
 }

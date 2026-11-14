@@ -1,8 +1,9 @@
 // Lo strumento della finestra vera (`finestra-vera.ts`): ogni guasto è un esito «NON inviato», che la prova sul prodotto
 // confronta col solo esito atteso. Gli interpreti finti sono script eseguiti da Bun al posto della PowerShell: uno che non
 // stampa nulla, uno che non risponde in tempo, uno che stampa due righe (il controllo positivo: le righe arrivano). Su
-// Windows anche la PowerShell vera con lo script vero, su un processo senza finestra (questo); fuori da Windows la
-// PowerShell non c'è, e anche quello è un «NON inviato».
+// Windows anche la PowerShell vera con lo script vero, su un processo senza finestra (questo); fuori da Windows lo
+// strumento non chiama la PowerShell (sul Mac del servizio c'è, e lo script dava «inviato»), e anche quello è un
+// «NON inviato».
 //
 // CHE COSA NON GUARDA:
 // - il messaggio che Windows rifiuta (`PostMessage` che risponde no, «NON inviato: PostMessage ha rifiutato…»): si

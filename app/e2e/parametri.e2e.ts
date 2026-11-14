@@ -13,7 +13,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
-import { apriVuota, costruisciFinzione } from "./pagina";
+import { apriVuota, CLIC_SENZA_FUOCO, costruisciFinzione, webkitFuoriDaLinux } from "./pagina";
 
 test.beforeAll(costruisciFinzione);
 test.use({ viewport: { width: 1600, height: 1000 } });
@@ -89,7 +89,8 @@ test("il tasto destro su un parametro: «Sposta giù» scambia gli argomenti del
   expect(p.functions[0].body[2].then[2].arguments).toEqual(["somma / contati"]);
 });
 
-test("la casella «globale» tolta da una funzione: la finestra nomina chi la usa, poi la costante è un dato della scheda", async ({ page }) => {
+test("la casella «globale» tolta da una funzione: la finestra nomina chi la usa, poi la costante è un dato della scheda", async ({ page, browserName }) => {
+  test.skip(webkitFuoriDaLinux(browserName), CLIC_SENZA_FUOCO);
   await apriIlProgetto(page);
   await mostra(page, "f3");
   await page.locator('[data-dato="comuni-0"]').dblclick();

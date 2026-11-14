@@ -127,7 +127,7 @@ import { riempi } from "../i18n/lingue";
 import { eventoDiChiusura } from "../ui/file";
 import { RIFERIMENTO, stato } from "./albero";
 import type { Finzione } from "./finzione-tauri";
-import { apri, apriVuota, costruisciFinzione, voceDelMenu, voceDellAiuto } from "./pagina";
+import { apri, apriVuota, costruisciFinzione, sulMacOspite, TASTI_DI_WINDOWS_E_LINUX, voceDelMenu, voceDellAiuto } from "./pagina";
 
 test.beforeAll(costruisciFinzione);
 test.use({ viewport: { width: 1920, height: 1080 } });
@@ -961,6 +961,7 @@ const gesti: readonly Gesto[] = [
 ];
 
 test("con dei campi aperti, un gesto da tastiera fuori dai campi trova il testo già confermato: nulla si perde e Ctrl+Z e Ctrl+Y lo ritrovano", async ({ browser }, info) => {
+  test.skip(sulMacOspite, TASTI_DI_WINDOWS_E_LINUX);
   test.setTimeout(120_000);
   const persi: string[] = [];
   for (const g of gesti) {

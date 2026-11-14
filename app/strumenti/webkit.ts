@@ -10,7 +10,8 @@
 //    prova che fallisce) e tolta dopo. Dal resoconto JSON: nessun errore fuori dalle prove (uno spec che non si carica),
 //    le prove vere eseguite uguali a quelle elencate nei due versi (file e titolo), tutte con l'esito atteso; controllo
 //    positivo: la sonda è fallita, una volta. Accanto la prova col margine di tempo più stretto, e le otto più vicine al
-//    loro limite nel log.
+//    loro limite nel log. Nel WebKit per Windows e per macOS alcune prove si saltano, ognuna col suo perché (`SALTATE`, per
+//    sistema): le saltate davvero e quelle dichiarate si confrontano nei due versi; su Linux una prova saltata è un rosso.
 //
 // Che cosa NON guarda:
 // - gli altri progetti della configurazione;
@@ -97,6 +98,23 @@ function proveDi(suite: Suite): Prova[] {
 }
 
 const chiave = (p: Prova) => `${p.file} › ${p.titolo}`;
+/** Le prove che il WebKit di Playwright non esegue fuori da Linux (`test.skip(webkitFuoriDaLinux(…), …)`, col perché in
+ * `e2e/pagina.ts`; misurate rosse nel WebKit per Windows e per macOS), più quelle del solo Mac (`sulMacOspite`): per
+ * sistema, confrontate nei due versi con quelle saltate davvero. Una in più o una che manca è un rosso; su Linux nessuna. */
+const FUORI_DA_LINUX = [
+  "mac.e2e.ts › i tasti con Ctrl come prima, ⌫ non tocca il blocco, nessun menu mandato al guscio",
+  "parametri.e2e.ts › la casella «globale» tolta da una funzione: la finestra nomina chi la usa, poi la costante è un dato della scheda",
+];
+const SALTATE: Record<string, readonly string[]> = {
+  win32: FUORI_DA_LINUX,
+  darwin: [
+    ...FUORI_DA_LINUX,
+  "espressioni.e2e.ts › mentre si scrive: la coppia col cursore dentro, la chiusura scavalcata, ⌫, la selezione, AltGr; Ctrl+Z toglie la coppia in un colpo",
+  "espressioni.e2e.ts › il valore iniziale di un vettore: l'elenco fra graffe, la graffa che si chiude da sé, la causa di un elemento",
+  "espressioni.e2e.ts › il testo di un commento non è un'espressione: le parentesi e le virgolette restano sole",
+  "lavoro-al-sicuro.e2e.ts › con dei campi aperti, un gesto da tastiera fuori dai campi trova il testo già confermato: nulla si perde e Ctrl+Z e Ctrl+Y lo ritrovano",
+  ],
+};
 /** Gli errori fuori dalle prove del resoconto, in una riga. */
 const erroriDi = (dati: Resoconto) => (dati.errors ?? []).map((errore) => errore.message ?? "?").join("; ");
 const comando = [process.execPath, "--bun", "playwright", "test", "--project", progetto, "--workers", processi, "--retries", "0", "--reporter=json"];
@@ -144,7 +162,12 @@ try {
   const controlloDelConfronto = differenzeDallElenco([...vere.map(chiave).filter((k) => k !== tolta), "sonda › in più"], elencate.map(chiave));
   if (!controlloDelConfronto.includes(`manca ${tolta}`) || !controlloDelConfronto.includes("in più sonda › in più")) rosso("CORSA", `il confronto delle prove non si accende: ${JSON.stringify(controlloDelConfronto.slice(0, 4))}`);
   if (confronto.length > 0) rosso("CORSA", `eseguite diverse dalle elencate: ${confronto.slice(0, 10).join("; ")}`);
-  const nonVerdi = vere.filter((p) => p.stato !== "expected");
+  const saltate = vere.filter((p) => p.stato === "skipped");
+  // Le saltate valgono per il progetto WebKit; un altro progetto non ne ha.
+  const saltateAttese = progetto.startsWith("webkit") ? (SALTATE[process.platform] ?? []) : [];
+  const scartiDelleSaltate = differenzeDallElenco(saltate.map(chiave), saltateAttese);
+  if (scartiDelleSaltate.length > 0) rosso("CORSA", `prove saltate diverse dalle dichiarate per ${process.platform}: ${scartiDelleSaltate.join("; ")}`);
+  const nonVerdi = vere.filter((p) => p.stato !== "expected" && p.stato !== "skipped");
   // Il messaggio di ogni prova non verde nel log, senza i colori del terminale (le sequenze che cominciano col carattere 27).
   const colori = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");
   for (const p of nonVerdi) log(`NON VERDE (${p.stato}, ${(p.durata / 1000).toFixed(1)} s su ${p.limite / 1000} s): ${chiave(p)}\n  ${p.errore.replace(colori, "").slice(0, 3000)}`);
@@ -154,10 +177,11 @@ try {
   const strette = [...vere].sort((a, b) => b.durata / b.limite - a.durata / a.limite);
   for (const p of strette.slice(0, 8)) log(`margine: ${(p.durata / 1000).toFixed(1)} s su ${p.limite / 1000} s (${Math.round((100 * p.durata) / p.limite)}%) ${chiave(p)}`);
   const stretta = strette[0]!;
+  const dichiarate = saltate.length > 0 ? ` (${saltate.length} saltate, quelle dichiarate per ${process.platform})` : "";
   riga(
-    `CORSA: VERDE | ${vere.length} su ${elencate.length} elencate, tutte verdi, in ${minuti} min | controllo positivo acceso (la sonda è fallita) | margine più stretto ${Math.round((100 * stretta.durata) / stretta.limite)}% del limite (${(stretta.durata / 1000).toFixed(1)} s su ${stretta.limite / 1000} s, ${chiave(stretta)})`,
+    `CORSA: VERDE | ${vere.length} su ${elencate.length} elencate, tutte verdi${dichiarate}, in ${minuti} min | controllo positivo acceso (la sonda è fallita) | margine più stretto ${Math.round((100 * stretta.durata) / stretta.limite)}% del limite (${(stretta.durata / 1000).toFixed(1)} s su ${stretta.limite / 1000} s, ${chiave(stretta)})`,
   );
-  riga(`ESITO: VERDE | ${progetto}: ${vere.length} prove verdi`);
+  riga(`ESITO: VERDE | ${progetto}: ${vere.length - saltate.length} prove verdi${saltate.length > 0 ? `, ${saltate.length} saltate dichiarate` : ""}`);
 } catch (e) {
   riga(e instanceof Rosso ? e.message : `ERRORE: ${e instanceof Error ? (e.stack ?? e.message) : String(e)}`);
   riga("ESITO: ROSSO");

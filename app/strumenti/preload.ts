@@ -1,4 +1,4 @@
-// Preload di `bun test` (bunfig.toml → [test] preload). Quattro cose, e ognuna ha una ragione:
+// Preload di `bun test` (bunfig.toml → [test] preload). Cinque cose, e ognuna ha una ragione:
 //
 // 1. Sotto `bun test` un `*.module.css` arriva come oggetto VUOTO: i CSS Modules sono del bundler,
 //    non del runtime. Le classi varrebbero `undefined` e un test che confronta due `undefined`
@@ -14,7 +14,12 @@
 //    resta nella cache del transpiler per le corse dopo. Con un import dinamico funziona: la regola non è affidabile.
 //    Qui l'import della macro diventa un import normale, e la stessa conversione gira quando la finestra si carica;
 //    la sostituzione deve trovare il suo testo una volta sola, o il caricamento si ferma col perché.
-import { afterEach } from "bun:test";
+// 5. `clearMocks()` di Tauri toglie le funzioni da `window.__TAURI_INTERNALS__` ma lascia l'oggetto, e l'interfaccia
+//    riconosce il guscio dalla sola presenza di quel nome (`"__TAURI_INTERNALS__" in window`, `ui/file.ts`): ogni prova
+//    dopo crederebbe di avere il guscio. Tutti i file corrono nello stesso processo, in un ordine che dipende dal disco
+//    (su APFS `ErroreInatteso.test.tsx` corre prima di `Applicazione.test.tsx`: 9 prove rosse, misurato). Prima di ogni
+//    prova l'oggetto rimasto senza `invoke` si toglie; un `mockIPC` attivo (con `invoke`) resta.
+import { afterEach, beforeEach } from "bun:test";
 import { plugin } from "bun";
 import { readFileSync } from "node:fs";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
@@ -52,3 +57,14 @@ GlobalRegistrator.register();
 // Importata DOPO la registrazione del DOM: Testing Library legge `document` quando si carica.
 const { cleanup } = await import("@testing-library/react");
 afterEach(() => cleanup());
+
+/** Il guscio finto rimasto vuoto dopo `clearMocks()`: si toglie, perché la prova dopo non creda di avere il guscio. */
+function togliIlGuscioVuoto(): boolean {
+  const interni = (window as unknown as { __TAURI_INTERNALS__?: object }).__TAURI_INTERNALS__;
+  if (typeof interni !== "object" || interni === null || "invoke" in interni) return false;
+  delete (window as unknown as { __TAURI_INTERNALS__?: object }).__TAURI_INTERNALS__;
+  return true;
+}
+beforeEach(() => {
+  togliIlGuscioVuoto();
+});

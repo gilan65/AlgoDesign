@@ -13,7 +13,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { en } from "../i18n/en";
 import { it } from "../i18n/it";
 import { vociDelMenu } from "../ui/menu";
-import { apri, apriVuota, costruisciFinzione, scegliLingua, voceDelMenu } from "./pagina";
+import { apri, apriVuota, costruisciFinzione, scegliLingua, TASTI_DI_WINDOWS_E_LINUX, voceDelMenu, webkitFuoriDaLinux } from "./pagina";
 
 test.beforeAll(costruisciFinzione);
 
@@ -80,7 +80,8 @@ test.describe("sul Mac", () => {
 test.describe("fuori dal Mac", () => {
   test.use({ userAgent: WINDOWS });
 
-  test("i tasti con Ctrl come prima, ⌫ non tocca il blocco, nessun menu mandato al guscio", async ({ page }) => {
+  test("i tasti con Ctrl come prima, ⌫ non tocca il blocco, nessun menu mandato al guscio", async ({ page, browserName }) => {
+    test.skip(webkitFuoriDaLinux(browserName), TASTI_DI_WINDOWS_E_LINUX);
     await apri(page, { lingua: "it" });
     await expect(nellaBarra(page, it.salva)).toHaveAttribute("title", `${it.salva} (Ctrl+S)`);
     await expect(nellaBarra(page, it.salva)).toHaveAttribute("aria-keyshortcuts", "Control+S");

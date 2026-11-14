@@ -9,7 +9,7 @@
 //   `errori-dell-app.ts`;
 // - la finestra vera, la X e i tasti: `e2e/errori-dell-app.e2e.ts`.
 
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, expect, test } from "bun:test";
 import { act, cleanup, render } from "@testing-library/react";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import type { ReactElement } from "react";
@@ -20,6 +20,9 @@ import { erroriDellApp } from "./errori-dell-app";
 import { ErroreInatteso, ricordaIlLavoro } from "./ErroreInatteso";
 
 afterEach(() => cleanup());
+// Il lavoro ricordato è del modulo e sopravvive al file che l'ha lasciato: un'altra prova che monta l'app (su APFS
+// `campi-nuovi.test.tsx` corre prima di questo file, misurato) lo lascia con le modifiche, e la frase del riparo cambia.
+beforeEach(() => ricordaIlLavoro(null));
 
 function Lancia(): ReactElement {
   throw new Error("un calcolo nel disegno che lancia");

@@ -9,15 +9,16 @@
 //   aperta da un comando che poi sparisce (una voce di menu), chiusa senza eliminare rimette il fuoco sulla riga.
 // - Il ritorno del fuoco di una finestra chiusa, se arriva dopo che un'altra si è aperta, non tocca il fuoco: le
 //   chiusure senza giri in mezzo imitano i timer che sotto carico arrivano tardi.
+// - Un Tab che lascia il fuoco fuori dalla finestra (il WebKit del Mac salta i pulsanti) lo riporta dentro.
 //
 // CHE COSA NON GUARDA:
 // - i motori veri: il clic che lascia il fuoco al corpo si imita togliendo il fuoco a mano, e i tempi della trappola
 //   (attiva un fotogramma dopo) sono quelli di happy-dom. La trappola nei motori la prova `e2e/progetto-file.e2e.ts`;
 // - le finestre dell'app una per una: qui la base, con un contenuto scritto qui, e la conferma di eliminazione;
-// - Esc e il Tab: li provano i motori.
+// - Esc e il giro del Tab: li provano i motori (qui solo il ritorno di un fuoco uscito, con l'uscita imitata a mano).
 
 import { expect, test } from "bun:test";
-import { act, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { useState, type ReactElement } from "react";
 import { it as testi } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
@@ -68,6 +69,32 @@ test("un disegno nuovo con la finestra aperta non sposta il fuoco, e chiusa lo r
   r.rerender(<ConLaFinestra aperta={false} disegno={4} />);
   await giro();
   expect(attivo()).toBe("apri");
+});
+
+/** Il Tab del WebKit del Mac, con la navigazione da tastiera del sistema spenta, salta i pulsanti: dall'ultimo campo il
+ * fuoco va al corpo della pagina. Qui il tasto arriva alla finestra, poi il fuoco si toglie a mano come fa quel motore. */
+async function tabCheEsce(daNome: string, indietro = false): Promise<void> {
+  const da = document.querySelector<HTMLElement>(`[data-nome="${daNome}"]`)!;
+  da.focus();
+  fireEvent.keyDown(da, { key: "Tab", shiftKey: indietro });
+  da.blur();
+  await giro();
+}
+
+test("un Tab che porta il fuoco fuori dalla finestra lo riporta dentro: al primo elemento, o all'ultimo con Maiusc", async () => {
+  const r = render(<ConLaFinestra aperta disegno={0} />);
+  await giro();
+  // Il primo è il campo, l'ultimo il pulsante: dal campo nessun Tab è «dall'ultimo», e il motore decide da sé.
+  await tabCheEsce("primo");
+  expect(attivo()).toBe("primo");
+  await tabCheEsce("primo", true);
+  expect(attivo()).toBe("secondo");
+  // Controllo positivo: senza il Tab un fuoco messo al corpo resta lì (il clic su un pulsante in WebKit).
+  (document.querySelector('[data-nome="primo"]') as HTMLElement).focus();
+  (document.activeElement as HTMLElement).blur();
+  await giro();
+  expect(attivo()).toBe("corpo");
+  r.unmount();
 });
 
 test("chiusa, la finestra esce subito dal documento, non lascia nulla nella pagina e un fuoco messo fuori resta fuori", async () => {

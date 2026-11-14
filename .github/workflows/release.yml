@@ -337,6 +337,13 @@ jobs:
             larghi=$(printf '\303\250%.0s' $(seq 1 255)); touch "$d/$larghi" 2>/dev/null && echo "nome di 255 lettere accentate: scritto" || echo "nome di 255 lettere accentate: rifiutato"
           } | tee uscita-nucleo/disco.txt
 
+      # Una misura, non una prova: il `Math.pow` di Bun su questo Mac, sulle potenze inesatte delle mutazioni
+      # dell'interprete (`core/interprete/interprete.test.ts`). Le mutazioni si tarano sul PC con Windows, dove è inesatto.
+      - name: Il pow di Bun
+        working-directory: app
+        run: |
+          bun -e 'for (const [b, e] of [[30, 18], [-30, 19], [9, 17], [17, 13]]) { const esatto = Number(BigInt(b) ** BigInt(e)); console.log(`${b} elevato a ${e}: ${Math.pow(b, e) === esatto ? "esatto" : "inesatto"}`); }' | tee ../uscita-nucleo/pow.txt
+
       - name: Prove del guscio su APFS
         working-directory: app/shell
         run: cargo test 2>&1 | tee ../../uscita-nucleo/cargo-test.log; exit "${PIPESTATUS[0]}"
@@ -375,6 +382,14 @@ jobs:
         run: |
           bun install --frozen-lockfile
           ./node_modules/.bin/playwright install webkit
+
+      # Sul Mac il Tab raggiunge i pulsanti solo con la navigazione da tastiera del sistema accesa (spenta di partenza):
+      # le prove del giro del fuoco sono scritte per il Tab di Windows e di Linux. Il ritorno del fuoco uscito da una
+      # finestra col Tab di partenza lo prova `ui/finestre/Finestra.test.tsx`.
+      - name: La navigazione da tastiera del sistema
+        run: |
+          defaults write -g AppleKeyboardUIMode -int 2
+          echo "AppleKeyboardUIMode: $(defaults read -g AppleKeyboardUIMode)"
 
       - name: Prove dell'interfaccia in WebKit
         run: bun ./strumenti/webkit.ts --progetto webkit-anteprima --processi 1

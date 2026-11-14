@@ -879,9 +879,11 @@ mod prove {
 
     /// La sottocartella del gruppo con l'attributo di sola lettura (Esplora risorse lo mette alle cartelle
     /// personalizzate): su Windows non ferma la cancellazione dei file, ma quella della cartella sì. Il gruppo va via
-    /// intero, e non resta vuoto col suo nome dopo aver perso gli esempi.
+    /// intero, e non resta vuoto col suo nome dopo aver perso gli esempi. Sul Mac la sola lettura è un permesso vero:
+    /// APFS non lascia spostare la cartella, e il gruppo resta intero con «gruppo_bloccato» (misurato sul Mac del
+    /// servizio). Su ogni sistema vale il tutto o niente; su Windows anche che vada via.
     #[test]
-    fn un_gruppo_nella_cartella_in_sola_lettura_va_via_intero() {
+    fn un_gruppo_nella_cartella_in_sola_lettura_va_via_intero_o_resta_intero() {
         let base = cartella_di_prova("gruppo-cartella-sola-lettura");
         let cartella = base.join("esempi");
         for nome in ["a.algo", "b.algo"] {
@@ -896,9 +898,17 @@ mod prove {
         let esito = togli_gruppo_da(&cartella, "Verifica");
         let restano: Vec<bool> = ["a.algo", "b.algo"].iter().map(|n| dentro.join(n).exists()).collect();
         println!("esito {esito:?}, la cartella c'è {}, restano {restano:?}", dentro.exists());
-        assert_eq!(esito, Ok(()));
-        assert!(!dentro.exists());
-        assert_eq!(fs::read_dir(&cartella).unwrap().count(), 0, "nessuna cartella nascosta rimasta");
+        let via_intero = esito == Ok(()) && !dentro.exists() && fs::read_dir(&cartella).unwrap().count() == 0;
+        let resta_intero = matches!(&esito, Err(e) if e.genere == "gruppo_bloccato") && restano == [true, true] && fs::read_dir(&cartella).unwrap().count() == 1;
+        assert!(via_intero || resta_intero, "né via intero né intero: {esito:?}, restano {restano:?}");
+        #[cfg(windows)]
+        assert!(via_intero, "su Windows la sola lettura della cartella non ferma il gruppo");
+        if dentro.exists() {
+            let mut scrivibile = fs::metadata(&dentro).unwrap().permissions();
+            #[allow(clippy::permissions_set_readonly_false)]
+            scrivibile.set_readonly(false);
+            fs::set_permissions(&dentro, scrivibile).unwrap();
+        }
         fs::remove_dir_all(&base).unwrap();
     }
 
