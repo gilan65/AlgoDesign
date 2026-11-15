@@ -69,7 +69,7 @@ const fileDelCorpus = (): string[] =>
     .filter((v) => v.isDirectory())
     .flatMap((v) => readdirSync(join(corpus, v.name)).filter((f) => f.endsWith(".algo")).map((f) => `${v.name}/${f.slice(0, -".algo".length)}`));
 
-test("il pacchetto ha le cinque funzioni, nessun import e ogni modulo al suo posto", async () => {
+test("il pacchetto ha le sei funzioni, nessun import e ogni modulo al suo posto", async () => {
   const { esportazioni, moduli, pacchetto } = await lati();
   expect([...esportazioni]).toEqual([...esportazioniAttese]);
   expect(problemiDelPacchetto(readFileSync(pacchetto, "utf8"), moduli)).toEqual([]);
@@ -214,7 +214,8 @@ test("un punto d'ingresso che perde le opzioni o la libreria, o che esporta anch
   copyFileSync(pacchetto, conDefault);
   appendFileSync(conDefault, "\nmodule.exports = { ...module.exports, default: () => 0 };\n");
   const alterato = await latoOttenuto(node, conDefault, corpus, join(cartella, "con-default.json"));
-  expect([...alterato.esportazioni]).toEqual(["aggiungiAllaLibreria", "apri", "controlla", "default", "genera", "leggiAccademico"]);
+  // Le esportazioni del contratto più `default`, in ordine: ricavate dall'elenco, non scritte di nuovo qui.
+  expect([...alterato.esportazioni]).toEqual([...esportazioniAttese, "default"].sort());
 }, LIMITE);
 
 test("il verdetto vede una combinazione tolta da ciascun lato e un carattere degli attesi; la sonda tutta rifiutata accende i motivi", async () => {

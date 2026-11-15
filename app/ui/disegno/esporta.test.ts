@@ -5,7 +5,8 @@
 // CHE COSA NON GUARDA:
 // - il CSSOM del motore (`regoleDelTema` sui fogli veri, col sistema scuro emulato) e il PNG decodificato: li prova
 //   `e2e/esporta.e2e.ts`;
-// - qui le regole di `tema.css` le legge un lettore della prova (graffe al primo livello, senza i commenti), non il motore.
+// - qui le regole di `tema.css` le legge un lettore della prova (graffe al primo livello, senza i commenti), non il motore;
+// - le tinte dei generi scelte nelle Impostazioni nelle tavolozze del nucleo: non ci sono, per costruzione.
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { svgDelDisegno } from "../../core/disegno/svg";
@@ -15,6 +16,9 @@ import { it as testiIt } from "../../i18n/it";
 import { en as testiEn } from "../../i18n/en";
 import { baseProposta } from "../nomi";
 import { FATTORI_DEL_PNG, misuraDelPng, nomeDellImmagine, primoFattore, tavolozzaDellaCarta, type RegolaDelTema } from "./esporta";
+import type { Tavolozza } from "../../core/disegno/tavolozza";
+import { insiemiDiColori, tavolozzeDellaCarta, type InsiemeDiColori } from "../../core/disegno/tavolozze-della-carta";
+import type { Colori } from "../preferenze";
 
 // ------------------------------------------------------------------------------------- i nomi
 
@@ -124,6 +128,48 @@ test("la tavolozza della carta è il tema chiaro dell'insieme, coi colori dei ge
   // Controllo positivo: con le regole del sistema scuro lette anche loro, la tavolozza è quella scura.
   const conLoScuro = tavolozzaDellaCarta(regoleDelFile(tema, true), "tenue", { "--blocco-assegnazione": "var(--tinta-viola)" });
   expect({ linea: conLoScuro.linea, se: conLoScuro.forme.se, assegnazione: conLoScuro.forme.assegnazione }).toEqual({ linea: "#9aa4b0", se: "#5a3214", assegnazione: "#33284a" });
+});
+
+/** I campi di due tavolozze che hanno colori diversi, coi due colori: l'elenco vuoto è l'uguaglianza. */
+function differenze(a: Tavolozza, b: Tavolozza): string[] {
+  const piatta = (t: Tavolozza) => Object.entries({ ...t, forme: undefined, ...Object.fromEntries(Object.entries(t.forme).map(([k, v]) => [`forme.${k}`, v])) }).filter(([, v]) => v !== undefined);
+  const daB = new Map(piatta(b));
+  const campi = new Set([...piatta(a).map(([k]) => k), ...daB.keys()]);
+  const da = new Map(piatta(a));
+  return [...campi].filter((k) => da.get(k) !== daB.get(k)).map((k) => `${k}: ${String(da.get(k))} ≠ ${String(daB.get(k))}`);
+}
+
+// Gli insiemi del nucleo e quelli delle Impostazioni sono gli stessi, nei due versi (un errore di `tsc` altrimenti).
+const _dalleImpostazioni: InsiemeDiColori = "tenue" as Colori;
+const _dalNucleo: Colori = "tenue" as InsiemeDiColori;
+void _dalleImpostazioni;
+void _dalNucleo;
+
+test("le tavolozze della carta del nucleo sono quelle che l'esportazione legge da tema.css, insieme per insieme e campo per campo", () => {
+  const regole = regoleDelFile(tema);
+  const confronti = insiemiDiColori.map((insieme) => ({ insieme, campi: differenze(tavolozzeDellaCarta[insieme], tavolozzaDellaCarta(regole, insieme, {})) }));
+  // La premessa: tre insiemi, ognuno con tutti i campi della tavolozza (11 colori più le 8 forme = 19).
+  const campiConfrontati = insiemiDiColori.map((i) => Object.keys(tavolozzeDellaCarta[i]).length - 1 + Object.keys(tavolozzeDellaCarta[i].forme).length);
+  console.log(`tavolozze della carta: ${insiemiDiColori.length} insiemi, campi confrontati ${campiConfrontati.join(" + ")}`);
+  expect(campiConfrontati).toEqual([19, 19, 19]);
+  expect(confronti).toEqual(insiemiDiColori.map((insieme) => ({ insieme, campi: [] })));
+
+  // Controllo positivo dal lato del foglio: un colore del «Contrasto forte» cambiato nelle regole lette.
+  let toccate = 0;
+  const cambiate = regole.map((r) => {
+    if (!r.selettori.includes('[data-colori="contrasto"]') || r.variabili["--disegno-se"] === undefined) return r;
+    toccate++;
+    return { ...r, variabili: { ...r.variabili, "--disegno-se": "#123456" } };
+  });
+  const dalFoglio = differenze(tavolozzeDellaCarta.contrasto, tavolozzaDellaCarta(cambiate, "contrasto", {}));
+  console.log(`controllo positivo (foglio): regole toccate ${toccate}, differenze ${dalFoglio.join("; ")}`);
+  expect(toccate).toBe(1);
+  expect(dalFoglio).toEqual(["forme.se: #f9a66c ≠ #123456"]);
+
+  // Controllo positivo dal lato del nucleo: un colore dei «Tenui» cambiato nella copia.
+  const dalNucleo = differenze({ ...tavolozzeDellaCarta.tenue, linea: "#123456" }, tavolozzaDellaCarta(regole, "tenue", {}));
+  console.log(`controllo positivo (nucleo): differenze ${dalNucleo.join("; ")}`);
+  expect(dalNucleo).toEqual(["linea: #123456 ≠ #5b6470"]);
 });
 
 // ------------------------------------------------------------------------------------- lo sfondo trasparente
