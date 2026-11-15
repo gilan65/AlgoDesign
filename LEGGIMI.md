@@ -44,7 +44,7 @@ AlgoDesign si scarica dalla pagina delle release, https://github.com/gilan65/Alg
 2. Estrai lo zip dove preferisci (il Desktop, una cartella dei documenti, una chiavetta): con «Estrai tutto» di Esplora file nasce una cartella col nome dello zip, con dentro la cartella `AlgoDesign-1.0.0`.
 3. Apri la cartella `AlgoDesign-1.0.0` e fai doppio clic su `AlgoDesign.exe`.
 
-**Lo strumento a riga di comando.** Accanto allo zip di AlgoDesign c'è un pacchetto a parte, `AlgoDesign-Tools-1.0.0-windows.zip`, con la sua impronta: `algodesign-tools.exe` ha due comandi. `accademico` legge un testo scritto in «Accademico» e ne fa una libreria di AlgoDesign, da aprire ed eseguire passo passo; `stampa` scrive da un progetto una pagina da stampare con due testi di codice affiancati e una pagina che prova il JavaScript nel browser. Si usa da PowerShell; come, lo dicono il `LEGGIMI.md` del pacchetto e la guida ad `algodesign-tools`, che il pacchetto porta con sé.
+**Lo strumento a riga di comando.** Accanto allo zip di AlgoDesign c'è un pacchetto a parte, `AlgoDesign-Tools-1.0.0-windows.zip`, con la sua impronta: `algodesign-tools.exe` ha tre comandi. `accademico` legge un testo scritto in «Accademico» e ne fa una libreria di AlgoDesign, da aprire ed eseguire passo passo; `stampa` scrive da un progetto una pagina da stampare con due testi di codice affiancati e una pagina che prova il JavaScript nel browser; `flowgorithm` converte i file di Flowgorithm (`.fprg`) in progetti di AlgoDesign. Si usa da PowerShell; come, lo dicono il `LEGGIMI.md` del pacchetto e la guida ad `algodesign-tools`, che il pacchetto porta con sé.
 
 **L'avviso di Windows al primo avvio.** AlgoDesign non è firmato digitalmente, e Windows avvisa quando si avvia un programma non firmato scaricato da internet. Se compare la finestra «Windows ha protetto il PC», scegli «Ulteriori informazioni» e poi «Esegui comunque». Per evitarla, prima di estrarre lo zip apri le sue Proprietà (tasto destro sullo zip), segna «Sblocca» in basso nella scheda «Generale» e conferma con «OK».
 
@@ -131,6 +131,7 @@ Tutti i comandi si danno nella cartella `app/`, dopo `bun install`.
 | Casi d'uso del corpus di esempi (`casi/`), oppure di un progetto dato | `bun run casi`, `bun run casi <progetto.algo>` |
 | Da un testo in «Accademico» una libreria di AlgoDesign (le opzioni nel capitolo 6 della guida ad «Accademico») | `bun run accademico <testo.txt>`, `bun run accademico -h` |
 | Da un progetto due testi di codice affiancati e la pagina di prova (le opzioni nella guida ad `algodesign-tools`) | `bun run tools stampa <progetto.algo>`, `bun run tools stampa -h` |
+| Dai file di Flowgorithm i progetti di AlgoDesign (le opzioni nella guida ad `algodesign-tools`) | `bun run flowgorithm <file.fprg>`, `bun run flowgorithm -h` |
 | Collaudo (tipi, test di unità, casi d'uso, confronto del codice generato, build, test del guscio in Rust, test dell'interfaccia in Chromium) | `bun run collaudo` |
 | Collaudo completo, coi test dell'interfaccia anche in WebKit | `bun run collaudo --completo` |
 | Confronto del codice generato con l'esecuzione sui casi d'uso | `bun run differenziale` |

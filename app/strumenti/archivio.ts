@@ -24,7 +24,7 @@
 // 6. CARTELLA: `dist/<versione>-linux/` alla radice del repository (`dist/prova/…` con `--prova`), con le voci di
 //    `elencoDiLinux`; i testi per l'utente dalla cartella di `--testi` coi segnaposto sostituiti (un segnaposto rimasto
 //    è rosso, col rilevatore di `segnaposto.ts`, lo stesso di Windows: il valore di una matrice nelle guide non lo è); le
-//    due guide per lo studente, la guida ad «Accademico» e quella dello strumento da `docs/`, i due README e il registro delle modifiche dalla radice, così come sono (come per
+//    due guide per lo studente, le tre guide dello strumento (ad «Accademico», ad `algodesign-tools`, ai file di Flowgorithm) da `docs/`, i due README e il registro delle modifiche dalla radice, così come sono (come per
 //    Windows); le licenze
 //    di terze parti per `x86_64-unknown-linux-gnu` con `licenze.ts`. Le voci, al primo livello e nella cartella delle
 //    librerie di sistema, si confrontano con l'atteso nei due versi; controllo positivo: lo stesso confronto, con una
@@ -89,8 +89,7 @@ import {
   elencoDelloStrumentoDelMac,
   elencoDelloStrumentoDiLinux,
   elencoDiLinux,
-  guidaAdAccademico,
-  guidaDelloStrumento,
+  guideDelloStrumento,
   guidePerCominciare,
   guidePerSegnalare,
   fileDelleLicenze,
@@ -381,7 +380,7 @@ async function componi(appimage: string, sistema: LibrerieDiSistema): Promise<vo
   writeFileSync(join(cartella, "CHANGELOG.md"), registro);
   const delData = dataConPreposizione(dataDiRilascio, "it");
   for (const [sorgente, destinazione] of Object.entries(testiDiLinux)) writeFileSync(join(cartella, destinazione), testoDaiTesti("CARTELLA", sorgente));
-  for (const d of [...documentiDelPacchetto, ...guidePerCominciare, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", join("docs", d)));
+  for (const d of [...documentiDelPacchetto, ...guidePerCominciare, ...guideDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", join("docs", d)));
   for (const d of documentiDellaRadice) writeFileSync(join(cartella, d), documento("CARTELLA", d));
   const figure = copiaLeFigure(repository, cartella);
   if (figure.differenze.length > 0) rosso("CARTELLA", `le figure delle guide: ${figure.differenze.join(", ")}`);
@@ -565,7 +564,7 @@ function componiLoStrumento(exe: string, moduli: readonly string[]): void {
   cpSync(exe, join(cartellaDelloStrumento, eseguibileS));
   for (const f of ["LICENSE", "LICENSE-DOCS"]) cpSync(join(repository, f), join(cartellaDelloStrumento, f));
   for (const [sorgente, destinazione] of Object.entries(testiDelloStrumento)) writeFileSync(join(cartellaDelloStrumento, destinazione), testoDaiTesti(C, sorgente));
-  for (const g of [guidaAdAccademico, guidaDelloStrumento]) {
+  for (const g of guideDelloStrumento) {
     const guida = documento(C, join("docs", g));
     if (!guida.includes(nomiS.archivio)) rosso(C, `${g} non dice il nome dell'archivio dello strumento per questo sistema, «${nomiS.archivio}»`);
     writeFileSync(join(cartellaDelloStrumento, g), guida);
@@ -678,7 +677,7 @@ async function componiIlMac(app: string): Promise<void> {
   if (registro.includes("SEGNAPOSTO")) rosso("CARTELLA", "CHANGELOG.md ha un SEGNAPOSTO rimasto");
   writeFileSync(join(cartella, "CHANGELOG.md"), registro);
   for (const [sorgente, destinazione] of Object.entries(testiDelMac)) writeFileSync(join(cartella, destinazione), testoDaiTesti("CARTELLA", sorgente));
-  for (const d of [...documentiDelPacchetto, ...guidePerCominciare, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", join("docs", d)));
+  for (const d of [...documentiDelPacchetto, ...guidePerCominciare, ...guideDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", join("docs", d)));
   for (const d of documentiDellaRadice) writeFileSync(join(cartella, d), documento("CARTELLA", d));
   const figure = copiaLeFigure(repository, cartella);
   if (figure.differenze.length > 0) rosso("CARTELLA", `le figure delle guide: ${figure.differenze.join(", ")}`);

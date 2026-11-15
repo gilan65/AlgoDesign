@@ -316,7 +316,7 @@ The page is tested in Chrome, Edge and Firefox. In Safari it is not tested: for 
 
 To run the JavaScript with Node, select with the mouse the code box of the test page (the line numbers do not enter the selection), paste it into a file `media.js` and type `node media.js`.
 
-The same command, with `--linguaggi pseudocodice c`, puts two languages of your choice side by side with the lines aligned block by block. The other command of the tool, `accademico`, brings into AlgoDesign a text written in “Academic”.
+The same command, with `--linguaggi pseudocodice c`, puts two languages of your choice side by side with the lines aligned block by block. The other two commands of the tool bring into AlgoDesign programs written elsewhere: `accademico` a text written in “Academic”, `flowgorithm` the files of Flowgorithm (`.fprg`), explained in the guide to the files of Flowgorithm, `GUIDA-AI-FILE-DI-FLOWGORITHM.md` (in Italian).
 
 ## 9. Procedures and functions
 

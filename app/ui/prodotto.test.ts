@@ -33,8 +33,7 @@ import {
   elencoDelNucleo,
   elencoDelPacchetto,
   elencoDiLinux,
-  guidaAdAccademico,
-  guidaDelloStrumento,
+  guideDelloStrumento,
   nomiDelloStrumento,
   nomiDelloStrumentoDiLinux,
   nomiDelNucleo,
@@ -125,8 +124,8 @@ test("i nomi del pacchetto dello strumento seguono la versione; l'eseguibile ha 
   const conVersione = (v: string) => nomiDelloStrumento(JSON.stringify({ version: v }));
   expect(conVersione("9.9.9-prova")).toEqual({ versione: "9.9.9-prova", versioneDellEseguibile: "9.9.9.0", cartella: "9.9.9-prova-tools", zip: "AlgoDesign-Tools-9.9.9-prova-windows.zip", cartellaNelloZip: "AlgoDesign-Tools-9.9.9-prova" });
   expect(conVersione("1.0.0").versioneDellEseguibile).toBe("1.0.0.0");
-  // La guida ad «Accademico» e quella dello strumento stanno in ogni pacchetto, e quello dello strumento ha le licenze come quello dell'app.
-  for (const g of [guidaAdAccademico, guidaDelloStrumento]) for (const elenco of [elencoDelPacchetto, elencoDelloStrumento, elencoDiLinux]) expect(elenco).toContain(g);
+  // Le tre guide dello strumento stanno in ogni pacchetto, e quello dello strumento ha le licenze come quello dell'app.
+  for (const g of guideDelloStrumento) for (const elenco of [elencoDelPacchetto, elencoDelloStrumento, elencoDiLinux]) expect(elenco).toContain(g);
   expect(elencoDelloStrumento.filter((v) => v.startsWith("LICEN")).sort()).toEqual(elencoDelPacchetto.filter((v) => v.startsWith("LICEN")).sort());
 });
 
@@ -251,12 +250,12 @@ test("il registro delle modifiche comincia dalla versione dei file e dalla sua d
   const delNucleo = nomiDelNucleo(file()["package.json"]!).zip;
   expect(readme.map((r) => [r.nome, zipDelNucleo(readFileSync(join(radice, r.nome), "utf8"))])).toEqual(readme.map((r) => [r.nome, [delNucleo]]));
   expect(zipDelNucleo("vedi `AlgoDesign-Core-0.5.0-beta.1.zip`.")).toEqual(["AlgoDesign-Core-0.5.0-beta.1.zip"]);
-  // Lo stesso nelle due guide che lo nominano: il pacchetto le pretende, e qui si vede senza comporlo.
-  const guide = [guidaAdAccademico, guidaDelloStrumento].map((g) => join("docs", g));
+  // Lo stesso nelle tre guide che lo nominano: il pacchetto le pretende, e qui si vede senza comporlo.
+  const guide = guideDelloStrumento.map((g) => join("docs", g));
   expect(guide.map((g) => [g, zipDelloStrumento(readFileSync(join(radice, g), "utf8"))])).toEqual(guide.map((g) => [g, [zip]]));
   // Controllo positivo del rilevatore: un nome con un'altra versione si vede.
   expect(zipDelloStrumento("vedi `AlgoDesign-Tools-0.5.0-beta.1-windows.zip`.")).toEqual(["AlgoDesign-Tools-0.5.0-beta.1-windows.zip"]);
-  // E l'archivio dello strumento per Linux, che `archivio.ts` pretende nelle due guide.
+  // E l'archivio dello strumento per Linux, che `archivio.ts` pretende nelle tre guide.
   const archivioDiLinux = (t: string) => [...t.matchAll(/AlgoDesign-Tools-[^\s`]*-linux-x64\.tar\.gz/g)].map((m) => m[0]);
   const diLinux = nomiDelloStrumentoDiLinux(file()["package.json"]!).archivio;
   expect(guide.map((g) => [g, archivioDiLinux(readFileSync(join(radice, g), "utf8"))])).toEqual(guide.map((g) => [g, [diLinux]]));

@@ -24,7 +24,7 @@
 //    dalla cartella di `--testi`, tracciati dal repository (una cartella fuori, come le note di una versione di prima
 //    rimaste fra i documenti di lavoro, è rossa), con `{{versione}}`, `{{delData}}` e `{{date}}` sostituiti (un segnaposto rimasto, un nome
 //    fra due graffe doppie, è rosso; il valore di una matrice come `{{1, 2}, {3, 4}}` no, con le sue sonde); le guide per lo
-//    studente, la guida ad «Accademico» e quella dello strumento da `docs/` del repository, così come sono (valgono per la versione del prodotto; un segnaposto è rosso); `README.md` e
+//    studente, le tre guide dello strumento (ad «Accademico», ad `algodesign-tools`, ai file di Flowgorithm) da `docs/` del repository, così come sono (valgono per la versione del prodotto; un segnaposto è rosso); `README.md` e
 //    `LEGGIMI.md` dalla radice, così come sono, rossi se non dicono la cartella della versione (`AlgoDesign-<versione>`);
 //    `CHANGELOG.md`
 //    dalla radice del repository, così com'è: senza la voce della versione («## <versione>, »), o con un
@@ -102,8 +102,7 @@ import {
   elencoDelNucleo,
   elencoDelPacchetto,
   fileDelleLicenze,
-  guidaAdAccademico,
-  guidaDelloStrumento,
+  guideDelloStrumento,
   guidePerCominciare,
   guidePerSegnalare,
   nomiDelloStrumento,
@@ -386,7 +385,7 @@ async function componi(rilascio: string): Promise<void> {
   if (registro.includes("SEGNAPOSTO")) rosso("CARTELLA", "CHANGELOG.md ha un SEGNAPOSTO rimasto");
   writeFileSync(join(cartella, "CHANGELOG.md"), registro);
   for (const t of testiDelPacchetto) writeFileSync(join(cartella, t), testoConISegnaposto("CARTELLA", t));
-  for (const d of [...documentiDelPacchetto, ...guidePerCominciare, guidaAdAccademico, guidaDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", d));
+  for (const d of [...documentiDelPacchetto, ...guidePerCominciare, ...guideDelloStrumento, ...guidePerSegnalare]) writeFileSync(join(cartella, d), documento("CARTELLA", d));
   for (const d of documentiDellaRadice) {
     const testo = readFileSync(join(repository, d), "utf8");
     const rimasto = segnapostoRimasto(testo);
@@ -541,7 +540,7 @@ function componiLoStrumento(exe: string, moduli: readonly string[]): void {
   cpSync(join(repository, "LICENSE-DOCS"), join(cartellaDelloStrumento, "LICENSE-DOCS"));
   for (const [sorgente, destinazione] of Object.entries(testiDelloStrumento))
     writeFileSync(join(cartellaDelloStrumento, destinazione), testoConISegnaposto("CARTELLA DELLO STRUMENTO", sorgente));
-  for (const g of [guidaAdAccademico, guidaDelloStrumento]) {
+  for (const g of guideDelloStrumento) {
     const guida = documento("CARTELLA DELLO STRUMENTO", g);
     if (!guida.includes(nomiS.zip)) rosso("CARTELLA DELLO STRUMENTO", `${g} non dice il nome del pacchetto dello strumento, «${nomiS.zip}»`);
     writeFileSync(join(cartellaDelloStrumento, g), guida);

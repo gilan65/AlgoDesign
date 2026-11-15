@@ -316,7 +316,7 @@ La pagina è provata in Chrome, in Edge e in Firefox. In Safari non è provata: 
 
 Per eseguire il JavaScript con Node, seleziona col mouse il riquadro del codice della pagina di prova (i numeri di riga non entrano nella selezione), incollalo in un file `media.js` e scrivi `node media.js`.
 
-Lo stesso comando, con `--linguaggi pseudocodice c`, affianca due linguaggi a scelta con le righe allineate blocco per blocco. L'altro comando dello strumento, `accademico`, porta in AlgoDesign un testo scritto in «Accademico».
+Lo stesso comando, con `--linguaggi pseudocodice c`, affianca due linguaggi a scelta con le righe allineate blocco per blocco. Gli altri due comandi dello strumento portano in AlgoDesign i programmi scritti altrove: `accademico` un testo scritto in «Accademico», `flowgorithm` i file di Flowgorithm (`.fprg`), spiegato nella guida ai file di Flowgorithm, `GUIDA-AI-FILE-DI-FLOWGORITHM.md`.
 
 ## 9. Procedure e funzioni
 
