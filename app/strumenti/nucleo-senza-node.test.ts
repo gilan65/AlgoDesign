@@ -1,6 +1,7 @@
 // Il pacchetto del nucleo gira anche in una pagina, senza Node: caricato in un contesto `node:vm` creato vuoto (i soli
-// `module` ed `exports`, nessun `process`, `Buffer`, `require`, `global`), apre ogni progetto del corpus, lo controlla e
-// ne disegna ogni funzione nelle due lingue, e l'esito e l'SVG sono quelli dei sorgenti. Il controllo positivo: lo stesso pacchetto con una riga che usa un globale di Node in
+// `module` ed `exports`, nessun `process`, `Buffer`, `require`, `global`), apre ogni progetto del corpus, lo controlla, ne
+// dà le segnalazioni e ne disegna ogni funzione coi bollini, nelle due lingue, e l'esito, l'elenco e l'SVG sono quelli dei
+// sorgenti. Il controllo positivo: lo stesso pacchetto con una riga che usa un globale di Node in
 // testa non si carica in quel contesto, con l'errore del nome che manca.
 //
 // CHE COSA NON GUARDA:
@@ -13,7 +14,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createContext, runInContext } from "node:vm";
-import { apri as apriNeiSorgenti, controlla as controllaNeiSorgenti, disegna as disegnaNeiSorgenti, type MisuraDelTesto } from "../entrypoint/index";
+import { apri as apriNeiSorgenti, controlla as controllaNeiSorgenti, disegna as disegnaNeiSorgenti, segnalazioni as segnalazioniNeiSorgenti, type MisuraDelTesto } from "../entrypoint/index";
 import { costruisciIlNucleo, fileDelNucleo } from "./conformita-del-nucleo";
 import { confermato } from "./corpus";
 
@@ -67,11 +68,15 @@ test("senza Node il pacchetto apre, controlla e disegna, e l'SVG è quello dei s
     }
     if (JSON.stringify(nucleo.controlla!(esito.progetto)) === JSON.stringify(controllaNeiSorgenti(atteso.progetto))) controllati++;
     else diversi.push(`${nome}: il controllo è diverso`);
+    const errori = controllaNeiSorgenti(atteso.progetto);
+    for (const lingua of ["it", "en"] as const)
+      if (JSON.stringify(nucleo.segnalazioni!(esito.progetto, lingua)) !== JSON.stringify(segnalazioniNeiSorgenti(atteso.progetto, lingua))) diversi.push(`${nome} ${lingua}: le segnalazioni sono diverse`);
     for (const f of atteso.progetto.functions) {
       funzioni++;
       for (const lingua of ["it", "en"] as const) {
-        const senzaNode = nucleo.disegna!(esito.progetto, f.id, lingua, misura, "sans-serif") as { svg: string };
-        if (senzaNode.svg !== disegnaNeiSorgenti(atteso.progetto, f.id, lingua, misura, "sans-serif").svg) diversi.push(`${nome} ${f.id} ${lingua}`);
+        // Coi bollini: il disegno col controllo dato, come lo dà chi chiama.
+        const senzaNode = nucleo.disegna!(esito.progetto, f.id, lingua, misura, "sans-serif", { errori }) as { svg: string };
+        if (senzaNode.svg !== disegnaNeiSorgenti(atteso.progetto, f.id, lingua, misura, "sans-serif", { errori }).svg) diversi.push(`${nome} ${f.id} ${lingua}`);
       }
     }
   }

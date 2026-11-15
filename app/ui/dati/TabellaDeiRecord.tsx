@@ -19,10 +19,10 @@ import { tastoCheElimina } from "../modifiche";
 import { Segnalazioni } from "./CampiDelDato";
 import { azioniDellaRiga, MenuDellaRiga } from "./MenuDellaRiga";
 import { campoNuovo, spostaCampo, type BozzaDelRecord } from "./record";
+import { chiaveDelRecord } from "./righe";
 import stili from "./VistaDati.module.css";
 
-/** Il segno di una riga di un record, nel documento. */
-export const chiaveDelRecord = (indice: number) => `record-${indice}`;
+export { chiaveDelRecord };
 
 const nomiDeiTipi: Record<Tipo, keyof Dizionario> = {
   integer: "tipoIntero",

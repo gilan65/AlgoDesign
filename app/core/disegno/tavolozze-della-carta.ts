@@ -10,7 +10,8 @@ import type { Tavolozza } from "./tavolozza";
 export type InsiemeDiColori = "tenue" | "contrasto" | "bianco-e-nero";
 export const insiemiDiColori: readonly InsiemeDiColori[] = ["tenue", "contrasto", "bianco-e-nero"];
 
-/** I colori che i tre insiemi hanno in comune: lo sfondo bianco della carta, il testo e i segni dell'esecuzione. */
+/** I colori che i tre insiemi hanno in comune: lo sfondo bianco della carta, il testo, i segni dell'esecuzione e quelli
+ * del controllo. */
 const comuni = {
   sfondo: "#ffffff",
   testo: "#1d1d1b",
@@ -18,6 +19,8 @@ const comuni = {
   bordoCorrente: "#d97706",
   testoCorrente: "#111111",
   punto: "#c62828",
+  errore: "#b42318",
+  avviso: "#9a6700",
 } as const;
 
 export const tavolozzeDellaCarta: Readonly<Record<InsiemeDiColori, Tavolozza>> = {

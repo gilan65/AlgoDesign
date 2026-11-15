@@ -15,14 +15,16 @@
 // taglio (`fogli.ts`), le linee che lo attraversano sono tratteggiate per `tratteggio` unità dal taglio: sopra la linea,
 // un tratteggio del colore dello sfondo (la punta della freccia resta intera).
 //
+// I segni del controllo (il contorno e il bollino di un errore o di un avviso) ci sono solo se chi chiama li dà
+// (`segnalati`): li vuole il punto d'ingresso del nucleo; la stampa e l'esportazione dell'app non li danno.
+//
 // Che cosa questo file NON fa:
-// - i segni della finestra che non sono del disegno: la scelta, i «+», i bollini degli errori e degli avvisi, i nomi del
-//   watch, la copia che si trascina;
+// - i segni della finestra che non sono del disegno: la scelta, i «+», i nomi del watch, la copia che si trascina;
 // - arrotondare: le coordinate hanno i decimali dell'impaginazione (`String` di un numero);
 // - misurare il testo: lo ha già misurato l'impaginazione, col carattere che chi chiama ripete qui.
 import type { Disegno, Elemento, Forma, Punto, Rettangolo } from "./impaginazione";
 import { tratteggio, type Foglio } from "./fogli";
-import { CORPO_DELLA_RIPRESA, pallino, punta, RAGGIO_DEL_PALLINO, ripresa, segniDelDisegno, type SegniDellEsecuzione } from "./segni";
+import { bollino, CORPO_DELLA_RIPRESA, pallino, punta, RAGGIO_DEL_BOLLINO, RAGGIO_DEL_PALLINO, ripresa, segniDelDisegno, type SegniDellEsecuzione } from "./segni";
 import { tavolozzaNelModo, type GenereDelColore, type ModoDiColore, type Tavolozza } from "./tavolozza";
 import type { GeometriaDelTema } from "./tema";
 
@@ -42,6 +44,16 @@ export interface OpzioniDelSvg {
   /** Senza il rettangolo dello sfondo sotto il disegno (l'immagine esportata con lo sfondo trasparente): ciò che ha il
    * colore dello sfondo per coprire le linee (le unioni, le intestazioni, il bordo del pallino) resta com'è. */
   readonly trasparente?: boolean;
+  /** I segni del controllo, per `id` del blocco (o della fine di una funzione): il contorno e il bollino come nella tela,
+   * con gli attributi `data-id`, `data-segno` e `data-codici`. Senza, il disegno non li ha. Vogliono i colori `errore` e
+   * `avviso` della tavolozza. */
+  readonly segnalati?: ReadonlyMap<string, SegnoDelControllo>;
+}
+
+/** Il segno del controllo su un blocco: «errore» o «avviso», e i numeri dei codici (`E034`, `A002`). */
+export interface SegnoDelControllo {
+  readonly segno: "errore" | "avviso";
+  readonly codici: readonly string[];
 }
 
 const n = (x: number) => String(x);
@@ -173,6 +185,33 @@ function corpo(d: Disegno, o: OpzioniDelSvg, t: Tavolozza, punta_: string, tagli
   for (const e of d.etichette)
     out.push(`<text data-etichetta="${e.valore}" x="${n(e.riquadro.x)}" y="${n(e.riquadro.y + e.riquadro.altezza / 2)}" fill="${e.valore === "vero" ? t.vero : t.falso}" dominant-baseline="central">${testo(e.testo)}</text>`);
   for (const u of d.ricongiungimenti) out.push(`<circle data-unione="" cx="${n(u.centro.x)}" cy="${n(u.centro.y)}" r="${n(u.raggio)}" fill="${t.sfondo}" stroke="${t.linea}" stroke-width="1.6"/>`);
+  if (o.segnalati !== undefined && o.segnalati.size > 0) out.push(...segniDelControllo(d, o.segnalati, t, g));
+  return out;
+}
+
+/** I segni del controllo sopra il disegno, come la tela (`ui/disegno/Flowchart.tsx`): sugli stessi elementi (uno per
+ * `id`, né i valori iniziali né le parti di un ciclo aperto), con la Lettura con la domanda che porta anche i segni della
+ * sua Scrittura; il contorno del colore del segno e il bollino sull'angolo (`bollino`), «!» o «?». */
+function segniDelControllo(d: Disegno, segnalati: ReadonlyMap<string, SegnoDelControllo>, t: Tavolozza, g: GeometriaDelTema): string[] {
+  const elementi = new Map(d.elementi.filter((e) => e.dato === undefined && e.fase === undefined).map((e) => [e.id, e]));
+  const out: string[] = [];
+  for (const e of elementi.values()) {
+    const ids = e.scrittura === undefined ? [e.id] : [e.scrittura, e.id];
+    const segni = ids.flatMap((x) => segnalati.get(x) ?? []);
+    if (segni.length === 0) continue;
+    const segno = segni.some((s) => s.segno === "errore") ? "errore" : "avviso";
+    const colore = segno === "errore" ? t.errore : t.avviso;
+    if (colore === undefined) throw new Error(`la tavolozza non ha il colore del segno «${segno}»`);
+    const codici = [...new Set(segni.flatMap((s) => s.codici))].join(" ");
+    const b = bollino(e);
+    out.push(
+      `<g data-bollino="" data-id="${testo(e.id)}" data-segno="${segno}" data-codici="${testo(codici)}">`,
+      `<polygon points="${punti(e.vertici)}" fill="none" stroke="${colore}" stroke-width="2.5"/>`,
+      `<circle cx="${n(b.x)}" cy="${n(b.y)}" r="${n(RAGGIO_DEL_BOLLINO)}" fill="${colore}"/>`,
+      `<text x="${n(b.x)}" y="${n(b.y)}" fill="${t.sfondo}" font-size="${n(g.carattere)}" font-weight="700" ${CENTRATO}>${segno === "errore" ? "!" : "?"}</text>`,
+      `</g>`,
+    );
+  }
   return out;
 }
 

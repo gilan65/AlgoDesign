@@ -10,6 +10,13 @@ import type { Dato, Ruolo, Tipo } from "../../core/progetto/modello";
 import type { Dizionario } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
 
+/** La chiave di una riga nel documento: la tabella e la posizione del dato. Sta qui, senza React, perché la usa anche
+ * l'elenco delle segnalazioni del punto d'ingresso del nucleo (`ui/segnalazioni.ts`). */
+export const chiaveDellaRiga = (comune: boolean, indice: number) => `${comune ? "comuni" : "dati"}-${indice}`;
+
+/** Il segno di una riga di un record, nel documento. */
+export const chiaveDelRecord = (indice: number) => `record-${indice}`;
+
 export interface RigaDelDato {
   readonly nome: string;
   readonly tipo: string;

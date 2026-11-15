@@ -27,7 +27,7 @@ import type { GenereDellaTappa, Posto, Ramo } from "../../core/modifica/operazio
 import { livelliDeiPerOgni, type Blocco, type Dato, type DefinizioneDelRecord, type Funzione } from "../../core/progetto/modello";
 import type { Dizionario } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
-import { chiaveDellaRiga } from "../dati/VistaDati";
+import { chiaveDellaRiga } from "../dati/righe";
 
 export type Voce =
   | { readonly genere: "punto"; readonly posto: Posto; readonly nome: string }

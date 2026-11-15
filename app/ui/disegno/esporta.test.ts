@@ -148,10 +148,11 @@ void _dalNucleo;
 test("le tavolozze della carta del nucleo sono quelle che l'esportazione legge da tema.css, insieme per insieme e campo per campo", () => {
   const regole = regoleDelFile(tema);
   const confronti = insiemiDiColori.map((insieme) => ({ insieme, campi: differenze(tavolozzeDellaCarta[insieme], tavolozzaDellaCarta(regole, insieme, {})) }));
-  // La premessa: tre insiemi, ognuno con tutti i campi della tavolozza (11 colori più le 8 forme = 19).
+  // La premessa: tre insiemi, ognuno con tutti i campi della tavolozza (13 colori, coi due segni del controllo, più le 8
+  // forme = 21).
   const campiConfrontati = insiemiDiColori.map((i) => Object.keys(tavolozzeDellaCarta[i]).length - 1 + Object.keys(tavolozzeDellaCarta[i].forme).length);
   console.log(`tavolozze della carta: ${insiemiDiColori.length} insiemi, campi confrontati ${campiConfrontati.join(" + ")}`);
-  expect(campiConfrontati).toEqual([19, 19, 19]);
+  expect(campiConfrontati).toEqual([21, 21, 21]);
   expect(confronti).toEqual(insiemiDiColori.map((insieme) => ({ insieme, campi: [] })));
 
   // Controllo positivo dal lato del foglio: un colore del «Contrasto forte» cambiato nelle regole lette.

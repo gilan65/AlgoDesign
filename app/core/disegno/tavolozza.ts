@@ -27,6 +27,9 @@ export interface Tavolozza {
   readonly testoCorrente: string;
   /** Il pallino del punto di interruzione e il contorno del suo blocco. */
   readonly punto: string;
+  /** Il segno di un errore e di un avviso del controllo (il contorno e il bollino), se chi chiama li disegna. */
+  readonly errore?: string;
+  readonly avviso?: string;
 }
 
 export type ModoDiColore = "colori" | "grigi" | "bianco-e-nero";
@@ -78,5 +81,7 @@ export function tavolozzaNelModo(t: Tavolozza, modo: ModoDiColore): Tavolozza {
     bordoCorrente: tratto(t.bordoCorrente),
     testoCorrente: tratto(t.testoCorrente),
     punto: tratto(t.punto),
+    ...(t.errore === undefined ? {} : { errore: tratto(t.errore) }),
+    ...(t.avviso === undefined ? {} : { avviso: tratto(t.avviso) }),
   };
 }
