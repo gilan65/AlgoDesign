@@ -56,7 +56,9 @@
 //    errore esce 1 col messaggio e la riga, senza scrivere; i testi in «Accademico» dei cinque esempi forniti che ci
 //    stanno (scritti a mano in `ui/genera/attesi-di-accademico.ts`), letti uno dopo l'altro in una sola libreria (`-o`,
 //    poi `-l` e `-r`), danno le stesse righe e la stessa libreria, byte per byte, di `bun ./strumenti/algodesign-tools.ts accademico`;
-//    `stampa` su un progetto del corpus, senza e con `--linguaggi`, scrive le stesse pagine, byte per byte, della stessa riga con Bun.
+//    `stampa` su un progetto del corpus, senza e con `--linguaggi`, scrive le stesse pagine, byte per byte, della stessa riga con Bun;
+//    `flowgorithm` su tre file del corpus, uno che non si converte, esce 1 con le righe e i `.algo` di Bun, byte per byte,
+//    e i `.algo` passano il controllo statico.
 //    Le tracce: i nomi nuovi al primo livello di %APPDATA%, %LOCALAPPDATA%, %TEMP% (e %TMP%, se è un'altra cartella)
 //    intorno ai soli avvii dell'eseguibile; controllo positivo, l'eseguibile che scrive la sua uscita in %TEMP%.
 // 11. NUCLEO: il file per Node (`costruisciIlNucleo`, `conformita-del-nucleo.ts`): CommonJS, nessun import, ogni modulo del

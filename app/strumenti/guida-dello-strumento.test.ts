@@ -31,6 +31,7 @@ const aiuto = (comando: string): string => {
 for (const [comando, titolo] of [
   ["accademico", "## 2. Il comando `accademico`"],
   ["stampa", "### Le opzioni"],
+  ["flowgorithm", "## 4. Il comando `flowgorithm`"],
 ] as const) {
   test(`le opzioni di ${comando}: quelle dell'aiuto sono quelle della guida`, () => {
     const vere = opzioniDellAiuto(aiuto(comando));
@@ -53,6 +54,13 @@ test("il confronto vede un'opzione tolta dalla guida e una in più", () => {
   expect(vere.length).toBeGreaterThan(2);
   expect(opzioniDellaGuida(guida.replace("| `--lingua` |", "| niente |"), titolo)).toEqual(vere.filter((o) => o !== "--lingua"));
   expect(opzioniDellaGuida(guida.replace("| `--lingua` |", "| `--altra` | prova |\n| `--lingua` |"), titolo)).toEqual([...vere, "--altra"].sort());
+  // Lo stesso sulla tabella di `flowgorithm`: `-r` tolto dalla guida, il confronto con l'aiuto vero lo vede.
+  const diFlowgorithm = "## 4. Il comando `flowgorithm`";
+  const senzaR = guida.replace(/(\n## 4\. Il comando `flowgorithm`\n[\s\S]*?)\| `-r` \|/, "$1| niente |");
+  expect(senzaR).not.toBe(guida);
+  const tolta = opzioniDellAiuto(aiuto("flowgorithm")).filter((o) => !opzioniDellaGuida(senzaR, diFlowgorithm).includes(o));
+  console.log(`flowgorithm, -r tolto dalla guida: senza voce ${JSON.stringify(tolta)}`);
+  expect(tolta).toEqual(["-r"]);
   // La sonda dell'aiuto: un'opzione con la sua spiegazione si conta, una parola dopo il rientro no.
   expect(opzioniDellAiuto("  -o cartella   dove\n  --lingua it|en  la lingua\n  bun run tools\n")).toEqual(["--lingua", "-o"]);
 });
