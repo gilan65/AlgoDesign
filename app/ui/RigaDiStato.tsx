@@ -34,31 +34,10 @@ import { nomiLingue, riempi, sigleLingue, type Lingua } from "../i18n/lingue";
 import { attributi, fuocoAChiLAveva, PulsanteDelComando, type Azioni, type Stati } from "./Barra";
 import stiliDellaBarra from "./Barra.module.css";
 import stili from "./RigaDiStato.module.css";
+import type { VoceDelControllo } from "./segnalazioni";
 
-/** Una voce dell'elenco, coi testi già nella lingua dell'interfaccia. */
-export interface VoceDelControllo {
-  readonly genere: "errore" | "avviso";
-  readonly codice: string;
-  /** Il nome del blocco, o del dato con la sua tabella. */
-  readonly dove: string;
-  /** L'`id` del blocco, se la voce è di un blocco. */
-  readonly blocco: string | null;
-  /** L'`id` della fine di una funzione, se la voce è di ciò che restituisce: la fine porta il segno come un blocco. */
-  readonly fine?: string;
-  /** La chiave della riga, se la voce è di un dato. */
-  readonly dato: string | null;
-  /** L'`id` della funzione del blocco o del dato (della procedura o della funzione stessa, per il suo nome, il valore
-   * predefinito e ciò che restituisce); assente per una costante comune. */
-  readonly funzione?: string;
-  /** Il testo breve del codice (la spiegazione intera sta nei campi del blocco o del dato). */
-  readonly breve: string;
-  /** I dati che il blocco può leggere prima che abbiano un valore: un comando ciascuno, che apre il loro valore
-   * iniziale nella vista dei dati (`chiave` è quella della riga, `funzione` la funzione del dato). */
-  readonly senzaValore?: readonly { readonly nome: string; readonly chiave: string; readonly funzione: string }[];
-  /** I parametri per riferimento che ricevono un dato senza valore e che la procedura non legge prima di dar loro un
-   * valore: un comando ciascuno, che li fa passare per uscita (`funzione` è la procedura, `indice` la posizione nei suoi dati). */
-  readonly versoOut?: readonly { readonly nome: string; readonly funzione: string; readonly indice: number }[];
-}
+/** Una voce dell'elenco: la compone `segnalazioni.ts`, la stessa del punto d'ingresso del nucleo. */
+export type { VoceDelControllo };
 
 /** La lingua dell'interfaccia: la sigla, e col clic (o con Invio) il menu delle lingue, segnata quella scelta. */
 function LinguaDellInterfaccia({ lingua, scegli, testi }: { lingua: Lingua; scegli: (l: Lingua) => void; testi: Dizionario }): ReactElement {

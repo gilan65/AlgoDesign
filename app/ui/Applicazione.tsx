@@ -35,7 +35,7 @@ import { annulla, applica, inizia, nomiDiPrima, ripeti, siAnnulla, siRipete, typ
 import { Tabs } from "@ark-ui/react/tabs";
 import type { EsitoDelCaso } from "../core/casi/esito";
 import { datiLettiAltrove } from "../core/casi/voci";
-import { causaDelNome, controlla, giriDellaRicorsione, type FermataDelBlocco, type Tetti } from "../core/controllo/controllo";
+import { causaDelNome, controlla, giriDellaRicorsione, type Tetti } from "../core/controllo/controllo";
 import { tettoDelleChiamate } from "../core/controllo/spazio";
 import {
   aggiungiCaso,
@@ -53,7 +53,6 @@ import {
   eliminaCaso,
   eliminaComune,
   eliminaDato,
-  funzioneDi,
   funzioniCheUsano,
   poi,
   regoleCheUsanoLaComune,
@@ -81,7 +80,6 @@ import {
   type Tratto,
 } from "../core/modifica/operazioni";
 import { eUnaParolaSola } from "../core/modifica/rinomina";
-import { sottoblocchi } from "../core/modifica/identificatori";
 import { importa as importaDa } from "../core/modifica/importa";
 import { apri as apriTesto, salva as testoDi } from "../core/progetto/formato";
 import { type Blocco, type CasoDiUnaFunzione, type Dato, type DefinizioneDelRecord, type Funzione, type Progetto } from "../core/progetto/modello";
@@ -128,6 +126,7 @@ import { misuraDelCanvas } from "./disegno/misura";
 import { disegniDiProva } from "./disegno/prova";
 import { testiDelDisegno } from "./disegno/testi";
 import { disegnoDellaFunzione, impaginaNellaLingua, opzioniDelDisegnoDa } from "./disegno/disegno-della-funzione";
+import { datiDi, fermataDel, funzioneCon, segniDelleVoci, vociDelControllo } from "./segnalazioni";
 import { areaDelDisegno, limitaLaScala, PASSO, scalaAdatta, VistaFlowchart } from "./disegno/VistaFlowchart";
 import { bozzaDi as bozzaDelDato, conIlValoreDi, datoDaBozza, intero, stessoDato, type BozzaDelDato, type Natura } from "./dati/bozza";
 import { tipoDelDato } from "./dati/righe";
@@ -247,8 +246,6 @@ const nelWatch = (t: TabellaMostrata, traccia: Traccia, nome: NomePuntato, funzi
   nome.chiamataIn === undefined ? t.watch(traccia, nome.dato, funzione, livello) : t.chiamata(traccia, nome.dato, nome.chiamataIn);
 /** Il programma principale. */
 const principaleDi = (p: Progetto) => p.functions.find((f) => f.kind === "main")!;
-/** I dati della funzione con quell'`id` (il programma principale, senza); nessuno, se la funzione non c'è più. */
-const datiDi = (p: Progetto, funzione?: string) => funzioneDi(p, funzione)?.data ?? [];
 
 /** Il dato della riga con quella chiave (`chiaveDellaRiga`): una costante comune o un dato della funzione (il programma
  * principale, senza), con la sua posizione. È l'identità del blocco del suo valore iniziale nel flowchart. */
@@ -280,11 +277,6 @@ const parametriDi = (f: Funzione) =>
       .map((d) => [d.name, { rif: d.parameter === "reference", vettore: d.size !== undefined && d.type !== "record" && d.parameter !== "out", uscita: d.parameter === "out" }]),
   );
 
-/** La funzione che contiene il blocco con quell'`id`. */
-function funzioneCon(p: Progetto, id: string): Funzione | undefined {
-  const dentro = (s: readonly Blocco[]): boolean => s.some((b) => b.id === id || dentro(sottoblocchi(b)));
-  return p.functions.find((f) => dentro(f.body));
-}
 
 /** La funzione che vede le modifiche fra due progetti: la mostrata, se è cambiata lei (o non c'è più); altrimenti la
  * prima che è cambiata, o che c'è in uno solo dei due. Ogni oggetto si ricostruisce a ogni operazione: si confronta il
@@ -338,8 +330,6 @@ type Aperta =
 // di stato con gli errori e gli avvisi del progetto, lo stato dell'esecuzione e lo zoom. Con un'esecuzione, a destra del flowchart la colonna con
 // la console (si allarga dal suo bordo); la vista dei dati si chiude all'avvio e si riapre alla fine o a
 // «Ferma», e la colonna resta finché «Ferma» non la chiude.
-/** La causa precisa dell'errore o dell'avviso di un blocco, se il controllo la sa. */
-const fermataDel = (fermate: readonly FermataDelBlocco[], s: { code: string; block: string }) => fermate.find((f) => f.code === s.code && f.block === s.block)?.fermata;
 
 export function Applicazione({
   linguaIniziale,
@@ -1039,103 +1029,11 @@ export function Applicazione({
   const controllo = useMemo(() => controlla(progetto, limiti), [progetto, limiti]);
   // I testi dei codici col tetto delle chiamate del progetto (i tetti della ricorsione ne dicono il numero).
   const codici = useMemo(() => testiDeiCodiciCol(lingua, tettoDelleChiamate(progetto)), [lingua, progetto]);
-  const voci = useMemo((): VoceDelControllo[] => {
-    if (controllo.fuoriTappa) return [];
-    const disegnoDiOra = testiDelDisegno(lingua);
-    // Ciò che sta in una procedura o in una funzione si dice col suo nome davanti.
-    const nellaFunzione = (f: Funzione, dove: string) => (f.kind === "main" ? dove : riempi(testi.voceNellaFunzione, { funzione: f.name ?? "", dove }));
-    // Gli errori e gli avvisi di un dato il controllo li dà anche sulla sua funzione: quelli la vista dei dati li dice dato
-    // per dato, e qui non si ripetono. Restano gli errori della funzione stessa (il suo nome, il valore predefinito).
-    const deiDati = new Map<string, number>();
-    const chiaveDel = (genere: string, block: string, code: string) => `${genere} ${block} ${code}`;
-    for (const s of controllo.dati) if (!s.comune) deiDati.set(chiaveDel(s.genere, s.funzione, s.code), (deiDati.get(chiaveDel(s.genere, s.funzione, s.code)) ?? 0) + 1);
-    const delBlocco =
-      (genere: "errore" | "avviso") =>
-      (s: { code: string; block: string }): VoceDelControllo[] => {
-        if (s.block === bloccoInSilenzio) return [];
-        const b = trova(progetto, s.block);
-        const chiave = chiaveDel(genere, s.block, s.code);
-        const ripetuti = b ? 0 : (deiDati.get(chiave) ?? 0);
-        if (ripetuti > 0) {
-          deiDati.set(chiave, ripetuti - 1);
-          return [];
-        }
-        // Il blocco di una funzione, la funzione stessa (il nome, il valore predefinito) o la sua fine (ciò che restituisce).
-        const f = b ? funzioneCon(progetto, s.block) : progetto.functions.find((x) => x.id === s.block || x.end.id === s.block);
-        if (!f) return [];
-        // Il dato letto prima di avere un valore: i dati li dice il controllo, per la funzione e la posizione.
-        const senzaValore =
-          s.code === "maybe_uninitialized"
-            ? controllo.primaDelValore
-                .filter((l) => l.block === s.block)
-                .map((l) => ({ nome: datiDi(progetto, l.funzione)[l.indice]?.name ?? "", chiave: chiaveDellaRiga(false, l.indice), funzione: l.funzione }))
-            : undefined;
-        // Il riferimento senza valore: per i parametri che lo ricevono, e che la procedura non legge prima di dar loro un
-        // valore, la correzione verso il passaggio per uscita (mai per uno letto prima: lì servirebbe il valore). Il nome
-        // è quello della scheda mostrata: nella procedura il parametro, altrove l'argomento come lo scrive il salto.
-        const versoOut =
-          s.code === "reference_without_value" && b?.kind === "call"
-            ? controllo.senzaValoreAlSalto
-                .filter((a) => a.block === s.block && controllo.versoOut.some((v) => v.funzione === a.funzione && v.indice === a.indice))
-                .map((a) => {
-                  const dati = datiDi(progetto, a.funzione);
-                  const parametro = dati[a.indice];
-                  const argomento = b.arguments[dati.filter((d) => d.parameter !== undefined).indexOf(parametro!)] ?? "";
-                  const nome = mostrata.id === a.funzione ? (parametro?.name ?? "") : (espressione ?? ((t: string) => t))(argomento);
-                  return { nome, funzione: a.funzione, indice: a.indice };
-                })
-            : [];
-        const testo = b
-          ? nomeDelBlocco(b, testi, espressione ?? ((t) => t), progetto.functions)
-          : (s.block === f.id ? partiDellIntestazione(f, disegnoDiOra) : partiDellaFine(f, disegnoDiOra)).map((p) => p.testo).join("");
-        // Sulla funzione stessa (le misure del risultato) o sulla sua fine, l'errore è sul risultato: il suo testo.
-        const sulRisultato = !b && f.kind === "function";
-        return [
-          {
-            genere,
-            codice: s.code,
-            dove: nellaFunzione(f, testo),
-            blocco: b ? b.id : null,
-            ...(!b && s.block === f.end.id ? { fine: f.end.id } : {}),
-            dato: null,
-            funzione: f.id,
-            breve: testoDellaSegnalazione(lingua, s.code as Codice, sulRisultato, fermataDel(controllo.fermate, s)).breve,
-            ...(senzaValore ? { senzaValore } : {}),
-            ...(versoOut.length > 0 ? { versoOut } : {}),
-          },
-        ];
-      };
-    const dati = controllo.dati
-      .filter((s) => s.comune || s.funzione !== mostrata.id || s.indice !== datoInSilenzio)
-      .map((s): VoceDelControllo => {
-        const f = s.comune ? undefined : progetto.functions.find((x) => x.id === s.funzione);
-        const d = (s.comune ? (progetto.shared_constants ?? []) : (f?.data ?? []))[s.indice]!;
-        const voce = riempi(testi.voceDelDato, { tabella: s.comune ? testi.costantiComuni : testi.dati, nome: d.name || testi.datoSenzaNome });
-        return {
-          genere: s.genere,
-          codice: s.code,
-          dove: f ? nellaFunzione(f, voce) : voce,
-          blocco: null,
-          dato: chiaveDellaRiga(s.comune, s.indice),
-          ...(f ? { funzione: f.id } : {}),
-          breve: testoDellaSegnalazione(lingua, s.code as Codice, false, s.fermata).breve,
-        };
-      });
-    // Gli errori dei record (del progetto, col blocco vuoto, che nessun blocco né funzione ha): uno per record e codice.
-    const deiRecord = (controllo.record ?? [])
-      .filter((s) => s.indice !== recordInSilenzio)
-      .map((s): VoceDelControllo => ({
-        genere: "errore",
-        codice: s.code,
-        dove: riempi(testi.voceDelDato, { tabella: testi.recordTitolo, nome: progetto.records?.[s.indice]?.name || testi.datoSenzaNome }),
-        blocco: null,
-        dato: chiaveDelRecord(s.indice),
-        breve: testoDellaSegnalazione(lingua, s.code as Codice, false, s.fermata).breve,
-      }));
-    const errori = dati.filter((v) => v.genere === "errore");
-    const avvisi = dati.filter((v) => v.genere === "avviso");
-    return [...deiRecord, ...errori, ...controllo.errori.flatMap(delBlocco("errore")), ...controllo.avvisi.flatMap(delBlocco("avviso")), ...avvisi];
-  }, [controllo, progetto, mostrata, lingua, testi, espressione, codici, bloccoInSilenzio, datoInSilenzio, recordInSilenzio]);
+  // L'elenco lo compone `segnalazioni.ts`, lo stesso del punto d'ingresso del nucleo; la finestra ci mette i suoi silenzi.
+  const voci = useMemo(
+    (): VoceDelControllo[] => vociDelControllo(progetto, controllo, lingua, mostrata.id, { blocco: bloccoInSilenzio, dato: datoInSilenzio, record: recordInSilenzio }),
+    [controllo, progetto, mostrata.id, lingua, bloccoInSilenzio, datoInSilenzio, recordInSilenzio],
+  );
   // I segni sulle righe della vista dei dati: i dati della funzione mostrata e, nel programma principale, le costanti comuni.
   const segni = useMemo((): Segni => {
     const dati = new Map<number, SegnalazioneMostrata[]>();
@@ -1151,11 +1049,7 @@ export function Applicazione({
   // I segni sui blocchi: gli errori e gli avvisi del controllo, e l'errore che ha fermato l'esecuzione. Agli
   // ausili il blocco dice i loro testi, e il suo punto di interruzione.
   const segnati = useMemo(() => {
-    const m = new Map<string, "errore" | "avviso">();
-    for (const v of voci) {
-      const id = v.blocco ?? v.fine;
-      if (id !== undefined && m.get(id) !== "errore") m.set(id, v.genere);
-    }
+    const m = segniDelleVoci(voci);
     if (erroreFinale) m.set(erroreFinale.block, "errore");
     return m;
   }, [voci, erroreFinale]);

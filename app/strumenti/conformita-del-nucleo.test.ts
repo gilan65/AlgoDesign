@@ -95,7 +95,7 @@ test("i rilevatori del pacchetto si accendono, ciascuno sul suo caso, e il rosso
   expect(percorsoVietato(altroDisco, `da ${altroDisco.toLowerCase()}`)).toBe(true);
   expect(percorsoVietato(altroDisco, "nessun percorso")).toBe(false);
   // Un posto si ha per nome: non basta stare in una cartella ammessa.
-  for (const m of ["i18n/codici.ts", "ui/dati/altro.ts", "core/x.test.ts", "node_modules/a/index.ts", "strumenti/corpus.ts"]) expect(postoDelModulo(m)).toBeUndefined();
+  for (const m of ["i18n/mancanze.ts", "ui/dati/altro.ts", "core/x.test.ts", "node_modules/a/index.ts", "strumenti/corpus.ts"]) expect(postoDelModulo(m)).toBeUndefined();
   for (const m of ["core/progetto/formato.ts", "i18n/it.ts", "ui/dati/righe.ts", puntoDIngresso]) expect(postoDelModulo(m)).toBeDefined();
 }, LIMITE);
 

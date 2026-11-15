@@ -39,6 +39,7 @@
       "core/progetto/schema.test.ts",
       "core/registrazione/corpus.test.ts",
       "entrypoint/disegna.test.ts",
+      "entrypoint/segnalazioni.test.ts",
       "strumenti/colonne.test.ts",
       "strumenti/conformita-del-nucleo.test.ts",
       "strumenti/flowgorithm.test.ts",
@@ -330,6 +331,8 @@
       "ripartenze": 2153,
       "voltePiuDiUna": 819
     },
+    "segnalazioni - bollini del corpus nelle due lingue": 56,
+    "segnalazioni - voci del corpus nelle due lingue": 74,
     "stampa - progetti col typescript e il javascript": 173,
     "stampa - progetti per coppia di linguaggi": {
       "pseudocodice e python": 173,

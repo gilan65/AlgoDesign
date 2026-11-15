@@ -32,14 +32,13 @@ import { campoDiTesto, tastoCheElimina } from "../modifiche";
 import { bozzaDi, type BozzaDelDato, type Natura } from "./bozza";
 import { campiDelDato, nomiDelleNature, SchedaDelDato, Segnalazioni } from "./CampiDelDato";
 import { azioniDellaRiga, MenuDellaRiga } from "./MenuDellaRiga";
-import { rigaDelDato } from "./righe";
+import { chiaveDellaRiga, rigaDelDato } from "./righe";
 import { TabellaDeiRecord, type ModificaDeiRecord } from "./TabellaDeiRecord";
 import stili from "./VistaDati.module.css";
 
 export type ModoDeiDati = "scheda" | "celle";
 
-/** La chiave di una riga nel documento: la tabella e la posizione del dato. */
-export const chiaveDellaRiga = (comune: boolean, indice: number) => `${comune ? "comuni" : "dati"}-${indice}`;
+export { chiaveDellaRiga };
 
 export interface ModificaDeiDati {
   readonly modo: ModoDeiDati;

@@ -7,5 +7,5 @@
   "compilerOptions": {
     "lib": ["ES2023"]
   },
-  "include": ["core", "entrypoint", "ui/genera/parole.ts", "ui/dati/righe.ts", "ui/disegno/testi.ts", "ui/disegno/disegno-della-funzione.ts"]
+  "include": ["core", "entrypoint", "ui/genera/parole.ts", "ui/dati/righe.ts", "ui/disegno/testi.ts", "ui/disegno/disegno-della-funzione.ts", "ui/disegno/accessibile.ts", "ui/segnalazioni.ts"]
 }

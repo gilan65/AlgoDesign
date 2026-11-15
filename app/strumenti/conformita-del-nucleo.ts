@@ -24,7 +24,7 @@ import { esecutoreDel, trovaToolchain } from "./esecutori";
 const radice = join(import.meta.dir, "..");
 
 /** Le funzioni del pacchetto, e nessun'altra: una in più è un rosso anche per chi lo usa. */
-export const esportazioniAttese: readonly string[] = ["aggiungiAllaLibreria", "apri", "controlla", "disegna", "genera", "leggiAccademico"];
+export const esportazioniAttese: readonly string[] = ["aggiungiAllaLibreria", "apri", "controlla", "disegna", "genera", "leggiAccademico", "segnalazioni"];
 
 /** Il punto d'ingresso, relativo all'app: il nome della sua cartella entra nei byte del pacchetto. */
 export const puntoDIngresso = "entrypoint/index.ts";
@@ -39,6 +39,9 @@ const fuoriDalNucleo: Readonly<Record<string, string>> = {
   "ui/dati/righe.ts": "la lettura delle righe",
   "ui/disegno/testi.ts": "le parole del disegno",
   "ui/disegno/disegno-della-funzione.ts": "il disegno di una funzione",
+  "ui/disegno/accessibile.ts": "i nomi dei blocchi",
+  "ui/segnalazioni.ts": "l'elenco delle segnalazioni",
+  "i18n/codici.ts": "i testi dei codici",
   "i18n/lingue.ts": "le lingue",
   "i18n/operatori.ts": "i nomi degli operatori",
   "i18n/it.ts": "il dizionario italiano",

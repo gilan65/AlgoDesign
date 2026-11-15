@@ -116,6 +116,8 @@ export function tavolozzaDellaCarta(regole: readonly RegolaDelTema[], insieme: s
     bordoCorrente: c("--esecuzione-bordo"),
     testoCorrente: c("--esecuzione-testo"),
     punto: c("--esecuzione-punto"),
+    errore: c("--colore-errore"),
+    avviso: c("--colore-avviso"),
   };
 }
 
