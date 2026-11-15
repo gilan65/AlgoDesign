@@ -21,6 +21,7 @@ export const elencoDelPacchetto: readonly string[] = [
   "img/",
   "GUIDA-AD-ACCADEMICO.md",
   "GUIDA-AD-ALGODESIGN-TOOLS.md",
+  "GUIDA-AI-FILE-DI-FLOWGORITHM.md",
   "GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md",
   "GUIDE-TO-REPORTING-A-MALFUNCTION.md",
   "CHANGELOG.md",
@@ -65,6 +66,15 @@ export const guidaAdAccademico = "GUIDA-AD-ACCADEMICO.md";
  * nomina) e in quello dello strumento. Fuori da `documentiDelPacchetto`, che sono le guide della finestra «Guida». */
 export const guidaDelloStrumento = "GUIDA-AD-ALGODESIGN-TOOLS.md";
 
+/** La guida ai file di Flowgorithm, da `docs/` così com'è: nel pacchetto dell'app (la guida per lo studente la nomina) e
+ * in quello dello strumento, come quella ad «Accademico». Fuori da `documentiDelPacchetto`, che sono le guide della
+ * finestra «Guida». */
+export const guidaAiFileDiFlowgorithm = "GUIDA-AI-FILE-DI-FLOWGORITHM.md";
+
+/** Le guide dello strumento che stanno anche nel pacchetto dell'app, nell'ordine dell'elenco: ognuna nomina il pacchetto
+ * dello strumento per ciascun sistema. */
+export const guideDelloStrumento: readonly string[] = [guidaAdAccademico, guidaDelloStrumento, guidaAiFileDiFlowgorithm];
+
 /** La guida per segnalare un malfunzionamento, nelle due lingue, da `docs/` così com'è: nel pacchetto dell'app, non in
  * quello dello strumento. Fuori da `documentiDelPacchetto`, che sono le guide della finestra «Guida». */
 export const guidePerSegnalare: readonly string[] = ["GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md", "GUIDE-TO-REPORTING-A-MALFUNCTION.md"];
@@ -106,6 +116,7 @@ export const elencoDiLinux: readonly string[] = [
   "img/",
   "GUIDA-AD-ACCADEMICO.md",
   "GUIDA-AD-ALGODESIGN-TOOLS.md",
+  "GUIDA-AI-FILE-DI-FLOWGORITHM.md",
   "GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md",
   "GUIDE-TO-REPORTING-A-MALFUNCTION.md",
   "CHANGELOG.md",
@@ -131,13 +142,14 @@ export function nomiDiLinux(testoDelPackageJson: string): { versione: string; ca
 }
 
 /** Le voci al primo livello del pacchetto aggiuntivo dello strumento a riga di comando (`pacchetto.ts`): l'eseguibile a
- * sé, i due testi brevi, le due guide e le licenze; niente `data/`, perché lo strumento scrive solo dove gli si dice. */
+ * sé, i due testi brevi, le tre guide e le licenze; niente `data/`, perché lo strumento scrive solo dove gli si dice. */
 export const elencoDelloStrumento: readonly string[] = [
   "algodesign-tools.exe",
   "LEGGIMI.md",
   "README.md",
   guidaDelloStrumento,
   guidaAdAccademico,
+  guidaAiFileDiFlowgorithm,
   "LICENSE",
   "LICENSE-DOCS",
   fileDelleLicenze,
