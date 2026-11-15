@@ -18,9 +18,11 @@ import { valoriPrecisi } from "./valori-precisi";
 test("i conteggi dichiarati del corpus sono quelli del disco (se no: bun run conferma-corpus)", () => {
   const misurati = misuraIlCorpus();
   console.log(`corpus: ${JSON.stringify(misurati.file)}, tipi ${JSON.stringify(misurati.tipi)}`);
-  // Le premesse: il rilevatore ha visto ogni specie, e le cartelle fanno il totale.
+  // Le premesse: il rilevatore ha visto ogni specie, e le cartelle dei `.algo` fanno il totale (i `.fprg` di
+  // `casi-flowgorithm` sono fuori dal totale, come in `misuraIlCorpus`, ma ci devono essere).
   expect(Object.values(misurati.tipi).every((n) => n > 0)).toBe(true);
-  expect(Object.entries(misurati.file).reduce((s, [k, n]) => (k === "totale" ? s : s + n), 0)).toBe(misurati.file.totale!);
+  expect(misurati.file["casi-flowgorithm"]).toBeGreaterThan(0);
+  expect(Object.entries(misurati.file).reduce((s, [k, n]) => (k === "totale" || k === "casi-flowgorithm" ? s : s + n), 0)).toBe(misurati.file.totale!);
   expect(differenze(leggiIConteggi().fatti, misurati)).toEqual([]);
   // Controllo positivo: un file in più e una matrice in meno, dichiarati, sono due differenze.
   const altri = { ...misurati, file: { ...misurati.file, tipi: misurati.file.tipi! + 1 }, tipi: { ...misurati.tipi, matrici: misurati.tipi.matrici - 1 } };
