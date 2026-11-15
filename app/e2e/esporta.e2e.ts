@@ -8,7 +8,8 @@
 // - in pausa sul punto di interruzione l'SVG ha il blocco corrente, la punta e il punto, e la finestra lo dice;
 // - le scelte si ricordano per la sessione e «Annulla» non le cambia; il nome con la funzione fra parentesi; un nome
 //   riservato passa dall'avviso del nome («con (2).png»); un errore prima della finestra del sistema (una variabile tolta
-//   dal tema chiaro) esce nella finestra d'errore.
+//   dal tema chiaro) esce nella finestra d'errore;
+// - lo stesso SVG esportato è, byte per byte, quello di `disegna` del punto d'ingresso del nucleo, con la misura del motore.
 //
 // Controlli positivi: la tavolozza della tela (scura) al posto di quella scritta a mano dà un altro SVG; un PNG fatto al
 // fattore 1 non ha la misura attesa; il PNG a toni di grigio confrontato con l'SVG a colori ha molti pixel diversi; con la
@@ -26,7 +27,8 @@ import { geometriaPredefinita as tema } from "../core/disegno/tema";
 import { apri as apriProgetto } from "../core/progetto/formato";
 import { it } from "../i18n/it";
 import { riempi } from "../i18n/lingue";
-import { disegnoNelMotore } from "./disegno-nel-motore";
+import { conLaMisuraDelMotore, disegnoNelMotore } from "./disegno-nel-motore";
+import { disegna } from "../entrypoint/index";
 import type { Finzione } from "./finzione-tauri";
 import { apriVuota, costruisciFinzione, sulMacOspite, voceDelMenu } from "./pagina";
 
@@ -144,6 +146,11 @@ test.describe("col sistema scuro", () => {
     expect(scritto).toBe(atteso);
     expect(scritto).not.toContain("data-interruzione");
     expect(scritto).toContain('data-fondo="" x="0" y="0"');
+    // Il punto d'ingresso del nucleo, con la misura del motore e il carattere del tema, dà lo stesso file.
+    const carattereDelTema = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--carattere").trim());
+    const dalContratto = await conLaMisuraDelMotore(page, (m) => disegna(programma(), "f1", "it", m, carattereDelTema).svg);
+    console.log(`SVG del punto d'ingresso: ${dalContratto.length} caratteri`);
+    expect(dalContratto).toBe(scritto);
     // Controllo positivo: con la tavolozza della tela (scura) l'SVG sarebbe un altro.
     const scura = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--disegno-linea").trim());
     const p = programma();

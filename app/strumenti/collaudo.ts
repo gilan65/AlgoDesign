@@ -206,7 +206,7 @@ const porteTsc: PortaTsc[] = [
       { percorso: "i18n/__sonda__chiusura.ts", contenuto: "export const sonda = Bun.version;\n", codiciAttesi: ["TS2868"] },
     ],
     // Fuori da core/: se uscissero dalla configurazione, il DOM vi tornerebbe senza un errore.
-    guardaAnche: ["entrypoint/index.ts", "ui/genera/parole.ts", "ui/dati/righe.ts"],
+    guardaAnche: ["entrypoint/index.ts", "ui/genera/parole.ts", "ui/dati/righe.ts", "ui/disegno/testi.ts", "ui/disegno/disegno-della-funzione.ts"],
   },
   {
     nome: "tsc interfaccia",

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useReducer, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactElement } from "react";
-import { funzioneChiamata, impagina, partiDellaFine, partiDellIntestazione, risultatoDi, type Disegno, type DomandaDellaLettura, type MisuraDelTesto } from "../core/disegno/impaginazione";
+import { funzioneChiamata, partiDellaFine, partiDellIntestazione, risultatoDi, type Disegno, type DomandaDellaLettura, type MisuraDelTesto, type OpzioniDelDisegno } from "../core/disegno/impaginazione";
 import { coppie, perScrittura, stessaDomanda, type Coppia } from "../core/disegno/domanda";
 import { campiConLaDomanda, incollaDiSeguito, trattoDellaVista } from "../core/modifica/domanda";
 import { nomiDeiValoriIniziali, nomiDelDisegno } from "../core/disegno/nomi";
@@ -127,6 +127,7 @@ import { Flowchart, type NomePuntato, type Spostamento } from "./disegno/Flowcha
 import { misuraDelCanvas } from "./disegno/misura";
 import { disegniDiProva } from "./disegno/prova";
 import { testiDelDisegno } from "./disegno/testi";
+import { disegnoDellaFunzione, impaginaNellaLingua, opzioniDelDisegnoDa } from "./disegno/disegno-della-funzione";
 import { areaDelDisegno, limitaLaScala, PASSO, scalaAdatta, VistaFlowchart } from "./disegno/VistaFlowchart";
 import { bozzaDi as bozzaDelDato, conIlValoreDi, datoDaBozza, intero, stessoDato, type BozzaDelDato, type Natura } from "./dati/bozza";
 import { tipoDelDato } from "./dati/righe";
@@ -407,20 +408,16 @@ export function Applicazione({
   const formeDeiCicli = useMemo(() => ({ per: cicliPer, perOgni: cicliPerOgni, copia: copiaDeiVettori }), [cicliPer, cicliPerOgni, copiaDeiVettori]);
   // Il disegno di una funzione, coi valori iniziali dei suoi dati (e delle costanti comuni, nel programma principale)
   // sotto «Inizio», se le Impostazioni li mostrano: li disegna il nucleo, dai dati. I cicli nella forma scelta.
+  // La composizione sta in `disegno/disegno-della-funzione.ts`, la stessa del punto d'ingresso del nucleo.
+  const opzioniDelDisegno = useMemo(
+    (): OpzioniDelDisegno => opzioniDelDisegnoDa({ condizioni, valoriIniziali, valoreRipetuto, cicliPer, cicliPerOgni, copiaDeiVettori, domandaNellaLettura }),
+    [condizioni, valoriIniziali, valoreRipetuto, cicliPer, cicliPerOgni, copiaDeiVettori, domandaNellaLettura],
+  );
   const disegna = useMemo(
     () =>
       (funzione: Funzione, comuni: readonly Dato[] = [], funzioni: readonly Funzione[] = [], records: readonly DefinizioneDelRecord[] = []) =>
-        impagina(
-          funzione,
-          geometriaPredefinita,
-          misuraDelTesto,
-          testiDelDisegno(lingua),
-          { condizioniLunghe: condizioni, valoriIniziali, valoreRipetuto, ...formeDeiCicli, domanda },
-          comuni,
-          funzioni,
-          records,
-        ),
-    [misuraDelTesto, lingua, condizioni, valoriIniziali, valoreRipetuto, formeDeiCicli, domanda],
+        impaginaNellaLingua(funzione, misuraDelTesto, lingua, opzioniDelDisegno, comuni, funzioni, records),
+    [misuraDelTesto, lingua, opzioniDelDisegno],
   );
   // Come la vista dei dati mostra i valori iniziali: lo stesso testo del blocco, dal nucleo.
   const valoriMostrati = useMemo(() => ({ testi: testiDelDisegno(lingua), ripetuto: valoreRipetuto }), [lingua, valoreRipetuto]);
@@ -476,7 +473,10 @@ export function Applicazione({
   const comuniMostrate = costantiComuni;
   const comuniModificabili = true;
   const comuniNelDisegno = nelProgramma ? costantiComuni : undefined;
-  const disegno = useMemo(() => disegna(mostrata, comuniNelDisegno, progetto.functions, progetto.records), [disegna, mostrata, comuniNelDisegno, progetto.functions, progetto.records]);
+  const disegno = useMemo(
+    () => disegnoDellaFunzione({ shared_constants: costantiComuni, functions: progetto.functions, records: progetto.records }, mostrata, misuraDelTesto, lingua, opzioniDelDisegno),
+    [mostrata, costantiComuni, progetto.functions, progetto.records, misuraDelTesto, lingua, opzioniDelDisegno],
+  );
   // Le Letture che mostrano la domanda in tutto il progetto, per `id` della Lettura e della Scrittura: ciò che il disegno
   // unisce, le modifiche e i punti di interruzione lo trattano insieme.
   const coppieDi = (p: Progetto): ReadonlyMap<string, Coppia> =>
@@ -2085,7 +2085,7 @@ export function Applicazione({
     setFinestra({ genere: "stampa" });
   }
   /** Il disegno di una funzione per la stampa, come quello della sua scheda (le costanti comuni nel programma principale). */
-  const disegnoPerLaStampa = (f: Funzione) => disegna(f, f.kind === "main" ? costantiComuni : undefined, progetto.functions, progetto.records);
+  const disegnoPerLaStampa = (f: Funzione) => disegnoDellaFunzione(progetto, f, misuraDelTesto, lingua, opzioniDelDisegno);
   /** I segni dell'esecuzione sul flowchart di una funzione (il suo disegno `d`), con le regole della scheda mostrata: il
    * blocco della pausa, o il valore iniziale nella funzione della pausa se il disegno lo mostra, o il suo «Inizio». */
   const segniPerLaStampa = (f: Funzione, d: Disegno): SegniDellEsecuzione => {
