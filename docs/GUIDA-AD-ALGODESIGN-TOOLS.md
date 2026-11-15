@@ -1,9 +1,10 @@
 # AlgoDesign: guida ad `algodesign-tools`
 
-`algodesign-tools` è lo strumento a riga di comando di AlgoDesign. È un'applicazione a sé, senza finestre, con due comandi:
+`algodesign-tools` è lo strumento a riga di comando di AlgoDesign. È un'applicazione a sé, senza finestre, con tre comandi:
 
 - **`accademico`** legge un testo scritto in «Accademico», lo pseudocodice delle Selezioni scolastiche delle Olimpiadi di Informatica e ne fa una libreria di AlgoDesign;
-- **`stampa`** legge un progetto di AlgoDesign e scrive due pagine HTML: due testi di codice affiancati da stampare e una pagina per provare il programma nel browser.
+- **`stampa`** legge un progetto di AlgoDesign e scrive due pagine HTML: due testi di codice affiancati da stampare e una pagina per provare il programma nel browser;
+- **`flowgorithm`** converte i file di Flowgorithm (`.fprg`) in progetti di AlgoDesign.
 
 Lo strumento scrive solo i file che il comando produce, non apre il browser e non stampa da solo. I suoi messaggi sono in italiano. Come si usa AlgoDesign è nella guida per lo studente (`GUIDA-PER-LO-STUDENTE.md`).
 
@@ -19,6 +20,7 @@ Per Linux lo strumento è `algodesign-tools`, nell'archivio `AlgoDesign-Tools-1.
 .\algodesign-tools -h
 .\algodesign-tools stampa -h
 .\algodesign-tools accademico -h
+.\algodesign-tools flowgorithm -h
 ```
 
 Lo strumento non è firmato digitalmente: su Windows può comparire un avviso al primo avvio, e come procedere è nel `LEGGIMI.md` di AlgoDesign, nel suo pacchetto, ed è lo stesso.
@@ -115,6 +117,35 @@ ERRORE media.algo non ci sta in «Accademico»: mancano 4 cose (l'elenco è nell
 
 Le due pagine si scrivono insieme o per niente. Un linguaggio sconosciuto, lo stesso linguaggio scritto due volte o un'opzione sbagliata fanno scrivere il motivo e l'aiuto.
 
-## 4. Licenza di questa guida
+## 4. Il comando `flowgorithm`
+
+Converte i file di Flowgorithm (`.fprg`) in progetti di AlgoDesign (`.algo`), che si aprono e si eseguono passo passo, con la tabella di traccia. Il programma principale, le procedure e le funzioni del file restano tali; le dichiarazioni diventano i dati della vista dei dati.
+
+```sh
+.\algodesign-tools flowgorithm media.fprg
+.\algodesign-tools flowgorithm esercizi -o convertiti -r
+```
+
+Si dà un file, più file separati da virgole o da spazi, oppure una cartella: si convertono i file `.fprg` che contiene, non quelli delle sottocartelle. Ogni `.algo` prende il nome del suo `.fprg` e va accanto a lui, o nella cartella di `-o`.
+
+```text
+TRASFORMAZIONE esercizi\conta.fprg, riga 16: il «per» di i diventa un «mentre» equivalente: il corpo cambia il contatore o il passo non è un numero scritto
+SCRITTO convertiti\conta.algo
+ERRORE esercizi\onda.fprg, riga 14: La funzione «Sin» di Flowgorithm non ha un equivalente in questa versione di AlgoDesign.
+CONVERTITI 1 file su 2
+```
+
+Una riga `TRASFORMAZIONE` dice dove il programma convertito è scritto in un altro modo, con lo stesso risultato. Se un file non si converte, la riga `ERRORE` dice perché e in quale riga del file; gli altri file si convertono lo stesso e lo strumento esce con 1 invece di 0. Che cosa si converte, che cosa no e le differenze fra i due programmi sono nella guida ai file di Flowgorithm, `GUIDA-AI-FILE-DI-FLOWGORITHM.md`.
+
+| Opzione | Che cosa fa |
+|---|---|
+| `-o` | la cartella dove scrivere i `.algo`, che deve esserci già; senza, accanto a ciascun `.fprg` |
+| `-r` | rinomina un dato dichiarato di nuovo con un altro tipo o un'altra dimensione, o un nome riservato in AlgoDesign; senza, quel file non si converte |
+| `-s` | sostituisce un `.algo` che c'è già; senza, quel file non si converte |
+| `-h` | mostra l'aiuto |
+
+Con `-o`, di due file con lo stesso nome in cartelle diverse si converte solo il primo: l'altro si converte a parte, con un'altra cartella.
+
+## 5. Licenza di questa guida
 
 Questa guida è di Giuseppe Lancellotti ed è rilasciata con licenza Creative Commons Attribuzione 4.0 Internazionale (CC BY 4.0): si può copiare, distribuire e modificare, anche per scopi commerciali, citando l'autore e la licenza. Il testo completo della licenza è nel file `LICENSE-DOCS`.

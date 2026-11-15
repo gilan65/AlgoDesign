@@ -9,6 +9,9 @@
 //   per byte, di `bun ./strumenti/algodesign-tools.ts accademico`;
 // - `stampa` su un progetto del corpus, senza e con `--linguaggi`, scrive le stesse pagine, byte per byte, della stessa
 //   riga con Bun;
+// - `flowgorithm` su una cartella con tre file del corpus (uno che diventa un «mentre», uno che si converte solo con `-r`,
+//   uno che non si converte), con `-o` e `-r`: esce 1, le righe e i due `.algo`, byte per byte, sono quelli di Bun, e i
+//   `.algo` si aprono e passano il controllo statico senza errori;
 // - le tracce: i nomi nuovi al primo livello delle cartelle date intorno ai soli avvii dell'eseguibile; controllo
 //   positivo, l'eseguibile che scrive la sua uscita nella cartella temporanea.
 //
@@ -18,6 +21,8 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
+import { controlla, tetti } from "../core/controllo/controllo";
+import { apri } from "../core/progetto/formato";
 import { delCorpus } from "../ui/genera/attesi-di-accademico";
 
 export interface ProvaDelloStrumento {
@@ -84,7 +89,21 @@ export async function provaDelloStrumento(p: ProvaDelloStrumento): Promise<strin
     righeDiBun.push(`${r.out}${r.err}`.replace(/\r/g, "").trim().replaceAll(libreriaDiBun, "<libreria>"));
   }
 
+  // `flowgorithm`: tre file del corpus in una cartella con uno spazio nel nome; Bun prima, fuori dalla finestra delle tracce.
+  const fileDiFlowgorithm = ["t-per-contatore-assegnato.fprg", "d-nome-riservato.fprg", "n-sin.fprg"];
+  const cartellaFprg = join(lavoro, "file di flowgorithm");
+  mkdirSync(cartellaFprg);
+  for (const f of fileDiFlowgorithm) cpSync(join(radice, "casi-flowgorithm", f), join(cartellaFprg, f));
+  const algoDiBun = join(lavoro, "flowgorithm con bun");
+  const algoDelloStrumento = join(lavoro, "flowgorithm con lo strumento");
+  mkdirSync(algoDiBun);
+  mkdirSync(algoDelloStrumento);
+  const fgDiBun = await esegui([process.execPath, "./strumenti/algodesign-tools.ts", "flowgorithm", cartellaFprg, "-o", algoDiBun, "-r"]);
+  if (fgDiBun.codice !== 1) rosso(C, `bun ./strumenti/algodesign-tools.ts flowgorithm esce ${fgDiBun.codice} invece di 1 (dettaglio nel log)`);
+  const righeFgDiBun = `${fgDiBun.out}${fgDiBun.err}`.replace(/\r/g, "").trim().replaceAll(algoDiBun, "<uscita>");
+
   const prima = fotografia();
+  const fg = await lancia([exe, "flowgorithm", cartellaFprg, "-o", algoDelloStrumento, "-r"]);
   const aiuto = await lancia([exe, "accademico", "-h"]);
   const sbagliata = await lancia([exe, "accademico", "-x"]);
   const errore = await lancia([exe, "accademico", rotto]);
@@ -140,7 +159,23 @@ export async function provaDelloStrumento(p: ProvaDelloStrumento): Promise<strin
     const i = a.findIndex((r, k) => r !== b[k]);
     rosso(C, `la libreria dello strumento non è quella di bun, byte per byte: prima differenza alla riga ${i + 1}, «${a[i]}» invece di «${b[i]}»`);
   }
+  // `flowgorithm`: esito 1 (un file non si converte), le righe di Bun, gli stessi `.algo` byte per byte, che passano il controllo.
+  if (fg.codice !== 1) rosso(C, `flowgorithm esce ${fg.codice} invece di 1: «${fg.uscita}»`);
+  if (fg.uscita.replaceAll(algoDelloStrumento, "<uscita>") !== righeFgDiBun) rosso(C, `flowgorithm: righe «${fg.uscita}» invece di quelle di bun «${righeFgDiBun}»`);
+  const algo = readdirSync(algoDelloStrumento).sort();
+  const algoAttesi = readdirSync(algoDiBun).sort();
+  if (algo.length !== fileDiFlowgorithm.length - 1 || algo.join() !== algoAttesi.join()) rosso(C, `flowgorithm: scritti ${algo.join(", ")} invece di ${algoAttesi.join(", ")} (${fileDiFlowgorithm.length - 1} attesi)`);
+  const controllati: string[] = [];
+  for (const f of algo) {
+    if (impronta(join(algoDelloStrumento, f)) !== impronta(join(algoDiBun, f))) rosso(C, `flowgorithm: ${f} dello strumento non è quello di bun, byte per byte`);
+    const a = apri(readFileSync(join(algoDelloStrumento, f), "utf8"));
+    if (!a.ok) rosso(C, `flowgorithm: ${f} non si apre`);
+    const c = controlla((a as { progetto: Parameters<typeof controlla>[0] }).progetto, tetti);
+    const quanti = c.fuoriTappa ? -1 : c.errori.length;
+    if (quanti !== 0) rosso(C, `flowgorithm: ${f} ha ${quanti < 0 ? "costrutti fuori tappa" : `${quanti} errori statici`}`);
+    controllati.push(`${f} ${statSync(join(algoDelloStrumento, f)).size} byte`);
+  }
   if (!acceso) rosso(C, `controllo positivo delle tracce SPENTO: l'uscita scritta in ${p.temporanea} non si vede`);
   if (tracce.length > 0) rosso(C, `lo strumento lascia tracce: ${tracce.join(", ")}`);
-  return `PATH senza le ${p.cartelleConBun} cartelle con Bun | -h esce 0 col modo d'uso; -x esce 2; il testo con un errore esce 1 («${errore.uscita}») | ${testi.length} testi in una libreria: righe e libreria (${statSync(libreria).size} byte, sha256 ${impronta(libreria)}) uguali a quelle di bun | stampa: ${pagine.length} pagine uguali a quelle di bun (${pagine.join(", ")}) | tracce fuori dalla cartella 0 in ${Object.keys(radiciDelleTracce).join(", ")}, controllo positivo acceso`;
+  return `PATH senza le ${p.cartelleConBun} cartelle con Bun | -h esce 0 col modo d'uso; -x esce 2; il testo con un errore esce 1 («${errore.uscita}») | ${testi.length} testi in una libreria: righe e libreria (${statSync(libreria).size} byte, sha256 ${impronta(libreria)}) uguali a quelle di bun | stampa: ${pagine.length} pagine uguali a quelle di bun (${pagine.join(", ")}) | flowgorithm su ${fileDiFlowgorithm.length} file esce 1: righe uguali a quelle di bun, ${controllati.length} .algo uguali e senza errori statici (${controllati.join(", ")}) | tracce fuori dalla cartella 0 in ${Object.keys(radiciDelleTracce).join(", ")}, controllo positivo acceso`;
 }

@@ -2,6 +2,7 @@
 //
 //   bun run tools accademico <testo.txt> …    da un testo in «Accademico» una libreria di AlgoDesign (`accademico.ts`)
 //   bun run tools stampa <progetto.algo> …    la pagina con due testi di codice affiancati e la pagina di prova (`stampa.ts`)
+//   bun run tools flowgorithm <ingresso> …    dai file di Flowgorithm i progetti di AlgoDesign (`flowgorithm.ts`)
 //   bun run tools -h
 //
 // Il pacchetto lo compila in `algodesign-tools.exe` (`pacchetto.ts`), con le clausole STRUMENTO.
@@ -11,16 +12,18 @@
 // CHE COSA NON FA: nessuna finestra e nessun'altra applicazione avviata; le opzioni dei comandi le legge ciascuno.
 import { basename, extname } from "node:path";
 import { comandoAccademico } from "./accademico";
+import { comandoFlowgorithm } from "./flowgorithm";
 import { comandoStampa } from "./stampa";
 
 // Il nome come lo scrive chi lo usa: `bun run tools` nel repository, il nome dell'eseguibile a sé fuori.
 const nome = basename(process.execPath).toLowerCase().startsWith("bun") ? "bun run tools" : basename(process.execPath, extname(process.execPath));
-const comandi = { accademico: comandoAccademico, stampa: comandoStampa } as const;
+const comandi = { accademico: comandoAccademico, stampa: comandoStampa, flowgorithm: comandoFlowgorithm } as const;
 
 const modoDUso = `Gli strumenti di AlgoDesign a riga di comando.
 
   ${nome} accademico <testo.txt> [opzioni]    da un testo in «Accademico» una libreria di AlgoDesign
   ${nome} stampa <progetto.algo> [opzioni]    due testi di codice affiancati da stampare e la pagina di prova nel browser
+  ${nome} flowgorithm <ingresso> [opzioni]    dai file di Flowgorithm (.fprg) i progetti di AlgoDesign (.algo)
   ${nome} <comando> -h                        l'aiuto di un comando
   ${nome} -h                                  mostra questo aiuto
 `;

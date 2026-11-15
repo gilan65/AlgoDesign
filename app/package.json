@@ -10,6 +10,7 @@
     "casi": "bun ./strumenti/casi.ts",
     "tools": "bun ./strumenti/algodesign-tools.ts",
     "accademico": "bun ./strumenti/algodesign-tools.ts accademico",
+    "flowgorithm": "bun ./strumenti/algodesign-tools.ts flowgorithm",
     "differenziale": "bun ./strumenti/differenziale.ts",
     "collaudo": "bun ./strumenti/collaudo.ts",
     "conferma-corpus": "bun ./strumenti/corpus.ts --conferma",
