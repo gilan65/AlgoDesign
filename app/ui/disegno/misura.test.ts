@@ -26,9 +26,12 @@ const motori: Record<string, Motore> = {
 };
 
 let creati = 0;
+// Il canvas finto si toglie dopo ogni prova: tutti i file di `bun test` corrono nello stesso processo, e un
+// `createElement` sostituito e lasciato lì passerebbe agli altri file (misurato: 250 prove rosse, la pila esaurita).
+let spia: { mockRestore: () => void } | null = null;
 function usa(motore: Motore): void {
   const originale = document.createElement.bind(document);
-  spyOn(document, "createElement").mockImplementation(((nome: string, opzioni?: ElementCreationOptions) => {
+  spia = spyOn(document, "createElement").mockImplementation(((nome: string, opzioni?: ElementCreationOptions) => {
     if (nome !== "canvas") return originale(nome, opzioni);
     creati++;
     let impostato = "10px sans-serif";
@@ -51,7 +54,18 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  spia?.mockRestore();
+  spia = null;
   document.documentElement.style.removeProperty("--carattere");
+});
+
+test("dopo le prove col canvas finto, createElement è di nuovo quello di happy-dom", () => {
+  usa(motori.fedele!);
+  spia!.mockRestore();
+  spia = null;
+  const canvas = document.createElement("canvas");
+  expect(canvas instanceof HTMLCanvasElement).toBe(true);
+  expect(creati).toBe(0);
 });
 
 test("la famiglia del tema arriva al controllo (premessa delle prove sotto)", () => {
