@@ -76,10 +76,12 @@ export function testoPerLoStrumento(m: Messaggio): string {
 /** Il file, non la sua scrittura: i collegamenti seguiti; le maiuscole contano solo dove il sistema le distingue. */
 const ilFile = (p: string): string => {
   let r = resolve(p);
-  if (existsSync(r))
-    try {
-      r = realpathSync.native(r);
-    } catch {}
+  // Il percorso vero, anche per un file che non c'è ancora (l'uscita prima di scriverla): quello della sua cartella. Senza,
+  // una cartella raggiunta da un collegamento (sul Mac `/var/…` è `/private/var/…`) darebbe due chiavi allo stesso file,
+  // una prima della scrittura e una dopo.
+  try {
+    r = existsSync(r) ? realpathSync.native(r) : join(realpathSync.native(dirname(r)), basename(r));
+  } catch {}
   return process.platform === "linux" ? r : r.toLowerCase();
 };
 

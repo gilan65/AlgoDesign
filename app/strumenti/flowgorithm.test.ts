@@ -9,7 +9,7 @@
 // Che cosa NON guarda: gli esiti del lettore file per file (`core/lettore/casi-flowgorithm.test.ts`; qui il corpus serve
 // a provare il comando, coi file e i conteggi presi dall'elenco); l'eseguibile a sé (la prova del pacchetto).
 import { afterAll, beforeAll, expect, test } from "bun:test";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { controlla, tetti } from "../core/controllo/controllo";
@@ -168,6 +168,27 @@ test("con -o due file con lo stesso nome: il secondo non si converte, il primo s
   const manca = join(uscita, "manca");
   expect(lancia(uno, "-o", manca)).toEqual({ esito: esito.nonTuttiConvertiti, righe: [`ERRORE la cartella ${manca} non c'è`] });
   expect(existsSync(join(uno, "t-per.algo"))).toBe(false);
+});
+
+test("con -o una cartella raggiunta da un collegamento, il secondo file con lo stesso nome è ancora «già l'uscita» del primo", () => {
+  // Sul Mac la cartella temporanea `/var/…` è un collegamento a `/private/var/…`: prima della scrittura il file d'uscita
+  // non c'è e il suo percorso vero non si legge, dopo sì, e le due chiavi non coincidevano (il secondo file riceveva
+  // «c'è già», e con -s avrebbe sostituito il primo). Qui lo stesso con un collegamento fatto apposta.
+  const uno = nuova("t-per.fprg");
+  const due = nuova("t-per.fprg");
+  const vera = nuova();
+  const collegamento = join(nuova(), "uscita");
+  symlinkSync(vera, collegamento, "junction");
+  const scritto = join(collegamento, "t-per.algo");
+  expect(lancia(uno, due, "-o", collegamento)).toEqual({
+    esito: esito.nonTuttiConvertiti,
+    righe: [
+      `SCRITTO ${scritto}`,
+      `ERRORE ${join(due, "t-per.fprg")} non si converte: ${scritto} è già l'uscita di ${join(uno, "t-per.fprg")}; convertilo a parte, con un'altra cartella -o`,
+      `CONVERTITI ${[uno].length} file su ${[uno, due].length}`,
+    ],
+  });
+  expect(readdirSync(vera)).toEqual(["t-per.algo"]);
 });
 
 test("un .algo che c'è già: senza -s il file non si converte e il .algo resta com'era; con -s si sostituisce", () => {
