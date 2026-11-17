@@ -10,6 +10,9 @@ import { geometriaPredefinita } from "../../core/disegno/tema";
 /** Come il canvas scrive lo stile davanti alla dimensione: lo stesso peso e la stessa pendenza del foglio di stile. */
 const davanti: Readonly<Record<StileDelTesto | "normale", string>> = { normale: "", grassetto: "bold ", corsivo: "italic " };
 
+/** Il testo con cui si controlla che uno stile cambi davvero la misura. */
+const CAMPIONE = "AlgoDesign 0123456789 ← somma";
+
 export function misuraDelCanvas(dimensione: number = geometriaPredefinita.carattere): MisuraDelTesto {
   const famiglia = getComputedStyle(document.documentElement).getPropertyValue("--carattere").trim();
   const contesti = new Map<StileDelTesto | "normale", CanvasRenderingContext2D>();
@@ -19,11 +22,17 @@ export function misuraDelCanvas(dimensione: number = geometriaPredefinita.caratt
     const carattere = `${davanti[stile]}${dimensione}px ${famiglia}`;
     contesto.font = carattere;
     // Un carattere che il canvas non sa leggere viene ignorato in silenzio (resta «10px sans-serif»), e la
-    // misura sarebbe di un altro carattere; uno stile ignorato misurerebbe il grassetto come il normale.
+    // misura sarebbe di un altro carattere: la dimensione riletta lo dice.
     const letto = contesto.font;
     const conLoStile = stile === "grassetto" ? [davanti.grassetto, "700 "] : [davanti[stile]];
-    if (famiglia === "" || !conLoStile.some((s) => letto.startsWith(`${s}${dimensione}px`)))
+    const nominato = conLoStile.some((s) => letto.startsWith(`${s}${dimensione}px`));
+    if (famiglia === "" || !(nominato || letto.startsWith(`${dimensione}px`)))
       throw new Error(`il canvas non accetta il carattere del tema «${carattere}» (ha «${letto}»)`);
+    // Uno stile ignorato misurerebbe il grassetto come il normale. Di solito lo dice il carattere riletto; il WebKit di
+    // Safari 16 (macOS 13) applica il grassetto ma lo toglie quando lo rilegge, e lì lo dice la misura.
+    const normale = contesti.get("normale");
+    if (!nominato && (normale === undefined || contesto.measureText(CAMPIONE).width === normale.measureText(CAMPIONE).width))
+      throw new Error(`il canvas non accetta il carattere del tema «${carattere}» (ha «${letto}», e lo stile non cambia la misura)`);
     contesti.set(stile, contesto);
   }
   const misurati = new Map<string, number>();
