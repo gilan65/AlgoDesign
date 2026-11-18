@@ -59,8 +59,11 @@
 
 /* I segni del controllo, come sui blocchi: un bollino col punto esclamativo (errore) o di domanda
    (avviso) prima del nome, e la riga sottolineata del colore del segno. Il bollino è solo da vedere: il
-   suo testo alternativo è vuoto, e il lettore di schermo legge la descrizione della riga. */
+   suo testo alternativo è vuoto, e il lettore di schermo legge la descrizione della riga. Il testo alternativo dopo la
+   barra il WebKit di Safari 16 (macOS 13) non lo conosce e scarta la dichiarazione: prima, la stessa senza la barra
+   (`ripieghi-del-css.test.ts`). */
 [data-segno] > th:first-child::before {
+  content: "!";
   content: "!" / "";
   display: inline-grid;
   place-content: center;
@@ -75,6 +78,7 @@
 }
 
 [data-segno="avviso"] > th:first-child::before {
+  content: "?";
   content: "?" / "";
   background: var(--colore-avviso);
 }
