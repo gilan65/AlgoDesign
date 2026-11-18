@@ -6,12 +6,15 @@ import { annotaErrore, ascoltaGliErrori } from "./errori-dell-app";
 import { ErroreInatteso } from "./ErroreInatteso";
 import { fuocoAlClic } from "./fuoco-al-clic";
 import { leggiPreferenze, preferenzeDa } from "./preferenze";
+import { stampaDelMac } from "./stampa/stampa-del-mac";
 import "./tema.css";
 
 // Prima di tutto il resto: un errore dell'avvio non deve sfuggire.
 ascoltaGliErrori();
 // Il clic dà il fuoco a caselle e pulsanti anche nel WebKit del Mac, come negli altri motori (`fuoco-al-clic.ts`).
 fuocoAlClic();
+// Sul Mac la stampa chiede al guscio il pannello di macOS coi margini della pagina (`stampa-del-mac.ts`).
+stampaDelMac();
 
 const radice = document.getElementById("radice");
 if (!radice) throw new Error("manca l'elemento #radice in index.html");

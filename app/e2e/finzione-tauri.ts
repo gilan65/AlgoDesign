@@ -67,6 +67,8 @@ export interface Finzione {
   scritturaRifiutata?: string | null;
   /** Le voci di ogni menu del Mac mandato al guscio (`imposta_menu`), in ordine. */
   menu?: Record<string, string>[];
+  /** I margini di ogni stampa chiesta al guscio sul Mac (`stampa_del_mac`), in millimetri, in ordine. */
+  stampeDelMac?: { sopra: number; destra: number; sotto: number; sinistra: number }[];
 }
 
 declare global {
@@ -219,6 +221,11 @@ mockIPC((comando, argomenti) => {
       return null;
     case "imposta_menu":
       (f.menu ??= []).push(a.voci as Record<string, string>);
+      return null;
+    case "stampa_del_mac":
+      // Il guscio vero apre il pannello di macOS e il motore manda `afterprint` quando si chiude: qui subito.
+      (f.stampeDelMac ??= []).push({ sopra: a.sopra as number, destra: a.destra as number, sotto: a.sotto as number, sinistra: a.sinistra as number });
+      window.dispatchEvent(new Event("afterprint"));
       return null;
   }
   throw new Error(`comando non simulato: ${comando}`);
