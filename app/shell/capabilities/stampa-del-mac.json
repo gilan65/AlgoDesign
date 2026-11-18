@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "stampa-del-mac",
+  "description": "Sul Mac Tauri mette al posto di window.print() il suo comando di stampa (il pannello di macOS), che senza questo permesso viene rifiutato in silenzio. Su Windows e Linux window.print() resta quello del motore.",
+  "windows": ["principale"],
+  "platforms": ["macOS"],
+  "permissions": ["core:webview:allow-print"]
+}
