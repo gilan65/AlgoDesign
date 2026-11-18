@@ -17,6 +17,9 @@
 # Il lato di una prova che gira sotto Node, senza compilazione.
 *.cjs text eol=lf
 
+# Le chiavi che Tauri fonde nell'Info.plist dell'app per il Mac: testo XML.
+*.plist text eol=lf
+
 # Le figure delle guide disegnate come SVG: testo.
 *.svg text eol=lf
 
