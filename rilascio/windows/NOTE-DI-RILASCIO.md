@@ -1,20 +1,14 @@
 # AlgoDesign {{versione}}: note di rilascio
 
-Versione {{delData}}. È la **prima versione stabile** di AlgoDesign, per Windows 10 e 11 a 64 bit, nella forma portabile: si estrae lo zip e si avvia `AlgoDesign.exe`, senza installarlo. Dalla stessa pagina si scarica anche la versione per Linux; quella per macOS arriverà con la 1.0.1. Come si avvia l'applicazione, i suoi requisiti e l'avviso di Windows al primo avvio sono nel file `LEGGIMI.md` (in inglese `README.md`); la scrittura del primo algoritmo, passo per passo, è nella guida «per cominciare», `PER-COMINCIARE.md` (in inglese `GETTING-STARTED.md`); come si usa l'applicazione è nella guida per lo studente, `GUIDA-PER-LO-STUDENTE.md` (in inglese `STUDENT-GUIDE.md`).
+Versione {{delData}}, per Windows 10 e 11 a 64 bit, nella forma portabile: si estrae lo zip e si avvia `AlgoDesign.exe`, senza installarlo. Dalla stessa pagina si scaricano anche le versioni per Linux e, da questa versione, per macOS. Come si avvia l'applicazione, i suoi requisiti e l'avviso di Windows al primo avvio sono nel file `LEGGIMI.md` (in inglese `README.md`); la scrittura del primo algoritmo, passo per passo, è nella guida «per cominciare», `PER-COMINCIARE.md` (in inglese `GETTING-STARTED.md`); come si usa l'applicazione è nella guida per lo studente, `GUIDA-PER-LO-STUDENTE.md` (in inglese `STUDENT-GUIDE.md`).
 
 ## Che cosa c'è di nuovo
 
-Rispetto alla versione 0.7.0-beta.3:
+Rispetto alla versione 1.0.0:
 
-- **Correggere in pausa.** Fermi in pausa, il flowchart, i dati e i casi d'uso si modificano; «Continua» diventa **Riesegui** (F5), che riesegue il programma modificato con le stesse letture, senza riscriverle, e si ferma allo stesso passaggio dello stesso blocco. Una casella delle Impostazioni offre lo stesso dopo un errore che ha fermato il programma. La guida lo spiega nel §6.
-- **Scrivere un valore a mano.** In pausa, e anche mentre il programma aspetta una lettura, un doppio clic su una cella della tabella di traccia corregge il valore senza cambiare il programma: la cella diventa verde lime e dice il valore di prima, «100 (era 3)». La tabella esportata ha in fondo la colonna «Valori modificati».
-- **Segnalare un malfunzionamento.** Nel menu «Aiuto», «Salva per segnalare un malfunzionamento…» salva in un file di testo ciò che serve a riprodurre l'ultima esecuzione; «Attiva la registrazione delle esecuzioni» registra anche quelle che seguono, per un file più dettagliato. AlgoDesign non invia nulla da solo: il file si allega a una segnalazione su GitHub, come spiega la guida per segnalare un malfunzionamento, `GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md` (in inglese `GUIDE-TO-REPORTING-A-MALFUNCTION.md`), accanto al programma. La guida per lo studente ha un capitolo nuovo, il §15.
-- **La guida «per cominciare»**, `PER-COMINCIARE.md` (in inglese `GETTING-STARTED.md`), con le figure della finestra nella cartella `img`.
-- **Ctrl+Maiusc+P** apre la finestra «Stampa» di AlgoDesign, come Ctrl+P.
-- **Il PNG di un flowchart di grandi dimensioni** viene salvato ridotto, quando supera la misura che la finestra sa disegnare; la riga di stato dice la misura in pixel.
-- **La pagina di prova** dello strumento a riga di comando mostra la riga di un errore anche in Firefox.
-- **Lo strumento a riga di comando legge più testi.** Il comando `accademico` accetta le forme dei testi più vecchi delle Selezioni scolastiche, aggiunge da sé `massimo` e `minimo`, e al posto di un codice d'errore scrive una frase che dice che cosa non va.
-- **Correzioni**: un valore rifiutato nella tabella di traccia trattiene i comandi che proseguono, e «Ferma» ferma sempre; in una tabella di traccia lunga, il testo scritto in un campo c'è ancora quando il campo torna in vista con la rotella; in una cella con più valori il nome accanto a un parametro per riferimento è quello giusto; la console nomina il campo o l'elemento chiesto, non solo il dato; una funzione che restituisce una matrice di record è un errore, come per un dato; importando procedure e funzioni, un dato che ha il nome di un record del programma è segnalato subito.
+- **La versione per macOS**, dalla stessa pagina: un'app universale, per i Mac con chip Apple e per quelli con processore Intel, da macOS 13.3 in poi. I progetti sono gli stessi: uno fatto su Windows si apre sul Mac senza cambiamenti, e il contrario.
+- **Lo strumento a riga di comando converte i file di Flowgorithm.** Il comando nuovo `flowgorithm` legge i file di Flowgorithm (`.fprg`) e ne fa progetti di AlgoDesign, che si aprono e si eseguono passo passo: un file, più file o una cartella intera. Che cosa si converte e che cosa no lo dice la guida ai file di Flowgorithm, `GUIDA-AI-FILE-DI-FLOWGORITHM.md`.
+- **Aprire un progetto all'avvio**: la guida per lo studente dice come dare il file ad AlgoDesign su ogni sistema; su Windows anche trascinando il file sopra `AlgoDesign.exe`, o col tasto destro e «Apri con».
 
 ## Che cosa c'è
 
@@ -37,13 +31,12 @@ Rispetto alla versione 0.7.0-beta.3:
 
 Ciò che è previsto per le prossime versioni e che oggi non c'è. Non sono difetti.
 
-- **La versione per macOS**, con la 1.0.1.
 - **In «Accademico» e nello strumento a riga di comando**: le matrici, i tipi `float` e `char`, `SQRT` e `-Infinity`.
 - **Il limite di un milione di azioni e quello dei 1000 elementi di un vettore**: la guida ad «Accademico» spiega come rispondere lo stesso a un esercizio che li supera.
 
 ## Da sapere
 
-- **I progetti delle versioni precedenti** si aprono con questa senza cambiamenti. **Non vale il contrario**: un progetto salvato con questa versione non si apre con le versioni precedenti alla 0.7.0-beta.3.
+- **I progetti delle versioni precedenti**, anche quelli fatti su Linux e sul Mac, si aprono con questa senza cambiamenti. **Non vale il contrario**: un progetto salvato con questa versione non si apre con le versioni precedenti alla 0.7.0-beta.3.
 - **Il codice generato è semplice, da leggere**: non controlla i calcoli che il C lascia senza una regola (un intero che esce dal suo intervallo, una divisione intera per zero, un indice fuori dal vettore, un reale fuori dall'intervallo degli interi convertito in intero, un dato letto prima di avere un valore), né un reale che diventa infinito o non è un numero. Un commento in testa al programma Python, C e TypeScript lo dice; AlgoDesign, invece, ferma l'esecuzione su ognuno di questi errori e indica il blocco. Su questi calcoli il Python, il C e il TypeScript generati possono dare risultati diversi fra loro.
 - **Un ciclo che non finisce**: AlgoDesign ferma l'esecuzione dopo un milione di azioni; il Python, il C e il TypeScript generati non hanno questo limite e il programma va fermato a mano.
 - **Il Python generato** vuole Python 3.11 o successivo; il C generato si compila con un compilatore C11; il TypeScript generato si esegue con Node.js 24.

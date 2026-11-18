@@ -1,7 +1,7 @@
 {
   "name": "algodesign",
-  "version": "1.0.0",
-  "dataDiRilascio": "2026-11-08",
+  "version": "1.0.1",
+  "dataDiRilascio": "2026-11-19",
   "private": true,
   "type": "module",
   "scripts": {

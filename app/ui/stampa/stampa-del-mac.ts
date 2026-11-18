@@ -2,10 +2,11 @@
 // il pannello di stampa di macOS con i margini a zero (wry li prende a parte, e Tauri non glieli passa): il testo toccava
 // il bordo del foglio (misurato nei Mac virtuali 13.3 e 27). Il WebKit del Mac non legge i margini delle regole `@page`;
 // il comando del guscio `stampa_del_mac` apre lo stesso pannello coi margini di `MARGINI`. Fuori dal Mac, e fuori dal
-// guscio, `window.print()` resta quello del motore. `afterprint` arriva come col comando di Tauri: la stampa è la stessa.
+// guscio, `window.print()` resta quello del motore. `afterprint` arriva quando il pannello si chiude, con «PDF» e con
+// «Annulla» (misurato su macOS 13.3, in un WKWebView con le stesse chiamate del guscio): la pagina stampata esce.
 //
 // CHE COSA NON FA: il verso dei fogli e le caselle del margine (intestazione e piè di pagina), che il WebKit del Mac non
-// conosce: i fogli escono tutti in verticale (misurato nel PDF; il pannello non mostra il verso).
+// conosce: i fogli escono tutti in verticale (misurato nel PDF; il pannello, anche nella sezione «Layout», non ha il verso).
 import { invoke } from "@tauri-apps/api/core";
 import { annotaErrore } from "../errori-dell-app";
 import { sulMac } from "../piattaforma";
