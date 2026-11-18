@@ -384,6 +384,25 @@ const necessario = (e: ElementoXml, nome: string): string => {
   return v!;
 };
 const figlio = (e: ElementoXml, nome: string): ElementoXml | undefined => e.figli.find((f) => f.nome === nome);
+/** I figli che Flowgorithm scrive dentro un elemento, ciascuno una volta: un altro, o lo stesso due volte, ferma il file
+ * (senza, il lettore lo salterebbe in silenzio). */
+const soloFigli = (e: ElementoXml, ammessi: readonly string[]) => {
+  const visti = new Set<string>();
+  for (const f of e.figli) {
+    if (!ammessi.includes(f.nome) || visti.has(f.nome))
+      ferma("file_non_leggibile", f.riga, { dettaglio: `l'elemento «<${f.nome}>» della riga ${f.riga} non è di Flowgorithm in quel punto` });
+    visti.add(f.nome);
+  }
+};
+/** Un attributo con due valori (in qualunque maiuscola): vero per `si`, falso per `no`, il predefinito se manca; un altro
+ * valore ferma il file. */
+const sceltaFra = (e: ElementoXml, nome: string, si: string, no: string, predefinito: boolean): boolean => {
+  const v = e.attributi.get(nome);
+  if (v === undefined) return predefinito;
+  if (v.toLowerCase() === si) return true;
+  if (v.toLowerCase() === no) return false;
+  return ferma("file_non_leggibile", e.riga, { dettaglio: `l'attributo «${nome}» dell'elemento «<${e.nome}>» della riga ${e.riga} vale «${v}»` });
+};
 
 function tipoDiFlowgorithm(testo: string, e: ElementoXml): TipoF {
   const t = tipiDiFlowgorithm[testo.toLowerCase()];
@@ -395,7 +414,15 @@ function liberoDa(nome: string, usati: ReadonlySet<string>): string {
   for (let k = 2; ; k++) if (!usati.has(`${nome}_${k}`.toLowerCase())) return `${nome}_${k}`;
 }
 
+/** Il carattere che la decodifica UTF-8 mette al posto dei byte che non lo sono (un file salvato in un'altra codifica). */
+const sostitutivo = String.fromCharCode(0xfffd);
+
 function converti(testo: string, opzioni: OpzioniDellaConversione): Conversione {
+  const dove = testo.indexOf(sostitutivo);
+  if (dove >= 0) {
+    const riga = testo.slice(0, dove).split("\n").length;
+    ferma("file_non_leggibile", riga, { dettaglio: `il testo non è scritto in UTF-8 (riga ${riga})` });
+  }
   const x = leggiXml(testo);
   if (!x.ok) return ferma("file_non_leggibile", x.riga, { dettaglio: `${x.motivo} (riga ${x.riga})` });
   const radice = x.radice;
@@ -417,14 +444,17 @@ function converti(testo: string, opzioni: OpzioniDellaConversione): Conversione 
     if (f.nome !== "function") ferma("file_non_leggibile", f.riga, { dettaglio: `l'elemento «<${f.nome}>» della riga ${f.riga} non è di Flowgorithm` });
     const nome = necessario(f, "name");
     const tipo = necessario(f, "type");
+    soloFigli(f, ["parameters", "body"]);
     const parametri = (figlio(f, "parameters")?.figli ?? []).map((p) => {
       if (p.nome !== "parameter") ferma("file_non_leggibile", p.riga, { dettaglio: `l'elemento «<${p.nome}>» della riga ${p.riga} non è di Flowgorithm` });
-      return { nome: necessario(p, "name"), tipo: tipoDiFlowgorithm(necessario(p, "type"), p), vettore: (attributo(p, "array") ?? "False").toLowerCase() === "true", riga: p.riga };
+      return { nome: necessario(p, "name"), tipo: tipoDiFlowgorithm(necessario(p, "type"), p), vettore: sceltaFra(p, "array", "true", "false", false), riga: p.riga };
     });
     firme.push({ nome, tipo: tipo.toLowerCase() === "none" ? undefined : tipoDiFlowgorithm(tipo, f), parametri, elemento: f, principale: nome.toLowerCase() === "main" });
   }
   const principale = firme.find((f) => f.principale);
   if (principale === undefined) ferma("file_non_leggibile", radice.riga, { dettaglio: "il file non ha il programma principale («Main»)" });
+  const secondo = firme.filter((f) => f.principale)[1];
+  if (secondo !== undefined) ferma("file_non_leggibile", secondo.elemento.riga, { dettaglio: `il file ha un secondo programma principale («Main») alla riga ${secondo.elemento.riga}` });
 
   // I nomi delle procedure e funzioni, senza le maiuscole; un nome riservato si rinomina a richiesta.
   const usatiDovunque = new Set<string>(firme.map((f) => f.nome.toLowerCase()));
@@ -471,7 +501,8 @@ function converti(testo: string, opzioni: OpzioniDellaConversione): Conversione 
     f.parametri.forEach((p, k) => {
       const n = nomeValido(p.nome, false, p.riga, usati);
       usati.add(n.toLowerCase());
-      const scrittoENonLetto = p.vettore && procedura && !leggeIlParametro(corpo!, p.nome);
+      // Per uscita solo se lo riempie tutto: scritto in una parte, il vettore di chi chiama perderebbe gli altri valori.
+      const scrittoENonLetto = p.vettore && procedura && !leggeIlParametro(corpo!, p.nome) && loRiempieTutto(corpo!, p.nome);
       const d: DatoLetto = { nome: n, tipo: p.tipo, parametro: p.vettore && procedura ? (scrittoENonLetto ? "out" : "reference") : "value", riga: p.riga };
       if (p.vettore) d.dimensione = dimensioniDeiParametri.get(`${f.nome.toLowerCase()}#${k}`) ?? ferma("dimensioni_diverse_negli_argomenti", f.elemento.riga, { nome: f.nome });
       if (scrittoENonLetto) trasformazioni.push({ specie: "vettore-per-uscita", riga: p.riga, nome: n });
@@ -641,10 +672,11 @@ function converti(testo: string, opzioni: OpzioniDellaConversione): Conversione 
           const n = espressione(necessario(b, "expression"), riga);
           // `&` in una scrittura: ogni parte è un valore della scrittura (Flowgorithm unisce anche i numeri).
           const parti = n.g === "binario" && n.op === "&" ? partiDellUnione(n) : [n];
-          const a = (attributo(b, "newline") ?? "True").toLowerCase() !== "false";
+          const a = sceltaFra(b, "newline", "true", "false", true);
           return [{ id: nuovoId(), kind: "write", values: parti.map((p) => testoVerificato(traduci(p, riga).e)), newline: a }];
         }
         case "if":
+          soloFigli(b, ["then", "else"]);
           return [{
             id: nuovoId(), kind: "if", condition: condizione(b),
             then: sequenza(figlio(b, "then")?.figli ?? []), else: sequenza(figlio(b, "else")?.figli ?? []),
@@ -679,7 +711,7 @@ function converti(testo: string, opzioni: OpzioniDellaConversione): Conversione 
       // `name` dalla versione 2; `variables` nei file 1.x (misurato: la 4.5 li riscrive così).
       const nomi = (attributo(b, "name") ?? attributo(b, "variables") ?? necessario(b, "name")).split(",").map((s) => s.trim()).filter((s) => s !== "");
       const tipo = tipoDiFlowgorithm(necessario(b, "type"), b);
-      const vettore = (attributo(b, "array") ?? "False").toLowerCase() === "true";
+      const vettore = sceltaFra(b, "array", "true", "false", false);
       let dimensione: number | undefined;
       if (vettore) {
         const scritta = (attributo(b, "size") ?? "").trim();
@@ -722,12 +754,16 @@ function converti(testo: string, opzioni: OpzioniDellaConversione): Conversione 
       const riga = b.riga;
       const contatore = traduci(espressione(necessario(b, "variable"), riga), riga);
       const da = adatta(traduci(espressione(necessario(b, "start"), riga), riga), "intero");
-      const a = adatta(traduci(espressione(necessario(b, "end"), riga), riga), "intero");
+      const fine = traduci(espressione(necessario(b, "end"), riga), riga);
+      const a = adatta(fine, "intero");
+      // Una fine reale: Flowgorithm confronta il contatore col reale (misurato: da 5 a 5 / 2 all'indietro dà 5, 4, 3; da 0 a
+      // 0 - 1 / 2 nessun giro), e troncarla per un «per» darebbe un giro in più o in meno: il «mentre» col confronto vero.
+      const fineReale = fine.t === "reale";
       const passo = (attributo(b, "step") ?? "1").trim();
       // Senza `direction`, come nei file 1.x, il verso è `inc` (misurato: la 4.5 lo riscrive così).
-      const indietro = (attributo(b, "direction") ?? "inc").toLowerCase() === "dec";
+      const indietro = sceltaFra(b, "direction", "dec", "inc", false);
       const nomeDelContatore = contatore.e.genere === "nome" ? contatore.e.nome : undefined;
-      if (/^[0-9]+$/.test(passo) && Number(passo) > 0 && nomeDelContatore !== undefined && !assegnaIlContatore(b.figli, (necessario(b, "variable")).toLowerCase())) {
+      if (!fineReale && /^[0-9]+$/.test(passo) && Number(passo) > 0 && nomeDelContatore !== undefined && !assegnaIlContatore(b.figli, (necessario(b, "variable")).toLowerCase())) {
         const p = (indietro ? -1 : 1) * Number(passo);
         return [{ id: nuovoId(), kind: "for", counter: nomeDelContatore, from: testoVerificato(da), to: testoVerificato(a), ...(p !== 1 ? { step: p } : {}), body: sequenza(b.figli) }];
       }
@@ -739,7 +775,7 @@ function converti(testo: string, opzioni: OpzioniDellaConversione): Conversione 
       return [
         { id: nuovoId(), kind: "assignment", target: c, value: testoVerificato(da) },
         {
-          id: nuovoId(), kind: "while", condition: testoVerificato(binario(indietro ? ">=" : "<=", contatore.e, a)),
+          id: nuovoId(), kind: "while", condition: testoVerificato(binario(indietro ? ">=" : "<=", contatore.e, fineReale ? fine.e : a)),
           body: [...corpo, { id: nuovoId(), kind: "assignment", target: c, value: testoVerificato(binario(indietro ? "-" : "+", contatore.e, passoTradotto)) }],
         },
       ];
@@ -858,6 +894,24 @@ function leggeIlParametro(corpo: ElementoXml, nome: string): boolean {
     }
   }
   return false;
+}
+
+/** Se il corpo riempie tutto il vettore ricevuto: un «per» fra i suoi blocchi (non dentro un «se» o un altro ciclo), da 0 a
+ * `Size(v) - 1` in avanti col passo 1, con l'assegnazione `v[i]` fra i blocchi del suo corpo. */
+function loRiempieTutto(corpo: ElementoXml, nome: string): boolean {
+  const k = nome.toLowerCase();
+  const pulito = (s: string | undefined) => (s ?? "").replace(/\s+/g, "").toLowerCase();
+  return corpo.figli.some((b) => {
+    if (b.nome !== "for") return false;
+    const i = pulito(b.attributi.get("variable"));
+    return (
+      pulito(b.attributi.get("start")) === "0" &&
+      pulito(b.attributi.get("end")) === `size(${k})-1` &&
+      pulito(b.attributi.get("step") ?? "1") === "1" &&
+      pulito(b.attributi.get("direction") ?? "inc") === "inc" &&
+      b.figli.some((a) => a.nome === "assign" && pulito(a.attributi.get("variable")) === `${k}[${i}]`)
+    );
+  });
 }
 
 /** Se una funzione ha effetti che in AlgoDesign solo una procedura ha: legge, scrive, o cambia un vettore ricevuto. */

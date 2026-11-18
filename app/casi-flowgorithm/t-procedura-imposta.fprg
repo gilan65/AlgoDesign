@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="t-procedura-imposta"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value=""/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="v" type="Integer" array="True" size="3"/>
+            <assign variable="v[0]" expression="1"/>
+            <assign variable="v[1]" expression="2"/>
+            <assign variable="v[2]" expression="3"/>
+            <call expression="Imposta(v, 1, 9)"/>
+            <output expression="v[0] &amp; &quot; &quot; &amp; v[1] &amp; &quot; &quot; &amp; v[2]" newline="True"/>
+        </body>
+    </function>
+    <function name="Imposta" type="None" variable="">
+        <parameters>
+            <parameter name="w" type="Integer" array="True"/>
+            <parameter name="pos" type="Integer" array="False"/>
+            <parameter name="val" type="Integer" array="False"/>
+        </parameters>
+        <body>
+            <assign variable="w[pos]" expression="val"/>
+        </body>
+    </function>
+</flowgorithm>

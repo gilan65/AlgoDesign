@@ -21,7 +21,7 @@
 // Che cosa NON guarda: le sottocartelle; un collegamento fisico (hard link) fra due uscite; `created`, `edited` e
 // `saved`, che il lettore non passa e lo strumento non mostra.
 
-import { existsSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import type { Causa } from "../core/espressioni/analizzatore";
 import { leggiFlowgorithm, testoDelMessaggio, type Messaggio, type Trasformazione } from "../core/lettore/flowgorithm";
@@ -53,7 +53,7 @@ Esempio:
 export function descrizioneDellaTrasformazione(t: Trasformazione): string {
   switch (t.specie) {
     case "per-come-mentre":
-      return `il «per»${t.nome !== undefined ? ` di ${t.nome}` : ""} diventa un «mentre» equivalente: il corpo cambia il contatore o il passo non è un numero scritto`;
+      return `il «per»${t.nome !== undefined ? ` di ${t.nome}` : ""} diventa un «mentre» equivalente: il corpo cambia il contatore, il passo non è un numero scritto o la fine non è un numero intero`;
     case "dichiarazione-nel-blocco":
       return `il dato ${t.nome} è dichiarato dentro un blocco: in AlgoDesign diventa un dato della funzione`;
     case "rinomina-dichiarazione":
@@ -121,7 +121,7 @@ export function comandoFlowgorithm(argomenti: readonly string[], comando: string
 
   // La cartella di `-o` si guarda prima di tutto: se manca, nessun file si converte.
   if (uscita !== undefined && !eUnaCartella(uscita)) {
-    console.log(`ERRORE la cartella ${uscita} non c'è`);
+    console.log(existsSync(uscita) ? `ERRORE ${uscita} non è una cartella` : `ERRORE la cartella ${uscita} non c'è`);
     process.exit(1);
   }
 
@@ -192,9 +192,18 @@ export function comandoFlowgorithm(argomenti: readonly string[], comando: string
       continue;
     }
     for (const t of c.trasformazioni) console.log(`TRASFORMAZIONE ${f}, riga ${t.riga}: ${descrizioneDellaTrasformazione(t)}`);
+    // Prima un file di passaggio accanto, poi il nome vero: una scrittura che non riesce (il disco pieno) non lascia
+    // un .algo a metà e, con -s, non tocca quello di prima.
+    const passaggio = `${scritto}.scrittura`;
     try {
-      writeFileSync(scritto, salva(c.progetto), "utf8");
+      writeFileSync(passaggio, salva(c.progetto), "utf8");
+      renameSync(passaggio, scritto);
     } catch (e) {
+      try {
+        if (existsSync(passaggio) && !eUnaCartella(passaggio)) unlinkSync(passaggio);
+      } catch {
+        // Il file di passaggio resta: la riga d'errore lo dice già col suo nome vicino.
+      }
       errore(`${scritto} non si scrive: ${(e as Error).message}`);
       continue;
     }

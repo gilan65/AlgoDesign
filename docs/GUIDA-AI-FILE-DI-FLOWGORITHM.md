@@ -33,7 +33,7 @@ Si dà un file, più file separati da virgole o da spazi, oppure una cartella: s
 Per ogni file lo strumento mostra le sue righe `TRASFORMAZIONE` e poi `SCRITTO` col nome del `.algo` (`SOSTITUITO` con `-s`), oppure una riga `ERRORE`; con più file l'ultima riga è il conto:
 
 ```text
-TRASFORMAZIONE esercizi\conta.fprg, riga 16: il «per» di i diventa un «mentre» equivalente: il corpo cambia il contatore o il passo non è un numero scritto
+TRASFORMAZIONE esercizi\conta.fprg, riga 16: il «per» di i diventa un «mentre» equivalente: il corpo cambia il contatore, il passo non è un numero scritto o la fine non è un numero intero
 SCRITTO convertiti\conta.algo
 ERRORE esercizi\onda.fprg, riga 14: La funzione «Sin» di Flowgorithm non ha un equivalente in questa versione di AlgoDesign.
 CONVERTITI 1 file su 2
@@ -49,7 +49,7 @@ Se un file non si converte, gli altri si convertono lo stesso e lo strumento esc
 | una funzione senza tipo di ritorno | una procedura |
 | una funzione con un tipo e la variabile del risultato | una funzione, che restituisce quella variabile |
 | un parametro semplice | un parametro per valore (in Flowgorithm passa per copia) |
-| un vettore passato a una procedura | un parametro per riferimento, *rif* (in Flowgorithm i vettori passano per riferimento); **per uscita**, *out*, se la procedura lo scrive senza leggerlo |
+| un vettore passato a una procedura | un parametro per riferimento, *rif* (in Flowgorithm i vettori passano per riferimento); **per uscita**, *out*, se la procedura lo riempie tutto senza leggerlo, con un «per» da 0 a `Size(v) - 1`; scritto solo in parte resta per riferimento, così gli altri elementi tengono il loro valore |
 | un vettore passato a una funzione che non lo cambia | un parametro per valore |
 | una dichiarazione (`declare`, anche di più nomi) | un dato della vista dei dati (§5): `Integer` intero, `Real` reale, `String` stringa, `Boolean` booleano; un vettore con la sua dimensione |
 | un'assegnazione (`assign`) | un'Assegnazione |
@@ -67,6 +67,7 @@ Le espressioni si scrivono con i simboli e le operazioni di AlgoDesign:
 - `=`, `<>`, `!=`, `≠`, `&&`, `||`, `!`, `%`, `×`, `÷`, `≤`, `≥` e le altre forme di Flowgorithm diventano `==`, `!=`, `and`, `or`, `not`, `mod`, `*`, `/`, `<=`, `>=`;
 - `/` fra due interi in Flowgorithm dà **sempre un reale** (`7 / 2` vale 3.5): il `.algo` scrive `converti_a_reale a / b`;
 - un reale dato a un intero, in Flowgorithm, si tronca verso lo zero (3.7 diventa 3, -3.7 diventa -3): il `.algo` scrive `converti_a_intero (…)`, che fa lo stesso;
+- la fine di un «per» che è un reale (per esempio `n / 2`): Flowgorithm confronta il contatore con quel reale (da 5 a 5 / 2 all'indietro dà 5, 4, 3): il `.algo` scrive un «mentre» con lo stesso confronto; un indice reale si tronca, come in Flowgorithm;
 - `^` si calcola da sinistra (`2 ^ 3 ^ 2` vale 64) e il meno davanti al numero conta di più (`-2 ^ 2` vale 4): il `.algo` scrive le parentesi che servono, `(-2) elevato_a 2`;
 - `&` in un output separa i valori della Scrittura; fra due testi diventa `+`;
 - `Abs`, `Sqrt`, `Int`, `Len`, `ToChar`, `ToCode` e `Pi` diventano `valore_assoluto`, `radice_quadrata`, `converti_a_intero`, `lunghezza`, `converti_a_carattere`, `converti_a_intero` e `pi_greco`; `Char(s, i)` diventa il carattere `s[i]`, e `Size(v)` la dimensione scritta del vettore;
@@ -90,8 +91,8 @@ Un file non si converte quando usa qualcosa che questa versione di AlgoDesign no
 - un nome riservato in AlgoDesign, o il nome di una procedura o funzione dato a un dato, senza `-r` (§5): «Il nome «length» è riservato in AlgoDesign: cambiando il nome diventa «length_2».»
 - un nome con lettere accentate o altri segni: «Il nome «età» non si può usare in AlgoDesign: un nome ha solo lettere senza accento, cifre e trattino basso e non può iniziare con una cifra o con il trattino basso.»
 - una procedura o funzione che riceve vettori di dimensioni diverse, o che riceve un vettore e non è mai chiamata: «In AlgoDesign un vettore ricevuto ha una dimensione sola: la procedura o funzione «Mostra» lo riceve con dimensioni diverse, o non è mai chiamata.»
-- un programma che, convertito, ha un errore che AlgoDesign segnala, come una funzione che chiama una procedura; la riga del file in questo caso non c'è: «Il programma convertito ha un errore che AlgoDesign segnala: «La funzione chiama una procedura: una funzione calcola e basta.» (blocco b3).»
-- un file che non è un file di Flowgorithm, o che contiene un elemento che Flowgorithm non scrive (Flowgorithm lo ignora in silenzio, lo strumento no): «Il file non è un file di Flowgorithm che AlgoDesign sa leggere: l'elemento «<sconosciuto>» della riga 14 non è di Flowgorithm.»
+- un programma che, convertito, ha un errore che AlgoDesign segnala, come una funzione che chiama una procedura, o una procedura che scrive un vettore e poi lo rilegge, quando chi chiama glielo passa senza valori; la riga del file in questo caso non c'è: «Il programma convertito ha un errore che AlgoDesign segnala: «La funzione chiama una procedura: una funzione calcola e basta.» (blocco b3).»
+- un file che non è un file di Flowgorithm, che non è scritto in UTF-8, o che contiene un elemento che Flowgorithm non scrive (Flowgorithm lo ignora in silenzio, lo strumento no): «Il file non è un file di Flowgorithm che AlgoDesign sa leggere: l'elemento «<sconosciuto>» della riga 14 non è di Flowgorithm.»
 
 Un file che non si converte si può correggere in Flowgorithm, togliendo ciò che il messaggio dice, e poi convertire di nuovo.
 
@@ -131,7 +132,7 @@ Un file di Flowgorithm registra, negli attributi `created` ed `edited`, il **nom
 |---|---|---|
 | `Main`, procedure e funzioni | programma principale, procedure, funzioni | §3 |
 | dichiarazioni nei blocchi | dati della vista dei dati; con tipi diversi `-r` | §5 |
-| vettore passato a una procedura | *rif*, o *out* se è solo scritto | §3 |
+| vettore passato a una procedura | *rif*, o *out* se è riempito tutto e non letto | §3 |
 | `/` fra interi, reale dato a un intero | `converti_a_reale`, `converti_a_intero` | §3 |
 | `^`, `&`, le funzioni predefinite | `elevato_a` con le parentesi, Scrittura o `+`, le operazioni di AlgoDesign | §3 |
 | il `for` che cambia il contatore o ha un passo calcolato | il Mentre equivalente | §3 |
