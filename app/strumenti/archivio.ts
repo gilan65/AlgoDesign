@@ -63,7 +63,8 @@
 //
 // Sul Mac (`--piattaforma macos`, su macOS) le clausole sono: ALBERO come sopra; BUILD, `bun tauri build --target
 // universal-apple-darwin --bundles app` coi percorsi rimappati, una sola app con la versione di `package.json` e il macOS
-// minimo di `tauri.conf.json` (`minimo-del-mac.ts`) nel suo `Info.plist`; FIRMA, la firma ad hoc (`codesign --force --deep --sign -`), verificata, e le due architetture dell'eseguibile
+// minimo di `tauri.conf.json` (`minimo-del-mac.ts`) e le lingue di `shell/Info.plist` (`lingue-del-mac.ts`) nel suo
+// `Info.plist`; FIRMA, la firma ad hoc (`codesign --force --deep --sign -`), verificata, e le due architetture dell'eseguibile
 // (`lipo`); PERCORSI come sopra, sull'eseguibile universale; CARTELLA con le voci di `elencoDelMac` e l'app copiata con `ditto`,
 // che tiene la firma; ARCHIVIO, lo zip fatto da `ditto` e riletto due volte: con `ditto -x -k` (firma ancora valida, stesse
 // voci e impronte, nessun file di attributi del Mac) e con il modulo `zipfile` di Python; STRUMENTO, i due eseguibili
@@ -80,6 +81,7 @@ import { homedir, tmpdir } from "node:os";
 import { basename, delimiter, isAbsolute, join, relative, resolve } from "node:path";
 import { dataConPreposizione, dataMostrata } from "../ui/prodotto";
 import { copiaLeFigure } from "./figure-delle-guide";
+import { difettoDelleLingue, infoPlistDaFondere, lingueDichiarate, lingueDiPlistBuddy } from "./lingue-del-mac";
 import { configurazioneDiTauri, difettoDelMinimo, minimoDichiarato } from "./minimo-del-mac";
 import {
   cartellaDelleLibrerieDiSistema,
@@ -656,7 +658,10 @@ async function costruisciIlMac(): Promise<string> {
   const minimo = await esegui(["/usr/libexec/PlistBuddy", "-c", "Print :LSMinimumSystemVersion", join(app, "Contents", "Info.plist")]);
   const difetto = difettoDelMinimo(minimo.out.trim(), minimoDichiarato(configurazioneDiTauri()));
   if (difetto !== null) rosso("BUILD", `${prodotte[0]}: ${difetto}`);
-  riga(`BUILD: VERDE | ${prodotte[0]} universale, versione ${nomi.versione} e macOS minimo ${minimo.out.trim()} nel suo Info.plist, in ${Math.round((Date.now() - inizio) / 1000)} s`);
+  const lingue = lingueDiPlistBuddy((await esegui(["/usr/libexec/PlistBuddy", "-c", "Print :CFBundleLocalizations", join(app, "Contents", "Info.plist")])).out);
+  const difettoDelleLingueLette = difettoDelleLingue(lingue, lingueDichiarate(infoPlistDaFondere()));
+  if (difettoDelleLingueLette !== null) rosso("BUILD", `${prodotte[0]}: ${difettoDelleLingueLette}`);
+  riga(`BUILD: VERDE | ${prodotte[0]} universale, versione ${nomi.versione}, macOS minimo ${minimo.out.trim()} e le lingue ${lingue.join(", ")} nel suo Info.plist, in ${Math.round((Date.now() - inizio) / 1000)} s`);
   await firmaAdHoc(app, "FIRMA", ["--force", "--deep", "--sign", "-"]);
   const eseguibile = join(app, "Contents", "MacOS", "algodesign");
   await dueArchitetture(eseguibile, "FIRMA");
