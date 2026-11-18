@@ -176,6 +176,8 @@ export function motivoDi(chiave: string, e: unknown): string {
   if (funzione === "genera") return v.generato === true ? (v.testo === "" ? "genera: testo vuoto" : "genera: testo") : `genera: ${v.perche ?? "esito sconosciuto"}`;
   if (funzione === "controlla") return v.fuoriTappa === true ? "controlla: fuori tappa" : (v.errori ?? []).length > 0 ? "controlla: con errori" : "controlla: senza errori";
   if (funzione === "caso") return chiave;
+  if (funzione === "disegna") return typeof (e as { svg?: unknown }).svg === "string" ? "disegna: svg" : "disegna: esito sconosciuto";
+  if (funzione === "segnalazioni") return Array.isArray(e) ? (e.length > 0 ? "segnalazioni: con voci" : "segnalazioni: nessuna") : "segnalazioni: esito sconosciuto";
   return `${funzione}: ${v.ok === true ? "riuscita" : "rifiutata"}`;
 }
 

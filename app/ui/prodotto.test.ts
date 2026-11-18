@@ -262,6 +262,11 @@ test("il registro delle modifiche comincia dalla versione dei file e dalla sua d
   const diLinux = nomiDelloStrumentoDiLinux(file()["package.json"]!).archivio;
   expect(guide.map((g) => [g, archivioDiLinux(readFileSync(join(radice, g), "utf8"))])).toEqual(guide.map((g) => [g, [diLinux]]));
   expect(archivioDiLinux("vedi `AlgoDesign-Tools-0.5.0-beta.1-linux-x64.tar.gz`.")).toEqual(["AlgoDesign-Tools-0.5.0-beta.1-linux-x64.tar.gz"]);
+  // E lo zip dello strumento per il Mac, che `archivio.ts` pretende nelle tre guide solo dopo la costruzione sul Mac.
+  const zipDelMac = (t: string) => [...t.matchAll(/AlgoDesign-Tools-[^\s`]*-macos-universal\.zip/g)].map((m) => m[0]);
+  const delMac = nomiDelloStrumentoDelMac(file()["package.json"]!).archivio;
+  expect(guide.map((g) => [g, zipDelMac(readFileSync(join(radice, g), "utf8"))])).toEqual(guide.map((g) => [g, [delMac]]));
+  expect(zipDelMac("vedi `AlgoDesign-Tools-0.5.0-beta.1-macos-universal.zip`.")).toEqual(["AlgoDesign-Tools-0.5.0-beta.1-macos-universal.zip"]);
   // Nei due README anche i nomi da scaricare dalla pagina delle release (lo zip dell'app per Windows, l'archivio dell'app e
   // quello dello strumento per Linux, lo zip dell'app e quello dello strumento per il Mac) e la cartella che nasce
   // estraendo: ogni nome scritto è quello della versione, e almeno uno.

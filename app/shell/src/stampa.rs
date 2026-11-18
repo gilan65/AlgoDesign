@@ -6,9 +6,11 @@
 //! chiama, e il comando risponde con un errore.
 //!
 //! CHE COSA NON FA: il verso dei fogli e le caselle del margine (intestazione e piè di pagina): il WebKit del Mac non le
-//! conosce, e i fogli escono tutti nel verso scelto nel pannello.
+//! conosce, e i fogli escono tutti in verticale (misurato nel PDF; il pannello non mostra il verso).
 
-/// Millimetri in punti tipografici (1/72 di pollice), l'unità dei margini di `NSPrintInfo`.
+/// Millimetri in punti tipografici (1/72 di pollice), l'unità dei margini di `NSPrintInfo`. Fuori dal Mac la usano solo
+/// le prove.
+#[cfg(any(target_os = "macos", test))]
 pub fn in_punti(millimetri: f64) -> f64 {
     millimetri * 72.0 / 25.4
 }

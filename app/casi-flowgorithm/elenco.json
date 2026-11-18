@@ -23,6 +23,34 @@
       "algodesign": "R 0 1 4 9\n"
     },
     {
+      "file": "t-procedura-imposta.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "1 9 3\n",
+      "algodesign": "1 9 3\n"
+    },
+    {
+      "file": "t-indice-reale.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "20\n30\n30\n",
+      "algodesign": "20\n30\n30\n"
+    },
+    {
+      "file": "t-per-fine-reale-indietro.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "5\n4\n3\nfine\n",
+      "algodesign": "5\n4\n3\nfine\n"
+    },
+    {
+      "file": "t-per-fine-reale-negativa.fprg",
+      "tema": "si traduce",
+      "esito": "converte",
+      "flowgorithm": "fine\n",
+      "algodesign": "fine\n"
+    },
+    {
       "file": "t-funzione.fprg",
       "tema": "si traduce",
       "esito": "converte",

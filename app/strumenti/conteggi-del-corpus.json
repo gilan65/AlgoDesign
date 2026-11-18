@@ -1,6 +1,6 @@
 {
   "fatti": {
-    "impronta": "dad5178e81235393c26ee70ef58e840bd042d139001f566e00b5468e53077019",
+    "impronta": "b3ce9b8036702354f453efb279fff745d9fda5ed720b8e23a16487b20e795d8a",
     "file": {
       "tappa-1": 60,
       "tappa-2": 16,
@@ -8,7 +8,7 @@
       "tappa-4": 23,
       "tipi": 39,
       "totale": 192,
-      "casi-flowgorithm": 57
+      "casi-flowgorithm": 61
     },
     "tipi": {
       "record": 20,
@@ -147,9 +147,9 @@
       "nonPartono": 3
     },
     "flowgorithm - esiti sul corpus": {
-      "converte": 39,
+      "converte": 43,
       "siFerma": 18,
-      "confermatiSuFlowgorithm": 37,
+      "confermatiSuFlowgorithm": 41,
       "dichiarazioni": 6,
       "conLaRinomina": 4,
       "convertonoConLaRinomina": 3
@@ -262,15 +262,18 @@
       "aggiungi: riuscita": 72,
       "controlla: con errori": 19,
       "controlla: senza errori": 173,
+      "disegna: svg": 384,
       "genera: errori-statici": 190,
       "genera: non-ci-sta": 274,
       "genera: testo": 1456,
-      "leggi: riuscita": 72
+      "leggi: riuscita": 72,
+      "segnalazioni: con voci": 74,
+      "segnalazioni: nessuna": 310
     },
     "nucleo per node - file, combinazioni ed esiti": {
       "file": 192,
       "combinazioni": 1920,
-      "esiti": 2269
+      "esiti": 3039
     },
     "pagina di prova - casi con un arresto": 108,
     "pagina di prova - casi del programma che leggono": 110,

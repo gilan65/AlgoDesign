@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<flowgorithm fileversion="2.11">
+    <attributes>
+        <attribute name="name" value="t-indice-reale"/>
+        <attribute name="authors" value="prova"/>
+        <attribute name="about" value=""/>
+        <attribute name="saved" value=""/>
+        <attribute name="created" value=""/>
+        <attribute name="edited" value=""/>
+    </attributes>
+    <function name="Main" type="None" variable="">
+        <parameters/>
+        <body>
+            <declare name="v" type="Integer" array="True" size="4"/>
+            <assign variable="v[0]" expression="10"/>
+            <assign variable="v[1]" expression="20"/>
+            <assign variable="v[2]" expression="30"/>
+            <assign variable="v[3]" expression="40"/>
+            <output expression="v[3 / 2]" newline="True"/>
+            <output expression="v[5 / 2]" newline="True"/>
+            <output expression="v[2.7]" newline="True"/>
+        </body>
+    </function>
+</flowgorithm>

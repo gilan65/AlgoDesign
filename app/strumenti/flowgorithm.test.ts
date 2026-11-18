@@ -202,6 +202,28 @@ test("un .algo che c'è già: senza -s il file non si converte e il .algo resta 
   valido(algo);
 });
 
+test("con -s, se la scrittura non riesce, il .algo di prima resta com'era e non resta un file a metà", () => {
+  const c = nuova("t-per.fprg");
+  const f = join(c, "t-per.fprg");
+  const algo = join(c, "t-per.algo");
+  writeFileSync(algo, "c'era già\n");
+  // Il file di passaggio non si può creare: al suo posto c'è una cartella.
+  mkdirSync(`${algo}.scrittura`);
+  const r = lancia(f, "-s");
+  expect(r.esito).toBe(esito.nonTuttiConvertiti);
+  // Una riga sola, quella dell'errore: il resto è il messaggio del sistema.
+  expect(r.righe.map((x) => x.startsWith(`ERRORE ${algo} non si scrive: `))).toEqual([true]);
+  expect(readFileSync(algo, "utf8")).toBe("c'era già\n");
+  expect(readdirSync(c).sort()).toEqual(["t-per.algo", "t-per.algo.scrittura", "t-per.fprg"]);
+});
+
+test("-o su un file che c'è: la riga dice che non è una cartella, e nessun file si converte", () => {
+  const c = nuova("t-per.fprg");
+  const f = join(c, "t-per.fprg");
+  expect(lancia(f, "-o", f)).toEqual({ esito: esito.nonTuttiConvertiti, righe: [`ERRORE ${f} non è una cartella`] });
+  expect(existsSync(join(c, "t-per.algo"))).toBe(false);
+});
+
 test("un programma che AlgoDesign segnala: la frase dell'app, senza la riga e mai col codice", () => {
   const c = nuova();
   const f = join(c, "effetto.fprg");

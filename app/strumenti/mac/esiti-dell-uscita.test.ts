@@ -1,18 +1,23 @@
 import { expect, test } from "bun:test";
-import { casiDellUscita, controllaGliEsiti } from "./esiti-dell-uscita";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { attesiDellUscita, casiDellUscita, controllaGliEsiti } from "./esiti-dell-uscita";
 
-/** Una riga col suo atteso, come la scrive `prova-uscita.sh`: i casi con «morta» dove l'app deve uscire. */
-const attesa = (caso: string) => (caso.includes("barra") ? "x, y" : caso === "campi" ? "«abcabc»" : caso.endsWith("non-salvare") || caso === "senza-modifiche" ? "morta" : "viva");
-const verde = () => casiDellUscita.map((c) => `${c}: ${attesa(c)} (attes${c === "campi" ? "o" : "a"}: ${attesa(c)})`);
+/** Le righe verdi, come le scrive `prova-uscita.sh`: l'esito uguale all'atteso dell'elenco. */
+const verde = () => casiDellUscita.map((c) => `${c}: ${attesiDellUscita[c]} (attes${c === "campi" ? "o" : "a"}: ${attesiDellUscita[c]})`);
 
 test("tutti i casi col loro atteso: verde", () => {
-  expect(casiDellUscita.length).toBe(16);
-  expect(controllaGliEsiti(verde().join("\n"))).toEqual({ rossi: [], visti: 16 });
+  expect(controllaGliEsiti(verde().join("\n"))).toEqual({ rossi: [], visti: casiDellUscita.length });
 });
 
 test("un esito alterato è rosso, e si nomina", () => {
   const righe = verde().map((r) => (r.startsWith("cmdq: ") ? "cmdq: morta (attesa: viva)" : r));
   expect(controllaGliEsiti(righe.join("\n")).rossi).toEqual(["cmdq: morta invece di viva"]);
+});
+
+test("un atteso cambiato nello script, con l'esito che gli dà ragione, è rosso", () => {
+  const righe = verde().map((r) => (r.startsWith("senza-modifiche: ") ? "senza-modifiche: viva (attesa: viva)" : r));
+  expect(controllaGliEsiti(righe.join("\n")).rossi).toEqual(["senza-modifiche: lo script si aspetta «viva» invece di «morta»"]);
 });
 
 test("un caso che non è partito è rosso due volte: la riga senza atteso e il caso che manca", () => {
@@ -28,5 +33,27 @@ test("un caso sparito, uno ripetuto, uno sconosciuto: rossi", () => {
 });
 
 test("un testo vuoto non è verde", () => {
-  expect(controllaGliEsiti("").rossi.length).toBe(16);
+  expect(controllaGliEsiti("").rossi.length).toBe(casiDellUscita.length);
+});
+
+/** Le coppie caso e atteso scritte nello script: `esito <caso> <atteso>`, `non_salvare <caso>` (morta),
+ * `barra <caso> "<atteso>"` e la riga dei campi. */
+export function attesiDelloScript(testo: string): Record<string, string> {
+  const coppie: [string, string][] = [];
+  for (const riga of testo.split("\n").map((r) => r.trim())) {
+    let m: RegExpExecArray | null;
+    if ((m = /^esito ([a-z-]+) (\S+)$/.exec(riga))) coppie.push([m[1]!, m[2]!]);
+    else if ((m = /^non_salvare ([a-z-]+)$/.exec(riga))) coppie.push([`${m[1]}-non-salvare`, "morta"]);
+    else if ((m = /^barra ([a-z-]+) "([^"]*)"$/.exec(riga))) coppie.push([m[1]!, m[2]!]);
+    else if ((m = /^echo "(campi): .*\(atteso: (.*)\)" \|/.exec(riga))) coppie.push([m[1]!, m[2]!]);
+  }
+  return Object.fromEntries(coppie.sort(([a], [b]) => (a < b ? -1 : 1)));
+}
+
+test("gli attesi scritti in prova-uscita.sh sono quelli dell'elenco, caso per caso, nei due versi", () => {
+  const script = readFileSync(join(import.meta.dir, "prova-uscita.sh"), "utf8");
+  const ordinati = Object.fromEntries(Object.entries(attesiDellUscita).sort(([a], [b]) => (a < b ? -1 : 1)));
+  expect(attesiDelloScript(script)).toEqual(ordinati);
+  // Controllo positivo: un atteso cambiato nello script si vede.
+  expect(attesiDelloScript(script.replace("esito cmdw viva", "esito cmdw morta")).cmdw).toBe("morta");
 });

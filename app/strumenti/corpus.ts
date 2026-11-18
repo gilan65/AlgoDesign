@@ -311,6 +311,14 @@ if (import.meta.main) {
     console.log(d.length === 0 ? "CONTEGGI DEL CORPUS: uguali al disco" : `CONTEGGI DEL CORPUS: diversi dal disco — ${d.join("; ")}`);
     process.exit(d.length === 0 ? 0 : 1);
   }
+  // Prima dei minuti delle prove: un numero scritto a mano in una prova del corpus fa rossa la porta «corpus» subito dopo,
+  // e la conferma andrebbe rifatta. Lo stesso rilevatore della porta, qui in pochi millisecondi.
+  const aMano = numeriNonDichiarati(testiDelCensimento());
+  const daDichiarare = [...aMano.nonDichiarati, ...aMano.senzaAsserzione.map((x) => `dichiarato e senza asserzione: ${x}`)];
+  if (daDichiarare.length > 0) {
+    console.log(`CONFERMA: ROSSA prima delle prove — ${daDichiarare.length} numeri scritti nelle prove del corpus fuori da \`strumenti/valori-precisi.ts\`: ${daDichiarare.slice(0, 5).join("; ")}`);
+    process.exit(1);
+  }
   const c = censimento();
   console.log(`CONFERMA: INIZIO | ${prima.file.totale} file del corpus | censimento: ${c.guardati} file di prova guardati, ${c.bun.length} di bun test e ${c.playwright.length} spec di Playwright leggono il corpus`);
   if (c.bun.length === 0 || c.playwright.length === 0) {

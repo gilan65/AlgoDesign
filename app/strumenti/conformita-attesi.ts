@@ -19,6 +19,13 @@ import { progettoNuovo } from "../core/modifica/operazioni";
 import { apri, salva } from "../core/progetto/formato";
 import type { Progetto } from "../core/progetto/modello";
 import { paroleDelloPseudocodice } from "../ui/genera/parole";
+import { opzioniPredefinite } from "../core/disegno/impaginazione";
+import { svgDelDisegno } from "../core/disegno/svg";
+import { tavolozzeDellaCarta } from "../core/disegno/tavolozze-della-carta";
+import { geometriaPredefinita } from "../core/disegno/tema";
+import { disegnoDellaFunzione } from "../ui/disegno/disegno-della-funzione";
+import { segnalatiDelleVoci, vociDelControllo } from "../ui/segnalazioni";
+import { numeroDelCodice, type Codice } from "../i18n/codici";
 
 const LINGUE: readonly LinguaDelCodice[] = ["it", "en"];
 
@@ -61,6 +68,37 @@ function aggiungi(dove: Progetto | { readonly nome: string }, letto: Extract<Let
   return a.ok ? { ...a, testo: salva(a.progetto) } : a;
 }
 
+// Il disegno e le segnalazioni, scritti di nuovo dalle funzioni del nucleo come li compone il punto d'ingresso: il
+// programma principale, le scelte predefinite, i bollini del controllo. La misura è la stessa del lato di Node.
+const misura = (t: string) => [...t].length * 9;
+const carattere = "sans-serif";
+const principaleDi = (p: Progetto) => p.functions.find((f) => f.kind === "main")?.id ?? "";
+function disegnato(testo: string, lingua: LinguaDelCodice): unknown {
+  const aperto = apri(testo);
+  if (!aperto.ok) return { apriRifiuta: aperto };
+  const p = aperto.progetto;
+  const d = disegnoDellaFunzione(p, p.functions.find((f) => f.kind === "main")!, misura, lingua, opzioniPredefinite);
+  const segnalati = segnalatiDelleVoci(vociDelControllo(p, controlla(p, tetti), lingua, principaleDi(p)));
+  const svg = svgDelDisegno(d, { geometria: geometriaPredefinita, tavolozza: tavolozzeDellaCarta.tenue, modo: "colori", carattere, fondoDeiCicli: false, trasparente: false, segnalati });
+  return { svg, larghezza: d.larghezza, altezza: d.altezza };
+}
+function segnalate(testo: string, lingua: LinguaDelCodice): unknown {
+  const aperto = apri(testo);
+  if (!aperto.ok) return { apriRifiuta: aperto };
+  const p = aperto.progetto;
+  return vociDelControllo(p, controlla(p, tetti), lingua, principaleDi(p)).map((v) => ({
+    numero: numeroDelCodice[v.codice as Codice],
+    genere: v.genere,
+    codice: v.codice,
+    breve: v.breve,
+    accaduto: v.accaduto,
+    suggerimento: v.suggerimento,
+    dove: v.dove,
+    blocco: v.blocco ?? v.fine ?? null,
+    ...(v.funzione === undefined ? {} : { funzione: v.funzione }),
+  }));
+}
+
 const esiti: Record<string, unknown> = {};
 for (const cartella of readdirSync(corpus, { withFileTypes: true }).filter((v) => v.isDirectory()).map((v) => v.name).sort())
   for (const f of readdirSync(join(corpus, cartella)).filter((n) => n.endsWith(".algo")).sort()) {
@@ -70,6 +108,10 @@ for (const cartella of readdirSync(corpus, { withFileTypes: true }).filter((v) =
       const aperto = apri(testo);
       return aperto.ok ? controlla(aperto.progetto, tetti) : { apriRifiuta: aperto };
     });
+    for (const lingua of LINGUE) {
+      esiti[`segnalazioni ${nome} ${lingua}`] = protetto(() => segnalate(testo, lingua));
+      esiti[`disegna ${nome} ${lingua}`] = protetto(() => disegnato(testo, lingua));
+    }
     for (const lingua of LINGUE)
       for (const voce of linguaggi) {
         const g = protetto(() => genera(testo, voce, lingua));
@@ -94,6 +136,8 @@ esiti["caso apri rifiuta"] = apri("questo non è un file");
 esiti["caso leggi rifiuta"] = leggiAccademico("function (((");
 esiti["caso linguaggio sconosciuto"] = { eccezione: "linguaggio sconosciuto: inesistente" };
 esiti["caso lingua sconosciuta"] = { eccezione: "lingua sconosciuta: IT" };
+esiti["caso disegna colori sconosciuti"] = { eccezione: "insieme di colori sconosciuto: verde" };
+esiti["caso disegna modo sconosciuto"] = { eccezione: "modo di colore sconosciuto: grayscale" };
 esiti["caso aggiungi a una nuova"] = nuova;
 esiti["caso aggiungi una identica"] = aggiungi(riaperta.progetto, letta, false);
 esiti["caso aggiungi un conflitto"] = aggiungi(riaperta.progetto, diversa, false);

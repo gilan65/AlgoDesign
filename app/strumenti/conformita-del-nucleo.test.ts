@@ -1,6 +1,7 @@
 // La conformità del pacchetto del nucleo per Node: sotto Node dà ciò che i sorgenti del nucleo danno sotto Bun, su tutto il corpus
-// di questo momento, per ogni voce del registro e nelle due lingue, rifiuti compresi; e `controlla`, `leggiAccademico` e
-// `aggiungiAllaLibreria` su ogni progetto, più i rami che il corpus non esercita, con casi fatti a mano.
+// di questo momento, per ogni voce del registro e nelle due lingue, rifiuti compresi; e `controlla`, `leggiAccademico`,
+// `aggiungiAllaLibreria`, `segnalazioni` e `disegna` (il programma principale, coi bollini, con una misura fissa uguale sui due
+// lati) su ogni progetto, più i rami che il corpus non esercita, con casi fatti a mano.
 //
 // I due lati stanno in due processi, e i dati in due file JSON (`conformita-attesi.ts`, `conformita-ottenuto.cjs`); enumerano il
 // corpus da soli. La costruzione e i verdetti sono in `conformita-del-nucleo.ts`, dove è scritto anche che cosa non guarda.
@@ -69,7 +70,7 @@ const fileDelCorpus = (): string[] =>
     .filter((v) => v.isDirectory())
     .flatMap((v) => readdirSync(join(corpus, v.name)).filter((f) => f.endsWith(".algo")).map((f) => `${v.name}/${f.slice(0, -".algo".length)}`));
 
-test("il pacchetto ha le sei funzioni, nessun import e ogni modulo al suo posto", async () => {
+test("il pacchetto ha le funzioni del contratto, nessun import e ogni modulo al suo posto", async () => {
   const { esportazioni, moduli, pacchetto } = await lati();
   expect([...esportazioni]).toEqual([...esportazioniAttese]);
   expect(problemiDelPacchetto(readFileSync(pacchetto, "utf8"), moduli)).toEqual([]);
@@ -259,7 +260,9 @@ test("un lato che non si può eseguire è un fermo, non una differenza", async (
 
 test("gli attesi non importano il punto d'ingresso né il pacchetto: il parser vede gli import veri, la spia quelli di soli tipi", () => {
   const testo = readFileSync(join(import.meta.dir, "conformita-attesi.ts"), "utf8");
-  const ammesso = (p: string) => p.startsWith("node:") || p.startsWith("../core/") || p === "../ui/genera/parole";
+  // I sorgenti del pacchetto fuori da `core/` (`tsconfig.nucleo.json`): le parole dello pseudocodice, il disegno e le segnalazioni.
+  const fuoriDaCore = ["../ui/genera/parole", "../ui/disegno/disegno-della-funzione", "../ui/segnalazioni", "../i18n/codici"];
+  const ammesso = (p: string) => p.startsWith("node:") || p.startsWith("../core/") || fuoriDaCore.includes(p);
   const nonAmmessi = (t: string) => new Bun.Transpiler({ loader: "ts" }).scanImports(t).map((i) => i.path).filter((p) => !ammesso(p));
   const spia = (t: string) => t.match(/entrypoint|algodesign-core|conformita-del-nucleo/g) ?? [];
   expect(new Bun.Transpiler({ loader: "ts" }).scanImports(testo).length).toBeGreaterThan(0);

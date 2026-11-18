@@ -1,5 +1,10 @@
 import { expect, test } from "bun:test";
-import { permessiDiversi, type VoceLetta } from "./permessi";
+import { degliAttributiDelMac, permessiDiversi, type VoceLetta } from "./permessi";
+
+test("i file di attributi del Mac: un nome che comincia con «._» o sta sotto __MACOSX, in qualunque parte del percorso", () => {
+  const nomi = ["AlgoDesign.app/._Info.plist", "__MACOSX/AlgoDesign.app", "a/__MACOSX/b", "._x", "AlgoDesign.app/Contents/Info.plist", "a/b._c", "MACOSX/a", "a_/x"];
+  expect(nomi.filter(degliAttributiDelMac)).toEqual(["AlgoDesign.app/._Info.plist", "__MACOSX/AlgoDesign.app", "a/__MACOSX/b", "._x"]);
+});
 
 const cartella = "AlgoDesign-1.0.0";
 const giuste: VoceLetta[] = [

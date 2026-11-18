@@ -20,18 +20,21 @@ AlgoDesign separa i due compiti: prima si **progetta** l'algoritmo come flowchar
 
 - **Un'app sola, `AlgoDesign`**, per i Mac con chip Apple e per quelli con processore Intel. Non si installa: funziona dalla cartella in cui la estrai, e si può spostare dove si vuole, anche in Applicazioni.
 - **Le preferenze, gli esempi e i dati della finestra** stanno nella cartella Libreria dell'utente, come per le altre app del Mac: sul Mac non c'è la cartella `data` delle versioni per Windows e per Linux. Dove stanno, e come toglierli, lo dice più sotto «Che cosa resta sul Mac».
-- Interfaccia in **italiano** e **inglese**; il menu in cima allo schermo e le finestre di macOS sono nella lingua del sistema.
+- Interfaccia in **italiano** e **inglese**; il menu in cima allo schermo è nella lingua di AlgoDesign, le finestre di macOS per aprire e salvare un file nella lingua del sistema se è l'italiano o l'inglese, altrimenti in inglese.
 
 ## Scaricare e avviare
 
-1. Scarica lo zip `AlgoDesign-{{versione}}-macos-universal.zip` dalla pagina delle release, https://github.com/gilan65/AlgoDesign/releases, e, se vuoi, controllane l'impronta: il file `.sha256` accanto allo zip contiene il suo codice SHA-256, che nel Terminale si calcola con `shasum -a 256 <nome dello zip>`.
-2. Safari estrae lo zip da solo, nella cartella Download: nasce la cartella `AlgoDesign-{{versione}}`. Con un altro browser, fai doppio clic sullo zip nel Finder.
+1. Scarica lo zip `AlgoDesign-{{versione}}-macos-universal.zip` dalla pagina delle release, https://github.com/gilan65/AlgoDesign/releases.
+2. Safari estrae lo zip da solo, nella cartella Download: nasce la cartella `AlgoDesign-{{versione}}`, e lo zip va nel Cestino. Con un altro browser, fai doppio clic sullo zip nel Finder.
+
+   Se vuoi controllare l'impronta dello zip, con Safari riprendilo dal Cestino: il file `.sha256` accanto allo zip contiene il suo codice SHA-256, che nel Terminale si calcola con `shasum -a 256 <nome dello zip>`.
 3. Apri la cartella `AlgoDesign-{{versione}}` e fai doppio clic su `AlgoDesign`.
 
 **Al primo avvio macOS blocca AlgoDesign.** AlgoDesign non è firmata da Apple (la firma di Apple vuole un abbonamento a pagamento), e macOS non apre da sé un'app scaricata da internet senza quella firma. Si apre una volta sola dalle Impostazioni di Sistema; dopo, il doppio clic basta. La finestra cambia con la versione di macOS:
 
-- **Da macOS 15 in poi** la finestra dice «AlgoDesign non è stata aperta», con due pulsanti: **«Sposta nel Cestino»**, in blu, e **«Fine»**. ⚠️ **Scegli «Fine»**: «Sposta nel Cestino» butta via l'app. Poi apri le Impostazioni di Sistema, «Privacy e sicurezza», e scendi fino alla sezione «Sicurezza»: accanto a «Il Mac ha bloccato AlgoDesign per garantire la sicurezza.» fai clic su **«Apri comunque»**. Nella finestra «Vuoi aprire AlgoDesign?» scegli di nuovo **«Apri comunque»** (non «Sposta nel Cestino»), poi scrivi il nome e la password dell'utente del Mac.
-- **Su macOS 13 e 14** la finestra dice «Impossibile aprire "AlgoDesign" perché Apple non può verificare la presenza di malware.», con «Mostra nel Finder» e **«OK»**: scegli «OK». Poi apri le Impostazioni di Sistema, «Privacy e sicurezza», e scendi fino in fondo: accanto a «L'utilizzo di "AlgoDesign" è stato bloccato perché non proviene da uno sviluppatore identificato.» fai clic su **«Apri comunque»** e scrivi la password. Nella finestra che torna, scegli **«Apri»**.
+- **Da macOS 15 in poi** la finestra dice «AlgoDesign non è stata aperta», con due pulsanti: **«Sposta nel Cestino»**, in blu, e **«Fine»**. ⚠️ **Scegli «Fine»**: «Sposta nel Cestino» butta via l'app. Poi apri le Impostazioni di Sistema, «Privacy e sicurezza», e scendi fino alla sezione «Sicurezza»: accanto a «Il Mac ha bloccato AlgoDesign per garantire la sicurezza.» fai clic su **«Apri comunque»**. Nella finestra «Vuoi aprire AlgoDesign?» scegli di nuovo **«Apri comunque»** (non «Sposta nel Cestino»), poi scrivi il nome e la password di un amministratore del Mac.
+- **Su macOS 13 e 14** la finestra dice «Impossibile aprire "AlgoDesign" perché Apple non può verificare la presenza di malware.», con «Mostra nel Finder» e **«OK»**: scegli «OK». Poi apri le Impostazioni di Sistema, «Privacy e sicurezza», e scendi fino in fondo: accanto a «L'utilizzo di "AlgoDesign" è stato bloccato perché non proviene da uno sviluppatore identificato.» fai clic su **«Apri comunque»** e scrivi la password di un amministratore del Mac. Nella finestra che torna, scegli **«Apri»**.
+
 **Aprire un progetto all'avvio.** Il doppio clic su un file `.algo` non basta: AlgoDesign non si installa, e il Mac non sa che quel file è suo. Dal Terminale, nella cartella del file, si scrive il percorso del programma che sta dentro l'app, seguito dal file fra virgolette se ha degli spazi; per esempio, con l'app rimasta in Download:
 
 ```sh
@@ -46,8 +49,8 @@ Il comando `open -a`, invece, apre AlgoDesign senza il file. La prima volta che 
 
 - **macOS 13.3 Ventura o successivo.** Su un macOS più vecchio, macOS stesso non apre l'app e lo dice: «Non puoi utilizzare questa versione dell'applicazione "AlgoDesign" con questa versione di macOS».
 - **Un Mac con chip Apple** (M1 e successivi) **o con processore Intel**: la stessa app funziona su tutti e due i tipi di Mac, senza scegliere una versione diversa.
-- **Nessuna installazione**: serve solo la password dell'utente del Mac, una volta, per sbloccarla al primo avvio.
-- **Spazio su disco**: circa 40 MB (l'app è di 25 MB, i dati della finestra nella Libreria crescono fino a una decina di MB).
+- **Nessuna installazione**: serve solo la password di un amministratore del Mac, una volta, per sbloccarla al primo avvio.
+- **Spazio su disco**: circa 25 MB (l'app è di 22 MB), più i dati della finestra che macOS tiene nella Libreria.
 - Uno schermo di almeno 960 × 600 punti: la finestra non si stringe sotto quella misura.
 - Non serve una connessione a internet.
 
@@ -55,7 +58,7 @@ Il comando `open -a`, invece, apre AlgoDesign senza il file. La prima volta che 
 
 ### Che cosa è stato provato
 
-- **Come lo usa uno studente**, su macOS 13.3 e su macOS 27, in italiano, e su macOS 27 in inglese, in Mac virtuali su un MacBook Air con chip Apple: lo zip scaricato con Safari, lo sblocco al primo avvio, l'uscita con ⌘Q con modifiche non salvate, un file aperto dal Terminale, le finestre per aprire e salvare un file, la stampa in PDF, l'esportazione del flowchart in PNG, il Tab nelle finestre, lo strumento a riga di comando nel Terminale.
+- **Come lo usa uno studente**, su macOS 13.3 e su macOS 27, in italiano, e su macOS 27 in inglese, in Mac virtuali su un Mac con chip Apple: lo zip scaricato con Safari, lo sblocco al primo avvio, l'uscita con ⌘Q con modifiche non salvate, un file aperto dal Terminale, le finestre per aprire e salvare un file, la stampa in PDF, l'esportazione del flowchart in PNG, il Tab nelle finestre, lo strumento a riga di comando nel Terminale.
 - **Su macOS 13.2.1**, la versione appena più vecchia: il rifiuto di macOS.
 - **Su macOS 15 con chip Apple, con prove automatiche**: l'avvio, anche nella parte per i processori Intel (con Rosetta), l'uscita e i menu coi tasti veri, e le prove dell'interfaccia, che usano l'applicazione come farebbe una persona.
 
@@ -63,15 +66,15 @@ Il comando `open -a`, invece, apre AlgoDesign senza il file. La prima volta che 
 
 - **I tasti**: ⌘ al posto di Ctrl, e i tasti funzione con **fn**; la guida per lo studente li elenca nel capitolo «Sul Mac».
 - **Il menu in cima allo schermo** ha tre voci: AlgoDesign (Informazioni, Impostazioni ed Esci), Modifica e Finestra. Gli altri comandi stanno nella barra dentro la finestra.
-- **La stampa**: «Stampa…» apre la finestra di stampa di macOS. Per avere un PDF fai clic su «PDF»: il nome proposto è «AlgoDesign», da cambiare. I fogli si stampano tutti nel verso scelto in quella finestra, senza l'intestazione e senza il piè di pagina (le note di rilascio, «Difetti noti»). Da macOS 15 in poi, alla prima stampa, macOS chiede «Vuoi consentire a AlgoDesign di trovare i dispositivi sulle reti locali?»: «Consenti» serve per una stampante di rete; per un PDF basta «Non consentire».
+- **La stampa**: «Stampa…» apre la finestra di stampa di macOS. Per avere un PDF fai clic su «PDF»: il nome proposto è «AlgoDesign», da cambiare. I fogli si stampano tutti in verticale, senza l'intestazione e senza il piè di pagina (le note di rilascio, «Difetti noti»). Da macOS 15 in poi, alla prima stampa, macOS chiede «Vuoi consentire a AlgoDesign di trovare i dispositivi sulle reti locali?»: «Consenti» serve per una stampante di rete; per un PDF basta «Non consentire».
 - **Il Tab** passa solo fra i campi, e salta i pulsanti, finché nelle Impostazioni di Sistema, «Tastiera», non si accende «Navigazione da tastiera»: è una scelta di macOS, che vale per tutte le app.
-- **Le finestre per aprire e salvare un file** sono quelle di macOS, nella lingua del sistema.
+- **Le finestre per aprire e salvare un file** sono quelle di macOS, nella lingua del sistema, provate in italiano.
 
 ### Non provato
 
 - **Un Mac con processore Intel vero**: la parte per Intel è provata con Rosetta su un Mac con chip Apple.
 - **Un Mac vero**: le prove da studente sono fatte in Mac virtuali.
-- **macOS 14, 15 e 26 a mano**: lì è provato solo che l'interfaccia parte; le prove automatiche corrono su macOS 15.
+- **macOS 14, 15 e 26 a mano**: lì questa versione non è stata provata da studente (su macOS 14 l'interfaccia nel motore di Safari, su macOS 26 la versione 1.0.0); le prove automatiche corrono su macOS 15.
 - **I programmi lunghi o pesanti** su un Mac vero (vettori grandi, cicli con molte azioni, tabelle di traccia lunghe).
 
 ### Che cosa resta sul Mac

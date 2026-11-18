@@ -37,6 +37,10 @@ function eccezioneDi(corpo) {
   }
 }
 
+/** La misura dei due lati: la stessa di `conformita-attesi.ts`. */
+const misura = (t) => [...t].length * 9;
+const principale = (p) => p.functions.find((f) => f.kind === "main").id;
+
 const esiti = {};
 for (const cartella of readdirSync(corpus, { withFileTypes: true }).filter((v) => v.isDirectory()).map((v) => v.name).sort())
   for (const f of readdirSync(join(corpus, cartella)).filter((n) => n.endsWith(".algo")).sort()) {
@@ -46,6 +50,18 @@ for (const cartella of readdirSync(corpus, { withFileTypes: true }).filter((v) =
       const aperto = m.apri(testo);
       return aperto.ok ? m.controlla(aperto.progetto) : { apriRifiuta: aperto };
     });
+    for (const lingua of LINGUE) {
+      esiti[`segnalazioni ${nome} ${lingua}`] = protetto(() => {
+        const aperto = m.apri(testo);
+        return aperto.ok ? m.segnalazioni(aperto.progetto, lingua) : { apriRifiuta: aperto };
+      });
+      esiti[`disegna ${nome} ${lingua}`] = protetto(() => {
+        const aperto = m.apri(testo);
+        if (!aperto.ok) return { apriRifiuta: aperto };
+        const p = aperto.progetto;
+        return m.disegna(p, principale(p), lingua, misura, "sans-serif", { errori: m.controlla(p) });
+      });
+    }
     for (const lingua of LINGUE)
       for (const linguaggio of LINGUAGGI) {
         const g = protetto(() => {
@@ -71,6 +87,8 @@ esiti["caso apri rifiuta"] = m.apri("questo non è un file");
 esiti["caso leggi rifiuta"] = m.leggiAccademico("function (((");
 esiti["caso linguaggio sconosciuto"] = eccezioneDi(() => m.genera(programma.progetto, "inesistente", "it"));
 esiti["caso lingua sconosciuta"] = eccezioneDi(() => m.genera(programma.progetto, "python", "IT"));
+esiti["caso disegna colori sconosciuti"] = eccezioneDi(() => m.disegna(programma.progetto, principale(programma.progetto), "it", misura, "sans-serif", { colori: "verde" }));
+esiti["caso disegna modo sconosciuto"] = eccezioneDi(() => m.disegna(programma.progetto, principale(programma.progetto), "it", misura, "sans-serif", { modo: "grayscale" }));
 esiti["caso aggiungi a una nuova"] = nuova;
 esiti["caso aggiungi una identica"] = m.aggiungiAllaLibreria(riaperta.progetto, letta, false);
 esiti["caso aggiungi un conflitto"] = m.aggiungiAllaLibreria(riaperta.progetto, diversa, false);

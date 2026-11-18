@@ -6,7 +6,7 @@
 
 Version 1.0.0 of 8 November 2026, for 64-bit Windows 10 and 11, for 64-bit Linux and for macOS 13.3 or later.
 
-AlgoDesign is a teaching environment for people learning to program: first you design and test the algorithm as a flowchart, then you see how the same reasoning becomes code. It is a **local and lightweight** application: it works without internet, without installing it and without administrator rights.
+AlgoDesign is a teaching environment for people learning to program: first you design and test the algorithm as a flowchart, then you see how the same reasoning becomes code. It is a **local and lightweight** application: it works without internet, without installing it and, on Windows and Linux, without administrator rights.
 
 Project page: https://www.lancellotti.info/AlgoDesign/
 
@@ -66,7 +66,7 @@ On Linux too AlgoDesign is portable, with the `data` folder next to the AppImage
 
 ### On the Mac
 
-1. Download the zip: Safari extracts it by itself, in the Downloads folder, into the folder `AlgoDesign-1.0.0`. If you like, check its fingerprint: in the Terminal, `shasum -a 256 <zip name>` computes the code to compare with the `.sha256` file.
+1. Download the zip: Safari extracts it by itself, in the Downloads folder, into the folder `AlgoDesign-1.0.0`, and moves the zip to the Trash. If you want to check its fingerprint, take it back from the Trash: in the Terminal, `shasum -a 256 <zip name>` computes the code to compare with the `.sha256` file.
 2. Open the folder `AlgoDesign-1.0.0` and double-click `AlgoDesign`, an app for Macs with Apple chips and for those with Intel processors, which is not installed.
 3. At the first start macOS blocks it, because it is not signed by Apple: ⚠️ in its window do not choose “Move to Trash”, which throws the app away, but “Done” (or “OK”); then in System Settings, “Privacy & Security”, click “Open Anyway”.
 
@@ -92,8 +92,8 @@ On Linux:
 On the Mac:
 
 - **macOS 13.3 Ventura or later**, on a Mac with an Apple chip or an Intel processor. On an older macOS, macOS does not open the app and says so.
-- **No installation**: the password of the Mac user is needed once, to unblock it at the first start.
-- **Disk space**: about 40 MB (the app is 25 MB).
+- **No installation**: the password of an administrator of the Mac is needed once, to unblock it at the first start.
+- **Disk space**: about 25 MB (the app is 22 MB).
 
 On all three:
 
@@ -111,7 +111,7 @@ A cell that starts with `=`, `+`, `-` or `@` and is not a number (for example a 
 - **Where this version was tested**, system by system:
   - **Windows**: Windows 11 Home 26H2, with WebView2 156; the user without administrator rights and the NTFS, exFAT and FAT32 USB sticks on an earlier version, with the same `data` folder. Windows 10 was not tested.
   - **Linux**: Ubuntu 26.04 with the GNOME desktop (Wayland), in a virtual machine; the start on freshly installed Ubuntu 22.04 and 24.04; on Ubuntu 22.04 and 24.04, the automatic tests, which use the application as a person would. The other desktops and distributions were not tested.
-  - **macOS**: macOS 13.3 and 27 (also in English), in virtual Macs on a MacBook Air with an Apple chip, as a student uses it; the refusal on macOS 13.2.1; on macOS 15 with an Apple chip, the automatic tests, also in the part for Intel with Rosetta. A Mac with a real Intel processor was not tested.
+  - **macOS**: macOS 13.3 and 27 in Italian and macOS 27 in English, in virtual Macs on a Mac with an Apple chip, as a student uses it; the refusal on macOS 13.2.1; on macOS 15 with an Apple chip, the automatic tests, also in the part for Intel with Rosetta. A Mac with a real Intel processor was not tested.
 - The defects already known and not yet fixed are in the part “Difetti noti” (known defects) of the release notes, `NOTE-DI-RILASCIO.md` (in Italian), next to the program.
 - Not tested: shutting down or restarting Windows with unsaved changes (better save first) and a file dragged onto the window (to open it use “Open”). The browser keys that would reload the window or go back (F5, Ctrl+R, “Refresh” and “Back” of some keyboards, Alt+arrow) are stopped by AlgoDesign: F5 runs the program.
 - The generated code has no limit on actions: a loop that does not end, which AlgoDesign stops after a million actions, must be stopped by hand in the generated Python, C and TypeScript.
@@ -150,7 +150,7 @@ All the commands are given in the `app/` folder, after `bun install`.
 | Full test run, with the interface tests in WebKit too | `bun run collaudo --completo` |
 | Comparison of the generated code with the run on the test cases | `bun run differenziale` |
 | Release executable for Windows | `bun tauri build --no-bundle` → `shell/target/release/algodesign.exe` |
-| Release packages for Windows: the one of AlgoDesign, the one of the command-line tool and the one of the core for Node, from the same tree (folders, zips and fingerprints in `dist/` at the root; the first carries this file, `LEGGIMI.md`, the two student guides, the guide to “Academic”, the one to the tool and the two to report a malfunction from `docs/`, the two “getting started” guides with the `img/` folder and the release notes, the second the executable of the tool, the two guides and the two short texts, the third the file for Node, the two short texts and the licenses; the texts are given to the tool) | `bun run pacchetto --testi ../rilascio/windows` (with `--prova` from a tree with changes, in `dist/prova/`) |
+| Release packages for Windows: the one of AlgoDesign, the one of the command-line tool and the one of the core for Node, from the same tree (folders, zips and fingerprints in `dist/` at the root; the first carries this file, `LEGGIMI.md`, the two student guides, the guide to “Academic”, the one to the Flowgorithm files, the one to the tool and the two to report a malfunction from `docs/`, the two “getting started” guides with the `img/` folder and the release notes, the second the executable of the tool, the three guides and the two short texts, the third the file for Node, the two short texts and the licenses; the texts are given to the tool) | `bun run pacchetto --testi ../rilascio/windows` (with `--prova` from a tree with changes, in `dist/prova/`) |
 | The JSON Schema of the format, after a change to the file reader | `bun ./strumenti/schema-del-formato.ts` |
 
 ### The tests on the product
