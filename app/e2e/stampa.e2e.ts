@@ -127,12 +127,13 @@ test("[Stampa] tutte le parti del riferimento della tappa 3: le predefinite, le 
   const prima = await page.evaluate(() => document.adoptedStyleSheets.length);
   await (await voceDelMenu(page, it.stampa)).click();
   await expect(finestra(page)).toBeVisible();
-  // Il consiglio sul PDF del sistema che il motore dichiara: su Linux «Stampa su file» e i limiti del WebKitGTK; l'altro
-  // testo non c'è.
-  const suLinux = (await page.evaluate(() => navigator.userAgent)).includes("Linux");
-  const [consiglio, altro] = suLinux ? [it.stampaConsiglioPdfLinux, it.stampaConsiglioPdf] : [it.stampaConsiglioPdf, it.stampaConsiglioPdfLinux];
+  // Il consiglio sul PDF del sistema che il motore dichiara: su Linux «Stampa su file» e i limiti del WebKitGTK, sul Mac
+  // il pulsante «PDF» e i limiti del WebKit del Mac; gli altri testi non ci sono.
+  const motore = await page.evaluate(() => navigator.userAgent);
+  const consigli = [it.stampaConsiglioPdf, it.stampaConsiglioPdfLinux, it.stampaConsiglioPdfMac];
+  const consiglio = motore.includes("Macintosh") ? it.stampaConsiglioPdfMac : motore.includes("Linux") ? it.stampaConsiglioPdfLinux : it.stampaConsiglioPdf;
   await expect(finestra(page)).toContainText(consiglio);
-  await expect(finestra(page)).not.toContainText(altro);
+  for (const altro of consigli.filter((c) => c !== consiglio)) await expect(finestra(page)).not.toContainText(altro);
   // Le predefinite: tutte le funzioni, di seguito; il flowchart e il codice affiancati; nessuna parte spenta; nessuna
   // casella dei segni. Le sei parti nell'ordine.
   const parti = [it.stampaProgetto, it.stampaDati, it.stampaFlowchart, it.stampaCodice, it.stampaAffiancati, it.stampaCasi];

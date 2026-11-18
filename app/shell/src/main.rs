@@ -6,6 +6,7 @@ mod menu;
 mod preferenze;
 mod progetto;
 mod scrittura;
+mod stampa;
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
@@ -42,6 +43,7 @@ fn main() {
             progetto::segna_modificato,
             progetto::chiudi_finestra,
             menu::imposta_menu,
+            stampa::stampa_del_mac,
         ])
         .on_window_event(progetto::alla_chiusura)
         .on_menu_event(menu::alla_voce)
@@ -300,15 +302,15 @@ mod prove {
     #[test]
     fn i_comandi_del_guscio_sono_gli_stessi_che_l_interfaccia_chiama_e_che_il_guscio_simulato_conosce() {
         let main = include_str!("main.rs");
-        let guscio = [include_str!("progetto.rs"), include_str!("preferenze.rs"), include_str!("menu.rs")];
-        let interfaccia = [include_str!("../../ui/file.ts"), include_str!("../../ui/preferenze.ts"), include_str!("../../ui/menu.ts")];
+        let guscio = [include_str!("progetto.rs"), include_str!("preferenze.rs"), include_str!("menu.rs"), include_str!("stampa.rs")];
+        let interfaccia = [include_str!("../../ui/file.ts"), include_str!("../../ui/preferenze.ts"), include_str!("../../ui/menu.ts"), include_str!("../../ui/stampa/stampa-del-mac.ts")];
         let finzione = include_str!("../../e2e/finzione-tauri.ts");
         let (r, d, c, s) = (registrati(main), definiti(&guscio), chiamati(&interfaccia), simulati(finzione));
         let argomenti: usize = c.values().map(BTreeSet::len).sum();
         println!("comandi: registrati {}, definiti {}, chiamati {} (con {argomenti} argomenti), simulati {}", r.len(), d.len(), c.len(), s.len());
         assert_eq!(differenze(main, &guscio, &interfaccia, finzione), Vec::<String>::new());
-        // Le premesse: i rilevatori trovano i comandi (ventuno, oggi) e gli argomenti.
-        assert_eq!([r.len(), d.len(), c.len(), s.len()], [21; 4]);
+        // Le premesse: i rilevatori trovano i comandi (ventidue, oggi) e gli argomenti.
+        assert_eq!([r.len(), d.len(), c.len(), s.len()], [22; 4]);
         assert!(argomenti >= 20, "{argomenti} argomenti chiamati");
         // Controllo positivo, un rilevatore per volta: un comando tolto dalla registrazione, un argomento rinominato
         // nell'interfaccia, un argomento letto dal guscio simulato che l'interfaccia non manda.

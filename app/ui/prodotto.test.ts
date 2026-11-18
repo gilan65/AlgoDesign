@@ -36,6 +36,8 @@ import {
   guideDelloStrumento,
   nomiDelloStrumento,
   nomiDelloStrumentoDiLinux,
+  nomiDelloStrumentoDelMac,
+  nomiDelMac,
   nomiDelNucleo,
   nomiDelPacchetto,
   nomiDiLinux,
@@ -138,7 +140,7 @@ test("l'archivio dello strumento per Linux ha i nomi della versione e le voci di
   expect(elencoDelloStrumento.filter((v) => !elencoDelloStrumentoDiLinux.includes(v))).toEqual(["algodesign-tools.exe"]);
   // I testi brevi dello strumento ci sono nelle due cartelle dei testi, e la cartella dell'archivio dell'app non è presa
   // dal nome dello strumento (la raccolta li chiede per nome, uno per uno).
-  for (const sistema of ["windows", "linux"]) expect(Object.keys(testiDelloStrumento).filter((t) => !existsSync(join(app, "..", "rilascio", sistema, t)))).toEqual([]);
+  for (const sistema of ["windows", "linux", "macos"]) expect(Object.keys(testiDelloStrumento).filter((t) => !existsSync(join(app, "..", "rilascio", sistema, t)))).toEqual([]);
   expect(nomiDelloStrumentoDiLinux(file()["package.json"]!).archivio.startsWith(`AlgoDesign-${versione}-`)).toBe(false);
 });
 
@@ -261,27 +263,42 @@ test("il registro delle modifiche comincia dalla versione dei file e dalla sua d
   expect(guide.map((g) => [g, archivioDiLinux(readFileSync(join(radice, g), "utf8"))])).toEqual(guide.map((g) => [g, [diLinux]]));
   expect(archivioDiLinux("vedi `AlgoDesign-Tools-0.5.0-beta.1-linux-x64.tar.gz`.")).toEqual(["AlgoDesign-Tools-0.5.0-beta.1-linux-x64.tar.gz"]);
   // Nei due README anche i nomi da scaricare dalla pagina delle release (lo zip dell'app per Windows, l'archivio dell'app e
-  // quello dello strumento per Linux) e la cartella che nasce estraendo: ogni nome scritto è quello della versione, e
-  // almeno uno.
+  // quello dello strumento per Linux, lo zip dell'app e quello dello strumento per il Mac) e la cartella che nasce
+  // estraendo: ogni nome scritto è quello della versione, e almeno uno.
   const delReadme = (t: string) => ({
     zip: [...t.matchAll(/AlgoDesign-[0-9][^\s`]*-windows-x64\.zip/g)].map((m) => m[0]),
     archivio: [...t.matchAll(/AlgoDesign-[0-9][^\s`]*-linux-x64\.tar\.gz/g)].map((m) => m[0]),
     strumento: [...t.matchAll(/AlgoDesign-Tools-[^\s`]*-linux-x64\.tar\.gz/g)].map((m) => m[0]),
+    mac: [...t.matchAll(/AlgoDesign-[0-9][^\s`]*-macos-universal\.zip/g)].map((m) => m[0]),
+    strumentoDelMac: [...t.matchAll(/AlgoDesign-Tools-[^\s`]*-macos-universal\.zip/g)].map((m) => m[0]),
     // Fra apici inversi e senza il sistema nel nome: lo zip e l'archivio hanno il loro rilevatore.
-    cartella: [...t.matchAll(/`(AlgoDesign-[0-9][^\s`]*)`/g)].map((m) => m[1]!).filter((n) => !/-(windows|linux)-/.test(n)),
+    cartella: [...t.matchAll(/`(AlgoDesign-[0-9][^\s`]*)`/g)].map((m) => m[1]!).filter((n) => !/-(windows|linux|macos)-/.test(n)),
   });
   const pacchetto = nomiDelPacchetto(file()["package.json"]!);
-  const attesi = { zip: [pacchetto.zip], archivio: [nomiDiLinux(file()["package.json"]!).archivio], strumento: [diLinux], cartella: [pacchetto.cartellaNelloZip] };
+  const attesi = {
+    zip: [pacchetto.zip],
+    archivio: [nomiDiLinux(file()["package.json"]!).archivio],
+    strumento: [diLinux],
+    mac: [nomiDelMac(file()["package.json"]!).archivio],
+    strumentoDelMac: [nomiDelloStrumentoDelMac(file()["package.json"]!).archivio],
+    cartella: [pacchetto.cartellaNelloZip],
+  };
   for (const r of readme) {
     const trovati = delReadme(readFileSync(join(radice, r.nome), "utf8"));
     expect([r.nome, Object.fromEntries(Object.entries(trovati).map(([k, v]) => [k, [...new Set(v)]]))]).toEqual([r.nome, attesi]);
     for (const v of Object.values(trovati)) expect(v.length).toBeGreaterThan(0);
   }
   // Controllo positivo: i nomi di un'altra versione si vedono, e non si confondono fra loro.
-  expect(delReadme("`AlgoDesign-0.5.0-beta.1-windows-x64.zip`, `AlgoDesign-0.5.0-beta.1-linux-x64.tar.gz`, `AlgoDesign-Tools-0.5.0-beta.1-linux-x64.tar.gz`, `AlgoDesign-0.5.0-beta.1`")).toEqual({
+  expect(
+    delReadme(
+      "`AlgoDesign-0.5.0-beta.1-windows-x64.zip`, `AlgoDesign-0.5.0-beta.1-linux-x64.tar.gz`, `AlgoDesign-Tools-0.5.0-beta.1-linux-x64.tar.gz`, `AlgoDesign-0.5.0-beta.1-macos-universal.zip`, `AlgoDesign-Tools-0.5.0-beta.1-macos-universal.zip`, `AlgoDesign-0.5.0-beta.1`",
+    ),
+  ).toEqual({
     zip: ["AlgoDesign-0.5.0-beta.1-windows-x64.zip"],
     archivio: ["AlgoDesign-0.5.0-beta.1-linux-x64.tar.gz"],
     strumento: ["AlgoDesign-Tools-0.5.0-beta.1-linux-x64.tar.gz"],
+    mac: ["AlgoDesign-0.5.0-beta.1-macos-universal.zip"],
+    strumentoDelMac: ["AlgoDesign-Tools-0.5.0-beta.1-macos-universal.zip"],
     cartella: ["AlgoDesign-0.5.0-beta.1"],
   });
 });
@@ -330,7 +347,7 @@ test("nei testi del pacchetto la data è scritta solo con i segnaposto che la di
   // I testi inglesi che dicono la data hanno {{date}}, gli italiani {{delData}}: i testi di ciascuno, con la cardinalità nel confronto.
   const conLaData = (n: string) => testi.filter((f) => nomi(readFileSync(join(cartella, f), "utf8")).includes(n)).map((f) => f.replaceAll("\\", "/")).sort();
   expect(conLaData("date")).toEqual(["linux/README-OF-ALGODESIGN-TOOLS.md", "macos/README-OF-ALGODESIGN-TOOLS.md", "windows/README-OF-ALGODESIGN-TOOLS.md"]);
-  expect(conLaData("delData")).toEqual(["linux/ALGODESIGN-PER-LINUX.md", "linux/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "linux/NOTE-DI-RILASCIO.md", "macos/ALGODESIGN-PER-MAC.md", "macos/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "windows/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "windows/NOTE-DI-RILASCIO.md"]);
+  expect(conLaData("delData")).toEqual(["linux/ALGODESIGN-PER-LINUX.md", "linux/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "linux/NOTE-DI-RILASCIO.md", "macos/ALGODESIGN-PER-MAC.md", "macos/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "macos/NOTE-DI-RILASCIO.md", "windows/LEGGIMI-DI-ALGODESIGN-TOOLS.md", "windows/NOTE-DI-RILASCIO.md"]);
   // Controllo positivo del rilevatore: un segnaposto vecchio si vede.
   expect(nomi("Versione del {{data}}.")).toEqual(["data"]);
 });

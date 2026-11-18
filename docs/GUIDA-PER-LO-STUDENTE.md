@@ -1,6 +1,6 @@
 # AlgoDesign: guida per lo studente
 
-Questa guida spiega come si usa AlgoDesign per progettare un algoritmo, provarlo e vederlo tradotto in codice. Come si scarica e si avvia il programma è nel file `LEGGIMI.md`; su Linux anche nel file `ALGODESIGN-PER-LINUX.md`, accanto al programma.
+Questa guida spiega come si usa AlgoDesign per progettare un algoritmo, provarlo e vederlo tradotto in codice. Come si scarica e si avvia il programma è nel file `LEGGIMI.md`; su Linux anche nel file `ALGODESIGN-PER-LINUX.md`, sul Mac nel file `ALGODESIGN-PER-MAC.md`, accanto al programma.
 
 ## 1. L'idea: prima i dati, poi le regole
 
@@ -19,7 +19,7 @@ Le parole che la guida usa sono queste: un **dato** è una costante o una variab
 - **La riga di stato**, in fondo: il nome del file, «modificato» se ci sono modifiche non salvate, gli errori e gli avvisi del progetto (un clic su «Mostra l'elenco» li elenca, e un clic su una voce porta al blocco o al dato), lo stato dell'esecuzione, «In registrazione» se la registrazione delle esecuzioni è attiva (§15) e, all'estrema destra, la lingua dell'interfaccia: «ITA» o «ENG», e un clic apre il menu con le due lingue (la stessa scelta delle Impostazioni).
 - **La guida per lo studente**: dal menu **Aiuto**, in una finestra a destra che resta aperta mentre si lavora (§12).
 
-Ogni comando si dà anche da tastiera: Tab porta da un elemento all'altro, Invio apre e conferma, Esc rinuncia.
+Ogni comando si dà anche da tastiera: Tab porta da un elemento all'altro, Invio apre e conferma, Esc rinuncia. La guida scrive i tasti di Windows e di Linux; sul Mac cambiano, come dice il §16.
 
 ## 3. Il primo progetto, passo per passo
 
@@ -31,7 +31,7 @@ Dal menu **Progetto** scegli **Nuovo** (Ctrl+N). Scrivi il nome del progetto, ch
 
 Salva il progetto con **Salva con nome** (Ctrl+Maiusc+S): il file ha l'estensione `.algo`. Da lì in poi **Salva** (Ctrl+S) scrive lo stesso file. Il file prende il nome del progetto; se quel nome ha caratteri che un file non può avere, o è un nome che Windows riserva (come `CON` o `NUL`), prima della finestra del sistema AlgoDesign lo dice e propone un altro nome, che si può cambiare: **Quali nomi si possono usare?** dice le regole.
 
-Un progetto salvato si riapre con **Apri** (Ctrl+O). AlgoDesign apre un progetto anche all'avvio, se riceve il file `.algo`: su Windows trascinando il file sopra `AlgoDesign.exe`, oppure col tasto destro sul file, «Apri con» e poi `AlgoDesign.exe`; dal terminale scrivendo il file dopo il nome di AlgoDesign, col suo percorso se sta in un'altra cartella e fra virgolette se ha degli spazi: `.\AlgoDesign.exe "media voti.algo"` in PowerShell su Windows, `./AlgoDesign.AppImage "media voti.algo"` su Linux. Il doppio clic su un file `.algo` non basta: AlgoDesign non si installa, e il sistema non sa che quel file è suo.
+Un progetto salvato si riapre con **Apri** (Ctrl+O). AlgoDesign apre un progetto anche all'avvio, se riceve il file `.algo`: su Windows trascinando il file sopra `AlgoDesign.exe`, oppure col tasto destro sul file, «Apri con» e poi `AlgoDesign.exe`; dal terminale scrivendo il file dopo il nome di AlgoDesign, col suo percorso se sta in un'altra cartella e fra virgolette se ha degli spazi: `.\AlgoDesign.exe "media voti.algo"` in PowerShell su Windows, `./AlgoDesign.AppImage "media voti.algo"` su Linux; sul Mac il programma dentro l'app, `…/AlgoDesign.app/Contents/MacOS/algodesign "media voti.algo"` (il §16 dice come). Il doppio clic su un file `.algo` non basta: AlgoDesign non si installa, e il sistema non sa che quel file è suo.
 
 ### I dati
 
@@ -301,7 +301,7 @@ Node esegue il file senza controllarne i tipi. Chi vuole il controllo lo chiede 
 
 In PowerShell si scrive `npm.cmd` e `npx.cmd`, non `npm` e `npx`: su un Windows appena installato questi ultimi si fermano con un errore sull'esecuzione di script. Con lo zip, `npx.cmd` deve trovare Node: prima si scrive `$env:PATH = "D:\node;$env:PATH"`, che vale finché la finestra di PowerShell resta aperta; poi i comandi sono gli stessi. Se in una cartella più in alto c'è un file `package.json`, i pacchetti finiscono lì e Node scrive anche un avviso (`MODULE_TYPELESS_PACKAGE_JSON`): il programma funziona lo stesso.
 
-**Su Linux** i comandi si scrivono nel terminale, nella cartella del file, e senza `.cmd`: `npm` e `npx` al posto di `npm.cmd` e `npx.cmd`. Per leggere i valori da un file basta `node media.ts < ingresso.txt`.
+**Su Linux e sul Mac** i comandi si scrivono nel terminale, nella cartella del file, e senza `.cmd`: `npm` e `npx` al posto di `npm.cmd` e `npx.cmd`. Per leggere i valori da un file basta `node media.ts < ingresso.txt`.
 
 ### Il JavaScript e lo strumento `algodesign-tools`
 
@@ -312,7 +312,7 @@ Il **JavaScript** è lo stesso programma del TypeScript senza i tipi, riga per r
 
 La pagina è provata in Chrome, in Edge e in Firefox. In Safari non è provata: per la riga di un errore la pagina potrebbe mostrare «?», col motivo giusto.
 
-**Su Linux** lo strumento è nel suo archivio per Linux e si avvia dal terminale, nella sua cartella, con `./algodesign-tools stampa media.algo`. Se il doppio clic su una pagina HTML la apre in un editor di testo, fai clic sulla pagina col tasto destro, scegli «Apri con» e poi il browser.
+**Su Linux e sul Mac** lo strumento è nel suo archivio per quel sistema e si avvia dal terminale, nella sua cartella, con `./algodesign-tools stampa media.algo`. Su Linux, se il doppio clic su una pagina HTML la apre in un editor di testo, fai clic sulla pagina col tasto destro, scegli «Apri con» e poi il browser.
 
 Per eseguire il JavaScript con Node, seleziona col mouse il riquadro del codice della pagina di prova (i numeri di riga non entrano nella selezione), incollalo in un file `media.js` e scrivi `node media.js`.
 
@@ -533,6 +533,8 @@ Di partenza sono scelti il flowchart e il codice affiancati, nel linguaggio dell
 
 **Su Linux** «Stampa…» apre la finestra di stampa del sistema. Per avere un PDF scegli la destinazione **Stampa su file**: il nome proposto è `output.pdf`, da cambiare. I fogli si stampano tutti nel verso scelto in quella finestra, senza l'intestazione e senza il piè di pagina, come dice anche la finestra «Stampa» di AlgoDesign.
 
+**Sul Mac** «Stampa…» apre la finestra di stampa di macOS: per avere un PDF si fa clic su **«PDF»**. I fogli si stampano tutti nel verso scelto in quella finestra, senza l'intestazione e senza il piè di pagina (§16).
+
 ### Esportare il flowchart
 
 **Esporta il flowchart…** esporta il flowchart della scheda mostrata. La finestra dice di quale flowchart si tratta e fa scegliere il **Formato**, **PNG (immagine)** o **SVG (disegno)**, i **Colori** (a colori, a toni di grigio, in bianco e nero) e lo **Sfondo trasparente**; senza la casella lo sfondo è bianco. **Esporta…** apre la finestra del sistema per salvare, col nome del progetto e, per una procedura o una funzione, il suo nome fra parentesi: per esempio «media (leggi_numero).png». Il PNG è disegnato al doppio della misura, perché resti nitido; un flowchart di grandi dimensioni viene ridotto, perché un'immagine PNG ha un limite: la riga di stato dice la misura in pixel. L'SVG si ingrandisce quanto si vuole senza perdere nitidezza. In pausa l'immagine ha i segni dell'esecuzione: il blocco corrente e i punti di interruzione. Le scelte restano fino alla chiusura di AlgoDesign.
@@ -560,6 +562,49 @@ Se AlgoDesign fa qualcosa che non dovrebbe, lo si può segnalare perché venga c
 
 Tutto il percorso è nella guida per segnalare un malfunzionamento, `GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md`, che nel pacchetto sta accanto al programma, nel repository nella cartella `docs`.
 
-## 16. Licenza di questa guida
+## 16. Sul Mac
+
+Sul Mac AlgoDesign funziona allo stesso modo, con i tasti del Mac. Col puntatore del mouse su un pulsante, il suggerimento scrive già il tasto del Mac: per esempio «Salva (⌘S)». Come si scarica, come si apre la prima volta e che cosa resta sul Mac lo dice il file `ALGODESIGN-PER-MAC.md`, accanto al programma.
+
+### I tasti
+
+| Su Windows e Linux | Sul Mac | Che cosa fa |
+|---|---|---|
+| Ctrl+N, Ctrl+O, Ctrl+S | ⌘N, ⌘O, ⌘S | Nuovo, Apri, Salva |
+| Ctrl+Maiusc+S | ⇧⌘S | Salva con nome |
+| Ctrl+P | ⌘P | Stampa |
+| Ctrl+Z | ⌘Z | Annulla |
+| Ctrl+Y | ⇧⌘Z (anche ⌘Y) | Ripeti |
+| Ctrl+X, Ctrl+C, Ctrl+V | ⌘X, ⌘C, ⌘V | Taglia, Copia, Incolla |
+| Canc | ⌫ | Elimina il blocco, il dato o il caso scelto |
+| F5, F10, F9, Maiusc+F5 | fn+F5, fn+F10, fn+F9, fn+⇧F5 | Esegui, Passo, Interruzione, Ferma |
+| F11, Maiusc+F11 | fn+F11, fn+⇧F11 | Entra, Esci |
+| il tasto Menu, o Maiusc+F10 | il tasto destro, o Ctrl+clic | il menu di un blocco, di un dato, di un caso, di una colonna, di una procedura o di una funzione |
+
+Sulle tastiere del Mac i tasti F1…F12 regolano luminosità, volume e simili: per usarli come tasti funzione si tiene premuto **fn**. Alcuni, come F11, macOS può tenerli per sé (F11 mostra la scrivania). I pulsanti della barra fanno le stesse cose e funzionano sempre.
+
+**Il Tab** passa solo fra i campi, e salta i pulsanti, finché nelle Impostazioni di Sistema, «Tastiera», non si accende «Navigazione da tastiera»: è una scelta di macOS, che vale per tutte le app.
+
+### Il menu in cima allo schermo
+
+La barra dei menu del Mac ha tre menu nella lingua di AlgoDesign: **AlgoDesign** (Informazioni su AlgoDesign, Impostazioni… ⌘, ed Esci da AlgoDesign ⌘Q), **Modifica** (Annulla, Ripeti, Taglia, Copia, Incolla e Seleziona tutto, per il testo dei campi) e **Finestra**. Gli altri comandi stanno nella barra dentro la finestra. Se ci sono modifiche non salvate, uscendo con ⌘Q, dal menu o dal Dock AlgoDesign chiede che cosa fare, come quando si chiude la finestra; lo spegnimento del Mac manda la stessa richiesta.
+
+### Aprire un progetto all'avvio
+
+Il doppio clic su un file `.algo` non basta, e nemmeno `open -a`: AlgoDesign si apre senza il file. Dal Terminale, nella cartella del file, si scrive il percorso del programma che sta dentro l'app, seguito dal file fra virgolette se ha degli spazi; per esempio, con l'app spostata in Applicazioni: `/Applications/AlgoDesign.app/Contents/MacOS/algodesign "media voti.algo"`. La prima volta che il Terminale legge un file nella cartella Documenti, o in Download, macOS chiede il permesso: «"Terminale" vorrebbe accedere ai file nella cartella Documenti», e si sceglie «Consenti», o «OK».
+
+### La prima volta
+
+AlgoDesign non è firmata da Apple, e al primo avvio macOS la blocca. Da macOS 15 in poi la finestra dice «AlgoDesign non è stata aperta», con **«Sposta nel Cestino»** in blu e **«Fine»**: ⚠️ si sceglie **«Fine»**, perché l'altro pulsante butta via l'app. Poi, nelle Impostazioni di Sistema, «Privacy e sicurezza», sezione «Sicurezza», si fa clic su **«Apri comunque»**, di nuovo «Apri comunque» nella finestra che chiede conferma, e si scrive la password. Su macOS 13 e 14 la finestra dice «Impossibile aprire "AlgoDesign"…», con «OK»; il resto è uguale, e alla fine il pulsante si chiama «Apri». Lo strumento a riga di comando si sblocca allo stesso modo, col pulsante **«Consenti comunque»**. Il file `ALGODESIGN-PER-MAC.md` ha le parole esatte delle finestre.
+
+### La stampa
+
+«Stampa…» apre la finestra di stampa di macOS. Per avere un PDF si fa clic su **«PDF»**: il nome proposto è «AlgoDesign», da cambiare. I fogli si stampano tutti nel verso scelto in quella finestra, senza l'intestazione e senza il piè di pagina, come dice anche la finestra «Stampa» di AlgoDesign. Da macOS 15 in poi, alla prima stampa, macOS chiede se AlgoDesign può trovare i dispositivi sulle reti locali: «Consenti» serve per una stampante di rete, per un PDF basta «Non consentire».
+
+### Dove restano i dati
+
+Le preferenze, gli esempi e i dati della finestra stanno nella Libreria dell'utente, in quattro posti col nome `io.github.gilan65.algodesign`. Per toglierli, nel Finder si sceglie «Vai», «Vai alla cartella…», si scrive `~/Library` e si spostano nel Cestino `Application Support/io.github.gilan65.algodesign`, `Caches/io.github.gilan65.algodesign`, `WebKit/io.github.gilan65.algodesign` e `Preferences/io.github.gilan65.algodesign.plist`.
+
+## 17. Licenza di questa guida
 
 Questa guida è di Giuseppe Lancellotti ed è rilasciata con licenza Creative Commons Attribuzione 4.0 Internazionale (CC BY 4.0): si può copiare, distribuire e modificare, anche per scopi commerciali, citando l'autore e la licenza. Il testo completo della licenza è nel file `LICENSE-DOCS`.
