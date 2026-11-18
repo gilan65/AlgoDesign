@@ -68,7 +68,8 @@
 // 12. ZIP DEL NUCLEO: `dist/AlgoDesign-Core-<versione>.zip`, con dentro la cartella `AlgoDesign-Core-<versione>`, con le prove
 //    di 6 e l'impronta accanto.
 // 13. PROVA DEL NUCLEO: lo zip estratto in una cartella con spazi nel nome, il file caricato da lì sotto Node con un PATH senza
-//    Bun: le cinque esportazioni per elementi, e su tutto il corpus gli esiti di ciò che i sorgenti danno sotto Bun. Se Node
+//    Bun: le esportazioni per elementi, e su tutto il corpus gli esiti di ciò che i sorgenti danno sotto Bun (anche il disegno
+//    e le segnalazioni). Se Node
 //    cade all'uscita (0xC0000409) il suo lato si ripete una volta sola, e la riga lo dice; ogni altra uscita è un rosso subito.
 //
 // Una cartella o uno zip della stessa versione si sostituiscono, ma la cartella solo se contiene le voci dell'elenco e

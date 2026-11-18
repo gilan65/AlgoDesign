@@ -3,8 +3,8 @@
 // carattere della misura, nell'esempio e nella voce di `disegna`, è quella del disegno.
 //
 // CHE COSA NON GUARDA:
-// - che l'esempio per la pagina giri: l'ha provato la conversazione che l'ha scritto, in Chromium, dai due file (il
-//   pacchetto di prova lo ripete sul `.cjs` dello zip);
+// - che l'esempio per la pagina giri: è stato provato in Chromium, dai due file, quando è stato scritto; il pacchetto di
+//   prova esegue `disegna` e `segnalazioni` sul `.cjs` dello zip, sotto Node, su tutto il corpus, ma non l'esempio;
 // - le opzioni e i campi descritti a parole, uno per uno: li dice il tipo del punto d'ingresso.
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";

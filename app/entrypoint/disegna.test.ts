@@ -112,12 +112,15 @@ test("disegna dà i byte dell'esportazione dell'app su tutto il corpus, nelle du
   expect(cambiatiDalControllo).toBe(disegniDiBase);
 });
 
-test("disegna rifiuta con un'eccezione una funzione, una lingua o un insieme di colori sconosciuti", () => {
+test("disegna rifiuta con un'eccezione una funzione, una lingua, un insieme di colori o un modo sconosciuti", () => {
   const { progetto } = progetti[0]!;
   const id = progetto.functions[0]!.id;
   expect(() => disegna(progetto, "nessuna", "it", misura, carattere)).toThrow("funzione sconosciuta: nessuna");
   expect(() => disegna(progetto, id, "fr" as "it", misura, carattere)).toThrow("lingua sconosciuta: fr");
   expect(() => disegna(progetto, id, "it", misura, carattere, { colori: "verde" as "tenue" })).toThrow("insieme di colori sconosciuto: verde");
+  expect(() => disegna(progetto, id, "it", misura, carattere, { modo: "grayscale" as "grigi" })).toThrow("modo di colore sconosciuto: grayscale");
+  // Controllo positivo: i tre modi veri passano.
+  expect((["colori", "grigi", "bianco-e-nero"] as const).map((modo) => typeof disegna(progetto, id, "it", misura, carattere, { modo }).svg)).toEqual(["string", "string", "string"]);
   // L'altezza e la larghezza sono quelle del disegno, e l'SVG le scrive.
   const r = disegna(progetto, id, "it", misura, carattere);
   expect(r.svg).toContain(`width="${r.larghezza}" height="${r.altezza}"`);
