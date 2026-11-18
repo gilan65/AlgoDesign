@@ -13,6 +13,7 @@ import { useState, type ReactElement } from "react";
 import { puntiMassimi, puntiMinimi } from "../../core/disegno/fogli";
 import type { Linguaggio } from "../../core/genera/linguaggi";
 import type { ModoDiColore } from "../../core/disegno/tavolozza";
+import type { Sistema } from "../../core/registrazione/formato";
 import type { Dizionario } from "../../i18n/it";
 import { riempi } from "../../i18n/lingue";
 import { modiDiColore } from "../disegno/esporta";
@@ -23,6 +24,9 @@ import { partiDellaStampa, partiStampate, testoDellaParte, type ParteDellaStampa
 import stili from "./Stampa.module.css";
 
 const testoDeiColori = { colori: "esportaAColori", grigi: "esportaAGrigi", "bianco-e-nero": "esportaInBiancoENero" } as const satisfies Record<ModoDiColore, keyof Dizionario>;
+/** Il consiglio sul PDF, per il sistema che il motore dichiara: la finestra di stampa di ciascuno, e su Linux e sul Mac
+ * i limiti del loro WebKit (un verso solo, niente intestazione né piè di pagina). */
+const consiglioDelSistema = { windows: "stampaConsiglioPdf", linux: "stampaConsiglioPdfLinux", macos: "stampaConsiglioPdfMac" } as const satisfies Record<Sistema, keyof Dizionario>;
 
 /** Ciò che la finestra sa del progetto: il nome della scheda mostrata, se l'esecuzione è in pausa, le parti piene, la
  * nota dei flowchart ristretti per le scelte di adesso, i linguaggi accesi coi loro nomi e la nota di un linguaggio che
@@ -205,7 +209,7 @@ function Scelte({ cosa, iniziali, testi, stampa }: { cosa: DaStampare; iniziali:
           <Casella testo={testi.stampaData} scelta={s.data} cambia={(si) => setS((x) => ({ ...x, data: si }))} />
         </div>
       </fieldset>
-      <Descrizione className={stili.consiglio}>{sistemaDelMotore() === "linux" ? testi.stampaConsiglioPdfLinux : testi.stampaConsiglioPdf}</Descrizione>
+      <Descrizione className={stili.consiglio}>{testi[consiglioDelSistema[sistemaDelMotore()]]}</Descrizione>
       <div className={finestra.comandi}>
         <Rinuncia type="button" className={finestra.comando}>
           {testi.annullaEsc}

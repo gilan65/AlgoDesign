@@ -1040,6 +1040,7 @@ export const en: Dizionario = {
   stampaData: "the date and time",
   stampaConsiglioPdf: "To get a PDF, choose the destination “Save as PDF” in the window that opens.",
   stampaConsiglioPdfLinux: "To get a PDF, choose “Print to File” in the window that opens. On Linux all sheets are printed in the orientation chosen in that window, without the header and the footer.",
+  stampaConsiglioPdfMac: "To get a PDF, click “PDF” in the window that opens. On the Mac all sheets are printed in the orientation chosen in that window, without the header and the footer.",
   stampaPagina: "page {n} of {m}",
   stampaFoglio: "sheet {n} of {m} of the flowchart",
   stampaValori: "Values typed in the console",
