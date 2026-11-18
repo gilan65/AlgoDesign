@@ -1,6 +1,6 @@
 # AlgoDesign: student guide
 
-This guide explains how to use AlgoDesign to design an algorithm, test it and see it translated into code. How to download and start the program is in the `README.md` file; on Linux also in the `ALGODESIGN-PER-LINUX.md` file (in Italian), next to the program.
+This guide explains how to use AlgoDesign to design an algorithm, test it and see it translated into code. How to download and start the program is in the `README.md` file; on Linux also in the `ALGODESIGN-PER-LINUX.md` file (in Italian), on the Mac in the `ALGODESIGN-PER-MAC.md` file (in Italian), next to the program.
 
 ## 1. The idea: first the data, then the rules
 
@@ -19,7 +19,7 @@ The words this guide uses are these: a **data item** is a constant or a variable
 - **The status bar**, at the bottom: the file name, “modified” if there are unsaved changes, the errors and warnings of the project (a click on “Show the list” lists them, and a click on an item leads to the block or the data item), the state of the run, “Recording” if execution recording is on (§15) and, at the far right, the interface language: “ITA” or “ENG”, and a click opens the menu with the two languages (the same choice as in the Settings).
 - **The student guide**: from the **Help** menu, in a window on the right that stays open while you work (§12).
 
-Every command can also be given from the keyboard: Tab moves from one element to the next, Enter opens and confirms, Esc cancels.
+Every command can also be given from the keyboard: Tab moves from one element to the next, Enter opens and confirms, Esc cancels. The guide writes the keys of Windows and Linux; on the Mac they change, as §16 says.
 
 ## 3. The first project, step by step
 
@@ -31,7 +31,7 @@ From the **Project** menu choose **New** (Ctrl+N). Write the name of the project
 
 Save the project with **Save as** (Ctrl+Shift+S): the file has the `.algo` extension. From then on **Save** (Ctrl+S) writes the same file. The file takes the name of the project; if that name has characters a file name cannot have, or is a name Windows reserves (such as `CON` or `NUL`), before the system dialog AlgoDesign says so and suggests another name, which can be changed: **Which names can be used?** tells the rules.
 
-A saved project is opened again with **Open** (Ctrl+O). AlgoDesign also opens a project at startup, if it receives the `.algo` file: on Windows by dragging the file onto `AlgoDesign.exe`, or by right-clicking the file, “Open with” and then `AlgoDesign.exe`; from the terminal by writing the file after the name of AlgoDesign, with its path if it is in another folder and in quotes if it has spaces: `.\AlgoDesign.exe "grade average.algo"` in PowerShell on Windows, `./AlgoDesign.AppImage "grade average.algo"` on Linux. Double-clicking a `.algo` file is not enough: AlgoDesign is not installed, and the system does not know that the file is its own.
+A saved project is opened again with **Open** (Ctrl+O). AlgoDesign also opens a project at startup, if it receives the `.algo` file: on Windows by dragging the file onto `AlgoDesign.exe`, or by right-clicking the file, “Open with” and then `AlgoDesign.exe`; from the terminal by writing the file after the name of AlgoDesign, with its path if it is in another folder and in quotes if it has spaces: `.\AlgoDesign.exe "grade average.algo"` in PowerShell on Windows, `./AlgoDesign.AppImage "grade average.algo"` on Linux; on the Mac the program inside the app, `…/AlgoDesign.app/Contents/MacOS/algodesign "grade average.algo"` (§16 says how). Double-clicking a `.algo` file is not enough: AlgoDesign is not installed, and the system does not know that the file is its own.
 
 ### The data
 
@@ -301,7 +301,7 @@ Node runs the file without checking its types. If you want the check, ask `tsc`.
 
 In PowerShell type `npm.cmd` and `npx.cmd`, not `npm` and `npx`: on a freshly installed Windows those stop with an error about running scripts. With the zip, `npx.cmd` has to find Node: first type `$env:PATH = "D:\node;$env:PATH"`, which lasts as long as the PowerShell window stays open; then the commands are the same. If a folder higher up contains a `package.json` file, the packages end up there and Node also writes a warning (`MODULE_TYPELESS_PACKAGE_JSON`): the program still works.
 
-**On Linux** the commands are typed in the terminal, in the folder of the file, and without `.cmd`: `npm` and `npx` instead of `npm.cmd` and `npx.cmd`. To read the values from a file, `node media.ts < ingresso.txt` is enough.
+**On Linux and on the Mac** the commands are typed in the terminal, in the folder of the file, and without `.cmd`: `npm` and `npx` instead of `npm.cmd` and `npx.cmd`. To read the values from a file, `node media.ts < ingresso.txt` is enough.
 
 ### JavaScript and the `algodesign-tools` tool
 
@@ -312,7 +312,7 @@ In PowerShell type `npm.cmd` and `npx.cmd`, not `npm` and `npx`: on a freshly in
 
 The page is tested in Chrome, Edge and Firefox. In Safari it is not tested: for the line of an error the page might show “?”, with the right reason.
 
-**On Linux** the tool is in its archive for Linux and starts from the terminal, in its folder, with `./algodesign-tools stampa media.algo`. If a double click on an HTML page opens it in a text editor, right-click the page, choose “Open With” and then the browser.
+**On Linux and on the Mac** the tool is in its archive for that system and starts from the terminal, in its folder, with `./algodesign-tools stampa media.algo`. On Linux, if a double click on an HTML page opens it in a text editor, right-click the page, choose “Open With” and then the browser.
 
 To run the JavaScript with Node, select with the mouse the code box of the test page (the line numbers do not enter the selection), paste it into a file `media.js` and type `node media.js`.
 
@@ -533,6 +533,8 @@ At first the flowchart and the code side by side are chosen, in the language of 
 
 **On Linux** **Print…** opens the print window of the system. To get a PDF choose the destination **Print to File**: the proposed name is `output.pdf`, to be changed. All sheets are printed in the orientation chosen in that window, without the header and the footer, as the AlgoDesign “Print” window also says.
 
+**On the Mac** **Print…** opens the print window of macOS: to get a PDF click **“PDF”**. All sheets are printed in the orientation chosen in that window, without the header and the footer (§16).
+
 ### Exporting the flowchart
 
 **Export the flowchart…** exports the flowchart of the tab shown. The window says which flowchart it is and lets you choose the **Format**, **PNG (image)** or **SVG (drawing)**, the **Colors** (in color, in shades of gray, in black and white) and the **Transparent background**; without the box the background is white. **Export…** opens the system window to save, with the name of the project and, for a procedure or a function, its name in brackets: for example “media (leggi_numero).png”. The PNG is drawn at twice the size, so that it stays sharp; a large flowchart is reduced, because a PNG image has a limit: the status line says the size in pixels. The SVG can be enlarged as much as you like without losing sharpness. In pause the image has the execution marks: the current block and the breakpoints. The choices stay until AlgoDesign is closed.
@@ -560,6 +562,49 @@ If AlgoDesign does something it should not, it can be reported so that it gets f
 
 The whole path is in the guide to reporting a malfunction, `GUIDE-TO-REPORTING-A-MALFUNCTION.md`, which in the package sits next to the program, in the repository in the `docs` folder.
 
-## 16. License of this guide
+## 16. On the Mac
+
+On the Mac AlgoDesign works the same way, with the Mac keys. With the mouse pointer on a button, the hint already writes the Mac key: for example “Save (⌘S)”. How to download it, how to open it the first time and what stays on the Mac is told by the `ALGODESIGN-PER-MAC.md` file (in Italian), next to the program.
+
+### The keys
+
+| On Windows and Linux | On the Mac | What it does |
+|---|---|---|
+| Ctrl+N, Ctrl+O, Ctrl+S | ⌘N, ⌘O, ⌘S | New, Open, Save |
+| Ctrl+Shift+S | ⇧⌘S | Save as |
+| Ctrl+P | ⌘P | Print |
+| Ctrl+Z | ⌘Z | Undo |
+| Ctrl+Y | ⇧⌘Z (also ⌘Y) | Redo |
+| Ctrl+X, Ctrl+C, Ctrl+V | ⌘X, ⌘C, ⌘V | Cut, Copy, Paste |
+| Del | ⌫ | Deletes the chosen block, data item or case |
+| F5, F10, F9, Shift+F5 | fn+F5, fn+F10, fn+F9, fn+⇧F5 | Run, Step, Breakpoint, Stop |
+| F11, Shift+F11 | fn+F11, fn+⇧F11 | Step in, Step out |
+| the Menu key, or Shift+F10 | the right button, or Ctrl+click | the menu of a block, a data item, a case, a column, a procedure or a function |
+
+On Mac keyboards the keys F1…F12 control brightness, volume and the like: to use them as function keys you hold down **fn**. Some, such as F11, macOS may keep for itself (F11 shows the desktop). The buttons of the bar do the same things and always work.
+
+**Tab** moves only between the fields, and skips the buttons, until “Keyboard navigation” is turned on in System Settings, “Keyboard”: it is a choice of macOS, which holds for all apps.
+
+### The menu at the top of the screen
+
+The Mac menu bar has three menus in the language of AlgoDesign: **AlgoDesign** (About AlgoDesign, Settings… ⌘, and Quit AlgoDesign ⌘Q), **Edit** (Undo, Redo, Cut, Copy, Paste and Select All, for the text of the fields) and **Window**. The other commands are in the bar inside the window. If there are unsaved changes, quitting with ⌘Q, from the menu or from the Dock, AlgoDesign asks what to do, as when the window is closed; shutting down the Mac sends the same request.
+
+### Opening a project at startup
+
+Double-clicking a `.algo` file is not enough, and neither is `open -a`: AlgoDesign opens without the file. From the Terminal, in the folder of the file, you type the path of the program inside the app, followed by the file in quotes if it has spaces; for example, with the app moved to Applications: `/Applications/AlgoDesign.app/Contents/MacOS/algodesign "grade average.algo"`. The first time the Terminal reads a file in the Documents folder, or in Downloads, macOS asks permission (“"Terminal" would like to access files in your Downloads folder”), and you choose “Allow”, or “OK”.
+
+### The first time
+
+AlgoDesign is not signed by Apple, and at the first start macOS blocks it. From macOS 15 on, the window says “"AlgoDesign" Not Opened”, with **“Move to Trash”** in blue and **“Done”**: ⚠️ choose **“Done”**, because the other button throws the app away. Then, in System Settings, “Privacy & Security”, “Security” section, click **“Open Anyway”**, again “Open Anyway” in the window that asks for confirmation, and type the password. On macOS 13 and 14 the window says that “AlgoDesign” cannot be opened, with “OK”; the rest is the same, and at the end the button is called “Open”. The command-line tool is unblocked the same way, with the **“Allow Anyway”** button. The `ALGODESIGN-PER-MAC.md` file has the exact words of the windows, in Italian.
+
+### Printing
+
+**Print…** opens the print window of macOS. To get a PDF click **“PDF”**: the proposed name is “AlgoDesign”, to be changed. All sheets are printed in the orientation chosen in that window, without the header and the footer, as the AlgoDesign “Print” window also says. From macOS 15 on, at the first print, macOS asks whether AlgoDesign may find devices on the local networks: allowing it is needed for a network printer, for a PDF it is enough not to allow it.
+
+### Where the data stay
+
+The preferences, the examples and the data of the window are in the user's Library, in four places with the name `io.github.gilan65.algodesign`. To remove them, in the Finder choose “Go”, “Go to Folder…”, type `~/Library` and move to the Trash `Application Support/io.github.gilan65.algodesign`, `Caches/io.github.gilan65.algodesign`, `WebKit/io.github.gilan65.algodesign` and `Preferences/io.github.gilan65.algodesign.plist`.
+
+## 17. License of this guide
 
 This guide is by Giuseppe Lancellotti and is released under the Creative Commons Attribution 4.0 International license (CC BY 4.0): it can be copied, distributed and modified, also for commercial purposes, crediting the author and the license. The full text of the license is in the `LICENSE-DOCS` file.

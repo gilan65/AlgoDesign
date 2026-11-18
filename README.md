@@ -4,7 +4,7 @@
 
 **Design algorithms as flowcharts, run them step by step and translate them into pseudocode, Python, C and TypeScript.**
 
-Version 1.0.0 of 8 November 2026, for 64-bit Windows 10 and 11 and for 64-bit Linux; the macOS version will come with 1.0.1.
+Version 1.0.0 of 8 November 2026, for 64-bit Windows 10 and 11, for 64-bit Linux and for macOS 13.3 or later.
 
 AlgoDesign is a teaching environment for people learning to program: first you design and test the algorithm as a flowchart, then you see how the same reasoning becomes code. It is a **local and lightweight** application: it works without internet, without installing it and without administrator rights.
 
@@ -34,7 +34,7 @@ To begin, the **getting-started guide**, [`GETTING-STARTED.md`](docs/GETTING-STA
 
 ## Download and start
 
-AlgoDesign is downloaded from the releases page, https://github.com/gilan65/AlgoDesign/releases: for Windows the zip `AlgoDesign-1.0.0-windows-x64.zip`, for Linux the archive `AlgoDesign-1.0.0-linux-x64.tar.gz`, each with its fingerprint, the `.sha256` file next to it. The macOS version will come with 1.0.1.
+AlgoDesign is downloaded from the releases page, https://github.com/gilan65/AlgoDesign/releases: for Windows the zip `AlgoDesign-1.0.0-windows-x64.zip`, for Linux the archive `AlgoDesign-1.0.0-linux-x64.tar.gz`, for macOS the zip `AlgoDesign-1.0.0-macos-universal.zip`, each with its fingerprint, the `.sha256` file next to it.
 
 **The core for Node.** There is also a package for every system, `AlgoDesign-Core-1.0.0.zip`, with its fingerprint: `algodesign-core.cjs` is the core of AlgoDesign in a single file, with no interface, to open, check and translate into code projects from another application with Node. It is not needed to use AlgoDesign. How to use it is told by the `README.md` of the package.
 
@@ -64,6 +64,14 @@ Windows itself, instead, records some things in the user registry even for a por
 
 On Linux too AlgoDesign is portable, with the `data` folder next to the AppImage. How to start it, what to do if the AppImage does not start (the execute permission, the FUSE library, the white window) and what is different on Linux from Windows, such as printing, is in the file `ALGODESIGN-PER-LINUX.md` (in Italian) inside the archive. The command-line tool for Linux is in a separate archive, `AlgoDesign-Tools-1.0.0-linux-x64.tar.gz`, and is used from the terminal with `./algodesign-tools`.
 
+### On the Mac
+
+1. Download the zip: Safari extracts it by itself, in the Downloads folder, into the folder `AlgoDesign-1.0.0`. If you like, check its fingerprint: in the Terminal, `shasum -a 256 <zip name>` computes the code to compare with the `.sha256` file.
+2. Open the folder `AlgoDesign-1.0.0` and double-click `AlgoDesign`, an app for Macs with Apple chips and for those with Intel processors, which is not installed.
+3. At the first start macOS blocks it, because it is not signed by Apple: ⚠️ in its window do not choose “Move to Trash”, which throws the app away, but “Done” (or “OK”); then in System Settings, “Privacy & Security”, click “Open Anyway”.
+
+The preferences and the examples are in the user's Library, not in a `data` folder. How to open it the first time, step by step, what stays on the Mac and how to remove it, and what is different on the Mac from Windows, such as printing, is in the file `ALGODESIGN-PER-MAC.md` (in Italian) inside the zip. The command-line tool for the Mac is in a separate zip, `AlgoDesign-Tools-1.0.0-macos-universal.zip`, and is used from the Terminal with `./algodesign-tools`.
+
 ## Requirements
 
 On Windows:
@@ -81,7 +89,13 @@ On Linux:
 - **No installation and no administrator rights**, except for the FUSE library on the systems that do not have it.
 - **Disk space**: about 100 MB (the AppImage is 82 MB).
 
-On both:
+On the Mac:
+
+- **macOS 13.3 Ventura or later**, on a Mac with an Apple chip or an Intel processor. On an older macOS, macOS does not open the app and says so.
+- **No installation**: the password of the Mac user is needed once, to unblock it at the first start.
+- **Disk space**: about 40 MB (the app is 25 MB).
+
+On all three:
 
 - A screen of at least 960 × 600 points: the window does not shrink below that size.
 - No internet connection is needed.
@@ -97,7 +111,7 @@ A cell that starts with `=`, `+`, `-` or `@` and is not a number (for example a 
 - **Where this version was tested**, system by system:
   - **Windows**: Windows 11 Home 26H2, with WebView2 156; the user without administrator rights and the NTFS, exFAT and FAT32 USB sticks on an earlier version, with the same `data` folder. Windows 10 was not tested.
   - **Linux**: Ubuntu 26.04 with the GNOME desktop (Wayland), in a virtual machine; the start on freshly installed Ubuntu 22.04 and 24.04; on Ubuntu 22.04 and 24.04, the automatic tests, which use the application as a person would. The other desktops and distributions were not tested.
-  - **macOS**: not yet; the version will come with 1.0.1.
+  - **macOS**: macOS 13.3 and 27 (also in English), in virtual Macs on a MacBook Air with an Apple chip, as a student uses it; the refusal on macOS 13.2.1; on macOS 15 with an Apple chip, the automatic tests, also in the part for Intel with Rosetta. A Mac with a real Intel processor was not tested.
 - The defects already known and not yet fixed are in the part “Difetti noti” (known defects) of the release notes, `NOTE-DI-RILASCIO.md` (in Italian), next to the program.
 - Not tested: shutting down or restarting Windows with unsaved changes (better save first) and a file dragged onto the window (to open it use “Open”). The browser keys that would reload the window or go back (F5, Ctrl+R, “Refresh” and “Back” of some keyboards, Alt+arrow) are stopped by AlgoDesign: F5 runs the program.
 - The generated code has no limit on actions: a loop that does not end, which AlgoDesign stops after a million actions, must be stopped by hand in the generated Python, C and TypeScript.
