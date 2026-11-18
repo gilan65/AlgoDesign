@@ -2,6 +2,22 @@
 
 Le novità e le correzioni di ogni versione, dalla più recente. Il dettaglio di una versione è nelle sue note di rilascio (`NOTE-DI-RILASCIO.md`); come si usa AlgoDesign è nella guida per lo studente (`GUIDA-PER-LO-STUDENTE.md`).
 
+## 1.0.1, 19 novembre 2026
+
+La prima versione per macOS. Per tutti e tre i sistemi, lo strumento a riga di comando converte i file di Flowgorithm.
+
+### Novità
+
+- **La versione per macOS**: un'app universale, per i Mac con chip Apple e per quelli con processore Intel, da macOS 13.3 in poi, in uno zip, con lo strumento a riga di comando in un altro zip.
+- **Lo strumento a riga di comando converte i file di Flowgorithm**: il comando `flowgorithm` legge i file `.fprg` e ne fa progetti di AlgoDesign, che si aprono e si eseguono passo passo: un file, più file o una cartella intera. Che cosa si converte e che cosa no lo dice la guida ai file di Flowgorithm (`GUIDA-AI-FILE-DI-FLOWGORITHM.md`).
+- **Aprire un progetto all'avvio**: la guida per lo studente dice come dare il file ad AlgoDesign su ogni sistema.
+- **Il nucleo per Node** disegna anche il flowchart di un progetto, come l'esportazione in SVG di AlgoDesign, e dà gli errori e gli avvisi del controllo con le loro frasi.
+- **La firma del codice**: i due README dicono perché AlgoDesign non è ancora firmato e quando lo sarà.
+
+### Correzioni
+
+- Su Linux, un progetto dato all'avvio dal terminale con un percorso relativo si apre dalla cartella da cui si è partiti.
+
 ## 1.0.0, 8 novembre 2026
 
 Prima versione stabile, per Windows e per Linux. La versione per macOS arriverà con la 1.0.1.

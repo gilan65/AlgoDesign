@@ -4,7 +4,7 @@
 
 **Design algorithms as flowcharts, run them step by step and translate them into pseudocode, Python, C and TypeScript.**
 
-Version 1.0.0 of 8 November 2026, for 64-bit Windows 10 and 11, for 64-bit Linux and for macOS 13.3 or later.
+Version 1.0.1 of 19 November 2026, for 64-bit Windows 10 and 11, for 64-bit Linux and for macOS 13.3 or later.
 
 AlgoDesign is a teaching environment for people learning to program: first you design and test the algorithm as a flowchart, then you see how the same reasoning becomes code. It is a **local and lightweight** application: it works without internet, without installing it and, on Windows and Linux, without administrator rights.
 
@@ -34,17 +34,17 @@ To begin, the **getting-started guide**, [`GETTING-STARTED.md`](docs/GETTING-STA
 
 ## Download and start
 
-AlgoDesign is downloaded from the releases page, https://github.com/gilan65/AlgoDesign/releases: for Windows the zip `AlgoDesign-1.0.0-windows-x64.zip`, for Linux the archive `AlgoDesign-1.0.0-linux-x64.tar.gz`, for macOS the zip `AlgoDesign-1.0.0-macos-universal.zip`, each with its fingerprint, the `.sha256` file next to it.
+AlgoDesign is downloaded from the releases page, https://github.com/gilan65/AlgoDesign/releases: for Windows the zip `AlgoDesign-1.0.1-windows-x64.zip`, for Linux the archive `AlgoDesign-1.0.1-linux-x64.tar.gz`, for macOS the zip `AlgoDesign-1.0.1-macos-universal.zip`, each with its fingerprint, the `.sha256` file next to it.
 
-**The core for Node.** There is also a package for every system, `AlgoDesign-Core-1.0.0.zip`, with its fingerprint: `algodesign-core.cjs` is the core of AlgoDesign in a single file, with no interface, to open, check and translate into code projects from another application with Node. It is not needed to use AlgoDesign. How to use it is told by the `README.md` of the package.
+**The core for Node.** There is also a package for every system, `AlgoDesign-Core-1.0.1.zip`, with its fingerprint: `algodesign-core.cjs` is the core of AlgoDesign in a single file, with no interface, to open, check and translate into code projects from another application with Node. It is not needed to use AlgoDesign. How to use it is told by the `README.md` of the package.
 
 ### On Windows
 
 1. Download the zip and, if you like, check its fingerprint: the `.sha256` file contains its SHA-256 code, which in PowerShell is computed with `Get-FileHash <zip name>` (PowerShell writes it in uppercase, the file in lowercase: upper and lower case do not matter).
-2. Extract the zip wherever you like (the Desktop, a documents folder, a USB stick): with “Extract All” in File Explorer a folder with the name of the zip is created, with the folder `AlgoDesign-1.0.0` inside.
-3. Open the folder `AlgoDesign-1.0.0` and double-click `AlgoDesign.exe`.
+2. Extract the zip wherever you like (the Desktop, a documents folder, a USB stick): with “Extract All” in File Explorer a folder with the name of the zip is created, with the folder `AlgoDesign-1.0.1` inside.
+3. Open the folder `AlgoDesign-1.0.1` and double-click `AlgoDesign.exe`.
 
-**The command-line tool.** Next to the AlgoDesign zip there is a separate package, `AlgoDesign-Tools-1.0.0-windows.zip`, with its fingerprint: `algodesign-tools.exe` has three commands. `accademico` reads a text written in “Academic” and turns it into an AlgoDesign library, to open and run step by step; `stampa` writes from a project a page to print with two code texts side by side and a page that tests the JavaScript in the browser; `flowgorithm` converts Flowgorithm files (`.fprg`) into AlgoDesign projects. It is used from PowerShell; how is told by the `README.md` of the package and by the guide to `algodesign-tools`, which the package carries.
+**The command-line tool.** Next to the AlgoDesign zip there is a separate package, `AlgoDesign-Tools-1.0.1-windows.zip`, with its fingerprint: `algodesign-tools.exe` has three commands. `accademico` reads a text written in “Academic” and turns it into an AlgoDesign library, to open and run step by step; `stampa` writes from a project a page to print with two code texts side by side and a page that tests the JavaScript in the browser; `flowgorithm` converts Flowgorithm files (`.fprg`) into AlgoDesign projects. It is used from PowerShell; how is told by the `README.md` of the package and by the guide to `algodesign-tools`, which the package carries.
 
 **The Windows warning at the first start.** AlgoDesign is not digitally signed, and Windows warns when a program downloaded from the internet without a signature is started. If the window “Windows protected your PC” appears, choose “More info” and then “Run anyway”. To avoid it, before extracting the zip open its Properties (right-click on the zip), tick “Unblock” at the bottom of the “General” tab and confirm with “OK”.
 
@@ -59,18 +59,18 @@ Windows itself, instead, records some things in the user registry even for a por
 ### On Linux
 
 1. Download the archive and, if you like, check its fingerprint: in the terminal, `sha256sum <archive name>` computes the code to compare with the `.sha256` file.
-2. Extract the archive wherever you like: with the file manager, right-click → “Extract”, a folder with the name of the archive is created, with the folder `AlgoDesign-1.0.0` inside; from the terminal, with `tar xzf <archive name>`, only the second one is created.
-3. Open the folder `AlgoDesign-1.0.0` and double-click `AlgoDesign.AppImage`, an AppImage that starts without installing it and without administrator rights.
+2. Extract the archive wherever you like: with the file manager, right-click → “Extract”, a folder with the name of the archive is created, with the folder `AlgoDesign-1.0.1` inside; from the terminal, with `tar xzf <archive name>`, only the second one is created.
+3. Open the folder `AlgoDesign-1.0.1` and double-click `AlgoDesign.AppImage`, an AppImage that starts without installing it and without administrator rights.
 
-On Linux too AlgoDesign is portable, with the `data` folder next to the AppImage. How to start it, what to do if the AppImage does not start (the execute permission, the FUSE library, the white window) and what is different on Linux from Windows, such as printing, is in the file `ALGODESIGN-PER-LINUX.md` (in Italian) inside the archive. The command-line tool for Linux is in a separate archive, `AlgoDesign-Tools-1.0.0-linux-x64.tar.gz`, and is used from the terminal with `./algodesign-tools`.
+On Linux too AlgoDesign is portable, with the `data` folder next to the AppImage. How to start it, what to do if the AppImage does not start (the execute permission, the FUSE library, the white window) and what is different on Linux from Windows, such as printing, is in the file `ALGODESIGN-PER-LINUX.md` (in Italian) inside the archive. The command-line tool for Linux is in a separate archive, `AlgoDesign-Tools-1.0.1-linux-x64.tar.gz`, and is used from the terminal with `./algodesign-tools`.
 
 ### On the Mac
 
-1. Download the zip: Safari extracts it by itself, in the Downloads folder, into the folder `AlgoDesign-1.0.0`, and moves the zip to the Trash. If you want to check its fingerprint, take it back from the Trash: in the Terminal, `shasum -a 256 <zip name>` computes the code to compare with the `.sha256` file.
-2. Open the folder `AlgoDesign-1.0.0` and double-click `AlgoDesign`, an app for Macs with Apple chips and for those with Intel processors, which is not installed.
+1. Download the zip: Safari extracts it by itself, in the Downloads folder, into the folder `AlgoDesign-1.0.1`, and moves the zip to the Trash. If you want to check its fingerprint, take it back from the Trash: in the Terminal, `shasum -a 256 <zip name>` computes the code to compare with the `.sha256` file.
+2. Open the folder `AlgoDesign-1.0.1` and double-click `AlgoDesign`, an app for Macs with Apple chips and for those with Intel processors, which is not installed.
 3. At the first start macOS blocks it, because it is not signed by Apple: ⚠️ in its window do not choose “Move to Trash”, which throws the app away, but “Done” (or “OK”); then in System Settings, “Privacy & Security”, click “Open Anyway”.
 
-The preferences and the examples are in the user's Library, not in a `data` folder. How to open it the first time, step by step, what stays on the Mac and how to remove it, and what is different on the Mac from Windows, such as printing, is in the file `ALGODESIGN-PER-MAC.md` (in Italian) inside the zip. The command-line tool for the Mac is in a separate zip, `AlgoDesign-Tools-1.0.0-macos-universal.zip`, and is used from the Terminal with `./algodesign-tools`.
+The preferences and the examples are in the user's Library, not in a `data` folder. How to open it the first time, step by step, what stays on the Mac and how to remove it, and what is different on the Mac from Windows, such as printing, is in the file `ALGODESIGN-PER-MAC.md` (in Italian) inside the zip. The command-line tool for the Mac is in a separate zip, `AlgoDesign-Tools-1.0.1-macos-universal.zip`, and is used from the Terminal with `./algodesign-tools`.
 
 ## Requirements
 
