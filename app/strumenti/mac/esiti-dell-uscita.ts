@@ -7,26 +7,28 @@
 
 import { readFileSync } from "node:fs";
 
-/** I casi della prova, tutti: dieci gesti, quattro «Don't save» dopo il menu, AppleScript, l'app nascosta e ⌘W, le due barre
- * dei menu, copia e incolla in un campo. */
-export const casiDellUscita: readonly string[] = [
-  "senza-modifiche",
-  "barra-inglese",
-  "cmdq",
-  "cmdq-esc",
-  "cmdq-di-nuovo",
-  "cmdq-non-salvare",
-  "menu",
-  "menu-non-salvare",
-  "applescript",
-  "applescript-non-salvare",
-  "nascosta",
-  "nascosta-non-salvare",
-  "cmdw",
-  "cmdw-non-salvare",
-  "campi",
-  "barra-italiana",
-];
+/** I casi della prova, tutti, col loro atteso: dieci gesti, quattro «Don't save» dopo il menu, AppleScript, l'app nascosta e
+ * ⌘W, le due barre dei menu, copia e incolla in un campo. L'atteso che lo script scrive accanto all'esito deve essere questo:
+ * uno cambiato nello script (per un refuso, o per far tacere un rosso) è rosso. */
+export const attesiDellUscita: Readonly<Record<string, string>> = {
+  "senza-modifiche": "morta",
+  "barra-inglese": "Apple, AlgoDesign, Edit, Window",
+  cmdq: "viva",
+  "cmdq-esc": "viva",
+  "cmdq-di-nuovo": "viva",
+  "cmdq-non-salvare": "morta",
+  menu: "viva",
+  "menu-non-salvare": "morta",
+  applescript: "viva",
+  "applescript-non-salvare": "morta",
+  nascosta: "viva",
+  "nascosta-non-salvare": "morta",
+  cmdw: "viva",
+  "cmdw-non-salvare": "morta",
+  campi: "«abcabc»",
+  "barra-italiana": "Apple, AlgoDesign, Modifica, Finestra",
+};
+export const casiDellUscita: readonly string[] = Object.keys(attesiDellUscita);
 
 export type EsitoDellUscita = { rossi: string[]; visti: number };
 
@@ -42,6 +44,7 @@ export function controllaGliEsiti(testo: string): EsitoDellUscita {
     }
     const [, caso, esito, atteso] = m as unknown as [string, string, string, string];
     if (!casiDellUscita.includes(caso)) rossi.push(`caso che l'elenco non conosce: «${caso}»`);
+    else if (atteso !== attesiDellUscita[caso]) rossi.push(`${caso}: lo script si aspetta «${atteso}» invece di «${attesiDellUscita[caso]}»`);
     if (visti.has(caso)) rossi.push(`caso ripetuto: «${caso}»`);
     visti.add(caso);
     if (esito !== atteso) rossi.push(`${caso}: ${esito} invece di ${atteso}`);

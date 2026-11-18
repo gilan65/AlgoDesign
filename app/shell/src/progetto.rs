@@ -344,7 +344,8 @@ pub fn togli_gruppo_da(cartella: &Path, gruppo: &str) -> Result<(), ErroreDelFil
     }
     let dentro = cartella.join(gruppo);
     let esempi = esempi_di(&dentro)?;
-    // I file col prefisso «._» sono gli attributi che il Mac scrive accanto a ogni file su una chiavetta che non li conosce.
+    // I file col prefisso «._» sono gli attributi che il Mac scrive accanto a ogni file su una chiavetta che non li conosce;
+    // valgono su ogni sistema, perché la chiavetta con l'app passa dal Mac a Windows o a Linux.
     let del_sistema = voci(&dentro, |v, n| v.file_type().is_ok_and(|t| t.is_file()) && (DEL_SISTEMA.contains(&n.to_lowercase().as_str()) || n.starts_with("._")))?;
     let mut altro: Vec<String> = fs::read_dir(&dentro)
         .map_err(di_sistema)?
@@ -901,8 +902,9 @@ mod prove {
         let via_intero = esito == Ok(()) && !dentro.exists() && fs::read_dir(&cartella).unwrap().count() == 0;
         let resta_intero = matches!(&esito, Err(e) if e.genere == "gruppo_bloccato") && restano == [true, true] && fs::read_dir(&cartella).unwrap().count() == 1;
         assert!(via_intero || resta_intero, "né via intero né intero: {esito:?}, restano {restano:?}");
-        #[cfg(windows)]
-        assert!(via_intero, "su Windows la sola lettura della cartella non ferma il gruppo");
+        // Solo il disco del Mac (APFS) può fermare il gruppo: su Windows e Linux va via intero, come nella versione di prima.
+        #[cfg(not(target_os = "macos"))]
+        assert!(via_intero, "fuori dal Mac la sola lettura della cartella non ferma il gruppo");
         if dentro.exists() {
             let mut scrivibile = fs::metadata(&dentro).unwrap().permissions();
             #[allow(clippy::permissions_set_readonly_false)]

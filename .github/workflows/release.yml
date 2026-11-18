@@ -42,7 +42,7 @@ on:
         description: "Piattaforme da costruire, separate da virgole (windows, linux, macos)"
         default: "windows"
       prove:
-        description: "Anche le prove di Linux (WebKit, prodotto, differenziale) e del Mac (cargo test, bun test, WebKit), una volta per release"
+        description: "Anche le prove di Linux (WebKit, prodotto, differenziale) e del Mac (cargo test, bun test, WebKit), nella corsa di prova e in quella dall'etichetta"
         type: boolean
         default: false
       webkit_del_mac:

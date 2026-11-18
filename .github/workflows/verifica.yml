@@ -25,10 +25,10 @@ on:
         description: "Etichetta della release da verificare (o corsa)"
         default: ""
       corsa:
-        description: "Numero di una corsa di release con l'artefatto linux (o tag)"
+        description: "Numero di una corsa di release con gli artefatti linux e macos delle piattaforme scelte (o tag)"
         default: ""
       piattaforme:
-        description: "Piattaforme da verificare, separate da virgole (linux, macos)"
+        description: "Piattaforme da verificare, separate da virgole (linux, macos); senza, il solo linux"
         default: "linux"
       sonda:
         description: "Il controllo positivo: impronta (un byte in più nell'archivio dell'app) o archivio (quello dello strumento tolto); vuoto per la verifica vera"

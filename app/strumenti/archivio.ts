@@ -105,7 +105,7 @@ import {
   testiDiLinux,
 } from "./elenco-del-pacchetto";
 import { licenzeDelloStrumento, licenzeDiTerzeParti } from "./licenze";
-import { permessiDiversi } from "./permessi";
+import { degliAttributiDelMac, permessiDiversi } from "./permessi";
 import { provaDelloStrumento } from "./prova-dello-strumento";
 import { segnapostoRimasto, sondaDeiSegnaposto, sostituisci } from "./segnaposto";
 
@@ -669,7 +669,20 @@ async function costruisciIlMac(): Promise<string> {
   return app;
 }
 
-/** La CARTELLA del Mac: l'app copiata con `ditto`, che tiene la firma; gli altri file 0644. */
+/** Le voci del Mac fuori dall'app: le cartelle 0755, i file 0644. L'app resta com'è uscita da `ditto`, coi suoi modi e la
+ * sua firma. */
+function permessiFuoriDallApp(dir: string): void {
+  chmodSync(dir, 0o755);
+  for (const v of readdirSync(dir, { recursive: true, withFileTypes: true }) as import("node:fs").Dirent[]) {
+    const p = join(v.parentPath, v.name);
+    if (relative(dir, p).split(/[\\/]/)[0] === "AlgoDesign.app") continue;
+    if (v.isDirectory()) chmodSync(p, 0o755);
+    else if (v.isFile()) chmodSync(p, 0o644);
+  }
+}
+
+/** La CARTELLA del Mac: l'app copiata con `ditto`, che tiene la firma; gli altri file 0644 e le cartelle 0755, riletti
+ * nello zip. */
 async function componiIlMac(app: string): Promise<void> {
   if (!existsSync(cartellaTesti!) || !statSync(cartellaTesti!).isDirectory()) rosso("CARTELLA", `--testi ${cartellaTesti}: non è una cartella`);
   if (existsSync(cartella)) {
@@ -692,6 +705,7 @@ async function componiIlMac(app: string): Promise<void> {
   if (figure.differenze.length > 0) rosso("CARTELLA", `le figure delle guide: ${figure.differenze.join(", ")}`);
   const l = await licenzeDiTerzeParti(["aarch64-apple-darwin", "x86_64-apple-darwin"], nomi.versione, esegui, rosso);
   writeFileSync(join(cartella, fileDelleLicenze), l.testo);
+  permessiFuoriDallApp(cartella);
   const trovate = voci(cartella);
   const controllo = confrontoAcceso(trovate, elencoDelMac, "primo livello");
   const differenze = differenzeDallElenco(trovate, elencoDelMac);
@@ -746,16 +760,21 @@ async function comprimiIlMac({ clausola, cartella, archivio, nomeDellArchivio, c
   const lette = p.out.split("\n").filter((r) => r !== "").map((r) => r.split("\t") as [string, string, string, string]);
   const fileLetti = new Map(lette.filter((r) => r[1] === "f").map((r) => [r[0], r[3]]));
   const collegamenti = lette.filter((r) => r[1] === "l").map((r) => r[0]);
-  const dattributi = lette.map((r) => r[0]).filter((n) => n.split("/").some((c) => c.startsWith("._") || c === "__MACOSX"));
+  const dattributi = lette.map((r) => r[0]).filter(degliAttributiDelMac);
   const diversi = differenzeDallElenco([...fileLetti.keys()], [...attesi.keys()]);
   const impronteDiverse = [...attesi].filter(([f, h]) => fileLetti.has(f) && fileLetti.get(f) !== h).map(([f]) => f);
   const nomeDellEseguibile = `${cartellaNellArchivio}/${eseguibile}`;
   const modoDellEseguibile = lette.find((r) => r[0] === nomeDellEseguibile)?.[2];
   // Controllo positivo: lo stesso rilevatore degli attributi, con un nome «._x» e uno sotto `__MACOSX`, li dice.
-  const accesi = ["a/._x", "__MACOSX/a", "a/b"].filter((n) => n.split("/").some((c) => c.startsWith("._") || c === "__MACOSX"));
+  const accesi = ["a/._x", "__MACOSX/a", "a/b"].filter(degliAttributiDelMac);
   if (accesi.length !== 2) rosso(clausola, `controllo positivo dei file di attributi SPENTO: ${JSON.stringify(accesi)}`);
-  if (diversi.length > 0 || impronteDiverse.length > 0 || collegamenti.length > 0 || dattributi.length > 0 || modoDellEseguibile !== "0o755")
-    rosso(clausola, `letto con Python: ${JSON.stringify({ diversi: diversi.slice(0, 10), impronteDiverse: impronteDiverse.slice(0, 10), collegamenti: collegamenti.slice(0, 10), attributi: dattributi.slice(0, 10), eseguibile: modoDellEseguibile })}`);
+  // I modi fuori dall'app (lo strumento è tutto fuori): cartelle 0755, file 0644, l'eseguibile 0755, come per Linux.
+  const dellApp = `${cartellaNellArchivio}/AlgoDesign.app`;
+  const fuoriDallApp = lette.filter((r) => (r[1] === "d" || r[1] === "f") && r[0] !== dellApp && !r[0].startsWith(`${dellApp}/`)).map((r) => [r[0], r[1], r[2]] as const);
+  const modiDiversi = permessiDiversi(fuoriDallApp, nomeDellEseguibile);
+  if (permessiDiversi([[`${cartellaNellArchivio}/README.md`, "f", "0o755"]], nomeDellEseguibile).length !== 1) rosso(clausola, "controllo positivo dei modi SPENTO");
+  if (diversi.length > 0 || impronteDiverse.length > 0 || collegamenti.length > 0 || dattributi.length > 0 || modoDellEseguibile !== "0o755" || modiDiversi.length > 0)
+    rosso(clausola, `letto con Python: ${JSON.stringify({ diversi: diversi.slice(0, 10), impronteDiverse: impronteDiverse.slice(0, 10), collegamenti: collegamenti.slice(0, 10), attributi: dattributi.slice(0, 10), eseguibile: modoDellEseguibile, modi: modiDiversi.slice(0, 10) })}`);
   const sha = impronta(archivio);
   writeFileSync(`${archivio}.sha256`, `${sha}  ${nomeDellArchivio}\n`);
   riga(`${clausola}: VERDE | ${relative(repository, archivio)} ${statSync(archivio).size} byte; estratto con ditto e letto con Python: la cartella ${cartellaNellArchivio}/, gli stessi ${attesi.size} file con le stesse impronte, ${eseguibile} 0755${firmata !== undefined ? `, ${firmata} con la firma valida` : ""}, nessun file di attributi (${lette.length} voci lette; controllo positivo acceso) | sha256 ${sha} in ${nomeDellArchivio}.sha256`);

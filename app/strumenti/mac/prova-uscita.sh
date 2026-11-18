@@ -8,6 +8,10 @@
 # gesto che non è arrivato. La barra dei menu si confronta, nelle due lingue, coi nomi letti sul Mac del servizio.
 # CHE COSA NON GUARDA: «Salva» nella domanda (apre la finestra del sistema); la chiusura della sessione e lo
 # spegnimento (la stessa richiesta di AppleScript, che si prova); la tastiera di un portatile (fn).
+if [ -z "${GITHUB_ACTIONS:-}" ] && [ "${ALGODESIGN_SU_QUESTO_MAC:-}" != 1 ]; then
+  echo "prova-uscita.sh chiude AlgoDesign se è aperta, cancella le sue preferenze e fa clic sullo schermo: corre sulle macchine di GitHub; su un altro Mac solo con ALGODESIGN_SU_QUESTO_MAC=1" >&2
+  exit 2
+fi
 app="$1"
 uscite="$2"
 mkdir -p "$uscite"
