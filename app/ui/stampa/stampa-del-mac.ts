@@ -5,7 +5,7 @@
 // guscio, `window.print()` resta quello del motore. `afterprint` arriva come col comando di Tauri: la stampa è la stessa.
 //
 // CHE COSA NON FA: il verso dei fogli e le caselle del margine (intestazione e piè di pagina), che il WebKit del Mac non
-// conosce: i fogli escono tutti nel verso scelto nel pannello, come su Linux.
+// conosce: i fogli escono tutti in verticale (misurato nel PDF; il pannello non mostra il verso).
 import { invoke } from "@tauri-apps/api/core";
 import { annotaErrore } from "../errori-dell-app";
 import { sulMac } from "../piattaforma";

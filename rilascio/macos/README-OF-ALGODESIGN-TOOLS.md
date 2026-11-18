@@ -31,7 +31,7 @@ Files are given with their path, in quotes if it has spaces, or copied into the 
 
 The first time the tool reads a file in the Downloads folder, or in Documents, macOS asks permission for the Terminal (“"Terminal" would like to access files in your Downloads folder”): choose “Allow”, or “OK”.
 
-**On a Mac with an Apple chip** the tool uses its part for that chip. If the Terminal is opened with Rosetta, it uses the part for Intel processors instead, which works from macOS 15 on; on macOS 13 and 14 it stops with “Illegal instruction”: open the Terminal without Rosetta.
+**On a Mac with an Apple chip** the tool uses its part for that chip. If the Terminal is opened with Rosetta, it uses the part for Intel processors instead, which works from macOS 15 on; on macOS 13 some commands stop with “Illegal instruction”, such as `flowgorithm` (on macOS 14 it is not tested): open the Terminal without Rosetta.
 
 ## License
 

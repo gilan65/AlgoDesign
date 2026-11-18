@@ -533,7 +533,7 @@ At first the flowchart and the code side by side are chosen, in the language of 
 
 **On Linux** **Print…** opens the print window of the system. To get a PDF choose the destination **Print to File**: the proposed name is `output.pdf`, to be changed. All sheets are printed in the orientation chosen in that window, without the header and the footer, as the AlgoDesign “Print” window also says.
 
-**On the Mac** **Print…** opens the print window of macOS: to get a PDF click **“PDF”**. All sheets are printed in the orientation chosen in that window, without the header and the footer (§16).
+**On the Mac** **Print…** opens the print window of macOS: to get a PDF click **“PDF”**. All sheets are printed in portrait, without the header and the footer (§16).
 
 ### Exporting the flowchart
 
@@ -595,11 +595,11 @@ Double-clicking a `.algo` file is not enough, and neither is `open -a`: AlgoDesi
 
 ### The first time
 
-AlgoDesign is not signed by Apple, and at the first start macOS blocks it. From macOS 15 on, the window says “"AlgoDesign" Not Opened”, with **“Move to Trash”** in blue and **“Done”**: ⚠️ choose **“Done”**, because the other button throws the app away. Then, in System Settings, “Privacy & Security”, “Security” section, click **“Open Anyway”**, again “Open Anyway” in the window that asks for confirmation, and type the password. On macOS 13 and 14 the window says that “AlgoDesign” cannot be opened, with “OK”; the rest is the same, and at the end the button is called “Open”. The command-line tool is unblocked the same way, with the **“Allow Anyway”** button. The `ALGODESIGN-PER-MAC.md` file has the exact words of the windows, in Italian.
+AlgoDesign is not signed by Apple, and at the first start macOS blocks it. From macOS 15 on, the window says “"AlgoDesign" Not Opened”, with **“Move to Trash”** in blue and **“Done”**: ⚠️ choose **“Done”**, because the other button throws the app away. Then, in System Settings, “Privacy & Security”, “Security” section, click **“Open Anyway”**, again “Open Anyway” in the window that asks for confirmation, and type the password of an administrator of the Mac. On macOS 13 and 14 the window says that “AlgoDesign” cannot be opened, with “OK”; the rest is the same, and at the end the button is called “Open”. The command-line tool is unblocked the same way, with the **“Allow Anyway”** button. The `ALGODESIGN-PER-MAC.md` file has the exact words of the windows, in Italian.
 
 ### Printing
 
-**Print…** opens the print window of macOS. To get a PDF click **“PDF”**: the proposed name is “AlgoDesign”, to be changed. All sheets are printed in the orientation chosen in that window, without the header and the footer, as the AlgoDesign “Print” window also says. From macOS 15 on, at the first print, macOS asks whether AlgoDesign may find devices on the local networks: allowing it is needed for a network printer, for a PDF it is enough not to allow it.
+**Print…** opens the print window of macOS. To get a PDF click **“PDF”**: the proposed name is “AlgoDesign”, to be changed. All sheets are printed in portrait, without the header and the footer, as the AlgoDesign “Print” window also says. From macOS 15 on, at the first print, macOS asks whether AlgoDesign may find devices on the local networks: allowing it is needed for a network printer, for a PDF it is enough not to allow it.
 
 ### Where the data stay
 

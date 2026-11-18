@@ -31,7 +31,7 @@ I file si danno col loro percorso, fra virgolette se ha degli spazi, o si copian
 
 La prima volta che lo strumento legge un file nella cartella Download, o in Documenti, macOS chiede il permesso per il Terminale («"Terminale" vorrebbe accedere ai file nella cartella Download»): scegli «Consenti», o «OK».
 
-**Su un Mac con chip Apple** lo strumento usa la sua parte per quel chip. Se il Terminale è aperto con Rosetta, usa invece quella per i processori Intel, che funziona da macOS 15 in poi; su macOS 13 e 14 si ferma con «Illegal instruction»: apri il Terminale senza Rosetta.
+**Su un Mac con chip Apple** lo strumento usa la sua parte per quel chip. Se il Terminale è aperto con Rosetta, usa invece quella per i processori Intel, che funziona da macOS 15 in poi; su macOS 13 alcuni comandi si fermano con «Illegal instruction», come `flowgorithm` (su macOS 14 non è provato): apri il Terminale senza Rosetta.
 
 ## Licenza
 

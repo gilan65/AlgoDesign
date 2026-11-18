@@ -533,7 +533,7 @@ Di partenza sono scelti il flowchart e il codice affiancati, nel linguaggio dell
 
 **Su Linux** «Stampa…» apre la finestra di stampa del sistema. Per avere un PDF scegli la destinazione **Stampa su file**: il nome proposto è `output.pdf`, da cambiare. I fogli si stampano tutti nel verso scelto in quella finestra, senza l'intestazione e senza il piè di pagina, come dice anche la finestra «Stampa» di AlgoDesign.
 
-**Sul Mac** «Stampa…» apre la finestra di stampa di macOS: per avere un PDF si fa clic su **«PDF»**. I fogli si stampano tutti nel verso scelto in quella finestra, senza l'intestazione e senza il piè di pagina (§16).
+**Sul Mac** «Stampa…» apre la finestra di stampa di macOS: per avere un PDF si fa clic su **«PDF»**. I fogli si stampano tutti in verticale, senza l'intestazione e senza il piè di pagina (§16).
 
 ### Esportare il flowchart
 
@@ -595,11 +595,11 @@ Il doppio clic su un file `.algo` non basta, e nemmeno `open -a`: AlgoDesign si 
 
 ### La prima volta
 
-AlgoDesign non è firmata da Apple, e al primo avvio macOS la blocca. Da macOS 15 in poi la finestra dice «AlgoDesign non è stata aperta», con **«Sposta nel Cestino»** in blu e **«Fine»**: ⚠️ si sceglie **«Fine»**, perché l'altro pulsante butta via l'app. Poi, nelle Impostazioni di Sistema, «Privacy e sicurezza», sezione «Sicurezza», si fa clic su **«Apri comunque»**, di nuovo «Apri comunque» nella finestra che chiede conferma, e si scrive la password. Su macOS 13 e 14 la finestra dice «Impossibile aprire "AlgoDesign"…», con «OK»; il resto è uguale, e alla fine il pulsante si chiama «Apri». Lo strumento a riga di comando si sblocca allo stesso modo, col pulsante **«Consenti comunque»**. Il file `ALGODESIGN-PER-MAC.md` ha le parole esatte delle finestre.
+AlgoDesign non è firmata da Apple, e al primo avvio macOS la blocca. Da macOS 15 in poi la finestra dice «AlgoDesign non è stata aperta», con **«Sposta nel Cestino»** in blu e **«Fine»**: ⚠️ si sceglie **«Fine»**, perché l'altro pulsante butta via l'app. Poi, nelle Impostazioni di Sistema, «Privacy e sicurezza», sezione «Sicurezza», si fa clic su **«Apri comunque»**, di nuovo «Apri comunque» nella finestra che chiede conferma, e si scrive la password di un amministratore del Mac. Su macOS 13 e 14 la finestra dice «Impossibile aprire "AlgoDesign"…», con «OK»; il resto è uguale, e alla fine il pulsante si chiama «Apri». Lo strumento a riga di comando si sblocca allo stesso modo, col pulsante **«Consenti comunque»**. Il file `ALGODESIGN-PER-MAC.md` ha le parole esatte delle finestre.
 
 ### La stampa
 
-«Stampa…» apre la finestra di stampa di macOS. Per avere un PDF si fa clic su **«PDF»**: il nome proposto è «AlgoDesign», da cambiare. I fogli si stampano tutti nel verso scelto in quella finestra, senza l'intestazione e senza il piè di pagina, come dice anche la finestra «Stampa» di AlgoDesign. Da macOS 15 in poi, alla prima stampa, macOS chiede se AlgoDesign può trovare i dispositivi sulle reti locali: «Consenti» serve per una stampante di rete, per un PDF basta «Non consentire».
+«Stampa…» apre la finestra di stampa di macOS. Per avere un PDF si fa clic su **«PDF»**: il nome proposto è «AlgoDesign», da cambiare. I fogli si stampano tutti in verticale, senza l'intestazione e senza il piè di pagina, come dice anche la finestra «Stampa» di AlgoDesign. Da macOS 15 in poi, alla prima stampa, macOS chiede se AlgoDesign può trovare i dispositivi sulle reti locali: «Consenti» serve per una stampante di rete, per un PDF basta «Non consentire».
 
 ### Dove restano i dati
 

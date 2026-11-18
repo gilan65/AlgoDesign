@@ -1187,7 +1187,7 @@ export const it = {
   stampaConsiglioPdfLinux: "Per avere un PDF, nella finestra che si apre scegli «Stampa su file». Su Linux i fogli si stampano tutti nel verso scelto in quella finestra, senza l'intestazione e senza il piè di pagina.",
   // Sul Mac al posto del consiglio: il pannello di macOS, col pulsante «PDF», e il WebKit del Mac, che non conosce i fogli
   // con un nome né le caselle del margine.
-  stampaConsiglioPdfMac: "Per avere un PDF, nella finestra che si apre fai clic su «PDF». Sul Mac i fogli si stampano tutti nel verso scelto in quella finestra, senza l'intestazione e senza il piè di pagina.",
+  stampaConsiglioPdfMac: "Per avere un PDF, nella finestra che si apre fai clic su «PDF». Sul Mac i fogli si stampano tutti in verticale, senza l'intestazione e senza il piè di pagina.",
   stampaPagina: "pagina {n} di {m}",
   stampaFoglio: "foglio {n} di {m} del flowchart",
   stampaValori: "Valori scritti nella console",

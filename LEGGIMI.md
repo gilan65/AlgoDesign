@@ -6,7 +6,7 @@
 
 Versione 1.0.0 dell'8 novembre 2026, per Windows 10 e 11 a 64 bit, per Linux a 64 bit e per macOS 13.3 o successivo.
 
-AlgoDesign è un ambiente didattico per chi impara a programmare: prima si progetta e si prova l'algoritmo come flowchart, poi si guarda come lo stesso ragionamento diventa codice. È un'applicazione **locale e leggera**: funziona senza internet, senza installarla e senza diritti di amministratore.
+AlgoDesign è un ambiente didattico per chi impara a programmare: prima si progetta e si prova l'algoritmo come flowchart, poi si guarda come lo stesso ragionamento diventa codice. È un'applicazione **locale e leggera**: funziona senza internet, senza installarla e, su Windows e Linux, senza diritti di amministratore.
 
 Pagina del progetto: https://www.lancellotti.info/AlgoDesign/
 
@@ -66,7 +66,7 @@ Anche su Linux AlgoDesign è portabile, con la cartella `data` accanto all'AppIm
 
 ### Sul Mac
 
-1. Scarica lo zip: Safari lo estrae da solo, nella cartella Download, nella cartella `AlgoDesign-1.0.0`. Se vuoi, controllane l'impronta: nel Terminale, `shasum -a 256 <nome dello zip>` calcola il codice da confrontare con il file `.sha256`.
+1. Scarica lo zip: Safari lo estrae da solo, nella cartella Download, nella cartella `AlgoDesign-1.0.0`, e mette lo zip nel Cestino. Se vuoi controllarne l'impronta, riprendilo dal Cestino: nel Terminale, `shasum -a 256 <nome dello zip>` calcola il codice da confrontare con il file `.sha256`.
 2. Apri la cartella `AlgoDesign-1.0.0` e fai doppio clic su `AlgoDesign`, un'app per i Mac con chip Apple e per quelli con processore Intel, che non si installa.
 3. Al primo avvio macOS la blocca, perché non è firmata da Apple: ⚠️ nella sua finestra non scegliere «Sposta nel Cestino», che butta via l'app, ma «Fine» (o «OK»), poi nelle Impostazioni di Sistema, «Privacy e sicurezza», fai clic su «Apri comunque».
 
@@ -92,8 +92,8 @@ Su Linux:
 Sul Mac:
 
 - **macOS 13.3 Ventura o successivo**, su un Mac con chip Apple o con processore Intel. Su un macOS più vecchio, macOS non apre l'app e lo dice.
-- **Nessuna installazione**: serve la password dell'utente del Mac, una volta, per sbloccarla al primo avvio.
-- **Spazio su disco**: circa 40 MB (l'app è di 25 MB).
+- **Nessuna installazione**: serve la password di un amministratore del Mac, una volta, per sbloccarla al primo avvio.
+- **Spazio su disco**: circa 25 MB (l'app è di 22 MB).
 
 Su tutti e tre:
 
@@ -111,7 +111,7 @@ Una cella che comincia con `=`, `+`, `-` o `@` e non è un numero (per esempio u
 - **Dove è stata provata** questa versione, sistema per sistema:
   - **Windows**: Windows 11 Home 26H2, con WebView2 156; l'utente senza diritti di amministratore e le chiavette NTFS, exFAT e FAT32 su una versione precedente, con la stessa cartella `data`. Windows 10 non è stato provato.
   - **Linux**: Ubuntu 26.04 con il desktop GNOME (Wayland), in una macchina virtuale; l'avvio su Ubuntu 22.04 e 24.04 appena installati; su Ubuntu 22.04 e 24.04, le prove automatiche, che usano l'applicazione come farebbe una persona. Gli altri desktop e le altre distribuzioni non sono stati provati.
-  - **macOS**: macOS 13.3 e 27 (anche in inglese), in Mac virtuali su un MacBook Air con chip Apple, come lo usa uno studente; il rifiuto su macOS 13.2.1; su macOS 15 con chip Apple, le prove automatiche, anche nella parte per Intel con Rosetta. Un Mac con processore Intel vero non è stato provato.
+  - **macOS**: macOS 13.3 e 27 in italiano e macOS 27 in inglese, in Mac virtuali su un Mac con chip Apple, come lo usa uno studente; il rifiuto su macOS 13.2.1; su macOS 15 con chip Apple, le prove automatiche, anche nella parte per Intel con Rosetta. Un Mac con processore Intel vero non è stato provato.
 - I difetti già conosciuti e non ancora corretti sono nella parte «Difetti noti» delle note di rilascio, `NOTE-DI-RILASCIO.md`, accanto al programma.
 - Non sono provati lo spegnimento o il riavvio di Windows con modifiche non salvate (prima conviene salvare) e un file trascinato sulla finestra (per aprirlo si usa «Apri»). I tasti del browser che ricaricherebbero la finestra o tornerebbero indietro (F5, Ctrl+R, «Aggiorna» e «Indietro» di certe tastiere, Alt+freccia) AlgoDesign li ferma: F5 esegue il programma.
 - Il codice generato non ha il limite delle azioni: un ciclo che non finisce, che AlgoDesign ferma dopo un milione di azioni, nel Python, nel C e nel TypeScript generati va fermato a mano.
@@ -150,7 +150,7 @@ Tutti i comandi si danno nella cartella `app/`, dopo `bun install`.
 | Collaudo completo, coi test dell'interfaccia anche in WebKit | `bun run collaudo --completo` |
 | Confronto del codice generato con l'esecuzione sui casi d'uso | `bun run differenziale` |
 | Eseguibile di release per Windows | `bun tauri build --no-bundle` → `shell/target/release/algodesign.exe` |
-| Pacchetti della release per Windows: quello di AlgoDesign, quello dello strumento a riga di comando e quello del nucleo per Node, dallo stesso albero (cartelle, zip e impronte in `dist/` alla radice; il primo porta questo file, `README.md`, le due guide per lo studente, la guida ad «Accademico», quella dello strumento e le due per segnalare un malfunzionamento da `docs/`, le due guide «per cominciare» con la cartella `img/` e le note di rilascio, il secondo l'eseguibile dello strumento, le due guide e i due testi brevi, il terzo il file per Node, i due testi brevi e le licenze; i testi si danno allo strumento) | `bun run pacchetto --testi ../rilascio/windows` (con `--prova` da un albero con modifiche, in `dist/prova/`) |
+| Pacchetti della release per Windows: quello di AlgoDesign, quello dello strumento a riga di comando e quello del nucleo per Node, dallo stesso albero (cartelle, zip e impronte in `dist/` alla radice; il primo porta questo file, `README.md`, le due guide per lo studente, la guida ad «Accademico», quella ai file di Flowgorithm, quella dello strumento e le due per segnalare un malfunzionamento da `docs/`, le due guide «per cominciare» con la cartella `img/` e le note di rilascio, il secondo l'eseguibile dello strumento, le tre guide e i due testi brevi, il terzo il file per Node, i due testi brevi e le licenze; i testi si danno allo strumento) | `bun run pacchetto --testi ../rilascio/windows` (con `--prova` da un albero con modifiche, in `dist/prova/`) |
 | Lo JSON Schema del formato, dopo un cambio del lettore dei file | `bun ./strumenti/schema-del-formato.ts` |
 
 ### Le prove sul prodotto

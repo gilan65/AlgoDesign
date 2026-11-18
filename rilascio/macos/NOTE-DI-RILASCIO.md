@@ -8,7 +8,7 @@ Rispetto alla versione 1.0.0, che era per Windows e per Linux:
 
 - **La versione per macOS**: un'app universale, per i Mac con chip Apple e per quelli con processore Intel, in uno zip, con lo strumento a riga di comando in un altro zip, `AlgoDesign-Tools-{{versione}}-macos-universal.zip`.
 - **Lo strumento a riga di comando converte i file di Flowgorithm.** Il comando nuovo `flowgorithm` legge i file di Flowgorithm (`.fprg`) e ne fa progetti di AlgoDesign, che si aprono e si eseguono passo passo: un file, più file o una cartella intera. Che cosa si converte e che cosa no lo dice la guida ai file di Flowgorithm, `GUIDA-AI-FILE-DI-FLOWGORITHM.md`.
-- **Aprire un progetto all'avvio**: la guida per lo studente dice come dare il file ad AlgoDesign su ogni sistema, dal terminale o trascinandolo sul programma.
+- **Aprire un progetto all'avvio**: la guida per lo studente dice come dare il file ad AlgoDesign su ogni sistema; sul Mac, dal Terminale.
 
 ## Che cosa c'è
 
@@ -50,7 +50,7 @@ Ciò che è previsto per le prossime versioni e che oggi non c'è. Non sono dife
 
 I difetti già conosciuti e non ancora corretti in questa versione. Se ne trovi un altro, la guida per segnalare un malfunzionamento, `GUIDA-PER-SEGNALARE-UN-MALFUNZIONAMENTO.md`, dice come farlo sapere.
 
-- **La stampa sul Mac.** I fogli si stampano tutti nel verso scelto nella finestra di stampa di macOS, anche il flowchart e il codice affiancati, che su Windows vanno su fogli orizzontali, e senza l'intestazione e senza il piè di pagina. Per avere un PDF, in quella finestra si fa clic su «PDF»: il nome proposto è «AlgoDesign», non quello del progetto. L'avviso nella finestra «Stampa» di AlgoDesign lo ricorda.
+- **La stampa sul Mac.** I fogli si stampano tutti in verticale, anche il flowchart e il codice affiancati, che su Windows vanno su fogli orizzontali, e senza l'intestazione e senza il piè di pagina. Per avere un PDF, in quella finestra si fa clic su «PDF»: il nome proposto è «AlgoDesign», non quello del progetto. L'avviso nella finestra «Stampa» di AlgoDesign lo ricorda.
 - **Un dato letto, rinominato in pausa.** «Riesegui» lo considera un altro dato: le sue letture si scrivono di nuovo nella console, e con «Tieni i valori modificati» un valore scritto a mano in quel dato non si riapplica.
 - **Una Lettura tolta e poi rimessa.** Se in pausa togli una Lettura, riesegui, poi la rimetti con Annulla e riesegui di nuovo, il valore che quella Lettura aveva letto non c'è più: AlgoDesign lo chiede di nuovo nella console, e l'avviso lo dice.
 - **L'esecuzione animata dietro una finestra.** Mentre una finestra è aperta, per esempio «Stampa», l'esecuzione animata va avanti: la stampa mostra il blocco evidenziato e i valori del momento del clic su «Stampa…», non di quando la finestra si è aperta. Per stampare un punto preciso dell'esecuzione, mettila prima in pausa.
